@@ -3,6 +3,7 @@
 Movie Hub is a private, self-hosted Kodi experience for discovering films and
 television, managing profiles, saving a watchlist and continuing across devices.
 It offers both a cinematic television interface and a fully native Kodi mode.
+Current release: **3.0.0**.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/billyke2000s/moviehub)
 [![Validate](https://github.com/billyke2000s/moviehub/actions/workflows/validate.yml/badge.svg)](https://github.com/billyke2000s/moviehub/actions/workflows/validate.yml)
