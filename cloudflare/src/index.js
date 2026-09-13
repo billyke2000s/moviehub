@@ -23,7 +23,7 @@
  *     VPS Pillow re-encode. Old images are deleted on replace/delete — no
  *     pile-up, and nothing currently in use is ever removed.
  *
- * Bindings (set in wrangler.toml):
+ * Bindings (set in wrangler.jsonc):
  *   DB          — D1 database
  *   AVATARS     — R2 bucket
  *   APP_SECRET  — secret (wrangler secret put APP_SECRET)
@@ -31,7 +31,11 @@
 
 // ── small helpers ────────────────────────────────────────────────────────────
 
-const JSON_HEADERS = { "Content-Type": "application/json" };
+const JSON_HEADERS = {
+  "Content-Type": "application/json",
+  "Cache-Control": "no-store",
+  "X-Content-Type-Options": "nosniff",
+};
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: JSON_HEADERS });
@@ -90,17 +94,27 @@ function randomToken(n = 32) {
   return bytesToHex(crypto.getRandomValues(new Uint8Array(n)));
 }
 
+async function sha256Hex(value) {
+  const bytes = new TextEncoder().encode(value);
+  return bytesToHex(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)));
+}
 
 // ── credential encryption (AES-GCM, key from ENC_KEY worker secret) ──────────
 // Keys are stored encrypted at rest. Only the Worker (with ENC_KEY) can decrypt,
 // and only hands a decrypted value back to an authenticated device.
 
 async function _encKey(env) {
-  if (typeof env.ENC_KEY !== "string" || env.ENC_KEY.length === 0) {
+  if (typeof env.ENC_KEY !== "string" || env.ENC_KEY.length < 32) {
     throw new Error("ENC_KEY is missing");
   }
+  const raw = new TextEncoder().encode(env.ENC_KEY);
+  const digest = await crypto.subtle.digest("SHA-256", raw);
+  return crypto.subtle.importKey("raw", digest, "AES-GCM", false, ["encrypt", "decrypt"]);
+}
+
+async function _legacyEncKey(env) {
   const raw = new TextEncoder().encode(env.ENC_KEY.padEnd(32, "0").slice(0, 32));
-  return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]);
+  return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]);
 }
 
 async function encryptValue(env, plaintext) {
@@ -109,20 +123,21 @@ async function encryptValue(env, plaintext) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key,
              new TextEncoder().encode(plaintext));
-  return bytesToHex(iv) + ":" + bytesToHex(new Uint8Array(ct));
+  return "v2:" + bytesToHex(iv) + ":" + bytesToHex(new Uint8Array(ct));
 }
 
 async function decryptValue(env, stored) {
   if (!stored || !stored.includes(":")) return "";
-  try {
-    const [ivHex, ctHex] = stored.split(":");
-    const key = await _encKey(env);
-    const pt = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: hexToBytes(ivHex) }, key, hexToBytes(ctHex));
-    return new TextDecoder().decode(pt);
-  } catch (_) {
-    return "";
+  const parts = stored.split(":");
+  const modern = parts[0] === "v2";
+  const [ivHex, ctHex] = modern ? parts.slice(1) : parts;
+  if (!/^[a-f0-9]{24}$/i.test(ivHex) || !/^[a-f0-9]+$/i.test(ctHex)) {
+    throw new Error("Encrypted value is malformed");
   }
+  const key = modern ? await _encKey(env) : await _legacyEncKey(env);
+  const pt = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: hexToBytes(ivHex) }, key, hexToBytes(ctHex));
+  return new TextDecoder().decode(pt);
 }
 
 async function decryptCompatible(env, stored) {
@@ -132,34 +147,50 @@ async function decryptCompatible(env, stored) {
   return stored.includes(":") ? await decryptValue(env, stored) : stored;
 }
 
-// ── rate limiting (per IP, in-memory per isolate — good enough for home use) ──
+// ── rate limiting (D1-backed so it survives isolate restarts) ────────────────
 
-const RL = new Map();
-function rateLimit(ip) {
-  const now = Date.now();
-  const WINDOW = 60000, MAX = 8;
-  const hits = (RL.get(ip) || []).filter((t) => now - t < WINDOW);
-  if (hits.length >= MAX) return false;
-  hits.push(now);
-  RL.set(ip, hits);
-  return true;
+async function rateLimit(env, ip) {
+  const windowId = Math.floor(Date.now() / 60000);
+  const key = await sha256Hex(ip);
+  await env.DB.prepare(
+    `INSERT INTO auth_attempts (client_key, window_id, attempts)
+     VALUES (?, ?, 1)
+     ON CONFLICT(client_key, window_id)
+     DO UPDATE SET attempts = attempts + 1`
+  ).bind(key, windowId).run();
+  const row = await env.DB.prepare(
+    `SELECT attempts FROM auth_attempts WHERE client_key = ? AND window_id = ?`
+  ).bind(key, windowId).first();
+  if (Math.random() < 0.02) {
+    await env.DB.prepare(`DELETE FROM auth_attempts WHERE window_id < ?`)
+      .bind(windowId - 2).run();
+  }
+  return Number(row?.attempts || 0) <= 8;
 }
 
 // ── auth guards ──────────────────────────────────────────────────────────────
 
-function requireAppKey(request, env) {
+async function requireAppKey(request, env) {
   const key = (request.headers.get("X-App-Key") || "").trim();
   const expected = (env.APP_SECRET || "").trim();
-  return expected.length > 0 && key.length > 0 && timingSafeEqual(key, expected);
+  if (expected.length < 24 || !key) return false;
+  return timingSafeEqual(await sha256Hex(key), await sha256Hex(expected));
+}
+
+function bearerToken(request) {
+  const match = (request.headers.get("Authorization") || "").match(/^Bearer (\S+)$/);
+  return match ? match[1] : "";
 }
 
 async function accountFromToken(request, env) {
-  const auth = request.headers.get("Authorization") || "";
-  const token = auth.replace("Bearer ", "").trim();
-  if (!token) return null;
+  const token = bearerToken(request);
+  if (!token || token.length > 128) return null;
+  const tokenHash = await sha256Hex(token);
+  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
   const row = await env.DB.prepare(
-    `SELECT a.* FROM accounts a JOIN tokens t ON t.account_id = a.id WHERE t.token = ?`
-  ).bind(token).first();
+    `SELECT a.* FROM accounts a JOIN tokens t ON t.account_id = a.id
+     WHERE t.token = ? AND t.created_at >= ?`
+  ).bind(tokenHash, cutoff).first();
   return row || null;
 }
 
@@ -173,7 +204,7 @@ async function accountPublic(env, acc) {
   const premiumize = await decryptCompatible(env, acc.premiumize_key || "");
   return {
     username: acc.username,
-    has_keys: !!(tmdb && premiumize),
+    has_keys: !!tmdb,
     keys: { tmdb, premiumize },
     profiles: results || [],
   };
@@ -183,8 +214,17 @@ async function issueLogin(env, username) {
   const acc = await env.DB.prepare(`SELECT * FROM accounts WHERE username = ?`)
     .bind(username).first();
   const token = randomToken();
+  const tokenHash = await sha256Hex(token);
+  await env.DB.prepare(`DELETE FROM tokens WHERE account_id = ? AND created_at < ?`)
+    .bind(acc.id, Date.now() - 30 * 24 * 60 * 60 * 1000).run();
   await env.DB.prepare(`INSERT INTO tokens (token, account_id, created_at) VALUES (?, ?, ?)`)
-    .bind(token, acc.id, Date.now()).run();
+    .bind(tokenHash, acc.id, Date.now()).run();
+  await env.DB.prepare(
+    `DELETE FROM tokens WHERE token IN (
+       SELECT token FROM tokens WHERE account_id = ?
+       ORDER BY created_at DESC LIMIT -1 OFFSET 20
+     )`
+  ).bind(acc.id).run();
   return { token, account: await accountPublic(env, acc) };
 }
 
@@ -227,16 +267,16 @@ export default {
         return await serveAvatar(env, path.slice("/avatar/".length));
       }
 
-      if (!requireAppKey(request, env)) return err("Those connection details were not accepted.", 403);
+      if (!(await requireAppKey(request, env))) return err("Those connection details were not accepted.", 403);
 
       // ── auth ──
       if (path === "/register" && method === "POST") {
-        if (!rateLimit(ip)) return err("Too many attempts — wait a minute.", 429);
+        if (!(await rateLimit(env, ip))) return err("Too many attempts — wait a minute.", 429);
         const body = await request.json();
         return await register(env, body);
       }
       if (path === "/login" && method === "POST") {
-        if (!rateLimit(ip)) return err("Too many attempts — wait a minute.", 429);
+        if (!(await rateLimit(env, ip))) return err("Too many attempts — wait a minute.", 429);
         const body = await request.json();
         return await login(env, body);
       }
@@ -303,7 +343,7 @@ async function register(env, body) {
   }
   const exists = await env.DB.prepare(`SELECT 1 FROM accounts WHERE username = ?`)
     .bind(username).first();
-  if (exists) return err("That username is taken.", 409);
+  if (exists) return err("An account could not be created with those details.", 409);
   const pw = await hashPassword(password);
   await env.DB.prepare(
     `INSERT INTO accounts (username, pw_hash, tmdb_key, premiumize_key, created_at) VALUES (?, ?, '', '', ?)`
@@ -335,8 +375,9 @@ async function login(env, body) {
 }
 
 async function logout(request, env) {
-  const token = (request.headers.get("Authorization") || "").replace("Bearer ", "").trim();
-  await env.DB.prepare(`DELETE FROM tokens WHERE token = ?`).bind(token).run();
+  const token = bearerToken(request);
+  if (!token) return json({ ok: true });
+  await env.DB.prepare(`DELETE FROM tokens WHERE token = ?`).bind(await sha256Hex(token)).run();
   return json({ ok: true });
 }
 
@@ -363,8 +404,14 @@ async function deleteProfile(env, acc, profileId) {
     .bind(profileId, acc.id).first();
   if (!prof) return err("No such profile.", 404);
   if (prof.avatar) await env.AVATARS.delete(prof.avatar).catch(() => {});
-  await env.DB.prepare(`DELETE FROM progress WHERE profile_id = ?`).bind(profileId).run();
-  await env.DB.prepare(`DELETE FROM profiles WHERE id = ?`).bind(profileId).run();
+  await env.DB.batch([
+    env.DB.prepare(`DELETE FROM progress WHERE profile_id = ?`).bind(profileId),
+    env.DB.prepare(`DELETE FROM watchlist WHERE profile_id = ?`).bind(profileId),
+    env.DB.prepare(`DELETE FROM vault WHERE profile_id = ?`).bind(profileId),
+    env.DB.prepare(`DELETE FROM prefs WHERE profile_id = ?`).bind(profileId),
+    env.DB.prepare(`DELETE FROM notif_dismissed WHERE profile_id = ?`).bind(profileId),
+    env.DB.prepare(`DELETE FROM profiles WHERE id = ? AND account_id = ?`).bind(profileId, acc.id),
+  ]);
   const fresh = await env.DB.prepare(`SELECT * FROM accounts WHERE id = ?`).bind(acc.id).first();
   return json({ account: await accountPublic(env, fresh) });
 }
@@ -464,8 +511,9 @@ async function removeWatchlist(env, acc, body) {
 async function saveTraktToken(env, acc, body) {
   const profileId = +body.profile_id;
   if (!(await ownsProfile(env, acc, profileId))) return err("That profile isn't yours.", 403);
+  const encrypted = await encryptValue(env, String(body.token || ""));
   await env.DB.prepare(`UPDATE profiles SET trakt_token = ? WHERE id = ?`)
-    .bind(body.token || "", profileId).run();
+    .bind(encrypted, profileId).run();
   return json({ ok: true });
 }
 
@@ -473,7 +521,7 @@ async function getTraktToken(env, acc, profileId) {
   if (!(await ownsProfile(env, acc, profileId))) return err("That profile isn't yours.", 403);
   const row = await env.DB.prepare(`SELECT trakt_token FROM profiles WHERE id = ?`)
     .bind(profileId).first();
-  return json({ token: (row && row.trakt_token) || "" });
+  return json({ token: row ? await decryptCompatible(env, row.trakt_token || "") : "" });
 }
 
 
@@ -520,8 +568,12 @@ async function setVault(env, acc, body) {
   const profileId = +body.profile_id;
   if (!(await ownsProfile(env, acc, profileId))) return err("That profile isn't yours.", 403);
   const items = body.items || {};
+  const allowed = new Set(["premiumize", "realdebrid", "alldebrid", "tmdb", "opensubtitles"]);
   for (const k of Object.keys(items)) {
-    const enc = await encryptValue(env, String(items[k] || ""));
+    if (!allowed.has(k)) return err("Unsupported credential type.");
+    const value = String(items[k] || "");
+    if (value.length > 4096) return err("Credential is too long.");
+    const enc = await encryptValue(env, value);
     await env.DB.prepare(
       `INSERT INTO vault (profile_id, key_name, enc_value) VALUES (?, ?, ?)
        ON CONFLICT(profile_id, key_name) DO UPDATE SET enc_value=excluded.enc_value`
@@ -543,11 +595,18 @@ async function setPrefs(env, acc, body) {
   const profileId = +body.profile_id;
   if (!(await ownsProfile(env, acc, profileId))) return err("That profile isn't yours.", 403);
   const items = body.items || {};
+  const allowed = new Set([
+    "autoplay_next", "subtitles_on", "subtitle_lang", "sort_pref", "cached_only",
+    "experience_mode", "preview_mode", "reduced_motion",
+  ]);
   for (const k of Object.keys(items)) {
+    if (!allowed.has(k)) return err("Unsupported preference.");
+    const value = String(items[k] || "");
+    if (value.length > 256) return err("Preference is too long.");
     await env.DB.prepare(
       `INSERT INTO prefs (profile_id, pref_name, pref_value) VALUES (?, ?, ?)
        ON CONFLICT(profile_id, pref_name) DO UPDATE SET pref_value=excluded.pref_value`
-    ).bind(profileId, k, String(items[k] || "")).run();
+    ).bind(profileId, k, value).run();
   }
   return json({ ok: true });
 }
@@ -557,3 +616,12 @@ async function ownsProfile(env, acc, profileId) {
     .bind(profileId, acc.id).first();
   return !!row;
 }
+
+export {
+  decryptValue,
+  encryptValue,
+  hashPassword,
+  sha256Hex,
+  timingSafeEqual,
+  verifyPassword,
+};

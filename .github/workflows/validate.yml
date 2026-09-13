@@ -20,4 +20,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: npm ci
+      - run: npm ci
+        working-directory: cloudflare
+      - run: npx wrangler deploy --dry-run
+        working-directory: cloudflare
       - run: npm test

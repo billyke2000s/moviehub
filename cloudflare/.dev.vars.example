@@ -1,0 +1,4 @@
+# Enter two different long random values. Cloudflare asks for these during
+# one-click deployment and stores them as encrypted Worker secrets.
+APP_SECRET=
+ENC_KEY=

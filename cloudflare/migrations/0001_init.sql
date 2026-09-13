@@ -40,6 +40,13 @@ CREATE TABLE IF NOT EXISTS progress (
 CREATE INDEX IF NOT EXISTS idx_profiles_account ON profiles(account_id);
 CREATE INDEX IF NOT EXISTS idx_tokens_account ON tokens(account_id);
 
+CREATE TABLE IF NOT EXISTS auth_attempts (
+    client_key TEXT NOT NULL,
+    window_id  INTEGER NOT NULL,
+    attempts   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (client_key, window_id)
+);
+
 CREATE TABLE IF NOT EXISTS watchlist (
     profile_id INTEGER NOT NULL,
     media_id   TEXT NOT NULL,

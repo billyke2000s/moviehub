@@ -1,25 +1,10 @@
 {
-  "name": "moviehub-worker",
-  "version": "3.0.0",
+  "name": "moviehub",
+  "version": "3.1.0",
   "private": true,
   "scripts": {
-    "deploy": "wrangler d1 migrations apply DB --remote --config cloudflare/wrangler.jsonc && wrangler deploy --config cloudflare/wrangler.jsonc",
-    "dev": "wrangler dev --config cloudflare/wrangler.jsonc",
+    "deploy": "npm --prefix cloudflare run deploy",
+    "dev": "npm --prefix cloudflare run dev",
     "test": "node --check cloudflare/src/index.js && python3 tools/validate.py"
-  },
-  "devDependencies": {
-    "wrangler": "^4.0.0"
-  },
-  "cloudflare": {
-    "label": "Movie Hub Server",
-    "products": ["Workers", "D1", "R2"],
-    "bindings": {
-      "DB": { "description": "Database for accounts, profiles, watch history and watchlist." },
-      "AVATARS": { "description": "Storage for profile pictures." }
-    },
-    "secrets": {
-      "APP_SECRET": { "description": "A private secret code shared only with your Kodi devices. Use a long random value and enter the same value when Movie Hub asks for your secret code." },
-      "ENC_KEY": { "description": "Encryption key that protects stored API keys. Enter any long random string (30+ characters). Keep it secret; you won't need it again." }
-    }
   }
 }

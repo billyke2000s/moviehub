@@ -13,6 +13,10 @@ Never commit `APP_SECRET`, `ENC_KEY`, API tokens, `deployment-details.txt`,
 is disclosed. Changing `ENC_KEY` makes values encrypted with the previous key
 unreadable, so re-enter those service credentials after rotation.
 
+Movie Hub stores only SHA-256 hashes of login tokens in D1. Sessions expire
+after 30 days, and the oldest sessions are removed when an account exceeds 20
+active devices.
+
 ## Deployment boundaries
 
 Each owner should deploy their own Worker, D1 database and R2 bucket. Do not

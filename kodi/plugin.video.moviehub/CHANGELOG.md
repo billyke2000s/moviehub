@@ -1,4 +1,17 @@
-# Movie Hub 3.0.0
+# Movie Hub 3.1.0
+
+## Security and deployment maintenance
+
+- Made the Cloudflare project self-contained for reliable one-click deployment.
+- Added expiry and database hashing for login tokens.
+- Moved rate limiting from Worker memory into D1.
+- Encrypted Trakt tokens and masked credentials in Kodi settings.
+- Allowed Premiumize, Real-Debrid or AllDebrid during onboarding.
+- Prevented credentials carrying between profiles.
+- Removed all profile-owned data when a profile is deleted.
+- Added deterministic release packaging and security behaviour tests.
+
+## Movie Hub 3.0.0
 
 ## Two complete television experiences
 

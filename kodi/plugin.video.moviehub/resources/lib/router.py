@@ -73,6 +73,7 @@ def legacy_root_menu():
         ("Surprise Me", _url(action="surprise", mt="movie"), "DefaultAddonsRecentlyAdded.png", True),
         ("Transfers", _url(action="transfers"), "DefaultNetwork.png", True),
         ("Connect Trakt", _url(action="link_trakt"), "DefaultAddonService.png", False),
+        ("Change Playback Service", _url(action="debrid_setup"), "DefaultNetwork.png", False),
         ("Switch Profile", _url(action="switch_profile"), "DefaultUser.png", False),
         ("Choose Interface", _url(action="experience_setup"), "DefaultAddonService.png", False),
         ("Reconnect Private Server", _url(action="connection_setup"), "DefaultNetwork.png", False),
@@ -88,33 +89,32 @@ def hub_menu(mt):
     """Top-level category sections for movies or tv, organised into groups."""
     if mt == "movie":
         rows = [
-            ("🔥  Trending Today", _url(action="row", mt=mt, cat="trending_day")),
-            ("📈  Trending This Week", _url(action="row", mt=mt, cat="trending")),
-            ("⭐  Popular", _url(action="row", mt=mt, cat="popular")),
-            ("🏆  Top Rated", _url(action="row", mt=mt, cat="top_rated")),
-            ("🎞️  Now Playing", _url(action="row", mt=mt, cat="now_playing")),
-            ("🆕  Upcoming", _url(action="row", mt=mt, cat="upcoming")),
+            ("Trending Today", _url(action="row", mt=mt, cat="trending_day")),
+            ("Trending This Week", _url(action="row", mt=mt, cat="trending")),
+            ("Popular", _url(action="row", mt=mt, cat="popular")),
+            ("Top Rated", _url(action="row", mt=mt, cat="top_rated")),
+            ("Now Playing", _url(action="row", mt=mt, cat="now_playing")),
+            ("Upcoming", _url(action="row", mt=mt, cat="upcoming")),
         ]
     else:
         rows = [
-            ("🔥  Trending Today", _url(action="row", mt=mt, cat="trending_day")),
-            ("📈  Trending This Week", _url(action="row", mt=mt, cat="trending")),
-            ("⭐  Popular", _url(action="row", mt=mt, cat="popular")),
-            ("🏆  Top Rated", _url(action="row", mt=mt, cat="top_rated")),
-            ("📡  On The Air", _url(action="row", mt=mt, cat="on_the_air")),
-            ("📅  Airing Today", _url(action="row", mt=mt, cat="airing_today")),
+            ("Trending Today", _url(action="row", mt=mt, cat="trending_day")),
+            ("Trending This Week", _url(action="row", mt=mt, cat="trending")),
+            ("Popular", _url(action="row", mt=mt, cat="popular")),
+            ("Top Rated", _url(action="row", mt=mt, cat="top_rated")),
+            ("On The Air", _url(action="row", mt=mt, cat="on_the_air")),
+            ("Airing Today", _url(action="row", mt=mt, cat="airing_today")),
         ]
     # Browse-by sub-menus
     rows += [
-        ("🎭  Browse by Genre", _url(action="genres", mt=mt)),
-        ("📆  Browse by Decade", _url(action="decades", mt=mt)),
-        ("🌍  Browse by Language", _url(action="languages", mt=mt)),
-        ("📺  Browse by Streaming Service", _url(action="providers", mt=mt)),
-        ("🔀  Browse by Sort Order", _url(action="sorts", mt=mt)),
+        ("Browse by Genre", _url(action="genres", mt=mt)),
+        ("Browse by Decade", _url(action="decades", mt=mt)),
+        ("Browse by Language", _url(action="languages", mt=mt)),
+        ("Browse by Streaming Service", _url(action="providers", mt=mt)),
+        ("Browse by Sort Order", _url(action="sorts", mt=mt)),
     ]
     for label, url in rows:
         li = xbmcgui.ListItem(label)
-        folder = not url.startswith(BASE + "?action=row") or True  # all folders
         xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
     xbmcplugin.setContent(HANDLE, "files")
     xbmcplugin.endOfDirectory(HANDLE)
@@ -859,7 +859,7 @@ def transfers_menu():
         pct = int(float(progress) * 100) if progress and float(progress) <= 1 else int(progress)
 
         if status == "finished" or status == "seeding":
-            label = "✅  %s  (ready)" % name
+            label = "%s  (ready)" % name
             # finished → play it
             file_id = t.get("file_id") or t.get("folder_id") or ""
             li = xbmcgui.ListItem(label)
@@ -1074,7 +1074,7 @@ def notifications_menu():
 
     for notif_id, tid, title, ep in new_items:
         sn = ep.get("season_number"); en = ep.get("episode_number")
-        label = "🔔  %s — S%dE%d: %s" % (title, sn, en, ep.get("name", ""))
+        label = "%s — S%dE%d: %s" % (title, sn, en, ep.get("name", ""))
         li = xbmcgui.ListItem(label)
         li.addContextMenuItems([(
             "Dismiss", "RunPlugin(%s)" % _url(action="notif_dismiss", nid=notif_id))])

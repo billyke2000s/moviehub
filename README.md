@@ -3,9 +3,9 @@
 Movie Hub is a private, self-hosted Kodi experience for discovering films and
 television, managing profiles, saving a watchlist and continuing across devices.
 It offers both a cinematic television interface and a fully native Kodi mode.
-Current release: **3.0.0**.
+Current release: **3.1.0**.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/billyke2000s/moviehub)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/billyke2000s/moviehub/tree/main/cloudflare)
 [![Validate](https://github.com/billyke2000s/moviehub/actions/workflows/validate.yml/badge.svg)](https://github.com/billyke2000s/moviehub/actions/workflows/validate.yml)
 
 ## Install on Kodi
@@ -24,6 +24,7 @@ Name it **Movie Hub**, then choose:
 4. **Video add-ons → Movie Hub → Install**
 
 Kodi uses the repository feed for future updates automatically.
+See the [complete setup guide](SETUP.md) for the Cloudflare and API steps.
 
 ## Deploy your private server
 
@@ -67,10 +68,11 @@ same profiles, watchlist and viewing progress.
 - Unknown accounts perform a dummy password derivation to reduce timing leaks.
 - Login failures never reveal whether the username or password was incorrect.
 - Secret codes and passwords are never echoed in API responses.
-- Service credentials are encrypted at rest with AES-GCM.
+- Service credentials, including Trakt tokens, are encrypted at rest with AES-GCM.
+- Login tokens expire after 30 days and only their SHA-256 hashes are stored.
 - Every private route passes through a central application-secret guard.
 - Personal data operations verify account and profile ownership.
-- Authentication attempts are rate-limited.
+- Authentication attempts are rate-limited through D1 across Worker isolates.
 - Internal exception details remain in server logs.
 
 See [SECURITY.md](SECURITY.md) for reporting and operational guidance.
@@ -96,13 +98,11 @@ npm test
 Rebuild the Kodi package and repository feed:
 
 ```bash
-cd kodi
-zip -r repository/plugin.video.moviehub-3.0.0.zip plugin.video.moviehub
-cd ..
 python3 tools/build_repository.py \
   --url https://raw.githubusercontent.com/billyke2000s/moviehub/main \
-  --addon kodi/repository/plugin.video.moviehub-3.0.0.zip \
-  --output kodi/repository
+  --addon-dir kodi/plugin.video.moviehub \
+  --output kodi/repository \
+  --pages-output docs
 ```
 
 ## Services and responsibility

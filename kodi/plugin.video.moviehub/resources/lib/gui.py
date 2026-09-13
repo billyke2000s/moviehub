@@ -243,27 +243,54 @@ def show_profiles(account):
 
 
 def first_login_keys():
-    """After account creation with no keys, ask for TMDb + Premiumize once."""
+    """Collect the discovery key; debrid is selected after profile creation."""
     dlg = xbmcgui.Dialog()
     dlg.ok("Movie Hub — one-time setup",
-           "Enter your own TMDb and Premiumize keys. They're saved to your "
-           "account, so you only do this once — every device you log in on gets "
-           "them automatically.")
-    tmdb_key = dlg.input("TMDb API key")
+           "Enter your TMDb API key for film and television discovery. It is "
+           "encrypted on your private server and follows your account.")
+    tmdb_key = dlg.input(
+        "Enter your TMDb API key", type=xbmcgui.INPUT_ALPHANUM,
+        option=xbmcgui.ALPHANUM_HIDE_INPUT)
     if not tmdb_key:
         return None
     if not tmdb.validate_key(tmdb_key):
         if not dlg.yesno("TMDb key", "That key didn't validate. Use it anyway?"):
             return None
-    pm_key = dlg.input("Premiumize API key")
-    if not pm_key:
-        return None
     try:
-        res = serverapi.save_keys(tmdb_key, pm_key)
+        res = serverapi.save_keys(tmdb_key, "")
     except serverapi.ServerError as e:
         _notify(str(e), err=True)
         return None
     return res["account"]
+
+
+def debrid_setup(profile_id):
+    """Let a profile use any supported debrid provider; none is privileged."""
+    dlg = xbmcgui.Dialog()
+    choices = ["Premiumize", "Real-Debrid", "AllDebrid"]
+    selected = dlg.select(
+        "Choose your playback service",
+        choices,
+        preselect=0,
+        useDetails=False)
+    if selected < 0:
+        return False
+    setting_keys = ["premiumize_key", "realdebrid_key", "alldebrid_key"]
+    vault_keys = ["premiumize", "realdebrid", "alldebrid"]
+    key = dlg.input(
+        "Enter your %s API key" % choices[selected],
+        type=xbmcgui.INPUT_ALPHANUM,
+        option=xbmcgui.ALPHANUM_HIDE_INPUT).strip()
+    if not key:
+        return False
+    ADDON.setSetting(setting_keys[selected], key)
+    try:
+        serverapi.set_vault(profile_id, {vault_keys[selected]: key})
+    except serverapi.ServerError as exc:
+        ADDON.setSetting(setting_keys[selected], "")
+        _notify(str(exc), err=True)
+        return False
+    return True
 
 
 def experience_setup(force=False):

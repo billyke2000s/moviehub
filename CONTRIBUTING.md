@@ -7,4 +7,4 @@ Cloudflare server on behalf of video playback.
 
 Before opening a pull request, run `npm test`, verify every Kodi XML document
 parses, and confirm no credentials or generated deployment files are present.
-Update the add-on version and rebuild `repository/` when publishing a release.
+Update the add-on version and rebuild `kodi/repository/` when publishing a release.

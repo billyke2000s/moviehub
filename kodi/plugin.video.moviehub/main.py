@@ -46,6 +46,13 @@ def run():
         gui.connection_setup(force=True)
         return
 
+    if action == "debrid_setup":
+        if not session.ensure_ready():
+            return
+        from resources.lib import gui
+        gui.debrid_setup(session.active_profile_id())
+        return
+
     if action == "link_trakt":
         if not session.ensure_ready():
             return

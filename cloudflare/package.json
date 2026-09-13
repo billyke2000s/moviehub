@@ -1,0 +1,31 @@
+{
+  "name": "moviehub-private-server",
+  "version": "3.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "npm run db:migrate && wrangler deploy",
+    "db:migrate": "wrangler d1 migrations apply DB --remote",
+    "dev": "wrangler dev",
+    "test": "node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "cloudflare": {
+    "bindings": {
+      "DB": {
+        "description": "Stores accounts, profiles, watchlists and viewing progress."
+      },
+      "AVATARS": {
+        "description": "Stores optional profile pictures."
+      },
+      "APP_SECRET": {
+        "description": "Create a long random secret code and enter the same code in the Kodi add-on."
+      },
+      "ENC_KEY": {
+        "description": "Create a different random value of at least 32 characters. This encrypts stored credentials."
+      }
+    }
+  }
+}

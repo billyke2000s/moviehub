@@ -36,7 +36,9 @@ def _apply_keys(account):
 
 def logout():
     serverapi.logout()
-    for k in ("auth_token", "active_profile_id", "tmdb_key", "premiumize_key"):
+    for k in ("auth_token", "active_profile_id", "tmdb_key", "premiumize_key",
+              "realdebrid_key", "alldebrid_key", "trakt_token",
+              "opensubtitles_login"):
         _set(k, "")
 
 
@@ -60,9 +62,12 @@ def _load_vault_and_prefs(pid):
         "premiumize": "premiumize_key",
         "realdebrid": "realdebrid_key",
         "alldebrid": "alldebrid_key",
-        "tmdb": "tmdb_key",
         "opensubtitles": "opensubtitles_login",
     }
+    # Never allow one profile's credentials to remain active after switching
+    # to another profile that has no value stored for that provider.
+    for setting in vault_map.values():
+        ADDON.setSetting(setting, "")
     try:
         vault = serverapi.get_vault(pid)
         for vkey, setting in vault_map.items():
@@ -123,7 +128,7 @@ def ensure_ready():
             _set("auth_token", "")
             return ensure_ready()
 
-    # 2) keys?
+    # 2) discovery key?
     if not account.get("has_keys"):
         updated = gui.first_login_keys()
         if not updated:
@@ -150,6 +155,14 @@ def ensure_ready():
             return False
         _set("active_profile_id", payload[0])
         _load_trakt_for_profile(payload[0])
+
+    # Always refresh profile-scoped credentials, then require exactly one of
+    # the supported playback services.
+    pid = active_profile_id()
+    _load_vault_and_prefs(pid)
+    from . import debrid
+    if not debrid.available_services() and not gui.debrid_setup(pid):
+        return False
 
     return True
 

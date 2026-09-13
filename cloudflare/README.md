@@ -3,7 +3,9 @@
 This folder contains the Cloudflare Worker used for accounts, profiles,
 watchlists and viewing progress. It does not proxy video.
 
-The recommended setup is the repository's **Deploy to Cloudflare** button.
+The recommended setup is the repository's **Deploy to Cloudflare** button,
+which targets this self-contained folder. Cloudflare provisions and binds D1
+and R2, then asks for the two values declared in `.dev.vars.example`.
 
 For a local command-line deployment:
 
