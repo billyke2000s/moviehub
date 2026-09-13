@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <!--
+      "Who's watching?" profile picker. A centered panel titled like the
+      Electron app, with a horizontal list of profile cards (avatar + name).
+      Same near-black + purple identity.
+    -->
+    <defaultcontrol always="true">50</defaultcontrol>
+    <coordinates>
+        <system>1</system><posx>0</posx><posy>0</posy>
+    </coordinates>
+    <controls>
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture>background.png</texture>
+        </control>
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="E6040406">white.png</texture>
+        </control>
+
+        <control type="label">
+            <left>0</left><top>210</top><width>1920</width><height>60</height>
+            <align>center</align>
+            <font>font_hub_title</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <label>Who's watching?</label>
+        </control>
+        <control type="label">
+            <left>0</left><top>280</top><width>1920</width><height>36</height>
+            <align>center</align>
+            <font>font_hub_sub</font>
+            <textcolor>9EFFFFFF</textcolor>
+            <label>Each profile keeps its own watch history and list.</label>
+        </control>
+
+        <!-- profile cards -->
+        <control type="list" id="50">
+            <left>210</left><top>390</top><width>1500</width><height>320</height>
+            <orientation>horizontal</orientation>
+            <itemgap>26</itemgap>
+            <focusposition>0</focusposition>
+            <itemlayout width="220" height="300">
+                <control type="image">
+                    <left>30</left><top>0</top><width>160</width><height>160</height>
+                    <texture border="12" colordiffuse="14FFFFFF" fallback="avatar-default.png">$INFO[ListItem.Icon]</texture>
+                </control>
+                <control type="label">
+                    <left>0</left><top>176</top><width>220</width><height>36</height>
+                    <align>center</align>
+                    <font>font_hub_label</font>
+                    <textcolor>B0FFFFFF</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+            </itemlayout>
+            <focusedlayout width="220" height="300">
+                <control type="image">
+                    <left>22</left><top>-8</top><width>176</width><height>176</height>
+                    <texture border="14" colordiffuse="FFD2AA67">panel.png</texture>
+                </control>
+                <control type="image">
+                    <left>30</left><top>0</top><width>160</width><height>160</height>
+                    <texture border="12" fallback="avatar-default.png">$INFO[ListItem.Icon]</texture>
+                </control>
+                <control type="label">
+                    <left>0</left><top>176</top><width>220</width><height>36</height>
+                    <align>center</align>
+                    <font>font_hub_button</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+            </focusedlayout>
+        </control>
+
+        <!-- Manage / log out row -->
+        <control type="button" id="60">
+            <left>760</left><top>760</top><width>200</width><height>52</height>
+            <texturefocus colordiffuse="1FFFFFFF" border="12">button.png</texturefocus>
+            <texturenofocus colordiffuse="0DFFFFFF" border="12">button.png</texturenofocus>
+            <font>font_hub_label</font><align>center</align>
+            <textcolor>D0FFFFFF</textcolor>
+            <label>Manage profiles</label>
+            <onup>50</onup><onright>61</onright>
+        </control>
+        <control type="button" id="61">
+            <left>980</left><top>760</top><width>180</width><height>52</height>
+            <texturefocus colordiffuse="1FFFFFFF" border="12">button.png</texturefocus>
+            <texturenofocus colordiffuse="0DFFFFFF" border="12">button.png</texturenofocus>
+            <font>font_hub_label</font><align>center</align>
+            <textcolor>D0FFFFFF</textcolor>
+            <label>Log out</label>
+            <onup>50</onup><onleft>60</onleft>
+        </control>
+    </controls>
+</window>

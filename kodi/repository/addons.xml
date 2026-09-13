@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='utf-8'?>
+<addons><addon id="plugin.video.moviehub" name="Movie Hub" version="3.0.0" provider-name="Movie Hub">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" version="2.22.0" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="main.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_gb">A cinematic, private library that follows you everywhere</summary>
+    <description lang="en_gb">Discover films and television in a remote-first cinema interface, keep a personal watchlist, and continue across devices. Playback stays on your device; the server stores only your account, profiles and progress.</description>
+    <platform>all</platform>
+    <license>MIT</license>
+    <assets>
+      <icon>resources/skins/default/media/icon.png</icon>
+      <fanart>resources/skins/default/media/fanart.jpg</fanart>
+    </assets>
+  </extension>
+</addon><addon id="repository.moviehub" name="Movie Hub Repository" version="1.0.0" provider-name="Movie Hub">
+  <extension point="xbmc.addon.repository" name="Movie Hub updates">
+    <dir>
+      <info compressed="false">https://raw.githubusercontent.com/billyke2000s/moviehub/main/kodi/repository/addons.xml</info>
+      <checksum>https://raw.githubusercontent.com/billyke2000s/moviehub/main/kodi/repository/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.githubusercontent.com/billyke2000s/moviehub/main/kodi/repository/</datadir>
+    </dir>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Private updates for Movie Hub</summary>
+    <description lang="en_GB">Keeps this private Movie Hub installation current through Kodi.</description>
+    <platform>all</platform>
+    <license>MIT</license>
+  </extension>
+</addon></addons>

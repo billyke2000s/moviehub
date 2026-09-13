@@ -1,0 +1,10 @@
+node_modules/
+__pycache__/
+*.py[cod]
+.DS_Store
+.dev.vars
+.env
+.wrangler/
+deployment-details.txt
+release/
+*.log

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Custom fonts for the Movie Hub dialogs. Kodi needs a font file present; we
+  reference Kodi's bundled default font family so this works everywhere without
+  shipping a font binary. Sizes/weights approximate the app's Inter look.
+-->
+<fonts>
+    <fontset id="Default" idloc="31390">
+        <font>
+            <name>font_hub_title</name>
+            <filename>NotoSans-Bold.ttf</filename>
+            <size>44</size>
+            <style>bold</style>
+        </font>
+        <font>
+            <name>font_hub_sub</name>
+            <filename>NotoSans-Regular.ttf</filename>
+            <size>22</size>
+        </font>
+        <font>
+            <name>font_hub_label</name>
+            <filename>NotoSans-Regular.ttf</filename>
+            <size>22</size>
+        </font>
+        <font>
+            <name>font_hub_input</name>
+            <filename>NotoSans-Regular.ttf</filename>
+            <size>26</size>
+        </font>
+        <font>
+            <name>font_hub_button</name>
+            <filename>NotoSans-Bold.ttf</filename>
+            <size>26</size>
+            <style>bold</style>
+        </font>
+        <font><name>font_hub_wordmark</name><filename>NotoSans-Bold.ttf</filename><size>34</size><style>bold</style></font>
+        <font><name>font_hub_nav</name><filename>NotoSans-Regular.ttf</filename><size>20</size></font>
+        <font><name>font_hub_hero</name><filename>NotoSans-Bold.ttf</filename><size>58</size><style>bold</style></font>
+        <font><name>font_hub_meta</name><filename>NotoSans-Regular.ttf</filename><size>20</size></font>
+        <font><name>font_hub_body</name><filename>NotoSans-Regular.ttf</filename><size>24</size></font>
+        <font><name>font_hub_kicker</name><filename>NotoSans-Bold.ttf</filename><size>19</size><style>bold</style></font>
+        <font><name>font_hub_tagline</name><filename>NotoSans-Regular.ttf</filename><size>28</size><style>italic</style></font>
+        <font><name>font_hub_button_small</name><filename>NotoSans-Bold.ttf</filename><size>18</size><style>bold</style></font>
+    </fontset>
+</fonts>

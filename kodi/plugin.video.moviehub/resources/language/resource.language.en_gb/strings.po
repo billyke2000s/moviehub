@@ -1,0 +1,107 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: plugin.video.moviehub\n"
+"Language: en_gb\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgctxt "#30001"
+msgid "Movie Hub"
+msgstr ""
+
+msgctxt "#30010"
+msgid "Server"
+msgstr ""
+
+msgctxt "#30011"
+msgid "Server URL"
+msgstr "Private server URL"
+
+msgctxt "#30012"
+msgid "App secret"
+msgstr "Secret code"
+
+msgctxt "#30020"
+msgid "Session (managed automatically)"
+msgstr ""
+
+msgctxt "#30030"
+msgid "Playback"
+msgstr ""
+
+msgctxt "#30031"
+msgid "Auto-play next episode (Up Next)"
+msgstr ""
+
+msgctxt "#30032"
+msgid "Auto-load subtitles"
+msgstr ""
+
+msgctxt "#30033"
+msgid "Subtitle language"
+msgstr ""
+
+msgctxt "#30034"
+msgid "Stream sort"
+msgstr ""
+
+msgctxt "#30035"
+msgid "Only show instantly-playable (cached) streams"
+msgstr ""
+
+msgctxt "#30040"
+msgid "Credentials"
+msgstr ""
+
+msgctxt "#30041"
+msgid "Premiumize key"
+msgstr ""
+
+msgctxt "#30042"
+msgid "Real-Debrid key"
+msgstr ""
+
+msgctxt "#30043"
+msgid "AllDebrid key"
+msgstr ""
+
+msgctxt "#30050"
+msgid "Trakt (optional)"
+msgstr ""
+
+msgctxt "#30051"
+msgid "Enable Trakt sync (optional)"
+msgstr ""
+
+msgctxt "#30052"
+msgid "Trakt Client ID"
+msgstr ""
+
+msgctxt "#30053"
+msgid "Trakt Client Secret"
+msgstr ""
+
+msgctxt "#30060"
+msgid "Experience"
+msgstr ""
+
+msgctxt "#30061"
+msgid "Interface and previews"
+msgstr ""
+
+msgctxt "#30062"
+msgid "Interface mode"
+msgstr ""
+
+msgctxt "#30063"
+msgid "Trailer previews"
+msgstr ""
+
+msgctxt "#30064"
+msgid "Reduce motion and visual effects"
+msgstr ""
+
+msgctxt "#30065"
+msgid "Experience setup completed"
+msgstr ""

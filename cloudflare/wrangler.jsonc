@@ -1,0 +1,18 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "moviehub",
+  "main": "src/index.js",
+  "compatibility_date": "2024-09-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "moviehub"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "AVATARS",
+      "bucket_name": "moviehub-avatars"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.moviehub"
+       name="Movie Hub"
+       version="3.0.0"
+       provider-name="Movie Hub">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+    <import addon="script.module.requests" version="2.22.0"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="main.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_gb">A cinematic, private library that follows you everywhere</summary>
+    <description lang="en_gb">Discover films and television in a remote-first cinema interface, keep a personal watchlist, and continue across devices. Playback stays on your device; the server stores only your account, profiles and progress.</description>
+    <platform>all</platform>
+    <license>MIT</license>
+    <assets>
+      <icon>resources/skins/default/media/icon.png</icon>
+      <fanart>resources/skins/default/media/fanart.jpg</fanart>
+    </assets>
+  </extension>
+</addon>

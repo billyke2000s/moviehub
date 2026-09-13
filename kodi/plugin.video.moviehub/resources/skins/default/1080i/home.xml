@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+  <defaultcontrol always="true">300</defaultcontrol>
+  <coordinates><system>1</system><posx>0</posx><posy>0</posy></coordinates>
+  <controls>
+    <control type="image">
+      <left>0</left><top>0</top><width>1920</width><height>1080</height>
+      <texture colordiffuse="FF090A0C">white.png</texture>
+    </control>
+    <control type="image" id="10">
+      <left>580</left><top>0</top><width>1340</width><height>650</height>
+      <aspectratio align="right" aligny="top">scale</aspectratio>
+      <fadetime>260</fadetime>
+    </control>
+    <control type="image">
+      <left>0</left><top>0</top><width>1920</width><height>680</height>
+      <texture colordiffuse="C9090A0C">hero-shade.png</texture>
+    </control>
+    <control type="image">
+      <left>0</left><top>560</top><width>1920</width><height>520</height>
+      <texture colordiffuse="F7090A0C">white.png</texture>
+    </control>
+
+    <control type="group">
+      <left>42</left><top>42</top><width>1840</width><height>96</height>
+      <control type="label">
+        <left>0</left><top>0</top><width>290</width><height>55</height>
+        <font>font_hub_wordmark</font><textcolor>FFFFFFFF</textcolor>
+        <label>MOVIE HUB</label>
+      </control>
+      <control type="image">
+        <left>0</left><top>58</top><width>46</width><height>3</height>
+        <texture colordiffuse="FFD2AA67">white.png</texture>
+      </control>
+      <control type="button" id="100">
+        <left>350</left><top>0</top><width>130</width><height>52</height><label>HOME</label>
+        <font>font_hub_nav</font><align>center</align><textcolor>AAFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+        <texturefocus colordiffuse="22D2AA67" border="8">button.png</texturefocus><texturenofocus>-</texturenofocus>
+        <onleft>105</onleft><onright>101</onright><ondown>300</ondown>
+      </control>
+      <control type="button" id="101">
+        <left>488</left><top>0</top><width>140</width><height>52</height><label>FILMS</label>
+        <font>font_hub_nav</font><align>center</align><textcolor>AAFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+        <texturefocus colordiffuse="22D2AA67" border="8">button.png</texturefocus><texturenofocus>-</texturenofocus>
+        <onleft>100</onleft><onright>102</onright><ondown>300</ondown>
+      </control>
+      <control type="button" id="102">
+        <left>636</left><top>0</top><width>190</width><height>52</height><label>TELEVISION</label>
+        <font>font_hub_nav</font><align>center</align><textcolor>AAFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+        <texturefocus colordiffuse="22D2AA67" border="8">button.png</texturefocus><texturenofocus>-</texturenofocus>
+        <onleft>101</onleft><onright>103</onright><ondown>300</ondown>
+      </control>
+      <control type="button" id="103">
+        <left>834</left><top>0</top><width>150</width><height>52</height><label>SEARCH</label>
+        <font>font_hub_nav</font><align>center</align><textcolor>AAFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+        <texturefocus colordiffuse="22D2AA67" border="8">button.png</texturefocus><texturenofocus>-</texturenofocus>
+        <onleft>102</onleft><onright>104</onright><ondown>300</ondown>
+      </control>
+      <control type="button" id="104">
+        <left>992</left><top>0</top><width>160</width><height>52</height><label>MY LIST</label>
+        <font>font_hub_nav</font><align>center</align><textcolor>AAFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+        <texturefocus colordiffuse="22D2AA67" border="8">button.png</texturefocus><texturenofocus>-</texturenofocus>
+        <onleft>103</onleft><onright>105</onright><ondown>300</ondown>
+      </control>
+      <control type="button" id="105">
+        <left>1160</left><top>0</top><width>160</width><height>52</height><label>ACCOUNT</label>
+        <font>font_hub_nav</font><align>center</align><textcolor>AAFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+        <texturefocus colordiffuse="22D2AA67" border="8">button.png</texturefocus><texturenofocus>-</texturenofocus>
+        <onleft>104</onleft><onright>100</onright><ondown>300</ondown>
+      </control>
+    </control>
+
+    <control type="label" id="22">
+      <left>86</left><top>205</top><width>720</width><height>34</height>
+      <font>font_hub_meta</font><textcolor>FFD2AA67</textcolor><label></label>
+    </control>
+    <control type="label" id="20">
+      <left>82</left><top>248</top><width>900</width><height>92</height>
+      <font>font_hub_hero</font><textcolor>FFFFFFFF</textcolor><label></label>
+    </control>
+    <control type="label" id="21">
+      <left>86</left><top>350</top><width>700</width><height>132</height>
+      <font>font_hub_body</font><textcolor>D9FFFFFF</textcolor><label></label>
+      <wrapmultiline>true</wrapmultiline>
+    </control>
+    <control type="button" id="200">
+      <left>86</left><top>492</top><width>210</width><height>52</height>
+      <font>font_hub_button_small</font><align>center</align><label>MORE INFO</label>
+      <textcolor>FF090A0C</textcolor><focusedcolor>FF090A0C</focusedcolor>
+      <texturefocus colordiffuse="FFFFFFFF" border="10">button.png</texturefocus>
+      <texturenofocus colordiffuse="FFD2AA67" border="10">button.png</texturenofocus>
+      <onup>100</onup><ondown>300</ondown>
+    </control>
+
+    <control type="label" id="30">
+      <left>82</left><top>544</top><width>1000</width><height>34</height>
+      <font>font_hub_kicker</font><textcolor>E6FFFFFF</textcolor><label>TRENDING NOW</label>
+    </control>
+    <control type="list" id="300">
+      <left>72</left><top>586</top><width>1800</width><height>218</height>
+      <orientation>horizontal</orientation><itemgap>16</itemgap><focusposition>1</focusposition>
+      <onup>200</onup><ondown>301</ondown>
+      <itemlayout width="142" height="210">
+        <control type="image"><left>6</left><top>6</top><width>130</width><height>195</height><aspectratio>scale</aspectratio><texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture></control>
+      </itemlayout>
+      <focusedlayout width="158" height="218">
+        <control type="image"><left>0</left><top>0</top><width>146</width><height>211</height><texture colordiffuse="FFD2AA67" border="8">panel.png</texture></control>
+        <control type="image"><left>5</left><top>5</top><width>136</width><height>201</height><aspectratio>scale</aspectratio><texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture></control>
+      </focusedlayout>
+    </control>
+
+    <control type="label" id="31">
+      <left>82</left><top>816</top><width>1000</width><height>34</height>
+      <font>font_hub_kicker</font><textcolor>E6FFFFFF</textcolor><label>ACCLAIMED TELEVISION</label>
+    </control>
+    <control type="list" id="301">
+      <left>72</left><top>856</top><width>1800</width><height>218</height>
+      <orientation>horizontal</orientation><itemgap>16</itemgap><focusposition>1</focusposition>
+      <onup>300</onup><ondown>100</ondown>
+      <itemlayout width="142" height="210">
+        <control type="image"><left>6</left><top>6</top><width>130</width><height>195</height><aspectratio>scale</aspectratio><texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture></control>
+      </itemlayout>
+      <focusedlayout width="158" height="218">
+        <control type="image"><left>0</left><top>0</top><width>146</width><height>211</height><texture colordiffuse="FFD2AA67" border="8">panel.png</texture></control>
+        <control type="image"><left>5</left><top>5</top><width>136</width><height>201</height><aspectratio>scale</aspectratio><texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture></control>
+      </focusedlayout>
+    </control>
+  </controls>
+</window>
