@@ -37,18 +37,25 @@ actual = hashlib.md5(index.read_bytes()).hexdigest()
 if actual != expected:
     raise SystemExit("kodi/repository/addons.xml.md5 does not match addons.xml")
 
-for package in REPOSITORY.glob("*.zip"):
+for package in REPOSITORY.glob("**/*.zip"):
     with zipfile.ZipFile(package) as archive:
         bad = archive.testzip()
         if bad:
             raise SystemExit(f"Corrupt member in {package.name}: {bad}")
 
 addon_xml = ET.parse(ADDON / "addon.xml").getroot()
+addon_id = addon_xml.attrib["id"]
 version = addon_xml.attrib["version"]
-plugin_name = f"plugin.video.moviehub-{version}.zip"
-plugin_packages = sorted(p.name for p in REPOSITORY.glob("plugin.video.moviehub-*.zip"))
+plugin_name = f"{addon_id}-{version}.zip"
+
+# Kodi requires zip="true" datadir packages at
+# <datadir>/<addon-id>/<addon-id>-<version>.zip
+# https://kodi.wiki/view/Add-on_repositories
+plugin_packages = sorted(p.name for p in (REPOSITORY / addon_id).glob(f"{addon_id}-*.zip"))
 if plugin_packages != [plugin_name]:
-    raise SystemExit(f"Expected only {plugin_name}; found {plugin_packages}")
+    raise SystemExit(
+        f"Expected only kodi/repository/{addon_id}/{plugin_name}; found {plugin_packages}"
+    )
 
 with tempfile.TemporaryDirectory() as directory:
     temporary = pathlib.Path(directory)
@@ -69,9 +76,13 @@ with tempfile.TemporaryDirectory() as directory:
         ],
         check=True,
     )
-    for name in (plugin_name, "repository.moviehub.zip", "addons.xml", "addons.xml.md5"):
+    for name in ("repository.moviehub.zip", "addons.xml", "addons.xml.md5"):
         if (generated_repo / name).read_bytes() != (REPOSITORY / name).read_bytes():
             raise SystemExit(f"{name} was not generated reproducibly")
+    if (generated_repo / addon_id / plugin_name).read_bytes() != (
+        REPOSITORY / addon_id / plugin_name
+    ).read_bytes():
+        raise SystemExit(f"{plugin_name} was not generated reproducibly")
     if (generated_docs / "repository.moviehub.zip").read_bytes() != (
         ROOT / "docs" / "repository.moviehub.zip"
     ).read_bytes():
