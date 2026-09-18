@@ -51,8 +51,12 @@ def main():
     package_name = f"{addon_id}-{version}.zip"
     base = args.url.rstrip("/") + "/kodi/repository/"
 
-    args.output.mkdir(parents=True, exist_ok=True)
-    plugin_zip = args.output / package_name
+    # Kodi requires zip="true" datadir packages at
+    # <datadir>/<addon-id>/<addon-id>-<version>.zip
+    # https://kodi.wiki/view/Add-on_repositories
+    addon_output_dir = args.output / addon_id
+    addon_output_dir.mkdir(parents=True, exist_ok=True)
+    plugin_zip = addon_output_dir / package_name
     zip_tree(args.addon_dir, plugin_zip)
 
     repository_xml = f'''<?xml version="1.0" encoding="UTF-8"?>
