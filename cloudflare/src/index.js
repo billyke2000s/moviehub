@@ -449,6 +449,7 @@ async function serveAvatar(env, name) {
   if (!obj) return err("Not found.", 404);
   const headers = new Headers();
   headers.set("Content-Type", obj.httpMetadata?.contentType || "image/jpeg");
+  headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Cache-Control", "public, max-age=86400");
   return new Response(obj.body, { headers });
 }
