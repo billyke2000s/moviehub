@@ -32,15 +32,6 @@ def run():
         xbmc.executebuiltin("Container.Refresh")
         return
 
-    if action == "experience_setup":
-        if not session.ensure_ready():
-            return
-        from resources.lib import gui
-        gui.experience_setup(force=True)
-        import xbmc
-        xbmc.executebuiltin("Container.Refresh")
-        return
-
     if action == "connection_setup":
         from resources.lib import gui
         gui.connection_setup(force=True)
@@ -59,6 +50,21 @@ def run():
         router.link_trakt()
         return
 
+    # Playback and background actions must not run the full login flow:
+    # it makes several server calls and can open dialogs while Kodi is
+    # waiting for a resolved URL. They only need the saved session.
+    if action in ("play", "trailer", "tr_play", "send_pm", "wl_add", "wl_remove",
+                  "notif_dismiss", "tr_delete"):
+        if not session.quick_ready():
+            import xbmcgui
+            xbmcgui.Dialog().notification("Movie Hub", "Open Movie Hub first to sign in.",
+                                          xbmcgui.NOTIFICATION_ERROR, 4000)
+            if action in ("play", "trailer", "tr_play") and len(sys.argv) > 1 and int(sys.argv[1]) >= 0:
+                xbmcplugin.setResolvedUrl(int(sys.argv[1]), False, xbmcgui.ListItem())
+            return
+        _dispatch(action, params)
+        return
+
     # Everything else needs a ready session (login + keys + profile).
     if not session.ensure_ready():
         # user backed out — end quietly
@@ -67,6 +73,10 @@ def run():
             xbmcplugin.endOfDirectory(handle, succeeded=False)
         return
 
+    _dispatch(action, params)
+
+
+def _dispatch(action, params):
     if action == "root":
         router.root_menu()
     elif action == "legacy_root":
@@ -131,7 +141,7 @@ def run():
                     params.get("title", ""), params.get("media_id", ""),
                     params.get("service", ""), params.get("mt", ""),
                     params.get("tmdb_id", ""), params.get("season", ""),
-                    params.get("episode", ""))
+                    params.get("episode", ""), params.get("fname", ""))
     elif action == "send_pm":
         router.send_pm(params)
     elif action == "continue":

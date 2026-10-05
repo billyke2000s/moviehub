@@ -1,3 +1,33 @@
+# Movie Hub 3.2.0
+
+## Standard Kodi look only
+
+- Removed the custom "Cinematic" interface (custom home/details windows and
+  their skin files). Movie Hub now uses only standard Kodi lists and dialogs,
+  so it always follows your installed skin.
+- Login, sign-up and profile picking now use Kodi's own dialogs.
+- Removed the interface/trailer-preview/reduced-motion first-run questions.
+
+## Playback fixes
+
+- Every link in the source list is now selectable and playable. Previously,
+  with Real-Debrid or AllDebrid every link was added as a non-playable
+  "send to debrid" item, because both services removed their cache-check APIs.
+- Real-Debrid: waits for magnet conversion, selects the actual video file
+  (not samples), picks the right episode from season packs and removes
+  failed/uncached torrents from your account.
+- AllDebrid: updated to the current API (Bearer auth, `magnet/files`,
+  `ready` flag); the removed `magnet/instant` call is no longer used.
+- Playback no longer keeps the plugin running for the whole film. Progress
+  sync, resume, Trakt and Up Next moved to a background service.
+- Playing a link no longer runs the full login/profile flow (several server
+  calls and possible dialogs) while Kodi waits for the stream.
+- A temporary server error no longer wipes your saved debrid key.
+- Source sites are queried in parallel with shorter timeouts; you now get a
+  clear message if none of them answer.
+- Fixed finished Premiumize transfers being added as folders that could
+  never open.
+
 # Movie Hub 3.1.0
 
 ## Security and deployment maintenance

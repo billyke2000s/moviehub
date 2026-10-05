@@ -7,6 +7,8 @@ the user has keys for (see debrid.py). All device-side.
 """
 
 import re
+import threading
+
 import requests
 import xbmcaddon
 
@@ -29,6 +31,10 @@ SCRAPERS = {
 
 
 class StreamError(Exception):
+    pass
+
+
+class NotCachedError(StreamError):
     pass
 
 
@@ -65,14 +71,15 @@ def _path(media_type, imdb, season, episode):
 
 
 def _scrape_one(base, media_type, imdb, season, episode):
+    """Return (streams, ok). ok=False means the scraper itself failed."""
     url = "%s/%s" % (base, _path(media_type, imdb, season, episode))
     try:
-        r = requests.get(url, timeout=20, headers=_HEADERS)
+        r = requests.get(url, timeout=12, headers=_HEADERS)
         if r.status_code >= 400:
-            return []
-        return r.json().get("streams", []) or []
+            return [], False
+        return (r.json().get("streams", []) or []), True
     except Exception:
-        return []
+        return [], False
 
 
 def fetch_streams(imdb_id, media_type, season=None, episode=None):
@@ -82,20 +89,39 @@ def fetch_streams(imdb_id, media_type, season=None, episode=None):
     if not imdb_id:
         raise StreamError("No IMDb id for this title, so streams can't be found.")
 
-    # 1) query all scrapers, merge + dedupe by infoHash
+    # 1) query all scrapers IN PARALLEL (was sequential: up to 60s of waiting
+    #    behind a frozen progress dialog), merge + dedupe by infoHash.
+    results = {}
+    def worker(name, base):
+        results[name] = _scrape_one(base, media_type, imdb_id, season, episode)
+    threads = [threading.Thread(target=worker, args=(n, b)) for n, b in SCRAPERS.items()]
+    for t in threads:
+        t.daemon = True
+        t.start()
+    for t in threads:
+        t.join(15)
+
+    failed = [n for n in SCRAPERS if not results.get(n, ([], False))[1]]
+    if len(failed) == len(SCRAPERS):
+        raise StreamError("No source sites answered (%s). They may be down or "
+                          "blocked on your network." % ", ".join(failed))
+
     seen = {}
-    for base in SCRAPERS.values():
-        for s in _scrape_one(base, media_type, imdb_id, season, episode):
+    for name in SCRAPERS:
+        for s in results.get(name, ([], False))[0]:
             h = (s.get("infoHash") or "").lower()
             if not h or h in seen:
                 continue
-            title = s.get("title", "")
+            title = s.get("title", "") or s.get("description", "") or ""
+            hints = s.get("behaviorHints") or {}
             seen[h] = {
-                "name": s.get("name", "") or "Stream",
+                "name": (s.get("name", "") or "Stream").replace("\n", " "),
                 "title": title,
                 "infoHash": h,
+                "filename": hints.get("filename", "") or "",
                 "size_mb": _size_mb(title),
-                "quality": _quality_label(title),
+                "quality": _quality_label(title + " " + (s.get("name") or "")),
+                "source": name,
             }
     items = list(seen.values())
     if not items:
@@ -103,46 +129,58 @@ def fetch_streams(imdb_id, media_type, season=None, episode=None):
 
     items = _sort(items, ADDON.getSetting("sort_pref") or "quality")
 
-    # 2) check which are cached on any debrid service
+    # 2) cache state per service. "_maybe" = provider can't say in advance,
+    #    so the link is still offered and resolve() finds out on click.
     cached = debrid.cache_check([i["infoHash"] for i in items])
     cached_only = ADDON.getSetting("cached_only") == "true"
 
-    out = []
+    confirmed, maybe = [], []
     for i in items:
-        svc = cached.get(i["infoHash"])
-        is_cached = svc is not None and svc != "realdebrid_maybe"
-        if cached_only and not is_cached:
-            continue
-        i["uncached"] = not is_cached
-        i["service"] = svc or ""
-        out.append(i)
-    return out
+        svc = cached.get(i["infoHash"]) or ""
+        i["service"] = svc
+        i["cached"] = bool(svc) and not svc.endswith("_maybe")
+        if i["cached"]:
+            confirmed.append(i)
+        elif svc and not cached_only:
+            maybe.append(i)
+        elif not svc and not cached_only:
+            # Premiumize-only user and not cached: offer as a cloud download.
+            i["service"] = (debrid.available_services() or [""])[0]
+            maybe.append(i)
+    # Known-cached first, then everything else in the user's sort order.
+    return confirmed + maybe
 
 
 def best_cached(streams):
-    """Return the top cached stream (for one-click auto-play), or None."""
+    """Return the top confirmed-cached stream, or None."""
     for s in streams:
-        if not s.get("uncached"):
+        if s.get("cached"):
             return s
     return None
 
 
-def resolve_playable(stream):
-    svc = stream.get("service") or ""
-    return debrid.resolve(stream["infoHash"], svc, stream.get("name", "download"))
-
-
-def send_to_premiumize(stream):
-    """Kept for uncached picks — sends to whichever service is available."""
-    svcs = debrid.available_services()
-    if not svcs:
-        raise StreamError("No debrid service set.")
-    # premiumize/alldebrid support a transfer-style add; RD adds via resolve.
+def resolve_playable(stream, season=None, episode=None):
     try:
-        debrid.resolve(stream["infoHash"], svcs[0], stream.get("name", "download"))
-        return True
+        return debrid.resolve(stream["infoHash"], stream.get("service") or "",
+                              stream.get("name", "download"),
+                              filename=stream.get("filename") or None,
+                              season=season, episode=episode)
+    except debrid.NotCached as e:
+        raise NotCachedError(str(e))
     except debrid.DebridError as e:
         raise StreamError(str(e))
+
+
+def send_to_debrid(stream):
+    """Queue a not-cached source as a cloud download on the user's service."""
+    try:
+        return debrid.queue_download(stream["infoHash"], stream.get("service") or "")
+    except debrid.DebridError as e:
+        raise StreamError(str(e))
+
+
+# Backwards-compatible name used by older code paths.
+send_to_premiumize = send_to_debrid
 
 
 # ── Premiumize transfers (kept for the Transfers screen) ─────────────────────

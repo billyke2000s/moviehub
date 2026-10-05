@@ -31,7 +31,25 @@ def active_profile_id():
 def _apply_keys(account):
     keys = account.get("keys", {})
     _set("tmdb_key", keys.get("tmdb", ""))
-    _set("premiumize_key", keys.get("premiumize", ""))
+    # Account-level Premiumize key (legacy). Profile vault values loaded later
+    # take precedence; never blank a key here.
+    global _legacy_premiumize
+    _legacy_premiumize = keys.get("premiumize", "") or ""
+    if _legacy_premiumize:
+        _set("premiumize_key", _legacy_premiumize)
+
+
+_legacy_premiumize = ""
+
+
+def quick_ready():
+    """Cheap, dialog-free check used by playback and background actions.
+
+    Playback must never open login/profile dialogs or make several server
+    round-trips while Kodi is waiting for setResolvedUrl.
+    """
+    return bool(_get("server_url") and _get("app_secret") and
+                _get("auth_token") and _get("active_profile_id"))
 
 
 def logout():
@@ -64,20 +82,23 @@ def _load_vault_and_prefs(pid):
         "alldebrid": "alldebrid_key",
         "opensubtitles": "opensubtitles_login",
     }
-    # Never allow one profile's credentials to remain active after switching
-    # to another profile that has no value stored for that provider.
-    for setting in vault_map.values():
-        ADDON.setSetting(setting, "")
+    # Fetch first. Only once the server has answered do we replace local
+    # credentials, so a network blip can no longer wipe a working debrid key
+    # (which previously made every link fail to resolve).
     try:
         vault = serverapi.get_vault(pid)
-        for vkey, setting in vault_map.items():
-            if vkey in vault:
-                ADDON.setSetting(setting, vault.get(vkey, ""))
     except Exception:
-        pass
+        vault = None
+    if vault is not None:
+        # Never allow one profile's credentials to remain active after
+        # switching to a profile with no value stored for that provider.
+        for vkey, setting in vault_map.items():
+            value = vault.get(vkey, "") or ""
+            if not value and vkey == "premiumize":
+                value = _legacy_premiumize
+            ADDON.setSetting(setting, value)
     # prefs -> pref settings
-    pref_keys = ["autoplay_next", "subtitles_on", "subtitle_lang", "sort_pref", "cached_only",
-                 "experience_mode", "preview_mode", "reduced_motion"]
+    pref_keys = ["autoplay_next", "subtitles_on", "subtitle_lang", "sort_pref", "cached_only"]
     try:
         prefs = serverapi.get_prefs(pid)
         for pk in pref_keys:

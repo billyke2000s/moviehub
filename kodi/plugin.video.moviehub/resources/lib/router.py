@@ -5,11 +5,11 @@ Builds Kodi's native list menus (reliable on a TV remote), fetches metadata from
 TMDb locally, resolves streams via Torrentio+Premiumize locally, plays through
 Kodi's own player, and syncs progress to the server.
 
-Native lists are used for browsing (not a custom skin) because they navigate
-cleanly with a Fire Stick / TV remote and get Kodi's poster wall for free. The
-purple identity still comes through via the fanart/background and icons.
+Only native Kodi lists and dialogs are used (no custom skin windows), so the
+add-on always follows the installed skin and navigates cleanly on a remote.
 """
 
+import os
 import sys
 import urllib.parse
 
@@ -23,6 +23,8 @@ from . import streams
 from . import serverapi
 from . import session
 from . import trakt
+from . import debrid
+from . import playback
 
 ADDON = xbmcaddon.Addon()
 HANDLE = int(sys.argv[1]) if len(sys.argv) > 1 else -1
@@ -42,47 +44,32 @@ def _notify(msg, err=False):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def root_menu():
-    """Open the custom ten-foot interface.
-
-    Keeping this entry in the router means old favourites and plugin URLs still
-    work, while the visible experience no longer depends on the active Kodi
-    skin.
-    """
-    from . import gui
-    if not gui.experience_setup():
-        return
-    if ADDON.getSetting("experience_mode") == "native":
-        legacy_root_menu()
-        return
-    from . import cinematic
-    cinematic.show_home()
-    if HANDLE >= 0:
-        xbmcplugin.endOfDirectory(HANDLE, succeeded=True, cacheToDisc=False)
-
-
-def legacy_root_menu():
-    """Compact fallback menu retained for diagnostics and unusual skins."""
+    """Main menu — a standard Kodi list that follows the installed skin."""
+    fanart = os.path.join(ADDON.getAddonInfo("path"), "resources", "media", "fanart.jpg")
     items = [
         ("Movies", _url(action="hub", mt="movie"), "DefaultMovies.png", True),
-        ("Television", _url(action="hub", mt="tv"), "DefaultTVShows.png", True),
+        ("TV Shows", _url(action="hub", mt="tv"), "DefaultTVShows.png", True),
         ("Search", _url(action="search"), "DefaultAddonsSearch.png", True),
         ("My List", _url(action="watchlist"), "DefaultPlaylist.png", True),
         ("Continue Watching", _url(action="continue"), "DefaultInProgressShows.png", True),
         ("Viewing History", _url(action="history"), "DefaultAddonsRecentlyUpdated.png", True),
-        ("Notifications", _url(action="notifications"), "DefaultAddonsUpdates.png", True),
+        ("New Episodes", _url(action="notifications"), "DefaultAddonsUpdates.png", True),
         ("Surprise Me", _url(action="surprise", mt="movie"), "DefaultAddonsRecentlyAdded.png", True),
-        ("Transfers", _url(action="transfers"), "DefaultNetwork.png", True),
+        ("Debrid Transfers", _url(action="transfers"), "DefaultNetwork.png", True),
         ("Connect Trakt", _url(action="link_trakt"), "DefaultAddonService.png", False),
         ("Change Playback Service", _url(action="debrid_setup"), "DefaultNetwork.png", False),
         ("Switch Profile", _url(action="switch_profile"), "DefaultUser.png", False),
-        ("Choose Interface", _url(action="experience_setup"), "DefaultAddonService.png", False),
         ("Reconnect Private Server", _url(action="connection_setup"), "DefaultNetwork.png", False),
     ]
     for label, url, icon, folder in items:
         li = xbmcgui.ListItem(label)
-        li.setArt({"icon": icon})
+        li.setArt({"icon": icon, "thumb": icon, "fanart": fanart})
         xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=folder)
     xbmcplugin.endOfDirectory(HANDLE)
+
+
+# Old favourites/shortcuts may still point at this action.
+legacy_root_menu = root_menu
 
 
 def hub_menu(mt):
@@ -120,9 +107,7 @@ def hub_menu(mt):
     xbmcplugin.endOfDirectory(HANDLE)
 
 
-import os
-_LOCAL_MEDIA = os.path.join(ADDON.getAddonInfo("path"), "resources", "skins",
-                            "default", "media", "genres")
+_LOCAL_MEDIA = os.path.join(ADDON.getAddonInfo("path"), "resources", "media", "genres")
 
 # The Xzener flat genre-icon resource addon (installed from Kodi's repo).
 # Its images are addressed as resource://<addon-id>/<GenreName>.png
@@ -373,158 +358,161 @@ def episodes_menu(tmdb_id, season, title, imdb):
 # STREAMS + PLAYBACK
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _stream_label(s):
+    svc = debrid.base_service(s.get("service"))
+    badge = debrid.LABELS.get(svc, "")
+    if s.get("cached"):
+        tag = "[COLOR lime]%s CACHED[/COLOR]" % badge
+    else:
+        tag = "[COLOR grey]%s ?[/COLOR]" % badge
+    parts = [tag]
+    if s.get("quality"):
+        parts.append(s["quality"])
+    if s.get("size_mb"):
+        parts.append("%.1f GB" % (s["size_mb"] / 1024) if s["size_mb"] > 1024
+                     else "%d MB" % int(s["size_mb"]))
+    first_line = (s.get("title") or "").split("\n")[0].strip()
+    return "%s  %s" % ("  ".join(parts), first_line or s.get("name", "Stream"))
+
+
+def _play_url(s, title, media_id, mt, tmdb_id, season, episode):
+    return _url(action="play", infoHash=s["infoHash"], sname=s.get("name", "")[:60],
+                service=s.get("service", ""), fname=s.get("filename", ""),
+                title=title, media_id=media_id, mt=mt, tmdb_id=tmdb_id,
+                season=season or "", episode=episode or "")
+
+
 def streams_menu(mt, tmdb_id, title, imdb=None, season=None, episode=None, auto=False):
+    """List every link as a native, playable Kodi item.
+
+    Previously, links that weren't confirmed cached (all of them for
+    Real-Debrid/AllDebrid, whose cache-check APIs no longer exist) were added
+    as non-playable "send to debrid" items, so there was never a link to play.
+    Now every link is playable; resolve() decides on click.
+    """
     if not imdb:
         try:
             det = tmdb.details(mt, tmdb_id)
             imdb = det.get("external_ids", {}).get("imdb_id", "")
         except tmdb.TmdbError as e:
-            _notify(str(e), err=True); xbmcplugin.endOfDirectory(HANDLE); return
+            _notify(str(e), err=True); _end(False); return
 
     dlg = xbmcgui.DialogProgress()
-    dlg.create("Movie Hub", "Searching sources and checking debrid…")
+    dlg.create("Movie Hub", "Searching sources…")
     try:
         found = streams.fetch_streams(imdb, mt, season, episode)
     except streams.StreamError as e:
-        dlg.close(); _notify(str(e), err=True); xbmcplugin.endOfDirectory(HANDLE); return
+        dlg.close(); _notify(str(e), err=True); _end(False); return
+    except Exception as e:
+        dlg.close(); _notify("Source search failed: %s" % e, err=True); _end(False); return
     dlg.close()
 
     if not found:
-        _notify("No streams found for this title.")
-        xbmcplugin.endOfDirectory(HANDLE); return
+        _notify("No links found for this title.")
+        _end(False); return
 
     media_id = _media_id(mt, tmdb_id, season, episode)
 
-    # Up Next auto mode: skip the list, play the best cached source immediately.
+    # Up Next auto mode (called from the background service via RunPlugin,
+    # so there is no directory handle): play the best cached link directly.
     if auto:
-        best = streams.best_cached(found)
-        if best:
-            xbmc.executebuiltin("PlayMedia(%s)" % _url(
-                action="play", infoHash=best["infoHash"], sname=best["name"],
-                service=best.get("service", ""), title=title, media_id=media_id,
-                mt=mt, tmdb_id=tmdb_id, season=season or "", episode=episode or ""))
+        for s in ([streams.best_cached(found)] if streams.best_cached(found) else []) + found[:5]:
+            try:
+                surl = streams.resolve_playable(s, season, episode)
+            except streams.StreamError:
+                continue
+            li = xbmcgui.ListItem(title, path=surl)
+            _tag_episode(li, title, season, episode)
+            playback.set_now_playing(media_id, title, mt, tmdb_id, season, episode,
+                                     _saved_position(media_id))
+            xbmc.Player().play(surl, li)
             return
+        _notify("Couldn't find a cached link for the next episode.", err=True)
+        return
 
-    # Auto-play best cached — one-click top entry.
     best = streams.best_cached(found)
     if best:
-        li = xbmcgui.ListItem("⚡  Auto-Play Best (%s)" % (best.get("quality") or "cached"))
+        li = xbmcgui.ListItem("[B]Play best cached link (%s)[/B]" % (best.get("quality") or "auto"))
         li.setProperty("IsPlayable", "true")
+        _tag_episode(li, title, season, episode)
         xbmcplugin.addDirectoryItem(
-            HANDLE, _url(action="play", infoHash=best["infoHash"], sname=best["name"],
-                         service=best.get("service", ""), title=title, media_id=media_id,
-                         mt=mt, tmdb_id=tmdb_id, season=season or "", episode=episode or ""),
+            HANDLE, _play_url(best, title, media_id, mt, tmdb_id, season, episode),
             li, isFolder=False)
 
     for s in found:
-        tags = ["CACHED" if not s["uncached"] else "UNCACHED"]
-        if s.get("service") and not s["uncached"]:
-            tags[0] = s["service"][:2].upper()  # PR/RE/AL badge
-        if s["quality"]:
-            tags.append(s["quality"])
-        if s["size_mb"]:
-            tags.append("%.1f GB" % (s["size_mb"]/1024) if s["size_mb"] > 1024
-                        else "%d MB" % int(s["size_mb"]))
-        label = "%s  [%s]" % (s["name"], " · ".join(tags))
-        li = xbmcgui.ListItem(label)
-        li.setLabel2(s["title"])
-        if s["uncached"]:
-            url = _url(action="send_pm", infoHash=s["infoHash"], sname=s["name"])
-            xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+        li = xbmcgui.ListItem(_stream_label(s))
+        li.setLabel2(s.get("name", ""))
+        li.setProperty("IsPlayable", "true")
+        _tag_episode(li, title, season, episode)
+        li.addContextMenuItems([(
+            "Send to debrid cloud (download)",
+            "RunPlugin(%s)" % _url(action="send_pm", infoHash=s["infoHash"],
+                                   service=s.get("service", ""), sname=s.get("name", "")[:60]))])
+        xbmcplugin.addDirectoryItem(
+            HANDLE, _play_url(s, title, media_id, mt, tmdb_id, season, episode),
+            li, isFolder=False)
+    xbmcplugin.setContent(HANDLE, "videos")
+    xbmcplugin.setPluginCategory(HANDLE, title)
+    xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
+
+
+def _tag_episode(li, title, season, episode):
+    try:
+        vt = li.getVideoInfoTag()
+        vt.setTitle(title)
+        if season and episode:
+            vt.setMediaType("episode")
+            vt.setSeason(int(season)); vt.setEpisode(int(episode))
         else:
-            li.setProperty("IsPlayable", "true")
-            url = _url(action="play", infoHash=s["infoHash"], sname=s["name"],
-                       service=s.get("service", ""), title=title, media_id=media_id,
-                       mt=mt, tmdb_id=tmdb_id, season=season or "", episode=episode or "")
-            xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
-    xbmcplugin.endOfDirectory(HANDLE)
+            vt.setMediaType("movie")
+    except Exception:
+        pass
+
+
+def _end(ok=True):
+    if HANDLE >= 0:
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=ok)
 
 
 def send_pm(params):
-    stream = {"infoHash": params.get("infoHash", ""), "name": params.get("sname", "download")}
+    stream = {"infoHash": params.get("infoHash", ""), "service": params.get("service", ""),
+              "name": params.get("sname", "download")}
     try:
-        streams.send_to_premiumize(stream)
-        _notify("Sent to debrid — it'll be playable once downloaded.")
+        streams.send_to_debrid(stream)
+        _notify("Sent to your debrid cloud — it'll be playable once downloaded.")
     except streams.StreamError as e:
         _notify(str(e), err=True)
 
 
-def play(info_hash, sname, title, media_id, service="", mt="", tmdb_id="", season="", episode=""):
-    """Resolve, play, sync progress, and queue Up Next for episodes."""
+def play(info_hash, sname, title, media_id, service="", mt="", tmdb_id="", season="",
+         episode="", fname=""):
+    """Resolve one link and hand it to Kodi's player — and return immediately.
+
+    The old version stayed inside this plugin call for the whole film
+    (progress polling, subtitles, Up Next loops). Long-running code in a
+    resolver invocation is fragile in Kodi; that work now lives in the
+    background service (resources/lib/playback.py).
+    """
+    stream = {"infoHash": info_hash, "name": sname, "service": service, "filename": fname}
     try:
-        surl = streams.resolve_playable({"infoHash": info_hash, "name": sname,
-                                         "service": service})
-    except streams.StreamError as e:
-        _notify(str(e), err=True)
+        surl = streams.resolve_playable(stream, season or None, episode or None)
+    except streams.NotCachedError as e:
+        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        if xbmcgui.Dialog().yesno("Not cached yet", "%s\n\nSend it to your debrid cloud to "
+                                  "download so it's playable later?" % e,
+                                  nolabel="No", yeslabel="Download"):
+            send_pm({"infoHash": info_hash, "service": service, "sname": sname})
+        return
+    except Exception as e:
+        _notify(str(e) or "That link couldn't be opened.", err=True)
         xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
         return
+
     li = xbmcgui.ListItem(title, path=surl)
-    start = _saved_position(media_id)
+    _tag_episode(li, title, season, episode)
+    playback.set_now_playing(media_id, title, mt, tmdb_id, season, episode,
+                             _saved_position(media_id))
     xbmcplugin.setResolvedUrl(HANDLE, True, li)
-
-    # subtitles
-    _maybe_add_subtitles(title)
-
-    _track_progress(media_id, title, start)
-
-    # Up Next — auto-play next episode when this one finishes
-    if mt == "tv" and ADDON.getSetting("autoplay_next") == "true":
-        _queue_up_next(tmdb_id, title, season, episode)
-
-
-def _track_progress(media_id, title, start):
-    player = xbmc.Player()
-    monitor = xbmc.Monitor()
-    # wait for playback to actually start
-    for _ in range(60):
-        if player.isPlayingVideo():
-            break
-        if monitor.waitForAbort(0.5):
-            return
-    if not player.isPlayingVideo():
-        return
-    # seek to resume point
-    if start and start > 5:
-        try:
-            player.seekTime(float(start))
-        except Exception:
-            pass
-
-    last_pos = 0
-    dur = 0
-    # poll every 10s; commit progress; final commit on stop
-    while not monitor.abortRequested():
-        if not player.isPlayingVideo():
-            break
-        try:
-            last_pos = int(player.getTime())
-            dur = int(player.getTotalTime())
-        except Exception:
-            pass
-        if monitor.waitForAbort(10):
-            break
-        _push_progress(media_id, title, last_pos, dur, completed=False)
-
-    # final
-    completed = bool(dur and last_pos >= dur * 0.9)
-    _push_progress(media_id, title, last_pos, dur, completed=completed)
-
-
-def _push_progress(media_id, title, pos, dur, completed):
-    pid = session.active_profile_id()
-    if not pid or pos <= 0:
-        return
-    try:
-        serverapi.save_progress(pid, media_id, title, pos, dur, completed)
-    except serverapi.ServerError:
-        pass  # don't interrupt playback for a sync hiccup
-    # Optional Trakt mirror on completion (silent if Trakt off/down).
-    if completed:
-        try:
-            mt, tmdb_id, season, episode = _parse_media_id(media_id)
-            trakt.mark_watched(tmdb_id, mt, season, episode)
-        except Exception:
-            pass
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -861,22 +849,23 @@ def transfers_menu():
         if status == "finished" or status == "seeding":
             label = "%s  (ready)" % name
             # finished → play it
-            file_id = t.get("file_id") or t.get("folder_id") or ""
             li = xbmcgui.ListItem(label)
-            li.setProperty("IsPlayable", "false")
+            # tr_play calls setResolvedUrl, so this MUST be a playable,
+            # non-folder item (as a folder it left Kodi waiting forever).
+            li.setProperty("IsPlayable", "true")
             li.addContextMenuItems([(
                 "Delete transfer",
                 "RunPlugin(%s)" % _url(action="tr_delete", id=tid))])
-            # play the finished file by resolving its folder
-            url = _url(action="tr_play", id=tid, name=name)
-            xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+            # folder/list needs the transfer's FOLDER id, not the transfer id.
+            url = _url(action="tr_play", id=t.get("folder_id") or tid, name=name)
+            xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
         else:
             label = "⬇  %s  —  %s %d%%" % (name, status, pct)
             li = xbmcgui.ListItem(label)
             li.addContextMenuItems([
                 ("Cancel / Delete", "RunPlugin(%s)" % _url(action="tr_delete", id=tid)),
                 ("Refresh", "Container.Refresh")])
-            xbmcplugin.addDirectoryItem(HANDLE, _url(action="transfers"), li, isFolder=False)
+            xbmcplugin.addDirectoryItem(HANDLE, _url(action="transfers"), li, isFolder=True)
 
     xbmcplugin.endOfDirectory(HANDLE)
 
@@ -915,96 +904,6 @@ def tr_play(params):
     except Exception as e:
         _notify("Couldn't open transfer: %s" % e, err=True)
         xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# UP NEXT + SUBTITLES
-# ─────────────────────────────────────────────────────────────────────────────
-
-def _queue_up_next(tmdb_id, title, season, episode):
-    """When the current episode nears its end, offer/auto-play the next."""
-    try:
-        season = int(season); episode = int(episode)
-    except (ValueError, TypeError):
-        return
-    player = xbmc.Player()
-    monitor = xbmc.Monitor()
-    # wait until near the end (last 40s) or stop
-    while not monitor.abortRequested() and player.isPlayingVideo():
-        try:
-            total = player.getTotalTime()
-            pos = player.getTime()
-        except Exception:
-            break
-        if total and pos and (total - pos) <= 40:
-            break
-        if monitor.waitForAbort(5):
-            return
-    if not player.isPlayingVideo():
-        return
-
-    # find next episode via TMDb
-    nxt = _next_episode(tmdb_id, season, episode)
-    if not nxt:
-        return
-    ns, ne, nname = nxt
-    # popup prompt
-    dlg = xbmcgui.Dialog()
-    go = dlg.yesno("Up Next",
-                   "Play S%dE%d — %s?" % (ns, ne, nname),
-                   yeslabel="Play", nolabel="Stop", autoclose=25000)
-    if go:
-        imdb = _imdb_for(tmdb_id)
-        url = _url(action="streams", mt="tv", id=tmdb_id, title=title, imdb=imdb,
-                   season=ns, episode=ne, auto="1")
-        xbmc.executebuiltin("RunPlugin(%s)" % url)
-
-
-def _next_episode(tmdb_id, season, episode):
-    """Return (season, episode, name) of the next episode, or None."""
-    try:
-        data = tmdb.season(tmdb_id, season)
-        eps = data.get("episodes", [])
-        # next in same season?
-        for e in eps:
-            if e.get("episode_number") == episode + 1:
-                return season, episode + 1, e.get("name", "")
-        # else first of next season
-        nxt = tmdb.season(tmdb_id, season + 1)
-        neps = nxt.get("episodes", [])
-        if neps:
-            return season + 1, neps[0].get("episode_number", 1), neps[0].get("name", "")
-    except Exception:
-        return None
-    return None
-
-
-def _imdb_for(tmdb_id):
-    try:
-        det = tmdb.details("tv", tmdb_id)
-        return det.get("external_ids", {}).get("imdb_id", "")
-    except Exception:
-        return ""
-
-
-def _maybe_add_subtitles(title):
-    """If auto-subs is on, tell Kodi to enable subtitles (OpenSubtitles addon
-    handles the actual fetch if installed)."""
-    if ADDON.getSetting("subtitles_on") != "true":
-        return
-    try:
-        player = xbmc.Player()
-        # give playback a moment to start
-        monitor = xbmc.Monitor()
-        for _ in range(20):
-            if player.isPlayingVideo():
-                break
-            if monitor.waitForAbort(0.5):
-                return
-        player.setSubtitles("")  # nudge Kodi to look
-        player.showSubtitles(True)
-    except Exception:
-        pass
 
 
 # ─────────────────────────────────────────────────────────────────────────────

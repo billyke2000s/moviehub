@@ -2,34 +2,6 @@
 <settings version="1">
   <section id="moviehub">
 
-    <category id="experience" label="30060">
-      <group id="1" label="30061">
-        <setting id="experience_mode" type="string" label="30062">
-          <level>0</level><default></default>
-          <constraints><options>
-            <option label="Cinematic — custom Movie Hub experience">cinematic</option>
-            <option label="Native Kodi — fastest and follows your skin">native</option>
-          </options></constraints>
-          <control type="list" format="string"><heading>30062</heading></control>
-        </setting>
-        <setting id="preview_mode" type="string" label="30063">
-          <level>0</level><default>manual</default>
-          <constraints><options>
-            <option label="Manual — play trailers when I choose">manual</option>
-            <option label="Automatic — preview after a short pause">automatic</option>
-            <option label="Off — never load trailers">off</option>
-          </options></constraints>
-          <control type="list" format="string"><heading>30063</heading></control>
-        </setting>
-        <setting id="reduced_motion" type="boolean" label="30064">
-          <level>0</level><default>false</default><control type="toggle"/>
-        </setting>
-        <setting id="setup_complete" type="boolean" label="30065">
-          <level>2</level><default>false</default><control type="toggle"/>
-        </setting>
-      </group>
-    </category>
-
     <category id="server" label="30010">
       <group id="1">
         <setting id="server_url" type="string" label="30011">
