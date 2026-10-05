@@ -2,8 +2,8 @@
 
 Movie Hub is a private, self-hosted Kodi experience for discovering films and
 television, managing profiles, saving a watchlist and continuing across devices.
-It offers both a cinematic television interface and a fully native Kodi mode.
-Current release: **3.1.0**.
+It uses Kodi's standard lists and dialogs, so it follows your installed skin.
+Current release: **3.2.0**.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/billyke2000s/moviehub/tree/main/cloudflare)
 [![Validate](https://github.com/billyke2000s/moviehub/actions/workflows/validate.yml/badge.svg)](https://github.com/billyke2000s/moviehub/actions/workflows/validate.yml)
@@ -40,27 +40,14 @@ secret code are unique to each owner and must never be committed or shared.
 
 Command-line deployment is also available in [`cloudflare/`](cloudflare/README.md).
 
-## Interfaces
+## Interface
 
-### Cinematic
+Movie Hub uses only standard Kodi screens:
 
-- Backdrop-led hero presentation and curated shelves
-- Dedicated Movies, Television, Search and My List destinations
-- Custom title pages with synopsis, rating, runtime and recommendations
-- Manual, automatic or disabled trailer previews
-- Reduced effects for older Fire TV and Raspberry Pi hardware
-- Remote-first navigation with visible, predictable focus states
-
-### Native Kodi
-
-- Kodi media lists and poster walls
-- Proper `InfoTagVideo` metadata
+- Kodi media lists and poster walls with proper `InfoTagVideo` metadata
 - The installed skin's typography and information panels
 - Kodi context menus, playback behaviour and remote conventions
-- Lower memory and rendering overhead
-
-The interface can be changed later without reinstalling. Both modes use the
-same profiles, watchlist and viewing progress.
+- Kodi's own dialogs for sign-in, profiles and setup
 
 ## Security
 
