@@ -1,5 +1,5 @@
 # Movie Hub
-
+movie hub is currently broken i am in the works for repairing it
 Movie Hub is a private, self-hosted Kodi experience for discovering films and
 television, managing profiles, saving a watchlist and continuing across devices.
 It uses Kodi's standard lists and dialogs, so it follows your installed skin.
