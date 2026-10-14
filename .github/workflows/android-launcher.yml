@@ -1,0 +1,57 @@
+name: Build Android TV launcher APK
+on:
+  push:
+    branches: [android-tv-launcher]
+    paths: ['android-tv-launcher/**', '.github/workflows/android-launcher.yml']
+  pull_request:
+    paths: ['android-tv-launcher/**', '.github/workflows/android-launcher.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-launcher-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK packages
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Verify playlist, network and episode rules
+        run: |
+          mkdir -p build/core-tests
+          javac -d build/core-tests android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles}.java android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest}.java
+          java -cp build/core-tests local.tv.home.PlaylistTest
+          java -cp build/core-tests local.tv.home.NetworkTest
+          java -cp build/core-tests local.tv.home.VideoFilesTest
+      - name: Build APK and run Android lint
+        run: gradle -p android-tv-launcher --no-daemon assembleDebug lintDebug
+      - name: Verify APK signature and checksum
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk
+          sha256sum android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk > android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk.sha256
+      - name: Upload installable debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-tv-launcher-debug-apk
+          path: |
+            android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk
+            android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk.sha256
+          if-no-files-found: error
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-launcher-diagnostics
+          path: android-tv-launcher/app/build/reports/
+          if-no-files-found: ignore

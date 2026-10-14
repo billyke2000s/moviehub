@@ -1,0 +1,17 @@
+package local.tv.home;
+
+import java.util.*;
+import java.util.regex.Pattern;
+
+/** Port of moviehub debrid._pick rules. Suggestions never auto-play a different episode. */
+final class VideoFiles {
+    static final Pattern VIDEO=Pattern.compile("(?i).*\\.(mkv|mp4|avi|m4v|mov|ts|webm|wmv|mpg|mpeg)$");
+    static final Pattern JUNK=Pattern.compile("(?i)\\bsample\\b|\\btrailer\\b|\\bextras?\\b|featurette");
+    static int score(String path,String hint,int season,int episode){
+        if(!VIDEO.matcher(path).matches()||JUNK.matcher(path).find())return -1;
+        String file=path.replace('\\','/');file=file.substring(file.lastIndexOf('/')+1);
+        if(hint!=null&&!hint.isEmpty()&&file.equalsIgnoreCase(hint.substring(hint.lastIndexOf('/')+1)))return 3;
+        if(season>=0&&episode>0){Pattern match=Pattern.compile("(?i)s0*"+season+"[ ._-]*e0*"+episode+"(?!\\d)|\\b0*"+season+"x0*"+episode+"(?!\\d)");return match.matcher(file).find()?2:-1;}
+        return 1;
+    }
+}
