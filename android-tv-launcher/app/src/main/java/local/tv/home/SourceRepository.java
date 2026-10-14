@@ -14,7 +14,7 @@ final class SourceRepository {
         List<String> providers=new ArrayList<>();providers.add("https://torrentio.strem.fun");for(String manifest:DefaultSourceProviders.backups())providers.add(manifest.replaceAll("/manifest\\.json$","").replaceAll("/+$",""));
         List<Source> result=new ArrayList<>();Set<String> seen=new HashSet<>();Exception failure=null;
         for(String provider:providers){try{List<Source> batch=new ArrayList<>();JSONArray streams=new JSONObject(Network.text(provider+"/stream/"+type+"/"+id+".json",null,false)).getJSONArray("streams");
-        for(int i=0;i<streams.length()&&result.size()+batch.size()<200;i++){JSONObject stream=streams.getJSONObject(i);String hash=stream.optString("infoHash"),uri=stream.optString("url");
+        for(int i=0;i<streams.length()&&batch.size()<200;i++){JSONObject stream=streams.getJSONObject(i);String hash=stream.optString("infoHash"),uri=stream.optString("url");
             if(hash.matches("[a-fA-F0-9]{40}"))uri="magnet:?xt=urn:btih:"+hash;
             else if(!uri.startsWith("magnet:?"))continue;
             if(!uri.matches(".*(?:urn:btih:|urn%3Abtih%3A)[a-fA-F0-9]{40}.*"))continue;
