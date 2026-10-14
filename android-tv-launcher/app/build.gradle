@@ -2,7 +2,18 @@ plugins { id 'com.android.application' }
 android {
     namespace 'local.tv.home'
     compileSdk 35
-    defaultConfig { applicationId 'local.tv.home'; minSdk 28; targetSdk 35; versionCode 1; versionName '0.1' }
+    defaultConfig { applicationId 'local.tv.home'; minSdk 28; targetSdk 35; versionCode Integer.parseInt(System.getenv('APK_VERSION_CODE') ?: '2'); versionName System.getenv('APK_VERSION_NAME') ?: '0.2' }
+    signingConfigs {
+        release {
+            if (System.getenv('APK_KEYSTORE')) {
+                storeFile file(System.getenv('APK_KEYSTORE'))
+                storePassword System.getenv('APK_STORE_PASSWORD')
+                keyAlias System.getenv('APK_KEY_ALIAS')
+                keyPassword System.getenv('APK_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes { release { signingConfig signingConfigs.release } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 dependencies { implementation 'org.videolan.android:libvlc-all:3.7.0' }
