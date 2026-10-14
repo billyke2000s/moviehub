@@ -10,18 +10,16 @@ final class SourceRepository {
     SourceRepository(Secrets secrets){this.secrets=secrets;}
     List<Source> torrentio(String imdb,int season,int episode) throws Exception{
         if(!imdb.matches("tt[0-9]+"))throw new IllegalArgumentException("IMDb ID unavailable");
-        String base=secrets.get("torrentio");if(base.isEmpty())base="https://torrentio.strem.fun";
-        base=Playlist.networkUrl(base,false).replaceAll("/manifest\\.json$","").replaceAll("/+$","");
         String type=season<0?"movie":"series",id=season<0?imdb:imdb+":"+season+":"+episode;
-        List<String> providers=new ArrayList<>();providers.add(base);String saved=secrets.get("fallbacks");JSONArray fallback=saved.isEmpty()?new JSONArray(DefaultSourceProviders.backups()):new JSONArray(saved);for(int i=0;i<Math.min(5,fallback.length());i++){String endpoint=Playlist.networkUrl(fallback.getString(i),false).replaceAll("/manifest\\.json$","").replaceAll("/+$","");if(!providers.contains(endpoint))providers.add(endpoint);}
+        List<String> providers=new ArrayList<>();providers.add("https://torrentio.strem.fun");for(String manifest:DefaultSourceProviders.backups())providers.add(manifest.replaceAll("/manifest\\.json$","").replaceAll("/+$",""));
         List<Source> result=new ArrayList<>();Set<String> seen=new HashSet<>();Exception failure=null;
-        for(String provider:providers){try{JSONArray streams=new JSONObject(Network.text(provider+"/stream/"+type+"/"+id+".json",null,false)).getJSONArray("streams");
-        for(int i=0;i<streams.length()&&result.size()<200;i++){JSONObject stream=streams.getJSONObject(i);String hash=stream.optString("infoHash"),uri=stream.optString("url");
+        for(String provider:providers){try{List<Source> batch=new ArrayList<>();JSONArray streams=new JSONObject(Network.text(provider+"/stream/"+type+"/"+id+".json",null,false)).getJSONArray("streams");
+        for(int i=0;i<streams.length()&&result.size()+batch.size()<200;i++){JSONObject stream=streams.getJSONObject(i);String hash=stream.optString("infoHash"),uri=stream.optString("url");
             if(hash.matches("[a-fA-F0-9]{40}"))uri="magnet:?xt=urn:btih:"+hash;
             else if(!uri.startsWith("magnet:?"))continue;
             if(!uri.matches(".*(?:urn:btih:|urn%3Abtih%3A)[a-fA-F0-9]{40}.*"))continue;
-            if(seen.add(uri))result.add(new Source(stream.optString("name","Source")+"\n"+stream.optString("title",stream.optString("description","")),uri));
-        }if(!result.isEmpty())return result;}catch(Exception e){failure=e;}}
+            if(seen.add(uri))batch.add(new Source(stream.optString("name","Source")+"\n"+stream.optString("title",stream.optString("description","")),uri));
+        }if(!batch.isEmpty()){try{check(batch);}catch(Exception e){for(Source source:batch)source.cache=Cache.UNKNOWN;}result.addAll(batch);for(Source source:batch)if(source.cache==Cache.CACHED)return result;}}catch(Exception e){failure=e;}}
         if(failure!=null&&result.isEmpty())throw new Exception("Source providers unavailable",failure);return result;
     }
     List<Source> check(List<Source> items) throws Exception{
