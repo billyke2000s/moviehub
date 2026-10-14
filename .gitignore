@@ -1,10 +1,8 @@
-node_modules/
-__pycache__/
-*.py[cod]
-.DS_Store
-.dev.vars
+**/.gradle/
+**/build/
+local.properties
+*.jks
+*.keystore
 .env
-.wrangler/
-deployment-details.txt
-release/
+release-files/
 *.log

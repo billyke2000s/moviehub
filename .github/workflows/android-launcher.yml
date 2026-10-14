@@ -1,7 +1,7 @@
 name: Build Android TV launcher APK
 on:
   push:
-    branches: [android-tv-launcher]
+    branches: [main, android-tv-launcher]
     paths: ['android-tv-launcher/**', '.github/workflows/android-launcher.yml']
   pull_request:
     paths: ['android-tv-launcher/**', '.github/workflows/android-launcher.yml']

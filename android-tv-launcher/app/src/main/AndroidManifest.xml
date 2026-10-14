@@ -10,7 +10,6 @@
   </queries>
   <application android:label="Home" android:icon="@drawable/home_placeholder" android:banner="@drawable/home_placeholder" android:allowBackup="false" android:enableOnBackInvokedCallback="false" android:usesCleartextTraffic="true" android:theme="@android:style/Theme.Material.NoActionBar">
     <provider android:name=".UpdateApkProvider" android:authorities="${applicationId}.updates" android:exported="false" android:grantUriPermissions="true"/>
-    <activity android:name=".PlaybackActivity" android:exported="false" android:screenOrientation="landscape"/>
     <activity android:name=".VlcPlaybackActivity" android:exported="false" android:screenOrientation="landscape"/>
     <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="landscape">
       <intent-filter>
