@@ -86,9 +86,7 @@ jobs:
           arch: x86_64
           profile: tv_1080p
           disable-animations: true
-          script: |
-            gradle -p android-tv-launcher --no-daemon connectedDebugAndroidTest
-            adb pull /sdcard/Android/data/local.tv.home/files/screenshots/ android-tv-launcher/app/build/reports/tv-screenshots/
+          script: bash android-tv-launcher/tests/run-device-tests.sh
       - name: Upload device test reports
         if: always()
         uses: actions/upload-artifact@v4

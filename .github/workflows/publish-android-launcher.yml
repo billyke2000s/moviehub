@@ -47,7 +47,7 @@ jobs:
           arch: x86_64
           profile: tv_1080p
           disable-animations: true
-          script: gradle -p android-tv-launcher --no-daemon testDebugUnitTest connectedDebugAndroidTest
+          script: bash android-tv-launcher/tests/run-device-tests.sh
       - name: Build signed release and update manifest
         env:
           APK_KEYSTORE_BASE64: ${{ secrets.APK_KEYSTORE_BASE64 }}

@@ -46,7 +46,7 @@ public class MainActivity extends Activity {
     private LinearLayout vertical(){LinearLayout v=new LinearLayout(this);v.setOrientation(LinearLayout.VERTICAL);return v;}
     private LinearLayout row(){LinearLayout v=new LinearLayout(this);v.setOrientation(LinearLayout.HORIZONTAL);v.setGravity(Gravity.CENTER_VERTICAL);return v;}
     private TextView text(String value,int size){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(0xfff8f8fc);t.setPadding(0,dp(8),0,dp(8));return t;}
-    private void focus(View v){v.setFocusable(true);v.setOnFocusChangeListener((view,focused)->{GradientDrawable d=box(focused?0xff343e62:0xff202c43);if(focused)d.setStroke(dp(3),accent());view.setBackground(d);view.setScaleX(focused?1.025f:1f);view.setScaleY(focused?1.025f:1f);});}
+    private void focus(View v){v.setFocusable(true);v.setFocusableInTouchMode(true);v.setOnFocusChangeListener((view,focused)->{GradientDrawable d=box(focused?0xff343e62:0xff202c43);if(focused)d.setStroke(dp(3),accent());view.setBackground(d);view.setScaleX(focused?1.025f:1f);view.setScaleY(focused?1.025f:1f);});}
     private Button button(String label,Runnable action){Button b=new Button(this);b.setText(label);b.setTextColor(0xfff8f8fc);b.setAllCaps(false);b.setTextSize(18);b.setBackground(box(0xff202c43));b.setPadding(dp(15),dp(10),dp(15),dp(10));focus(b);b.setOnClickListener(v->action.run());return b;}
     private void screen(String title,Runnable goBack){generation++;back=goBack;clock=null;updateButton=null;ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xff14233c,0xff080b13,0xff070a10}));page=vertical();page.setPadding(dp(32),dp(22),dp(32),dp(28));scroll.addView(page);setContentView(scroll);if(title!=null){LinearLayout head=row();head.addView(text(title,28),new LinearLayout.LayoutParams(0,-2,1));head.addView(button("Back",goBack));page.addView(head);}}
     private void addRow(LinearLayout parent,View view,int width,int height){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(dp(width),dp(height));p.setMargins(dp(5),dp(5),dp(8),dp(5));parent.addView(view,p);}
@@ -148,10 +148,10 @@ public class MainActivity extends Activity {
         },items->{
             ChannelImporter.Status sync=ChannelImporter.status(this);
             status.setText(sync.running?String.format(Locale.getDefault(),"Updating · %,d channels imported",sync.progress):sync.queued?"Waiting for network to refresh":sync.message.isEmpty()?"Saved channels":"Saved channels · "+sync.message);
-            int count=Math.min(items.size(),ChannelDatabase.PAGE);LinearLayout gridRow=null;
+            int count=Math.min(items.size(),ChannelDatabase.PAGE);Set<String> visibleFavourites=favouriteKeys();LinearLayout gridRow=null;
             for(int i=0;i<count;i++){
                 ChannelDatabase.Row channel=items.get(i);if(i%3==0){gridRow=row();results.addView(gridRow);}
-                boolean favourite=favouriteKeys().contains(channel.key);
+                boolean favourite=visibleFavourites.contains(channel.key);
                 LinearLayout card=vertical();card.setPadding(dp(16),dp(12),dp(16),dp(12));card.setBackground(box(0xff182337));
                 TextView name=text((favourite?"★  ":"")+channel.name,18);name.setMaxLines(1);name.setEllipsize(android.text.TextUtils.TruncateAt.END);card.addView(name);
                 TextView group=text(channel.group.isEmpty()?"Live TV":channel.group,13);group.setMaxLines(1);card.addView(group);focus(card);
