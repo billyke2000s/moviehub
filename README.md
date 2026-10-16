@@ -1,4 +1,4 @@
-# Android TV launcher
+# MovieHub for Android TV
 
 Native launcher for Android TV and Android box devices running Android 9 or newer, with no custom logo or wordmark.
 
@@ -8,7 +8,7 @@ Live TV supports Xtream and M3U playlists. Channel lists are streamed into an on
 
 Download the signed [home.apk](https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/home.apk) from [Releases](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest).
 
-The **Build Android TV launcher APK** workflow provides separate debug builds and runs 45 core checks (including a 250,000-channel streaming parse), Android compilation/lint and signature verification. Use the signed release APK as the baseline for in-app updates.
+The **Build Android TV launcher APK** workflow runs 45 core checks (including a 250,000-channel streaming parse), debug/release compilation and lint, Android instrumentation tests for the encrypted database and native player, and signing compatibility checks against the current release. It provides a separate debug APK. Use the signed release APK as the baseline for in-app updates.
 
 For a local build, use JDK 17, Android SDK 35 and Gradle 8.10.2:
 
@@ -22,6 +22,6 @@ The **Publish Android TV launcher update** workflow publishes signed APKs and up
 
 ## Status
 
-The APK builds successfully in CI. The channel database, background import, search and automatic refresh are compiled and lint-checked but have not been tested on a device or against a real provider catalogue. Playback, remote navigation, on-screen keyboard and update installation require testing on each device. Compatibility with every Android box has not been verified.
+Build and verification results for the current work are recorded in PR #15. Deterministic Android tests cover SQLite pagination, favourites beyond 900 entries, failed-import rollback, non-destructive schema upgrades, encrypted stream URLs and actual LibVLC playback/seek/media keys. Provider fixtures exercise Xtream login and TS/HLS URL negotiation and M3U imports; fixtures do not establish live provider availability. Real Xtream/Premiumize accounts and target-TV installation remain release verification requirements.
 
 Account details are entered on the device and stored using Android Keystore. No credentials or firmware images are included in this repository.

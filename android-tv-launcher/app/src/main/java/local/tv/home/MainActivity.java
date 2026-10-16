@@ -29,7 +29,11 @@ public class MainActivity extends Activity {
     interface Done<T>{void accept(T result) throws Exception;}
     private <T> void async(Job<T> job,Done<T> done){int request=generation;io.execute(()->{try{T result=job.run();runOnUiThread(()->{if(isFinishing()||isDestroyed()||request!=generation)return;try{done.accept(result);}catch(Exception e){toast("Could not display this response");}});}catch(Exception e){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed()&&request==generation)showRequestError();});}});}
     private void showRequestError(){
+        clearLoading(page);
         TextView error=text("Could not load this content. Check your connection and connected accounts.",18);page.addView(error);page.addView(button("Settings",this::settings));
+    }
+    private void clearLoading(android.view.ViewGroup parent){
+        for(int i=parent.getChildCount()-1;i>=0;i--){View child=parent.getChildAt(i);if(child instanceof TextView&&(((TextView)child).getText().toString().startsWith("Loading")||((TextView)child).getText().toString().startsWith("Checking sources")))parent.removeViewAt(i);else if(child instanceof android.view.ViewGroup)clearLoading((android.view.ViewGroup)child);}
     }
     private void toast(String message){Toast.makeText(this,message,Toast.LENGTH_LONG).show();}
     private boolean http(){return prefs.getBoolean("http",false);}
@@ -47,9 +51,10 @@ public class MainActivity extends Activity {
     private void screen(String title,Runnable goBack){generation++;back=goBack;clock=null;updateButton=null;ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xff14233c,0xff080b13,0xff070a10}));page=vertical();page.setPadding(dp(32),dp(22),dp(32),dp(28));scroll.addView(page);setContentView(scroll);if(title!=null){LinearLayout head=row();head.addView(text(title,28),new LinearLayout.LayoutParams(0,-2,1));head.addView(button("Back",goBack));page.addView(head);}}
     private void addRow(LinearLayout parent,View view,int width,int height){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(dp(width),dp(height));p.setMargins(dp(5),dp(5),dp(8),dp(5));parent.addView(view,p);}
     private LinearLayout horizontal(LinearLayout parent){HorizontalScrollView scroll=new HorizontalScrollView(this);scroll.setHorizontalScrollBarEnabled(false);LinearLayout r=row();r.setPadding(dp(4),dp(8),dp(4),dp(8));scroll.addView(r);parent.addView(scroll);return r;}
-    private void checkForUpdate(){
+    private void checkForUpdate(){checkForUpdate(false);}
+    private void checkForUpdate(boolean manual){
         long now=android.os.SystemClock.elapsedRealtime();if(lastUpdateCheck!=0&&now-lastUpdateCheck<6*60*60*1000L)return;lastUpdateCheck=now;
-        io.execute(()->{AppUpdates.Release result=null;try{result=AppUpdates.check(getApplicationContext());}catch(Exception ignored){}final AppUpdates.Release release=result;runOnUiThread(()->{if(isFinishing()||isDestroyed())return;availableUpdate=release;if(updateButton!=null)updateButton.setVisibility(release==null?View.GONE:View.VISIBLE);if(release!=null&&prefs.getBoolean("autoUpdates",true)&&promptedUpdateVersion!=release.version){promptedUpdateVersion=release.version;offerUpdate();}});});
+        io.execute(()->{AppUpdates.Release result=null;boolean success=false;try{result=AppUpdates.check(getApplicationContext());success=true;}catch(Exception ignored){}final boolean checked=success;final AppUpdates.Release release=result;runOnUiThread(()->{if(isFinishing()||isDestroyed())return;availableUpdate=release;if(manual)toast(!checked?"Could not reach the update server. Try again later.":release==null?"You have the latest version":"Update available · "+release.name);if(updateButton!=null)updateButton.setVisibility(release==null?View.GONE:View.VISIBLE);if(release!=null&&(manual||(prefs.getBoolean("autoUpdates",true)&&promptedUpdateVersion!=release.version))){promptedUpdateVersion=release.version;offerUpdate();}});});
     }
     private void offerUpdate(){
         if(availableUpdate==null||updateBusy)return;
@@ -191,7 +196,7 @@ public class MainActivity extends Activity {
         }else if(tab.equals("Appearance")){toggle(body,"Show featured row","featured",true);toggle(body,"24-hour clock","clock24",true);for(int colour:new int[]{0xff8a9eff,0xff55aaff,0xff45c9ac})body.addView(button(colour==0xff8a9eff?"Violet":colour==0xff55aaff?"Blue":"Teal",()->{prefs.edit().putInt("accent",colour).apply();toast("Accent saved");}));body.addView(button("Apply",()->{dialog.dismiss();home();}));}
         else if(tab.equals("Playback")){toggle(body,"Resume playback","resume",true);toggle(body,"Check and offer app updates automatically","autoUpdates",true);languagePreference(body,"Subtitles","subtitleLanguage","none",true);languagePreference(body,"Audio track","audioLanguage","eng,en",false);}
         else if(tab.equals("Apps")){body.addView(button("Manage installed-app dock",()->{dialog.dismiss();allApps();}));}
-        else{body.addView(text(android.os.Build.MANUFACTURER+" "+android.os.Build.MODEL+" · Android "+android.os.Build.VERSION.RELEASE,16));body.addView(button("Check for app updates",()->{lastUpdateCheck=0;checkForUpdate();}));body.addView(button("Open Android Settings",()->{try{startActivity(new Intent(Settings.ACTION_SETTINGS));}catch(Exception e){toast("Android Settings is unavailable");}}));body.addView(text("TMDB supplies metadata and artwork. This product uses the TMDB API but is not endorsed or certified by TMDB.",12));body.addView(button("Metadata attribution",()->new AlertDialog.Builder(this).setTitle("Metadata attribution").setMessage("The Movie Database (TMDB)\nhttps://www.themoviedb.org\n\nMetadata is separate from your playback sources.").setPositiveButton("Close",null).show()));}
+        else{body.addView(text(android.os.Build.MANUFACTURER+" "+android.os.Build.MODEL+" · Android "+android.os.Build.VERSION.RELEASE,16));body.addView(button("Check for app updates",()->{lastUpdateCheck=0;checkForUpdate(true);}));body.addView(button("Open Android Settings",()->{try{startActivity(new Intent(Settings.ACTION_SETTINGS));}catch(Exception e){toast("Android Settings is unavailable");}}));body.addView(text("TMDB supplies metadata and artwork. This product uses the TMDB API but is not endorsed or certified by TMDB.",12));body.addView(button("Metadata attribution",()->new AlertDialog.Builder(this).setTitle("Metadata attribution").setMessage("The Movie Database (TMDB)\nhttps://www.themoviedb.org\n\nMetadata is separate from your playback sources.").setPositiveButton("Close",null).show()));}
         settingsStyle(body);
     }
     private void catalogueMenu(String kind){
