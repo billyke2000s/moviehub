@@ -205,7 +205,7 @@ public class MainActivity extends Activity {
         String quality=lower.contains("2160p")||lower.contains("4k")?"4K":lower.contains("1080p")?"1080p":lower.contains("720p")?"720p":"Other";
         String hdr=lower.contains("dolby vision")||lower.contains("dv")?" · Dolby Vision":lower.contains("hdr")?" · HDR":"";
         String codec=lower.contains("h265")||lower.contains("hevc")||lower.contains("x265")?" · HEVC":lower.contains("h264")||lower.contains("x264")?" · H.264":"";
-        String provider=raw.contains("\\n")?raw.substring(0,raw.indexOf('\\n')):"Source";
+        int split=raw.indexOf(10);String provider=split>=0?raw.substring(0,split):"Source";
         return quality+hdr+codec+"  ·  "+provider;
     }
     private void torrentSources(String imdb,int season,int episode,String title,String kind){
