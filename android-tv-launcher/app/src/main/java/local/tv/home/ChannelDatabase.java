@@ -25,7 +25,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     private static ChannelDatabase instance;
     private final Secrets secrets;
     static synchronized ChannelDatabase get(Context context){if(instance==null)instance=new ChannelDatabase(context.getApplicationContext());return instance;}
-    private ChannelDatabase(Context context){super(context,"channels-v2.db",null,1);secrets=new Secrets(context);setWriteAheadLoggingEnabled(true);}
+    private ChannelDatabase(Context context){super(context,"channels-v2.db",null,2);secrets=new Secrets(context);setWriteAheadLoggingEnabled(true);}
 
     @Override public void onCreate(SQLiteDatabase db){
         db.execSQL("CREATE TABLE channels(_id INTEGER PRIMARY KEY,source TEXT NOT NULL,position INTEGER NOT NULL,name TEXT NOT NULL,grp TEXT NOT NULL,logo TEXT NOT NULL,epg TEXT NOT NULL,key TEXT NOT NULL,url BLOB NOT NULL)");
@@ -33,9 +33,10 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         db.execSQL("CREATE INDEX channels_group ON channels(grp,source,position)");
         db.execSQL("CREATE INDEX channels_key ON channels(key)");
         db.execSQL("CREATE VIRTUAL TABLE channel_search USING fts4(name,grp)");
+        db.execSQL("CREATE TABLE favourite_keys(key TEXT PRIMARY KEY)");
     }
     @Override public void onUpgrade(SQLiteDatabase db,int from,int to){
-        db.execSQL("DROP TABLE IF EXISTS channel_search");db.execSQL("DROP TABLE IF EXISTS channels");onCreate(db);
+        if(from<2)db.execSQL("CREATE TABLE IF NOT EXISTS favourite_keys(key TEXT PRIMARY KEY)");
     }
 
     // ---- URL encryption -------------------------------------------------------------------
@@ -114,11 +115,24 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         String match=ChannelQuery.fts(text);if(match.isEmpty())return new ArrayList<>();
         return rows("_id IN (SELECT docid FROM channel_search WHERE channel_search MATCH ?)",new String[]{match},offset);
     }
-    List<Row> favourites(Set<String> keys,int offset){
-        if(keys.isEmpty())return new ArrayList<>();
-        List<String> list=new ArrayList<>(keys);if(list.size()>900)list=list.subList(0,900);
-        StringBuilder marks=new StringBuilder();for(int i=0;i<list.size();i++)marks.append(i==0?"?":",?");
-        return rows("key IN ("+marks+")",list.toArray(new String[0]),offset);
+    synchronized List<Row> browse(String filter,String text,Set<String> keys,int offset){
+        SQLiteDatabase db=getWritableDatabase();
+        if("favourites".equals(filter)){
+            db.beginTransactionNonExclusive();
+            try(SQLiteStatement insert=db.compileStatement("INSERT OR IGNORE INTO favourite_keys(key) VALUES(?)")){
+                db.delete("favourite_keys",null,null);
+                for(String key:keys){insert.bindString(1,key);insert.executeInsert();}
+                db.setTransactionSuccessful();
+            }finally{db.endTransaction();}
+        }
+        List<String> args=new ArrayList<>();String where="1=1";
+        if("favourites".equals(filter))where+=" AND key IN (SELECT key FROM favourite_keys)";
+        if("sports".equals(filter))where+=" AND (grp LIKE '%sport%' OR name LIKE '%sport%')";
+        if(text!=null&&!text.trim().isEmpty()){
+            String match=ChannelQuery.fts(text);if(match.isEmpty())return new ArrayList<>();
+            where+=" AND _id IN (SELECT docid FROM channel_search WHERE channel_search MATCH ?)";args.add(match);
+        }
+        return rows(where,args.toArray(new String[0]),offset);
     }
     List<Group> groups(){
         List<Group> out=new ArrayList<>();
@@ -126,8 +140,8 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         return out;
     }
     /** Decrypts a channel's stream URL for playback. */
-    String url(long id) throws Exception{
-        byte[] blob;try(Cursor c=getReadableDatabase().rawQuery("SELECT url FROM channels WHERE _id=?",new String[]{String.valueOf(id)})){if(!c.moveToFirst())throw new IllegalStateException("Channel no longer exists");blob=c.getBlob(0);}
+    String url(long id,String expectedKey) throws Exception{
+        byte[] blob;try(Cursor c=getReadableDatabase().rawQuery("SELECT url,key FROM channels WHERE _id=?",new String[]{String.valueOf(id)})){if(!c.moveToFirst())throw new IllegalStateException("Channel no longer exists");if(!expectedKey.equals(c.getString(1)))throw new IllegalStateException("Channel list changed; select the channel again");blob=c.getBlob(0);}
         Cipher cipher=Cipher.getInstance("AES/GCM/NoPadding");cipher.init(Cipher.DECRYPT_MODE,urlKey(false),new GCMParameterSpec(128,blob,0,12));
         return new String(cipher.doFinal(blob,12,blob.length-12),java.nio.charset.StandardCharsets.UTF_8);
     }

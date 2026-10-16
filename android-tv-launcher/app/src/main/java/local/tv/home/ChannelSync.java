@@ -35,7 +35,7 @@ final class ChannelSync {
         public Job(@NonNull Context context,@NonNull WorkerParameters params){super(context,params);}
         @NonNull @Override public Result doWork(){
             boolean ok=ChannelImporter.run(getApplicationContext(),()->{if(isStopped())throw new CancellationException();});
-            return ok?Result.success():Result.failure();
+            return ok?Result.success():getRunAttemptCount()<3?Result.retry():Result.failure();
         }
     }
 }
