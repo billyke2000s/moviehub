@@ -200,11 +200,19 @@ public class MainActivity extends Activity {
     }
     private void seasons(int tmdbId,String title){screen(title,this::home);async(()->media.tmdb("tv/"+tmdbId+"?append_to_response=external_ids"),details->{String imdb=details.getJSONObject("external_ids").optString("imdb_id");JSONArray seasons=details.getJSONArray("seasons");for(int i=0;i<seasons.length();i++){JSONObject season=seasons.getJSONObject(i);int number=season.getInt("season_number");page.addView(button(season.optString("name","Season "+number),()->episodes(tmdbId,imdb,number,title)));}});}
     private void episodes(int tmdbId,String imdb,int season,String title){screen(title+" · Season "+season,()->seasons(tmdbId,title));async(()->media.tmdb("tv/"+tmdbId+"/season/"+season).getJSONArray("episodes"),episodes->{for(int i=0;i<episodes.length();i++){JSONObject episode=episodes.getJSONObject(i);int number=episode.getInt("episode_number");String label=number+" · "+episode.optString("name","Episode");page.addView(button(label,()->torrentSources(imdb,season,number,title+" · "+label,"Series")));}});}
+    private String sourceLabel(String raw){
+        String lower=raw.toLowerCase(Locale.ROOT);
+        String quality=lower.contains("2160p")||lower.contains("4k")?"4K":lower.contains("1080p")?"1080p":lower.contains("720p")?"720p":"Other";
+        String hdr=lower.contains("dolby vision")||lower.contains("dv")?" · Dolby Vision":lower.contains("hdr")?" · HDR":"";
+        String codec=lower.contains("h265")||lower.contains("hevc")||lower.contains("x265")?" · HEVC":lower.contains("h264")||lower.contains("x264")?" · H.264":"";
+        String provider=raw.contains("\\n")?raw.substring(0,raw.indexOf('\\n')):"Source";
+        return quality+hdr+codec+"  ·  "+provider;
+    }
     private void torrentSources(String imdb,int season,int episode,String title,String kind){
         screen(title+" · Sources",()->catalogueMenu(kind));page.addView(button("Premiumize cloud",()->cloud("",kind)));page.addView(text("Checking sources and Premiumize cache…",16));SourceRepository sourceRepo=new SourceRepository(secrets);
         async(()->{return sourceRepo.torrentio(imdb,season,episode);},sources->{page.removeViewAt(page.getChildCount()-1);if(sources.isEmpty()){page.addView(text("No supported sources returned",16));return;}
             for(SourceRepository.Cache status:SourceRepository.Cache.values()){page.addView(text(status==SourceRepository.Cache.CACHED?"Cached":status==SourceRepository.Cache.NOT_CACHED?"Not cached":"Unknown — cache check unavailable",20));int count=0;
-                for(SourceRepository.Source source:sources)if(source.cache==status){count++;page.addView(button(source.title,()->{
+                for(SourceRepository.Source source:sources)if(source.cache==status){count++;page.addView(button(sourceLabel(source.title),()->{
                     if(source.cache==SourceRepository.Cache.UNKNOWN){torrentSources(imdb,season,episode,title,kind);return;}
                     if(source.cache==SourceRepository.Cache.NOT_CACHED){new AlertDialog.Builder(this).setTitle("Send to Premiumize?").setMessage("Queue this source in your cloud. Select a source you have permission to download.").setPositiveButton("Queue",(d,w)->async(()->sourceRepo.queue(source),id->{toast("Transfer queued");transfers(kind);})).setNegativeButton("Cancel",null).show();return;}
                     async(()->sourceRepo.direct(source),files->{screen(title+" · Files",()->torrentSources(imdb,season,episode,title,kind));for(int i=0;i<files.length();i++){JSONObject file=files.getJSONObject(i);String link=file.getString("link"),name=file.optString("path","File");int match=VideoFiles.score(name,"",season,episode);page.addView(button((match>=2?"Suggested episode · ":"")+name,()->play(name,link,id(source.uri+":"+name),false)));}});
