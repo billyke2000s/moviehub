@@ -40,5 +40,14 @@ public class ChannelImporterTest {
         secrets.put("m3u",root+"/list.m3u");assertTrue(ChannelImporter.run(context,()->{}));assertEquals(2,db.count());broken=true;assertFalse(ChannelImporter.run(context,()->{}));assertEquals(2,db.count());
         secrets.remove("m3u");secrets.remove("xtream");broken=false;assertTrue(ChannelImporter.run(context,()->{}));assertEquals(0,db.count());
     }
+    @Test public void legacyCacheMigratesWithoutLosingFavouriteIdentity() throws Exception{
+        Playlist.Channel channel=new Playlist.Channel("Legacy channel","https://legacy.example/live/user/password/42.ts","News","","");
+        try(ChannelStore old=new ChannelStore(context)){old.replace(java.util.Collections.singletonList(channel));}
+        String key=ChannelQuery.key(channel.url);java.util.Set<String> previous=new java.util.HashSet<>(context.getSharedPreferences("ui",0).getStringSet("favourites",java.util.Collections.emptySet()));
+        try{
+            context.getSharedPreferences("ui",0).edit().putStringSet("favourites",java.util.Collections.singleton(key)).commit();secrets.put("m3u",root+"/broken.m3u");broken=true;
+            assertFalse(ChannelImporter.run(context,()->{}));assertFalse(context.getDatabasePath("channels.db").exists());assertEquals(1,db.count());ChannelDatabase.Row row=db.all(0).get(0);assertEquals(key,row.key);assertEquals(channel.url,db.url(row.id,key));assertTrue(context.getSharedPreferences("ui",0).getStringSet("favourites",java.util.Collections.emptySet()).contains(key));
+        }finally{context.getSharedPreferences("ui",0).edit().putStringSet("favourites",previous).commit();context.deleteDatabase("channels.db");}
+    }
     @After public void cleanup() throws Exception{closed=true;if(server!=null)server.close();secrets.remove("xtream");secrets.remove("m3u");db.clear();context.getSharedPreferences("ui",0).edit().putBoolean("http",oldHttp).commit();}
 }
