@@ -3,6 +3,11 @@ package local.tv.home;
 import android.app.*;
 import android.content.*;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
+import android.widget.EditText;
+import android.widget.ScrollView;
+import org.json.*;
+import java.lang.reflect.Method;
 import android.os.SystemClock;
 import android.view.*;
 import android.widget.TextView;
@@ -24,10 +29,18 @@ public class TvNavigationTest {
     }
     @Test public void tvScreensNavigateAndKeepAVisibleFocusTarget() throws Exception{
         Context context=instrumentation.getTargetContext();ChannelDatabase db=ChannelDatabase.get(context);ChannelDatabase.Writer writer=db.writer("navigation-fixture",()->{},n->{});try{for(int i=1;i<=12;i++)writer.accept(new Playlist.Channel("Fixture channel "+i,"https://example.test/live/"+i+".ts",i%2==0?"Sports":"News","",""));writer.commit();}finally{writer.abort();}autoUpdates=context.getSharedPreferences("ui",0).getBoolean("autoUpdates",true);context.getSharedPreferences("ui",0).edit().putBoolean("autoUpdates",false).commit();activity=(MainActivity)instrumentation.startActivitySync(new Intent(context,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));instrumentation.waitForIdleSync();
-        screenshot("home");instrumentation.runOnMainSync(()->assertNotNull(activity.getCurrentFocus()));
-        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);instrumentation.waitForIdleSync();instrumentation.runOnMainSync(()->assertNotNull("Remote opens Movies",text(activity.getWindow().getDecorView(),"Browse & search")));screenshot("movies");instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);instrumentation.waitForIdleSync();
-        select("Settings");select("Playback");screenshot("settings-playback");select("Accounts");screenshot("settings-accounts");instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);instrumentation.waitForIdleSync();
+        screenshot("home");instrumentation.runOnMainSync(()->{assertNotNull(activity.getCurrentFocus());assertFullyVisible("All Apps");assertFullyVisible("Settings");assertFullyVisible("For you");assertFullyVisible("My list");});
+        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);instrumentation.waitForIdleSync();instrumentation.runOnMainSync(()->assertNotNull("Remote opens Movies",text(activity.getWindow().getDecorView(),"Trending this week")));instrumentation.runOnMainSync(()->{for(String category:new String[]{"Search","Trending today","Trending this week","Popular","Top rated","Now playing","Upcoming","Genres","More filters","My library"})assertFullyVisible(category);});screenshot("movies");instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);instrumentation.waitForIdleSync();
+        select("Settings");select("Playback");screenshot("settings-playback");select("Accounts");screenshot("settings-accounts");instrumentation.runOnMainSync(()->{assertEquals("Account overview must not expose a wall of login fields",0,countInputs(activity.getWindow().getDecorView()));assertFullyVisible("Xtream");assertFullyVisible("Premiumize");});instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);instrumentation.waitForIdleSync();
         select("Live TV");SystemClock.sleep(1000);screenshot("live-tv");
+    }
+    private int countInputs(View view){int count=view instanceof EditText?1:0;if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)count+=countInputs(group.getChildAt(i));}return count;}
+    private void assertFullyVisible(String label){View view=text(activity.getWindow().getDecorView(),label);assertNotNull(label,view);Rect visible=new Rect();assertTrue(label+" visible",view.getGlobalVisibleRect(visible));assertEquals(label+" is vertically clipped",view.getHeight(),visible.height());assertEquals(label+" is horizontally clipped",view.getWidth(),visible.width());}
+    @Test public void detailsAndConnectionFormsFitAndKeepDistinctPurposes() throws Exception{
+        Context context=instrumentation.getTargetContext();autoUpdates=context.getSharedPreferences("ui",0).getBoolean("autoUpdates",true);context.getSharedPreferences("ui",0).edit().putBoolean("autoUpdates",false).commit();activity=(MainActivity)instrumentation.startActivitySync(new Intent(context,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));instrumentation.waitForIdleSync();
+        instrumentation.runOnMainSync(()->{try{Method method=MainActivity.class.getDeclaredMethod("accountScreen",String.class);method.setAccessible(true);method.invoke(activity,"TMDB");}catch(Exception e){throw new AssertionError(e);}});instrumentation.waitForIdleSync();instrumentation.runOnMainSync(()->{assertEquals(1,countInputs(activity.getWindow().getDecorView()));assertFullyVisible("API Key (v3 auth)");});screenshot("connect-tmdb");
+        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);instrumentation.waitForIdleSync();
+        instrumentation.runOnMainSync(()->{try{Method screen=MainActivity.class.getDeclaredMethod("fixedScreen",String.class,Runnable.class);screen.setAccessible(true);screen.invoke(activity,"Details",(Runnable)()->{});JSONObject fixture=new JSONObject().put("id",100).put("media_type","tv").put("name","A series with a longer title").put("first_air_date","2026-01-01").put("vote_average",8.1).put("overview","A detailed synopsis that needs room to breathe on a television screen. "+new String(new char[20]).replace("\0","The story follows a family on an unexpected journey. ")).put("genres",new JSONArray().put(new JSONObject().put("name","Drama"))).put("credits",new JSONObject().put("cast",new JSONArray().put(new JSONObject().put("name","Actor One"))));Method details=MainActivity.class.getDeclaredMethod("renderDetails",JSONObject.class);details.setAccessible(true);details.invoke(activity,fixture);}catch(Exception e){throw new AssertionError(e);}});instrumentation.waitForIdleSync();instrumentation.runOnMainSync(()->{assertFullyVisible("Browse episodes");assertFullyVisible("Full synopsis");assertFullyVisible("Cast · Actor One");});screenshot("details");
     }
     @After public void cleanup(){if(activity!=null)instrumentation.runOnMainSync(activity::finish);instrumentation.getTargetContext().getSharedPreferences("ui",0).edit().putBoolean("autoUpdates",autoUpdates).commit();ChannelDatabase.get(instrumentation.getTargetContext()).clear();}
 }
