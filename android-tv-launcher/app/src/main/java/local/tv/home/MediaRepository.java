@@ -6,24 +6,6 @@ import java.util.*;
 final class MediaRepository {
     final Secrets secrets;
     MediaRepository(Secrets secrets){this.secrets=secrets;}
-    List<Playlist.Channel> live(boolean http) throws Exception{
-        List<Playlist.Channel> rows=new ArrayList<>();String playlist=secrets.get("m3u");
-        if(!playlist.isEmpty())rows.addAll(Playlist.parse(Network.text(playlist,null,http),playlist,http));
-        String account=secrets.get("xtream");
-        if(!account.isEmpty()){
-            JSONObject a=new JSONObject(account);String server=Playlist.networkUrl(a.getString("server"),http).replaceAll("/+$","");
-            String query="?username="+Network.q(a.getString("username"))+"&password="+Network.q(a.getString("password"));
-            JSONArray categories=new JSONArray(Network.text(server+"/player_api.php"+query+"&action=get_live_categories",null,http));Map<String,String> groups=new HashMap<>();
-            for(int i=0;i<categories.length();i++){JSONObject c=categories.getJSONObject(i);groups.put(c.optString("category_id"),c.optString("category_name"));}
-            JSONArray streams=new JSONArray(Network.text(server+"/player_api.php"+query+"&action=get_live_streams",null,http));
-            
-            for(int i=0;i<streams.length();i++){JSONObject c=streams.getJSONObject(i);String id=c.getString("stream_id");if(!id.matches("[0-9]+"))continue;
-                String format=a.optString("format","ts");if(!format.equals("m3u8"))format="ts";
-                String url=server+"/live/"+Network.path(a.getString("username"))+"/"+Network.path(a.getString("password"))+"/"+id+"."+format;
-                rows.add(new Playlist.Channel(c.optString("name","Channel"),url,groups.getOrDefault(c.optString("category_id"),""),c.optString("stream_icon"),c.optString("epg_channel_id")));
-            }
-        }return rows;
-    }
     JSONArray featured(String type,int seed) throws Exception{
         String token=secrets.get("tmdb");if(token.isEmpty())return new JSONArray();
         String path=seed>0?type+"/"+seed+"/recommendations":"trending/all/week";

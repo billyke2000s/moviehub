@@ -13,7 +13,6 @@ import android.widget.*;
 import org.json.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.security.MessageDigest;
 
 /** Native TV home UI based on the supplied visual reference. No WebView. */
 public class MainActivity extends Activity {
@@ -30,8 +29,8 @@ public class MainActivity extends Activity {
     private <T> void async(Job<T> job,Done<T> done){int request=generation;io.execute(()->{try{T result=job.run();runOnUiThread(()->{if(isFinishing()||request!=generation)return;try{done.accept(result);}catch(Exception e){toast("Could not display this response");}});}catch(Exception e){runOnUiThread(()->{if(!isFinishing()&&request==generation)toast("Request failed. Check the connection and account details.");});}});}
     private void toast(String message){Toast.makeText(this,message,Toast.LENGTH_LONG).show();}
     private boolean http(){return prefs.getBoolean("http",false);}
-    @Override public void onCreate(Bundle state){super.onCreate(state);secrets=new Secrets(this);media=new MediaRepository(secrets);prefs=getSharedPreferences("ui",MODE_PRIVATE);home();}
-    @Override public void onStart(){super.onStart();handler.removeCallbacks(ticker);handler.post(ticker);checkForUpdate();}
+    @Override public void onCreate(Bundle state){super.onCreate(state);secrets=new Secrets(this);media=new MediaRepository(secrets);prefs=getSharedPreferences("ui",MODE_PRIVATE);try{ChannelSync.schedule(this);}catch(Exception ignored){}home();}
+    @Override public void onStart(){super.onStart();handler.removeCallbacks(ticker);handler.post(ticker);checkForUpdate();try{ChannelSync.refreshIfStale(this);}catch(Exception ignored){}}
     @Override public void onStop(){handler.removeCallbacks(ticker);super.onStop();}
     @Override public void onDestroy(){io.shutdownNow();super.onDestroy();}
     @Override public void onBackPressed(){if(back!=null)back.run();}
@@ -78,19 +77,83 @@ public class MainActivity extends Activity {
     private void addApp(LinearLayout into,App app,boolean pinControls){LinearLayout cell=vertical();cell.setGravity(Gravity.CENTER);ImageView image=new ImageView(this);image.setImageDrawable(app.icon);cell.addView(image,new LinearLayout.LayoutParams(dp(52),dp(52)));TextView label=text(app.label,16);label.setMaxLines(2);label.setGravity(Gravity.CENTER);cell.addView(label);focus(cell);cell.setBackground(box(0xff202c43));cell.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_MAIN).setComponent(app.component));}catch(Exception e){toast("App is unavailable");}});cell.setOnLongClickListener(v->{pin(app);return true;});cell.setOnKeyListener((v,key,event)->{if(key==KeyEvent.KEYCODE_MENU&&event.getAction()==KeyEvent.ACTION_UP){pin(app);return true;}return false;});addRow(into,cell,130,114);if(pinControls)addRow(into,button("Pin / unpin",()->pin(app)),130,70);}
     private void pin(App app){Set<String> pins=new HashSet<>(prefs.getStringSet("pinned",Collections.emptySet()));String id=app.component.flattenToString();boolean added=pins.add(id);if(!added)pins.remove(id);prefs.edit().putStringSet("pinned",pins).apply();toast(added?"Added to dock":"Removed from dock");}
     private void allApps(){screen("All Apps",this::home);page.addView(text("Hold Select or press Menu to pin or unpin an app",14));queryApps();LinearLayout r=null;for(int i=0;i<apps.size();i++){if(i%6==0){r=row();page.addView(r);}addApp(r,apps.get(i),false);}if(apps.isEmpty())page.addView(text("No launchable apps found",16));}
-    private void live(){screen("Live TV",this::home);page.addView(button("Accounts",this::settings));TextView loading=text("Loading channels…",16);page.addView(loading);async(()->media.live(http()),channels->{page.removeView(loading);if(channels.isEmpty()){page.addView(text("Add an authorized Xtream account or M3U playlist in Settings",16));return;}LinearLayout filters=row();LinearLayout list=vertical();page.addView(filters);page.addView(list);filters.addView(button("All channels",()->channels(list,channels,"all")));filters.addView(button("Sports",()->channels(list,channels,"sports")));filters.addView(button("Favourites",()->channels(list,channels,"favourites")));channels(list,channels,"all");});}
-    private String id(String url){try{byte[] d=MessageDigest.getInstance("SHA-256").digest(url.getBytes(java.nio.charset.StandardCharsets.UTF_8));StringBuilder b=new StringBuilder();for(byte n:d)b.append(String.format(Locale.ROOT,"%02x",n&255));return b.toString();}catch(Exception e){throw new IllegalStateException(e);}}
-    private void channels(LinearLayout list,List<Playlist.Channel> channels,String filter){
-        list.removeAllViews();Set<String> favourites=prefs.getStringSet("favourites",Collections.emptySet());List<Playlist.Channel> selected=new ArrayList<>();
-        for(Playlist.Channel channel:channels){String key=id(channel.url);if(filter.equals("sports")&&!channel.group.toLowerCase(Locale.ROOT).contains("sport"))continue;if(filter.equals("favourites")&&!favourites.contains(key))continue;selected.add(channel);}
-        if(selected.isEmpty())list.addView(text("No channels in this group",16));else channelsPage(list,selected,0);
+    private ChannelDatabase channelsDb(){return ChannelDatabase.get(this);}
+    interface ChannelPage{List<ChannelDatabase.Row> load(int offset) throws Exception;}
+    private Set<String> favouriteKeys(){return new HashSet<>(prefs.getStringSet("favourites",Collections.emptySet()));}
+    private void live(){
+        screen("Live TV",this::home);
+        LinearLayout actions=row();page.addView(actions);
+        actions.addView(button("Search",this::channelSearch));actions.addView(button("Groups",this::channelGroups));actions.addView(button("Refresh channels",()->{ChannelSync.refreshNow(this);live();}));actions.addView(button("Accounts",this::settings));
+        TextView status=text("",14);page.addView(status);
+        LinearLayout filters=row();LinearLayout list=vertical();page.addView(filters);page.addView(list);
+        filters.addView(button("All channels",()->showChannels(list,o->channelsDb().all(o))));
+        filters.addView(button("Sports",()->showChannels(list,o->channelsDb().sports(o))));
+        filters.addView(button("Favourites",()->showChannels(list,o->channelsDb().favourites(favouriteKeys(),o))));
+        loadLive(status,list);
+        page.post(()->actions.getChildAt(0).requestFocus());
     }
-    private void channelsPage(LinearLayout list,List<Playlist.Channel> channels,int offset){
-        int end=Math.min(offset+150,channels.size());
-        for(int i=offset;i<end;i++){Playlist.Channel channel=channels.get(i);String key=id(channel.url);Button b=button(channel.name+(channel.group.isEmpty()?"":" · "+channel.group),()->play(channel.name,channel.url,key,true));
-            b.setOnLongClickListener(v->{Set<String> copy=new HashSet<>(prefs.getStringSet("favourites",Collections.emptySet()));boolean added=copy.add(key);if(!added)copy.remove(key);prefs.edit().putStringSet("favourites",copy).apply();toast(added?"Added to favourites":"Removed from favourites");return true;});list.addView(b);}
-        if(end<channels.size()){Button more=button("More channels",()->{});more.setOnClickListener(v->{list.removeView(more);channelsPage(list,channels,end);});list.addView(more);}
+    private void loadLive(TextView status,LinearLayout list){
+        int request=generation;
+        async(()->channelsDb().count(),count->{
+            ChannelImporter.Status state=ChannelImporter.status(this);
+            if(count==0&&!state.running&&!state.queued){
+                if(!secrets.has("m3u")&&!secrets.has("xtream")){list.removeAllViews();list.addView(text("Add an authorized Xtream account or M3U playlist in Settings",16));return;}
+                if(state.lastSuccess==0&&state.message.isEmpty()){ChannelSync.refreshNow(this);state=ChannelImporter.status(this);}
+            }
+            if(count>0)showChannels(list,o->channelsDb().all(o));else list.removeAllViews();
+            describeImport(status,state,count);
+            if(state.running||state.queued)watchImport(request,status,list,count);
+        });
     }
+    private void describeImport(TextView status,ChannelImporter.Status state,int count){
+        String total=String.format(Locale.getDefault(),"%,d channels",count);
+        if(state.running)status.setText(String.format(Locale.getDefault(),"Updating channels… %,d imported",state.progress)+(count>0?" · current list stays available":""));
+        else if(state.queued)status.setText("Channel update starting… waiting for a network connection if offline");
+        else if(state.lastSuccess>0)status.setText(total+" · updated "+android.text.format.DateUtils.getRelativeTimeSpanString(state.lastSuccess)+(state.message.isEmpty()||state.message.endsWith("updated")?"":"\n"+state.message));
+        else status.setText(state.message.isEmpty()?total:state.message+"\nSelect Refresh channels to try again.");
+    }
+    private void watchImport(int request,TextView status,LinearLayout list,int before){
+        handler.postDelayed(new Runnable(){public void run(){
+            if(isFinishing()||request!=generation)return;
+            ChannelImporter.Status state=ChannelImporter.status(MainActivity.this);
+            if(state.running||state.queued){describeImport(status,state,before);handler.postDelayed(this,1000);return;}
+            async(()->channelsDb().count(),count->{describeImport(status,state,count);if(before==0&&count>0)showChannels(list,o->channelsDb().all(o));else if(count>0)status.append("\nReopen a list to see the update.");});
+        }},1000);
+    }
+    private void showChannels(LinearLayout list,ChannelPage loader){list.removeAllViews();channelsPage(list,loader,0);}
+    private void channelsPage(LinearLayout list,ChannelPage loader,int offset){
+        TextView loading=text("Loading…",16);list.addView(loading);
+        async(()->loader.load(offset),rows->{
+            list.removeView(loading);
+            if(offset==0&&rows.isEmpty()){list.addView(text("No channels here",16));return;}
+            View first=null;int end=Math.min(ChannelDatabase.PAGE,rows.size());
+            for(int i=0;i<end;i++){ChannelDatabase.Row channel=rows.get(i);Button b=button(channel.name+(channel.group.isEmpty()?"":" · "+channel.group),()->playChannel(channel));
+                b.setOnLongClickListener(v->{Set<String> copy=favouriteKeys();boolean added=copy.add(channel.key);if(!added)copy.remove(channel.key);prefs.edit().putStringSet("favourites",copy).apply();toast(added?"Added to favourites":"Removed from favourites");return true;});
+                list.addView(b);if(first==null)first=b;}
+            if(offset>0&&first!=null)first.requestFocus();
+            if(rows.size()>ChannelDatabase.PAGE){Button more=button("More channels",()->{});more.setOnClickListener(v->{list.removeView(more);channelsPage(list,loader,offset+ChannelDatabase.PAGE);});list.addView(more);}
+        });
+    }
+    private void playChannel(ChannelDatabase.Row channel){
+        async(()->{try{return channelsDb().url(channel.id);}catch(Exception e){return "";}},url->{if(url.isEmpty()){toast("This channel is unavailable. Select Refresh channels.");return;}play(channel.name,url,channel.key,true);});
+    }
+    private void channelSearch(){
+        LinearLayout form=vertical();EditText query=field(form,"Channel name or group",false,"");Dialog dialog=form("Search channels",form);
+        form.addView(button("Search",()->{String value=query.getText().toString().trim();if(ChannelQuery.fts(value).isEmpty()){toast("Enter letters or numbers to search");return;}dialog.dismiss();
+            screen("Search · "+value,this::live);page.addView(button("New search",this::channelSearch));LinearLayout list=vertical();page.addView(list);showChannels(list,o->channelsDb().search(value,o));}));
+    }
+    private void channelGroups(){
+        screen("Channel groups",this::live);TextView loading=text("Loading…",16);page.addView(loading);
+        async(()->channelsDb().groups(),groups->{page.removeView(loading);if(groups.isEmpty()){page.addView(text("No channels yet",16));return;}groupsPage(groups,0);});
+    }
+    private void groupsPage(List<ChannelDatabase.Group> groups,int offset){
+        int end=Math.min(offset+200,groups.size());View first=null;
+        for(int i=offset;i<end;i++){ChannelDatabase.Group group=groups.get(i);String label=group.name.isEmpty()?"Ungrouped":group.name;
+            Button b=button(label+String.format(Locale.getDefault()," · %,d",group.count),()->{screen(label,this::channelGroups);LinearLayout list=vertical();page.addView(list);showChannels(list,o->channelsDb().group(group.name,o));});page.addView(b);if(first==null)first=b;}
+        if(offset>0&&first!=null)first.requestFocus();
+        if(end<groups.size()){Button more=button("More groups",()->{});more.setOnClickListener(v->{page.removeView(more);groupsPage(groups,end);});page.addView(more);}
+    }
+    private String id(String url){return ChannelQuery.key(url);}
     private void play(String title,String url,String id,boolean live){try{String safe=Playlist.networkUrl(url,http());startActivity(new Intent(this,VlcPlaybackActivity.class).putExtra("title",title).putExtra("url",safe).putExtra("id",id).putExtra("live",live));}catch(Exception e){toast("Use an HTTPS source, or enable HTTP sources in Settings");}}
     private void library(String kind){screen(kind,this::home);page.addView(button("Browse catalogue",()->catalogueMenu(kind)));page.addView(button("Premiumize transfers",()->transfers(kind)));page.addView(button("Add authorized source",()->addSource(kind,"","")));page.addView(button("Premiumize cloud",()->cloud("",kind)));try{JSONArray rows=media.library();int found=0;for(int i=0;i<rows.length();i++){JSONObject item=rows.getJSONObject(i);if(!kind.equals(item.getString("kind")))continue;String title=item.getString("title"),url=item.optString("url"),key=item.getString("id");LinearLayout r=row();r.addView(button(title,()->{if("premiumize".equals(item.optString("source"))){async(()->media.premiumize("item/details?id="+Network.q(item.getString("sourceId")),secrets.get("premiumize")),detail->play(title,detail.getString("link"),key,false));}else play(title,url,key,false);}),new LinearLayout.LayoutParams(0,dp(66),1));r.addView(button("Remove",()->new AlertDialog.Builder(this).setTitle("Remove "+title+"?").setPositiveButton("Remove",(d,w)->{try{media.remove(key);library(kind);}catch(Exception e){toast("Could not remove this source");}}).setNegativeButton("Cancel",null).show()));page.addView(r);found++;}if(found==0)page.addView(text("Your library is empty",16));}catch(Exception e){toast("Library could not be read");}}
     private EditText field(LinearLayout parent,String hint,boolean password,String value){
@@ -104,6 +167,12 @@ public class MainActivity extends Activity {
     private Dialog form(String title,LinearLayout content){Dialog d=new Dialog(this);ScrollView scroll=new ScrollView(this);LinearLayout shell=vertical();shell.setPadding(dp(24),dp(20),dp(24),dp(24));shell.setBackgroundColor(0xff101827);shell.addView(text(title,24));shell.addView(content);shell.addView(button("Close",d::dismiss));scroll.addView(shell);d.setContentView(scroll);d.show();d.getWindow().setLayout(dp(500),-1);d.getWindow().setGravity(Gravity.RIGHT);d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE|WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);return d;}
     private void addSource(String kind,String name,String link){LinearLayout content=vertical();EditText title=field(content,"Title",false,name),url=field(content,"Authorized media URL",false,link);CheckBox permission=new CheckBox(this);permission.setText("I have permission to play this source");permission.setTextColor(0xfff8f8fc);content.addView(permission);Dialog dialog=form("Add to "+kind,content);content.addView(button("Save source",()->{if(!permission.isChecked()){toast("Confirm permission for this source");return;}try{media.add(title.getText().toString(),url.getText().toString(),kind,http());dialog.dismiss();library(kind);}catch(Exception e){toast("Enter a title and valid media URL");}}));}
     private void cloud(String folder,String kind){screen("Premiumize cloud",()->library(kind));page.addView(text("Loading…",16));async(()->{String token=secrets.get("premiumize");if(token.isEmpty())throw new Exception();return media.premiumize("folder/list"+(folder.isEmpty()?"":"?id="+Network.q(folder)),token).getJSONArray("content");},items->{page.removeViewAt(page.getChildCount()-1);if(items.length()==0)page.addView(text("This folder is empty",16));for(int i=0;i<items.length();i++){JSONObject file=items.getJSONObject(i);String name=file.optString("name","File"),key=file.optString("id"),type=file.optString("type");page.addView(button((type.equals("folder")?"▦ ":"▶ ")+name,()->{if(type.equals("folder")){cloud(key,kind);return;}async(()->media.premiumize("item/details?id="+Network.q(key),secrets.get("premiumize")),detail->{String url=detail.optString("link");if(url.isEmpty()){toast("This file has no playback link");return;}new AlertDialog.Builder(this).setTitle(name).setItems(new String[]{"Play","Add to "+kind},(d,w)->{if(w==0)play(name,url,"pm:"+key,false);else{try{media.addPremiumize(name,key,kind);toast("Added to "+kind);}catch(Exception e){toast("Could not add this file");}}}).show();});}));}});}
+    private static final class FoundChannel extends Exception{}
+    /** Reads only until the first playable channel, so connecting a very large playlist stays quick. */
+    private boolean hasChannel(String url) throws Exception{
+        try(java.io.InputStream in=Network.open(url,null,Network.CATALOGUE_MAX,http())){Playlist.parse(new java.io.InputStreamReader(in,java.nio.charset.StandardCharsets.UTF_8),url,http(),c->{throw new FoundChannel();});}catch(FoundChannel found){return true;}
+        return false;
+    }
     private void settingsStyle(View view){if(view instanceof Button||view instanceof Switch){view.setFocusable(true);view.setOnFocusChangeListener((v,on)->{GradientDrawable bg=box(on?0xff263550:0xff101827);bg.setStroke(dp(on?2:0),accent());v.setBackground(bg);});view.setBackground(box(0xff101827));}if(view instanceof android.view.ViewGroup){android.view.ViewGroup group=(android.view.ViewGroup)view;for(int i=0;i<group.getChildCount();i++)settingsStyle(group.getChildAt(i));}}
     private void settings(){LinearLayout content=vertical();Dialog dialog=form("Home settings",content);LinearLayout tabs=horizontal(content);LinearLayout body=vertical();content.addView(body);for(String tab:new String[]{"Accounts","Appearance","Playback","Apps","System"})tabs.addView(button(tab,()->settingsTab(body,tab,dialog)));settingsTab(body,"Accounts",dialog);settingsStyle(tabs);tabs.getChildAt(0).requestFocus();}
     private void toggle(LinearLayout parent,String title,String key,boolean fallback){Switch s=new Switch(this);s.setText(title);s.setTextColor(0xfff8f8fc);s.setChecked(prefs.getBoolean(key,fallback));s.setPadding(0,dp(12),0,dp(12));s.setOnCheckedChangeListener((v,checked)->prefs.edit().putBoolean(key,checked).apply());parent.addView(s);}
@@ -116,8 +185,8 @@ public class MainActivity extends Activity {
     private void settingsTab(LinearLayout body,String tab,Dialog dialog){
         body.removeAllViews();
         if(tab.equals("Accounts")){
-            body.addView(text("Xtream — live TV and sports",18));EditText server=field(body,"Server URL",false,""),username=field(body,"Username",false,""),password=field(body,"Password",true,"");body.addView(button("Connect Xtream",()->{String url=server.getText().toString().trim(),user=username.getText().toString(),pass=password.getText().toString();async(()->{String safe=Playlist.networkUrl(url,http()).replaceAll("/+$","");JSONObject check=new JSONObject(Network.text(safe+"/player_api.php?username="+Network.q(user)+"&password="+Network.q(pass),null,http()));if(check.optJSONObject("user_info")==null||check.getJSONObject("user_info").optInt("auth")!=1)throw new Exception();secrets.put("xtream",new JSONObject().put("server",safe).put("username",user).put("password",pass).toString());return true;},ok->{password.setText("");toast("Xtream connected");});}));body.addView(button("Disconnect Xtream",()->{secrets.remove("xtream");toast("Xtream disconnected");}));
-            body.addView(text("M3U — live TV and sports",18));EditText playlist=field(body,"Playlist URL",false,"");body.addView(button("Connect playlist",()->{String url=playlist.getText().toString().trim();async(()->{String safe=Playlist.networkUrl(url,http());List<Playlist.Channel> rows=Playlist.parse(Network.text(safe,null,http()),safe,http());if(rows.isEmpty())throw new Exception();secrets.put("m3u",safe);return rows.size();},count->toast("Playlist connected · "+count+" channels"));}));body.addView(button("Disconnect playlist",()->{secrets.remove("m3u");toast("Playlist disconnected");}));
+            body.addView(text("Xtream — live TV and sports",18));EditText server=field(body,"Server URL",false,""),username=field(body,"Username",false,""),password=field(body,"Password",true,"");body.addView(button("Connect Xtream",()->{String url=server.getText().toString().trim(),user=username.getText().toString(),pass=password.getText().toString();async(()->{String safe=Playlist.networkUrl(url,http()).replaceAll("/+$","");JSONObject check=new JSONObject(Network.text(safe+"/player_api.php?username="+Network.q(user)+"&password="+Network.q(pass),null,http()));if(check.optJSONObject("user_info")==null||check.getJSONObject("user_info").optInt("auth")!=1)throw new Exception();secrets.put("xtream",new JSONObject().put("server",safe).put("username",user).put("password",pass).toString());return true;},ok->{password.setText("");toast("Xtream connected · importing channels");ChannelSync.refreshNow(this);});}));body.addView(button("Disconnect Xtream",()->{secrets.remove("xtream");ChannelSync.refreshNow(this);toast("Xtream disconnected");}));
+            body.addView(text("M3U — live TV and sports",18));EditText playlist=field(body,"Playlist URL",false,"");body.addView(button("Connect playlist",()->{String url=playlist.getText().toString().trim();async(()->{String safe=Playlist.networkUrl(url,http());if(!hasChannel(safe))throw new Exception();secrets.put("m3u",safe);return true;},ok->{toast("Playlist connected · importing channels");ChannelSync.refreshNow(this);});}));body.addView(button("Disconnect playlist",()->{secrets.remove("m3u");ChannelSync.refreshNow(this);toast("Playlist disconnected");}));
             body.addView(text("TMDB recommendations",18));EditText tmdb=field(body,"TMDB API Key (v3)",true,"");body.addView(button("Connect TMDB",()->{String token=tmdb.getText().toString().trim();async(()->{if(token.isEmpty())throw new Exception();new JSONObject(Network.text(MediaRepository.tmdbUrl("trending/all/week",token),null,false)).getJSONArray("results");secrets.put("tmdb",token);return true;},ok->{tmdb.setText("");toast("TMDB connected");});}));body.addView(button("Disconnect TMDB",()->{secrets.remove("tmdb");toast("TMDB disconnected");}));
             body.addView(text("Premiumize",18));EditText pm=field(body,"Premiumize API key",true,"");body.addView(button("Connect Premiumize",()->{String token=pm.getText().toString().trim();async(()->{if(token.isEmpty())throw new Exception();media.premiumize("account/info",token);secrets.put("premiumize",token);return true;},ok->{pm.setText("");toast("Premiumize connected");});}));body.addView(button("Disconnect Premiumize",()->{secrets.remove("premiumize");toast("Premiumize disconnected");}));toggle(body,"Allow HTTP provider sources","http",false);body.addView(text("HTTP sends provider credentials without transport encryption.",12));
         }else if(tab.equals("Appearance")){toggle(body,"Show featured row","featured",true);toggle(body,"24-hour clock","clock24",true);for(int colour:new int[]{0xff8a9eff,0xff55aaff,0xff45c9ac})body.addView(button(colour==0xff8a9eff?"Violet":colour==0xff55aaff?"Blue":"Teal",()->{prefs.edit().putInt("accent",colour).apply();toast("Accent saved");}));body.addView(button("Apply",()->{dialog.dismiss();home();}));}

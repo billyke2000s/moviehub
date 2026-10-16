@@ -16,4 +16,7 @@ android {
     buildTypes { release { signingConfig signingConfigs.release } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
-dependencies { implementation 'org.videolan.android:libvlc-all:3.7.0' }
+dependencies {
+    implementation 'org.videolan.android:libvlc-all:3.7.0'
+    implementation 'androidx.work:work-runtime:2.9.1'
+}

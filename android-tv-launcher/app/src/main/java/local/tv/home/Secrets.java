@@ -28,4 +28,5 @@ final class Secrets {
         return new String(cipher.doFinal(Base64.decode(parts[1],Base64.NO_WRAP)),java.nio.charset.StandardCharsets.UTF_8);
     }
     void remove(String name){prefs.edit().remove(name).apply();}
+    boolean has(String name){return !prefs.getString(name,"").isEmpty();}
 }
