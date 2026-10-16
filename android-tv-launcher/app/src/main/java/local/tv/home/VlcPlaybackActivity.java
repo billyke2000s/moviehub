@@ -58,7 +58,7 @@ public class VlcPlaybackActivity extends Activity {
         status=new TextView(this);status.setTextColor(Color.WHITE);status.setTextSize(20);status.setGravity(Gravity.CENTER);status.setText("Opening source…");root.addView(status,new FrameLayout.LayoutParams(-1,-1));
         controls=new LinearLayout(this);controls.setOrientation(LinearLayout.VERTICAL);controls.setPadding(dp(24),dp(12),dp(24),dp(12));controls.setBackgroundColor(0xe6101827);
         TextView title=new TextView(this);title.setText(getIntent().getStringExtra("title"));title.setTextColor(Color.WHITE);title.setTextSize(22);title.setMaxLines(1);title.setEllipsize(android.text.TextUtils.TruncateAt.END);controls.addView(title);
-        LinearLayout progress=new LinearLayout(this);progress.setGravity(Gravity.CENTER_VERTICAL);elapsed=label();duration=label();timeline=new SeekBar(this);timeline.setMax(1000);timeline.setEnabled(false);progress.addView(elapsed);progress.addView(timeline,new LinearLayout.LayoutParams(0,dp(44),1));progress.addView(duration);controls.addView(progress);
+        LinearLayout progress=new LinearLayout(this);progress.setGravity(Gravity.CENTER_VERTICAL);elapsed=label();duration=label();timeline=new SeekBar(this);timeline.setMax(1000);int tint=getSharedPreferences("ui",MODE_PRIVATE).getInt("accent",0xff8a9eff);timeline.setProgressTintList(android.content.res.ColorStateList.valueOf(tint));timeline.setThumbTintList(android.content.res.ColorStateList.valueOf(tint));timeline.setEnabled(false);progress.addView(elapsed);progress.addView(timeline,new LinearLayout.LayoutParams(0,dp(44),1));progress.addView(duration);controls.addView(progress);
         timeline.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
             public void onStartTrackingTouch(SeekBar bar){dragging=true;overlayHandler.removeCallbacks(hideOverlay);}
             public void onStopTrackingTouch(SeekBar bar){dragging=false;revealControls();}
@@ -69,7 +69,10 @@ public class VlcPlaybackActivity extends Activity {
         root.addView(controls,new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM));root.setOnClickListener(v->revealControls());setContentView(root);pause.requestFocus();revealControls();
     }
     private TextView label(){TextView t=new TextView(this);t.setTextColor(Color.WHITE);t.setTextSize(15);t.setText("—");return t;}
-    private Button add(LinearLayout parent,String title,Runnable action){Button b=new Button(this);b.setText(title);b.setTextSize(15);b.setAllCaps(false);b.setOnClickListener(v->{revealControls();action.run();});parent.addView(b);return b;}
+    private Button add(LinearLayout parent,String title,Runnable action){
+        Button button=new Button(this);button.setText(title);button.setTextColor(Color.WHITE);button.setTextSize(16);button.setAllCaps(false);button.setPadding(dp(14),dp(8),dp(14),dp(8));button.setBackground(controlBackground(false));button.setOnFocusChangeListener((v,focused)->v.setBackground(controlBackground(focused)));button.setOnClickListener(v->{revealControls();action.run();});LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,dp(52));lp.setMargins(dp(3),dp(4),dp(3),dp(4));parent.addView(button,lp);return button;
+    }
+    private android.graphics.drawable.GradientDrawable controlBackground(boolean focused){android.graphics.drawable.GradientDrawable background=new android.graphics.drawable.GradientDrawable();background.setColor(focused?0xff343e62:0xff202c43);background.setCornerRadius(dp(12));background.setStroke(dp(focused?2:1),focused?getSharedPreferences("ui",MODE_PRIVATE).getInt("accent",0xff8a9eff):0x33ffffff);return background;}
     @Override public void onStart(){
         super.onStart();foreground=true;if(url==null)return;audio=(AudioManager)getSystemService(AUDIO_SERVICE);
         audioFocus=new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MOVIE).build()).setOnAudioFocusChangeListener(change->{if(change<0&&player!=null){player.pause();pause.setText("Play");revealControls();}}).build();

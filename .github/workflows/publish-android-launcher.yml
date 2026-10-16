@@ -45,6 +45,7 @@ jobs:
         with:
           api-level: 28
           arch: x86_64
+          profile: tv_1080p
           disable-animations: true
           script: gradle -p android-tv-launcher --no-daemon testDebugUnitTest connectedDebugAndroidTest
       - name: Build signed release and update manifest
