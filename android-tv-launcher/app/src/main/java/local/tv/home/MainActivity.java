@@ -137,7 +137,12 @@ public class MainActivity extends Activity {
             if(items.size()>ChannelDatabase.PAGE)navigation.addView(button("Next page",()->channelBrowser(filter,search,offset+ChannelDatabase.PAGE)));
             navigation.addView(button("Refresh providers",()->{ChannelSync.refreshNow(this);channelBrowser(filter,search,0);}));page.addView(navigation);
             page.addView(text("Hold Select on a channel to save or remove a favourite",13));
-            int request=generation;if(sync.running||sync.queued)handler.postDelayed(()->{if(!isFinishing()&&generation==request)channelBrowser(filter,search,offset);},5000);
+            int request=generation;if(sync.running||sync.queued)handler.postDelayed(new Runnable(){public void run(){
+                if(isFinishing()||isDestroyed()||generation!=request)return;
+                ChannelImporter.Status latest=ChannelImporter.status(MainActivity.this);
+                if(latest.running||latest.queued){status.setText(latest.running?String.format(Locale.getDefault(),"Updating · %,d channels imported",latest.progress):"Waiting for network to refresh");handler.postDelayed(this,2000);}
+                else{status.setText(latest.message);page.addView(button("Reload channels",()->channelBrowser(filter,search,0)));}
+            }},2000);
         });
     }
     private String id(String url){return ChannelQuery.key(url);}
