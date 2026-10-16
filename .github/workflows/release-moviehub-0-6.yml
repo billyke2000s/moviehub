@@ -1,0 +1,126 @@
+name: Publish MovieHub 0.6 signed release
+on:
+  push:
+    branches: [release/moviehub-0.6]
+    paths: ['.github/workflows/release-moviehub-0-6.yml']
+permissions:
+  contents: write
+concurrency:
+  group: publish-android-launcher
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Verify core rules
+        run: |
+          mkdir -p build/core-tests
+          javac -d build/core-tests android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery}.java android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest}.java
+          for test in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest; do java -Xmx64m -cp build/core-tests local.tv.home.$test; done
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify database upgrades and channel imports on Android
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 28
+          arch: x86_64
+          profile: tv_1080p
+          disable-animations: true
+          script: bash android-tv-launcher/tests/run-device-tests.sh
+      - name: Build signed release and update manifest
+        env:
+          APK_KEYSTORE_BASE64: ${{ secrets.APK_KEYSTORE_BASE64 }}
+          APK_STORE_PASSWORD: ${{ secrets.APK_STORE_PASSWORD }}
+          APK_KEY_ALIAS: ${{ secrets.APK_KEY_ALIAS }}
+          APK_KEY_PASSWORD: ${{ secrets.APK_KEY_PASSWORD }}
+          APK_VERSION_CODE: '6'
+          APK_VERSION_NAME: '0.6'
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64,json,os,pathlib,subprocess
+          code=int(os.environ['APK_VERSION_CODE'])
+          if not 2 < code < 2100000000: raise SystemExit('Version code must be an integer above 2')
+          for key in ['APK_KEYSTORE_BASE64','APK_STORE_PASSWORD','APK_KEY_ALIAS','APK_KEY_PASSWORD']:
+              if not os.environ.get(key): raise SystemExit('Configure the APK signing secrets before publishing')
+          existing=subprocess.run(['gh','release','view','android-tv-latest','--json','tagName'],capture_output=True)
+          if existing.returncode==0:
+              subprocess.run(['gh','release','download','android-tv-latest','--pattern','update.json','--dir',os.environ['RUNNER_TEMP']],check=True)
+              previous=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'update.json').read_text())
+              subprocess.run(['gh','release','download','android-tv-latest','--pattern','home.apk','--dir',os.environ['RUNNER_TEMP']],check=True)
+              if code<=previous['versionCode']: raise SystemExit('Version code must increase')
+          key=pathlib.Path(os.environ['RUNNER_TEMP'])/'launcher-signing.jks'
+          key.write_bytes(base64.b64decode(os.environ['APK_KEYSTORE_BASE64'],validate=True));key.chmod(0o600)
+          with open(os.environ['GITHUB_ENV'],'a') as output: output.write('APK_KEYSTORE='+str(key)+'\n')
+          PY
+          export APK_KEYSTORE="$RUNNER_TEMP/launcher-signing.jks"
+          gradle -p android-tv-launcher --no-daemon assembleRelease lintRelease
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android-tv-launcher/app/build/outputs/apk/release/app-release.apk
+          python - <<'PYVERIFY'
+          import os,pathlib,subprocess,re,hashlib,json
+          previous=pathlib.Path(os.environ['RUNNER_TEMP'])/'home.apk'
+          current=pathlib.Path('android-tv-launcher/app/build/outputs/apk/release/app-release.apk')
+          if previous.exists():
+              manifest=json.loads((previous.parent/'update.json').read_text())
+              if hashlib.sha256(previous.read_bytes()).hexdigest()!=manifest['sha256']: raise SystemExit('Published baseline checksum mismatch')
+              signer=str(pathlib.Path(os.environ['ANDROID_HOME'])/'build-tools/35.0.0/apksigner')
+              def certificates(apk):
+                  result=subprocess.check_output([signer,'verify','--print-certs',str(apk)],text=True)
+                  return set(re.findall(r'Signer #\d+ certificate SHA-256 digest: ([0-9a-f]+)',result))
+              old,new=certificates(previous),certificates(current)
+              if not old or old!=new: raise SystemExit('Signing key differs from installed updater baseline')
+          PYVERIFY
+          mkdir -p release-files
+          cp android-tv-launcher/app/build/outputs/apk/release/app-release.apk release-files/home.apk
+          python - <<'PY'
+          import hashlib,json,os,pathlib
+          apk=pathlib.Path('release-files/home.apk')
+          data=dict(packageName='local.tv.home',versionCode=int(os.environ['APK_VERSION_CODE']),versionName=os.environ['APK_VERSION_NAME'],sha256=hashlib.sha256(apk.read_bytes()).hexdigest())
+          pathlib.Path('release-files/update.json').write_text(json.dumps(data))
+          PY
+      - name: Publish versioned APK and compatible updater assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > "$RUNNER_TEMP/moviehub-release-notes.md" <<'NOTES'
+          MovieHub 0.6 (version code 6)
+
+          - Artwork-led TV home, poster grids, detailed metadata and episode browsing.
+          - Fullscreen LibVLC controls, seeking, audio/subtitle selection, buffering and retry errors.
+          - Streaming encrypted SQLite IPTV imports with no fixed channel-count cap, indexed search, paging, favourites and background refresh.
+          - Legacy cache migration and existing account/settings/favourite storage preserved.
+          - Automatic update checking with user-approved installation and package, version, checksum and certificate verification.
+
+          Verification: 45 core checks and 10 Android emulator tests, including real MP4/TS/HLS playback, database upgrades and D-pad navigation; builds, lint and signing compatibility checks passed.
+
+          Known verification limits: live Xtream, TMDB and Premiumize account credentials were unavailable in the build environment. Torrentio and Comet stream requests returned HTTP 403; MediaFusion's test title returned no sources. Authenticated provider playback and installation on the target TV remain unverified.
+
+          Install home.apk over the previous signed MovieHub release. The package and signing certificate are unchanged. Existing app updates continue to use the android-tv-latest/home.apk and update.json assets.
+          NOTES
+          gh release create moviehub-v0.6 release-files/home.apk release-files/update.json --target "$GITHUB_SHA" --title 'MovieHub 0.6' --notes-file "$RUNNER_TEMP/moviehub-release-notes.md"
+          if ! gh release view android-tv-latest >/dev/null 2>&1; then
+            gh release create android-tv-latest --target "$GITHUB_SHA" --title 'MovieHub 0.6 — updater feed' --notes-file "$RUNNER_TEMP/moviehub-release-notes.md"
+          else
+            gh release edit android-tv-latest --title 'MovieHub 0.6 — updater feed' --notes-file "$RUNNER_TEMP/moviehub-release-notes.md"
+          fi
+          gh release upload android-tv-latest release-files/home.apk --clobber
+          gh release upload android-tv-latest release-files/update.json --clobber
+      - name: Remove temporary signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/launcher-signing.jks"
