@@ -29,7 +29,7 @@ public final class Playlist {
             else if(!line.startsWith("#")){
                 try{String url=networkUrl(base.resolve(line).toString(),allowHttp);result.add(new Channel(name.isEmpty()?"Channel "+(result.size()+1):name,url,group,logo,id));}catch(IllegalArgumentException ignored){}
                 name="";group="";logo="";id="";
-                if(result.size()>20000)throw new IllegalArgumentException("Too many channels");
+                
             }
         }return result;
     }
