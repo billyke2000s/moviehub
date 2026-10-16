@@ -16,9 +16,10 @@ final class MediaRepository {
             JSONArray categories=new JSONArray(Network.text(server+"/player_api.php"+query+"&action=get_live_categories",null,http));Map<String,String> groups=new HashMap<>();
             for(int i=0;i<categories.length();i++){JSONObject c=categories.getJSONObject(i);groups.put(c.optString("category_id"),c.optString("category_name"));}
             JSONArray streams=new JSONArray(Network.text(server+"/player_api.php"+query+"&action=get_live_streams",null,http));
-            if(streams.length()>20000)throw new Exception("Too many channels");
+            if(streams.length()>500000)throw new Exception("Provider returned an unusually large channel list");
             for(int i=0;i<streams.length();i++){JSONObject c=streams.getJSONObject(i);String id=c.getString("stream_id");if(!id.matches("[0-9]+"))continue;
-                String url=server+"/live/"+Network.path(a.getString("username"))+"/"+Network.path(a.getString("password"))+"/"+id+".m3u8";
+                String format=a.optString("format","ts");if(!format.equals("m3u8"))format="ts";
+                String url=server+"/live/"+Network.path(a.getString("username"))+"/"+Network.path(a.getString("password"))+"/"+id+"."+format;
                 rows.add(new Playlist.Channel(c.optString("name","Channel"),url,groups.getOrDefault(c.optString("category_id"),""),c.optString("stream_icon"),c.optString("epg_channel_id")));
             }
         }return rows;
