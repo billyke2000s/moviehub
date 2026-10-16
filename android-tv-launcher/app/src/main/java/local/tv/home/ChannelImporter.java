@@ -36,11 +36,12 @@ final class ChannelImporter {
             boolean http=context.getSharedPreferences("ui",Context.MODE_PRIVATE).getBoolean("http",false);
             List<String> configured=new ArrayList<>();List<String> problems=new ArrayList<>();int total=0;boolean anySource=false;
             try{
+                migrateLegacy(context,db,cancel);
                 String playlist=secrets.get("m3u");
                 if(!playlist.isEmpty()){anySource=true;configured.add("m3u");try{total+=importM3u(db,playlist,http,cancel,total);}catch(Exception e){problems.add("M3U: "+describe(e));}}
                 String account=secrets.get("xtream");
                 if(!account.isEmpty()){anySource=true;configured.add("xtream");try{total+=importXtream(db,new JSONObject(account),http,cancel,total);}catch(Exception e){problems.add("Xtream: "+describe(e));}}
-                db.removeSourcesExcept(configured);
+                cancel.check();if(problems.isEmpty())db.removeSourcesExcept(configured);
             }catch(Exception e){problems.add(describe(e));}
             finally{running=false;}
             String message=!anySource?"No live TV account connected":problems.isEmpty()?String.format(Locale.getDefault(),"%,d channels updated",total):String.join("\n",problems);
@@ -50,9 +51,22 @@ final class ChannelImporter {
             return problems.isEmpty();
         }
     }
+    /** Upgrade the previous UI cache without touching accounts, favourites or playback positions. */
+    private static void migrateLegacy(Context context,ChannelDatabase db,ChannelDatabase.Cancel cancel) throws Exception{
+        java.io.File legacy=context.getDatabasePath("channels.db");if(!legacy.exists())return;
+        if(db.count()==0){
+            ChannelDatabase.Writer writer=db.writer("legacy",cancel,n->progress=n);
+            try(android.database.sqlite.SQLiteDatabase old=android.database.sqlite.SQLiteDatabase.openDatabase(legacy.getPath(),null,android.database.sqlite.SQLiteDatabase.OPEN_READONLY);
+                android.database.Cursor rows=old.rawQuery("SELECT name,url,category,logo,epg FROM channels ORDER BY id",null)){
+                while(rows.moveToNext())writer.accept(new Playlist.Channel(rows.getString(0),rows.getString(1),rows.getString(2),rows.getString(3),rows.getString(4)));
+                cancel.check();writer.commit();
+            }finally{writer.abort();}
+        }
+        context.deleteDatabase("channels.db");
+    }
     private static String describe(Exception e){
         if(e instanceof java.util.concurrent.CancellationException)return "update was interrupted; previous channels kept";
-        String m=e.getMessage();return m==null||m.isEmpty()?"download failed; previous channels kept":m;
+        return "refresh failed; previous channels kept. Check the connection and account.";
     }
 
     private static int importM3u(ChannelDatabase db,String url,boolean http,ChannelDatabase.Cancel cancel,int base) throws Exception{
@@ -60,7 +74,7 @@ final class ChannelImporter {
         try(InputStream in=Network.open(url,null,Network.CATALOGUE_MAX,http)){
             Playlist.parse(new InputStreamReader(in,StandardCharsets.UTF_8),url,http,writer);
             if(writer.count()==0)throw new IOException("playlist has no playable channels");
-            writer.commit();return writer.count();
+            cancel.check();writer.commit();return writer.count();
         }finally{writer.abort();}
     }
 
@@ -95,9 +109,9 @@ final class ChannelImporter {
                 String group=groups.get(category);
                 writer.accept(new Playlist.Channel(name.isEmpty()?"Channel":name,ChannelQuery.xtreamUrl(server,user,pass,id,format),group==null?"":group,icon,epg));
             }
-            json.endArray();
+            json.endArray();cancel.check();
             if(writer.count()==0)throw new IOException("provider returned no live channels");
-            writer.commit();return writer.count();
+            cancel.check();writer.commit();return writer.count();
         }finally{writer.abort();}
     }
     private static String string(JsonReader json) throws IOException{

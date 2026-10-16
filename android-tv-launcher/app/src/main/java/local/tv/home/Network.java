@@ -27,7 +27,7 @@ final class Network {
     private static final class Bounded extends FilterInputStream{
         private final HttpURLConnection connection;private final long max;private long count;
         Bounded(HttpURLConnection connection,long max) throws IOException{super(connection.getInputStream());this.connection=connection;this.max=max;}
-        private void add(long n) throws IOException{if(n>0){count+=n;if(count>max)throw new IOException("Response is too large");}}
+        private void add(long n) throws IOException{if(Thread.currentThread().isInterrupted())throw new java.io.InterruptedIOException("Cancelled");if(n>0){count+=n;if(count>max)throw new IOException("Response is too large");}}
         @Override public int read() throws IOException{int b=super.read();if(b>=0)add(1);return b;}
         @Override public int read(byte[] b,int off,int len) throws IOException{int n=super.read(b,off,len);add(n);return n;}
         @Override public long skip(long n) throws IOException{long s=super.skip(n);add(s);return s;}

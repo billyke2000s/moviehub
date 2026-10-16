@@ -30,6 +30,24 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
+      - name: Verify core rules
+        run: |
+          mkdir -p build/core-tests
+          javac -d build/core-tests android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery}.java android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest}.java
+          for test in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest; do java -Xmx64m -cp build/core-tests local.tv.home.$test; done
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify database upgrades and channel imports on Android
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 28
+          arch: x86_64
+          profile: tv_1080p
+          disable-animations: true
+          script: bash android-tv-launcher/tests/run-device-tests.sh
       - name: Build signed release and update manifest
         env:
           APK_KEYSTORE_BASE64: ${{ secrets.APK_KEYSTORE_BASE64 }}
@@ -50,6 +68,7 @@ jobs:
           if existing.returncode==0:
               subprocess.run(['gh','release','download','android-tv-latest','--pattern','update.json','--dir',os.environ['RUNNER_TEMP']],check=True)
               previous=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'update.json').read_text())
+              subprocess.run(['gh','release','download','android-tv-latest','--pattern','home.apk','--dir',os.environ['RUNNER_TEMP']],check=True)
               if code<=previous['versionCode']: raise SystemExit('Version code must increase')
           key=pathlib.Path(os.environ['RUNNER_TEMP'])/'launcher-signing.jks'
           key.write_bytes(base64.b64decode(os.environ['APK_KEYSTORE_BASE64'],validate=True));key.chmod(0o600)
@@ -58,6 +77,20 @@ jobs:
           export APK_KEYSTORE="$RUNNER_TEMP/launcher-signing.jks"
           gradle -p android-tv-launcher --no-daemon assembleRelease lintRelease
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android-tv-launcher/app/build/outputs/apk/release/app-release.apk
+          python - <<'PYVERIFY'
+          import os,pathlib,subprocess,re,hashlib,json
+          previous=pathlib.Path(os.environ['RUNNER_TEMP'])/'home.apk'
+          current=pathlib.Path('android-tv-launcher/app/build/outputs/apk/release/app-release.apk')
+          if previous.exists():
+              manifest=json.loads((previous.parent/'update.json').read_text())
+              if hashlib.sha256(previous.read_bytes()).hexdigest()!=manifest['sha256']: raise SystemExit('Published baseline checksum mismatch')
+              signer=str(pathlib.Path(os.environ['ANDROID_HOME'])/'build-tools/35.0.0/apksigner')
+              def certificates(apk):
+                  result=subprocess.check_output([signer,'verify','--print-certs',str(apk)],text=True)
+                  return set(re.findall(r'Signer #\d+ certificate SHA-256 digest: ([0-9a-f]+)',result))
+              old,new=certificates(previous),certificates(current)
+              if not old or old!=new: raise SystemExit('Signing key differs from installed updater baseline')
+          PYVERIFY
           mkdir -p release-files
           cp android-tv-launcher/app/build/outputs/apk/release/app-release.apk release-files/home.apk
           python - <<'PY'

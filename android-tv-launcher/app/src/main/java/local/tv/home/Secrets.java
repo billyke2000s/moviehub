@@ -12,7 +12,7 @@ import javax.crypto.spec.GCMParameterSpec;
 final class Secrets {
     private final SharedPreferences prefs;
     Secrets(Context context){prefs=context.getSharedPreferences("accounts",Context.MODE_PRIVATE);}
-    private synchronized SecretKey key() throws Exception{
+    private static synchronized SecretKey key() throws Exception{
         KeyStore store=KeyStore.getInstance("AndroidKeyStore");store.load(null);
         if(!store.containsAlias("tv-home-accounts")){KeyGenerator generator=KeyGenerator.getInstance("AES","AndroidKeyStore");generator.init(new KeyGenParameterSpec.Builder("tv-home-accounts",KeyProperties.PURPOSE_ENCRYPT|KeyProperties.PURPOSE_DECRYPT).setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).build());generator.generateKey();}
         return (SecretKey)store.getKey("tv-home-accounts",null);

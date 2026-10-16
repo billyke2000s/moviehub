@@ -18,3 +18,5 @@ Run Publish Android TV launcher update on the intended source branch, with a vis
 The HTML preview hides the button normally. Append `?updateDemo=1` to its URL to see the illustrative update-available state. It does not perform a live release check or install anything.
 
 Offline compilation cannot establish successful installation, unknown-source settings availability, or update behavior on the Tanix box. Those require device testing.
+
+The release workflow now runs core checks and Android database/player tests before signing. It downloads the current updater baseline, verifies its checksum and refuses publication if the new certificate differs. Same-repository PRs also build a signed candidate and check package, increasing version code and signing continuity without publishing it. The package remains `local.tv.home`, and the existing `android-tv-latest/home.apk` and `update.json` paths and manifest fields are unchanged.

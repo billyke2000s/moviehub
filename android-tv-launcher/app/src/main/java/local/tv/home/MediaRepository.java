@@ -13,6 +13,16 @@ final class MediaRepository {
         if(seed>0)for(int i=0;i<result.length();i++)result.getJSONObject(i).put("media_type",type);
         return result;
     }
+    static JSONObject connectXtream(String server,String username,String password,boolean http) throws Exception{
+        String safe=Playlist.networkUrl(server,http).replaceAll("/+$","");
+        JSONObject response=new JSONObject(Network.text(safe+"/player_api.php?username="+Network.q(username)+"&password="+Network.q(password),null,http));
+        JSONObject account=response.optJSONObject("user_info");
+        if(account==null||account.optInt("auth")!=1)throw new IllegalArgumentException("Provider rejected the account");
+        String status=account.optString("status","");if(!status.isEmpty()&&!status.equalsIgnoreCase("Active"))throw new IllegalArgumentException("Provider account is inactive");
+        String format="ts";JSONArray formats=account.optJSONArray("allowed_output_formats");
+        if(formats!=null&&formats.length()>0){boolean ts=false,hls=false;for(int i=0;i<formats.length();i++){ts|="ts".equalsIgnoreCase(formats.optString(i));hls|="m3u8".equalsIgnoreCase(formats.optString(i))||"hls".equalsIgnoreCase(formats.optString(i));}if(!ts&&hls)format="m3u8";else if(!ts)throw new IllegalArgumentException("Provider has no supported live format");}
+        return new JSONObject().put("server",safe).put("username",username).put("password",password).put("format",format);
+    }
     JSONObject premiumize(String path,String token) throws Exception{
         JSONObject result=new JSONObject(Network.text("https://www.premiumize.me/api/"+path,token,false));
         if(!"success".equals(result.optString("status")))throw new Exception("Premiumize request was not accepted");return result;

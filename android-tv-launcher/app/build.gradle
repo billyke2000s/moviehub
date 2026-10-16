@@ -3,6 +3,7 @@ android {
     namespace 'local.tv.home'
     compileSdk 35
     defaultConfig { applicationId 'local.tv.home'; minSdk 28; targetSdk 35; versionCode Integer.parseInt(System.getenv('APK_VERSION_CODE') ?: '2'); versionName System.getenv('APK_VERSION_NAME') ?: '0.2' }
+    defaultConfig { testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner' }
     signingConfigs {
         release {
             if (System.getenv('APK_KEYSTORE')) {
@@ -13,10 +14,12 @@ android {
             }
         }
     }
-    buildTypes { release { signingConfig signingConfigs.release } }
+    buildTypes { release { if (System.getenv('APK_KEYSTORE')) signingConfig signingConfigs.release } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 dependencies {
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
     implementation 'org.videolan.android:libvlc-all:3.7.0'
     implementation 'androidx.work:work-runtime:2.9.1'
 }
