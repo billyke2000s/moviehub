@@ -20,7 +20,7 @@ public class MainActivity extends Activity {
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final List<App> apps=new ArrayList<>();
     private Secrets secrets;private MediaRepository media;private SharedPreferences prefs;
-    private LinearLayout page;private Runnable back;private int generation;private TextView clock;private Button updateButton;private AppUpdates.Release availableUpdate;private long lastUpdateCheck;private boolean updateBusy;
+    private LinearLayout page;private Runnable back;private int generation;private TextView clock;private Button updateButton;private AppUpdates.Release availableUpdate;private long lastUpdateCheck;private boolean updateBusy;private long promptedUpdateVersion;
     private final Runnable ticker=new Runnable(){public void run(){if(clock!=null)clock.setText(new java.text.SimpleDateFormat(prefs.getBoolean("clock24",true)?"HH:mm":"h:mm a",Locale.getDefault()).format(new Date()));handler.postDelayed(this,30000);}};
     private int accent(){return prefs.getInt("accent",0xff8a9eff);}
     private int dp(float value){return (int)(value*getResources().getDisplayMetrics().density+.5f);}
@@ -45,7 +45,7 @@ public class MainActivity extends Activity {
     private LinearLayout horizontal(LinearLayout parent){HorizontalScrollView scroll=new HorizontalScrollView(this);scroll.setHorizontalScrollBarEnabled(false);LinearLayout r=row();r.setPadding(dp(4),dp(8),dp(4),dp(8));scroll.addView(r);parent.addView(scroll);return r;}
     private void checkForUpdate(){
         long now=android.os.SystemClock.elapsedRealtime();if(lastUpdateCheck!=0&&now-lastUpdateCheck<6*60*60*1000L)return;lastUpdateCheck=now;
-        io.execute(()->{AppUpdates.Release result=null;try{result=AppUpdates.check(getApplicationContext());}catch(Exception ignored){}final AppUpdates.Release release=result;runOnUiThread(()->{if(isFinishing()||isDestroyed())return;availableUpdate=release;if(updateButton!=null)updateButton.setVisibility(release==null?View.GONE:View.VISIBLE);});});
+        io.execute(()->{AppUpdates.Release result=null;try{result=AppUpdates.check(getApplicationContext());}catch(Exception ignored){}final AppUpdates.Release release=result;runOnUiThread(()->{if(isFinishing()||isDestroyed())return;availableUpdate=release;if(updateButton!=null)updateButton.setVisibility(release==null?View.GONE:View.VISIBLE);if(release!=null&&prefs.getBoolean("autoUpdates",true)&&promptedUpdateVersion!=release.version){promptedUpdateVersion=release.version;offerUpdate();}});});
     }
     private void offerUpdate(){
         if(availableUpdate==null||updateBusy)return;
@@ -68,9 +68,26 @@ public class MainActivity extends Activity {
     private void loadImage(ImageView view,String url){async(()->{byte[] data=Network.bytes(url,null,2*1024*1024,false);BitmapFactory.Options bounds=new BitmapFactory.Options();bounds.inJustDecodeBounds=true;BitmapFactory.decodeByteArray(data,0,data.length,bounds);if(bounds.outWidth<=0||bounds.outHeight<=0||bounds.outWidth>8000||bounds.outHeight>8000)throw new Exception();BitmapFactory.Options opts=new BitmapFactory.Options();opts.inSampleSize=Math.max(1,Math.max(bounds.outWidth/700,bounds.outHeight/700));return BitmapFactory.decodeByteArray(data,0,data.length,opts);},bitmap->{if(view.isAttachedToWindow())view.setImageBitmap(bitmap);});}
     private void tmdbTitle(JSONObject item){
         String title=item.optString("title",item.optString("name","Title")),type=item.optString("media_type","movie");int tmdbId=item.optInt("id");
-        new AlertDialog.Builder(this).setTitle(title).setMessage(item.optString("overview")).setPositiveButton("Sources",(d,w)->{
-            if(type.equals("tv"))seasons(tmdbId,title);else async(()->media.tmdb("movie/"+tmdbId+"/external_ids").optString("imdb_id"),imdb->torrentSources(imdb,-1,-1,title,"Movies"));
-        }).setNeutralButton("More like this",(d,w)->catalogue(type,type+"/"+tmdbId+"/recommendations",1)).setNegativeButton("Library",(d,w)->library(type.equals("tv")?"Series":"Movies")).show();
+        String kind=type.equals("tv")?"Series":"Movies";
+        screen(null,()->catalogueMenu(kind));
+        String backdrop=item.optString("backdrop_path");
+        if(backdrop.startsWith("/")){
+            ImageView artwork=new ImageView(this);artwork.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            page.addView(artwork,new LinearLayout.LayoutParams(-1,dp(300)));
+            loadImage(artwork,"https://image.tmdb.org/t/p/w1280"+backdrop);
+        }
+        page.addView(text(title,36));
+        LinearLayout actions=row();
+        actions.addView(button("▶  Find sources",()->{
+            if(type.equals("tv"))seasons(tmdbId,title);
+            else async(()->media.tmdb("movie/"+tmdbId+"/external_ids").optString("imdb_id"),imdb->torrentSources(imdb,-1,-1,title,"Movies"));
+        }),new LinearLayout.LayoutParams(0,dp(65),1));
+        actions.addView(button("More like this",()->catalogue(type,type+"/"+tmdbId+"/recommendations",1)));
+        actions.addView(button("Back",()->catalogueMenu(kind)));
+        page.addView(actions);
+        String date=item.optString("release_date",item.optString("first_air_date",""));
+        if(!date.isEmpty())page.addView(text(date.substring(0,Math.min(4,date.length()))+"    ★ "+String.format(Locale.ROOT,"%.1f",item.optDouble("vote_average",0))+" / 10",18));
+        page.addView(text(item.optString("overview",""),19));
     }
     private static class App{String label;ComponentName component;Drawable icon;App(String label,ComponentName component,Drawable icon){this.label=label;this.component=component;this.icon=icon;}}
     private void queryApps(){apps.clear();Set<ComponentName> seen=new HashSet<>();for(String category:new String[]{Intent.CATEGORY_LEANBACK_LAUNCHER,Intent.CATEGORY_LAUNCHER})for(ResolveInfo r:getPackageManager().queryIntentActivities(new Intent(Intent.ACTION_MAIN).addCategory(category),0)){ActivityInfo a=r.activityInfo;if(!a.enabled||!a.exported||a.packageName.equals(getPackageName()))continue;ComponentName component=new ComponentName(a.packageName,a.name);if(seen.add(component))apps.add(new App(r.loadLabel(getPackageManager()).toString(),component,r.loadIcon(getPackageManager())));}apps.sort(Comparator.comparing(a->a.label.toLowerCase(Locale.ROOT)));}
@@ -190,7 +207,7 @@ public class MainActivity extends Activity {
             body.addView(text("TMDB recommendations",18));EditText tmdb=field(body,"TMDB API Key (v3)",true,"");body.addView(button("Connect TMDB",()->{String token=tmdb.getText().toString().trim();async(()->{if(token.isEmpty())throw new Exception();new JSONObject(Network.text(MediaRepository.tmdbUrl("trending/all/week",token),null,false)).getJSONArray("results");secrets.put("tmdb",token);return true;},ok->{tmdb.setText("");toast("TMDB connected");});}));body.addView(button("Disconnect TMDB",()->{secrets.remove("tmdb");toast("TMDB disconnected");}));
             body.addView(text("Premiumize",18));EditText pm=field(body,"Premiumize API key",true,"");body.addView(button("Connect Premiumize",()->{String token=pm.getText().toString().trim();async(()->{if(token.isEmpty())throw new Exception();media.premiumize("account/info",token);secrets.put("premiumize",token);return true;},ok->{pm.setText("");toast("Premiumize connected");});}));body.addView(button("Disconnect Premiumize",()->{secrets.remove("premiumize");toast("Premiumize disconnected");}));toggle(body,"Allow HTTP provider sources","http",false);body.addView(text("HTTP sends provider credentials without transport encryption.",12));
         }else if(tab.equals("Appearance")){toggle(body,"Show featured row","featured",true);toggle(body,"24-hour clock","clock24",true);for(int colour:new int[]{0xff8a9eff,0xff55aaff,0xff45c9ac})body.addView(button(colour==0xff8a9eff?"Violet":colour==0xff55aaff?"Blue":"Teal",()->{prefs.edit().putInt("accent",colour).apply();toast("Accent saved");}));body.addView(button("Apply",()->{dialog.dismiss();home();}));}
-        else if(tab.equals("Playback")){languagePreference(body,"Subtitles","subtitleLanguage","none",true);languagePreference(body,"Audio track","audioLanguage","eng,en",false);}
+        else if(tab.equals("Playback")){toggle(body,"Check and offer app updates automatically","autoUpdates",true);languagePreference(body,"Subtitles","subtitleLanguage","none",true);languagePreference(body,"Audio track","audioLanguage","eng,en",false);}
         else if(tab.equals("Apps")){body.addView(button("Manage installed-app dock",()->{dialog.dismiss();allApps();}));}
         else{body.addView(text(android.os.Build.MANUFACTURER+" "+android.os.Build.MODEL+" · Android "+android.os.Build.VERSION.RELEASE,16));body.addView(button("Open Android Settings",()->{try{startActivity(new Intent(Settings.ACTION_SETTINGS));}catch(Exception e){toast("Android Settings is unavailable");}}));body.addView(text("TMDB supplies metadata and artwork. This product uses the TMDB API but is not endorsed or certified by TMDB.",12));body.addView(button("Metadata attribution",()->new AlertDialog.Builder(this).setTitle("Metadata attribution").setMessage("The Movie Database (TMDB)\nhttps://www.themoviedb.org\n\nMetadata is separate from your playback sources.").setPositiveButton("Close",null).show()));}
         settingsStyle(body);
@@ -206,7 +223,7 @@ public class MainActivity extends Activity {
     private void catalogue(String type,String path,int number){
         String kind=type.equals("movie")?"Movies":"Series";screen(kind+" · Page "+number,()->catalogueMenu(kind));page.addView(text("Loading…",16));
         async(()->media.tmdb(path+(path.contains("?")?"&":"?")+"page="+number),result->{page.removeViewAt(page.getChildCount()-1);JSONArray items=result.getJSONArray("results");int visible=0;
-            for(int i=0;i<items.length();i++){JSONObject item=items.getJSONObject(i);if(item.optBoolean("adult",false))continue;item.put("media_type",type);page.addView(button(item.optString("title",item.optString("name","Title")),()->tmdbTitle(item)));visible++;}
+            LinearLayout posterRow=null;for(int i=0;i<items.length();i++){JSONObject item=items.getJSONObject(i);if(item.optBoolean("adult",false))continue;item.put("media_type",type);if(visible%5==0){posterRow=row();page.addView(posterRow);}LinearLayout card=vertical();card.setPadding(dp(5),dp(6),dp(5),dp(6));ImageView poster=new ImageView(this);poster.setScaleType(ImageView.ScaleType.CENTER_CROP);card.addView(poster,new LinearLayout.LayoutParams(-1,dp(205)));String name=item.optString("title",item.optString("name","Title"));TextView label=text(name,15);label.setMaxLines(2);label.setEllipsize(android.text.TextUtils.TruncateAt.END);card.addView(label);focus(card);card.setOnClickListener(v->tmdbTitle(item));posterRow.addView(card,new LinearLayout.LayoutParams(0,dp(265),1));String image=item.optString("poster_path");if(image.startsWith("/"))loadImage(poster,"https://image.tmdb.org/t/p/w342"+image);visible++;}
             if(visible==0)page.addView(text("No titles found",16));int total=result.optInt("total_pages",1);if(number<Math.min(total,500))page.addView(button("Next page",()->catalogue(type,path,number+1)));if(number>1)page.addView(button("Previous page",()->catalogue(type,path,number-1)));
         });
     }
