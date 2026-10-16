@@ -21,7 +21,7 @@ public class MainActivity extends Activity {
     private final List<App> apps=new ArrayList<>();
     private final Artwork artworkLoader=new Artwork();
     private Secrets secrets;private MediaRepository media;private SharedPreferences prefs;
-    private LinearLayout page;private Runnable back;private int generation;private TextView clock;private Button updateButton;private AppUpdates.Release availableUpdate;private long lastUpdateCheck;private boolean updateBusy;private long promptedUpdateVersion;
+    private LinearLayout page;private Runnable back;private Runnable destination;private HomeShelf homeShelf;private int generation;private TextView clock;private Button updateButton;private AppUpdates.Release availableUpdate;private long lastUpdateCheck;private boolean updateBusy;private long promptedUpdateVersion;
     private final Runnable ticker=new Runnable(){public void run(){if(clock!=null)clock.setText(new java.text.SimpleDateFormat(prefs.getBoolean("clock24",true)?"HH:mm":"h:mm a",Locale.getDefault()).format(new Date()));handler.postDelayed(this,30000);}};
     private int accent(){return prefs.getInt("accent",0xff8a9eff);}
     private int dp(float value){return (int)(value*getResources().getDisplayMetrics().density+.5f);}
@@ -80,7 +80,7 @@ public class MainActivity extends Activity {
     }
     private TextView compactText(String value,int size){TextView label=text(value,size);label.setPadding(0,dp(3),0,dp(3));return label;}
     private void home(){
-        fixedScreen(null,null);page.setPadding(dp(30),dp(10),dp(30),dp(10));LinearLayout top=row();
+        destination=this::home;fixedScreen(null,null);page.setPadding(dp(30),dp(10),dp(30),dp(10));LinearLayout top=row();
         for(String kind:new String[]{"Live TV","Movies","Series","My list","Continue"})top.addView(button(kind,()->{if(kind.equals("Live TV"))live();else if(kind.equals("My list"))watchlist();else if(kind.equals("Continue"))continueWatching();else library(kind);}),new LinearLayout.LayoutParams(dp(94),dp(38)));
         top.addView(new View(this),new LinearLayout.LayoutParams(0,1,1));clock=compactText("",16);top.addView(clock);
         updateButton=button("Update",this::offerUpdate);updateButton.setVisibility(availableUpdate==null?View.GONE:View.VISIBLE);top.addView(updateButton);
@@ -98,10 +98,28 @@ public class MainActivity extends Activity {
         LinearLayout categories=row();
         String[] labels={"For you","Trending","Top rated","New movies","On TV"};
         LinearLayout posterHost=vertical();posterHost.setClipChildren(false);
+        HomeShelf shelf=new HomeShelf(posterHost,heading,summary,open,backdrop);homeShelf=shelf;
         java.util.function.Consumer<String> load=path->{
             generation++;posterHost.removeAllViews();TextView loading=compactText("Loading titles…",14);posterHost.addView(loading);
             if(!secrets.has("tmdb")){loading.setText("Connect TMDB in Settings to see artwork and recommendations.");return;}
             async(()->path.isEmpty()?media.featured(prefs.getString("seedType","movie"),prefs.getInt("seed",0)):media.tmdb(path).getJSONArray("results"),items->{
+                shelf.show(items,path);
+            });
+        };
+        String[] paths={"","trending/all/week","movie/top_rated","movie/now_playing","tv/on_the_air"};
+        List<Button> tabs=new ArrayList<>();for(int i=0;i<labels.length;i++){final String path=paths[i];Button tab=button(labels[i],()->{});tabs.add(tab);tab.setOnClickListener(v->{for(Button other:tabs){other.setSelected(other==v);styleFocus(other,other.hasFocus());}load.accept(path);});categories.addView(tab,new LinearLayout.LayoutParams(dp(114),dp(32)));}tabs.get(0).setSelected(true);styleFocus(tabs.get(0),false);
+        page.addView(categories,new LinearLayout.LayoutParams(-1,dp(32)));
+        page.addView(posterHost,new LinearLayout.LayoutParams(-1,dp(158)));if(prefs.getBoolean("featured",true))load.accept("");else{hero.setVisibility(View.GONE);categories.setVisibility(View.GONE);posterHost.setVisibility(View.GONE);page.addView(new View(this),new LinearLayout.LayoutParams(-1,0,1));}
+        LinearLayout dockHeader=row();dockHeader.addView(compactText("Your apps",13),new LinearLayout.LayoutParams(0,-2,1));dockHeader.addView(compactText("Hold Select to pin or unpin",11));page.addView(dockHeader,new LinearLayout.LayoutParams(-1,dp(20)));
+        HorizontalScrollView appScroll=new HorizontalScrollView(this);appScroll.setHorizontalScrollBarEnabled(false);LinearLayout dock=row();appScroll.addView(dock);page.addView(appScroll,new LinearLayout.LayoutParams(-1,dp(70)));queryApps();Set<String> pinned=prefs.getStringSet("pinned",null);
+        if(pinned==null){pinned=new LinkedHashSet<>();for(int i=0;i<Math.min(6,apps.size());i++)pinned.add(apps.get(i).component.flattenToString());prefs.edit().putStringSet("pinned",pinned).apply();}
+        for(App app:apps)if(pinned.contains(app.component.flattenToString())){addApp(dock,app,false);View cell=dock.getChildAt(dock.getChildCount()-1);LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)cell.getLayoutParams();lp.width=dp(108);lp.height=dp(62);lp.topMargin=dp(2);lp.bottomMargin=dp(2);cell.setLayoutParams(lp);LinearLayout contents=(LinearLayout)cell;contents.getChildAt(0).setLayoutParams(new LinearLayout.LayoutParams(dp(30),dp(30)));TextView caption=(TextView)contents.getChildAt(1);caption.setTextSize(12);caption.setMaxLines(1);caption.setPadding(0,dp(3),0,0);}
+        dock.addView(button("All Apps",this::allApps),new LinearLayout.LayoutParams(dp(104),dp(62)));page.post(()->top.getChildAt(0).requestFocus());
+    }
+    private final class HomeShelf {
+        final LinearLayout posterHost;final TextView heading,summary;final Button open;final ImageView backdrop;
+        HomeShelf(LinearLayout host,TextView title,TextView overview,Button action,ImageView image){posterHost=host;heading=title;summary=overview;open=action;backdrop=image;}
+        void show(JSONArray items,String path) throws JSONException {
                 posterHost.removeAllViews();HorizontalScrollView scroll=new HorizontalScrollView(this);scroll.setHorizontalScrollBarEnabled(false);scroll.setClipToPadding(false);LinearLayout posters=row();posters.setPadding(dp(4),dp(4),dp(4),dp(4));scroll.addView(posters);posterHost.addView(scroll,new LinearLayout.LayoutParams(-1,-1));
                 boolean selected=false;
                 for(int i=0;i<Math.min(20,items.length());i++){
@@ -110,32 +128,22 @@ public class MainActivity extends Activity {
                     Runnable preview=()->{heading.setText(name);summary.setText(item.optString("overview",""));open.setText("View details");open.setOnClickListener(v->tmdbTitle(item));String art=item.optString("backdrop_path");backdrop.setImageDrawable(null);if(art.startsWith("/"))loadImage(backdrop,"https://image.tmdb.org/t/p/w1280"+art);};
                     if(!selected){selected=true;preview.run();}
                     FrameLayout card=new FrameLayout(this);card.setBackground(box(0xff171d27));card.setClipToOutline(true);ImageView poster=new ImageView(this);poster.setScaleType(ImageView.ScaleType.CENTER_CROP);card.addView(poster,new FrameLayout.LayoutParams(-1,-1));card.setContentDescription(name);focus(card);card.setOnFocusChangeListener((v,on)->{styleFocus(v,on);card.setPadding(dp(on?3:0),dp(on?3:0),dp(on?3:0),dp(on?3:0));if(on)preview.run();});card.setOnClickListener(v->tmdbTitle(item));
-                    int height=dp(116);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(78),height);lp.setMargins(dp(4),0,dp(6),0);posters.addView(card,lp);String art=item.optString("poster_path");if(art.startsWith("/"))loadImage(poster,"https://image.tmdb.org/t/p/w342"+art);
+                    int height=dp(150);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(100),height);lp.setMargins(dp(4),0,dp(6),0);posters.addView(card,lp);String art=item.optString("poster_path");if(art.startsWith("/"))loadImage(poster,"https://image.tmdb.org/t/p/w342"+art);
                 }
                 if(!selected)posters.addView(compactText("No titles available. Choose another category.",15));
-            });
-        };
-        String[] paths={"","trending/all/week","movie/top_rated","movie/now_playing","tv/on_the_air"};
-        List<Button> tabs=new ArrayList<>();for(int i=0;i<labels.length;i++){final String path=paths[i];Button tab=button(labels[i],()->{});tabs.add(tab);tab.setOnClickListener(v->{for(Button other:tabs){other.setSelected(other==v);styleFocus(other,other.hasFocus());}load.accept(path);});categories.addView(tab,new LinearLayout.LayoutParams(dp(114),dp(32)));}tabs.get(0).setSelected(true);styleFocus(tabs.get(0),false);
-        page.addView(categories,new LinearLayout.LayoutParams(-1,dp(32)));
-        page.addView(posterHost,new LinearLayout.LayoutParams(-1,dp(124)));load.accept("");
-        LinearLayout dockHeader=row();dockHeader.addView(compactText("Your apps",13),new LinearLayout.LayoutParams(0,-2,1));dockHeader.addView(compactText("Hold Select to pin or unpin",11));page.addView(dockHeader,new LinearLayout.LayoutParams(-1,dp(20)));
-        HorizontalScrollView appScroll=new HorizontalScrollView(this);appScroll.setHorizontalScrollBarEnabled(false);LinearLayout dock=row();appScroll.addView(dock);page.addView(appScroll,new LinearLayout.LayoutParams(-1,dp(58)));queryApps();Set<String> pinned=prefs.getStringSet("pinned",null);
-        if(pinned==null){pinned=new LinkedHashSet<>();for(int i=0;i<Math.min(6,apps.size());i++)pinned.add(apps.get(i).component.flattenToString());prefs.edit().putStringSet("pinned",pinned).apply();}
-        for(App app:apps)if(pinned.contains(app.component.flattenToString())){addApp(dock,app,false);View cell=dock.getChildAt(dock.getChildCount()-1);LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)cell.getLayoutParams();lp.width=dp(108);lp.height=dp(54);lp.topMargin=dp(2);lp.bottomMargin=dp(2);cell.setLayoutParams(lp);LinearLayout contents=(LinearLayout)cell;contents.getChildAt(0).setLayoutParams(new LinearLayout.LayoutParams(dp(26),dp(26)));TextView caption=(TextView)contents.getChildAt(1);caption.setTextSize(12);caption.setMaxLines(1);caption.setPadding(0,dp(3),0,0);}
-        dock.addView(button("All Apps",this::allApps),new LinearLayout.LayoutParams(dp(104),dp(54)));page.post(()->top.getChildAt(0).requestFocus());
+        }
     }
     private void loadImage(ImageView view,String url){artworkLoader.load(view,url);}
     private void tmdbTitle(JSONObject item){
         String type=item.optString("media_type",item.has("title")?"movie":"tv");int tmdbId=item.optInt("id");
-        fixedScreen("Details",()->library(type.equals("tv")?"Series":"Movies"));
+        Runnable returnTo=destination==null?this::home:destination;fixedScreen("Details",returnTo);
         TextView loading=text("Loading details…",18);page.addView(loading);
         async(()->media.tmdb(type+"/"+tmdbId+"?append_to_response=external_ids,credits"),details->{details.put("media_type",type);page.removeView(loading);renderDetails(details);});
     }
     private void renderDetails(JSONObject item) throws Exception{
         String title=item.optString("title",item.optString("name","Title")),type=item.optString("media_type","movie");int tmdbId=item.optInt("id");String kind=type.equals("tv")?"Series":"Movies";
         LinearLayout layout=row();layout.setGravity(Gravity.TOP);LinearLayout.LayoutParams mainParams=new LinearLayout.LayoutParams(-1,0,1);mainParams.setMargins(0,dp(12),0,0);page.addView(layout,mainParams);
-        FrameLayout artworkFrame=new FrameLayout(this);artworkFrame.setBackground(box(0xff171d27));artworkFrame.setClipToOutline(true);ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);artworkFrame.addView(image,new FrameLayout.LayoutParams(-1,-1));layout.addView(artworkFrame,new LinearLayout.LayoutParams(dp(210),-1));
+        FrameLayout artworkFrame=new FrameLayout(this);artworkFrame.setBackground(box(0xff171d27));artworkFrame.setClipToOutline(true);ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);artworkFrame.addView(image,new FrameLayout.LayoutParams(-1,-1));layout.addView(artworkFrame,new LinearLayout.LayoutParams(dp(210),dp(315)));
         String artwork=item.optString("poster_path");if(artwork.startsWith("/"))loadImage(image,"https://image.tmdb.org/t/p/w500"+artwork);
         LinearLayout info=vertical();info.setPadding(dp(28),0,0,0);layout.addView(info,new LinearLayout.LayoutParams(0,-1,1));page=info;
         TextView heading=compactText(title,30);heading.setTypeface(Typeface.DEFAULT,Typeface.BOLD);heading.setMaxLines(2);heading.setEllipsize(android.text.TextUtils.TruncateAt.END);page.addView(heading);
@@ -203,15 +211,19 @@ public class MainActivity extends Activity {
         });
     }
     private String id(String url){return ChannelQuery.key(url);}
-    private void play(String title,String url,String id,boolean live){try{String safe=Playlist.networkUrl(url,http());if(!live){JSONArray previous=new JSONArray(secrets.get("recentPlayback").isEmpty()?"[]":secrets.get("recentPlayback")),recent=new JSONArray();recent.put(new JSONObject().put("title",title).put("url",safe).put("id",id));for(int i=0;i<previous.length()&&recent.length()<50;i++)if(!id.equals(previous.getJSONObject(i).optString("id")))recent.put(previous.getJSONObject(i));secrets.put("recentPlayback",recent.toString());}startActivity(new Intent(this,VlcPlaybackActivity.class).putExtra("title",title).putExtra("url",safe).putExtra("id",id).putExtra("live",live));}catch(Exception e){toast("Could not open this source. Check its address and your HTTP setting.");}}
+    private void play(String title,String url,String id,boolean live){
+        final String safe;try{safe=Playlist.networkUrl(url,http());}catch(Exception e){toast("Could not open this source. Check its address and your HTTP setting.");return;}
+        if(!live)try{String stored=secrets.get("recentPlayback");JSONArray previous=new JSONArray(stored.isEmpty()?"[]":stored),recent=new JSONArray();recent.put(new JSONObject().put("title",title).put("url",safe).put("id",id));for(int i=0;i<previous.length()&&recent.length()<50;i++)if(!id.equals(previous.getJSONObject(i).optString("id")))recent.put(previous.getJSONObject(i));secrets.put("recentPlayback",recent.toString());}catch(Exception ignored){/* History failure must never prevent playback. */}
+        try{startActivity(new Intent(this,VlcPlaybackActivity.class).putExtra("title",title).putExtra("url",safe).putExtra("id",id).putExtra("live",live));}catch(Exception e){toast("Playback could not be started");}
+    }
     private JSONArray watchlistItems(){try{return new JSONArray(prefs.getString("watchlist","[]"));}catch(Exception e){return new JSONArray();}}
     private boolean isWatchlisted(JSONObject item){JSONArray saved=watchlistItems();for(int i=0;i<saved.length();i++){JSONObject row=saved.optJSONObject(i);if(row!=null&&row.optInt("id")==item.optInt("id")&&row.optString("media_type").equals(item.optString("media_type")))return true;}return false;}
     private void toggleWatchlist(JSONObject item){JSONArray saved=watchlistItems(),next=new JSONArray();boolean found=false;for(int i=0;i<saved.length();i++){JSONObject row=saved.optJSONObject(i);if(row==null)continue;if(row.optInt("id")==item.optInt("id")&&row.optString("media_type").equals(item.optString("media_type"))){found=true;continue;}next.put(row);}if(!found){JSONObject entry=new JSONObject();try{for(String key:new String[]{"id","title","name","media_type","poster_path","backdrop_path","overview"})if(item.has(key))entry.put(key,item.get(key));next.put(entry);}catch(Exception ignored){}}prefs.edit().putString("watchlist",next.toString()).apply();}
-    private void watchlist(){screen("My list",this::home);JSONArray saved=watchlistItems();if(saved.length()==0){page.addView(text("Save movies and series from their details page",20));page.addView(button("Browse movies",()->library("Movies")));return;}try{posterGrid(page,saved,"");}catch(Exception e){toast("Could not display your list");}}
+    private void watchlist(){destination=this::watchlist;screen("My list",this::home);JSONArray saved=watchlistItems();if(saved.length()==0){page.addView(text("Save movies and series from their details page",20));page.addView(button("Browse movies",()->library("Movies")));return;}try{posterGrid(page,saved,"");}catch(Exception e){toast("Could not display your list");}}
     private void continueWatching(){screen("Continue watching",this::home);try{String stored=secrets.get("recentPlayback");JSONArray recent=new JSONArray(stored.isEmpty()?"[]":stored);int count=0;for(int i=0;i<recent.length();i++){JSONObject item=recent.getJSONObject(i);String key=item.getString("id");Object position=getSharedPreferences("positions",MODE_PRIVATE).getAll().get(key);if(!(position instanceof Number)||((Number)position).longValue()<=0)continue;count++;String name=item.optString("title","Title"),url=item.getString("url");LinearLayout card=row();card.addView(button(name+"  ·  "+(((Number)position).longValue()/60000)+" min watched",()->play(name,url,key,false)),new LinearLayout.LayoutParams(0,dp(58),1));card.addView(button("Remove",()->{getSharedPreferences("positions",MODE_PRIVATE).edit().remove(key).apply();continueWatching();}));page.addView(card);}if(count==0)page.addView(text("Movies and episodes you start will appear here",20));}catch(Exception e){page.addView(text("Could not read your viewing history",18));}}
     private void library(String kind){browse(kind,"Trending this week","trending/"+(kind.equals("Movies")?"movie":"tv")+"/week",1);}
     private void browse(String kind,String selected,String path,int number){
-        String type=kind.equals("Movies")?"movie":"tv";fixedScreen(kind,this::home);
+        String type=kind.equals("Movies")?"movie":"tv";destination=()->browse(kind,selected,path,number);fixedScreen(kind,this::home);
         LinearLayout layout=row();layout.setGravity(Gravity.TOP);page.addView(layout,new LinearLayout.LayoutParams(-1,0,1));
         ScrollView navigation=new ScrollView(this);navigation.setVerticalScrollBarEnabled(false);LinearLayout menu=vertical();menu.setPadding(0,0,dp(16),0);navigation.addView(menu);layout.addView(navigation,new LinearLayout.LayoutParams(dp(178),-1));
         LinearLayout right=vertical();right.setPadding(dp(14),0,0,0);layout.addView(right,new LinearLayout.LayoutParams(0,-1,1));
@@ -269,7 +281,7 @@ public class MainActivity extends Activity {
         if(service.equals("Xtream")||service.equals("M3U playlist"))toggle(form,"Allow HTTP for this provider","http",false);
         if(!service.equals("M3U playlist")){CheckBox reveal=new CheckBox(this);reveal.setText("Show "+(service.equals("Xtream")?"password":"key"));reveal.setTextColor(0xffaab4c4);EditText secret=inputs.get(inputs.size()-1);reveal.setOnCheckedChangeListener((v,on)->{int cursor=secret.getSelectionStart();secret.setTransformationMethod(on?null:android.text.method.PasswordTransformationMethod.getInstance());if(cursor>=0)secret.setSelection(Math.min(cursor,secret.length()));});form.addView(reveal);}
         Button save=button(connected?"Verify & save":"Connect",()->{});form.addView(save,new LinearLayout.LayoutParams(-1,dp(44)));save.setOnClickListener(v->{
-            List<String> values=new ArrayList<>();for(EditText input:inputs){String value=input.getText().toString().trim();if(value.isEmpty()){input.setError("Required");input.requestFocus();return;}values.add(value);}
+            List<String> values=new ArrayList<>();for(EditText input:inputs){String value=input.getText().toString();if(!(service.equals("Xtream")&&inputs.indexOf(input)==2))value=value.trim();if(value.isEmpty()){input.setError("Required");input.requestFocus();return;}values.add(value);}
             if(service.equals("TMDB")&&!values.get(0).matches("[0-9a-fA-F]{32}")){inputs.get(0).setError("Use the 32-character API Key (v3 auth)");inputs.get(0).requestFocus();return;}
             save.setEnabled(false);save.setText("Connecting…");status.setText("Checking your connection…");int request=generation;boolean allowHttp=http();
             io.execute(()->{String result;boolean success=false;try{
