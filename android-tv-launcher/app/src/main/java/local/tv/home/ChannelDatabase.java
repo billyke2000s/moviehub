@@ -25,7 +25,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     private static ChannelDatabase instance;
     private final Secrets secrets;
     static synchronized ChannelDatabase get(Context context){if(instance==null)instance=new ChannelDatabase(context.getApplicationContext());return instance;}
-    private ChannelDatabase(Context context){super(context,"channels.db",null,1);secrets=new Secrets(context);setWriteAheadLoggingEnabled(true);}
+    private ChannelDatabase(Context context){super(context,"channels-v2.db",null,1);secrets=new Secrets(context);setWriteAheadLoggingEnabled(true);}
 
     @Override public void onCreate(SQLiteDatabase db){
         db.execSQL("CREATE TABLE channels(_id INTEGER PRIMARY KEY,source TEXT NOT NULL,position INTEGER NOT NULL,name TEXT NOT NULL,grp TEXT NOT NULL,logo TEXT NOT NULL,epg TEXT NOT NULL,key TEXT NOT NULL,url BLOB NOT NULL)");
