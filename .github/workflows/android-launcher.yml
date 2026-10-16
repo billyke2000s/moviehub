@@ -29,13 +29,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: Verify playlist, network and episode rules
+      - name: Verify playlist, network, channel search and episode rules
         run: |
           mkdir -p build/core-tests
-          javac -d build/core-tests android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles}.java android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest}.java
+          javac -d build/core-tests android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery}.java android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest}.java
           java -cp build/core-tests local.tv.home.PlaylistTest
           java -cp build/core-tests local.tv.home.NetworkTest
           java -cp build/core-tests local.tv.home.VideoFilesTest
+          java -Xmx64m -cp build/core-tests local.tv.home.ChannelQueryTest
       - name: Build APK and run Android lint
         run: gradle -p android-tv-launcher --no-daemon assembleDebug lintDebug
       - name: Verify APK signature and checksum

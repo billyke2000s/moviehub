@@ -1,0 +1,111 @@
+package local.tv.home;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.util.JsonReader;
+import android.util.JsonToken;
+import org.json.*;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+/**
+ * Downloads configured M3U and Xtream catalogues and streams them into {@link ChannelDatabase}.
+ * Each source is replaced atomically: a failed or cancelled import keeps that source's previous channels.
+ */
+final class ChannelImporter {
+    private ChannelImporter(){}
+    private static final Object LOCK=new Object();
+    private static volatile boolean running;
+    private static volatile int progress;
+    private static volatile boolean queued;
+    static void markQueued(){queued=true;}
+
+    static final class Status {
+        final boolean running,queued;final int progress;final String message;final long lastSuccess;
+        Status(boolean running,boolean queued,int progress,String message,long lastSuccess){this.running=running;this.queued=queued;this.progress=progress;this.message=message;this.lastSuccess=lastSuccess;}
+    }
+    private static SharedPreferences prefs(Context context){return context.getSharedPreferences("channelImport",Context.MODE_PRIVATE);}
+    static Status status(Context context){SharedPreferences p=prefs(context);return new Status(running,queued&&!running,progress,p.getString("message",""),p.getLong("lastSuccess",0));}
+
+    /** Returns true when every configured source imported successfully. */
+    static boolean run(Context context,ChannelDatabase.Cancel cancel){
+        synchronized(LOCK){
+            queued=false;running=true;progress=0;
+            Secrets secrets=new Secrets(context);ChannelDatabase db=ChannelDatabase.get(context);
+            boolean http=context.getSharedPreferences("ui",Context.MODE_PRIVATE).getBoolean("http",false);
+            List<String> configured=new ArrayList<>();List<String> problems=new ArrayList<>();int total=0;boolean anySource=false;
+            try{
+                String playlist=secrets.get("m3u");
+                if(!playlist.isEmpty()){anySource=true;configured.add("m3u");try{total+=importM3u(db,playlist,http,cancel,total);}catch(Exception e){problems.add("M3U: "+describe(e));}}
+                String account=secrets.get("xtream");
+                if(!account.isEmpty()){anySource=true;configured.add("xtream");try{total+=importXtream(db,new JSONObject(account),http,cancel,total);}catch(Exception e){problems.add("Xtream: "+describe(e));}}
+                db.removeSourcesExcept(configured);
+            }catch(Exception e){problems.add(describe(e));}
+            finally{running=false;}
+            String message=!anySource?"No live TV account connected":problems.isEmpty()?String.format(Locale.getDefault(),"%,d channels updated",total):String.join("\n",problems);
+            SharedPreferences.Editor edit=prefs(context).edit().putString("message",message).putLong("lastAttempt",System.currentTimeMillis());
+            if(anySource&&problems.isEmpty())edit.putLong("lastSuccess",System.currentTimeMillis());
+            edit.apply();
+            return problems.isEmpty();
+        }
+    }
+    private static String describe(Exception e){
+        if(e instanceof java.util.concurrent.CancellationException)return "update was interrupted; previous channels kept";
+        String m=e.getMessage();return m==null||m.isEmpty()?"download failed; previous channels kept":m;
+    }
+
+    private static int importM3u(ChannelDatabase db,String url,boolean http,ChannelDatabase.Cancel cancel,int base) throws Exception{
+        ChannelDatabase.Writer writer=db.writer("m3u",cancel,n->progress=base+n);
+        try(InputStream in=Network.open(url,null,Network.CATALOGUE_MAX,http)){
+            Playlist.parse(new InputStreamReader(in,StandardCharsets.UTF_8),url,http,writer);
+            if(writer.count()==0)throw new IOException("playlist has no playable channels");
+            writer.commit();return writer.count();
+        }finally{writer.abort();}
+    }
+
+    private static int importXtream(ChannelDatabase db,JSONObject account,boolean http,ChannelDatabase.Cancel cancel,int base) throws Exception{
+        String server=Playlist.networkUrl(account.getString("server"),http).replaceAll("/+$",""),user=account.getString("username"),pass=account.getString("password"),format=account.optString("format","ts");
+        String api=server+"/player_api.php?username="+Network.q(user)+"&password="+Network.q(pass);
+        Map<String,String> groups=new HashMap<>();
+        Object parsed=new JSONTokener(Network.text(api+"&action=get_live_categories",null,http)).nextValue();
+        if(parsed instanceof JSONArray){JSONArray categories=(JSONArray)parsed;for(int i=0;i<categories.length();i++){JSONObject c=categories.optJSONObject(i);if(c!=null)groups.put(c.optString("category_id"),c.optString("category_name"));}}
+        else throw new IOException("account was rejected by the provider");
+        ChannelDatabase.Writer writer=db.writer("xtream",cancel,n->progress=base+n);
+        try(InputStream in=Network.open(api+"&action=get_live_streams",null,Network.CATALOGUE_MAX,http);JsonReader json=new JsonReader(new InputStreamReader(in,StandardCharsets.UTF_8))){
+            json.setLenient(true);
+            if(json.peek()!=JsonToken.BEGIN_ARRAY)throw new IOException("provider did not return a channel list");
+            json.beginArray();
+            while(json.hasNext()){
+                if(json.peek()!=JsonToken.BEGIN_OBJECT){json.skipValue();continue;}
+                String name="",id="",category="",icon="",epg="";
+                json.beginObject();
+                while(json.hasNext()){
+                    switch(json.nextName()){
+                        case "name":name=string(json);break;
+                        case "stream_id":id=string(json);break;
+                        case "category_id":category=string(json);break;
+                        case "stream_icon":icon=string(json);break;
+                        case "epg_channel_id":epg=string(json);break;
+                        default:json.skipValue();
+                    }
+                }
+                json.endObject();
+                if(!id.matches("[0-9]+"))continue;
+                String group=groups.get(category);
+                writer.accept(new Playlist.Channel(name.isEmpty()?"Channel":name,ChannelQuery.xtreamUrl(server,user,pass,id,format),group==null?"":group,icon,epg));
+            }
+            json.endArray();
+            if(writer.count()==0)throw new IOException("provider returned no live channels");
+            writer.commit();return writer.count();
+        }finally{writer.abort();}
+    }
+    private static String string(JsonReader json) throws IOException{
+        switch(json.peek()){
+            case STRING:case NUMBER:return json.nextString();
+            case BOOLEAN:return String.valueOf(json.nextBoolean());
+            case NULL:json.nextNull();return "";
+            default:json.skipValue();return "";
+        }
+    }
+}
