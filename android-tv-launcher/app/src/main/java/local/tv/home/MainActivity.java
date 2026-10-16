@@ -99,76 +99,47 @@ public class MainActivity extends Activity {
     private Set<String> favouriteKeys(){return new HashSet<>(prefs.getStringSet("favourites",Collections.emptySet()));}
     private void live(){
         screen("Live TV",this::home);
-        LinearLayout actions=row();page.addView(actions);
-        actions.addView(button("Search",this::channelSearch));actions.addView(button("Groups",this::channelGroups));actions.addView(button("Refresh channels",()->{ChannelSync.refreshNow(this);live();}));actions.addView(button("Accounts",this::settings));
-        TextView status=text("",14);page.addView(status);
-        LinearLayout filters=row();LinearLayout list=vertical();page.addView(filters);page.addView(list);
-        filters.addView(button("All channels",()->showChannels(list,o->channelsDb().all(o))));
-        filters.addView(button("Sports",()->showChannels(list,o->channelsDb().sports(o))));
-        filters.addView(button("Favourites",()->showChannels(list,o->channelsDb().favourites(favouriteKeys(),o))));
-        loadLive(status,list);
-        page.post(()->actions.getChildAt(0).requestFocus());
-    }
-    private void loadLive(TextView status,LinearLayout list){
+        page.addView(button("Accounts",this::settings));
+        TextView loading=text("Loading saved channels…",16);page.addView(loading);
+        ChannelStore store=new ChannelStore(getApplicationContext());
+        if(store.count()>0){page.removeView(loading);channelBrowser(store,"all","",0);}
+        else loading.setText("Importing channels for the first time…");
         int request=generation;
-        async(()->channelsDb().count(),count->{
-            ChannelImporter.Status state=ChannelImporter.status(this);
-            if(count==0&&!state.running&&!state.queued){
-                if(!secrets.has("m3u")&&!secrets.has("xtream")){list.removeAllViews();list.addView(text("Add an authorized Xtream account or M3U playlist in Settings",16));return;}
-                if(state.lastSuccess==0&&state.message.isEmpty()){ChannelSync.refreshNow(this);state=ChannelImporter.status(this);}
+        io.execute(()->{
+            try{
+                List<Playlist.Channel> incoming=media.live(http());
+                store.replace(incoming);
+                runOnUiThread(()->{if(isFinishing()||request!=generation)return;page.removeAllViews();page.addView(button("Accounts",this::settings));channelBrowser(store,"all","",0);});
+            }catch(Exception e){runOnUiThread(()->{if(isFinishing()||request!=generation)return;loading.setText("Could not refresh channels. Check your provider in Settings.");});}
+        });
+    }
+    private void channelBrowser(ChannelStore store,String filter,String search,int offset){
+        page.removeAllViews();
+        LinearLayout head=row();head.addView(text("Live TV",28),new LinearLayout.LayoutParams(0,-2,1));head.addView(button("Back",this::home));page.addView(head);
+        page.addView(text("Saved channels: "+store.count(),16));
+        LinearLayout filters=row();
+        for(String option:new String[]{"all","sports","favourites"})filters.addView(button(option.substring(0,1).toUpperCase(Locale.ROOT)+option.substring(1),()->channelBrowser(store,option,search,0)),new LinearLayout.LayoutParams(0,dp(60),1));
+        page.addView(filters);
+        EditText query=field(page,"Search channels",false,search);
+        page.addView(button("Search",()->channelBrowser(store,filter,query.getText().toString().trim(),0)));
+        LinearLayout results=vertical();page.addView(results);
+        int fetched=0;int next=offset;
+        Set<String> favourites=prefs.getStringSet("favourites",Collections.emptySet());
+        while(fetched<100){
+            List<Playlist.Channel> batch=store.page(filter.equals("favourites")?"all":filter,search,next,150);
+            next+=batch.size();
+            for(Playlist.Channel channel:batch){
+                String key=id(channel.url);if(filter.equals("favourites")&&!favourites.contains(key))continue;
+                Button b=button(channel.name+(channel.group.isEmpty()?"":" · "+channel.group),()->play(channel.name,channel.url,key,true));
+                b.setOnLongClickListener(v->{Set<String> copy=new HashSet<>(prefs.getStringSet("favourites",Collections.emptySet()));if(!copy.add(key))copy.remove(key);prefs.edit().putStringSet("favourites",copy).apply();toast("Favourites updated");return true;});
+                results.addView(b);fetched++;if(fetched>=100)break;
             }
-            if(count>0)showChannels(list,o->channelsDb().all(o));else list.removeAllViews();
-            describeImport(status,state,count);
-            if(state.running||state.queued)watchImport(request,status,list,count);
-        });
-    }
-    private void describeImport(TextView status,ChannelImporter.Status state,int count){
-        String total=String.format(Locale.getDefault(),"%,d channels",count);
-        if(state.running)status.setText(String.format(Locale.getDefault(),"Updating channels… %,d imported",state.progress)+(count>0?" · current list stays available":""));
-        else if(state.queued)status.setText("Channel update starting… waiting for a network connection if offline");
-        else if(state.lastSuccess>0)status.setText(total+" · updated "+android.text.format.DateUtils.getRelativeTimeSpanString(state.lastSuccess)+(state.message.isEmpty()||state.message.endsWith("updated")?"":"\n"+state.message));
-        else status.setText(state.message.isEmpty()?total:state.message+"\nSelect Refresh channels to try again.");
-    }
-    private void watchImport(int request,TextView status,LinearLayout list,int before){
-        handler.postDelayed(new Runnable(){public void run(){
-            if(isFinishing()||request!=generation)return;
-            ChannelImporter.Status state=ChannelImporter.status(MainActivity.this);
-            if(state.running||state.queued){describeImport(status,state,before);handler.postDelayed(this,1000);return;}
-            async(()->channelsDb().count(),count->{describeImport(status,state,count);if(before==0&&count>0)showChannels(list,o->channelsDb().all(o));else if(count>0)status.append("\nReopen a list to see the update.");});
-        }},1000);
-    }
-    private void showChannels(LinearLayout list,ChannelPage loader){list.removeAllViews();channelsPage(list,loader,0);}
-    private void channelsPage(LinearLayout list,ChannelPage loader,int offset){
-        TextView loading=text("Loading…",16);list.addView(loading);
-        async(()->loader.load(offset),rows->{
-            list.removeView(loading);
-            if(offset==0&&rows.isEmpty()){list.addView(text("No channels here",16));return;}
-            View first=null;int end=Math.min(ChannelDatabase.PAGE,rows.size());
-            for(int i=0;i<end;i++){ChannelDatabase.Row channel=rows.get(i);Button b=button(channel.name+(channel.group.isEmpty()?"":" · "+channel.group),()->playChannel(channel));
-                b.setOnLongClickListener(v->{Set<String> copy=favouriteKeys();boolean added=copy.add(channel.key);if(!added)copy.remove(channel.key);prefs.edit().putStringSet("favourites",copy).apply();toast(added?"Added to favourites":"Removed from favourites");return true;});
-                list.addView(b);if(first==null)first=b;}
-            if(offset>0&&first!=null)first.requestFocus();
-            if(rows.size()>ChannelDatabase.PAGE){Button more=button("More channels",()->{});more.setOnClickListener(v->{list.removeView(more);channelsPage(list,loader,offset+ChannelDatabase.PAGE);});list.addView(more);}
-        });
-    }
-    private void playChannel(ChannelDatabase.Row channel){
-        async(()->{try{return channelsDb().url(channel.id);}catch(Exception e){return "";}},url->{if(url.isEmpty()){toast("This channel is unavailable. Select Refresh channels.");return;}play(channel.name,url,channel.key,true);});
-    }
-    private void channelSearch(){
-        LinearLayout form=vertical();EditText query=field(form,"Channel name or group",false,"");Dialog dialog=form("Search channels",form);
-        form.addView(button("Search",()->{String value=query.getText().toString().trim();if(ChannelQuery.fts(value).isEmpty()){toast("Enter letters or numbers to search");return;}dialog.dismiss();
-            screen("Search · "+value,this::live);page.addView(button("New search",this::channelSearch));LinearLayout list=vertical();page.addView(list);showChannels(list,o->channelsDb().search(value,o));}));
-    }
-    private void channelGroups(){
-        screen("Channel groups",this::live);TextView loading=text("Loading…",16);page.addView(loading);
-        async(()->channelsDb().groups(),groups->{page.removeView(loading);if(groups.isEmpty()){page.addView(text("No channels yet",16));return;}groupsPage(groups,0);});
-    }
-    private void groupsPage(List<ChannelDatabase.Group> groups,int offset){
-        int end=Math.min(offset+200,groups.size());View first=null;
-        for(int i=offset;i<end;i++){ChannelDatabase.Group group=groups.get(i);String label=group.name.isEmpty()?"Ungrouped":group.name;
-            Button b=button(label+String.format(Locale.getDefault()," · %,d",group.count),()->{screen(label,this::channelGroups);LinearLayout list=vertical();page.addView(list);showChannels(list,o->channelsDb().group(group.name,o));});page.addView(b);if(first==null)first=b;}
-        if(offset>0&&first!=null)first.requestFocus();
-        if(end<groups.size()){Button more=button("More groups",()->{});more.setOnClickListener(v->{page.removeView(more);groupsPage(groups,end);});page.addView(more);}
+            if(batch.size()<150)break;
+        }
+        final int following=next;
+        if(fetched==0)results.addView(text("No matching channels",16));
+        if(following<store.count())page.addView(button("More channels",()->channelBrowser(store,filter,search,following)));
+        page.addView(button("Refresh provider",this::live));
     }
     private String id(String url){return ChannelQuery.key(url);}
     private void play(String title,String url,String id,boolean live){try{String safe=Playlist.networkUrl(url,http());startActivity(new Intent(this,VlcPlaybackActivity.class).putExtra("title",title).putExtra("url",safe).putExtra("id",id).putExtra("live",live));}catch(Exception e){toast("Use an HTTPS source, or enable HTTP sources in Settings");}}
