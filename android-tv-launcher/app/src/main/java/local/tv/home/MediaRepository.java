@@ -26,7 +26,7 @@ final class MediaRepository {
     JSONArray featured(String type,int seed) throws Exception{
         String token=secrets.get("tmdb");if(token.isEmpty())return new JSONArray();
         String path=seed>0?type+"/"+seed+"/recommendations":"trending/all/week";
-        JSONObject response=new JSONObject(Network.text("https://api.themoviedb.org/3/"+path+"?language=en-US",token,false));JSONArray result=response.getJSONArray("results");
+        JSONObject response=new JSONObject(Network.text(tmdbUrl(path+"?language=en-US",token),null,false));JSONArray result=response.getJSONArray("results");
         if(seed>0)for(int i=0;i<result.length();i++)result.getJSONObject(i).put("media_type",type);
         return result;
     }
@@ -44,5 +44,9 @@ final class MediaRepository {
         if(fileId.isEmpty()||(!kind.equals("Movies")&&!kind.equals("Series")))throw new IllegalArgumentException();JSONArray items=library();
         items.put(new JSONObject().put("id",UUID.randomUUID().toString()).put("title",title).put("source","premiumize").put("sourceId",fileId).put("kind",kind));secrets.put("library",items.toString());
     }
-    JSONObject tmdb(String path) throws Exception{String token=secrets.get("tmdb");if(token.isEmpty())throw new Exception("Connect TMDB first");return new JSONObject(Network.text("https://api.themoviedb.org/3/"+path+(path.contains("?")?"&":"?")+"language=en-US",token,false));}
+    static String tmdbUrl(String path,String key) throws Exception{
+        if(!key.matches("(?i)[0-9a-f]{32}"))throw new IllegalArgumentException("Enter the 32-character TMDB API key (v3), not the Read Access Token");
+        return "https://api.themoviedb.org/3/"+path+(path.contains("?")?"&":"?")+"api_key="+Network.q(key);
+    }
+    JSONObject tmdb(String path) throws Exception{String key=secrets.get("tmdb");if(key.isEmpty())throw new Exception("Connect TMDB first");return new JSONObject(Network.text(tmdbUrl(path+(path.contains("?")?"&":"?")+"language=en-US",key),null,false));}
 }
