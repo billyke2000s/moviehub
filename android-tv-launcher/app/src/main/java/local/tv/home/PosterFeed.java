@@ -20,17 +20,19 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     private final Handler main=new Handler(Looper.getMainLooper());
     private final Executor worker; private final Loader loader; private final Cards cards;
     private final String type; private final boolean horizontal;
+    private int columns=4;private boolean pendingBelow;
     private int next=1,total=1; private boolean loading,closed,failed,capped; private View pendingFrom;
     private final FeedAdapter adapter=new FeedAdapter();
     PosterFeed(Context context,boolean horizontal,String type,Executor worker,Loader loader,Cards cards){
         super(context);this.horizontal=horizontal;this.type=type;this.worker=worker;this.loader=loader;this.cards=cards;
         setItemAnimator(null);setPreserveFocusAfterLayout(true);setClipToPadding(true);setPadding(0,0,0,0);
         if(horizontal)setLayoutManager(new LinearLayoutManager(context,HORIZONTAL,false));
-        else {GridLayoutManager grid=new GridLayoutManager(context,4);grid.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup(){@Override public int getSpanSize(int position){return position==items.size()?4:1;}});setLayoutManager(grid);}
+        else {GridLayoutManager grid=new GridLayoutManager(context,4);grid.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup(){@Override public int getSpanSize(int position){return position==items.size()?columns:1;}});setLayoutManager(grid);}
         adapter.setHasStableIds(true);setAdapter(adapter);
         addOnScrollListener(new OnScrollListener(){@Override public void onScrolled(RecyclerView view,int dx,int dy){prefetch();}});
         setFocusable(false);setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
     }
+    void setColumns(int value){columns=value;((GridLayoutManager)getLayoutManager()).setSpanCount(value);}
     void start(){loadMore();}
     private int dp(int value){return (int)(value*getResources().getDisplayMetrics().density+.5f);}
     private void prefetch(){if(closed||loading||failed||next>total)return;LinearLayoutManager manager=(LinearLayoutManager)getLayoutManager();int last=manager.findLastVisibleItemPosition();if(last>=items.size()-(horizontal?6:12))post(()->{if(!closed&&!failed)loadMore();});}
@@ -47,17 +49,19 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
         }catch(JSONException e){failed=true;loading=false;statusChanged();}});}catch(Exception e){main.post(()->{if(!closed){failed=true;loading=false;statusChanged();}});}});
     }
     private void statusChanged(){adapter.notifyItemChanged(items.size());}
-    boolean focusNearest(View from){
+    boolean focusNearest(View from){return focusFrom(from,false);}
+    boolean focusBelow(View from){return focusFrom(from,true);}
+    private boolean focusFrom(View from,boolean below){
         Rect source=new Rect();from.getGlobalVisibleRect(source);View best=null;int distance=Integer.MAX_VALUE,left=Integer.MAX_VALUE;
-        for(int i=0;i<getChildCount();i++){View child=getChildAt(i);int position=getChildAdapterPosition(child);if(position<0||position>=items.size())continue;Rect r=new Rect();if(!child.getGlobalVisibleRect(r))continue;int d=Math.abs(r.centerY()-source.centerY());if(d<distance||(d==distance&&r.left<left)){best=child;distance=d;left=r.left;}}
-        if(best!=null){pendingFrom=null;return best.requestFocus();}pendingFrom=from;return false;
+        for(int i=0;i<getChildCount();i++){View child=getChildAt(i);int position=getChildAdapterPosition(child);if(position<0||position>=items.size())continue;Rect r=new Rect();if(!child.getGlobalVisibleRect(r))continue;int d=below?Math.abs(r.centerX()-source.centerX()):Math.abs(r.centerY()-source.centerY());if(d<distance||(d==distance&&r.left<left)){best=child;distance=d;left=r.left;}}
+        if(best!=null){pendingFrom=null;return best.requestFocus();}pendingFrom=from;pendingBelow=below;return false;
     }
-    private void completePendingFocus(){if(pendingFrom!=null){if(pendingFrom.hasFocus())focusNearest(pendingFrom);else pendingFrom=null;}}
+    private void completePendingFocus(){if(pendingFrom!=null){if(pendingFrom.hasFocus())focusFrom(pendingFrom,pendingBelow);else pendingFrom=null;}}
     @Override protected void onLayout(boolean changed,int left,int top,int right,int bottom){super.onLayout(changed,left,top,right,bottom);if(pendingFrom!=null)post(this::completePendingFocus);}
     @Override public boolean dispatchKeyEvent(KeyEvent event){
         int key=event.getKeyCode();boolean forward=horizontal?key==KeyEvent.KEYCODE_DPAD_RIGHT:key==KeyEvent.KEYCODE_DPAD_DOWN;
         if(forward){View current=findFocus();ViewHolder holder=current==null?null:findContainingViewHolder(current);
-            if(next>total&&holder!=null&&!items.isEmpty()){int position=holder.getBindingAdapterPosition();boolean last=horizontal?position==items.size()-1:position>=0&&position/4==(items.size()-1)/4;if(last){if(event.getAction()==KeyEvent.ACTION_DOWN)smoothScrollToPosition(items.size());return true;}}
+            if(next>total&&holder!=null&&!items.isEmpty()){int position=holder.getBindingAdapterPosition();boolean last=horizontal?position==items.size()-1:position>=0&&position/columns==(items.size()-1)/columns;if(last){if(event.getAction()==KeyEvent.ACTION_DOWN)smoothScrollToPosition(items.size());return true;}}
             View target=current==null?null:focusSearch(current,horizontal?FOCUS_RIGHT:FOCUS_DOWN);boolean inside=false;for(View node=target;node!=null;node=node.getParent() instanceof View?(View)node.getParent():null)if(node==this){inside=true;break;}
             if(!inside){if(event.getAction()==KeyEvent.ACTION_DOWN&&!failed)loadMore();return true;}}
         return super.dispatchKeyEvent(event);
@@ -70,7 +74,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
         @Override public long getItemId(int p){if(p==items.size())return Long.MIN_VALUE;JSONObject item=items.get(p);return ((long)item.optInt("id")<<1)|("tv".equals(item.optString("media_type"))?1:0);}
         @Override public Holder onCreateViewHolder(ViewGroup parent,int type){
             View card;if(type==1){Button status=new Button(getContext());status.setAllCaps(false);status.setTextColor(0xfff2f4f8);status.setTextSize(14);status.setBackgroundColor(0xff090d14);status.setOnFocusChangeListener((v,on)->{status.setBackgroundColor(on?0xfff2f4f8:0xff090d14);status.setTextColor(on?0xff10141c:0xfff2f4f8);});status.setOnClickListener(v->{View last=getLayoutManager().findViewByPosition(items.size()-1);if(last!=null)last.requestFocus();loadMore();});card=status;}else card=cards.create(parent);
-            LayoutParams lp=new LayoutParams(horizontal?dp(type==1?170:108):LayoutParams.MATCH_PARENT,horizontal?dp(150):dp(type==1?48:222));lp.setMargins(dp(4),dp(4),dp(4),dp(4));card.setLayoutParams(lp);return new Holder(card);
+            LayoutParams lp=new LayoutParams(horizontal?dp(type==1?170:108):LayoutParams.MATCH_PARENT,horizontal?dp(150):type==1?dp(48):LayoutParams.WRAP_CONTENT);lp.setMargins(dp(4),dp(4),dp(4),dp(4));card.setLayoutParams(lp);return new Holder(card);
         }
         @Override public void onBindViewHolder(Holder holder,int position){
             if(position==items.size()){Button status=(Button)holder.itemView;boolean end=next>total;status.setText(failed?"Could not load · Retry":end?(items.isEmpty()?"No titles found · End of list":capped?"End of list · Refine category for more results":"End of list"):"Loading titles…");status.setFocusable(failed);status.setEnabled(failed);return;}

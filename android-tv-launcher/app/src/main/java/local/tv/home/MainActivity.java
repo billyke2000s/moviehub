@@ -19,6 +19,10 @@ public class MainActivity extends Activity {
     private final ExecutorService io=Executors.newFixedThreadPool(3);
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final List<App> apps=new ArrayList<>();
+    private final DpadRepeats dpadRepeats=new DpadRepeats();
+    private CatalogueScreen catalogue;private Dialog catalogueDialog;private LinearLayout overlayContent;
+    private void leaveCatalogue(){if(catalogue!=null){catalogue.close();catalogue=null;}if(catalogueDialog!=null)catalogueDialog.dismiss();}
+    @Override public boolean dispatchKeyEvent(KeyEvent event){return dpadRepeats.consume(event)||super.dispatchKeyEvent(event);}
     private final List<PosterFeed> feeds=new ArrayList<>();
     private void closeFeeds(){for(PosterFeed feed:feeds)feed.close();feeds.clear();}
     private final Artwork artworkLoader=new Artwork();
@@ -31,9 +35,9 @@ public class MainActivity extends Activity {
     interface Done<T>{void accept(T result) throws Exception;}
     private <T> void async(Job<T> job,Done<T> done){int request=generation;io.execute(()->{try{T result=job.run();runOnUiThread(()->{if(isFinishing()||isDestroyed()||request!=generation)return;try{done.accept(result);}catch(Exception e){toast("Could not display this response");}});}catch(Exception e){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed()&&request==generation)showRequestError();});}});}
     private void showRequestError(){
-        TextView pending=findLoading(page);if(pending!=null){pending.setText("Unable to load. Check your connection or retry this category.");return;}
-        clearLoading(page);
-        TextView error=text("Could not load this content. Check your connection and connected accounts.",18);page.addView(error);page.addView(button("Settings",this::settings));
+        LinearLayout target=catalogueDialog!=null&&catalogueDialog.isShowing()&&overlayContent!=null?overlayContent:page;TextView pending=findLoading(target);if(pending!=null){pending.setText("Unable to load. Check your connection or retry this category.");return;}
+        clearLoading(target);
+        TextView error=text("Could not load this content. Check your connection and connected accounts.",18);target.addView(error);target.addView(button("Settings",this::settings));
     }
     private TextView findLoading(ViewGroup parent){for(int i=0;i<parent.getChildCount();i++){View child=parent.getChildAt(i);if(child instanceof TextView&&((TextView)child).getText().toString().startsWith("Loading"))return (TextView)child;if(child instanceof ViewGroup){TextView found=findLoading((ViewGroup)child);if(found!=null)return found;}}return null;}
     private void clearLoading(android.view.ViewGroup parent){
@@ -46,7 +50,7 @@ public class MainActivity extends Activity {
     @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);if(focused)tvFullscreen();}
     @Override public void onStart(){super.onStart();handler.removeCallbacks(ticker);handler.post(ticker);checkForUpdate();try{ChannelSync.refreshIfStale(this);}catch(Exception ignored){}}
     @Override public void onStop(){handler.removeCallbacks(ticker);super.onStop();}
-    @Override public void onDestroy(){closeFeeds();handler.removeCallbacksAndMessages(null);artworkLoader.close();io.shutdownNow();super.onDestroy();}
+    @Override public void onDestroy(){leaveCatalogue();closeFeeds();handler.removeCallbacksAndMessages(null);artworkLoader.close();io.shutdownNow();super.onDestroy();}
     @Override public void onBackPressed(){if(back!=null)back.run();}
     private GradientDrawable box(int colour){GradientDrawable d=new GradientDrawable();d.setColor(colour);d.setCornerRadius(dp(7));return d;}
     private LinearLayout vertical(){LinearLayout v=new LinearLayout(this);v.setOrientation(LinearLayout.VERTICAL);return v;}
@@ -57,7 +61,7 @@ public class MainActivity extends Activity {
     private void focus(View view){view.setFocusable(true);view.setFocusableInTouchMode(true);view.setOnFocusChangeListener((v,focused)->styleFocus(v,focused));}
     private Button button(String label,Runnable action){Button b=new Button(this);b.setText(label);b.setTextColor(0xfff8f8fc);b.setAllCaps(false);b.setTextSize(16);b.setSingleLine(true);b.setEllipsize(android.text.TextUtils.TruncateAt.END);b.setMinWidth(0);b.setMinimumWidth(0);b.setMinHeight(0);b.setMinimumHeight(0);b.setBackground(box(0xff171d27));b.setPadding(dp(12),dp(5),dp(12),dp(5));focus(b);b.setOnClickListener(v->action.run());return b;}
     private Button navigationButton(String label,Runnable action){Button b=button(label,action);b.setTag("navigation");styleFocus(b,false);return b;}
-    private void screen(String title,Runnable goBack){closeFeeds();generation++;back=goBack;clock=null;updateButton=null;ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xff10151f,0xff090d14,0xff090d14}));page=vertical();page.setPadding(dp(32),dp(22),dp(32),dp(28));scroll.addView(page);setContentView(scroll);if(title!=null){LinearLayout head=row();head.addView(text(title,28),new LinearLayout.LayoutParams(0,-2,1));head.addView(button("Back",goBack));page.addView(head);}}
+    private void screen(String title,Runnable goBack){leaveCatalogue();closeFeeds();generation++;back=goBack;clock=null;updateButton=null;ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xff10151f,0xff090d14,0xff090d14}));page=vertical();page.setPadding(dp(32),dp(22),dp(32),dp(28));scroll.addView(page);setContentView(scroll);if(title!=null){LinearLayout head=row();head.addView(text(title,28),new LinearLayout.LayoutParams(0,-2,1));head.addView(button("Back",goBack));page.addView(head);}}
     private void addRow(LinearLayout parent,View view,int width,int height){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(dp(width),dp(height));p.setMargins(dp(5),dp(5),dp(8),dp(5));parent.addView(view,p);}
     private LinearLayout horizontal(LinearLayout parent){HorizontalScrollView scroll=new HorizontalScrollView(this);scroll.setHorizontalScrollBarEnabled(false);LinearLayout r=row();r.setPadding(dp(4),dp(8),dp(4),dp(8));scroll.addView(r);parent.addView(scroll);return r;}
     private void checkForUpdate(){checkForUpdate(false);}
@@ -77,7 +81,7 @@ public class MainActivity extends Activity {
     private void resetUpdateButton(){updateBusy=false;if(updateButton!=null){updateButton.setEnabled(true);updateButton.setText("Update");}}
     /** Home is a viewport, never a vertically scrolling page. The dock has reserved space. */
     private void fixedScreen(String title,Runnable goBack){
-        closeFeeds();generation++;back=goBack;clock=null;updateButton=null;page=vertical();page.setBackgroundColor(0xff090d14);
+        leaveCatalogue();closeFeeds();generation++;back=goBack;clock=null;updateButton=null;page=vertical();page.setBackgroundColor(0xff090d14);
         page.setPadding(dp(30),dp(16),dp(30),dp(16));setContentView(page);
         if(title!=null){LinearLayout head=row();TextView name=text(title,24);name.setTypeface(Typeface.DEFAULT,Typeface.BOLD);head.addView(name,new LinearLayout.LayoutParams(0,-1,1));head.addView(button("Back",goBack),new LinearLayout.LayoutParams(dp(72),dp(38)));page.addView(head,new LinearLayout.LayoutParams(-1,dp(46)));}
     }
@@ -119,9 +123,9 @@ public class MainActivity extends Activity {
         dock.addView(button("All Apps",this::allApps),new LinearLayout.LayoutParams(dp(104),dp(62)));page.post(()->top.getChildAt(0).requestFocus());
     }
     private final class HomeShelf {
-        final LinearLayout posterHost;final TextView heading,summary;final Button open;final ImageView backdrop;PosterFeed feed;boolean previewed;
+        final LinearLayout posterHost;final TextView heading,summary;final Button open;final ImageView backdrop;PosterFeed feed;boolean previewed;Runnable pendingArt;
         HomeShelf(LinearLayout host,TextView title,TextView overview,Button action,ImageView image){posterHost=host;heading=title;summary=overview;open=action;backdrop=image;}
-        void close(){if(feed!=null){feed.close();feeds.remove(feed);feed=null;}}
+        void close(){if(pendingArt!=null)handler.removeCallbacks(pendingArt);if(feed!=null){feed.close();feeds.remove(feed);feed=null;}}
         void show(JSONArray items,String path) throws JSONException {load(path,n->new JSONObject().put("results",items).put("total_pages",1));}
         void load(String path,PosterFeed.Loader loader){
             close();previewed=false;posterHost.removeAllViews();
@@ -130,11 +134,11 @@ public class MainActivity extends Activity {
                 public void bind(View card,JSONObject item){bindPoster(card,item,true,()->preview(item));if(!previewed){previewed=true;preview(item);}}
             });feeds.add(feed);posterHost.addView(feed,new LinearLayout.LayoutParams(-1,-1));feed.start();
         }
-        void preview(JSONObject item){String name=item.optString("title",item.optString("name","Title"));heading.setText(name);summary.setText(item.optString("overview",""));open.setText("View details");open.setOnClickListener(v->tmdbTitle(item));String art=item.optString("backdrop_path");backdrop.setTag(null);backdrop.setImageDrawable(null);if(art.startsWith("/"))loadImage(backdrop,"https://image.tmdb.org/t/p/w1280"+art);}
+        void preview(JSONObject item){String name=item.optString("title",item.optString("name","Title"));heading.setText(name);summary.setText(item.optString("overview",""));open.setText("View details");open.setOnClickListener(v->tmdbTitle(item));String art=item.optString("backdrop_path");if(pendingArt!=null)handler.removeCallbacks(pendingArt);pendingArt=()->{if(!backdrop.isAttachedToWindow())return;backdrop.setTag(null);backdrop.setImageDrawable(null);if(art.startsWith("/"))loadImage(backdrop,"https://image.tmdb.org/t/p/w1280"+art);};handler.postDelayed(pendingArt,320);}
     }
     private View posterCard(boolean compact){
         LinearLayout card=vertical();card.setBackground(box(0xff171d27));card.setClipToOutline(true);card.setPadding(dp(compact?0:6),dp(compact?0:6),dp(compact?0:6),dp(compact?0:6));
-        ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);card.addView(image,new LinearLayout.LayoutParams(-1,compact?-1:dp(160)));
+        ImageView image=compact?new ImageView(this):new ImageView(this){@Override protected void onMeasure(int widthSpec,int heightSpec){int width=View.MeasureSpec.getSize(widthSpec);setMeasuredDimension(width,Math.round(width*1.5f));}};image.setScaleType(compact?ImageView.ScaleType.CENTER_CROP:ImageView.ScaleType.FIT_CENTER);card.addView(image,new LinearLayout.LayoutParams(-1,compact?-1:-2));
         if(!compact){PosterTitle title=new PosterTitle(this);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,Math.max(dp(42),(int)Math.ceil(title.getPaint().getFontSpacing()*2)));lp.topMargin=dp(4);card.addView(title,lp);}focus(card);return card;
     }
     private void bindPoster(View view,JSONObject item,boolean compact,Runnable preview){
@@ -144,10 +148,10 @@ public class MainActivity extends Activity {
         card.setOnFocusChangeListener((v,on)->{styleFocus(v,on);if(title!=null)title.cardFocus(on);if(on&&preview!=null)preview.run();});styleFocus(card,card.hasFocus());card.setOnClickListener(v->tmdbTitle(item));
     }
     PosterFeed catalogueFeed(LinearLayout right,View oldResults,LinearLayout menu,String type,PosterFeed.Loader loader){
-        right.removeView(oldResults);PosterFeed feed=new PosterFeed(this,false,type,io,loader,new PosterFeed.Cards(){public View create(ViewGroup parent){return posterCard(false);}public void bind(View card,JSONObject item){bindPoster(card,item,false,null);}});
-        feeds.add(feed);right.addView(feed,new LinearLayout.LayoutParams(-1,0,1));routeCategoryFocus(menu,feed);feed.start();return feed;
+        right.removeAllViews();PosterFeed feed=new PosterFeed(this,false,type,io,loader,new PosterFeed.Cards(){public View create(ViewGroup parent){return posterCard(false);}public void bind(View card,JSONObject item){CatalogueScreen active=catalogue;bindPoster(card,item,false,active==null?null:()->active.preview(item));}});
+        feed.setColumns(6);if(catalogue!=null&&catalogue.content==right){if(catalogue.feed!=null){catalogue.feed.close();feeds.remove(catalogue.feed);}catalogue.feed=feed;}feeds.add(feed);right.addView(feed,new LinearLayout.LayoutParams(-1,0,1));routeCategoryFocus(menu,feed);feed.start();return feed;
     }
-    static void routeCategoryFocus(LinearLayout menu,PosterFeed feed){for(int i=0;i<menu.getChildCount();i++)if(menu.getChildAt(i).isFocusable())menu.getChildAt(i).setOnKeyListener((v,key,event)->{if(key!=KeyEvent.KEYCODE_DPAD_RIGHT)return false;if(event.getAction()==KeyEvent.ACTION_DOWN)feed.focusNearest(v);return true;});}
+    static void routeCategoryFocus(LinearLayout menu,PosterFeed feed){for(int i=0;i<menu.getChildCount();i++)if(menu.getChildAt(i).isFocusable())menu.getChildAt(i).setOnKeyListener((v,key,event)->{if(key!=KeyEvent.KEYCODE_DPAD_DOWN)return false;if(event.getAction()==KeyEvent.ACTION_DOWN)feed.focusBelow(v);return true;});}
     private void loadImage(ImageView view,String url){artworkLoader.load(view,url);}
     private void tmdbTitle(JSONObject item){
         String type=item.optString("media_type",item.has("title")?"movie":"tv");int tmdbId=item.optInt("id");
@@ -172,7 +176,7 @@ public class MainActivity extends Activity {
         for(int i=0;i<items.length();i++){
             JSONObject item=items.getJSONObject(i);if(item.optBoolean("adult",false))continue;if(!type.isEmpty())item.put("media_type",type);
             if(visible%4==0){posterRow=row();target.addView(posterRow);}View card=posterCard(false);bindPoster(card,item,false,null);
-            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(222),1);lp.setMargins(dp(4),dp(5),dp(4),dp(5));posterRow.addView(card,lp);visible++;
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(4),dp(5),dp(4),dp(5));posterRow.addView(card,lp);visible++;
         }
         if(posterRow!=null)while(posterRow.getChildCount()<4)posterRow.addView(new View(this),new LinearLayout.LayoutParams(0,1,1));
         if(visible==0)target.addView(text("No titles found",18));
@@ -243,8 +247,8 @@ public class MainActivity extends Activity {
         return new ArrayList<>(rows.values());
     }
     private void categoryChoices(LinearLayout target,String kind,List<TmdbCategories.Entry> entries){
-        LinearLayout line=null;for(int i=0;i<entries.size();i++){TmdbCategories.Entry entry=entries.get(i);if(i%3==0){line=row();target.addView(line);}Button choice=button(entry.name,()->browse(kind,entry.name,entry.path,1));choice.setTextSize(14);choice.setTag(entry.path);choice.setContentDescription(entry.name);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(48),1);lp.setMargins(dp(3),dp(3),dp(3),dp(3));line.addView(choice,lp);}
-        if(line!=null)while(line.getChildCount()<3)line.addView(new View(this),new LinearLayout.LayoutParams(0,1,1));
+        LinearLayout line=null;for(int i=0;i<entries.size();i++){TmdbCategories.Entry entry=entries.get(i);if(i%2==0){line=row();target.addView(line);}Button choice=button(entry.name,()->browse(kind,entry.name,entry.path,1));choice.setTextSize(14);choice.setTag(entry.path);choice.setContentDescription(entry.name);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(42),1);lp.setMargins(dp(3),dp(3),dp(3),dp(3));line.addView(choice,lp);}
+        if(line!=null)while(line.getChildCount()<2)line.addView(new View(this),new LinearLayout.LayoutParams(0,1,1));
     }
     private void renderCategoryHub(LinearLayout target,String kind,String section){
         String type=kind.equals("Movies")?"movie":"tv";target.removeAllViews();
@@ -257,18 +261,56 @@ public class MainActivity extends Activity {
         io.execute(()->{try{JSONArray result=media.tmdb("genre/"+type+"/list").getJSONArray("genres");for(int i=0;i<result.length();i++){JSONObject item=result.getJSONObject(i);TmdbCategories.genre(type,item.getInt("id"),item.getString("name"));}String data=result.toString();if(data.equals(prefs.getString("catalogueGenres_"+type,"[]")))return;prefs.edit().putString("catalogueGenres_"+type,data).apply();runOnUiThread(()->{if(isFinishing()||isDestroyed()||generation!=request)return;View focused=getCurrentFocus();Object route=focused==null?null:focused.getTag();boolean inside=false;for(android.view.ViewParent parent=focused==null?null:focused.getParent();parent!=null;parent=parent.getParent())if(parent==target){inside=true;break;}renderCategoryHub(target,kind,section);if(inside&&route!=null){View replacement=target.findViewWithTag(route);if(replacement!=null)replacement.requestFocus();}});}catch(Exception ignored){/* Official built-in and previously fetched genres remain usable offline. */}});
     }
     private void browse(String kind,String selected,String path,int number){
-        String type=kind.equals("Movies")?"movie":"tv";destination=()->browse(kind,selected,path,number);fixedScreen(kind,path.equals("trending/"+type+"/day")?this::home:()->library(kind));
-        LinearLayout layout=row();layout.setGravity(Gravity.TOP);page.addView(layout,new LinearLayout.LayoutParams(-1,0,1));
-        ScrollView navigation=new ScrollView(this);navigation.setVerticalScrollBarEnabled(false);LinearLayout menu=vertical();menu.setPadding(dp(6),dp(3),dp(10),dp(3));menu.setBackground(box(0xff101722));navigation.addView(menu);layout.addView(navigation,new LinearLayout.LayoutParams(dp(190),-1));
-        LinearLayout right=vertical();right.setPadding(dp(14),0,0,0);layout.addView(right,new LinearLayout.LayoutParams(0,-1,1));
-        List<TmdbCategories.Entry> navigationItems=new ArrayList<>();navigationItems.add(new TmdbCategories.Entry("Search",":search"));navigationItems.addAll(TmdbCategories.lists(type));navigationItems.add(new TmdbCategories.Entry("Genres",":genres"));navigationItems.add(new TmdbCategories.Entry("All categories",":categories"));navigationItems.add(new TmdbCategories.Entry("More filters",":filters"));navigationItems.add(new TmdbCategories.Entry("My library",":library"));
-        boolean exact=navigationItems.stream().anyMatch(entry->entry.name.equals(selected));String active=exact?selected:path.contains("with_genres=")?"Genres":path.startsWith("search/")?"Search":"More filters";
-        for(int i=0;i<navigationItems.size();i++){TmdbCategories.Entry entry=navigationItems.get(i);if(i==1||entry.path.equals(":genres")||entry.path.equals(":library")){TextView group=compactText(i==1?"DISCOVER":entry.path.equals(":genres")?"EXPLORE":"LIBRARY",10);group.setLetterSpacing(.12f);group.setTextColor(0xff8d9bb1);group.setPadding(dp(12),0,0,0);group.setGravity(Gravity.CENTER_VERTICAL);menu.addView(group,new LinearLayout.LayoutParams(-1,dp(20)));}
-            Button choice=navigationButton(entry.name,()->{if(entry.path.equals(":search"))searchCatalogue(kind);else if(entry.path.equals(":library"))savedLibrary(kind);else browse(kind,entry.name,entry.path,1);});choice.setTextSize(14);choice.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);choice.setSelected(entry.name.equals(active));styleFocus(choice,false);LinearLayout.LayoutParams itemLayout=new LinearLayout.LayoutParams(-1,dp(30));itemLayout.bottomMargin=dp(2);menu.addView(choice,itemLayout);if(entry.name.equals(active))choice.post(choice::requestFocus);
+        if(catalogue==null||!catalogue.kind.equals(kind)){catalogue=new CatalogueScreen(kind);if(path.startsWith(":"))catalogue.load("Trending today","trending/"+catalogue.type+"/day");catalogue.refreshGenres();}
+        if(path.startsWith(":")){catalogue.showOverlay(selected,path);return;}
+        catalogue.load(selected,path);
+    }
+    private final class CatalogueScreen {
+        final String kind,type;final LinearLayout content,categories;final HorizontalScrollView categoryScroll;final ImageView backdrop;final TextView collection;
+        final ArrayDeque<TmdbCategories.Entry> overlayPages=new ArrayDeque<>();PosterFeed feed;boolean closed;Runnable pendingPreview;String selected="Trending today",path;
+        CatalogueScreen(String kind){
+            this.kind=kind;type=kind.equals("Movies")?"movie":"tv";fixedScreen(kind,MainActivity.this::home);
+            LinearLayout header=(LinearLayout)page.getChildAt(0);View backButton=header.getChildAt(1);header.removeView(backButton);
+            header.addView(navigationButton("Search",()->searchCatalogue(kind)),new LinearLayout.LayoutParams(dp(88),dp(36)));header.addView(navigationButton("Filters",()->showOverlay("Filters",":filters")),new LinearLayout.LayoutParams(dp(88),dp(36)));
+            Button library=navigationButton("Library",()->{});library.setOnClickListener(v->new AlertDialog.Builder(MainActivity.this).setTitle("Your library").setItems(new String[]{"My library","Premiumize cloud","Transfers"},(d,which)->{if(which==0)savedLibrary(kind);else if(which==1)cloud("",kind);else transfers(kind);}).show());header.addView(library,new LinearLayout.LayoutParams(dp(88),dp(36)));header.addView(backButton,new LinearLayout.LayoutParams(dp(72),dp(36)));
+            ViewGroup parent=(ViewGroup)page.getParent();parent.removeView(page);FrameLayout root=new FrameLayout(MainActivity.this);root.setBackgroundColor(0xff090d14);backdrop=new ImageView(MainActivity.this);backdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);backdrop.setAlpha(.2f);root.addView(backdrop,new FrameLayout.LayoutParams(-1,-1));View shade=new View(MainActivity.this);shade.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{0xaa090d14,0xdd090d14,0xff090d14}));root.addView(shade,new FrameLayout.LayoutParams(-1,-1));page.setBackgroundColor(Color.TRANSPARENT);root.addView(page,new FrameLayout.LayoutParams(-1,-1));setContentView(root);
+            categoryScroll=new HorizontalScrollView(MainActivity.this);categoryScroll.setHorizontalScrollBarEnabled(false);categories=row();categories.setPadding(dp(4),dp(4),dp(4),dp(4));categoryScroll.addView(categories);page.addView(categoryScroll,new LinearLayout.LayoutParams(-1,dp(46)));buildTabs();
+            collection=compactText("Trending today",16);collection.setTextColor(0xffaab7cb);page.addView(collection,new LinearLayout.LayoutParams(-1,dp(28)));content=vertical();page.addView(content,new LinearLayout.LayoutParams(-1,0,1));
         }
-        LinearLayout toolbar=row();TextView heading=compactText(selected,21);heading.setMaxLines(1);heading.setEllipsize(android.text.TextUtils.TruncateAt.END);toolbar.addView(heading,new LinearLayout.LayoutParams(0,-2,1));toolbar.addView(button("Cloud",()->cloud("",kind)));toolbar.addView(button("Transfers",()->transfers(kind)));right.addView(toolbar,new LinearLayout.LayoutParams(-1,dp(40)));
-        ScrollView results=new ScrollView(this);results.setClipToPadding(false);LinearLayout grid=vertical();results.addView(grid);right.addView(results,new LinearLayout.LayoutParams(-1,0,1));
-        if(path.equals(":categories")||path.equals(":genres")||path.equals(":filters")){renderCategoryHub(grid,kind,path);if(!path.equals(":filters"))refreshCatalogueGenres(grid,kind,path);return;}
+        void close(){closed=true;if(pendingPreview!=null)handler.removeCallbacks(pendingPreview);}
+        void buildTabs(){
+            View oldFocus=getCurrentFocus();Object focusedRoute=oldFocus!=null&&oldFocus.getParent()==categories?oldFocus.getTag():null;int x=categoryScroll.getScrollX();categories.removeAllViews();List<TmdbCategories.Entry> entries=new ArrayList<>(TmdbCategories.lists(type));List<TmdbCategories.Entry> genres=catalogueGenres(type);genres.sort(Comparator.comparing(e->e.name));entries.addAll(genres);
+            for(TmdbCategories.Entry entry:entries){Button tab=navigationButton(entry.name,()->load(entry.name,entry.path));tab.setTextSize(14);tab.setTag(entry.path);tab.setSelected(entry.name.equals(selected));styleFocus(tab,tab.hasFocus());LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,dp(34));lp.setMargins(dp(2),0,dp(6),0);categories.addView(tab,lp);}
+            if(feed!=null)routeCategoryFocus(categories,feed);categoryScroll.post(()->{categoryScroll.scrollTo(x,0);if(focusedRoute!=null){View replacement=categories.findViewWithTag(focusedRoute);if(replacement!=null)replacement.requestFocus();}});
+        }
+        void refreshGenres(){if(!secrets.has("tmdb"))return;io.execute(()->{try{JSONArray result=media.tmdb("genre/"+type+"/list").getJSONArray("genres");String data=result.toString();if(data.equals(prefs.getString("catalogueGenres_"+type,"[]")))return;prefs.edit().putString("catalogueGenres_"+type,data).apply();runOnUiThread(()->{if(!closed)buildTabs();});}catch(Exception ignored){}});}
+        void load(String name,String route){
+            if(closed)return;if(catalogueDialog!=null)catalogueDialog.dismiss();generation++;selected=name;path=route;destination=()->browse(kind,name,route,1);collection.setText(name);if(pendingPreview!=null)handler.removeCallbacks(pendingPreview);backdrop.setTag(null);backdrop.setImageDrawable(null);
+            if(feed!=null){feed.close();feeds.remove(feed);feed=null;}content.removeAllViews();for(int i=0;i<categories.getChildCount();i++){View tab=categories.getChildAt(i);tab.setSelected(route.equals(tab.getTag()));styleFocus(tab,tab.hasFocus());}
+            TextView loading=compactText("Loading titles…",15);content.addView(loading);
+            if(!secrets.has("tmdb")){loading.setText("Connect TMDB to browse this catalogue");content.addView(button("Connect TMDB",()->accountScreen("TMDB")));}
+            else feed=catalogueFeed(content,loading,categories,type,n->cataloguePage(type,route,n));
+            if(getCurrentFocus()==null||getCurrentFocus().getParent()!=categories){View active=categories.findViewWithTag(route);if(active!=null)active.post(active::requestFocus);}
+        }
+        void preview(JSONObject item){if(pendingPreview!=null)handler.removeCallbacks(pendingPreview);String art=item.optString("backdrop_path");pendingPreview=()->{if(closed)return;backdrop.setTag(null);backdrop.setImageDrawable(null);if(art.startsWith("/"))loadImage(backdrop,"https://image.tmdb.org/t/p/w1280"+art);};handler.postDelayed(pendingPreview,350);}
+        void showOverlay(String title,String route){
+            if(catalogueDialog==null){overlayPages.clear();Dialog dialog=new Dialog(MainActivity.this,android.R.style.Theme_DeviceDefault_Dialog_NoActionBar);catalogueDialog=dialog;dialog.setOnDismissListener(d->{if(catalogueDialog==dialog){catalogueDialog=null;overlayContent=null;generation++;}});dialog.setOnKeyListener((d,key,event)->{if(key!=KeyEvent.KEYCODE_BACK)return dpadRepeats.consume(event);if(event.getAction()==KeyEvent.ACTION_UP){if(overlayPages.size()>1){overlayPages.pop();renderOverlay();}else dialog.dismiss();}return true;});}
+            overlayPages.push(new TmdbCategories.Entry(title,route));renderOverlay();
+        }
+        void renderOverlay(){
+            generation++;TmdbCategories.Entry entry=overlayPages.peek();LinearLayout body=vertical();body.setPadding(dp(20),dp(14),dp(20),dp(18));LinearLayout head=row();TextView title=compactText(entry.name,22);head.addView(title,new LinearLayout.LayoutParams(0,dp(46),1));head.addView(button("Close",()->catalogueDialog.dismiss()),new LinearLayout.LayoutParams(dp(76),dp(36)));body.addView(head);ScrollView scroll=new ScrollView(MainActivity.this);LinearLayout choices=vertical();overlayContent=choices;scroll.addView(choices);body.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));catalogueDialog.setContentView(body);catalogueDialog.show();Window window=catalogueDialog.getWindow();window.getDecorView().setSystemUiVisibility(MainActivity.this.getWindow().getDecorView().getSystemUiVisibility());window.setBackgroundDrawable(box(0xff101722));window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);window.setDimAmount(.55f);window.setLayout(Math.min(dp(520),getResources().getDisplayMetrics().widthPixels-dp(48)),getResources().getDisplayMetrics().heightPixels-dp(48));WindowManager.LayoutParams attributes=window.getAttributes();attributes.gravity=Gravity.END|Gravity.CENTER_VERTICAL;attributes.x=dp(24);window.setAttributes(attributes);renderCatalogueOptions(choices,kind,entry.path);
+        }
+    }
+    private JSONObject cataloguePage(String type,String path,int number) throws Exception {
+        if(path.startsWith("collection/")){JSONArray parts=media.tmdb(path).getJSONArray("parts");List<JSONObject> sorted=new ArrayList<>();for(int i=0;i<parts.length();i++)sorted.add(parts.getJSONObject(i));sorted.sort(Comparator.comparing(item->item.optString("release_date","9999")));return new JSONObject().put("results",new JSONArray(sorted)).put("total_pages",1);}
+        if(path.startsWith("person/")){JSONObject response=media.tmdb(path);JSONArray items=new JSONArray();Set<Integer> seen=new HashSet<>();for(String key:new String[]{"cast","crew"}){JSONArray credits=response.optJSONArray(key);if(credits!=null)for(int i=0;i<credits.length();i++){JSONObject item=credits.getJSONObject(i);if(seen.add(item.optInt("id")))items.put(item);}}return new JSONObject().put("results",items).put("total_pages",1);}
+        return media.tmdb(path+(path.contains("?")?"&":"?")+"page="+number);
+    }
+    private void renderCatalogueOptions(LinearLayout grid,String kind,String path){
+        String type=kind.equals("Movies")?"movie":"tv";
+        if(path.equals(":filters")){categoryChoices(grid,kind,TmdbCategories.groups(type));return;}
+        if(path.equals(":categories")||path.equals(":genres")){renderCategoryHub(grid,kind,path);refreshCatalogueGenres(grid,kind,path);return;}
+        if(path.equals(":region")){grid.addView(text("Loading countries…",16));async(()->new JSONArray(Network.text(MediaRepository.tmdbUrl("configuration/countries",secrets.get("tmdb")),null,false)),countries->{grid.removeAllViews();for(int i=0;i<countries.length();i++){JSONObject country=countries.getJSONObject(i);String code=country.getString("iso_3166_1");grid.addView(button(country.optString("english_name",code),()->{prefs.edit().putString("catalogueRegion",code).apply();if(catalogue!=null){catalogue.overlayPages.pop();catalogue.renderOverlay();}}));}});return;}
         if(path.equals(":years")){grid.addView(button("Choose a year",()->{LinearLayout content=vertical();EditText input=field(content,"Year",false,String.valueOf(java.time.LocalDate.now().getYear()));input.setInputType(InputType.TYPE_CLASS_NUMBER);Dialog dialog=form("Browse by year",content);content.addView(button("Browse",()->{try{TmdbCategories.Entry entry=TmdbCategories.year(type,Integer.parseInt(input.getText().toString().trim()));dialog.dismiss();browse(kind,entry.name,entry.path,1);}catch(Exception e){input.setError("Enter a year from 1874 to 9999");}}));}));}
         if(Arrays.asList(":years",":ratings",":runtime",":sort",":types",":status",":releases",":availability").contains(path)){categoryChoices(grid,kind,TmdbCategories.filters(type,path,catalogueRegion(),java.time.LocalDate.now()));return;}
         if(path.equals(":people")||path.equals(":companies")||path.equals(":keywords")||path.equals(":collections")){entitySearch(grid,kind,path);return;}
@@ -281,14 +323,8 @@ public class MainActivity extends Activity {
         if(path.equals(":services")){grid.removeAllViews();grid.addView(button("Region: "+catalogueRegion(),()->chooseCatalogueRegion(kind)));grid.addView(compactText("Availability data: JustWatch",12));categoryChoices(grid,kind,TmdbCategories.filters(type,":availability",catalogueRegion(),java.time.LocalDate.now()));grid.addView(loading);
             async(()->media.tmdb("watch/providers/"+type+"?watch_region="+catalogueRegion()).getJSONArray("results"),items->{grid.removeView(loading);List<TmdbCategories.Entry> choices=new ArrayList<>();for(int i=0;i<items.length();i++){JSONObject provider=items.getJSONObject(i);choices.add(new TmdbCategories.Entry(provider.getString("provider_name"),TmdbCategories.discover(type,"watch_region="+catalogueRegion()+"&with_watch_providers="+provider.getInt("provider_id"))));}if(choices.isEmpty())grid.addView(text("No services listed in this region",16));categoryChoices(grid,kind,choices);});return;
         }
-        if(path.startsWith("collection/")){async(()->media.tmdb(path).getJSONArray("parts"),items->{grid.removeAllViews();List<JSONObject> ordered=new ArrayList<>();for(int i=0;i<items.length();i++)ordered.add(items.getJSONObject(i));ordered.sort(Comparator.comparing(item->item.optString("release_date","9999")));posterGrid(grid,new JSONArray(ordered),"movie");});return;}
-        if(path.startsWith("person/")){async(()->media.tmdb(path),response->{grid.removeAllViews();JSONArray items=new JSONArray();Set<Integer> seen=new HashSet<>();for(String key:new String[]{"cast","crew"}){JSONArray credits=response.optJSONArray(key);if(credits!=null)for(int i=0;i<credits.length();i++){JSONObject item=credits.getJSONObject(i);if(seen.add(item.optInt("id")))items.put(item);}}posterGrid(grid,items,type);});return;}
-        catalogueFeed(right,results,menu,type,pageNumber->media.tmdb(path+(path.contains("?")?"&":"?")+"page="+pageNumber));
     }
-    private void chooseCatalogueRegion(String kind){
-        screen("Catalogue region",()->browse(kind,"Streaming services",":services",1));page.addView(text("Loading countries…",15));
-        async(()->new JSONArray(Network.text(MediaRepository.tmdbUrl("configuration/countries",secrets.get("tmdb")),null,false)),countries->{page.removeViewAt(page.getChildCount()-1);List<JSONObject> sorted=new ArrayList<>();for(int i=0;i<countries.length();i++)sorted.add(countries.getJSONObject(i));sorted.sort(Comparator.comparing(item->item.optString("english_name","")));for(JSONObject country:sorted){String code=country.getString("iso_3166_1");page.addView(button(country.optString("english_name",code),()->{prefs.edit().putString("catalogueRegion",code).apply();browse(kind,"Streaming services",":services",1);}));}});
-    }
+    private void chooseCatalogueRegion(String kind){browse(kind,"Region",":region",1);}
     private void entitySearch(LinearLayout target,String kind,String section){
         String type=kind.equals("Movies")?"movie":"tv",entity=section.equals(":people")?"person":section.equals(":companies")?"company":section.equals(":keywords")?"keyword":"collection";
         EditText query=field(target,section.equals(":people")?"Actor, director or creator":section.equals(":companies")?"Studio name":section.equals(":keywords")?"Keyword or theme":"Collection name",false,"");LinearLayout found=vertical();
