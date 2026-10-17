@@ -33,17 +33,17 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     }
     void start(){loadMore();}
     private int dp(int value){return (int)(value*getResources().getDisplayMetrics().density+.5f);}
-    private void prefetch(){if(closed||loading||failed||next>total)return;LinearLayoutManager manager=(LinearLayoutManager)getLayoutManager();int last=manager.findLastVisibleItemPosition();if(last>=items.size()-(horizontal?6:12))loadMore();}
+    private void prefetch(){if(closed||loading||failed||next>total)return;LinearLayoutManager manager=(LinearLayoutManager)getLayoutManager();int last=manager.findLastVisibleItemPosition();if(last>=items.size()-(horizontal?6:12))post(()->{if(!closed&&!failed)loadMore();});}
     void loadMore(){
         if(closed||loading||next>total)return;loading=true;failed=false;statusChanged();final int requested=next;
         worker.execute(()->{try{JSONObject response=loader.load(requested);main.post(()->{if(closed)return;try{
-            JSONArray results=response.getJSONArray("results");ArrayList<JSONObject> additions=new ArrayList<>();
+            JSONArray results=response.getJSONArray("results");ArrayList<JSONObject> additions=new ArrayList<>();Set<String> addedKeys=new HashSet<>();
             for(int i=0;i<results.length();i++){JSONObject item=results.getJSONObject(i);String media=item.optString("media_type",type);int id=item.optInt("id");if(item.optBoolean("adult",false)||id<=0||(!media.equals("movie")&&!media.equals("tv")))continue;
-                if(seen.add(media+":"+id)){item.put("media_type",media);additions.add(item);}}
-            int first=items.size();items.addAll(additions);capped=response.optInt("total_pages",requested)>500;total=Math.min(500,Math.max(requested,response.optInt("total_pages",requested)));next=requested+1;loading=false;
+                if(!seen.contains(media+":"+id)&&addedKeys.add(media+":"+id)){item.put("media_type",media);additions.add(item);}}
+            int first=items.size();seen.addAll(addedKeys);items.addAll(additions);capped=response.optInt("total_pages",requested)>500;total=Math.min(500,Math.max(requested,response.optInt("total_pages",requested)));next=requested+1;loading=false;
             // The footer stays at the end; existing poster holders are never rebound on append.
-            if(!additions.isEmpty())adapter.notifyItemRangeInserted(first,additions.size());statusChanged();
-            post(()->{if(pendingFrom!=null)focusNearest(pendingFrom);prefetch();});
+            if(!additions.isEmpty()){adapter.notifyItemRangeInserted(first,additions.size());if(first==0)scrollToPosition(0);}statusChanged();
+            post(()->{completePendingFocus();prefetch();});
         }catch(JSONException e){failed=true;loading=false;statusChanged();}});}catch(Exception e){main.post(()->{if(!closed){failed=true;loading=false;statusChanged();}});}});
     }
     private void statusChanged(){adapter.notifyItemChanged(items.size());}
@@ -52,6 +52,8 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
         for(int i=0;i<getChildCount();i++){View child=getChildAt(i);int position=getChildAdapterPosition(child);if(position<0||position>=items.size())continue;Rect r=new Rect();if(!child.getGlobalVisibleRect(r))continue;int d=Math.abs(r.centerY()-source.centerY());if(d<distance||(d==distance&&r.left<left)){best=child;distance=d;left=r.left;}}
         if(best!=null){pendingFrom=null;return best.requestFocus();}pendingFrom=from;return false;
     }
+    private void completePendingFocus(){if(pendingFrom!=null){if(pendingFrom.hasFocus())focusNearest(pendingFrom);else pendingFrom=null;}}
+    @Override protected void onLayout(boolean changed,int left,int top,int right,int bottom){super.onLayout(changed,left,top,right,bottom);if(pendingFrom!=null)post(this::completePendingFocus);}
     @Override public boolean dispatchKeyEvent(KeyEvent event){
         int key=event.getKeyCode();boolean forward=horizontal?key==KeyEvent.KEYCODE_DPAD_RIGHT:key==KeyEvent.KEYCODE_DPAD_DOWN;
         if(forward){View current=findFocus();View target=current==null?null:focusSearch(current,horizontal?FOCUS_RIGHT:FOCUS_DOWN);boolean inside=false;for(View node=target;node!=null;node=node.getParent() instanceof View?(View)node.getParent():null)if(node==this){inside=true;break;}
