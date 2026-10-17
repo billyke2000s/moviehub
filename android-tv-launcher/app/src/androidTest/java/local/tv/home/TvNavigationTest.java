@@ -266,9 +266,9 @@ public class TvNavigationTest {
         instrumentation.waitForIdleSync();
         instrumentation.runOnMainSync(() -> {
             try {
-                Method method = MainActivity.class.getDeclaredMethod("accountScreen", String.class);
+                Method method = SettingsScreens.class.getDeclaredMethod("accountScreen", String.class);
                 method.setAccessible(true);
-                method.invoke(activity, "TMDB");
+                method.invoke(activity.settingsScreens, "TMDB");
             } catch (Exception e) {
                 throw new AssertionError(e);
             }
@@ -309,9 +309,9 @@ public class TvNavigationTest {
                             new JSONArray().put(new JSONObject().put("name", "Actor One"))
                         )
                     );
-                Method details = MainActivity.class.getDeclaredMethod("renderDetails", JSONObject.class);
+                Method details = TitleDetails.class.getDeclaredMethod("renderDetails", JSONObject.class);
                 details.setAccessible(true);
-                details.invoke(activity, fixture);
+                details.invoke(activity.titleDetails, fixture);
             } catch (Exception e) {
                 throw new AssertionError(e);
             }
@@ -331,15 +331,15 @@ public class TvNavigationTest {
                     .put("id", 991100)
                     .put("media_type", "tv")
                     .put("name", "Saved series");
-                Method toggle = MainActivity.class.getDeclaredMethod("toggleWatchlist", JSONObject.class),
-                    has = MainActivity.class.getDeclaredMethod("isWatchlisted", JSONObject.class);
+                Method toggle = LibraryScreens.class.getDeclaredMethod("toggleWatchlist", JSONObject.class),
+                    has = LibraryScreens.class.getDeclaredMethod("isWatchlisted", JSONObject.class);
                 toggle.setAccessible(true);
                 has.setAccessible(true);
-                assertFalse((Boolean) has.invoke(activity, title));
-                toggle.invoke(activity, title);
-                assertTrue((Boolean) has.invoke(activity, title));
-                toggle.invoke(activity, title);
-                assertFalse((Boolean) has.invoke(activity, title));
+                assertFalse((Boolean) has.invoke(activity.libraryScreens, title));
+                toggle.invoke(activity.libraryScreens, title);
+                assertTrue((Boolean) has.invoke(activity.libraryScreens, title));
+                toggle.invoke(activity.libraryScreens, title);
+                assertFalse((Boolean) has.invoke(activity.libraryScreens, title));
             } catch (Exception e) {
                 throw new AssertionError(e);
             } finally {

@@ -129,7 +129,7 @@ public class PosterFeedTest {
         AtomicReference<LinearLayout> navigation = new AtomicReference<>();
         remote.runOnMainSync(() -> {
             try {
-                Method browse = MainActivity.class.getDeclaredMethod(
+                Method browse = CatalogueScreens.class.getDeclaredMethod(
                     "browse",
                     String.class,
                     String.class,
@@ -138,21 +138,21 @@ public class PosterFeedTest {
                 );
                 browse.setAccessible(true);
                 browse.invoke(
-                    activity,
+                    activity.catalogues,
                     kind,
                     "Top rated",
                     kind.equals("Movies") ? "movie/top_rated" : "tv/top_rated",
                     1
                 );
-                Field field = MainActivity.class.getDeclaredField("catalogue");
+                Field field = CatalogueScreens.class.getDeclaredField("catalogue");
                 field.setAccessible(true);
-                Object screen = field.get(activity);
+                Object screen = field.get(activity.catalogues);
                 Field contentField = screen.getClass().getDeclaredField("content");
                 contentField.setAccessible(true);
                 LinearLayout right = (LinearLayout) contentField.get(screen),
                     menu = (LinearLayout) ((LinearLayout) right.getParent()).getChildAt(0);
                 navigation.set(menu);
-                feed = activity.catalogueFeed(
+                feed = activity.posters.catalogueFeed(
                     right,
                     right.getChildAt(0),
                     menu,

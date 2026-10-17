@@ -25,11 +25,11 @@ public class StreamingMenusTest {
     private Set<String> watched;
     private boolean updates;
 
-    private void call(String name, Class<?>[] types, Object... args) {
+    private void call(Object owner, String name, Class<?>[] types, Object... args) {
         try {
-            Method m = MainActivity.class.getDeclaredMethod(name, types);
+            Method m = owner.getClass().getDeclaredMethod(name, types);
             m.setAccessible(true);
-            m.invoke(activity, args);
+            m.invoke(owner, args);
         } catch (Exception e) {
             throw new AssertionError(e);
         }
@@ -89,8 +89,8 @@ public class StreamingMenusTest {
     public void searchHistoryIsDeduplicatedAndSearchIsRemoteAccessible() throws Exception {
         ui(() -> {
             for (String value : new String[] { "Alien", "Arrival", "alien" })
-                call("rememberSearch", new Class[] { String.class }, value);
-            call("searchCatalogue", new Class[] { String.class }, "Movies");
+                call(activity.catalogueSearch, "rememberSearch", new Class[] { String.class }, value);
+            call(activity.catalogueSearch, "searchCatalogue", new Class[] { String.class }, "Movies");
             assertNotNull(find(root(), "Search titles"));
             assertNotNull(find(root(), "Search people"));
             assertNotNull(find(root(), "Recent searches"));
@@ -110,7 +110,13 @@ public class StreamingMenusTest {
             .put(new JSONObject().put("id", 3).put("media_type", "movie").put("title", "Alpha"));
         prefs.edit().putString("watchlist", items.toString()).commit();
         ui(() -> {
-            call("watchlist", new Class[] { String.class, String.class }, "Movies", "Title A–Z");
+            call(
+                activity.libraryScreens,
+                "watchlist",
+                new Class[] { String.class, String.class },
+                "Movies",
+                "Title A–Z"
+            );
             assertNotNull(find(root(), "Alpha"));
             assertNotNull(find(root(), "Zebra"));
             assertNull(find(root(), "Series fixture"));
@@ -137,12 +143,13 @@ public class StreamingMenusTest {
             );
         ui(() -> {
             call(
+                activity,
                 "screen",
                 new Class[] { String.class, Runnable.class },
                 "Fixture series",
                 (Runnable) () -> {}
             );
-            call("renderSeasons", new Class[] { JSONObject.class }, series);
+            call(activity.seriesScreens, "renderSeasons", new Class[] { JSONObject.class }, series);
             assertNotNull(find(root(), "Season 1"));
             assertNotNull(find(root(), "Choose a season"));
         });
@@ -157,12 +164,14 @@ public class StreamingMenusTest {
         );
         ui(() -> {
             call(
+                activity,
                 "screen",
                 new Class[] { String.class, Runnable.class },
                 "Fixture series · Season 1",
                 (Runnable) () -> {}
             );
             call(
+                activity.seriesScreens,
                 "renderEpisodes",
                 new Class[] {
                     JSONArray.class,
@@ -204,6 +213,7 @@ public class StreamingMenusTest {
         List<SourceRepository.Source> sources = Arrays.asList(uhd, hd);
         ui(() -> {
             call(
+                activity,
                 "screen",
                 new Class[] { String.class, Runnable.class },
                 "Choose a source",
@@ -219,6 +229,7 @@ public class StreamingMenusTest {
                 throw new AssertionError(e);
             }
             call(
+                activity.sources,
                 "renderSources",
                 new Class[] {
                     LinearLayout.class,

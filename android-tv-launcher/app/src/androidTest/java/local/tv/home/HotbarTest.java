@@ -24,15 +24,15 @@ public class HotbarTest {
     private boolean updates;
 
     private Object field(String name) throws Exception {
-        Field f = MainActivity.class.getDeclaredField(name);
+        Field f = AppDock.class.getDeclaredField(name);
         f.setAccessible(true);
-        return f.get(activity);
+        return f.get(activity.dock);
     }
 
-    private void call(String name) throws Exception {
-        Method m = MainActivity.class.getDeclaredMethod(name);
+    private void call(Object owner, String name) throws Exception {
+        Method m = owner.getClass().getDeclaredMethod(name);
         m.setAccessible(true);
-        m.invoke(activity);
+        m.invoke(owner);
     }
 
     private void ui(Runnable run) {
@@ -75,16 +75,15 @@ public class HotbarTest {
             try {
                 dock.removeAllViews();
                 Method add = null;
-                for (Method m : MainActivity.class.getDeclaredMethods())
-                    if (m.getName().equals("addApp")) add = m;
+                for (Method m : AppDock.class.getDeclaredMethods()) if (m.getName().equals("addApp")) add = m;
                 assertNotNull(add);
                 add.setAccessible(true);
-                Class<?> app = Class.forName("local.tv.home.MainActivity$App");
+                Class<?> app = Class.forName("local.tv.home.AppDock$App");
                 Constructor<?> ctor = app.getDeclaredConstructors()[0];
                 ctor.setAccessible(true);
                 for (String name : new String[] { "A", "B", "C" })
                     add.invoke(
-                        activity,
+                        activity.dock,
                         dock,
                         ctor.newInstance(name, new ComponentName("fixture." + name, "Main"), null),
                         true
@@ -92,7 +91,7 @@ public class HotbarTest {
                 Button all = new Button(activity);
                 all.setText("All Apps");
                 dock.addView(all);
-                call("saveVisibleDock");
+                call(activity.dock, "saveVisibleDock");
             } catch (Exception e) {
                 throw new AssertionError(e);
             }
@@ -129,7 +128,7 @@ public class HotbarTest {
         assertEquals(2, new JSONArray(prefs.getString("dockOrder", "[]")).length());
         ui(() -> {
             try {
-                call("home");
+                call(activity.homeScreen, "home");
             } catch (Exception e) {
                 throw new AssertionError(e);
             }
