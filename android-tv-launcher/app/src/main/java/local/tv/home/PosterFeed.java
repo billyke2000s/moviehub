@@ -132,8 +132,64 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     @Override
     public void requestChildFocus(View child, View focused) {
         super.requestChildFocus(child, focused);
+        focusedView = focused;
         int position = getChildAdapterPosition(child);
         if (position >= 0 && position < items.size()) lastFocused = adapter.getItemId(position);
+    }
+
+    /** The focused view inside this feed, if focus is currently here. */
+    private View focusedView;
+
+    /**
+     * Quick D-pad presses can move focus to a poster that is still being scrolled into view. A layout
+     * during that scroll can recycle the focused poster, which leaves nothing focused and makes the
+     * remote appear dead. When that happens, focus is given back to the same title.
+     */
+    private final ViewTreeObserver.OnGlobalFocusChangeListener focusWatcher = (before, after) -> {
+        if (after != null) {
+            if (!isDescendant(after)) focusedView = null;
+            return;
+        }
+        if (before != null && before == focusedView) recoverFocus();
+    };
+
+    private boolean isDescendant(View view) {
+        for (ViewParent parent = view.getParent(); parent instanceof View; parent = parent.getParent()) if (
+            parent == this
+        ) return true;
+        return false;
+    }
+
+    private void recoverFocus() {
+        long id = lastFocused;
+        if (closed || id == Long.MIN_VALUE) return;
+        post(() -> {
+            if (closed || !isAttachedToWindow() || getRootView().findFocus() != null) return;
+            ViewHolder holder = findViewHolderForItemId(id);
+            if (
+                holder != null && holder.itemView.isAttachedToWindow() && holder.itemView.requestFocus()
+            ) return;
+            for (int position = 0; position < items.size(); position++) if (
+                adapter.getItemId(position) == id
+            ) {
+                // onLayout focuses the item once it has been laid out again.
+                restoredFocus = id;
+                scrollToPosition(position);
+                return;
+            }
+        });
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        getViewTreeObserver().addOnGlobalFocusChangeListener(focusWatcher);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        getViewTreeObserver().removeOnGlobalFocusChangeListener(focusWatcher);
+        super.onDetachedFromWindow();
     }
 
     void setColumns(int value) {
