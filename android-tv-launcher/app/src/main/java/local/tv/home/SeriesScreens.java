@@ -194,7 +194,9 @@ final class SeriesScreens {
                             : new JSONObject(series.toString());
                     metadata.put("season", season).put("episode", number).put("episodeKey", key);
                     activity.playbackTitle = metadata;
-                } catch (JSONException ignored) {}
+                } catch (JSONException e) {
+                    Diagnostics.recovered("Preparing episode metadata", e);
+                }
                 activity.sources.torrentSources(
                     imdb,
                     season,

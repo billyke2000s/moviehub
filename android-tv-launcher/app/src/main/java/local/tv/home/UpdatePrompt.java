@@ -42,7 +42,9 @@ final class UpdatePrompt {
             try {
                 result = AppUpdates.check(activity.getApplicationContext());
                 success = true;
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                Diagnostics.recovered("Checking for an update", e);
+            }
             final boolean checked = success;
             final AppUpdates.Release release = result;
             activity.runOnUiThread(() -> {

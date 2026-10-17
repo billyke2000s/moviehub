@@ -251,7 +251,9 @@ final class PosterCards {
                     if (position instanceof Number && ((Number) position).longValue() > 0) return row;
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            Diagnostics.recovered("Reading resume position", e);
+        }
         return null;
     }
 

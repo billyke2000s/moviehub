@@ -113,7 +113,9 @@ final class AppDock {
                     String id = array.getString(i);
                     if (!order.contains(id)) order.add(id);
                 }
-            } catch (JSONException ignored) {}
+            } catch (JSONException e) {
+                Diagnostics.recovered("Reading saved dock order", e);
+            }
         } else {
             Set<String> pins = activity.prefs.getStringSet("pinned", null);
             for (App app : apps)
