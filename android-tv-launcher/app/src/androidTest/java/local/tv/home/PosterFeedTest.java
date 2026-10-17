@@ -43,7 +43,7 @@ public class PosterFeedTest {
         screenshot("poster-category-focus");
     }
     @Test public void downDuringInitialLoadingEntersPostersWhenReady() throws Exception {
-        LinearLayout menu=mount("Movies",n->{assertTrue(release.await(15,TimeUnit.SECONDS));return page(n,20,1,"movie");},false);View category=label(menu,"Browse");remote.runOnMainSync(()->{category.requestFocus();feed.focusBelow(category);assertSame(category,activity.getCurrentFocus());});release.countDown();await(()->activity.getCurrentFocus()!=null&&activity.getCurrentFocus().getParent()==feed);
+        LinearLayout menu=mount("Movies",n->{assertTrue(release.await(15,TimeUnit.SECONDS));return page(n,20,1,"movie");},false);View category=label(menu,"Browse");remote.runOnMainSync(category::requestFocus);key(KeyEvent.KEYCODE_DPAD_DOWN);remote.runOnMainSync(()->assertSame(category,activity.getCurrentFocus()));release.countDown();await(()->activity.getCurrentFocus()!=null&&activity.getCurrentFocus().getParent()==feed);
     }
     @Test public void delayedPagesAppendWithoutMovingRemoteFocusOrScroll() throws Exception {
         AtomicInteger requested=new AtomicInteger();mount("Movies",n->{requested.set(n);if(n==2)assertTrue(release.await(15,TimeUnit.SECONDS));return page(n,n==3?7:20,3,"movie");});
