@@ -24,7 +24,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     private final FeedAdapter adapter=new FeedAdapter();
     PosterFeed(Context context,boolean horizontal,String type,Executor worker,Loader loader,Cards cards){
         super(context);this.horizontal=horizontal;this.type=type;this.worker=worker;this.loader=loader;this.cards=cards;
-        setItemAnimator(null);setPreserveFocusAfterLayout(true);setClipToPadding(true);setPadding(4,4,4,4);
+        setItemAnimator(null);setPreserveFocusAfterLayout(true);setClipToPadding(true);setPadding(0,0,0,0);
         if(horizontal)setLayoutManager(new LinearLayoutManager(context,HORIZONTAL,false));
         else {GridLayoutManager grid=new GridLayoutManager(context,4);grid.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup(){@Override public int getSpanSize(int position){return position==items.size()?4:1;}});setLayoutManager(grid);}
         adapter.setHasStableIds(true);setAdapter(adapter);
@@ -67,7 +67,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
         @Override public int getItemViewType(int p){return p==items.size()?1:0;}
         @Override public long getItemId(int p){if(p==items.size())return Long.MIN_VALUE;JSONObject item=items.get(p);return ((long)item.optInt("id")<<1)|("tv".equals(item.optString("media_type"))?1:0);}
         @Override public Holder onCreateViewHolder(ViewGroup parent,int type){
-            View card;if(type==1){Button status=new Button(getContext());status.setAllCaps(false);status.setTextColor(0xfff2f4f8);status.setTextSize(14);status.setBackgroundColor(0xff090d14);status.setOnClickListener(v->loadMore());card=status;}else card=cards.create(parent);
+            View card;if(type==1){Button status=new Button(getContext());status.setAllCaps(false);status.setTextColor(0xfff2f4f8);status.setTextSize(14);status.setBackgroundColor(0xff090d14);status.setOnFocusChangeListener((v,on)->{status.setBackgroundColor(on?0xfff2f4f8:0xff090d14);status.setTextColor(on?0xff10141c:0xfff2f4f8);});status.setOnClickListener(v->{View last=getLayoutManager().findViewByPosition(items.size()-1);if(last!=null)last.requestFocus();loadMore();});card=status;}else card=cards.create(parent);
             LayoutParams lp=new LayoutParams(horizontal?dp(type==1?170:108):LayoutParams.MATCH_PARENT,horizontal?dp(150):dp(type==1?48:222));lp.setMargins(dp(4),dp(4),dp(4),dp(4));card.setLayoutParams(lp);return new Holder(card);
         }
         @Override public void onBindViewHolder(Holder holder,int position){

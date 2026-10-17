@@ -6,6 +6,6 @@ The feed requests another page with roughly two grid rows or six shelf cards rem
 
 Right from a catalogue sidebar category selects the visible poster nearest its vertical centre, breaking ties towards the leftmost column. If the first page is pending, the request is retained until cards are ready. Page appends never request focus.
 
-Poster captions reserve two top-aligned lines without the previous text padding. A focused title which exceeds two lines uses Android's repeating marquee; moving focus away restores the two-line caption. The Home dock heading has its own 28dp row and elevation above clipped app tiles.
+Poster captions reserve two top-aligned lines without the previous text padding. A focused title which exceeds two lines uses a repeating, frame-timed marquee; moving focus away restores the two-line caption. The Home dock heading has its own 28dp row and elevation above clipped app tiles.
 
 Instrumentation uses generated, paginated TMDB-shaped responses through the production loader interface, with real D-pad events. This verifies navigation and delayed-page behaviour without requiring or modifying saved account credentials. It does not verify an authenticated live TMDB account or target-device installation.
