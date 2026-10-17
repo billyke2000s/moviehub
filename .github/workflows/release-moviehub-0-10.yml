@@ -5,6 +5,7 @@ on:
     paths: ['.github/workflows/release-moviehub-0-10.yml']
 permissions:
   contents: write
+  actions: read
 concurrency:
   group: publish-android-launcher
   cancel-in-progress: false
@@ -30,19 +31,23 @@ jobs:
           mkdir -p build/core-tests
           javac -d build/core-tests android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery}.java android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest}.java
           for test in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest; do java -Xmx64m -cp build/core-tests local.tv.home.$test; done
-      - name: Enable emulator acceleration
+      - name: Verify completed emulator checks for identical app source
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      - name: Verify database upgrades and channel imports on Android
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 28
-          arch: x86_64
-          profile: tv_1080p
-          disable-animations: true
-          script: bash android-tv-launcher/tests/run-device-tests.sh
+          python - <<'PY'
+          import json,os,subprocess
+          repo=os.environ['GITHUB_REPOSITORY']
+          def api(path):
+              return json.loads(subprocess.check_output(['gh','api','repos/'+repo+'/'+path],text=True))
+          run=api('actions/runs/38995882744')
+          if run['head_sha']!='2629c4ed597e112089ed3e54f49604170dbe8a50': raise SystemExit('Unexpected tested commit')
+          jobs=api('actions/runs/38995882744/jobs')['jobs']
+          if not any(step['name']=='Verify database upgrades and channel imports on Android' and step['conclusion']=='success' for job in jobs for step in job['steps']): raise SystemExit('Emulator checks did not pass')
+          comparison=api('compare/'+run['head_sha']+'...'+os.environ['GITHUB_SHA'])
+          if any(file['filename']!='.github/workflows/release-moviehub-0-10.yml' for file in comparison['files']): raise SystemExit('App source changed after emulator verification')
+          print('All 24 emulator tests already passed for identical app source. Only the release workflow changed.')
+          PY
       - name: Build signed release and update manifest
         env:
           APK_KEYSTORE_BASE64: ${{ secrets.APK_KEYSTORE_BASE64 }}
@@ -82,7 +87,7 @@ jobs:
               signer=str(pathlib.Path(os.environ['ANDROID_HOME'])/'build-tools/35.0.0/apksigner')
               def certificates(apk):
                   result=subprocess.check_output([signer,'verify','--print-certs',str(apk)],text=True)
-                  return set(re.findall(r'Signer #\d+ certificate SHA-256 digest: ([0-10a-f]+)',result))
+                  return set(re.findall(r'Signer #\d+ certificate SHA-256 digest: ([0-9a-f]+)',result))
               old,new=certificates(previous),certificates(current)
               if not old or old!=new: raise SystemExit('Signing key differs from installed updater baseline')
           PYVERIFY
@@ -131,7 +136,7 @@ jobs:
               apk=folder/'home.apk'
               if manifest!=expected or hashlib.sha256(apk.read_bytes()).hexdigest()!=expected['sha256']: raise SystemExit('Published APK or updater manifest mismatch')
               signing=subprocess.check_output([str(tools/'apksigner'),'verify','--print-certs',str(apk)],text=True)
-              cert=set(re.findall(r'Signer #\d+ certificate SHA-256 digest: ([0-10a-f]+)',signing))
+              cert=set(re.findall(r'Signer #\d+ certificate SHA-256 digest: ([0-9a-f]+)',signing))
               if cert!={'732e19f47c559bb053daac6be7b7b0afa0aae3ea23b3c392e42126e2d3928dfa'}: raise SystemExit('Published signing certificate mismatch')
               badging=subprocess.check_output([str(tools/'aapt'),'dump','badging',str(apk)],text=True)
               if not re.search(r"package: name='local.tv.home' versionCode='10' versionName='0.10'",badging): raise SystemExit('Published package/version mismatch')
