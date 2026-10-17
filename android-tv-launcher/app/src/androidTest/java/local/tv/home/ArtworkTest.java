@@ -31,6 +31,9 @@ public class ArtworkTest {
     boolean updates;
     CountDownLatch release = new CountDownLatch(1);
     String prefix = "fixture:" + UUID.randomUUID() + ":";
+    /** Focus changes recorded during the test, reported when a wait times out. */
+    final List<String> focusLog = Collections.synchronizedList(new ArrayList<>());
+    volatile String phase = "setup";
 
     interface Check {
         boolean ready();
@@ -71,8 +74,23 @@ public class ArtworkTest {
                 (feed == null ? -1 : feed.getHeight()) +
                 ", children=" +
                 (feed == null ? -1 : feed.getChildCount()) +
-                posters.get()
+                posters.get() +
+                "; recent focus changes: " +
+                recentFocusChanges()
         );
+    }
+
+    String recentFocusChanges() {
+        synchronized (focusLog) {
+            int from = Math.max(0, focusLog.size() - 12);
+            return focusLog.subList(from, focusLog.size()).toString();
+        }
+    }
+
+    String focusName(View view) {
+        if (view == null) return "none";
+        CharSequence description = view.getContentDescription();
+        return description != null ? description.toString() : view.getClass().getSimpleName();
     }
 
     /** Lists visible poster cards that do not show their expected image. */
@@ -252,6 +270,20 @@ public class ArtworkTest {
                 )
             );
             activity.setContentView(host);
+            host.getViewTreeObserver().addOnGlobalFocusChangeListener((before, after) ->
+                focusLog.add(
+                    phase +
+                        ": " +
+                        focusName(before) +
+                        " -> " +
+                        focusName(after) +
+                        " (scroll " +
+                        feed.getScrollState() +
+                        ", children " +
+                        feed.getChildCount() +
+                        ")"
+                )
+            );
             feed.start();
         });
         await(
@@ -269,9 +301,11 @@ public class ArtworkTest {
         );
         await("initial focus", () -> activity.getCurrentFocus() != null);
         for (int i = 0; i < 59; i++) {
+            phase = "right " + (i + 1);
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
             remote.waitForIdleSync();
         }
+        phase = "settling at end";
         await("scroll idle at end", () -> feed.getScrollState() == RecyclerView.SCROLL_STATE_IDLE);
         await("posters ready at end", this::visiblePostersReady);
         await("focus at end", () -> activity.getCurrentFocus() != null);
@@ -279,6 +313,7 @@ public class ArtworkTest {
             assertEquals("Poster 60", activity.getCurrentFocus().getContentDescription())
         );
         for (int i = 0; i < 59; i++) {
+            phase = "left " + (i + 1);
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
             remote.waitForIdleSync();
         }
