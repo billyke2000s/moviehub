@@ -27,8 +27,9 @@ Last updated: 17 October 2026.
 
 - **PR #25**: readable code structure and documentation (no behaviour change).
 - **PR #26**: device-test reliability, the poster focus fix, error logging, CI action updates.
-- **PR #27**: MovieHub Start, the companion Home app with a crash failsafe.
-- These PRs are stacked: merge #25, then #26, then #27.
+- These PRs are stacked: merge #25, then #26.
+- A companion Home app to survive updates (PR #27) was closed as not needed; after an update, choose
+  MovieHub again as the Home app. Its code remains on branch `feature/launcher-shim`.
 - **Dependabot:** #3 (`actions/checkout`, superseded by PR #26), #12 (Android Gradle plugin 9, a
   major upgrade to do separately) and #13 (LibVLC 3.7.7) remain open. Stale PRs #1, #2, #4, #5, #10
   and the superseded #22 were closed on 17 October.
