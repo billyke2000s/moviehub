@@ -32,6 +32,13 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
         addOnScrollListener(new OnScrollListener(){@Override public void onScrolled(RecyclerView view,int dx,int dy){prefetch();}});
         setFocusable(false);setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
     }
+    static final class State {
+        final ArrayList<JSONObject> items;final int next,total;final boolean capped;final android.os.Parcelable layout;final long focused;
+        State(PosterFeed feed){items=new ArrayList<>(feed.items);next=feed.next;total=feed.total;capped=feed.capped;layout=feed.getLayoutManager().onSaveInstanceState();View view=feed.findFocus();ViewHolder holder=view==null?null:feed.findContainingViewHolder(view);focused=holder==null?Long.MIN_VALUE:holder.getItemId();}
+    }
+    State snapshot(){return new State(this);}
+    private long restoredFocus=Long.MIN_VALUE;
+    void restore(State state){items.clear();items.addAll(state.items);seen.clear();for(JSONObject item:items)seen.add(item.optString("media_type",type)+":"+item.optInt("id"));next=state.next;total=state.total;capped=state.capped;restoredFocus=state.focused;adapter.notifyDataSetChanged();getLayoutManager().onRestoreInstanceState(state.layout);post(this::prefetch);}
     void setColumns(int value){columns=value;((GridLayoutManager)getLayoutManager()).setSpanCount(value);}
     void start(){loadMore();}
     private int dp(int value){return (int)(value*getResources().getDisplayMetrics().density+.5f);}
@@ -57,7 +64,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
         if(best!=null){pendingFrom=null;return best.requestFocus();}pendingFrom=from;pendingBelow=below;return false;
     }
     private void completePendingFocus(){if(pendingFrom!=null){if(pendingFrom.hasFocus())focusFrom(pendingFrom,pendingBelow);else pendingFrom=null;}}
-    @Override protected void onLayout(boolean changed,int left,int top,int right,int bottom){super.onLayout(changed,left,top,right,bottom);if(pendingFrom!=null)post(this::completePendingFocus);if(onFirstItems!=null&&!items.isEmpty()&&getLayoutManager().findViewByPosition(0)!=null){Runnable callback=onFirstItems;onFirstItems=null;post(callback);}}
+    @Override protected void onLayout(boolean changed,int left,int top,int right,int bottom){super.onLayout(changed,left,top,right,bottom);if(pendingFrom!=null)post(this::completePendingFocus);if(restoredFocus!=Long.MIN_VALUE){ViewHolder holder=findViewHolderForItemId(restoredFocus);if(holder!=null){restoredFocus=Long.MIN_VALUE;View target=holder.itemView;post(target::requestFocus);}}if(onFirstItems!=null&&!items.isEmpty()&&getLayoutManager().findViewByPosition(0)!=null){Runnable callback=onFirstItems;onFirstItems=null;post(callback);}}
     @Override public boolean dispatchKeyEvent(KeyEvent event){
         int key=event.getKeyCode();boolean forward=horizontal?key==KeyEvent.KEYCODE_DPAD_RIGHT:key==KeyEvent.KEYCODE_DPAD_DOWN;
         if(forward){View current=findFocus();ViewHolder holder=current==null?null:findContainingViewHolder(current);

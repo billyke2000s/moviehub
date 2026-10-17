@@ -127,6 +127,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         }
         List<String> args=new ArrayList<>();String where="1=1";
         if("favourites".equals(filter))where+=" AND key IN (SELECT key FROM favourite_keys)";
+        if(filter.startsWith("group:")){where+=" AND grp=?";args.add(filter.substring(6));}
         if("sports".equals(filter))where+=" AND (grp LIKE '%sport%' OR name LIKE '%sport%')";
         if(text!=null&&!text.trim().isEmpty()){
             String match=ChannelQuery.fts(text);if(match.isEmpty())return new ArrayList<>();
