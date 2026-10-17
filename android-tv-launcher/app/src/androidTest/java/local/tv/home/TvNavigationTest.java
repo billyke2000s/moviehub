@@ -43,11 +43,19 @@ public class TvNavigationTest {
         return activity.getWindow().getDecorView();
     }
 
+    /** Clicks the control with this label, waiting up to 5 s for the screen to finish changing. */
     private void select(String label) {
+        long end = SystemClock.uptimeMillis() + 5000;
+        java.util.concurrent.atomic.AtomicBoolean present = new java.util.concurrent.atomic.AtomicBoolean();
+        while (true) {
+            instrumentation.runOnMainSync(() -> present.set(text(root(), label) != null));
+            if (present.get() || SystemClock.uptimeMillis() > end) break;
+            SystemClock.sleep(100);
+        }
         instrumentation.runOnMainSync(() -> {
             View view = text(root(), label);
             if (view == null) UiEvidence.capture("navigation-missing-" + label);
-            assertNotNull(label, view);
+            assertNotNull("No control labelled '" + label + "' on screen after 5 s", view);
             while (!view.hasOnClickListeners() && view.getParent() instanceof View)
                 view = (View) view.getParent();
             assertTrue(label, view.performClick());
