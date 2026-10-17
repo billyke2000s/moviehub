@@ -119,7 +119,7 @@ final class CatalogueSearch {
         }
     }
 
-    private void rememberSearch(String value) {
+    void rememberSearch(String value) {
         JSONArray next = new JSONArray();
         next.put(value);
         JSONArray old = recentSearches();

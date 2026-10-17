@@ -12,7 +12,6 @@ import androidx.recyclerview.widget.*;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import java.io.*;
-import java.lang.reflect.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import org.json.*;
@@ -128,40 +127,22 @@ public class PosterFeedTest {
     LinearLayout mount(String kind, PosterFeed.Loader loader, boolean wait) throws Exception {
         AtomicReference<LinearLayout> navigation = new AtomicReference<>();
         remote.runOnMainSync(() -> {
-            try {
-                Method browse = CatalogueScreens.class.getDeclaredMethod(
-                    "browse",
-                    String.class,
-                    String.class,
-                    String.class,
-                    int.class
-                );
-                browse.setAccessible(true);
-                browse.invoke(
-                    activity.catalogues,
-                    kind,
-                    "Top rated",
-                    kind.equals("Movies") ? "movie/top_rated" : "tv/top_rated",
-                    1
-                );
-                Field field = CatalogueScreens.class.getDeclaredField("catalogue");
-                field.setAccessible(true);
-                Object screen = field.get(activity.catalogues);
-                Field contentField = screen.getClass().getDeclaredField("content");
-                contentField.setAccessible(true);
-                LinearLayout right = (LinearLayout) contentField.get(screen),
-                    menu = (LinearLayout) ((LinearLayout) right.getParent()).getChildAt(0);
-                navigation.set(menu);
-                feed = activity.posters.catalogueFeed(
-                    right,
-                    right.getChildAt(0),
-                    menu,
-                    kind.equals("Movies") ? "movie" : "tv",
-                    loader
-                );
-            } catch (Exception e) {
-                throw new AssertionError(e);
-            }
+            activity.catalogues.browse(
+                kind,
+                "Top rated",
+                kind.equals("Movies") ? "movie/top_rated" : "tv/top_rated",
+                1
+            );
+            LinearLayout right = activity.catalogues.catalogue.content,
+                menu = (LinearLayout) ((LinearLayout) right.getParent()).getChildAt(0);
+            navigation.set(menu);
+            feed = activity.posters.catalogueFeed(
+                right,
+                right.getChildAt(0),
+                menu,
+                kind.equals("Movies") ? "movie" : "tv",
+                loader
+            );
         });
         if (wait) await(
             () -> feed.items.size() >= 20 && feed.getLayoutManager().findViewByPosition(0) != null
@@ -258,29 +239,13 @@ public class PosterFeedTest {
     public void homeShelfContinuesBeyondTwentyAndDockHeadingStaysAboveTiles() throws Exception {
         AtomicReference<Object> shelf = new AtomicReference<>();
         remote.runOnMainSync(() -> {
-            try {
-                Field f = MainActivity.class.getDeclaredField("homeShelf");
-                f.setAccessible(true);
-                Object value = f.get(activity);
-                shelf.set(value);
-                Method load = value
-                    .getClass()
-                    .getDeclaredMethod("load", String.class, PosterFeed.Loader.class);
-                load.setAccessible(true);
-                load.invoke(
-                    value,
-                    "",
-                    (PosterFeed.Loader) n -> {
-                        if (n == 2) assertTrue(release.await(15, TimeUnit.SECONDS));
-                        return page(n, 20, 2, "movie");
-                    }
-                );
-                Field field = value.getClass().getDeclaredField("feed");
-                field.setAccessible(true);
-                feed = (PosterFeed) field.get(value);
-            } catch (Exception e) {
-                throw new AssertionError(e);
-            }
+            HomeScreen.HomeShelf value = activity.homeShelf;
+            shelf.set(value);
+            value.load("", n -> {
+                if (n == 2) assertTrue(release.await(15, TimeUnit.SECONDS));
+                return page(n, 20, 2, "movie");
+            });
+            feed = value.feed;
         });
         await(() -> feed.items.size() == 20 && feed.getLayoutManager().findViewByPosition(0) != null);
         remote.runOnMainSync(() -> feed.getLayoutManager().findViewByPosition(0).requestFocus());
@@ -393,9 +358,7 @@ public class PosterFeedTest {
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
             try {
-                Field field = MainActivity.class.getDeclaredField("catalogueDialog");
-                field.setAccessible(true);
-                android.app.Dialog dialog = (android.app.Dialog) field.get(activity);
+                android.app.Dialog dialog = activity.catalogueDialog;
                 assertTrue(dialog.isShowing());
                 assertNotNull(label(dialog.getWindow().getDecorView(), "Years & decades"));
                 assertTrue(feed.isAttachedToWindow());

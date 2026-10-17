@@ -43,7 +43,9 @@ final class CatalogueScreens {
                 int id = genre.getInt("id");
                 rows.put(id, TmdbCategories.genre(type, id, genre.getString("name")));
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            Diagnostics.recovered("Reading cached genres", e);
+        }
         return new ArrayList<>(rows.values());
     }
 
@@ -122,7 +124,8 @@ final class CatalogueScreens {
                         if (replacement != null) replacement.requestFocus();
                     }
                 });
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                Diagnostics.recovered("Refreshing catalogue genres", e);
                 /* Official built-in and previously fetched genres remain usable offline. */
             }
         });
@@ -245,7 +248,9 @@ final class CatalogueScreens {
                         .edit()
                         .putString("catalogueGenres_" + type, data)
                         .apply();
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    Diagnostics.recovered("Caching catalogue genres", e);
+                }
             });
         }
 

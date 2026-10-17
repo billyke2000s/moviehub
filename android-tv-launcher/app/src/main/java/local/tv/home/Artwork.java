@@ -109,7 +109,8 @@ final class Artwork {
                     result = CACHE.get(url);
                     if (result == null) result = fetcher.fetch(url);
                     if (result != null) CACHE.put(url, result);
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    Diagnostics.recovered("Artwork download", e);
                     /* Bounded retries while this artwork is visible. */
                 }
                 Bitmap ready = result;

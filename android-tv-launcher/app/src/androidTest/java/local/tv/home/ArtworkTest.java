@@ -31,12 +31,20 @@ public class ArtworkTest {
     boolean updates;
     CountDownLatch release = new CountDownLatch(1);
     String prefix = "fixture:" + UUID.randomUUID() + ":";
+    /** Focus changes recorded during the test, reported when a wait times out. */
+    final List<String> focusLog = Collections.synchronizedList(new ArrayList<>());
+    volatile String phase = "setup";
 
     interface Check {
         boolean ready();
     }
 
     void await(Check check) {
+        await("condition", check);
+    }
+
+    /** Waits up to 12 seconds; on timeout the message names the stage and lists unready posters. */
+    void await(String stage, Check check) {
         long end = SystemClock.uptimeMillis() + 12000;
         while (SystemClock.uptimeMillis() < end) {
             AtomicBoolean ready = new AtomicBoolean();
@@ -45,18 +53,72 @@ public class ArtworkTest {
             SystemClock.sleep(50);
         }
         UiEvidence.capture("artwork-timeout");
+        AtomicReference<String> posters = new AtomicReference<>("");
+        remote.runOnMainSync(() -> posters.set(describePosters()));
         fail(
-            "Artwork did not become ready: focused=" +
+            "Artwork did not become ready at stage '" +
+                stage +
+                "': focused=" +
                 activity.hasWindowFocus() +
+                ", currentFocus=" +
+                (activity.getCurrentFocus() == null
+                    ? "none"
+                    : activity.getCurrentFocus().getContentDescription()) +
                 ", items=" +
                 (feed == null ? -1 : feed.items.size()) +
+                ", scrollState=" +
+                (feed == null ? -1 : feed.getScrollState()) +
                 ", width=" +
                 (feed == null ? -1 : feed.getWidth()) +
                 ", height=" +
                 (feed == null ? -1 : feed.getHeight()) +
                 ", children=" +
-                (feed == null ? -1 : feed.getChildCount())
+                (feed == null ? -1 : feed.getChildCount()) +
+                posters.get() +
+                "; recent focus changes: " +
+                recentFocusChanges()
         );
+    }
+
+    String recentFocusChanges() {
+        synchronized (focusLog) {
+            int from = Math.max(0, focusLog.size() - 12);
+            return focusLog.subList(from, focusLog.size()).toString();
+        }
+    }
+
+    String focusName(View view) {
+        if (view == null) return "none";
+        CharSequence description = view.getContentDescription();
+        return description != null ? description.toString() : view.getClass().getSimpleName();
+    }
+
+    /** Lists visible poster cards that do not show their expected image. */
+    String describePosters() {
+        if (feed == null) return "";
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < feed.getChildCount(); i++) {
+            View card = feed.getChildAt(i);
+            int position = feed.getChildAdapterPosition(card);
+            if (!(card instanceof ImageView) || position < 0 || position >= 60) continue;
+            ImageView image = (ImageView) card;
+            if (colour(image, 0xff000000 | (position + 1))) continue;
+            String shown = "none";
+            if (image.getDrawable() instanceof BitmapDrawable) shown = Integer.toHexString(
+                ((BitmapDrawable) image.getDrawable()).getBitmap().getPixel(0, 0) & 0xffffff
+            );
+            out.append("; unready position=")
+                .append(position)
+                .append(" description=")
+                .append(card.getContentDescription())
+                .append(" tag=")
+                .append(card.getTag())
+                .append(" shown=")
+                .append(shown)
+                .append(" attached=")
+                .append(card.isAttachedToWindow());
+        }
+        return out.toString();
     }
 
     Bitmap bitmap(int colour) {
@@ -208,9 +270,24 @@ public class ArtworkTest {
                 )
             );
             activity.setContentView(host);
+            host.getViewTreeObserver().addOnGlobalFocusChangeListener((before, after) ->
+                focusLog.add(
+                    phase +
+                        ": " +
+                        focusName(before) +
+                        " -> " +
+                        focusName(after) +
+                        " (scroll " +
+                        feed.getScrollState() +
+                        ", children " +
+                        feed.getChildCount() +
+                        ")"
+                )
+            );
             feed.start();
         });
         await(
+            "first page laid out",
             () ->
                 activity.hasWindowFocus() &&
                 feed.items.size() == 60 &&
@@ -222,23 +299,26 @@ public class ArtworkTest {
                 feed.getLayoutManager().findViewByPosition(0).requestFocus()
             )
         );
-        await(() -> activity.getCurrentFocus() != null);
+        await("initial focus", () -> activity.getCurrentFocus() != null);
         for (int i = 0; i < 59; i++) {
+            phase = "right " + (i + 1);
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
             remote.waitForIdleSync();
         }
-        await(() -> feed.getScrollState() == RecyclerView.SCROLL_STATE_IDLE);
-        await(this::visiblePostersReady);
-        await(() -> activity.getCurrentFocus() != null);
+        phase = "settling at end";
+        await("scroll idle at end", () -> feed.getScrollState() == RecyclerView.SCROLL_STATE_IDLE);
+        await("posters ready at end", this::visiblePostersReady);
+        await("focus at end", () -> activity.getCurrentFocus() != null);
         remote.runOnMainSync(() ->
             assertEquals("Poster 60", activity.getCurrentFocus().getContentDescription())
         );
         for (int i = 0; i < 59; i++) {
+            phase = "left " + (i + 1);
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
             remote.waitForIdleSync();
         }
-        await(() -> feed.getScrollState() == RecyclerView.SCROLL_STATE_IDLE);
-        await(this::visiblePostersReady);
+        await("scroll idle at start", () -> feed.getScrollState() == RecyclerView.SCROLL_STATE_IDLE);
+        await("posters ready at start", this::visiblePostersReady);
         remote.runOnMainSync(() ->
             assertEquals("Poster 1", activity.getCurrentFocus().getContentDescription())
         );

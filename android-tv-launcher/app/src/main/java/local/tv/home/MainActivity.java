@@ -236,7 +236,9 @@ public class MainActivity extends TvActivity {
         prefs = getSharedPreferences("ui", MODE_PRIVATE);
         try {
             ChannelSync.schedule(this);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            Diagnostics.recovered("Scheduling channel refresh", e);
+        }
         homeScreen.home();
     }
 
@@ -267,7 +269,9 @@ public class MainActivity extends TvActivity {
         updates.checkForUpdate();
         try {
             ChannelSync.refreshIfStale(this);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            Diagnostics.recovered("Starting stale channel refresh", e);
+        }
     }
 
     @Override
@@ -383,7 +387,8 @@ public class MainActivity extends TvActivity {
                 !id.equals(previous.getJSONObject(i).optString("id"))
             ) recent.put(previous.getJSONObject(i));
             secrets.put("recentPlayback", recent.toString());
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            Diagnostics.recovered("Saving recent playback", e);
             /* History failure must never prevent playback. */
         }
         try {

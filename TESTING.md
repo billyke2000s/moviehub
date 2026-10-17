@@ -45,49 +45,37 @@ step can come from any test.
 Some tests save screenshots (`UiEvidence.capture`) that CI uploads as the `android-tv-device-tests`
 artifact.
 
-### Known problem: flaky device tests
+### Device-test reliability
 
-As of 17 October 2026 the device tests are **not reliable**. The same source tree has passed on a
-pull request and then failed on `main` minutes later (PR #24 head `4e076b0` passed; the identical
-tree pushed as `84b6487` failed in the device-test step). Every completed CI run on `main` since
-03:24 that morning has failed. The PR #23 notes record 10 artwork/catalogue tests failing on
-unchanged `main`.
+Until 17 October 2026 the device tests failed at random, even on unchanged code. Running the full
+suite 8 times in parallel on CI found three causes:
 
-A side-by-side run on 17 October (PR #25 against unchanged `main`) failed on `main` only in
-`ArtworkTest.remoteScrollingPastFirstPageAndBackLoadsEveryRecycledPoster` ("Artwork did not become
-ready") and passed on PR #25. When device tests fail, CI now lists each failed test with its message
-as an annotation on the run and in the job summary (`tests/report-test-failures.py`).
+| Cause | Kind | Fix |
+| --- | --- | --- |
+| Quick D-pad presses moved focus to a poster just past the edge; a layout then recycled it and focus was lost | **App bug** (users could lose the selection) | Poster rows and grids keep half a screen laid out beyond each edge, and refocus the same title if focus is still lost (`PosterFeed`) |
+| A Back press sent while a dialog was closing reached no window and was dropped | Test timing | `TvNavigationTest.back()` waits for window focus before the next key |
+| Controls were looked up once, immediately after a screen change | Test timing | `TvNavigationTest.select()` waits up to 5 s |
 
-Until this is fixed:
+Results of 8 parallel runs of the whole suite:
 
-- A red device-test run is not proof that a change broke something. Compare against a run of
-  unchanged `main`, or re-run the job.
-- A green run is real evidence, but one run is not proof of stability.
-- Fixing the flakiness (likely timing waits around RecyclerView layout, artwork loading and focus)
-  is the top testing priority. See [STATUS.md](STATUS.md).
-
-## Members reached by reflection
-
-Several device tests read private fields or call private methods by name using reflection. The
-compiler cannot see these, so **renaming or moving one of these members breaks the test only at
-run time**. If you change one, update the test in the same commit.
-
-| Class | Members |
+| Code | Passed |
 | --- | --- |
-| `MainActivity` | fields `page`, `homeShelf`, `catalogueDialog`; method `screen(String, Runnable)` |
-| `AppDock` | fields `homeDock`, `movingApp`; methods `saveVisibleDock()`, `addApp(...)`; nested class `AppDock$App` (3-arg constructor) |
-| `HomeScreen` | method `home()`; nested `HomeShelf` with `load(String, PosterFeed.Loader)`, `show(JSONArray, String)`, field `feed` |
-| `CatalogueScreens` | field `catalogue`; method `browse(String, String, String, int)`; nested `CatalogueScreen` field `content` |
-| `CatalogueSearch` | `rememberSearch(String)`, `searchCatalogue(String)` |
-| `LibraryScreens` | `watchlist(String, String)`, `toggleWatchlist(JSONObject)`, `isWatchlisted(JSONObject)` |
-| `SeriesScreens` | `renderSeasons(JSONObject)`, `renderEpisodes(JSONArray, JSONObject, int, String, int, String)` |
-| `SourcesScreen` | `renderSources(LinearLayout, List, String, SourceRepository, JSONObject, String, int, int, String, String)` |
-| `SettingsScreens` | `accountScreen(String)` |
-| `TitleDetails` | `renderDetails(JSONObject)` |
-| `VlcPlaybackActivity` | fields `player`, `sleepAt`, `triedAlternative` |
+| Before the fixes | 3 / 8 |
+| After the focus fix | 4 / 8 |
+| After keeping off-edge posters laid out | 6 / 8 |
+| After the Back fix | **8 / 8** |
 
-A better long-term fix is for tests to call these package-private members directly (the tests are
-in the same package), so the compiler checks them.
+Eight passing runs are good evidence, not proof. If a device test fails, read its annotation: CI
+lists each failed test with its message on the run (`tests/report-test-failures.py`), and timeouts
+in `ArtworkTest` and `TvNavigationTest` describe the screen state when they fail.
+
+## Tests call app code directly
+
+Device tests live in the same package as the app (`local.tv.home`), so they call package-private
+members directly, for example `activity.libraryScreens.toggleWatchlist(title)`. The compiler
+checks every one of these calls, so renaming or moving a member breaks the test build immediately
+instead of failing at run time. Do not use reflection to reach app members in tests; make the
+member package-private instead.
 
 ## What no automated test covers
 

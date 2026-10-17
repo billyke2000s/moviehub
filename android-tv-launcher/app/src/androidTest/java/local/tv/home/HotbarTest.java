@@ -9,7 +9,6 @@ import android.view.*;
 import android.widget.*;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-import java.lang.reflect.*;
 import org.json.JSONArray;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -22,18 +21,6 @@ public class HotbarTest {
     private SharedPreferences prefs;
     private String oldOrder;
     private boolean updates;
-
-    private Object field(String name) throws Exception {
-        Field f = AppDock.class.getDeclaredField(name);
-        f.setAccessible(true);
-        return f.get(activity.dock);
-    }
-
-    private void call(Object owner, String name) throws Exception {
-        Method m = owner.getClass().getDeclaredMethod(name);
-        m.setAccessible(true);
-        m.invoke(owner);
-    }
 
     private void ui(Runnable run) {
         remote.runOnMainSync(run);
@@ -69,32 +56,20 @@ public class HotbarTest {
 
     @Test
     public void remoteReordersRemovesAndNeverMovesAllApps() throws Exception {
-        LinearLayout dock = (LinearLayout) field("homeDock");
+        LinearLayout dock = activity.dock.homeDock;
         // Use fixture tiles so emulator-installed app counts do not affect coverage.
         ui(() -> {
-            try {
-                dock.removeAllViews();
-                Method add = null;
-                for (Method m : AppDock.class.getDeclaredMethods()) if (m.getName().equals("addApp")) add = m;
-                assertNotNull(add);
-                add.setAccessible(true);
-                Class<?> app = Class.forName("local.tv.home.AppDock$App");
-                Constructor<?> ctor = app.getDeclaredConstructors()[0];
-                ctor.setAccessible(true);
-                for (String name : new String[] { "A", "B", "C" })
-                    add.invoke(
-                        activity.dock,
-                        dock,
-                        ctor.newInstance(name, new ComponentName("fixture." + name, "Main"), null),
-                        true
-                    );
-                Button all = new Button(activity);
-                all.setText("All Apps");
-                dock.addView(all);
-                call(activity.dock, "saveVisibleDock");
-            } catch (Exception e) {
-                throw new AssertionError(e);
-            }
+            dock.removeAllViews();
+            for (String name : new String[] { "A", "B", "C" })
+                activity.dock.addApp(
+                    dock,
+                    new AppDock.App(name, new ComponentName("fixture." + name, "Main"), null),
+                    true
+                );
+            Button all = new Button(activity);
+            all.setText("All Apps");
+            dock.addView(all);
+            activity.dock.saveVisibleDock();
         });
         View first = dock.getChildAt(0),
             all = dock.getChildAt(3);
@@ -106,7 +81,7 @@ public class HotbarTest {
         });
         remote.sendKeySync(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER));
         remote.waitForIdleSync(); // release the original hold
-        assertSame(first, field("movingApp"));
+        assertSame(first, activity.dock.movingApp);
         SystemClock.sleep(200);
         assertTrue(first.getTranslationY() < 0);
         key(KeyEvent.KEYCODE_DPAD_RIGHT);
@@ -116,7 +91,7 @@ public class HotbarTest {
         assertSame(first, dock.getChildAt(2));
         assertSame(all, dock.getChildAt(3));
         key(KeyEvent.KEYCODE_DPAD_CENTER);
-        assertNull(field("movingApp"));
+        assertNull(activity.dock.movingApp);
         assertEquals(0, clicks[0]);
         assertEquals("fixture.A/Main", new JSONArray(prefs.getString("dockOrder", "[]")).getString(2));
         ui(() -> first.performLongClick());
@@ -126,13 +101,7 @@ public class HotbarTest {
         assertEquals(3, dock.getChildCount());
         assertSame(all, dock.getChildAt(2));
         assertEquals(2, new JSONArray(prefs.getString("dockOrder", "[]")).length());
-        ui(() -> {
-            try {
-                call(activity.homeScreen, "home");
-            } catch (Exception e) {
-                throw new AssertionError(e);
-            }
-        });
+        ui(() -> activity.homeScreen.home());
         assertEquals(2, new JSONArray(prefs.getString("dockOrder", "[]")).length());
     }
 }

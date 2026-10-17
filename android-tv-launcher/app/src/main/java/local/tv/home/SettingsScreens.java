@@ -169,7 +169,9 @@ final class SettingsScreens {
                     server = saved.optString("server");
                     user = saved.optString("username");
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                Diagnostics.recovered("Reading saved Xtream account", e);
+            }
             inputs.add(activity.field(form, "Server address", false, server));
             inputs.get(0).setHint("https://provider.example:port");
             inputs.add(activity.field(form, "Username", false, user));

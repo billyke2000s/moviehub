@@ -9,7 +9,6 @@ import android.view.*;
 import android.widget.*;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-import java.lang.reflect.*;
 import java.util.*;
 import org.json.*;
 import org.junit.*;
@@ -25,11 +24,14 @@ public class StreamingMenusTest {
     private Set<String> watched;
     private boolean updates;
 
-    private void call(Object owner, String name, Class<?>[] types, Object... args) {
+    interface Step {
+        void run() throws Exception;
+    }
+
+    /** Runs a step on the caller's thread and turns checked exceptions into test failures. */
+    private void call(Step step) {
         try {
-            Method m = owner.getClass().getDeclaredMethod(name, types);
-            m.setAccessible(true);
-            m.invoke(owner, args);
+            step.run();
         } catch (Exception e) {
             throw new AssertionError(e);
         }
@@ -89,8 +91,8 @@ public class StreamingMenusTest {
     public void searchHistoryIsDeduplicatedAndSearchIsRemoteAccessible() throws Exception {
         ui(() -> {
             for (String value : new String[] { "Alien", "Arrival", "alien" })
-                call(activity.catalogueSearch, "rememberSearch", new Class[] { String.class }, value);
-            call(activity.catalogueSearch, "searchCatalogue", new Class[] { String.class }, "Movies");
+                call(() -> activity.catalogueSearch.rememberSearch(value));
+            call(() -> activity.catalogueSearch.searchCatalogue("Movies"));
             assertNotNull(find(root(), "Search titles"));
             assertNotNull(find(root(), "Search people"));
             assertNotNull(find(root(), "Recent searches"));
@@ -110,13 +112,7 @@ public class StreamingMenusTest {
             .put(new JSONObject().put("id", 3).put("media_type", "movie").put("title", "Alpha"));
         prefs.edit().putString("watchlist", items.toString()).commit();
         ui(() -> {
-            call(
-                activity.libraryScreens,
-                "watchlist",
-                new Class[] { String.class, String.class },
-                "Movies",
-                "Title A–Z"
-            );
+            call(() -> activity.libraryScreens.watchlist("Movies", "Title A–Z"));
             assertNotNull(find(root(), "Alpha"));
             assertNotNull(find(root(), "Zebra"));
             assertNull(find(root(), "Series fixture"));
@@ -142,14 +138,8 @@ public class StreamingMenusTest {
                 )
             );
         ui(() -> {
-            call(
-                activity,
-                "screen",
-                new Class[] { String.class, Runnable.class },
-                "Fixture series",
-                (Runnable) () -> {}
-            );
-            call(activity.seriesScreens, "renderSeasons", new Class[] { JSONObject.class }, series);
+            call(() -> activity.screen("Fixture series", (Runnable) () -> {}));
+            call(() -> activity.seriesScreens.renderSeasons(series));
             assertNotNull(find(root(), "Season 1"));
             assertNotNull(find(root(), "Choose a season"));
         });
@@ -163,30 +153,9 @@ public class StreamingMenusTest {
                 .put("overview", "A new journey begins.")
         );
         ui(() -> {
-            call(
-                activity,
-                "screen",
-                new Class[] { String.class, Runnable.class },
-                "Fixture series · Season 1",
-                (Runnable) () -> {}
-            );
-            call(
-                activity.seriesScreens,
-                "renderEpisodes",
-                new Class[] {
-                    JSONArray.class,
-                    JSONObject.class,
-                    int.class,
-                    String.class,
-                    int.class,
-                    String.class,
-                },
-                episodes,
-                series,
-                100,
-                "tt12345",
-                1,
-                "Fixture series"
+            call(() -> activity.screen("Fixture series · Season 1", (Runnable) () -> {}));
+            call(() ->
+                activity.seriesScreens.renderEpisodes(episodes, series, 100, "tt12345", 1, "Fixture series")
             );
             View title = find(root(), "1 · Pilot");
             assertNotNull(title);
@@ -212,47 +181,23 @@ public class StreamingMenusTest {
         hd.cache = SourceRepository.Cache.NOT_CACHED;
         List<SourceRepository.Source> sources = Arrays.asList(uhd, hd);
         ui(() -> {
-            call(
-                activity,
-                "screen",
-                new Class[] { String.class, Runnable.class },
-                "Choose a source",
-                (Runnable) () -> {}
-            );
+            call(() -> activity.screen("Choose a source", (Runnable) () -> {}));
             LinearLayout target = new LinearLayout(activity);
             target.setOrientation(LinearLayout.VERTICAL);
-            try {
-                Field field = MainActivity.class.getDeclaredField("page");
-                field.setAccessible(true);
-                ((LinearLayout) field.get(activity)).addView(target);
-            } catch (Exception e) {
-                throw new AssertionError(e);
-            }
-            call(
-                activity.sources,
-                "renderSources",
-                new Class[] {
-                    LinearLayout.class,
-                    List.class,
-                    String.class,
-                    SourceRepository.class,
-                    JSONObject.class,
-                    String.class,
-                    int.class,
-                    int.class,
-                    String.class,
-                    String.class,
-                },
-                target,
-                sources,
-                "4K",
-                new SourceRepository(new Secrets(activity)),
-                null,
-                "tt12345",
-                -1,
-                -1,
-                "Fixture film",
-                "Movies"
+            activity.page.addView(target);
+            call(() ->
+                activity.sources.renderSources(
+                    target,
+                    sources,
+                    "4K",
+                    new SourceRepository(new Secrets(activity)),
+                    null,
+                    "tt12345",
+                    -1,
+                    -1,
+                    "Fixture film",
+                    "Movies"
+                )
             );
             assertNotNull(find(root(), "Ready to play · 1"));
             assertNull(find(root(), "Available to transfer · 1"));

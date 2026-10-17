@@ -42,7 +42,7 @@ final class SeriesScreens {
         );
     }
 
-    private void renderSeasons(JSONObject details) throws Exception {
+    void renderSeasons(JSONObject details) throws Exception {
         String title = details.optString("name", "Series");
         int id = details.optInt("id");
         String imdb =
@@ -125,7 +125,7 @@ final class SeriesScreens {
         );
     }
 
-    private void renderEpisodes(
+    void renderEpisodes(
         JSONArray episodes,
         JSONObject series,
         int tmdbId,
@@ -194,7 +194,9 @@ final class SeriesScreens {
                             : new JSONObject(series.toString());
                     metadata.put("season", season).put("episode", number).put("episodeKey", key);
                     activity.playbackTitle = metadata;
-                } catch (JSONException ignored) {}
+                } catch (JSONException e) {
+                    Diagnostics.recovered("Preparing episode metadata", e);
+                }
                 activity.sources.torrentSources(
                     imdb,
                     season,

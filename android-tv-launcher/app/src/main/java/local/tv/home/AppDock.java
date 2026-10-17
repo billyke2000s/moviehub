@@ -113,7 +113,9 @@ final class AppDock {
                     String id = array.getString(i);
                     if (!order.contains(id)) order.add(id);
                 }
-            } catch (JSONException ignored) {}
+            } catch (JSONException e) {
+                Diagnostics.recovered("Reading saved dock order", e);
+            }
         } else {
             Set<String> pins = activity.prefs.getStringSet("pinned", null);
             for (App app : apps)
@@ -129,7 +131,7 @@ final class AppDock {
         activity.prefs.edit().putString("dockOrder", new JSONArray(order).toString()).apply();
     }
 
-    private void saveVisibleDock() {
+    void saveVisibleDock() {
         List<String> order = new ArrayList<>();
         for (int i = 0; i < homeDock.getChildCount(); i++) {
             Object id = homeDock.getChildAt(i).getTag();

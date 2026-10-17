@@ -74,7 +74,9 @@ final class LibraryScreens {
                 })
                     if (item.has(key)) entry.put(key, item.get(key));
                 next.put(entry);
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                Diagnostics.recovered("Copying a My List entry", e);
+            }
         }
         activity.prefs.edit().putString("watchlist", next.toString()).apply();
     }

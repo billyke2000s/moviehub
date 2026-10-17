@@ -59,9 +59,23 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
         setPreserveFocusAfterLayout(true);
         setClipToPadding(true);
         setPadding(0, 0, 0, 0);
-        if (horizontal) setLayoutManager(new LinearLayoutManager(context, HORIZONTAL, false));
+        if (horizontal) setLayoutManager(
+            new LinearLayoutManager(context, HORIZONTAL, false) {
+                @Override
+                protected void calculateExtraLayoutSpace(RecyclerView.State state, int[] extra) {
+                    super.calculateExtraLayoutSpace(state, extra);
+                    keepNeighboursLaidOut(extra, getWidth());
+                }
+            }
+        );
         else {
-            GridLayoutManager grid = new GridLayoutManager(context, 4);
+            GridLayoutManager grid = new GridLayoutManager(context, 4) {
+                @Override
+                protected void calculateExtraLayoutSpace(RecyclerView.State state, int[] extra) {
+                    super.calculateExtraLayoutSpace(state, extra);
+                    keepNeighboursLaidOut(extra, getHeight());
+                }
+            };
             grid.setSpanSizeLookup(
                 new GridLayoutManager.SpanSizeLookup() {
                     @Override
@@ -84,6 +98,16 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
         );
         setFocusable(false);
         setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
+    }
+
+    /**
+     * Keeps half a screen of posters laid out beyond each edge. A quick D-pad press can focus a poster
+     * just past the edge before scrolling catches up (CI showed one or two posters ahead); without
+     * this margin, a layout at that moment would recycle the focused poster and focus would be lost.
+     */
+    private static void keepNeighboursLaidOut(int[] extra, int page) {
+        extra[0] = Math.max(extra[0], page / 2);
+        extra[1] = Math.max(extra[1], page / 2);
     }
 
     static final class State {
@@ -132,8 +156,67 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     @Override
     public void requestChildFocus(View child, View focused) {
         super.requestChildFocus(child, focused);
+        focusedView = focused;
         int position = getChildAdapterPosition(child);
         if (position >= 0 && position < items.size()) lastFocused = adapter.getItemId(position);
+    }
+
+    /** The focused view inside this feed, if focus is currently here. */
+    private View focusedView;
+
+    /**
+     * Quick D-pad presses can move focus to a poster that is still being scrolled into view. A layout
+     * during that scroll can recycle the focused poster, which leaves nothing focused and makes the
+     * remote appear dead. When that happens, focus is given back to the same title.
+     */
+    private final ViewTreeObserver.OnGlobalFocusChangeListener focusWatcher = (before, after) -> {
+        if (after != null) {
+            if (!isDescendant(after)) focusedView = null;
+            return;
+        }
+        if (before != null && before == focusedView) recoverFocus();
+    };
+
+    private boolean isDescendant(View view) {
+        for (ViewParent parent = view.getParent(); parent instanceof View; parent = parent.getParent()) if (
+            parent == this
+        ) return true;
+        return false;
+    }
+
+    private void recoverFocus() {
+        long id = lastFocused;
+        if (closed || id == Long.MIN_VALUE) return;
+        post(() -> recoverFocus(id, 20));
+    }
+
+    /** Refocuses the title; waits for scrolling to stop before scrolling back to it. */
+    private void recoverFocus(long id, int attemptsLeft) {
+        if (closed || !isAttachedToWindow() || getRootView().findFocus() != null) return;
+        ViewHolder holder = findViewHolderForItemId(id);
+        if (holder != null && holder.itemView.isAttachedToWindow() && holder.itemView.requestFocus()) return;
+        if (getScrollState() != SCROLL_STATE_IDLE && attemptsLeft > 0) {
+            postDelayed(() -> recoverFocus(id, attemptsLeft - 1), 50);
+            return;
+        }
+        for (int position = 0; position < items.size(); position++) if (adapter.getItemId(position) == id) {
+            // onLayout focuses the item once it has been laid out again.
+            restoredFocus = id;
+            scrollToPosition(position);
+            return;
+        }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        getViewTreeObserver().addOnGlobalFocusChangeListener(focusWatcher);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        getViewTreeObserver().removeOnGlobalFocusChangeListener(focusWatcher);
+        super.onDetachedFromWindow();
     }
 
     void setColumns(int value) {

@@ -10,6 +10,9 @@ MovieHub stores provider accounts and installs its own updates, so these rules m
   encrypted with AES-GCM using a device-bound Android Keystore key (`Secrets`).
 - IPTV stream addresses are stored encrypted in the channel database.
 - `android:allowBackup="false"`, so app data is not copied into Android backups.
+- Diagnostic logging (`Diagnostics`, logcat tag `MovieHub`) records only where a failure happened
+  and the exception type. Exception messages are never logged, because they can contain provider
+  URLs with usernames and passwords.
 
 ## Network
 
