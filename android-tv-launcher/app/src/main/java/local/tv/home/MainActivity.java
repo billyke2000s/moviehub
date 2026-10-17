@@ -19,6 +19,8 @@ public class MainActivity extends Activity {
     private final ExecutorService io=Executors.newFixedThreadPool(3);
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final List<App> apps=new ArrayList<>();
+    private final List<PosterFeed> feeds=new ArrayList<>();
+    private void closeFeeds(){for(PosterFeed feed:feeds)feed.close();feeds.clear();}
     private final Artwork artworkLoader=new Artwork();
     private Secrets secrets;private MediaRepository media;private SharedPreferences prefs;
     private LinearLayout page;private Runnable back;private Runnable destination;private HomeShelf homeShelf;private int generation;private TextView clock;private Button updateButton;private AppUpdates.Release availableUpdate;private long lastUpdateCheck;private boolean updateBusy;private long promptedUpdateVersion;
@@ -44,7 +46,7 @@ public class MainActivity extends Activity {
     @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);if(focused)tvFullscreen();}
     @Override public void onStart(){super.onStart();handler.removeCallbacks(ticker);handler.post(ticker);checkForUpdate();try{ChannelSync.refreshIfStale(this);}catch(Exception ignored){}}
     @Override public void onStop(){handler.removeCallbacks(ticker);super.onStop();}
-    @Override public void onDestroy(){handler.removeCallbacksAndMessages(null);artworkLoader.close();io.shutdownNow();super.onDestroy();}
+    @Override public void onDestroy(){closeFeeds();handler.removeCallbacksAndMessages(null);artworkLoader.close();io.shutdownNow();super.onDestroy();}
     @Override public void onBackPressed(){if(back!=null)back.run();}
     private GradientDrawable box(int colour){GradientDrawable d=new GradientDrawable();d.setColor(colour);d.setCornerRadius(dp(7));return d;}
     private LinearLayout vertical(){LinearLayout v=new LinearLayout(this);v.setOrientation(LinearLayout.VERTICAL);return v;}
@@ -55,7 +57,7 @@ public class MainActivity extends Activity {
     private void focus(View view){view.setFocusable(true);view.setFocusableInTouchMode(true);view.setOnFocusChangeListener((v,focused)->styleFocus(v,focused));}
     private Button button(String label,Runnable action){Button b=new Button(this);b.setText(label);b.setTextColor(0xfff8f8fc);b.setAllCaps(false);b.setTextSize(16);b.setSingleLine(true);b.setEllipsize(android.text.TextUtils.TruncateAt.END);b.setMinWidth(0);b.setMinimumWidth(0);b.setMinHeight(0);b.setMinimumHeight(0);b.setBackground(box(0xff171d27));b.setPadding(dp(12),dp(5),dp(12),dp(5));focus(b);b.setOnClickListener(v->action.run());return b;}
     private Button navigationButton(String label,Runnable action){Button b=button(label,action);b.setTag("navigation");styleFocus(b,false);return b;}
-    private void screen(String title,Runnable goBack){generation++;back=goBack;clock=null;updateButton=null;ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xff10151f,0xff090d14,0xff090d14}));page=vertical();page.setPadding(dp(32),dp(22),dp(32),dp(28));scroll.addView(page);setContentView(scroll);if(title!=null){LinearLayout head=row();head.addView(text(title,28),new LinearLayout.LayoutParams(0,-2,1));head.addView(button("Back",goBack));page.addView(head);}}
+    private void screen(String title,Runnable goBack){closeFeeds();generation++;back=goBack;clock=null;updateButton=null;ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xff10151f,0xff090d14,0xff090d14}));page=vertical();page.setPadding(dp(32),dp(22),dp(32),dp(28));scroll.addView(page);setContentView(scroll);if(title!=null){LinearLayout head=row();head.addView(text(title,28),new LinearLayout.LayoutParams(0,-2,1));head.addView(button("Back",goBack));page.addView(head);}}
     private void addRow(LinearLayout parent,View view,int width,int height){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(dp(width),dp(height));p.setMargins(dp(5),dp(5),dp(8),dp(5));parent.addView(view,p);}
     private LinearLayout horizontal(LinearLayout parent){HorizontalScrollView scroll=new HorizontalScrollView(this);scroll.setHorizontalScrollBarEnabled(false);LinearLayout r=row();r.setPadding(dp(4),dp(8),dp(4),dp(8));scroll.addView(r);parent.addView(scroll);return r;}
     private void checkForUpdate(){checkForUpdate(false);}
@@ -75,7 +77,7 @@ public class MainActivity extends Activity {
     private void resetUpdateButton(){updateBusy=false;if(updateButton!=null){updateButton.setEnabled(true);updateButton.setText("Update");}}
     /** Home is a viewport, never a vertically scrolling page. The dock has reserved space. */
     private void fixedScreen(String title,Runnable goBack){
-        generation++;back=goBack;clock=null;updateButton=null;page=vertical();page.setBackgroundColor(0xff090d14);
+        closeFeeds();generation++;back=goBack;clock=null;updateButton=null;page=vertical();page.setBackgroundColor(0xff090d14);
         page.setPadding(dp(30),dp(16),dp(30),dp(16));setContentView(page);
         if(title!=null){LinearLayout head=row();TextView name=text(title,24);name.setTypeface(Typeface.DEFAULT,Typeface.BOLD);head.addView(name,new LinearLayout.LayoutParams(0,-1,1));head.addView(button("Back",goBack),new LinearLayout.LayoutParams(dp(72),dp(38)));page.addView(head,new LinearLayout.LayoutParams(-1,dp(46)));}
     }
@@ -101,39 +103,51 @@ public class MainActivity extends Activity {
         LinearLayout posterHost=vertical();posterHost.setClipChildren(false);
         HomeShelf shelf=new HomeShelf(posterHost,heading,summary,open,backdrop);homeShelf=shelf;
         java.util.function.Consumer<String> load=path->{
-            generation++;posterHost.removeAllViews();TextView loading=compactText("Loading titles…",14);posterHost.addView(loading);
+            generation++;shelf.close();posterHost.removeAllViews();TextView loading=compactText("Loading titles…",14);posterHost.addView(loading);
             if(!secrets.has("tmdb")){loading.setText("Connect TMDB in Settings to see artwork and recommendations.");return;}
-            async(()->path.isEmpty()?media.featured(prefs.getString("seedType","movie"),prefs.getInt("seed",0)):media.tmdb(path).getJSONArray("results"),items->{
-                shelf.show(items,path);
-            });
+            String seedType=prefs.getString("seedType","movie");int seed=prefs.getInt("seed",0);
+            shelf.load(path,pageNumber->path.isEmpty()?media.featuredPage(seedType,seed,pageNumber):media.tmdb(path+"?page="+pageNumber));
         };
         String[] paths={"","trending/all/week","movie/top_rated","movie/now_playing","tv/on_the_air"};
         List<Button> tabs=new ArrayList<>();for(int i=0;i<labels.length;i++){final String path=paths[i];Button tab=navigationButton(labels[i],()->{});tabs.add(tab);tab.setTextSize(14);tab.setOnClickListener(v->{for(Button other:tabs){other.setSelected(other==v);styleFocus(other,other.hasFocus());}load.accept(path);});categories.addView(tab,new LinearLayout.LayoutParams(dp(114),dp(32)));}tabs.get(0).setSelected(true);styleFocus(tabs.get(0),false);
         page.addView(categories,new LinearLayout.LayoutParams(-1,dp(32)));
         page.addView(posterHost,new LinearLayout.LayoutParams(-1,dp(158)));if(prefs.getBoolean("featured",true))load.accept("");else{hero.setVisibility(View.GONE);categories.setVisibility(View.GONE);posterHost.setVisibility(View.GONE);page.addView(new View(this),new LinearLayout.LayoutParams(-1,0,1));}
-        LinearLayout dockHeader=row();dockHeader.addView(compactText("Your apps",13),new LinearLayout.LayoutParams(0,-2,1));dockHeader.addView(compactText("Hold Select to pin or unpin",11));page.addView(dockHeader,new LinearLayout.LayoutParams(-1,dp(20)));
-        HorizontalScrollView appScroll=new HorizontalScrollView(this);appScroll.setHorizontalScrollBarEnabled(false);LinearLayout dock=row();appScroll.addView(dock);page.addView(appScroll,new LinearLayout.LayoutParams(-1,dp(70)));queryApps();Set<String> pinned=prefs.getStringSet("pinned",null);
+        LinearLayout dockHeader=row();dockHeader.addView(compactText("Your apps",13),new LinearLayout.LayoutParams(0,-2,1));dockHeader.addView(compactText("Hold Select to pin or unpin",11));dockHeader.setElevation(dp(8));dockHeader.setBackgroundColor(0xff090d14);page.addView(dockHeader,new LinearLayout.LayoutParams(-1,dp(28)));
+        HorizontalScrollView appScroll=new HorizontalScrollView(this);appScroll.setHorizontalScrollBarEnabled(false);appScroll.setClipChildren(true);appScroll.setClipToPadding(true);LinearLayout dock=row();appScroll.addView(dock);page.addView(appScroll,new LinearLayout.LayoutParams(-1,dp(70)));queryApps();Set<String> pinned=prefs.getStringSet("pinned",null);
         if(pinned==null){pinned=new LinkedHashSet<>();for(int i=0;i<Math.min(6,apps.size());i++)pinned.add(apps.get(i).component.flattenToString());prefs.edit().putStringSet("pinned",pinned).apply();}
         for(App app:apps)if(pinned.contains(app.component.flattenToString())){addApp(dock,app,false);View cell=dock.getChildAt(dock.getChildCount()-1);LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)cell.getLayoutParams();lp.width=dp(108);lp.height=dp(62);lp.topMargin=dp(2);lp.bottomMargin=dp(2);cell.setLayoutParams(lp);LinearLayout contents=(LinearLayout)cell;contents.getChildAt(0).setLayoutParams(new LinearLayout.LayoutParams(dp(30),dp(30)));TextView caption=(TextView)contents.getChildAt(1);caption.setTextSize(12);caption.setMaxLines(1);caption.setPadding(0,dp(3),0,0);}
         dock.addView(button("All Apps",this::allApps),new LinearLayout.LayoutParams(dp(104),dp(62)));page.post(()->top.getChildAt(0).requestFocus());
     }
     private final class HomeShelf {
-        final LinearLayout posterHost;final TextView heading,summary;final Button open;final ImageView backdrop;
+        final LinearLayout posterHost;final TextView heading,summary;final Button open;final ImageView backdrop;PosterFeed feed;boolean previewed;
         HomeShelf(LinearLayout host,TextView title,TextView overview,Button action,ImageView image){posterHost=host;heading=title;summary=overview;open=action;backdrop=image;}
-        void show(JSONArray items,String path) throws JSONException {
-                posterHost.removeAllViews();HorizontalScrollView scroll=new HorizontalScrollView(MainActivity.this);scroll.setHorizontalScrollBarEnabled(false);scroll.setClipToPadding(false);LinearLayout posters=row();posters.setPadding(dp(4),dp(4),dp(4),dp(4));scroll.addView(posters);posterHost.addView(scroll,new LinearLayout.LayoutParams(-1,-1));
-                boolean selected=false;
-                for(int i=0;i<Math.min(20,items.length());i++){
-                    JSONObject item=items.getJSONObject(i);String type=item.optString("media_type",path.startsWith("tv/")?"tv":"movie");if(item.optBoolean("adult",false)||(!type.equals("tv")&&!type.equals("movie")))continue;item.put("media_type",type);
-                    String name=item.optString("title",item.optString("name","Title"));
-                    Runnable preview=()->{heading.setText(name);summary.setText(item.optString("overview",""));open.setText("View details");open.setOnClickListener(v->tmdbTitle(item));String art=item.optString("backdrop_path");backdrop.setTag(null);backdrop.setImageDrawable(null);if(art.startsWith("/"))loadImage(backdrop,"https://image.tmdb.org/t/p/w1280"+art);};
-                    if(!selected){selected=true;preview.run();}
-                    FrameLayout card=new FrameLayout(MainActivity.this);card.setBackground(box(0xff171d27));card.setClipToOutline(true);ImageView poster=new ImageView(MainActivity.this);poster.setScaleType(ImageView.ScaleType.CENTER_CROP);card.addView(poster,new FrameLayout.LayoutParams(-1,-1));card.setContentDescription(name);focus(card);card.setOnFocusChangeListener((v,on)->{styleFocus(v,on);card.setPadding(dp(on?3:0),dp(on?3:0),dp(on?3:0),dp(on?3:0));if(on)preview.run();});card.setOnClickListener(v->tmdbTitle(item));
-                    int height=dp(150);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(100),height);lp.setMargins(dp(4),0,dp(6),0);posters.addView(card,lp);String art=item.optString("poster_path");if(art.startsWith("/"))loadImage(poster,"https://image.tmdb.org/t/p/w342"+art);
-                }
-                if(!selected)posters.addView(compactText("No titles available. Choose another category.",15));
+        void close(){if(feed!=null){feed.close();feeds.remove(feed);feed=null;}}
+        void show(JSONArray items,String path) throws JSONException {load(path,n->new JSONObject().put("results",items).put("total_pages",1));}
+        void load(String path,PosterFeed.Loader loader){
+            close();previewed=false;posterHost.removeAllViews();
+            feed=new PosterFeed(MainActivity.this,true,path.startsWith("tv/")?"tv":"movie",io,loader,new PosterFeed.Cards(){
+                public View create(ViewGroup parent){return posterCard(true);}
+                public void bind(View card,JSONObject item){bindPoster(card,item,true,()->preview(item));if(!previewed){previewed=true;preview(item);}}
+            });feeds.add(feed);posterHost.addView(feed,new LinearLayout.LayoutParams(-1,-1));feed.start();
         }
+        void preview(JSONObject item){String name=item.optString("title",item.optString("name","Title"));heading.setText(name);summary.setText(item.optString("overview",""));open.setText("View details");open.setOnClickListener(v->tmdbTitle(item));String art=item.optString("backdrop_path");backdrop.setTag(null);backdrop.setImageDrawable(null);if(art.startsWith("/"))loadImage(backdrop,"https://image.tmdb.org/t/p/w1280"+art);}
     }
+    private View posterCard(boolean compact){
+        LinearLayout card=vertical();card.setBackground(box(0xff171d27));card.setClipToOutline(true);card.setPadding(dp(compact?0:6),dp(compact?0:6),dp(compact?0:6),dp(compact?0:6));
+        ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);card.addView(image,new LinearLayout.LayoutParams(-1,compact?-1:dp(160)));
+        if(!compact){PosterTitle title=new PosterTitle(this);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,Math.max(dp(42),(int)Math.ceil(title.getPaint().getFontSpacing()*2)));lp.topMargin=dp(4);card.addView(title,lp);}focus(card);return card;
+    }
+    private void bindPoster(View view,JSONObject item,boolean compact,Runnable preview){
+        LinearLayout card=(LinearLayout)view;ImageView image=(ImageView)card.getChildAt(0);String name=item.optString("title",item.optString("name","Title"));
+        image.setTag(null);image.setImageDrawable(null);String art=item.optString("poster_path");if(art.startsWith("/"))loadImage(image,"https://image.tmdb.org/t/p/w342"+art);
+        card.setContentDescription(name);PosterTitle title=compact?null:(PosterTitle)card.getChildAt(1);if(title!=null){title.setText(name);title.cardFocus(card.hasFocus());}
+        card.setOnFocusChangeListener((v,on)->{styleFocus(v,on);if(title!=null)title.cardFocus(on);if(on&&preview!=null)preview.run();});styleFocus(card,card.hasFocus());card.setOnClickListener(v->tmdbTitle(item));
+    }
+    PosterFeed catalogueFeed(LinearLayout right,View oldResults,LinearLayout menu,String type,PosterFeed.Loader loader){
+        right.removeView(oldResults);PosterFeed feed=new PosterFeed(this,false,type,io,loader,new PosterFeed.Cards(){public View create(ViewGroup parent){return posterCard(false);}public void bind(View card,JSONObject item){bindPoster(card,item,false,null);}});
+        feeds.add(feed);right.addView(feed,new LinearLayout.LayoutParams(-1,0,1));routeCategoryFocus(menu,feed);feed.start();return feed;
+    }
+    static void routeCategoryFocus(LinearLayout menu,PosterFeed feed){for(int i=0;i<menu.getChildCount();i++)menu.getChildAt(i).setOnKeyListener((v,key,event)->{if(key!=KeyEvent.KEYCODE_DPAD_RIGHT)return false;if(event.getAction()==KeyEvent.ACTION_DOWN)feed.focusNearest(v);return true;});}
     private void loadImage(ImageView view,String url){artworkLoader.load(view,url);}
     private void tmdbTitle(JSONObject item){
         String type=item.optString("media_type",item.has("title")?"movie":"tv");int tmdbId=item.optInt("id");
@@ -157,10 +171,8 @@ public class MainActivity extends Activity {
         int visible=0;LinearLayout posterRow=null;
         for(int i=0;i<items.length();i++){
             JSONObject item=items.getJSONObject(i);if(item.optBoolean("adult",false))continue;if(!type.isEmpty())item.put("media_type",type);
-            if(visible%4==0){posterRow=row();target.addView(posterRow);}LinearLayout card=vertical();card.setBackground(box(0xff182337));card.setPadding(dp(6),dp(6),dp(6),dp(6));card.setClipToOutline(true);
-            ImageView poster=new ImageView(this);poster.setScaleType(ImageView.ScaleType.CENTER_CROP);card.addView(poster,new LinearLayout.LayoutParams(-1,dp(168)));
-            String name=item.optString("title",item.optString("name","Title"));TextView label=text(name,15);label.setMaxLines(2);label.setEllipsize(android.text.TextUtils.TruncateAt.END);card.addView(label);card.setContentDescription(name);focus(card);card.setOnClickListener(v->tmdbTitle(item));
-            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(222),1);lp.setMargins(dp(4),dp(5),dp(4),dp(5));posterRow.addView(card,lp);String path=item.optString("poster_path");if(path.startsWith("/"))loadImage(poster,"https://image.tmdb.org/t/p/w342"+path);visible++;
+            if(visible%4==0){posterRow=row();target.addView(posterRow);}View card=posterCard(false);bindPoster(card,item,false,null);
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(222),1);lp.setMargins(dp(4),dp(5),dp(4),dp(5));posterRow.addView(card,lp);visible++;
         }
         if(posterRow!=null)while(posterRow.getChildCount()<4)posterRow.addView(new View(this),new LinearLayout.LayoutParams(0,1,1));
         if(visible==0)target.addView(text("No titles found",18));
@@ -250,7 +262,7 @@ public class MainActivity extends Activity {
         ScrollView navigation=new ScrollView(this);navigation.setVerticalScrollBarEnabled(false);LinearLayout menu=vertical();menu.setPadding(0,0,dp(16),0);navigation.addView(menu);layout.addView(navigation,new LinearLayout.LayoutParams(dp(178),-1));
         LinearLayout right=vertical();right.setPadding(dp(14),0,0,0);layout.addView(right,new LinearLayout.LayoutParams(0,-1,1));
         List<TmdbCategories.Entry> navigationItems=new ArrayList<>();navigationItems.add(new TmdbCategories.Entry("All categories",":categories"));navigationItems.add(new TmdbCategories.Entry("Search",":search"));navigationItems.addAll(TmdbCategories.lists(type));navigationItems.add(new TmdbCategories.Entry("Genres",":genres"));navigationItems.add(new TmdbCategories.Entry("More filters",":filters"));navigationItems.add(new TmdbCategories.Entry("My library",":library"));
-        for(TmdbCategories.Entry entry:navigationItems){Button choice=navigationButton(entry.name,()->{if(entry.path.equals(":search"))searchCatalogue(kind);else if(entry.path.equals(":library"))savedLibrary(kind);else browse(kind,entry.name,entry.path,1);});choice.setTextSize(14);choice.setSelected(entry.name.equals(selected));styleFocus(choice,false);menu.addView(choice,new LinearLayout.LayoutParams(-1,dp(35)));}
+        for(TmdbCategories.Entry entry:navigationItems){Button choice=navigationButton(entry.name,()->{if(entry.path.equals(":search"))searchCatalogue(kind);else if(entry.path.equals(":library"))savedLibrary(kind);else browse(kind,entry.name,entry.path,1);});choice.setTextSize(14);choice.setSelected(entry.name.equals(selected));styleFocus(choice,false);menu.addView(choice,new LinearLayout.LayoutParams(-1,dp(35)));if(entry.name.equals(selected))choice.post(choice::requestFocus);}
         LinearLayout toolbar=row();TextView heading=compactText(selected,21);heading.setMaxLines(1);heading.setEllipsize(android.text.TextUtils.TruncateAt.END);toolbar.addView(heading,new LinearLayout.LayoutParams(0,-2,1));toolbar.addView(button("Cloud",()->cloud("",kind)));toolbar.addView(button("Transfers",()->transfers(kind)));right.addView(toolbar,new LinearLayout.LayoutParams(-1,dp(40)));
         ScrollView results=new ScrollView(this);results.setClipToPadding(false);LinearLayout grid=vertical();results.addView(grid);right.addView(results,new LinearLayout.LayoutParams(-1,0,1));
         if(path.equals(":categories")||path.equals(":genres")||path.equals(":filters")){renderCategoryHub(grid,kind,path);if(!path.equals(":filters"))refreshCatalogueGenres(grid,kind,path);return;}
@@ -268,7 +280,7 @@ public class MainActivity extends Activity {
         }
         if(path.startsWith("collection/")){async(()->media.tmdb(path).getJSONArray("parts"),items->{grid.removeAllViews();List<JSONObject> ordered=new ArrayList<>();for(int i=0;i<items.length();i++)ordered.add(items.getJSONObject(i));ordered.sort(Comparator.comparing(item->item.optString("release_date","9999")));posterGrid(grid,new JSONArray(ordered),"movie");});return;}
         if(path.startsWith("person/")){async(()->media.tmdb(path),response->{grid.removeAllViews();JSONArray items=new JSONArray();Set<Integer> seen=new HashSet<>();for(String key:new String[]{"cast","crew"}){JSONArray credits=response.optJSONArray(key);if(credits!=null)for(int i=0;i<credits.length();i++){JSONObject item=credits.getJSONObject(i);if(seen.add(item.optInt("id")))items.put(item);}}posterGrid(grid,items,type);});return;}
-        async(()->media.tmdb(path+(path.contains("?")?"&":"?")+"page="+number),result->{grid.removeAllViews();posterGrid(grid,result.getJSONArray("results"),type);LinearLayout pages=row();if(number>1)pages.addView(button("Previous",()->browse(kind,selected,path,number-1)));pages.addView(compactText("  Page "+number+"  ",14));if(number<Math.min(result.optInt("total_pages",1),500))pages.addView(button("Next",()->browse(kind,selected,path,number+1)));grid.addView(pages);});
+        catalogueFeed(right,results,menu,type,pageNumber->media.tmdb(path+(path.contains("?")?"&":"?")+"page="+pageNumber));
     }
     private void chooseCatalogueRegion(String kind){
         screen("Catalogue region",()->browse(kind,"Streaming services",":services",1));page.addView(text("Loading countries…",15));
