@@ -62,6 +62,10 @@ jobs:
   device-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        attempt: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
@@ -94,7 +98,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: android-tv-device-tests
+          name: android-tv-device-tests-${{ matrix.attempt }}
           path: |
             android-tv-launcher/app/build/reports/androidTests/
             android-tv-launcher/app/build/reports/tv-screenshots/
