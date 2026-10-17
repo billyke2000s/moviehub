@@ -11,6 +11,10 @@ final class TmdbCategories {
     }
     static String type(String type){if(!type.equals("movie")&&!type.equals("tv"))throw new IllegalArgumentException("Unknown catalogue");return type;}
     static String discover(String type,String query){return "discover/"+type(type)+"?include_adult=false&"+query;}
+    static String refine(String type,int genre,int year,int rating,String sort){
+        type(type);if(genre<0||year!=0&&(year<1874||year>9999)||rating<0||rating>10||!Arrays.asList("popularity.desc","vote_average.desc","date.desc","title.asc").contains(sort))throw new IllegalArgumentException("Invalid catalogue filters");
+        String date=type.equals("movie")?"primary_release_date":"first_air_date";String order=sort.equals("date.desc")?date+".desc":sort.equals("title.asc")?(type.equals("movie")?"title":"name")+".asc":sort;StringBuilder query=new StringBuilder("sort_by="+order);if(genre>0)query.append("&with_genres=").append(genre);if(year>0)query.append("&").append(date).append(".gte=").append(year).append("-01-01&").append(date).append(".lte=").append(year).append("-12-31");if(rating>0)query.append("&vote_average.gte=").append(rating);if(rating>0||sort.equals("vote_average.desc"))query.append("&vote_count.gte=100");return discover(type,query.toString());
+    }
     static Entry genre(String type,int id,String name){if(id<=0||name.trim().isEmpty())throw new IllegalArgumentException("Invalid genre");return new Entry(name,discover(type,"with_genres="+id));}
     static List<Entry> genres(String type){
         type(type);List<Entry> rows=new ArrayList<>();

@@ -22,6 +22,6 @@ The **Publish Android TV launcher update** workflow publishes signed APKs and up
 
 ## Status
 
-Build and verification results for the current work are recorded in PR #15. Deterministic Android tests cover SQLite pagination, favourites beyond 900 entries, failed-import rollback, non-destructive schema upgrades, encrypted stream URLs and actual LibVLC playback/seek/media keys. Provider fixtures exercise Xtream login and TS/HLS URL negotiation and M3U imports; fixtures do not establish live provider availability. Real Xtream/Premiumize accounts and target-TV installation remain release verification requirements.
+Build, lint, signed-update compatibility and Android device verification run on pull requests. Deterministic Android tests cover SQLite pagination, favourites beyond 900 entries, failed-import rollback, non-destructive schema upgrades, encrypted stream URLs and actual LibVLC playback/seek/media keys. Provider fixtures exercise Xtream login and TS/HLS URL negotiation and M3U imports; fixtures do not establish live provider availability. Real Xtream/Premiumize accounts and target-TV installation remain release verification requirements.
 
 Account details are entered on the device and stored using Android Keystore. No credentials or firmware images are included in this repository.

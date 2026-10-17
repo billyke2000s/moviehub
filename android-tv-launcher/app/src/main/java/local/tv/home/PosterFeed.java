@@ -20,6 +20,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     private final Handler main=new Handler(Looper.getMainLooper());
     private final Executor worker; private final Loader loader; private final Cards cards;
     private final String type; private final boolean horizontal;
+    private long lastFocused=Long.MIN_VALUE;
     private int columns=4;private boolean pendingBelow;Runnable onFirstItems;
     private int next=1,total=1; private boolean loading,closed,failed,capped; private View pendingFrom;
     private final FeedAdapter adapter=new FeedAdapter();
@@ -34,11 +35,12 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     }
     static final class State {
         final ArrayList<JSONObject> items;final int next,total;final boolean capped;final android.os.Parcelable layout;final long focused;
-        State(PosterFeed feed){items=new ArrayList<>(feed.items);next=feed.next;total=feed.total;capped=feed.capped;layout=feed.getLayoutManager().onSaveInstanceState();View view=feed.findFocus();ViewHolder holder=view==null?null:feed.findContainingViewHolder(view);focused=holder==null?Long.MIN_VALUE:holder.getItemId();}
+        State(PosterFeed feed){items=new ArrayList<>(feed.items);next=feed.next;total=feed.total;capped=feed.capped;layout=feed.getLayoutManager().onSaveInstanceState();View view=feed.findFocus();ViewHolder holder=view==null?null:feed.findContainingViewHolder(view);focused=holder==null||holder.getItemId()==Long.MIN_VALUE?feed.lastFocused:holder.getItemId();}
     }
     State snapshot(){return new State(this);}
     private long restoredFocus=Long.MIN_VALUE;
     void restore(State state){items.clear();items.addAll(state.items);seen.clear();for(JSONObject item:items)seen.add(item.optString("media_type",type)+":"+item.optInt("id"));next=state.next;total=state.total;capped=state.capped;restoredFocus=state.focused;adapter.notifyDataSetChanged();getLayoutManager().onRestoreInstanceState(state.layout);post(this::prefetch);}
+    @Override public void requestChildFocus(View child,View focused){super.requestChildFocus(child,focused);int position=getChildAdapterPosition(child);if(position>=0&&position<items.size())lastFocused=adapter.getItemId(position);}
     void setColumns(int value){columns=value;((GridLayoutManager)getLayoutManager()).setSpanCount(value);}
     void start(){loadMore();}
     private int dp(int value){return (int)(value*getResources().getDisplayMetrics().density+.5f);}
