@@ -37,6 +37,8 @@ public class TmdbCategoriesTest {
         assertTrue(named(TmdbCategories.filters("movie",":runtime","GB",day),"Under 30 minutes").path.contains("with_runtime.lte=29"));
         assertTrue(named(TmdbCategories.filters("tv",":availability","GB",day),"Free").path.contains("watch_region=GB&with_watch_monetization_types=free"));
         assertTrue(named(TmdbCategories.filters("movie",":sort","GB",day),"Newest releases").path.contains("primary_release_date.lte=2026-10-17"));
+        assertEquals(14,TmdbCategories.filters("movie",":sort","GB",day).size());assertEquals(12,TmdbCategories.filters("tv",":sort","GB",day).size());
+        assertTrue(named(TmdbCategories.filters("tv",":sort","GB",day),"Original: A to Z").path.endsWith("sort_by=original_name.asc"));
         try{TmdbCategories.year("movie",0);fail("Invalid year");}catch(IllegalArgumentException expected){}
         try{TmdbCategories.filters("movie",":availability","GB&extra=1",day);fail("Region injection");}catch(IllegalArgumentException expected){}
     }

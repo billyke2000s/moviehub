@@ -14,6 +14,8 @@ Browse-by groups cover years and decades, all original languages, countries of o
 
 All title-result pages retain poster browsing, details and pagination. Selecting a category uses the appropriate movie or TV query; movie-only genres and release filters are not reused as TV filters. Existing account credentials, personal sources, favourites and installed-app pins are untouched.
 
+The sort browser includes all 14 documented movie sort orders and all 12 TV sort orders. Two hundred generated routes were checked against the official TMDB OpenAPI paths, query parameters and sort enums.
+
 Verification includes tests for every baseline genre appearing on opening the section, actual D-pad selection of a final genre, media-specific filter groups, discover query boundaries and malformed region/year inputs. Authenticated live TMDB account checks require external credentials and are not inferred from fixtures or compilation.
 
 References:
