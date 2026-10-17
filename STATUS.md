@@ -14,7 +14,12 @@ Last updated: 17 October 2026.
 
 1. **Device tests fail or are flaky.** The same source tree passed on PR #24 and failed on `main`
    minutes later, and every completed `main` run since the morning of 17 October has failed.
-   A side-by-side comparison of PR #25 with unchanged `main` is in progress.
+   On 17 October PR #25 and unchanged `main` were run side by side (runs 39067415466 and
+   39067416543). PR #25 passed every device test; `main` failed one,
+   `ArtworkTest.remoteScrollingPastFirstPageAndBackLoadsEveryRecycledPoster` ("Artwork did not
+   become ready"). An earlier PR #25 run also failed before failures were being reported, so the
+   test that failed then is unknown. One run each is not enough to call any test stable; artwork
+   loading timing is the first suspect. Failed tests are now listed as annotations on each run.
 2. **Errors are often swallowed.** About 38 `catch (Exception ...)` blocks, 8 of them empty, hide
    failures from the user and from logs. Some are intentional (optional features), but failures on a
    real TV can be silent. Review them one area at a time, and log or show a message where useful.

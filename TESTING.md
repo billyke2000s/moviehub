@@ -53,6 +53,11 @@ tree pushed as `84b6487` failed in the device-test step). Every completed CI run
 03:24 that morning has failed. The PR #23 notes record 10 artwork/catalogue tests failing on
 unchanged `main`.
 
+A side-by-side run on 17 October (PR #25 against unchanged `main`) failed on `main` only in
+`ArtworkTest.remoteScrollingPastFirstPageAndBackLoadsEveryRecycledPoster` ("Artwork did not become
+ready") and passed on PR #25. When device tests fail, CI now lists each failed test with its message
+as an annotation on the run and in the job summary (`tests/report-test-failures.py`).
+
 Until this is fixed:
 
 - A red device-test run is not proof that a change broke something. Compare against a run of

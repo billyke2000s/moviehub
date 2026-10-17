@@ -15,7 +15,8 @@ On `main` but not yet published to TVs:
   search history, combined filters, library sorting, viewing progress, watched episodes, channel
   groups and logos, source quality filters, cloud breadcrumbs and player options (PR #24).
 - Code restructure: Java sources reformatted for readability, `MainActivity` split into feature
-  classes, and project documentation added. No intended behaviour change (PR #25).
+  classes, project documentation added, and failed device tests listed as CI annotations. No
+  intended behaviour change (PR #25).
 
 ## 0.10 (17 Oct 2026)
 
