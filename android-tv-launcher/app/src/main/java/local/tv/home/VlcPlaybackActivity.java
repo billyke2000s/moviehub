@@ -19,13 +19,14 @@ import org.videolan.libvlc.util.VLCVideoLayout;
 public class VlcPlaybackActivity extends Activity {
 
     private LibVLC engine;
-    private MediaPlayer player;
+    MediaPlayer player;
     private VLCVideoLayout video;
     private String url, id;
     private long position;
-    private boolean live, ended, foreground, triedAlternative, dragging, dialogOpen;
+    private boolean live, ended, foreground, dragging, dialogOpen;
+    boolean triedAlternative;
     private float playbackRate = 1f;
-    private long sleepAt;
+    long sleepAt;
     private String aspect;
     private final Runnable sleep = () -> {
         Toast.makeText(this, "Sleep timer finished", Toast.LENGTH_SHORT).show();
@@ -545,7 +546,7 @@ public class VlcPlaybackActivity extends Activity {
         dialog.show();
     }
 
-    private void chooseSpeed() {
+    void chooseSpeed() {
         float[] rates = { .5f, .75f, 1f, 1.25f, 1.5f, 1.75f, 2f };
         int selected = 2;
         for (int i = 0; i < rates.length; i++) if (rates[i] == playbackRate) selected = i;
@@ -560,7 +561,7 @@ public class VlcPlaybackActivity extends Activity {
         );
     }
 
-    private void choosePicture() {
+    void choosePicture() {
         String[] aspects = { null, "16:9", "4:3", "21:9" };
         int selected = 0;
         for (int i = 1; i < aspects.length; i++) if (aspects[i].equals(aspect)) selected = i;
@@ -588,7 +589,7 @@ public class VlcPlaybackActivity extends Activity {
         );
     }
 
-    private void chooseSleep() {
+    void chooseSleep() {
         options(
             "Sleep timer",
             new String[] { "Off", "15 minutes", "30 minutes", "60 minutes", "90 minutes" },

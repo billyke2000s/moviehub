@@ -129,7 +129,7 @@ final class AppDock {
         activity.prefs.edit().putString("dockOrder", new JSONArray(order).toString()).apply();
     }
 
-    private void saveVisibleDock() {
+    void saveVisibleDock() {
         List<String> order = new ArrayList<>();
         for (int i = 0; i < homeDock.getChildCount(); i++) {
             Object id = homeDock.getChildAt(i).getTag();

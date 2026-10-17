@@ -14,8 +14,6 @@ import android.widget.TextView;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import java.io.*;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import org.json.*;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -40,14 +38,8 @@ public class TvNavigationTest {
     }
 
     private View root() {
-        try {
-            Field field = MainActivity.class.getDeclaredField("catalogueDialog");
-            field.setAccessible(true);
-            Dialog dialog = (Dialog) field.get(activity);
-            if (dialog != null && dialog.isShowing()) return dialog.getWindow().getDecorView();
-        } catch (Exception e) {
-            throw new AssertionError(e);
-        }
+        Dialog dialog = activity.catalogueDialog;
+        if (dialog != null && dialog.isShowing()) return dialog.getWindow().getDecorView();
         return activity.getWindow().getDecorView();
     }
 
@@ -139,11 +131,6 @@ public class TvNavigationTest {
         });
         instrumentation.runOnMainSync(() -> {
             try {
-                Field field = MainActivity.class.getDeclaredField("homeShelf");
-                field.setAccessible(true);
-                Object shelf = field.get(activity);
-                Method show = shelf.getClass().getDeclaredMethod("show", JSONArray.class, String.class);
-                show.setAccessible(true);
                 JSONArray titles = new JSONArray();
                 for (int i = 0; i < 12; i++) titles.put(
                     new JSONObject()
@@ -157,7 +144,7 @@ public class TvNavigationTest {
                         .put("poster_path", "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg")
                         .put("backdrop_path", "/hZkgoQYus5vegHoetLkCJzb17zJ.jpg")
                 );
-                show.invoke(shelf, titles, "");
+                activity.homeShelf.show(titles, "");
             } catch (Exception e) {
                 throw new AssertionError(e);
             }
@@ -265,13 +252,7 @@ public class TvNavigationTest {
         );
         instrumentation.waitForIdleSync();
         instrumentation.runOnMainSync(() -> {
-            try {
-                Method method = SettingsScreens.class.getDeclaredMethod("accountScreen", String.class);
-                method.setAccessible(true);
-                method.invoke(activity.settingsScreens, "TMDB");
-            } catch (Exception e) {
-                throw new AssertionError(e);
-            }
+            activity.settingsScreens.accountScreen("TMDB");
         });
         instrumentation.waitForIdleSync();
         instrumentation.runOnMainSync(() -> {
@@ -283,9 +264,7 @@ public class TvNavigationTest {
         instrumentation.waitForIdleSync();
         instrumentation.runOnMainSync(() -> {
             try {
-                Method screen = MainActivity.class.getDeclaredMethod("screen", String.class, Runnable.class);
-                screen.setAccessible(true);
-                screen.invoke(activity, "Details", (Runnable) () -> {});
+                activity.screen("Details", () -> {});
                 JSONObject fixture = new JSONObject()
                     .put("id", 100)
                     .put("media_type", "tv")
@@ -309,9 +288,7 @@ public class TvNavigationTest {
                             new JSONArray().put(new JSONObject().put("name", "Actor One"))
                         )
                     );
-                Method details = TitleDetails.class.getDeclaredMethod("renderDetails", JSONObject.class);
-                details.setAccessible(true);
-                details.invoke(activity.titleDetails, fixture);
+                activity.titleDetails.renderDetails(fixture);
             } catch (Exception e) {
                 throw new AssertionError(e);
             }
@@ -331,15 +308,12 @@ public class TvNavigationTest {
                     .put("id", 991100)
                     .put("media_type", "tv")
                     .put("name", "Saved series");
-                Method toggle = LibraryScreens.class.getDeclaredMethod("toggleWatchlist", JSONObject.class),
-                    has = LibraryScreens.class.getDeclaredMethod("isWatchlisted", JSONObject.class);
-                toggle.setAccessible(true);
-                has.setAccessible(true);
-                assertFalse((Boolean) has.invoke(activity.libraryScreens, title));
-                toggle.invoke(activity.libraryScreens, title);
-                assertTrue((Boolean) has.invoke(activity.libraryScreens, title));
-                toggle.invoke(activity.libraryScreens, title);
-                assertFalse((Boolean) has.invoke(activity.libraryScreens, title));
+                LibraryScreens library = activity.libraryScreens;
+                assertFalse(library.isWatchlisted(title));
+                library.toggleWatchlist(title);
+                assertTrue(library.isWatchlisted(title));
+                library.toggleWatchlist(title);
+                assertFalse(library.isWatchlisted(title));
             } catch (Exception e) {
                 throw new AssertionError(e);
             } finally {

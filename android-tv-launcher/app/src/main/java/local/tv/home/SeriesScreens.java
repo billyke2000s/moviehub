@@ -42,7 +42,7 @@ final class SeriesScreens {
         );
     }
 
-    private void renderSeasons(JSONObject details) throws Exception {
+    void renderSeasons(JSONObject details) throws Exception {
         String title = details.optString("name", "Series");
         int id = details.optInt("id");
         String imdb =
@@ -125,7 +125,7 @@ final class SeriesScreens {
         );
     }
 
-    private void renderEpisodes(
+    void renderEpisodes(
         JSONArray episodes,
         JSONObject series,
         int tmdbId,

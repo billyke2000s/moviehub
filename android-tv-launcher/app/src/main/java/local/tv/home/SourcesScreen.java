@@ -121,7 +121,7 @@ final class SourcesScreen {
         );
     }
 
-    private void renderSources(
+    void renderSources(
         LinearLayout target,
         List<SourceRepository.Source> sources,
         String quality,

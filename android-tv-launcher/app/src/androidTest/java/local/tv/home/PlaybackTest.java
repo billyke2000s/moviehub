@@ -27,10 +27,8 @@ public class PlaybackTest {
     private volatile boolean closed;
     private boolean oldHttp;
 
-    private MediaPlayer player() throws Exception {
-        java.lang.reflect.Field field = VlcPlaybackActivity.class.getDeclaredField("player");
-        field.setAccessible(true);
-        return (MediaPlayer) field.get(activity);
+    private MediaPlayer player() {
+        return activity.player;
     }
 
     private void await(BooleanSupplier condition, long timeout) {
@@ -189,16 +187,9 @@ public class PlaybackTest {
         );
     }
 
-    private void option(String method, int steps) throws Exception {
-        instrumentation.runOnMainSync(() -> {
-            try {
-                java.lang.reflect.Method action = VlcPlaybackActivity.class.getDeclaredMethod(method);
-                action.setAccessible(true);
-                action.invoke(activity);
-            } catch (Exception e) {
-                throw new AssertionError(e);
-            }
-        });
+    /** Opens a player options dialog, moves down `steps` entries and selects. */
+    private void option(Runnable open, int steps) {
+        instrumentation.runOnMainSync(open);
         instrumentation.waitForIdleSync();
         SystemClock.sleep(250);
         for (int i = 0; i < steps; i++) instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
@@ -216,16 +207,14 @@ public class PlaybackTest {
             }
         }, 30000);
         MediaPlayer engine = player();
-        option("chooseSpeed", 1);
+        option(activity::chooseSpeed, 1);
         assertEquals(1.25f, engine.getRate(), .01f);
-        option("choosePicture", 1);
+        option(activity::choosePicture, 1);
         assertEquals("16:9", engine.getAspectRatio());
-        option("chooseSleep", 1);
-        java.lang.reflect.Field sleep = VlcPlaybackActivity.class.getDeclaredField("sleepAt");
-        sleep.setAccessible(true);
-        assertTrue(sleep.getLong(activity) > SystemClock.elapsedRealtime());
-        option("chooseSleep", 0);
-        assertEquals(0, sleep.getLong(activity));
+        option(activity::chooseSleep, 1);
+        assertTrue(activity.sleepAt > SystemClock.elapsedRealtime());
+        option(activity::chooseSleep, 0);
+        assertEquals(0, activity.sleepAt);
         UiEvidence.capture("playback-options");
     }
 
@@ -263,9 +252,7 @@ public class PlaybackTest {
                 return false;
             }
         }, 30000);
-        java.lang.reflect.Field alternate = VlcPlaybackActivity.class.getDeclaredField("triedAlternative");
-        alternate.setAccessible(true);
-        assertFalse("The requested format must play directly", alternate.getBoolean(activity));
+        assertFalse("The requested format must play directly", activity.triedAlternative);
     }
 
     @After
