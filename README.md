@@ -29,6 +29,20 @@ Download the signed [home.apk](https://github.com/billyke2000s/moviehub/releases
 from [Releases](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) and install
 it on the TV. Later versions arrive through the in-app Update button.
 
+### Recommended: MovieHub Start (keeps MovieHub as Home after updates)
+
+When MovieHub updates itself, Android stops it briefly and the box falls back to its original
+launcher. **MovieHub Start** is a tiny companion app that fixes this:
+
+1. Install `shim-debug.apk` (from the `android-tv-launcher-debug-apk` download on any CI run) once.
+2. Press Home and choose **MovieHub Start** as the default Home app ("Always").
+
+Pressing Home then always opens MovieHub, including straight after an update. If MovieHub is
+updating, Start waits and opens it when ready. If MovieHub crashes 3 times within 3 minutes, Start
+opens the box's original launcher for a few minutes instead, so a crashing update does not leave
+you stuck. (It detects Java crashes; a freeze or a crash inside the native video player is not
+reported.) MovieHub Start does not need updating when MovieHub updates.
+
 ## Build
 
 You need JDK 17, Android SDK 35 and Gradle 8.10.2.

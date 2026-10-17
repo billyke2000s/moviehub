@@ -28,6 +28,9 @@ All source lives in one package, `local.tv.home`, under
                         └────────────────────────────┘
 ```
 
+The repository also contains a second, tiny app, **MovieHub Start** (`android-tv-launcher/shim/`),
+described at the end of this document.
+
 There are two activities. `MainActivity` is the launcher (it registers for the `HOME` and
 `LEANBACK_LAUNCHER` intents) and draws every browsing screen. `VlcPlaybackActivity` plays one stream.
 
@@ -60,6 +63,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `PosterTitle` | Two-line poster caption that scrolls when focused and too long. |
 | `Artwork` | Image download and caching for posters and backdrops. |
 | `DpadRepeats` | Rate-limits held D-pad keys so a held direction cannot race through lists. |
+| `CrashReporter` | Tells the MovieHub Start shim that MovieHub crashed, then lets Android handle the crash. |
 | `Diagnostics` | Logs failures the app recovers from (`adb logcat -s MovieHub`), without account details. |
 
 ### Screens (feature classes)
@@ -119,3 +123,19 @@ once, when the activity is constructed, and keep almost no state of their own.
   error (for example a failed artwork download), it calls `Diagnostics.recovered(...)`, which writes
   the location and exception type to logcat under the tag `MovieHub`. Exception messages are not
   logged because they can contain provider URLs with account details.
+
+## MovieHub Start (launcher shim)
+
+`android-tv-launcher/shim/` is a separate app (`local.tv.home.shim`) meant to be the box's default
+Home app. It exists because a running app cannot stay the Home screen while Android replaces it
+during an update.
+
+| File | Responsibility |
+| --- | --- |
+| `StartActivity` | Invisible Home activity. On every Home press it opens MovieHub (`local.tv.home/.MainActivity`). If MovieHub is missing or mid-update it shows a short message and retries every second. If MovieHub is crash-looping it opens the stock launcher. |
+| `CrashReceiver` | Records crash reports sent by MovieHub. |
+| `CrashGuard` | Pure-Java rule: 3 crashes within 3 minutes means use the stock launcher. Tested by `tests/CrashGuardTest.java`. |
+
+MovieHub's side is `CrashReporter`: its uncaught-exception handler sends an explicit broadcast to
+the shim and then lets Android handle the crash as before. The shim waits 400 ms before deciding,
+so a report sent just before MovieHub's process ended can arrive.

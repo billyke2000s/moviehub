@@ -8,6 +8,7 @@
     <intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LEANBACK_LAUNCHER"/></intent>
     <intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent>
     <intent><action android:name="android.settings.SETTINGS"/></intent>
+    <package android:name="local.tv.home.shim"/>
   </queries>
   <application android:label="Home" android:icon="@drawable/home_placeholder" android:banner="@drawable/home_placeholder" android:allowBackup="false" android:enableOnBackInvokedCallback="false" android:usesCleartextTraffic="true" android:theme="@android:style/Theme.Material.NoActionBar">
     <provider android:name=".UpdateApkProvider" android:authorities="${applicationId}.updates" android:exported="false" android:grantUriPermissions="true"/>

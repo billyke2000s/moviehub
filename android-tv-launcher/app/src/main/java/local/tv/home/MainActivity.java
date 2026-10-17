@@ -230,6 +230,7 @@ public class MainActivity extends TvActivity {
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
+        CrashReporter.install(this);
         tvFullscreen();
         secrets = new Secrets(this);
         media = new MediaRepository(secrets);

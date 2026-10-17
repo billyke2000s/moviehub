@@ -1,0 +1,25 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-feature android:name="android.software.leanback" android:required="false"/>
+  <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
+  <queries>
+    <!-- MovieHub, which this app opens, and other Home apps to fall back to. -->
+    <package android:name="local.tv.home"/>
+    <intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.HOME"/></intent>
+  </queries>
+  <application android:label="MovieHub Start" android:icon="@drawable/start_placeholder" android:allowBackup="false" android:theme="@android:style/Theme.Translucent.NoTitleBar">
+    <activity android:name=".StartActivity" android:exported="true" android:launchMode="singleTask" android:excludeFromRecents="true" android:stateNotNeeded="true" android:screenOrientation="landscape">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+        <category android:name="android.intent.category.HOME"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+      </intent-filter>
+    </activity>
+    <!-- Exported so MovieHub can report a crash. A forged report can only make the box use the
+         standard launcher for a few minutes, so no permission is required. -->
+    <receiver android:name=".CrashReceiver" android:exported="true">
+      <intent-filter>
+        <action android:name="local.tv.home.shim.MOVIEHUB_CRASHED"/>
+      </intent-filter>
+    </receiver>
+  </application>
+</manifest>

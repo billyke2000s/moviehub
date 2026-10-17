@@ -5,7 +5,7 @@ There are three layers of checks. CI runs all of them on every pull request that
 
 | Layer | Where | Needs | Runs in CI step |
 | --- | --- | --- | --- |
-| Core checks (45) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
+| Core checks (56) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
 | Build and lint | Gradle | Android SDK 35 | "Build APK and run Android lint" |
 | Device tests (instrumentation) | `android-tv-launcher/app/src/androidTest/` | Android emulator | `device-tests` job |
 | Signing compatibility | release build vs published APK | signing secrets (same-repo PRs only) | `signed-compatibility` job |
@@ -25,6 +25,14 @@ done
 ```
 
 Expected output: 17 playlist, 9 network, 6 episode/file and 13 channel-query checks passed.
+
+The launcher shim's crash rule has its own check:
+
+```sh
+javac -d build/core-tests android-tv-launcher/shim/src/main/java/local/tv/home/shim/CrashGuard.java \
+  android-tv-launcher/tests/CrashGuardTest.java
+java -cp build/core-tests local.tv.home.shim.CrashGuardTest   # 11 checks
+```
 
 ## Device tests
 

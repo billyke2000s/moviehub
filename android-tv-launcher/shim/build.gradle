@@ -1,0 +1,24 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'local.tv.home.shim'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'local.tv.home.shim'
+        minSdk 28
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+    signingConfigs {
+        release {
+            if (System.getenv('APK_KEYSTORE')) {
+                storeFile file(System.getenv('APK_KEYSTORE'))
+                storePassword System.getenv('APK_STORE_PASSWORD')
+                keyAlias System.getenv('APK_KEY_ALIAS')
+                keyPassword System.getenv('APK_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes { release { if (System.getenv('APK_KEYSTORE')) signingConfig signingConfigs.release } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}

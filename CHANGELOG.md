@@ -17,6 +17,9 @@ On `main` but not yet published to TVs:
 - Fixed: quick D-pad presses along a poster row or grid could lose the selection.
 - Failures the app recovers from are logged to logcat (tag `MovieHub`) without account details.
 - Device tests are reliable again (8/8 parallel runs) and call app code directly; CI actions use Node 24.
+- MovieHub Start: an optional companion Home app that reopens MovieHub after updates, waits while
+  MovieHub is updating, and falls back to the stock launcher if MovieHub crashes 3 times within
+  3 minutes. MovieHub reports crashes to it.
 - Code restructure: Java sources reformatted for readability, `MainActivity` split into feature
   classes, project documentation added, and failed device tests listed as CI annotations. No
   intended behaviour change (PR #25).
