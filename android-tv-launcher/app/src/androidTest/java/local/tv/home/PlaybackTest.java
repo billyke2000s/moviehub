@@ -53,6 +53,13 @@ public class PlaybackTest {
         instrumentation.runOnMainSync(activity::finish);instrumentation.waitForIdleSync();
         await(()->instrumentation.getTargetContext().getSharedPreferences("positions",0).getLong("playback-test",0)>0,5000);
     }
+    private void option(String method,String text)throws Exception{
+        instrumentation.runOnMainSync(()->{try{java.lang.reflect.Method action=VlcPlaybackActivity.class.getDeclaredMethod(method);action.setAccessible(true);action.invoke(activity);}catch(Exception e){throw new AssertionError(e);}});instrumentation.waitForIdleSync();
+        await(()->{android.view.accessibility.AccessibilityNodeInfo root=instrumentation.getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(android.view.accessibility.AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByText(text))if(text.contentEquals(node.getText())){while(node!=null&&!node.isClickable())node=node.getParent();if(node!=null)return node.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK);}return false;},5000);instrumentation.waitForIdleSync();
+    }
+    @Test public void playbackOptionsApplySpeedPictureAndCancellableSleepTimer()throws Exception{
+        await(()->{try{return player()!=null&&player().isPlaying();}catch(Exception e){return false;}},30000);MediaPlayer engine=player();option("chooseSpeed","1.25×");assertEquals(1.25f,engine.getRate(),.01f);option("choosePicture","16:9");assertEquals("16:9",engine.getAspectRatio());option("chooseSleep","15 minutes");java.lang.reflect.Field sleep=VlcPlaybackActivity.class.getDeclaredField("sleepAt");sleep.setAccessible(true);assertTrue(sleep.getLong(activity)>SystemClock.elapsedRealtime());option("chooseSleep","Off");assertEquals(0,sleep.getLong(activity));UiEvidence.capture("playback-options");
+    }
     @Test public void playsTransportStream() throws Exception{playLiveFixture("live.ts");}
     @Test public void playsHlsWithoutFallingBackToTs() throws Exception{playLiveFixture("playlist.m3u8");}
     private void playLiveFixture(String path) throws Exception{
@@ -62,6 +69,6 @@ public class PlaybackTest {
         java.lang.reflect.Field alternate=VlcPlaybackActivity.class.getDeclaredField("triedAlternative");alternate.setAccessible(true);assertFalse("The requested format must play directly",alternate.getBoolean(activity));
     }
     @After public void cleanup() throws Exception{
-        if(activity!=null)instrumentation.runOnMainSync(activity::finish);closed=true;if(server!=null)server.close();Context context=instrumentation.getTargetContext();context.getSharedPreferences("ui",0).edit().putBoolean("http",oldHttp).commit();context.getSharedPreferences("positions",0).edit().remove("playback-test").commit();
+        if(activity!=null)instrumentation.runOnMainSync(activity::finish);closed=true;if(server!=null)server.close();Context context=instrumentation.getTargetContext();context.getSharedPreferences("ui",0).edit().putBoolean("http",oldHttp).commit();context.getSharedPreferences("positions",0).edit().remove("playback-test").remove("playback-test:duration").commit();
     }
 }

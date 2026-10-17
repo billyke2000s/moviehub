@@ -51,7 +51,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
                 if(!seen.contains(media+":"+id)&&addedKeys.add(media+":"+id)){item.put("media_type",media);additions.add(item);}}
             int first=items.size();seen.addAll(addedKeys);items.addAll(additions);capped=response.optInt("total_pages",requested)>500;total=Math.min(500,Math.max(requested,response.optInt("total_pages",requested)));next=requested+1;loading=false;
             // The footer stays at the end; existing poster holders are never rebound on append.
-            if(!additions.isEmpty()){adapter.notifyItemRangeInserted(first,additions.size());}statusChanged();
+            if(!additions.isEmpty()){adapter.notifyItemRangeInserted(first,additions.size());if(first==0)getLayoutManager().scrollToPosition(0);}statusChanged();
             post(()->{completePendingFocus();prefetch();});
         }catch(JSONException e){failed=true;loading=false;statusChanged();}});}catch(Exception e){main.post(()->{if(!closed){failed=true;loading=false;statusChanged();}});}});
     }

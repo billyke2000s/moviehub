@@ -26,6 +26,7 @@ public class ChannelDatabaseTest {
         Set<Long> seen=new HashSet<>();int offset=0;while(true){List<ChannelDatabase.Row> page=db.browse("favourites","",keys,offset);int shown=Math.min(ChannelDatabase.PAGE,page.size());for(int i=0;i<shown;i++)assertTrue("No duplicated row",seen.add(page.get(i).id));if(page.size()<=ChannelDatabase.PAGE)break;offset+=ChannelDatabase.PAGE;}
         assertEquals(1301,seen.size());assertEquals(1,db.browse("all","Channel 1300",keys,0).size());assertEquals(0,db.browse("sports","Channel 1299",keys,0).size());
         assertTrue(db.browse("favourites","\" OR *",Collections.emptySet(),0).isEmpty());
+        assertEquals(1,db.browse("group:News","Channel 1299",keys,0).size());assertEquals(0,db.browse("group:Sports","Channel 1299",keys,0).size());assertTrue(db.browse("group:News OR 1=1","",keys,0).isEmpty());
     }
     @Test public void failedRefreshKeepsPreviousRowsAndUrlsAreEncrypted() throws Exception{
         importRows(3);assertEquals(channel(0).url,db.url(db.all(0).get(0).id,ChannelQuery.key(channel(0).url)));
