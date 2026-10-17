@@ -274,7 +274,7 @@ public class MainActivity extends Activity {
             header.addView(navigationButton("Search",()->searchCatalogue(kind)),new LinearLayout.LayoutParams(dp(88),dp(36)));header.addView(navigationButton("Browse",()->showOverlay("Browse categories",":categories")),new LinearLayout.LayoutParams(dp(100),dp(36)));header.addView(navigationButton("Filters",()->showOverlay("Filters",":filters")),new LinearLayout.LayoutParams(dp(88),dp(36)));
             Button library=navigationButton("Library",()->{});library.setOnClickListener(v->new AlertDialog.Builder(MainActivity.this).setTitle("Your library").setItems(new String[]{"My library","Premiumize cloud","Transfers"},(d,which)->{if(which==0)savedLibrary(kind);else if(which==1)cloud("",kind);else transfers(kind);}).show());header.addView(library,new LinearLayout.LayoutParams(dp(88),dp(36)));header.addView(backButton,new LinearLayout.LayoutParams(dp(72),dp(36)));
             ViewGroup parent=(ViewGroup)page.getParent();parent.removeView(page);FrameLayout root=new FrameLayout(MainActivity.this);root.setBackgroundColor(0xff090d14);backdrop=new ImageView(MainActivity.this);backdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);backdrop.setAlpha(.2f);root.addView(backdrop,new FrameLayout.LayoutParams(-1,-1));View shade=new View(MainActivity.this);shade.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{0xaa090d14,0xdd090d14,0xff090d14}));root.addView(shade,new FrameLayout.LayoutParams(-1,-1));page.setBackgroundColor(Color.TRANSPARENT);root.addView(page,new FrameLayout.LayoutParams(-1,-1));setContentView(root);
-            categoryScroll=new HorizontalScrollView(MainActivity.this);categoryScroll.setHorizontalScrollBarEnabled(false);categories=row();categories.setPadding(dp(4),dp(4),dp(4),dp(4));categoryScroll.addView(categories); // Categories live in the Browse panel, not a competing horizontal D-pad strip.
+            categoryScroll=new HorizontalScrollView(MainActivity.this);categoryScroll.setHorizontalScrollBarEnabled(false);categories=row();categories.setPadding(dp(4),dp(4),dp(4),dp(4));categoryScroll.addView(categories); // Detached: Browse dialog owns catalogue navigation.
             collection=compactText("Trending today",16);collection.setTextColor(0xffaab7cb);page.addView(collection,new LinearLayout.LayoutParams(-1,dp(28)));content=vertical();page.addView(content,new LinearLayout.LayoutParams(-1,0,1));
         }
         void close(){closed=true;if(pendingPreview!=null)handler.removeCallbacks(pendingPreview);}
@@ -289,8 +289,13 @@ public class MainActivity extends Activity {
             if(feed!=null){feed.close();feeds.remove(feed);feed=null;}content.removeAllViews();for(int i=0;i<categories.getChildCount();i++){View tab=categories.getChildAt(i);tab.setSelected(route.equals(tab.getTag()));styleFocus(tab,tab.hasFocus());}
             TextView loading=compactText("Loading titles…",15);content.addView(loading);
             if(!secrets.has("tmdb")){loading.setText("Connect TMDB to browse this catalogue");content.addView(button("Connect TMDB",()->accountScreen("TMDB")));}
-            else feed=catalogueFeed(content,loading,categories,type,n->cataloguePage(type,route,n));
-            // Leave focus in the poster grid instead of pulling it into category controls.
+            else {feed=catalogueFeed(content,loading,categories,type,n->cataloguePage(type,route,n));
+                final PosterFeed current=feed;final View focusBefore=getCurrentFocus();
+                current.post(()->{if(closed||feed!=current||current.items.isEmpty()||!current.isAttachedToWindow())return;
+                    if(focusBefore==null||!focusBefore.isAttachedToWindow()||focusBefore==loading){View first=current.getLayoutManager().findViewByPosition(0);if(first!=null)first.requestFocus();}
+                });
+            }
+            // Keep focus on the posters when the catalogue is already being navigated.
         }
         void preview(JSONObject item){if(pendingPreview!=null)handler.removeCallbacks(pendingPreview);String art=item.optString("backdrop_path");pendingPreview=()->{if(closed)return;backdrop.setTag(null);backdrop.setImageDrawable(null);if(art.startsWith("/"))loadImage(backdrop,"https://image.tmdb.org/t/p/w1280"+art);};handler.postDelayed(pendingPreview,350);}
         void showOverlay(String title,String route){
