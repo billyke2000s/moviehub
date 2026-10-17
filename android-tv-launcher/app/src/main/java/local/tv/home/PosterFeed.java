@@ -56,7 +56,9 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     @Override protected void onLayout(boolean changed,int left,int top,int right,int bottom){super.onLayout(changed,left,top,right,bottom);if(pendingFrom!=null)post(this::completePendingFocus);}
     @Override public boolean dispatchKeyEvent(KeyEvent event){
         int key=event.getKeyCode();boolean forward=horizontal?key==KeyEvent.KEYCODE_DPAD_RIGHT:key==KeyEvent.KEYCODE_DPAD_DOWN;
-        if(forward){View current=findFocus();View target=current==null?null:focusSearch(current,horizontal?FOCUS_RIGHT:FOCUS_DOWN);boolean inside=false;for(View node=target;node!=null;node=node.getParent() instanceof View?(View)node.getParent():null)if(node==this){inside=true;break;}
+        if(forward){View current=findFocus();ViewHolder holder=current==null?null:findContainingViewHolder(current);
+            if(next>total&&holder!=null&&!items.isEmpty()){int position=holder.getBindingAdapterPosition();boolean last=horizontal?position==items.size()-1:position>=0&&position/4==(items.size()-1)/4;if(last){if(event.getAction()==KeyEvent.ACTION_DOWN)smoothScrollToPosition(items.size());return true;}}
+            View target=current==null?null:focusSearch(current,horizontal?FOCUS_RIGHT:FOCUS_DOWN);boolean inside=false;for(View node=target;node!=null;node=node.getParent() instanceof View?(View)node.getParent():null)if(node==this){inside=true;break;}
             if(!inside){if(event.getAction()==KeyEvent.ACTION_DOWN&&!failed)loadMore();return true;}}
         return super.dispatchKeyEvent(event);
     }
