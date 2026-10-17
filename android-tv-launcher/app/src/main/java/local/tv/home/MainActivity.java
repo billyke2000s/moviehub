@@ -291,9 +291,9 @@ public class MainActivity extends Activity {
             if(!secrets.has("tmdb")){loading.setText("Connect TMDB to browse this catalogue");content.addView(button("Connect TMDB",()->accountScreen("TMDB")));}
             else {feed=catalogueFeed(content,loading,categories,type,n->cataloguePage(type,route,n));
                 final PosterFeed current=feed;final View focusBefore=getCurrentFocus();
-                current.post(()->{if(closed||feed!=current||current.items.isEmpty()||!current.isAttachedToWindow())return;
+                current.onFirstItems=()->{if(closed||feed!=current||current.items.isEmpty()||!current.isAttachedToWindow())return;
                     if(focusBefore==null||!focusBefore.isAttachedToWindow()||focusBefore==loading){View first=current.getLayoutManager().findViewByPosition(0);if(first!=null)first.requestFocus();}
-                });
+                };
             }
             // Keep focus on the posters when the catalogue is already being navigated.
         }
