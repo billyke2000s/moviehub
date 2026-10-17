@@ -66,28 +66,13 @@ Until this is fixed:
 - Fixing the flakiness (likely timing waits around RecyclerView layout, artwork loading and focus)
   is the top testing priority. See [STATUS.md](STATUS.md).
 
-## Members reached by reflection
+## Tests call app code directly
 
-Several device tests read private fields or call private methods by name using reflection. The
-compiler cannot see these, so **renaming or moving one of these members breaks the test only at
-run time**. If you change one, update the test in the same commit.
-
-| Class | Members |
-| --- | --- |
-| `MainActivity` | fields `page`, `homeShelf`, `catalogueDialog`; method `screen(String, Runnable)` |
-| `AppDock` | fields `homeDock`, `movingApp`; methods `saveVisibleDock()`, `addApp(...)`; nested class `AppDock$App` (3-arg constructor) |
-| `HomeScreen` | method `home()`; nested `HomeShelf` with `load(String, PosterFeed.Loader)`, `show(JSONArray, String)`, field `feed` |
-| `CatalogueScreens` | field `catalogue`; method `browse(String, String, String, int)`; nested `CatalogueScreen` field `content` |
-| `CatalogueSearch` | `rememberSearch(String)`, `searchCatalogue(String)` |
-| `LibraryScreens` | `watchlist(String, String)`, `toggleWatchlist(JSONObject)`, `isWatchlisted(JSONObject)` |
-| `SeriesScreens` | `renderSeasons(JSONObject)`, `renderEpisodes(JSONArray, JSONObject, int, String, int, String)` |
-| `SourcesScreen` | `renderSources(LinearLayout, List, String, SourceRepository, JSONObject, String, int, int, String, String)` |
-| `SettingsScreens` | `accountScreen(String)` |
-| `TitleDetails` | `renderDetails(JSONObject)` |
-| `VlcPlaybackActivity` | fields `player`, `sleepAt`, `triedAlternative` |
-
-A better long-term fix is for tests to call these package-private members directly (the tests are
-in the same package), so the compiler checks them.
+Device tests live in the same package as the app (`local.tv.home`), so they call package-private
+members directly, for example `activity.libraryScreens.toggleWatchlist(title)`. The compiler
+checks every one of these calls, so renaming or moving a member breaks the test build immediately
+instead of failing at run time. Do not use reflection to reach app members in tests; make the
+member package-private instead.
 
 ## What no automated test covers
 

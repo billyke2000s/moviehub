@@ -23,11 +23,10 @@ before changing code.
   fixtures do not prove live provider behaviour.
 - If you could not run something, say so in the PR description.
 
-## Changing members used by tests
+## Tests and app members
 
-Some device tests reach private members by name through reflection. Before renaming or moving a
-member, search `app/src/androidTest` for its name and update the test in the same commit. The list
-is in [TESTING.md](TESTING.md#members-reached-by-reflection).
+Device tests call app members directly (no reflection), so the compiler catches a rename. Keep it
+that way: if a test needs a private member, make it package-private rather than using reflection.
 
 ## Git and releases
 

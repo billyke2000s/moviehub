@@ -60,6 +60,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `PosterTitle` | Two-line poster caption that scrolls when focused and too long. |
 | `Artwork` | Image download and caching for posters and backdrops. |
 | `DpadRepeats` | Rate-limits held D-pad keys so a held direction cannot race through lists. |
+| `Diagnostics` | Logs failures the app recovers from (`adb logcat -s MovieHub`), without account details. |
 
 ### Screens (feature classes)
 
@@ -114,5 +115,7 @@ once, when the activity is constructed, and keep almost no state of their own.
   making the code navigable. Fragments would be a behavioural rewrite.
 - **Base class for widgets.** `TvActivity` holds the view helpers so `MainActivity` code can call
   `text(...)` and feature classes can call `activity.text(...)` with no extra indirection.
-- **Instrumentation tests use reflection** on some private members. When moving or renaming a
-  member, check [TESTING.md](TESTING.md#members-reached-by-reflection).
+- **Recovered failures are logged, not shown.** Where the app deliberately carries on after an
+  error (for example a failed artwork download), it calls `Diagnostics.recovered(...)`, which writes
+  the location and exception type to logcat under the tag `MovieHub`. Exception messages are not
+  logged because they can contain provider URLs with account details.
