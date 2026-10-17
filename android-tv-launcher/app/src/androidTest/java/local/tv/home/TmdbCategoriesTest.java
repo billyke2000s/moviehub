@@ -42,4 +42,6 @@ public class TmdbCategoriesTest {
         try{TmdbCategories.year("movie",0);fail("Invalid year");}catch(IllegalArgumentException expected){}
         try{TmdbCategories.filters("movie",":availability","GB&extra=1",day);fail("Region injection");}catch(IllegalArgumentException expected){}
     }
+    @Test public void combinedFiltersRetainGenreYearRatingAndMediaSpecificSort(){String movie=TmdbCategories.refine("movie",28,2020,7,"date.desc");assertTrue(movie.contains("with_genres=28"));assertTrue(movie.contains("primary_release_date.gte=2020-01-01"));assertTrue(movie.contains("primary_release_date.lte=2020-12-31"));assertTrue(movie.contains("vote_average.gte=7"));assertTrue(movie.contains("sort_by=primary_release_date.desc"));String tv=TmdbCategories.refine("tv",0,0,0,"title.asc");assertEquals("discover/tv?include_adult=false&sort_by=name.asc",tv);try{TmdbCategories.refine("tv",0,100,0,"title.asc");fail("Invalid year accepted");}catch(IllegalArgumentException expected){}}
+
 }

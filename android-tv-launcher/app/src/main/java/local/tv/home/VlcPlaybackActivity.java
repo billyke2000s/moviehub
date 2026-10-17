@@ -19,6 +19,8 @@ import java.util.*;
 public class VlcPlaybackActivity extends Activity {
     private LibVLC engine;private MediaPlayer player;private VLCVideoLayout video;
     private String url,id;private long position;private boolean live,ended,foreground,triedAlternative,dragging,dialogOpen;
+    private float playbackRate=1f;private long sleepAt;private String aspect;
+    private final Runnable sleep=()->{Toast.makeText(this,"Sleep timer finished",Toast.LENGTH_SHORT).show();finish();};
     private Button pause;private SeekBar timeline;private TextView elapsed,duration,status;
     private AudioManager audio;private AudioFocusRequest audioFocus;
     private LinearLayout controls;private final Handler overlayHandler=new Handler(Looper.getMainLooper());
@@ -65,7 +67,7 @@ public class VlcPlaybackActivity extends Activity {
             public void onProgressChanged(SeekBar bar,int value,boolean fromUser){if(fromUser&&player!=null&&!live&&player.isSeekable()){player.setTime(player.getLength()*value/1000);revealControls();}}
         });
         HorizontalScrollView scroll=new HorizontalScrollView(this);scroll.setHorizontalScrollBarEnabled(false);LinearLayout buttons=new LinearLayout(this);buttons.setGravity(Gravity.CENTER_VERTICAL);scroll.addView(buttons);controls.addView(scroll);
-        if(!live)add(buttons,"−10 s",()->seek(-10000));pause=add(buttons,"Pause",this::toggle);if(!live)add(buttons,"+10 s",()->seek(10000));add(buttons,"Video",this::resolution);add(buttons,"Audio",()->tracks(false));add(buttons,"Subtitles",()->tracks(true));add(buttons,"Back",this::finish);
+        if(!live)add(buttons,"−10 s",()->seek(-10000));pause=add(buttons,"Pause",this::toggle);if(!live)add(buttons,"+10 s",()->seek(10000));add(buttons,"Video",this::resolution);add(buttons,"Audio",()->tracks(false));add(buttons,"Subtitles",()->tracks(true));add(buttons,"More",this::moreControls);
         root.addView(controls,new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM));root.setOnClickListener(v->revealControls());setContentView(root);pause.requestFocus();revealControls();
     }
     private TextView label(){TextView t=new TextView(this);t.setTextColor(Color.WHITE);t.setTextSize(15);t.setText("—");return t;}
@@ -81,11 +83,11 @@ public class VlcPlaybackActivity extends Activity {
     private void startPlayer(){
         if(!foreground)return;release();status.setText("Opening source…");status.setVisibility(View.VISIBLE);overlayHandler.removeCallbacks(stalled);overlayHandler.postDelayed(stalled,45000);
         engine=new LibVLC(this,new ArrayList<>(Arrays.asList("--network-caching=1500","--no-video-title-show","--audio-language="+getSharedPreferences("ui",MODE_PRIVATE).getString("audioLanguage","eng,en"),"--sub-language="+getSharedPreferences("ui",MODE_PRIVATE).getString("subtitleLanguage","none"))));
-        player=new MediaPlayer(engine);player.attachViews(video,null,false,false);
+        player=new MediaPlayer(engine);player.setRate(playbackRate);if(aspect!=null)player.setAspectRatio(aspect);player.attachViews(video,null,false,false);
         player.setEventListener(event->{if(!foreground||player==null)return;
-            if(event.type==MediaPlayer.Event.Playing){overlayHandler.removeCallbacks(stalled);status.setVisibility(View.GONE);if(position>0&&!live&&player.isSeekable()){player.setTime(position);position=0;}pause.setText("Pause");revealControls();}
+            if(event.type==MediaPlayer.Event.Playing){player.setRate(playbackRate);if(aspect!=null)player.setAspectRatio(aspect);overlayHandler.removeCallbacks(stalled);status.setVisibility(View.GONE);if(position>0&&!live&&player.isSeekable()){player.setTime(position);position=0;}pause.setText("Pause");revealControls();}
             else if(event.type==MediaPlayer.Event.Buffering){if(event.getBuffering()<100){status.setText("Buffering…");status.setVisibility(View.VISIBLE);}else status.setVisibility(View.GONE);}
-            else if(event.type==MediaPlayer.Event.EndReached){ended=true;getSharedPreferences("positions",MODE_PRIVATE).edit().remove(id).apply();finish();}
+            else if(event.type==MediaPlayer.Event.EndReached){ended=true;getSharedPreferences("positions",MODE_PRIVATE).edit().remove(id).apply();String episode=getIntent().getStringExtra("episodeKey");if(episode!=null&&!episode.isEmpty()){android.content.SharedPreferences prefs=getSharedPreferences("ui",MODE_PRIVATE);Set<String> watched=new HashSet<>(prefs.getStringSet("watchedEpisodes",Collections.emptySet()));watched.add(episode);prefs.edit().putStringSet("watchedEpisodes",watched).apply();}finish();}
             else if(event.type==MediaPlayer.Event.EncounteredError){
                 if(live&&!triedAlternative&&(Uri.parse(url).getPath().endsWith(".ts")||Uri.parse(url).getPath().endsWith(".m3u8"))){triedAlternative=true;Uri original=Uri.parse(url);String path=original.getEncodedPath();path=path.endsWith(".ts")?path.substring(0,path.length()-3)+".m3u8":path.substring(0,path.length()-5)+".ts";url=original.buildUpon().encodedPath(path).build().toString();video.post(this::startPlayer);}
                 else showError("This source could not be played. Try another source or retry the connection.");
@@ -109,8 +111,16 @@ public class VlcPlaybackActivity extends Activity {
         String[] names=new String[choices.length];int selected=-1;for(int i=0;i<names.length;i++){names[i]=choices[i].id<0?"Off":choices[i].name;if(choices[i].id==current)selected=i;}
         dialogOpen=true;AlertDialog dialog=new AlertDialog.Builder(this).setTitle(title).setSingleChoiceItems(names,selected,(d,which)->{if(player!=null){int choice=choices[which].id;if(type==2)player.setSpuTrack(choice);else if(type==1)player.setAudioTrack(choice);else player.setVideoTrack(choice);}d.dismiss();}).setNegativeButton("Close",null).create();dialog.setOnDismissListener(d->{dialogOpen=false;revealControls();});dialog.show();
     }
+    private void moreControls(){
+        List<String> labels=new ArrayList<>();if(!live)labels.add("Playback speed · "+playbackRate+"×");labels.add("Picture size");labels.add("Subtitle timing");labels.add(sleepAt>0?"Sleep timer · "+Math.max(1,(sleepAt-SystemClock.elapsedRealtime())/60000)+" min left":"Sleep timer");dialogOpen=true;AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Playback options").setItems(labels.toArray(new String[0]),(d,which)->{String label=labels.get(which);overlayHandler.post(()->{if(label.startsWith("Playback speed"))chooseSpeed();else if(label.equals("Picture size"))choosePicture();else if(label.equals("Subtitle timing"))subtitleTiming();else chooseSleep();});}).setNegativeButton("Close",null).create();dialog.setOnDismissListener(d->{dialogOpen=false;revealControls();});dialog.show();
+    }
+    private void options(String title,String[] labels,int selected,java.util.function.IntConsumer action){dialogOpen=true;AlertDialog dialog=new AlertDialog.Builder(this).setTitle(title).setSingleChoiceItems(labels,selected,(d,which)->{action.accept(which);d.dismiss();}).setNegativeButton("Cancel",null).create();dialog.setOnDismissListener(d->{dialogOpen=false;revealControls();});dialog.show();}
+    private void chooseSpeed(){float[] rates={.5f,.75f,1f,1.25f,1.5f,1.75f,2f};int selected=2;for(int i=0;i<rates.length;i++)if(rates[i]==playbackRate)selected=i;options("Playback speed",new String[]{"0.5×","0.75×","Normal · 1×","1.25×","1.5×","1.75×","2×"},selected,which->{playbackRate=rates[which];if(player!=null)player.setRate(playbackRate);});}
+    private void choosePicture(){String[] aspects={null,"16:9","4:3","21:9"};int selected=0;for(int i=1;i<aspects.length;i++)if(aspects[i].equals(aspect))selected=i;options("Picture size",new String[]{"Original · Fit","16:9","4:3","21:9"},selected,which->{aspect=aspects[which];if(player!=null){player.setScale(0);player.setAspectRatio(aspect);}});}
+    private void subtitleTiming(){if(player==null)return;long delay=player.getSpuDelay();options("Subtitle timing · "+delay/1000+" ms",new String[]{"Earlier by 250 ms","Later by 250 ms","Reset timing"},-1,which->{if(player!=null)player.setSpuDelay(which==2?0:delay+(which==0?-250000:250000));});}
+    private void chooseSleep(){options("Sleep timer",new String[]{"Off","15 minutes","30 minutes","60 minutes","90 minutes"},sleepAt==0?0:-1,which->{overlayHandler.removeCallbacks(sleep);int[] minutes={0,15,30,60,90};sleepAt=which==0?0:SystemClock.elapsedRealtime()+minutes[which]*60000L;if(sleepAt>0)overlayHandler.postDelayed(sleep,minutes[which]*60000L);});}
     private void release(){if(player!=null){player.setEventListener(null);player.stop();player.detachViews();player.release();player=null;}if(engine!=null){engine.release();engine=null;}}
-    @Override public void onStop(){overlayHandler.removeCallbacksAndMessages(null);foreground=false;if(player!=null){long time=player.getTime();if(time>=0)position=time;if(!live&&!ended&&getSharedPreferences("ui",MODE_PRIVATE).getBoolean("resume",true))getSharedPreferences("positions",MODE_PRIVATE).edit().putLong(id,position).apply();}release();if(audio!=null&&audioFocus!=null)audio.abandonAudioFocusRequest(audioFocus);super.onStop();}
+    @Override public void onStop(){overlayHandler.removeCallbacksAndMessages(null);sleepAt=0;foreground=false;if(player!=null){long time=player.getTime();if(time>=0)position=time;if(!live){long length=player.getLength();android.content.SharedPreferences.Editor edit=getSharedPreferences("positions",MODE_PRIVATE).edit();if(length>0)edit.putLong(id+":duration",length);if(!ended&&getSharedPreferences("ui",MODE_PRIVATE).getBoolean("resume",true))edit.putLong(id,position);edit.apply();}}release();if(audio!=null&&audioFocus!=null)audio.abandonAudioFocusRequest(audioFocus);super.onStop();}
     @Override public void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putLong("position",player==null?position:Math.max(position,player.getTime()));}
     @Override public void onDestroy(){overlayHandler.removeCallbacksAndMessages(null);release();super.onDestroy();}
 }

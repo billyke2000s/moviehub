@@ -53,6 +53,12 @@ public class PlaybackTest {
         instrumentation.runOnMainSync(activity::finish);instrumentation.waitForIdleSync();
         await(()->instrumentation.getTargetContext().getSharedPreferences("positions",0).getLong("playback-test",0)>0,5000);
     }
+    private void option(String method,int steps)throws Exception{
+        instrumentation.runOnMainSync(()->{try{java.lang.reflect.Method action=VlcPlaybackActivity.class.getDeclaredMethod(method);action.setAccessible(true);action.invoke(activity);}catch(Exception e){throw new AssertionError(e);}});instrumentation.waitForIdleSync();SystemClock.sleep(250);for(int i=0;i<steps;i++)instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);instrumentation.waitForIdleSync();
+    }
+    @Test public void playbackOptionsApplySpeedPictureAndCancellableSleepTimer()throws Exception{
+        await(()->{try{return player()!=null&&player().isPlaying();}catch(Exception e){return false;}},30000);MediaPlayer engine=player();option("chooseSpeed",1);assertEquals(1.25f,engine.getRate(),.01f);option("choosePicture",1);assertEquals("16:9",engine.getAspectRatio());option("chooseSleep",1);java.lang.reflect.Field sleep=VlcPlaybackActivity.class.getDeclaredField("sleepAt");sleep.setAccessible(true);assertTrue(sleep.getLong(activity)>SystemClock.elapsedRealtime());option("chooseSleep",0);assertEquals(0,sleep.getLong(activity));UiEvidence.capture("playback-options");
+    }
     @Test public void playsTransportStream() throws Exception{playLiveFixture("live.ts");}
     @Test public void playsHlsWithoutFallingBackToTs() throws Exception{playLiveFixture("playlist.m3u8");}
     private void playLiveFixture(String path) throws Exception{
@@ -62,6 +68,6 @@ public class PlaybackTest {
         java.lang.reflect.Field alternate=VlcPlaybackActivity.class.getDeclaredField("triedAlternative");alternate.setAccessible(true);assertFalse("The requested format must play directly",alternate.getBoolean(activity));
     }
     @After public void cleanup() throws Exception{
-        if(activity!=null)instrumentation.runOnMainSync(activity::finish);closed=true;if(server!=null)server.close();Context context=instrumentation.getTargetContext();context.getSharedPreferences("ui",0).edit().putBoolean("http",oldHttp).commit();context.getSharedPreferences("positions",0).edit().remove("playback-test").commit();
+        if(activity!=null)instrumentation.runOnMainSync(activity::finish);closed=true;if(server!=null)server.close();Context context=instrumentation.getTargetContext();context.getSharedPreferences("ui",0).edit().putBoolean("http",oldHttp).commit();context.getSharedPreferences("positions",0).edit().remove("playback-test").remove("playback-test:duration").commit();
     }
 }
