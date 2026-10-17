@@ -75,6 +75,28 @@ public class TvNavigationTest {
         instrumentation.waitForIdleSync();
     }
 
+    /**
+     * Presses Back, then waits until one of the app's windows has input focus again. Closing a dialog
+     * hands focus back to the main window asynchronously; a key sent in that gap is dropped.
+     */
+    private void back() {
+        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        instrumentation.waitForIdleSync();
+        long end = SystemClock.uptimeMillis() + 3000;
+        java.util.concurrent.atomic.AtomicBoolean focused = new java.util.concurrent.atomic.AtomicBoolean();
+        while (SystemClock.uptimeMillis() < end) {
+            instrumentation.runOnMainSync(() -> {
+                Dialog dialog = activity.catalogueDialog;
+                focused.set(
+                    activity.hasWindowFocus() ||
+                        (dialog != null && dialog.isShowing() && dialog.getWindow().getDecorView().hasWindowFocus())
+                );
+            });
+            if (focused.get()) return;
+            SystemClock.sleep(50);
+        }
+    }
+
     /** The first visible text labels on screen, to show where a test ended up. */
     private String visibleLabels(View root) {
         java.util.List<String> labels = new java.util.ArrayList<>();
@@ -223,10 +245,8 @@ public class TvNavigationTest {
             })
                 assertNotNull(category, text(root(), category));
         });
-        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-        instrumentation.waitForIdleSync();
-        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-        instrumentation.waitForIdleSync();
+        back();
+        back();
         select("Settings");
         select("Playback");
         screenshot("settings-playback");
@@ -241,8 +261,7 @@ public class TvNavigationTest {
             assertFullyVisible("Xtream");
             assertFullyVisible("Premiumize");
         });
-        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-        instrumentation.waitForIdleSync();
+        back();
         select("Live TV");
         SystemClock.sleep(1000);
         screenshot("live-tv");
@@ -300,8 +319,7 @@ public class TvNavigationTest {
             assertFullyVisible("API Key (v3 auth)");
         });
         screenshot("connect-tmdb");
-        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-        instrumentation.waitForIdleSync();
+        back();
         instrumentation.runOnMainSync(() -> {
             try {
                 activity.screen("Details", () -> {});
@@ -422,12 +440,9 @@ public class TvNavigationTest {
                     text(root(), type.equals("movie") ? "Digital releases" : "Miniseries")
                 )
             );
-            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-            instrumentation.waitForIdleSync();
-            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-            instrumentation.waitForIdleSync();
-            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-            instrumentation.waitForIdleSync();
+            back();
+            back();
+            back();
         }
     }
 
