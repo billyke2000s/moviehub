@@ -55,12 +55,44 @@ public class TvNavigationTest {
         instrumentation.runOnMainSync(() -> {
             View view = text(root(), label);
             if (view == null) UiEvidence.capture("navigation-missing-" + label);
-            assertNotNull("No control labelled '" + label + "' on screen after 5 s", view);
+            assertNotNull(
+                "No control labelled '" +
+                    label +
+                    "' on screen after 5 s. Dialog showing: " +
+                    (activity.catalogueDialog != null && activity.catalogueDialog.isShowing()) +
+                    ", focus: " +
+                    (activity.getCurrentFocus() == null
+                        ? "none"
+                        : activity.getCurrentFocus().getClass().getSimpleName()) +
+                    ", visible labels: " +
+                    visibleLabels(root()),
+                view
+            );
             while (!view.hasOnClickListeners() && view.getParent() instanceof View)
                 view = (View) view.getParent();
             assertTrue(label, view.performClick());
         });
         instrumentation.waitForIdleSync();
+    }
+
+    /** The first visible text labels on screen, to show where a test ended up. */
+    private String visibleLabels(View root) {
+        java.util.List<String> labels = new java.util.ArrayList<>();
+        java.util.ArrayDeque<View> queue = new java.util.ArrayDeque<>();
+        queue.add(root);
+        while (!queue.isEmpty() && labels.size() < 25) {
+            View view = queue.poll();
+            if (!view.isShown()) continue;
+            if (view instanceof TextView && ((TextView) view).getText().length() > 0) labels.add(
+                ((TextView) view).getText().toString()
+            );
+            if (view instanceof ViewGroup) for (
+                int i = 0;
+                i < ((ViewGroup) view).getChildCount();
+                i++
+            ) queue.add(((ViewGroup) view).getChildAt(i));
+        }
+        return labels.toString();
     }
 
     private void screenshot(String name) throws Exception {
