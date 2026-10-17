@@ -20,7 +20,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     private final Handler main=new Handler(Looper.getMainLooper());
     private final Executor worker; private final Loader loader; private final Cards cards;
     private final String type; private final boolean horizontal;
-    private int columns=4;private boolean pendingBelow;
+    private int columns=4;private boolean pendingBelow;Runnable onFirstItems;
     private int next=1,total=1; private boolean loading,closed,failed,capped; private View pendingFrom;
     private final FeedAdapter adapter=new FeedAdapter();
     PosterFeed(Context context,boolean horizontal,String type,Executor worker,Loader loader,Cards cards){
@@ -45,7 +45,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
             int first=items.size();seen.addAll(addedKeys);items.addAll(additions);capped=response.optInt("total_pages",requested)>500;total=Math.min(500,Math.max(requested,response.optInt("total_pages",requested)));next=requested+1;loading=false;
             // The footer stays at the end; existing poster holders are never rebound on append.
             if(!additions.isEmpty()){adapter.notifyItemRangeInserted(first,additions.size());}statusChanged();
-            post(()->{completePendingFocus();prefetch();});
+            post(()->{completePendingFocus();if(first==0&&onFirstItems!=null){Runnable callback=onFirstItems;onFirstItems=null;callback.run();}prefetch();});
         }catch(JSONException e){failed=true;loading=false;statusChanged();}});}catch(Exception e){main.post(()->{if(!closed){failed=true;loading=false;statusChanged();}});}});
     }
     private void statusChanged(){adapter.notifyItemChanged(items.size());}
