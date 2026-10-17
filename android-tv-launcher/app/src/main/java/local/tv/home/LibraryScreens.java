@@ -165,11 +165,7 @@ final class LibraryScreens {
                 .setTitle("Clear viewing history?")
                 .setMessage("This removes saved playback progress on this device.")
                 .setPositiveButton("Clear", (d, w) -> {
-                    activity
-                        .getSharedPreferences("positions", MainActivity.MODE_PRIVATE)
-                        .edit()
-                        .clear()
-                        .apply();
+                    activity.getSharedPreferences("positions", Context.MODE_PRIVATE).edit().clear().apply();
                     try {
                         activity.secrets.put("recentPlayback", "[]");
                     } catch (Exception e) {
@@ -184,10 +180,7 @@ final class LibraryScreens {
             String stored = activity.secrets.get("recentPlayback");
             JSONArray recent = new JSONArray(stored.isEmpty() ? "[]" : stored);
             int count = 0;
-            SharedPreferences positions = activity.getSharedPreferences(
-                "positions",
-                MainActivity.MODE_PRIVATE
-            );
+            SharedPreferences positions = activity.getSharedPreferences("positions", Context.MODE_PRIVATE);
             for (int i = 0; i < recent.length(); i++) {
                 JSONObject item = recent.getJSONObject(i);
                 String key = item.getString("id");

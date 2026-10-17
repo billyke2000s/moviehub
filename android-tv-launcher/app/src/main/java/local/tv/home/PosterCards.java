@@ -245,7 +245,7 @@ final class PosterCards {
                     row.optString("media_type").equals(item.optString("media_type"))
                 ) {
                     Object position = activity
-                        .getSharedPreferences("positions", MainActivity.MODE_PRIVATE)
+                        .getSharedPreferences("positions", Context.MODE_PRIVATE)
                         .getAll()
                         .get(row.optString("id"));
                     if (position instanceof Number && ((Number) position).longValue() > 0) return row;

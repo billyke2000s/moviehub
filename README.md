@@ -1,27 +1,64 @@
 # MovieHub for Android TV
 
-Native launcher for Android TV and Android box devices running Android 9 or newer, with no custom logo or wordmark.
+A native Android TV launcher for Android 9 or newer. It replaces the TV's home screen and brings
+together installed apps, movies and series, live TV and playback in one remote-friendly interface.
+It has no custom logo or wordmark.
 
-Live TV supports Xtream and M3U playlists. Channel lists are streamed into an on-device SQLite database in the background (no fixed channel limit), searchable by name or group, and refreshed automatically every 12 hours; a failed refresh keeps the previous list. Movies and Series provide TMDB browsing and recommendations, automatic Torrentio → MediaFusion → Comet fallback, Premiumize cloud/cache/transfers, and LibVLC playback. The launcher includes an installed-app dock, remote navigation, Android Settings access, subtitle/audio language preferences, and a conditional app-update button.
+## Features
 
-## Build and download
+- **Home**: featured artwork, poster shelf, clock, and a dock of installed apps you can rearrange
+  with the remote. Android Settings and All Apps are one click away.
+- **Movies and Series**: TMDB browsing by category, genre and filters; search by title, person or
+  company; details pages with cast, collections, trailers and recommendations.
+- **Sources and playback**: finds streams through Torrentio, falling back to MediaFusion and then
+  Comet, with Premiumize cloud, cache and transfers. Plays with LibVLC, with subtitle and audio
+  language preferences, track choice, speed, picture ratio, subtitle timing and a sleep timer.
+- **My List and Continue Watching**: saved titles, resume positions and watched episodes.
+- **Live TV**: Xtream and M3U playlists imported in the background into an on-device database, with
+  no channel-count limit. Search by name or group, favourites, and automatic refresh every 12 hours.
+  A failed refresh keeps the previous list.
+- **Updates**: an Update button appears beside Settings only when a newer signed version is
+  published. Updates are verified before Android's installer opens.
 
-Download the signed [home.apk](https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/home.apk) from [Releases](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest).
+Account details are entered on the TV and stored encrypted with Android Keystore. Nothing secret is
+in this repository.
 
-The **Build Android TV launcher APK** workflow runs 45 core checks (including a 250,000-channel streaming parse), debug/release compilation and lint, Android instrumentation tests for the encrypted database and native player, and signing compatibility checks against the current release. It provides a separate debug APK. Use the signed release APK as the baseline for in-app updates.
+## Install
 
-For a local build, use JDK 17, Android SDK 35 and Gradle 8.10.2:
+Download the signed [home.apk](https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/home.apk)
+from [Releases](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) and install
+it on the TV. Later versions arrive through the in-app Update button.
+
+## Build
+
+You need JDK 17, Android SDK 35 and Gradle 8.10.2.
 
 ```sh
 gradle -p android-tv-launcher assembleDebug lintDebug
 ```
 
-## Updates
+Full setup, formatting and conventions are in [DEVELOPMENT.md](DEVELOPMENT.md).
 
-The **Publish Android TV launcher update** workflow publishes signed APKs and update metadata. It uses the permanent signing key stored in GitHub Actions secrets; see [update setup](android-tv-launcher/UPDATES.md). The Update button beside Settings appears only for a newer published version. Publishing source to main does not publish an APK release.
+## Documentation
 
-## Status
+| Document | Read it for |
+| --- | --- |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | How the code is organised and which file does what |
+| [DEVELOPMENT.md](DEVELOPMENT.md) | Building, code style, branches and releases |
+| [TESTING.md](TESTING.md) | Test layers, how to run them, and known flaky tests |
+| [SECURITY.md](SECURITY.md) | How accounts, network access and updates are protected |
+| [STATUS.md](STATUS.md) | Current state, known issues and next steps |
+| [CHANGELOG.md](CHANGELOG.md) | What changed in each version |
+| [AGENTS.md](AGENTS.md) | Rules for AI assistants editing this repository |
+| [android-tv-launcher/UPDATES.md](android-tv-launcher/UPDATES.md) | Publishing signed updates |
+| [docs/](docs/) | Design notes: TV interface, catalogue categories, poster feeds |
 
-Build, lint, signed-update compatibility and Android device verification run on pull requests. Deterministic Android tests cover SQLite pagination, favourites beyond 900 entries, failed-import rollback, non-destructive schema upgrades, encrypted stream URLs and actual LibVLC playback/seek/media keys. Provider fixtures exercise Xtream login and TS/HLS URL negotiation and M3U imports; fixtures do not establish live provider availability. Real Xtream/Premiumize accounts and target-TV installation remain release verification requirements.
+## Limits
 
-Account details are entered on the device and stored using Android Keystore. No credentials or firmware images are included in this repository.
+Automated tests use local fixtures. They do not prove that a real TMDB, Premiumize or Xtream
+account works, or that the app installs and updates correctly on a specific TV box. Check those on
+the device before a release.
+
+## License
+
+[MIT](LICENSE)

@@ -1,0 +1,42 @@
+# Changelog
+
+Versions are published to TVs through the in-app updater (`android-tv-latest` release). Each
+version below was built from the listed `main` commit. Earlier history is in the git log.
+
+## Unreleased
+
+On `main` but not yet published to TVs:
+
+- Full portrait posters and redesigned movie/series browsing with filter overlays (PR #20).
+- The catalogue no longer jumps back to the top when the first page arrives; long category lists
+  moved into a Browse overlay (PR #21, plus direct follow-up commits on initial poster focus).
+- Rearrange the Home hotbar with the remote; app actions and Android system controls in All Apps (PR #23).
+- Redesigned streaming menus: catalogue previews, cinematic details, trailers, cast, collections,
+  search history, combined filters, library sorting, viewing progress, watched episodes, channel
+  groups and logos, source quality filters, cloud breadcrumbs and player options (PR #24).
+- Code restructure: Java sources reformatted for readability, `MainActivity` split into feature
+  classes, and project documentation added. No intended behaviour change (PR #25).
+
+## 0.10 (17 Oct 2026)
+
+Built from PR #19: keeps scrolling artwork loaded and simplifies catalogue navigation (grouped
+catalogues open on daily trending).
+
+## 0.9 (17 Oct 2026)
+
+Built from PR #18: keeps TV focus stable while movie and series feeds load continuously; end-of-list
+message and scrolling captions.
+
+## 0.8 (17 Oct 2026)
+
+Built from PR #17: complete TMDB category browsing in Movies and Series (all movie and TV genres,
+trending, popular, top rated and release/airing lists).
+
+## 0.7 (17 Oct 2026)
+
+Built from PR #16: TV home fits the viewport; catalogue and account navigation made visible.
+
+## 0.6 (16 Oct 2026)
+
+Built from PR #15: MovieHub TV browsing, scalable IPTV and fullscreen playback, with signing
+continuity checks.
