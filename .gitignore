@@ -6,3 +6,4 @@ local.properties
 .env
 release-files/
 *.log
+node_modules/
