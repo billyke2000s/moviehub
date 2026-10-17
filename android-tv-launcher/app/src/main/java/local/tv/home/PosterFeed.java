@@ -45,7 +45,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
             int first=items.size();seen.addAll(addedKeys);items.addAll(additions);capped=response.optInt("total_pages",requested)>500;total=Math.min(500,Math.max(requested,response.optInt("total_pages",requested)));next=requested+1;loading=false;
             // The footer stays at the end; existing poster holders are never rebound on append.
             if(!additions.isEmpty()){adapter.notifyItemRangeInserted(first,additions.size());}statusChanged();
-            post(()->{completePendingFocus();if(first==0&&onFirstItems!=null){Runnable callback=onFirstItems;onFirstItems=null;callback.run();}prefetch();});
+            post(()->{completePendingFocus();prefetch();});
         }catch(JSONException e){failed=true;loading=false;statusChanged();}});}catch(Exception e){main.post(()->{if(!closed){failed=true;loading=false;statusChanged();}});}});
     }
     private void statusChanged(){adapter.notifyItemChanged(items.size());}
@@ -57,7 +57,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
         if(best!=null){pendingFrom=null;return best.requestFocus();}pendingFrom=from;pendingBelow=below;return false;
     }
     private void completePendingFocus(){if(pendingFrom!=null){if(pendingFrom.hasFocus())focusFrom(pendingFrom,pendingBelow);else pendingFrom=null;}}
-    @Override protected void onLayout(boolean changed,int left,int top,int right,int bottom){super.onLayout(changed,left,top,right,bottom);if(pendingFrom!=null)post(this::completePendingFocus);}
+    @Override protected void onLayout(boolean changed,int left,int top,int right,int bottom){super.onLayout(changed,left,top,right,bottom);if(pendingFrom!=null)post(this::completePendingFocus);if(onFirstItems!=null&&!items.isEmpty()&&getLayoutManager().findViewByPosition(0)!=null){Runnable callback=onFirstItems;onFirstItems=null;post(callback);}}
     @Override public boolean dispatchKeyEvent(KeyEvent event){
         int key=event.getKeyCode();boolean forward=horizontal?key==KeyEvent.KEYCODE_DPAD_RIGHT:key==KeyEvent.KEYCODE_DPAD_DOWN;
         if(forward){View current=findFocus();ViewHolder holder=current==null?null:findContainingViewHolder(current);
