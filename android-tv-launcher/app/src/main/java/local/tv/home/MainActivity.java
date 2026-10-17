@@ -20,9 +20,21 @@ public class MainActivity extends Activity {
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final List<App> apps=new ArrayList<>();
     private final DpadRepeats dpadRepeats=new DpadRepeats();
+    private View movingApp;private LinearLayout homeDock;private TextView dockHint;private boolean eatSelectUp,refreshAppsOnResume,dockRemoving;
     private CatalogueScreen catalogue;private Dialog catalogueDialog;private LinearLayout overlayContent;
     private void leaveCatalogue(){if(catalogue!=null){catalogue.close();catalogue=null;}if(catalogueDialog!=null)catalogueDialog.dismiss();}
-    @Override public boolean dispatchKeyEvent(KeyEvent event){return dpadRepeats.consume(event)||super.dispatchKeyEvent(event);}
+    @Override public boolean dispatchKeyEvent(KeyEvent event){int key=event.getKeyCode();
+        if(eatSelectUp&&(key==KeyEvent.KEYCODE_DPAD_CENTER||key==KeyEvent.KEYCODE_ENTER)&&event.getAction()==KeyEvent.ACTION_UP){eatSelectUp=false;return true;}
+        if(dockRemoving&&(key==KeyEvent.KEYCODE_DPAD_LEFT||key==KeyEvent.KEYCODE_DPAD_RIGHT||key==KeyEvent.KEYCODE_DPAD_UP||key==KeyEvent.KEYCODE_DPAD_DOWN||key==KeyEvent.KEYCODE_DPAD_CENTER||key==KeyEvent.KEYCODE_ENTER))return true;
+        if(movingApp!=null){
+            if(key==KeyEvent.KEYCODE_DPAD_LEFT||key==KeyEvent.KEYCODE_DPAD_RIGHT||key==KeyEvent.KEYCODE_DPAD_UP||key==KeyEvent.KEYCODE_DPAD_DOWN||key==KeyEvent.KEYCODE_BACK||key==KeyEvent.KEYCODE_DPAD_CENTER||key==KeyEvent.KEYCODE_ENTER){
+                if(event.getAction()==KeyEvent.ACTION_DOWN&&!dpadRepeats.consume(event)){
+                    if(key==KeyEvent.KEYCODE_DPAD_LEFT||key==KeyEvent.KEYCODE_DPAD_RIGHT)moveDockApp(key==KeyEvent.KEYCODE_DPAD_LEFT?-1:1);
+                    else if(event.getRepeatCount()==0){if(key==KeyEvent.KEYCODE_DPAD_UP)removeDockApp();else{if(key==KeyEvent.KEYCODE_DPAD_CENTER||key==KeyEvent.KEYCODE_ENTER)eatSelectUp=true;finishDockMove();}}
+                }return true;
+            }
+        }
+        return dpadRepeats.consume(event)||super.dispatchKeyEvent(event);}
     private final List<PosterFeed> feeds=new ArrayList<>();
     private void closeFeeds(){for(PosterFeed feed:feeds)feed.close();feeds.clear();}
     private final Artwork artworkLoader=new Artwork();
@@ -49,6 +61,7 @@ public class MainActivity extends Activity {
     private void tvFullscreen(){getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY|View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_LAYOUT_STABLE);}
     @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);if(focused)tvFullscreen();}
     @Override public void onStart(){super.onStart();handler.removeCallbacks(ticker);handler.post(ticker);checkForUpdate();try{ChannelSync.refreshIfStale(this);}catch(Exception ignored){}}
+    @Override public void onResume(){super.onResume();if(refreshAppsOnResume){refreshAppsOnResume=false;allApps();}}
     @Override public void onStop(){handler.removeCallbacks(ticker);super.onStop();}
     @Override public void onDestroy(){leaveCatalogue();closeFeeds();handler.removeCallbacksAndMessages(null);artworkLoader.close();io.shutdownNow();super.onDestroy();}
     @Override public void onBackPressed(){if(back!=null)back.run();}
@@ -61,7 +74,7 @@ public class MainActivity extends Activity {
     private void focus(View view){view.setFocusable(true);view.setFocusableInTouchMode(true);view.setOnFocusChangeListener((v,focused)->styleFocus(v,focused));}
     private Button button(String label,Runnable action){Button b=new Button(this);b.setText(label);b.setTextColor(0xfff8f8fc);b.setAllCaps(false);b.setTextSize(16);b.setSingleLine(true);b.setEllipsize(android.text.TextUtils.TruncateAt.END);b.setMinWidth(0);b.setMinimumWidth(0);b.setMinHeight(0);b.setMinimumHeight(0);b.setBackground(box(0xff171d27));b.setPadding(dp(12),dp(5),dp(12),dp(5));focus(b);b.setOnClickListener(v->action.run());return b;}
     private Button navigationButton(String label,Runnable action){Button b=button(label,action);b.setTag("navigation");styleFocus(b,false);return b;}
-    private void screen(String title,Runnable goBack){leaveCatalogue();closeFeeds();generation++;back=goBack;clock=null;updateButton=null;ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xff10151f,0xff090d14,0xff090d14}));page=vertical();page.setPadding(dp(32),dp(22),dp(32),dp(28));scroll.addView(page);setContentView(scroll);if(title!=null){LinearLayout head=row();head.addView(text(title,28),new LinearLayout.LayoutParams(0,-2,1));head.addView(button("Back",goBack));page.addView(head);}}
+    private void screen(String title,Runnable goBack){finishDockMove();leaveCatalogue();closeFeeds();generation++;back=goBack;clock=null;updateButton=null;ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xff10151f,0xff090d14,0xff090d14}));page=vertical();page.setPadding(dp(32),dp(22),dp(32),dp(28));scroll.addView(page);setContentView(scroll);if(title!=null){LinearLayout head=row();head.addView(text(title,28),new LinearLayout.LayoutParams(0,-2,1));head.addView(button("Back",goBack));page.addView(head);}}
     private void addRow(LinearLayout parent,View view,int width,int height){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(dp(width),dp(height));p.setMargins(dp(5),dp(5),dp(8),dp(5));parent.addView(view,p);}
     private LinearLayout horizontal(LinearLayout parent){HorizontalScrollView scroll=new HorizontalScrollView(this);scroll.setHorizontalScrollBarEnabled(false);LinearLayout r=row();r.setPadding(dp(4),dp(8),dp(4),dp(8));scroll.addView(r);parent.addView(scroll);return r;}
     private void checkForUpdate(){checkForUpdate(false);}
@@ -81,7 +94,7 @@ public class MainActivity extends Activity {
     private void resetUpdateButton(){updateBusy=false;if(updateButton!=null){updateButton.setEnabled(true);updateButton.setText("Update");}}
     /** Home is a viewport, never a vertically scrolling page. The dock has reserved space. */
     private void fixedScreen(String title,Runnable goBack){
-        leaveCatalogue();closeFeeds();generation++;back=goBack;clock=null;updateButton=null;page=vertical();page.setBackgroundColor(0xff090d14);
+        finishDockMove();leaveCatalogue();closeFeeds();generation++;back=goBack;clock=null;updateButton=null;page=vertical();page.setBackgroundColor(0xff090d14);
         page.setPadding(dp(30),dp(16),dp(30),dp(16));setContentView(page);
         if(title!=null){LinearLayout head=row();TextView name=text(title,24);name.setTypeface(Typeface.DEFAULT,Typeface.BOLD);head.addView(name,new LinearLayout.LayoutParams(0,-1,1));head.addView(button("Back",goBack),new LinearLayout.LayoutParams(dp(72),dp(38)));page.addView(head,new LinearLayout.LayoutParams(-1,dp(46)));}
     }
@@ -116,11 +129,13 @@ public class MainActivity extends Activity {
         List<Button> tabs=new ArrayList<>();for(int i=0;i<labels.length;i++){final String path=paths[i];Button tab=navigationButton(labels[i],()->{});tabs.add(tab);tab.setTextSize(14);tab.setOnClickListener(v->{for(Button other:tabs){other.setSelected(other==v);styleFocus(other,other.hasFocus());}load.accept(path);});categories.addView(tab,new LinearLayout.LayoutParams(dp(114),dp(32)));}tabs.get(0).setSelected(true);styleFocus(tabs.get(0),false);
         page.addView(categories,new LinearLayout.LayoutParams(-1,dp(32)));
         page.addView(posterHost,new LinearLayout.LayoutParams(-1,dp(158)));if(prefs.getBoolean("featured",true))load.accept("");else{hero.setVisibility(View.GONE);categories.setVisibility(View.GONE);posterHost.setVisibility(View.GONE);page.addView(new View(this),new LinearLayout.LayoutParams(-1,0,1));}
-        LinearLayout dockHeader=row();dockHeader.addView(compactText("Your apps",13),new LinearLayout.LayoutParams(0,-2,1));dockHeader.addView(compactText("Hold Select to pin or unpin",11));dockHeader.setElevation(dp(8));dockHeader.setBackgroundColor(0xff090d14);page.addView(dockHeader,new LinearLayout.LayoutParams(-1,dp(28)));
-        HorizontalScrollView appScroll=new HorizontalScrollView(this);appScroll.setHorizontalScrollBarEnabled(false);appScroll.setClipChildren(true);appScroll.setClipToPadding(true);LinearLayout dock=row();appScroll.addView(dock);page.addView(appScroll,new LinearLayout.LayoutParams(-1,dp(70)));queryApps();Set<String> pinned=prefs.getStringSet("pinned",null);
-        if(pinned==null){pinned=new LinkedHashSet<>();for(int i=0;i<Math.min(6,apps.size());i++)pinned.add(apps.get(i).component.flattenToString());prefs.edit().putStringSet("pinned",pinned).apply();}
-        for(App app:apps)if(pinned.contains(app.component.flattenToString())){addApp(dock,app,false);View cell=dock.getChildAt(dock.getChildCount()-1);LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)cell.getLayoutParams();lp.width=dp(108);lp.height=dp(62);lp.topMargin=dp(2);lp.bottomMargin=dp(2);cell.setLayoutParams(lp);LinearLayout contents=(LinearLayout)cell;contents.getChildAt(0).setLayoutParams(new LinearLayout.LayoutParams(dp(30),dp(30)));TextView caption=(TextView)contents.getChildAt(1);caption.setTextSize(12);caption.setMaxLines(1);caption.setPadding(0,dp(3),0,0);}
-        dock.addView(button("All Apps",this::allApps),new LinearLayout.LayoutParams(dp(104),dp(62)));page.post(()->top.getChildAt(0).requestFocus());
+        LinearLayout dockHeader=row();dockHeader.addView(compactText("Your apps",13),new LinearLayout.LayoutParams(0,-2,1));dockHint=compactText("Hold Select to rearrange",11);dockHeader.addView(dockHint);page.addView(dockHeader,new LinearLayout.LayoutParams(-1,dp(28)));
+        HorizontalScrollView appScroll=new HorizontalScrollView(this);appScroll.setHorizontalScrollBarEnabled(false);appScroll.setClipChildren(false);appScroll.setClipToPadding(false);homeDock=row();homeDock.setClipChildren(false);homeDock.setPadding(0,dp(8),0,0);appScroll.addView(homeDock);page.addView(appScroll,new LinearLayout.LayoutParams(-1,dp(78)));queryApps();
+        for(String id:dockOrder())for(App app:apps)if(id.equals(app.component.flattenToString())){
+            View cell=addApp(homeDock,app,true);LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)cell.getLayoutParams();lp.width=dp(108);lp.height=dp(62);lp.topMargin=dp(2);lp.bottomMargin=dp(2);cell.setLayoutParams(lp);
+            LinearLayout contents=(LinearLayout)cell;contents.getChildAt(0).setLayoutParams(new LinearLayout.LayoutParams(dp(30),dp(30)));TextView caption=(TextView)contents.getChildAt(1);caption.setTextSize(12);caption.setMaxLines(1);caption.setPadding(0,dp(3),0,0);
+        }
+        homeDock.addView(button("All Apps",this::allApps),new LinearLayout.LayoutParams(dp(104),dp(62)));page.post(()->top.getChildAt(0).requestFocus());
     }
     private final class HomeShelf {
         final LinearLayout posterHost;final TextView heading,summary;final Button open;final ImageView backdrop;PosterFeed feed;boolean previewed;Runnable pendingArt;
@@ -183,9 +198,44 @@ public class MainActivity extends Activity {
     }
     private static class App{String label;ComponentName component;Drawable icon;App(String label,ComponentName component,Drawable icon){this.label=label;this.component=component;this.icon=icon;}}
     private void queryApps(){apps.clear();Set<ComponentName> seen=new HashSet<>();for(String category:new String[]{Intent.CATEGORY_LEANBACK_LAUNCHER,Intent.CATEGORY_LAUNCHER})for(ResolveInfo r:getPackageManager().queryIntentActivities(new Intent(Intent.ACTION_MAIN).addCategory(category),0)){ActivityInfo a=r.activityInfo;if(!a.enabled||!a.exported||a.packageName.equals(getPackageName()))continue;ComponentName component=new ComponentName(a.packageName,a.name);if(seen.add(component))apps.add(new App(r.loadLabel(getPackageManager()).toString(),component,r.loadIcon(getPackageManager())));}apps.sort(Comparator.comparing(a->a.label.toLowerCase(Locale.ROOT)));}
-    private void addApp(LinearLayout into,App app,boolean pinControls){LinearLayout cell=vertical();cell.setGravity(Gravity.CENTER);ImageView image=new ImageView(this);image.setImageDrawable(app.icon);cell.addView(image,new LinearLayout.LayoutParams(dp(52),dp(52)));TextView label=text(app.label,16);label.setMaxLines(2);label.setGravity(Gravity.CENTER);cell.addView(label);focus(cell);cell.setBackground(box(0xff202c43));cell.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_MAIN).setComponent(app.component));}catch(Exception e){toast("App is unavailable");}});cell.setOnLongClickListener(v->{pin(app);return true;});cell.setOnKeyListener((v,key,event)->{if(key==KeyEvent.KEYCODE_MENU&&event.getAction()==KeyEvent.ACTION_UP){pin(app);return true;}return false;});addRow(into,cell,130,114);if(pinControls)addRow(into,button("Pin / unpin",()->pin(app)),130,70);}
-    private void pin(App app){Set<String> pins=new HashSet<>(prefs.getStringSet("pinned",Collections.emptySet()));String id=app.component.flattenToString();boolean added=pins.add(id);if(!added)pins.remove(id);prefs.edit().putStringSet("pinned",pins).apply();toast(added?"Added to dock":"Removed from dock");}
-    private void allApps(){screen("All Apps",this::home);page.addView(text("Hold Select or press Menu to pin or unpin an app",14));queryApps();LinearLayout r=null;for(int i=0;i<apps.size();i++){if(i%6==0){r=row();page.addView(r);}addApp(r,apps.get(i),false);}if(apps.isEmpty())page.addView(text("No launchable apps found",16));}
+    private View addApp(LinearLayout into,App app,boolean dock){
+        LinearLayout cell=vertical();cell.setTag(app.component.flattenToString());cell.setGravity(Gravity.CENTER);ImageView image=new ImageView(this);image.setImageDrawable(app.icon);cell.addView(image,new LinearLayout.LayoutParams(dp(52),dp(52)));TextView label=text(app.label,16);label.setMaxLines(2);label.setGravity(Gravity.CENTER);cell.addView(label);focus(cell);cell.setBackground(box(0xff202c43));
+        cell.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_MAIN).setComponent(app.component));}catch(Exception e){toast("App is unavailable");}});
+        cell.setOnLongClickListener(v->{if(dock)beginDockMove(v);else appMenu(v,app);return true;});
+        cell.setOnKeyListener((v,key,event)->{if(key==KeyEvent.KEYCODE_MENU){if(event.getAction()==KeyEvent.ACTION_UP){if(dock)beginDockMove(v);else appMenu(v,app);}return true;}return false;});addRow(into,cell,130,114);return cell;
+    }
+    /** Migrate the old unordered pins once, using their existing visible order. */
+    private List<String> dockOrder(){
+        List<String> order=new ArrayList<>();String saved=prefs.getString("dockOrder",null);
+        if(saved!=null){try{JSONArray array=new JSONArray(saved);for(int i=0;i<array.length();i++){String id=array.getString(i);if(!order.contains(id))order.add(id);}}catch(JSONException ignored){}}
+        else{Set<String> pins=prefs.getStringSet("pinned",null);for(App app:apps)if(pins==null?order.size()<6:pins.contains(app.component.flattenToString()))order.add(app.component.flattenToString());saveDockOrder(order);}
+        return order;
+    }
+    private void saveDockOrder(List<String> order){prefs.edit().putString("dockOrder",new JSONArray(order).toString()).apply();}
+    private void saveVisibleDock(){List<String> order=new ArrayList<>();for(int i=0;i<homeDock.getChildCount();i++){Object id=homeDock.getChildAt(i).getTag();if(id instanceof String)order.add((String)id);}saveDockOrder(order);}
+    private void beginDockMove(View view){if(dockRemoving)return;finishDockMove();movingApp=view;eatSelectUp=true;view.requestFocus();view.animate().translationY(-dp(8)).setDuration(160).start();view.setElevation(dp(10));dockHint.setText("← → Move · ↑ Remove · Select Done");}
+    private void finishDockMove(){if(movingApp!=null){movingApp.animate().translationY(0).setDuration(160).start();movingApp.setElevation(0);movingApp=null;}if(dockHint!=null)dockHint.setText("Hold Select to rearrange");}
+    /** Animate from the positions actually on screen, including any unfinished movement. */
+    private void animateDockChange(Runnable change){
+        LinearLayout dock=homeDock;Map<View,Float> positions=new HashMap<>();for(int i=0;i<dock.getChildCount();i++){View child=dock.getChildAt(i);positions.put(child,child.getX());child.animate().cancel();}change.run();
+        dock.getViewTreeObserver().addOnPreDrawListener(new android.view.ViewTreeObserver.OnPreDrawListener(){public boolean onPreDraw(){dock.getViewTreeObserver().removeOnPreDrawListener(this);for(int i=0;i<dock.getChildCount();i++){View child=dock.getChildAt(i);Float old=positions.get(child);if(old!=null){child.setTranslationX(old-child.getLeft());child.animate().translationX(0).setDuration(220).setInterpolator(new android.view.animation.DecelerateInterpolator()).start();}}return true;}});
+    }
+    private void moveDockApp(int direction){View cell=movingApp;int index=homeDock.indexOfChild(cell),target=index+direction;if(target<0||target>=homeDock.getChildCount()-1)return;
+        animateDockChange(()->{homeDock.removeView(cell);homeDock.addView(cell,target);cell.requestFocus();});saveVisibleDock();
+    }
+    private void removeDockApp(){
+        View cell=movingApp;LinearLayout dock=homeDock;dockRemoving=true;int index=dock.indexOfChild(cell);finishDockMove();cell.setEnabled(false);cell.setFocusable(false);homeDock.getChildAt(Math.min(index+1,homeDock.getChildCount()-1)).requestFocus();
+        // Remove from saved order immediately; keep the outgoing tile until its exit ends.
+        List<String> order=dockOrder();order.remove((String)cell.getTag());saveDockOrder(order);
+        cell.animate().translationY(-dp(24)).alpha(0).setDuration(160).withEndAction(()->{dockRemoving=false;if(cell.getParent()!=homeDock||homeDock!=dock)return;animateDockChange(()->homeDock.removeView(cell));homeDock.getChildAt(Math.min(index,homeDock.getChildCount()-1)).requestFocus();}).start();
+    }
+    private void appMenu(View anchor,App app){
+        PopupMenu menu=new PopupMenu(this,anchor);boolean pinned=dockOrder().contains(app.component.flattenToString());menu.getMenu().add(0,1,0,"Open");menu.getMenu().add(0,2,1,pinned?"Remove from hotbar":"Add to hotbar");menu.getMenu().add(0,3,2,"App info");
+        try{ApplicationInfo info=getPackageManager().getApplicationInfo(app.component.getPackageName(),0);if((info.flags&ApplicationInfo.FLAG_SYSTEM)==0||(info.flags&ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)!=0)menu.getMenu().add(0,4,3,"Uninstall");}catch(PackageManager.NameNotFoundException ignored){}
+        menu.setOnMenuItemClickListener(item->{int id=item.getItemId();if(id==2){List<String> order=dockOrder();String component=app.component.flattenToString();if(!order.remove(component))order.add(component);saveDockOrder(order);toast(pinned?"Removed from hotbar":"Added to hotbar");return true;}
+            try{if(id==1)startActivity(new Intent(Intent.ACTION_MAIN).setComponent(app.component));else{Intent intent=new Intent(id==4?Intent.ACTION_DELETE:Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:"+app.component.getPackageName()));refreshAppsOnResume=true;startActivity(intent);}}catch(Exception e){refreshAppsOnResume=false;toast("Android could not open this action");}return true;});menu.show();
+    }
+    private void allApps(){screen("All Apps",this::home);page.addView(text("Hold Select or press Menu for app options",14));queryApps();LinearLayout r=null;for(int i=0;i<apps.size();i++){if(i%6==0){r=row();page.addView(r);}addApp(r,apps.get(i),false);}if(apps.isEmpty())page.addView(text("No launchable apps found",16));}
     private ChannelDatabase channelsDb(){return ChannelDatabase.get(this);}
     interface ChannelPage{List<ChannelDatabase.Row> load(int offset) throws Exception;}
     private Set<String> favouriteKeys(){return new HashSet<>(prefs.getStringSet("favourites",Collections.emptySet()));}
@@ -363,7 +413,7 @@ public class MainActivity extends Activity {
         fixedScreen("Settings",this::home);LinearLayout layout=row();layout.setGravity(Gravity.TOP);page.addView(layout,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout navigation=vertical();navigation.setPadding(0,dp(8),dp(22),0);layout.addView(navigation,new LinearLayout.LayoutParams(dp(190),-1));
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);LinearLayout body=vertical();body.setPadding(dp(12),dp(8),dp(12),dp(8));scroll.addView(body);layout.addView(scroll,new LinearLayout.LayoutParams(0,-1,1));List<Button> choices=new ArrayList<>();
-        for(String tab:new String[]{"Accounts","Appearance","Playback","Apps","System"}){Button choice=navigationButton(tab,()->{});choices.add(choice);LinearLayout.LayoutParams navParams=new LinearLayout.LayoutParams(-1,dp(44));navParams.bottomMargin=dp(4);navigation.addView(choice,navParams);choice.setOnClickListener(v->{for(Button other:choices){other.setSelected(other==v);styleFocus(other,other.hasFocus());}settingsTab(body,tab);});}
+        for(String tab:new String[]{"Accounts","Appearance","Playback","System"}){Button choice=navigationButton(tab,()->{});choices.add(choice);LinearLayout.LayoutParams navParams=new LinearLayout.LayoutParams(-1,dp(44));navParams.bottomMargin=dp(4);navigation.addView(choice,navParams);choice.setOnClickListener(v->{for(Button other:choices){other.setSelected(other==v);styleFocus(other,other.hasFocus());}settingsTab(body,tab);});}
         choices.get(0).setSelected(true);styleFocus(choices.get(0),false);settingsTab(body,"Accounts");choices.get(0).requestFocus();
     }
     private String accountKey(String service){return service.equals("Xtream")?"xtream":service.equals("M3U playlist")?"m3u":service.equals("TMDB")?"tmdb":"premiumize";}
@@ -413,7 +463,6 @@ public class MainActivity extends Activity {
             accountCard(body,"Xtream","Live channels from your TV provider");accountCard(body,"M3U playlist","Live channels from a playlist link");accountCard(body,"TMDB","Movie and series discovery, details and artwork");accountCard(body,"Premiumize","Playback sources and your cloud library");
         }else if(tab.equals("Appearance")){toggle(body,"Show featured row","featured",true);toggle(body,"24-hour clock","clock24",true);for(int colour:new int[]{0xff8a9eff,0xff55aaff,0xff45c9ac})body.addView(button(colour==0xff8a9eff?"Violet":colour==0xff55aaff?"Blue":"Teal",()->{prefs.edit().putInt("accent",colour).apply();toast("Accent saved");}));body.addView(button("Return home",this::home));}
         else if(tab.equals("Playback")){toggle(body,"Resume playback","resume",true);languagePreference(body,"Subtitles","subtitleLanguage","none",true);languagePreference(body,"Audio track","audioLanguage","eng,en",false);}
-        else if(tab.equals("Apps")){body.addView(text("Choose the apps shown on Home",22));body.addView(text("Hold Select on an app to pin or unpin it.",16));body.addView(button("Manage app dock",this::allApps));}
         else{toggle(body,"Check for updates automatically","autoUpdates",true);body.addView(text(android.os.Build.MANUFACTURER+" "+android.os.Build.MODEL+" · Android "+android.os.Build.VERSION.RELEASE,16));body.addView(button("Check for app updates",()->{lastUpdateCheck=0;checkForUpdate(true);}));body.addView(button("Open Android Settings",()->{try{startActivity(new Intent(Settings.ACTION_SETTINGS));}catch(Exception e){toast("Android Settings is unavailable");}}));body.addView(text("TMDB supplies metadata and artwork. This product uses the TMDB API but is not endorsed or certified by TMDB.",12));body.addView(button("Metadata attribution",()->new AlertDialog.Builder(this).setTitle("Metadata attribution").setMessage("The Movie Database (TMDB)\nhttps://www.themoviedb.org\n\nMetadata is separate from your playback sources.").setPositiveButton("Close",null).show()));}
         settingsStyle(body);
     }
