@@ -30,6 +30,7 @@ final class HomeScreen {
         activity.destination = this::home;
         activity.fixedScreen(null, null);
         activity.page.setPadding(activity.dp(30), activity.dp(10), activity.dp(30), activity.dp(10));
+        BackdropView backdrop = fullBleedBackdrop();
         LinearLayout top = activity.row();
         for (String kind : new String[] { "Live TV", "Movies", "Series", "My list", "Continue" })
             top.addView(
@@ -72,30 +73,18 @@ final class HomeScreen {
         activity.ticker.run();
         activity.handler.removeCallbacks(activity.ticker);
         activity.handler.postDelayed(activity.ticker, 30000);
+        // The featured title's text sits directly on the full-screen artwork; there is no box.
         FrameLayout hero = new FrameLayout(activity);
-        hero.setClipToOutline(true);
-        hero.setBackground(activity.box(0xff111a27));
-        ImageView backdrop = new ImageView(activity);
-        backdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        hero.addView(backdrop, new FrameLayout.LayoutParams(-1, -1));
-        View shade = new View(activity);
-        shade.setBackground(
-            new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[] {
-                0xff090d14,
-                0xdd090d14,
-                0x11090d14,
-            })
-        );
-        hero.addView(shade, new FrameLayout.LayoutParams(-1, -1));
         LinearLayout copy = activity.vertical();
         copy.setGravity(Gravity.CENTER_VERTICAL);
-        copy.setPadding(activity.dp(18), activity.dp(4), activity.dp(16), activity.dp(4));
+        copy.setPadding(activity.dp(4), activity.dp(4), activity.dp(16), activity.dp(4));
         TextView eyebrow = activity.compactText("MOVIEHUB", 11);
         eyebrow.setLetterSpacing(.18f);
         eyebrow.setTextColor(0xffa6b2c8);
         copy.addView(eyebrow);
         TextView heading = activity.compactText("Find your next favourite", 28);
         heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        heading.setShadowLayer(activity.dp(6), 0, activity.dp(1), 0xcc000000);
         heading.setMaxLines(1);
         heading.setEllipsize(android.text.TextUtils.TruncateAt.END);
         copy.addView(heading);
@@ -107,6 +96,7 @@ final class HomeScreen {
         );
         summary.setMaxLines(2);
         summary.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        summary.setShadowLayer(activity.dp(4), 0, activity.dp(1), 0xcc000000);
         copy.addView(summary);
         Button open = activity.button("Connect TMDB", () -> activity.settingsScreens.accountScreen("TMDB"));
         copy.addView(open, new LinearLayout.LayoutParams(activity.dp(170), activity.dp(36)));
@@ -207,17 +197,62 @@ final class HomeScreen {
         activity.page.post(() -> top.getChildAt(0).requestFocus());
     }
 
+    /**
+     * Puts the page on top of full-screen artwork, shaded so text on the left and the posters and
+     * apps below stay readable. Returns the artwork view.
+     */
+    private BackdropView fullBleedBackdrop() {
+        android.view.ViewGroup parent = (android.view.ViewGroup) activity.page.getParent();
+        parent.removeView(activity.page);
+        FrameLayout root = new FrameLayout(activity);
+        root.setBackgroundColor(0xff090d14);
+        BackdropView backdrop = new BackdropView(activity);
+        root.addView(backdrop, new FrameLayout.LayoutParams(-1, -1));
+        root.addView(
+            shade(GradientDrawable.Orientation.LEFT_RIGHT, new int[] {
+                0xff090d14,
+                0xf0090d14,
+                0xb3090d14,
+                0x40090d14,
+                0x00090d14,
+                0x00090d14,
+            })
+        );
+        root.addView(
+            shade(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {
+                0xb3090d14,
+                0x00090d14,
+                0x00090d14,
+                0x99090d14,
+                0xf2090d14,
+                0xff090d14,
+                0xff090d14,
+            })
+        );
+        activity.page.setBackgroundColor(Color.TRANSPARENT);
+        root.addView(activity.page, new FrameLayout.LayoutParams(-1, -1));
+        activity.setContentView(root);
+        return backdrop;
+    }
+
+    private View shade(GradientDrawable.Orientation direction, int[] colours) {
+        View shade = new View(activity);
+        shade.setBackground(new GradientDrawable(direction, colours));
+        shade.setLayoutParams(new FrameLayout.LayoutParams(-1, -1));
+        return shade;
+    }
+
     final class HomeShelf {
 
         final LinearLayout posterHost;
         final TextView heading, summary;
         final Button open;
-        final ImageView backdrop;
+        final BackdropView backdrop;
         PosterFeed feed;
         boolean previewed;
         Runnable pendingArt;
 
-        HomeShelf(LinearLayout host, TextView title, TextView overview, Button action, ImageView image) {
+        HomeShelf(LinearLayout host, TextView title, TextView overview, Button action, BackdropView image) {
             posterHost = host;
             heading = title;
             summary = overview;
@@ -278,11 +313,11 @@ final class HomeScreen {
             pendingArt = () -> {
                 if (!backdrop.isAttachedToWindow()) return;
                 backdrop.setTag(null);
-                backdrop.setImageDrawable(null);
                 if (art.startsWith("/")) activity.posters.loadImage(
                     backdrop,
                     "https://image.tmdb.org/t/p/w1280" + art
                 );
+                else backdrop.clear();
             };
             activity.handler.postDelayed(pendingArt, 320);
         }
