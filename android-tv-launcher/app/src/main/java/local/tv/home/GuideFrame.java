@@ -127,6 +127,7 @@ final class GuideFrame {
                     return true;
                 }
                 if (key == KeyEvent.KEYCODE_DPAD_DOWN) {
+                    if (guide.cells.isEmpty()) return false; // an empty list: its Options button
                     guide.tabFocus = false;
                     guide.focusFirstRow();
                     return true;
