@@ -103,7 +103,12 @@ final class ChannelDatabase extends SQLiteOpenHelper {
      * duplicate key: its country and plain name. The guide shows it once; the others are backups.
      */
     private static void addDuplicateKey(SQLiteDatabase db) {
-        db.execSQL("ALTER TABLE channels ADD COLUMN dkey TEXT NOT NULL DEFAULT ''");
+        // Safe to run twice (a database whose version was rolled back already has the column).
+        boolean present = false;
+        try (Cursor columns = db.rawQuery("PRAGMA table_info(channels)", null)) {
+            while (columns.moveToNext()) if ("dkey".equals(columns.getString(1))) present = true;
+        }
+        if (!present) db.execSQL("ALTER TABLE channels ADD COLUMN dkey TEXT NOT NULL DEFAULT ''");
         db.execSQL("CREATE INDEX IF NOT EXISTS channels_dkey ON channels(dkey)");
     }
 
