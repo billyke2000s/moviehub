@@ -326,12 +326,16 @@ final class LiveTvScreen {
         );
     }
 
+    /** Red, CH+ or Page Up: the page before, as on the satellite guide. */
     private boolean isPageUp(int key) {
-        return key == KeyEvent.KEYCODE_CHANNEL_UP || key == KeyEvent.KEYCODE_PAGE_UP;
+        return colour(key) == 'r' || key == KeyEvent.KEYCODE_CHANNEL_UP || key == KeyEvent.KEYCODE_PAGE_UP;
     }
 
+    /** Green, CH- or Page Down: the next page. */
     private boolean isPageDown(int key) {
-        return key == KeyEvent.KEYCODE_CHANNEL_DOWN || key == KeyEvent.KEYCODE_PAGE_DOWN;
+        return (
+            colour(key) == 'g' || key == KeyEvent.KEYCODE_CHANNEL_DOWN || key == KeyEvent.KEYCODE_PAGE_DOWN
+        );
     }
 
     /** The row that has the focus (its name or a programme), so a refresh keeps the place. */
@@ -398,21 +402,14 @@ final class LiveTvScreen {
             if (more) guide(pageStart + ROWS, row);
             return true;
         }
+        // Yellow searches and blue opens the sections (the guide menu), as on the satellite guide.
         char colour = colour(key);
-        if (colour == 'r') {
-            panels.reminders();
-            return true;
-        }
-        if (colour == 'g') {
+        if (colour == 'y') {
             panels.searchPanel();
             return true;
         }
-        if (colour == 'y') {
-            nextDay(row);
-            return true;
-        }
         if (colour == 'b') {
-            previousDay(row);
+            menu.show();
             return true;
         }
         if (key == KeyEvent.KEYCODE_MENU) {

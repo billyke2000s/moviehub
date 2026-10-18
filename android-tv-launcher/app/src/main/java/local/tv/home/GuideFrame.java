@@ -164,13 +164,13 @@ final class GuideFrame {
         // Colour keys, as round buttons on the remote, and what SELECT does.
         LinearLayout keys = activity.row();
         keys.setPadding(0, activity.dp(6), 0, 0);
-        colourKey(keys, SkyOverlay.RED, "Reminders");
-        colourKey(keys, SkyOverlay.GREEN, "Search A–Z");
-        colourKey(keys, LiveTvScreen.YELLOW, "+24 Hours");
-        colourKey(keys, SkyOverlay.BLUE, "−24 Hours");
+        colourKey(keys, SkyOverlay.RED, "Page up");
+        colourKey(keys, SkyOverlay.GREEN, "Page down");
+        colourKey(keys, LiveTvScreen.YELLOW, "Search");
+        colourKey(keys, SkyOverlay.BLUE, "Sections");
         page.addView(keys);
         TextView press = text(
-            "Press SELECT to view or set a reminder   ·   i for information   ·   BACK for the guide menu",
+            "Press SELECT to view or set a reminder   ·   ◀ ▶ through the day   ·   i for information",
             14,
             true
         );

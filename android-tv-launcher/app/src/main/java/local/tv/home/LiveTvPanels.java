@@ -62,6 +62,8 @@ final class LiveTvPanels {
             .option("All channels", () -> guide.show("all", ""))
             .option("Favourites", () -> guide.show("favourites", ""))
             .option("Guide menu", guide.menu::show)
+            .option("Tomorrow (+24 hours)", () -> guide.nextDay(guide.focusedRow()))
+            .option("Back to today", () -> guide.previousDay(guide.focusedRow()))
             .option("Search", this::searchPanel)
             .option("Reminders", this::reminders)
             .option("Parental lock", this::parentalLock)
