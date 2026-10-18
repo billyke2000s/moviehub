@@ -93,10 +93,14 @@ public class StreamingMenusTest {
             for (String value : new String[] { "Alien", "Arrival", "alien" })
                 call(() -> activity.catalogueSearch.rememberSearch(value));
             call(() -> activity.catalogueSearch.searchCatalogue("Movies"));
-            assertNotNull(find(root(), "Search titles"));
-            assertNotNull(find(root(), "Search people"));
+            assertNull(
+                "Results appear as you type; no separate search buttons",
+                find(root(), "Search titles")
+            );
+            assertNull(find(root(), "Search people"));
             assertNotNull(find(root(), "Recent searches"));
-            assertNotNull(activity.getCurrentFocus());
+            assertNotNull("Recent searches are pills", find(root(), "Arrival"));
+            assertTrue("The search box is focused", activity.getCurrentFocus() instanceof EditText);
         });
         JSONArray saved = new JSONArray(prefs.getString("searchHistory", "[]"));
         assertEquals(2, saved.length());
@@ -204,5 +208,54 @@ public class StreamingMenusTest {
         });
         assertEquals(2, sources.size());
         UiEvidence.capture("sources-redesign");
+    }
+
+    @Test
+    public void searchShowsMovieSeriesAndPeopleRowsAsYouType() throws Exception {
+        java.util.List<String> paths = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+        CatalogueSearch.testSource = path -> {
+            paths.add(path);
+            try {
+                JSONArray items = new JSONArray();
+                if (path.startsWith("search/movie")) for (int i = 1; i <= 8; i++) items.put(
+                    new JSONObject()
+                        .put("id", 500 + i)
+                        .put("media_type", "movie")
+                        .put("title", "Alien " + i)
+                );
+                if (path.startsWith("search/person")) items.put(
+                    new JSONObject()
+                        .put("id", 9)
+                        .put("name", "Sigourney Weaver")
+                        .put("known_for_department", "Acting")
+                );
+                return new JSONObject().put("results", items).put("total_pages", 1);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
+        try {
+            ui(() -> call(() -> activity.catalogueSearch.searchCatalogue("Movies")));
+            ui(() -> ((EditText) activity.getCurrentFocus()).setText("Alien"));
+            long end = SystemClock.uptimeMillis() + 10000;
+            java.util.concurrent.atomic.AtomicBoolean ready = new java.util.concurrent.atomic.AtomicBoolean();
+            while (!ready.get() && SystemClock.uptimeMillis() < end) {
+                SystemClock.sleep(100);
+                remote.runOnMainSync(() ->
+                    ready.set(find(root(), "Sigourney Weaver") != null && find(root(), "Movies") != null)
+                );
+            }
+            assertTrue("Results appeared without pressing a button: " + paths, ready.get());
+            SystemClock.sleep(500);
+            remote.runOnMainSync(() -> {
+                View series = find(root(), "Series");
+                assertTrue("A category with no results is hidden", series == null || !series.isShown());
+                assertNull("Typing does not open the old grid screen", activity.catalogues.catalogue);
+            });
+            assertTrue("Searched movies, series and people", paths.size() >= 3);
+            UiEvidence.capture("search-results");
+        } finally {
+            CatalogueSearch.testSource = null;
+        }
     }
 }

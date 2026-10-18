@@ -71,7 +71,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `AppDock` | The installed-app dock on Home (long-press Select to lift, move, remove) and All Apps. |
 | `CatalogueRows` | The Movies/Series start page: a hero area for the focused title above Netflix-style rows (Trending, Popular, Top rated, release lists, then genres). The focused row is pinned at the top of the rows area, rows load as they come near, and position is restored after opening a title. |
 | `CatalogueScreens` | The Movies/Series screen (`CatalogueScreen`): header, hero and either the rows page or a single-category poster grid ("see all", Browse and filter results), plus the Browse and filter sheets. Back from a grid opened from the rows returns to the rows. See [docs/tmdb-categories.md](docs/tmdb-categories.md). |
-| `CatalogueSearch` | Search by title, person or company; recent searches. |
+| `CatalogueSearch` | Live search: a large search box whose results appear as you type, as Movies, Series and People rows; recent searches as pills; person/company/keyword search inside the Browse sheets. Also builds the round person cards used for cast. |
 | `TitleDetails` | The details page for one movie or series: full-bleed artwork, title block and pill actions (resume, sources/episodes, My List, trailer), then "More like this" posters, collection and round cast photos. |
 | `SeriesScreens` | Seasons and episodes, watched-episode marks. |
 | `SourcesScreen` | Finds stream sources (Torrentio → MediaFusion → Comet fallback, Premiumize cache) and lists them. |

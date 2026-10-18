@@ -281,6 +281,24 @@ final class CatalogueRows {
         if (next != null) next.start(null, false);
     }
 
+    /**
+     * Moves focus to the top bar and scrolls back to the first row, so the header is one press away
+     * from anywhere on the page. Returns false when focus is not on a poster, so Back leaves.
+     */
+    boolean jumpToTop() {
+        if (closed || rows.isEmpty()) return false;
+        View focus = activity.getCurrentFocus();
+        // Only jump when browsing the rows; from the top bar (or with nothing focused) Back leaves.
+        if (focus == null || rowContaining(focus) == null) return false;
+        Row first = firstVisibleRow();
+        if (first != null) {
+            focusedRow = first;
+            pin(first, true);
+        }
+        screen.initialFocus.requestFocus();
+        return true;
+    }
+
     /** Stops loading and returns what to restore when this page is shown again. */
     Saved close() {
         if (closed) return null;

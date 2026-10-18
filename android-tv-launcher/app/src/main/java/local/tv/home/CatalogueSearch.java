@@ -129,80 +129,344 @@ final class CatalogueSearch {
         activity.prefs.edit().putString("searchHistory", next.toString()).apply();
     }
 
+    /** Test hook: when set, search requests are answered from this instead of TMDB. */
+    static java.util.function.Function<String, JSONObject> testSource;
+
+    /** Waits this long after the last key press before searching, so typing stays smooth. */
+    static final long TYPING_PAUSE_MILLIS = 450;
+
     void searchCatalogue(String kind) {
+        searchCatalogue(kind, "");
+    }
+
+    /**
+     * Streaming-app style search: one large search box, results that appear as you type, shown as
+     * Movies, Series and People rows on this page. Recent searches appear while the box is empty.
+     */
+    void searchCatalogue(String kind, String initial) {
         activity.screen("Search", () -> activity.libraryScreens.library(kind));
-        LinearLayout typeRow = activity.horizontal(activity.page);
-        for (String scope : new String[] { "Movies", "Series" }) {
-            Button tab = activity.chip(typeRow, scope, () -> searchCatalogue(scope));
-            if (scope.equals(kind)) activity.primary(tab);
-        }
-        activity.section(activity.page, "What would you like to watch?");
-        LinearLayout input = activity.vertical();
-        EditText query = activity.field(input, "Search " + kind.toLowerCase(Locale.ROOT), false, "");
-        activity.page.addView(input);
-        query.setHint("Titles, actors, directors…");
-        LinearLayout actions = activity.row();
-        Runnable submit = () -> {
-            String value = query.getText().toString().trim();
-            if (value.isEmpty()) {
-                query.setError("Enter a title");
-                return;
-            }
-            rememberSearch(value);
-            String type = kind.equals("Movies") ? "movie" : "tv";
-            activity.catalogues.browse(
-                kind,
-                "Search: " + value,
-                "search/" + type + "?query=" + Network.q(value) + "&include_adult=false",
-                1
-            );
-        };
-        Button search = activity.chip(actions, "Search titles", submit);
-        activity.primary(search);
-        activity.chip(actions, "Search people", () -> {
-            String value = query.getText().toString().trim();
-            if (value.isEmpty()) {
-                query.setError("Enter a name");
-                return;
-            }
-            rememberSearch(value);
-            activity.catalogues.browse(kind, "People", ":people", 1);
-            if (activity.overlayContent != null) entityResults(
-                activity.overlayContent,
-                kind,
-                "person",
-                value,
-                1
-            );
+        LinearLayout holder = activity.vertical();
+        EditText query = activity.field(holder, "Search", false, initial);
+        holder.removeViewAt(0); // the field's own label; the box has a hint instead
+        query.setHint("Search movies, series and people");
+        query.setTextSize(22);
+        query.setPadding(activity.dp(24), activity.dp(14), activity.dp(24), activity.dp(14));
+        styleSearchBox(query, false);
+        View.OnFocusChangeListener keyboardHandling = query.getOnFocusChangeListener();
+        query.setOnFocusChangeListener((v, focused) -> {
+            keyboardHandling.onFocusChange(v, focused);
+            styleSearchBox(query, focused);
         });
-        activity.page.addView(actions);
+        activity.page.addView(holder, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout results = activity.vertical();
+        results.setClipChildren(false);
+        activity.page.addView(results, new LinearLayout.LayoutParams(-1, -2));
+
+        Search search = new Search(kind, query, results);
+        query.addTextChangedListener(
+            new android.text.TextWatcher() {
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                public void afterTextChanged(android.text.Editable text) {
+                    search.typed(text.toString().trim());
+                }
+            }
+        );
         query.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
         query.setOnEditorActionListener((v, action, event) -> {
-            if (action == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
-                submit.run();
-                return true;
+            if (action != android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) return false;
+            String value = query.getText().toString().trim();
+            if (!value.isEmpty()) {
+                rememberSearch(value);
+                search.run(value);
             }
-            return false;
+            return true;
         });
-        JSONArray history = recentSearches();
-        if (history.length() > 0) {
-            activity.section(activity.page, "Recent searches");
-            LinearLayout recent = activity.horizontal(activity.page);
+        if (initial.isEmpty()) search.showRecent();
+        else search.run(initial);
+        query.requestFocus();
+    }
+
+    private void styleSearchBox(EditText box, boolean focused) {
+        GradientDrawable shape = new GradientDrawable();
+        shape.setCornerRadius(activity.dp(30));
+        shape.setColor(focused ? 0x33ffffff : 0x1fffffff);
+        shape.setStroke(activity.dp(focused ? 3 : 1), focused ? activity.accent() : 0x40ffffff);
+        box.setBackground(shape);
+    }
+
+    /** One search page: debounced typing, result rows and recent searches. */
+    final class Search {
+
+        final String kind;
+        final EditText query;
+        final LinearLayout results;
+        final List<PosterFeed> feeds = new ArrayList<>();
+        private final Runnable pending = () -> run(currentText());
+        private String shown = "";
+        private int token;
+        private int emptyRows;
+
+        Search(String kind, EditText query, LinearLayout results) {
+            this.kind = kind;
+            this.query = query;
+            this.results = results;
+        }
+
+        private String currentText() {
+            return query.getText().toString().trim();
+        }
+
+        void typed(String value) {
+            activity.handler.removeCallbacks(pending);
+            if (value.isEmpty()) {
+                shown = "";
+                showRecent();
+            } else if (value.length() >= 2) activity.handler.postDelayed(pending, TYPING_PAUSE_MILLIS);
+        }
+
+        private void clear() {
+            token++;
+            for (PosterFeed feed : feeds) {
+                feed.close();
+                activity.feeds.remove(feed);
+            }
+            feeds.clear();
+            results.removeAllViews();
+        }
+
+        void showRecent() {
+            clear();
+            JSONArray history = recentSearches();
+            if (history.length() == 0) {
+                results.addView(heading("Search by title, actor or director"));
+                return;
+            }
+            results.addView(heading("Recent searches"));
+            HorizontalScrollView scroll = new HorizontalScrollView(activity);
+            scroll.setHorizontalScrollBarEnabled(false);
+            scroll.setClipToPadding(false);
+            LinearLayout pills = activity.row();
+            pills.setClipChildren(false);
+            pills.setPadding(activity.dp(4), activity.dp(6), activity.dp(24), activity.dp(6));
+            scroll.addView(pills);
+            results.addView(scroll);
             for (int i = 0; i < history.length(); i++) {
                 String value = history.optString(i);
-                activity.chip(recent, value, () -> {
-                    query.setText(value);
-                    submit.run();
-                });
+                pill(pills, value, () -> query.setText(value));
             }
-            activity.page.addView(
-                activity.button("Clear search history", () -> {
-                    activity.prefs.edit().remove("searchHistory").apply();
-                    searchCatalogue(kind);
-                }),
-                new LinearLayout.LayoutParams(activity.dp(200), activity.dp(40))
+            pill(pills, "Clear", () -> {
+                activity.prefs.edit().remove("searchHistory").apply();
+                showRecent();
+            });
+        }
+
+        private void pill(LinearLayout parent, String label, Runnable run) {
+            Button button = activity.button(label, run);
+            activity.pill(button, false);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, activity.dp(38));
+            lp.rightMargin = activity.dp(10);
+            parent.addView(button, lp);
+        }
+
+        private TextView heading(String text) {
+            TextView title = activity.compactText(text, 18);
+            title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+            title.setPadding(activity.dp(4), activity.dp(18), 0, activity.dp(4));
+            return title;
+        }
+
+        void run(String value) {
+            if (value.equals(shown) && results.getChildCount() > 0) return;
+            shown = value;
+            clear();
+            activity.destination = () -> searchCatalogue(kind, value);
+            if (testSource == null && !activity.secrets.has("tmdb")) {
+                activity.emptyState(
+                    results,
+                    "Connect TMDB",
+                    "Search uses TMDB. Add your free API key to search movies, series and people.",
+                    "Connect TMDB",
+                    () -> activity.settingsScreens.accountScreen("TMDB")
+                );
+                return;
+            }
+            emptyRows = 0;
+            String encoded = Network.q(value);
+            boolean moviesFirst = kind.equals("Movies");
+            titleRow(moviesFirst ? "Movies" : "Series", moviesFirst ? "movie" : "tv", encoded);
+            titleRow(moviesFirst ? "Series" : "Movies", moviesFirst ? "tv" : "movie", encoded);
+            peopleRow(value, encoded);
+        }
+
+        private JSONObject fetch(String path) throws Exception {
+            return testSource != null ? testSource.apply(path) : activity.media.tmdb(path);
+        }
+
+        private void rowEmpty(LinearLayout section, int request) {
+            activity.runOnUiThread(() -> {
+                if (request != token) return;
+                section.setVisibility(View.GONE);
+                if (++emptyRows == 3) results.addView(heading("No results for \u201c" + shown + "\u201d"));
+            });
+        }
+
+        private void titleRow(String name, String type, String encoded) {
+            int request = token;
+            LinearLayout section = activity.vertical();
+            section.addView(heading(name));
+            PosterFeed feed = new PosterFeed(
+                activity,
+                true,
+                type,
+                activity.io,
+                n -> {
+                    JSONObject page = fetch(
+                        "search/" + type + "?query=" + encoded + "&include_adult=false&page=" + n
+                    );
+                    JSONArray items = page.optJSONArray("results");
+                    if (n == 1 && (items == null || items.length() == 0)) rowEmpty(section, request);
+                    return page;
+                },
+                new PosterFeed.Cards() {
+                    public View create(ViewGroup parent) {
+                        View card = activity.posters.posterCard(true);
+                        int frame = activity.dp(3);
+                        card.setPadding(frame, frame, frame, frame);
+                        return card;
+                    }
+
+                    public void bind(View card, JSONObject item) {
+                        activity.posters.bindPoster(card, item, true, () -> rememberSearch(shown));
+                    }
+                }
             );
-        } else activity.page.addView(activity.muted("Your recent searches will appear here.", 15));
-        query.requestFocus();
+            feed.setCardSize(CatalogueRows.POSTER_WIDTH, CatalogueRows.POSTER_HEIGHT);
+            feed.setClipToPadding(false);
+            feed.setPadding(0, activity.dp(4), activity.dp(24), activity.dp(4));
+            feeds.add(feed);
+            activity.feeds.add(feed);
+            section.addView(
+                feed,
+                new LinearLayout.LayoutParams(-1, activity.dp(CatalogueRows.POSTER_HEIGHT + 16))
+            );
+            results.addView(section);
+            feed.start();
+        }
+
+        private void peopleRow(String value, String encoded) {
+            int request = token;
+            LinearLayout section = activity.vertical();
+            section.addView(heading("People"));
+            HorizontalScrollView scroll = new HorizontalScrollView(activity);
+            scroll.setHorizontalScrollBarEnabled(false);
+            scroll.setClipToPadding(false);
+            LinearLayout people = activity.row();
+            people.setClipChildren(false);
+            people.setPadding(0, activity.dp(6), activity.dp(24), activity.dp(6));
+            scroll.addView(people);
+            section.addView(scroll);
+            results.addView(section);
+            String type = kind.equals("Movies") ? "movie" : "tv";
+            activity.io.execute(() -> {
+                JSONArray found;
+                try {
+                    found = fetch(
+                        "search/person?query=" + encoded + "&include_adult=false&page=1"
+                    ).optJSONArray("results");
+                } catch (Exception e) {
+                    Diagnostics.recovered("Searching people", e);
+                    found = null;
+                }
+                JSONArray list = found;
+                activity.runOnUiThread(() -> {
+                    if (request != token) return;
+                    if (list == null || list.length() == 0) {
+                        rowEmpty(section, request);
+                        return;
+                    }
+                    for (int i = 0; i < Math.min(20, list.length()); i++) {
+                        JSONObject person = list.optJSONObject(i);
+                        if (person == null || person.optBoolean("adult", false)) continue;
+                        people.addView(
+                            personCard(person, () -> {
+                                rememberSearch(value);
+                                activity.catalogues.browse(
+                                    kind,
+                                    person.optString("name"),
+                                    "person/" + person.optInt("id") + "/" + type + "_credits",
+                                    1
+                                );
+                            })
+                        );
+                    }
+                });
+            });
+        }
+    }
+
+    /** A round photo with a name, as used for cast and people in search. */
+    View personCard(JSONObject person, Runnable open) {
+        LinearLayout card = activity.vertical();
+        card.setGravity(Gravity.CENTER_HORIZONTAL);
+        card.setFocusable(true);
+        card.setFocusableInTouchMode(true);
+        ImageView photo = new ImageView(activity);
+        photo.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        photo.setClipToOutline(true);
+        photo.setOutlineProvider(
+            new android.view.ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, android.graphics.Outline outline) {
+                    outline.setOval(0, 0, view.getWidth(), view.getHeight());
+                }
+            }
+        );
+        card.addView(photo, new LinearLayout.LayoutParams(activity.dp(92), activity.dp(92)));
+        String image = person.optString("profile_path");
+        if (image.startsWith("/")) activity.posters.loadImage(
+            photo,
+            "https://image.tmdb.org/t/p/w185" + image
+        );
+        TextView name = activity.compactText(person.optString("name"), 13);
+        name.setGravity(Gravity.CENTER);
+        name.setMaxLines(1);
+        name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        card.addView(name, new LinearLayout.LayoutParams(-1, -2));
+        String role = person.optString("character", person.optString("known_for_department"));
+        TextView detail = activity.muted(role, 11);
+        detail.setGravity(Gravity.CENTER);
+        detail.setMaxLines(1);
+        detail.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        card.addView(detail, new LinearLayout.LayoutParams(-1, -2));
+        card.setContentDescription(person.optString("name"));
+        ringPhoto(photo, false);
+        card.setOnFocusChangeListener((v, focused) -> {
+            ringPhoto(photo, focused);
+            v.setScaleX(focused ? 1.08f : 1f);
+            v.setScaleY(focused ? 1.08f : 1f);
+            name.setTypeface(Typeface.DEFAULT, focused ? Typeface.BOLD : Typeface.NORMAL);
+        });
+        card.setOnClickListener(v -> open.run());
+        card.setLayoutParams(cardLayout());
+        return card;
+    }
+
+    private LinearLayout.LayoutParams cardLayout() {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(activity.dp(116), -2);
+        lp.rightMargin = activity.dp(10);
+        return lp;
+    }
+
+    private void ringPhoto(ImageView photo, boolean focused) {
+        GradientDrawable ring = new GradientDrawable();
+        ring.setShape(GradientDrawable.OVAL);
+        ring.setColor(0xff1b2433);
+        if (focused) ring.setStroke(activity.dp(3), 0xfff2f4f8);
+        photo.setBackground(ring);
+        int inset = focused ? activity.dp(3) : 0;
+        photo.setPadding(inset, inset, inset, inset);
     }
 }
