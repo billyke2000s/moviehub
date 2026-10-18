@@ -134,6 +134,35 @@ final class LiveTvScreen {
         startPicture();
     }
 
+    /** Whether there is a page after this one. */
+    boolean hasMore;
+    /** The bar key to focus when the page arrives (paged from the bar), or -1. */
+    private int barKey = -1;
+
+    /** Down from the bottom row: the colour keys, on Page down. */
+    void focusKeys() {
+        frame.bar.focus(1);
+    }
+
+    /** Up from the colour keys: the bottom row, on its name or the programme at the cursor. */
+    void focusLastRow() {
+        if (cells.isEmpty()) {
+            frame.focusTop();
+            return;
+        }
+        int last = cells.size() - 1;
+        if (programmeFocus) rows.focusAt(last, cursorTime);
+        else cells.get(last).requestFocus();
+    }
+
+    /** Page up or Page down chosen in the bar: turns the page and keeps the focus on that key. */
+    void pageFromBar(int direction, int key) {
+        int target = pageStart + direction * ROWS;
+        if (target < 0 || (direction > 0 && !hasMore)) return;
+        barKey = key;
+        guide(target, 0);
+    }
+
     /** Down from the Options button: the first row of the grid. */
     void focusFirstRow() {
         if (!cells.isEmpty()) {
@@ -212,6 +241,7 @@ final class LiveTvScreen {
                 rows.clear();
                 int count = Math.min(items.size(), ROWS);
                 boolean more = items.size() > ROWS;
+                hasMore = more;
                 Set<String> favourites = favouriteKeys(),
                     reminders = new HashSet<>();
                 for (Reminders.Reminder item : Reminders.all(activity)) reminders.add(item.id());
@@ -246,7 +276,11 @@ final class LiveTvScreen {
                     return;
                 }
                 int focus = focusRow < 0 ? count - 1 : Math.min(focusRow, count - 1);
-                if (programmeFocus) rows.focusAt(focus, cursorTime);
+                if (barKey >= 0) {
+                    // Paged with a key in the bar: stay on it, so SELECT pages again.
+                    frame.bar.focus(barKey);
+                    barKey = -1;
+                } else if (programmeFocus) rows.focusAt(focus, cursorTime);
                 else cells.get(focus).requestFocus();
             }
         );

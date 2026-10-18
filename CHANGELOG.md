@@ -13,6 +13,11 @@ update feed), so the next release after it used code 12, named 0.12.
   and square colour keys. The light-blue redesign from 0.28 (programme preview and tabs) is gone;
   sections are on the blue key and the guide menu. Scrolling right through the day, reminders and
   the rest are kept.
+- The TV Guide menu is in the same dark blue as the guide.
+- No coloured buttons on your remote? The colour keys at the bottom of the guide and the menu can
+  now be chosen: press Down past the bottom row, move along them and press SELECT. Page down stays
+  selected, so SELECT again turns another page. While watching, SELECT twice opens Options, which
+  now also has Programme information, so it covers every coloured button.
 - Live TV now opens on the TV Guide menu first, like the old satellite box's TV Guide button.
   Pick a list (or press its number) to see the channels; BACK from the channels comes back here.
 - Every row of the menu now fits on the screen, so 9 Music and 0 More… are no longer cut off.

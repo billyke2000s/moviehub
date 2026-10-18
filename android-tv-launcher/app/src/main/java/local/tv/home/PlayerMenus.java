@@ -116,6 +116,8 @@ final class PlayerMenus {
         );
         if (a.live && a.behindLive) labels.add(0, "Back to live");
         if (liveTv) {
+            // Everything the coloured buttons do is here too, for remotes without them.
+            if (a.zapper != null) labels.add(0, "Programme information");
             labels.add(0, "Audio & subtitles");
             labels.add(0, a.player != null && a.player.isPlaying() ? "Pause" : "Play");
         }
@@ -125,6 +127,7 @@ final class PlayerMenus {
             panel.option(label, () -> {
                 if (label.equals("Pause") || label.equals("Play")) a.toggle();
                 else if (label.equals("Audio & subtitles")) audioAndSubtitles();
+                else if (label.equals("Programme information")) a.zapper.information();
                 else if (label.equals("Back to live")) a.backToLive();
                 else if (label.startsWith("Source")) chooseSource();
                 else if (label.startsWith("Playback speed")) chooseSpeed();

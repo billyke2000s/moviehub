@@ -4,7 +4,6 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -24,10 +23,18 @@ import java.util.Locale;
  */
 final class GuideFrame {
 
-    /** The guide menu's light-blue background and cells (the menu keeps its own look). */
-    static final int BACK_TOP = 0xff6ea8ec,
-        BACK_BOTTOM = 0xff3a7bd6,
-        CELL = 0xff1b4db4;
+    /** The guide's background: dark bands top and bottom, a lighter blue sweep in the middle. */
+    static GradientDrawable background() {
+        return new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {
+            LiveTvScreen.NAVY,
+            LiveTvScreen.NAVY,
+            0xff2a43a6,
+            0xff6a8ce0,
+            0xff3654b8,
+            0xff1d2f86,
+            LiveTvScreen.NAVY,
+        });
+    }
 
     private final MainActivity activity;
     private final LiveTvScreen guide;
@@ -35,6 +42,12 @@ final class GuideFrame {
     FrameLayout pictureBox;
     TextView pictureLabel, status;
     Button optionsButton;
+    /** The colour keys along the bottom, which can be chosen with the D-pad. */
+    KeyBar bar;
+    /** The colour keys' colours, as on the remote. */
+    static final int RED = 0xffe53935,
+        GREEN = 0xff43a047,
+        BLUE = 0xff1e63d6;
     private TextView when, listTitle, dayLabel;
     private final List<TextView> slotLabels = new ArrayList<>();
 
@@ -46,18 +59,7 @@ final class GuideFrame {
     void build() {
         LinearLayout page = activity.page;
         page.setPadding(activity.dp(40), activity.dp(18), activity.dp(40), activity.dp(14));
-        page.setBackground(
-            new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {
-                // Dark bands top and bottom with a lighter blue sweep behind the grid.
-                LiveTvScreen.NAVY,
-                LiveTvScreen.NAVY,
-                0xff2a43a6,
-                0xff6a8ce0,
-                0xff3654b8,
-                0xff1d2f86,
-                LiveTvScreen.NAVY,
-            })
-        );
+        page.setBackground(background());
 
         // Header: the time and date and the list name on the left; on the right the Options
         // button and the live picture.
@@ -112,14 +114,16 @@ final class GuideFrame {
         grid = activity.vertical();
         page.addView(grid, new LinearLayout.LayoutParams(-1, 0, 1));
 
-        // Colour keys, as on the remote.
-        LinearLayout keys = activity.row();
-        keys.setPadding(0, activity.dp(6), 0, 0);
-        colourKey(keys, 0xffe53935, "Page up");
-        colourKey(keys, 0xff43a047, "Page down");
-        colourKey(keys, LiveTvScreen.YELLOW, "Search");
-        colourKey(keys, 0xff1e63d6, "Sections");
-        page.addView(keys);
+        // Colour keys, as on the remote. Each is a button too (Down from the bottom row), for
+        // remotes without coloured buttons.
+        bar = new KeyBar(activity)
+            .onUp(guide::focusLastRow)
+            .add(RED, "Page up", () -> guide.pageFromBar(-1, 0))
+            .add(GREEN, "Page down", () -> guide.pageFromBar(1, 1))
+            .add(LiveTvScreen.YELLOW, "Search", guide.panels::searchPanel)
+            .add(BLUE, "Sections", guide.menu::show);
+        bar.view.setPadding(0, activity.dp(4), 0, 0);
+        page.addView(bar.view);
         // "Press SELECT to view", with SELECT on a yellow key as the old guide printed it.
         android.text.SpannableString select = new android.text.SpannableString(
             "Press  SELECT  to view  ·  ◀ ▶ through the day  ·  Hold  SELECT  for favourites"
@@ -153,21 +157,6 @@ final class GuideFrame {
     /** Up from the top row, or nothing in the grid: the Options button. */
     void focusTop() {
         if (optionsButton != null) optionsButton.requestFocus();
-    }
-
-    private void colourKey(LinearLayout parent, int colour, String label) {
-        View swatch = new View(activity);
-        swatch.setBackground(box(colour));
-        LinearLayout.LayoutParams swatchLayout = new LinearLayout.LayoutParams(
-            activity.dp(18),
-            activity.dp(18)
-        );
-        swatchLayout.rightMargin = activity.dp(6);
-        parent.addView(swatch, swatchLayout);
-        TextView text = text(label, 17, true);
-        LinearLayout.LayoutParams textLayout = new LinearLayout.LayoutParams(-2, -2);
-        textLayout.rightMargin = activity.dp(34);
-        parent.addView(text, textLayout);
     }
 
     private TextView text(String value, int size, boolean bold) {

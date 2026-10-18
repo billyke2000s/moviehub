@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * The guide menu, laid out like the satellite box's: a numbered list on a light-blue background
+ * The guide menu, laid out like the satellite box's: a numbered list in the guide's dark blue
  * (1 All Channels, 2 Favourites, 3 Entertainment … 0 More…), the chosen row in yellow, number keys
  * to pick one, and the colour keys underneath. Live TV opens here, like the box's TV Guide button;
  * the parts along the top (Reminders, Search, Options) can be chosen too. BACK from the channel
@@ -48,6 +48,8 @@ final class GuideMenu {
     /** The menu's rows, and the parts along the top (for tests). */
     final List<View> rows = new ArrayList<>(),
         tabs = new ArrayList<>();
+    /** The colour keys along the bottom, which can be chosen with the D-pad. */
+    KeyBar bar;
 
     GuideMenu(MainActivity activity, LiveTvScreen guide) {
         this.activity = activity;
@@ -67,14 +69,7 @@ final class GuideMenu {
         activity.fixedScreen(null, back);
         LinearLayout page = activity.page;
         page.setPadding(activity.dp(80), activity.dp(24), activity.dp(80), activity.dp(18));
-        page.setBackground(
-            new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[] {
-                0xffa9cdf6,
-                GuideFrame.BACK_TOP,
-                0xff8fbdf2,
-                GuideFrame.BACK_BOTTOM,
-            })
-        );
+        page.setBackground(GuideFrame.background());
 
         // The heading row: the guide's name, then its parts. Each part can be chosen: this list,
         // reminders, search and options.
@@ -137,7 +132,10 @@ final class GuideMenu {
                     tabs.get(0).requestFocus();
                     return true;
                 }
-                if (key == KeyEvent.KEYCODE_DPAD_DOWN && index == items.length - 1) return true;
+                if (key == KeyEvent.KEYCODE_DPAD_DOWN && index == items.length - 1) {
+                    bar.focus(0); // below the list: the colour keys, which can be chosen too
+                    return true;
+                }
                 return shortcut(items, key);
             });
             LinearLayout.LayoutParams rowLayout = new LinearLayout.LayoutParams(-1, 0, 1);
@@ -150,13 +148,14 @@ final class GuideMenu {
         if (spare > 0) list.addView(new View(activity), new LinearLayout.LayoutParams(-1, 0, spare));
         page.addView(list, new LinearLayout.LayoutParams(-1, 0, 1));
 
-        LinearLayout keys = activity.row();
-        keys.setPadding(activity.dp(40), 0, 0, 0);
-        colourKey(keys, SkyOverlay.RED, "Options");
-        colourKey(keys, SkyOverlay.GREEN, "Reminders");
-        colourKey(keys, LiveTvScreen.YELLOW, "Search A–Z");
-        colourKey(keys, SkyOverlay.BLUE, "Favourites");
-        page.addView(keys);
+        bar = new KeyBar(activity)
+            .onUp(() -> rows.get(rows.size() - 1).requestFocus())
+            .add(GuideFrame.RED, "Options", guide.panels::options)
+            .add(GuideFrame.GREEN, "Reminders", guide.panels::reminders)
+            .add(LiveTvScreen.YELLOW, "Search A–Z", guide.panels::searchPanel)
+            .add(GuideFrame.BLUE, "Favourites", () -> guide.show("favourites", ""));
+        bar.view.setPadding(activity.dp(34), 0, 0, 0);
+        page.addView(bar.view);
         rows.get(0).requestFocus();
     }
 
@@ -221,9 +220,9 @@ final class GuideMenu {
         nameLayout.leftMargin = activity.dp(3);
         row.addView(name, nameLayout);
         View.OnFocusChangeListener style = (v, focused) -> {
-            number.setBackground(box(focused ? 0xffe0a400 : 0xff3c74d4));
-            number.setTextColor(focused ? LiveTvScreen.INK : 0xffd3e4ff);
-            name.setBackground(box(focused ? LiveTvScreen.YELLOW : GuideFrame.CELL));
+            number.setBackground(box(focused ? 0xffe0a400 : LiveTvScreen.BLUE_DARK));
+            number.setTextColor(focused ? LiveTvScreen.INK : 0xffdfe6ff);
+            name.setBackground(box(focused ? LiveTvScreen.YELLOW : LiveTvScreen.BLUE));
             name.setTextColor(focused ? LiveTvScreen.INK : 0xffffffff);
         };
         row.setOnFocusChangeListener(style);
@@ -231,26 +230,10 @@ final class GuideMenu {
         return row;
     }
 
-    private void colourKey(LinearLayout parent, int colour, String label) {
-        View swatch = new View(activity);
-        swatch.setBackground(box(colour));
-        LinearLayout.LayoutParams swatchLayout = new LinearLayout.LayoutParams(
-            activity.dp(16),
-            activity.dp(16)
-        );
-        swatchLayout.rightMargin = activity.dp(6);
-        parent.addView(swatch, swatchLayout);
-        TextView text = text(label, 17, true);
-        LinearLayout.LayoutParams textLayout = new LinearLayout.LayoutParams(-2, -2);
-        textLayout.rightMargin = activity.dp(34);
-        parent.addView(text, textLayout);
-    }
-
     private TextView text(String value, int size, boolean bold) {
         TextView label = activity.compactText(value, size);
         label.setTextColor(0xffffffff);
-        label.setShadowLayer(activity.dp(2), 0, activity.dp(1), 0x55000000);
-        SkyFont.apply(label, bold);
+        if (bold) label.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
         return label;
     }
 

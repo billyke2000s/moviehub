@@ -130,6 +130,10 @@ final class SkyOverlay {
         colourKey(GREEN, "Source");
         colourKey(LiveTvScreen.YELLOW, "Information");
         colourKey(BLUE, "Options");
+        // No coloured buttons on the remote: SELECT again opens Options, which has all of these.
+        TextView noColours = label(15, true, SOFT);
+        noColours.setText("·  SELECT again for all of these");
+        keys.addView(noColours);
         content.addView(keys);
         hint = label(16, true, LiveTvScreen.YELLOW);
         hint.setPadding(0, a.dp(8), 0, 0);

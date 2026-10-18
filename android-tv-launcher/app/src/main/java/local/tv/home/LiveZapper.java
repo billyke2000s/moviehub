@@ -554,6 +554,12 @@ final class LiveZapper {
         return handled;
     }
 
+    /** Programme information from Options (the yellow or i key's job, for remotes without them). */
+    void information() {
+        if (!overlay.bannerShowing()) showBanner();
+        showInfo();
+    }
+
     /** A tap on the picture (phone layout): shows the banner and its buttons, or hides them. */
     void tapped() {
         if (overlay.bannerShowing()) {

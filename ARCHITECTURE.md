@@ -87,6 +87,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `DeviceMode`, `LayoutChooser` | TV or phone layout: the first-start question (best guess suggested), kept in preferences, changeable in Settings. |
 | `PhoneLive` | Live TV in the phone layout: portrait touch channel list with tabs, search, now and next; the player gets touch buttons on its banner. |
 | `GuideFrame` | The guide's fixed parts in the dark-blue classic look (as in 0.26): clock, list name and status, Options and the live picture, time slots, colour keys. |
+| `KeyBar` | The colour-key guide at the bottom of the guide and its menu; each key is a D-pad button too, for remotes without coloured buttons. |
 | `GuideMenu` | The numbered guide menu (1 All Channels … 0 More…) that Live TV opens first and BACK from the guide returns to; its rows share the height so all fit, and its top parts (Reminders, Search, Options) can be chosen. |
 | `GuideRows` | The guide's rows: channel names and programme cells, moving along programmes and through time, SELECT to watch or set a reminder. |
 | `LiveTvPanels` | The guide's side panels: options, sections and groups, search, programme information with reminders, the parental lock, colour-key set-up. |

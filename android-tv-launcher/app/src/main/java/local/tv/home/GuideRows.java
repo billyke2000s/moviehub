@@ -117,9 +117,10 @@ final class GuideRows {
                 guide.panels.programmeInfo(channel, position);
                 return true;
             }
-            if (key == KeyEvent.KEYCODE_DPAD_DOWN && row == count - 1 && more) {
+            if (key == KeyEvent.KEYCODE_DPAD_DOWN && row == count - 1) {
+                // Below the bottom row: the colour keys (Page down turns the page).
                 guide.programmeFocus = false;
-                guide.guide(guide.pageStart + LiveTvScreen.ROWS, 0);
+                guide.focusKeys();
                 return true;
             }
             if (key == KeyEvent.KEYCODE_DPAD_UP && row == 0) {
@@ -181,7 +182,7 @@ final class GuideRows {
                         -1
                     );
                     else if (target < 0) guide.focusTabs();
-                    else if (target >= count && more) guide.guide(guide.pageStart + LiveTvScreen.ROWS, 0);
+                    else if (target >= count) guide.focusKeys();
                     return true;
                 }
                 if (key == KeyEvent.KEYCODE_INFO) {

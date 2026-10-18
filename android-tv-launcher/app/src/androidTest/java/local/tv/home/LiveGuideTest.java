@@ -88,12 +88,27 @@ public class LiveGuideTest {
             () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
         );
         UiEvidence.capture("live-guide");
+        // Down past the bottom row: the colour keys, on Page down (for remotes without colours).
         for (int i = 0; i < 10; i++) {
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
             remote.waitForIdleSync();
         }
+        await("on Page down", () -> activity.liveTv.frame.bar.keys.get(1).hasFocus());
+        UiEvidence.capture("live-guide-key-bar");
+        // SELECT turns the page and stays on the key; Up goes back to the bottom row.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         await(
-            "second page",
+            "second page from the bar",
+            () -> activity.liveTv.pageStart == 10 && activity.liveTv.frame.bar.keys.get(1).hasFocus()
+        );
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        await("bottom row", () -> focused().startsWith("120  Channel 19"));
+        for (int i = 0; i < 9; i++) {
+            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+            remote.waitForIdleSync();
+        }
+        await(
+            "second page, top row",
             () -> activity.liveTv.pageStart == 10 && focused().startsWith("111  Channel 10")
         );
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN); // green: page down
@@ -228,6 +243,16 @@ public class LiveGuideTest {
         // Down to the last row (0 More…) and select: the second page, all on screen too.
         for (int i = 0; i < 9; i++) remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
         await("on More…", () -> activity.liveTv.menu.rows.get(9).hasFocus());
+        // Below the list: the colour keys, chosen with SELECT (for remotes without colours).
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
+        await("on the Options key", () -> activity.liveTv.menu.bar.keys.get(0).hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        await("options open", () -> SidePanel.current != null && SidePanel.current.isShowing());
+        remote.runOnMainSync(() -> SidePanel.current.dismiss());
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> activity.liveTv.menu.bar.keys.get(0).requestFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        await("back on More…", () -> activity.liveTv.menu.rows.get(9).hasFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         await(
             "more",
