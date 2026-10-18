@@ -5,27 +5,27 @@ There are three layers of checks. CI runs all of them on every pull request that
 
 | Layer | Where | Needs | Runs in CI step |
 | --- | --- | --- | --- |
-| Core checks (85) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
+| Core checks (110) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
 | Build and lint | Gradle | Android SDK 35 | "Build APK and run Android lint" |
 | Device tests (instrumentation) | `android-tv-launcher/app/src/androidTest/` | Android emulator | `device-tests` job |
 | Signing compatibility | release build vs published APK | signing secrets (same-repo PRs only) | `signed-compatibility` job |
 
 ## Core checks (fast, run these locally)
 
-Pure-Java rules for playlists, URLs, channel search and episode matching. They do not need Android.
+Pure-Java rules for playlists, URLs, channel search, episode matching and combining film skips. They do not need Android.
 
 ```sh
 mkdir -p build/core-tests
 javac -d build/core-tests \
-  android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch,SkyNumbers,GuideOrder}.java \
-  android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest,SkyNumbersTest,GuideOrderTest}.java
-for t in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest EpgMatchTest SkyNumbersTest GuideOrderTest; do
+  android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch,SkyNumbers,GuideOrder,SkipQueue}.java \
+  android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest,SkyNumbersTest,GuideOrderTest,SkipQueueTest}.java
+for t in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest EpgMatchTest SkyNumbersTest GuideOrderTest SkipQueueTest; do
   java -Xmx64m -cp build/core-tests local.tv.home.$t
 done
 ```
 
 Expected output: 17 playlist, 9 network, 10 episode/file, 13 channel-query, 18 programme-guide
-matching, 17 satellite numbering and 15 guide order checks passed.
+matching, 17 satellite numbering, 15 guide order and 11 film skip checks passed.
 
 ## Device tests
 
@@ -73,6 +73,12 @@ Results of 8 parallel runs of the whole suite:
 | After the focus fix | 4 / 8 |
 | After keeping off-edge posters laid out | 6 / 8 |
 | After the Back fix | **8 / 8** |
+
+On 19 October 2026 a further cause was found (named by the improved failure reporter):
+`LivePlayer.stop()` in `PlaybackTest.cleanup` released the shared live player while a closing
+player screen still used it, crashing the app ("can't get VLCObject instance"). A crash ends the
+run before results are written, which is why earlier failures named no test. The player now lets
+go of a shared player that was released or replaced (`forgetReleasedLivePlayer`).
 
 Eight passing runs are good evidence, not proof. If a device test fails, read its annotation: CI
 lists each failed test with its message on the run (`tests/report-test-failures.py`), and timeouts

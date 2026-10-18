@@ -75,12 +75,17 @@ final class PlayerOverlay {
 
                 public void onStopTrackingTouch(SeekBar bar) {
                     a.dragging = false;
+                    // A finger let go: jump now rather than waiting.
+                    a.overlayHandler.removeCallbacks(a.applySkip);
+                    a.applySkip.run();
                     a.revealControls();
                 }
 
                 public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
                     if (fromUser && a.player != null && !a.live && a.player.isSeekable()) {
-                        a.player.setTime((a.player.getLength() * value) / 1000);
+                        // Moving along the bar jumps once, when it stops, not at every step.
+                        long length = a.player.getLength();
+                        a.showSkipTarget(a.skips.moveTo((length * value) / 1000, length), length);
                         a.revealControls();
                     }
                 }
@@ -233,5 +238,25 @@ final class PlayerOverlay {
         lp.rightMargin = a.dp(18);
         parent.addView(item, lp);
         return item;
+    }
+
+    /**
+     * How fast the player is reading the stream, in megabits per second, or -1. LibVLC 3 reports
+     * the input rate in bytes per microsecond (VLC's desktop app shows it × 8000 as kb/s; VLC for
+     * Android × 8 × 1024 as kb/s), so × 8 gives megabits per second. Once the player's small
+     * buffer is full this follows the stream's bitrate rather than the connection's top speed.
+     */
+    static float downloadSpeed(org.videolan.libvlc.MediaPlayer player) {
+        if (player == null) return -1;
+        var media = player.getMedia();
+        if (media == null) return -1;
+        try {
+            var stats = media.getStats();
+            return stats == null ? -1 : stats.inputBitrate * 8f;
+        } catch (RuntimeException e) {
+            return -1;
+        } finally {
+            media.release();
+        }
     }
 }
