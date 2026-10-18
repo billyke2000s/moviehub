@@ -10,6 +10,12 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.29 (18 Oct 2026)
+
+- The guide's coloured buttons are back to how they were, as on the satellite guide: red page up,
+  green page down, yellow search, blue sections (the guide menu). CH+ and CH− still turn pages too.
+  Tomorrow and Back to today are in Options, and ◀ ▶ still move through the day.
+
 ## 0.28 (18 Oct 2026)
 
 The Live TV guide is redone from photos of the real satellite-box guide:

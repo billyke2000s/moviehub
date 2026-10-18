@@ -96,7 +96,7 @@ public class LiveGuideTest {
             "second page",
             () -> activity.liveTv.pageStart == 10 && focused().startsWith("111  Channel 10")
         );
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_CHANNEL_DOWN);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN); // green: page down
         await("page down", () -> activity.liveTv.pageStart == 20 && activity.liveTv.cells.size() == 5);
         await("on the first row of the last page", () -> focused().startsWith("121  Channel 20"));
         // Up from the top row turns back a page and lands on its last row.
@@ -148,14 +148,14 @@ public class LiveGuideTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_INFO);
         await("programme information", () -> SidePanel.current != null && SidePanel.current.isShowing());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
-        // Yellow: the same time tomorrow; blue: back a day.
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_YELLOW);
+        // Options → Tomorrow: the same time tomorrow; Back to today returns.
+        remote.runOnMainSync(() -> activity.liveTv.nextDay(2));
         await(
             "tomorrow",
             () -> activity.liveTv.windowOffset == LiveTvScreen.MAX_OFFSET && activity.liveTv.cells.size() == 5
         );
         UiEvidence.capture("live-guide-tomorrow");
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_BLUE);
+        remote.runOnMainSync(() -> activity.liveTv.previousDay(2));
         await("today", () -> activity.liveTv.windowOffset == 0 && activity.liveTv.cells.size() == 5);
         // A locked channel asks for the PIN instead of playing.
         ChannelDatabase.Row row = ChannelDatabase.get(activity)
@@ -206,6 +206,12 @@ public class LiveGuideTest {
         await(
             "all channels from the menu",
             () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
+        );
+        // Blue: the sections (the guide menu), as on the satellite guide.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_BLUE);
+        await(
+            "sections",
+            () -> activity.liveTv.menu.rows.size() == 10 && activity.liveTv.menu.rows.get(0).hasFocus()
         );
     }
 }
