@@ -26,8 +26,8 @@ Last updated: 18 October 2026.
 ## Open pull requests and branches
 
 - **Dependabot:** #3 (`actions/checkout`) is superseded by checkout@v5 in CI and can be closed.
-  #13 (LibVLC 3.7.7) fails the APK build and lint step (also when retried on current `main` in
-  October 2026); the CI log was not readable from the assistant's environment, so the cause is not
+  #13 (LibVLC 3.7.7) fails the APK build and lint step, both in Dependabot's run and when retried
+  on the 0.15 branch; the CI log was not readable from the assistant's environment, so the cause is not
   known yet. LibVLC stays on 3.7.0. #12 (AGP 9): see above.
 - Branches that are merged or no longer needed can be deleted on GitHub (the assistant's proxy
   cannot delete branches): `ci/device-test-control`, `ci/flaky-measure`, `refactor/readable-structure`,
