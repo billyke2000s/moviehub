@@ -10,6 +10,10 @@ update feed), so the next release after it used code 12, named 0.12.
 
 On `main` but not yet published to TVs:
 
+- Home "For you" now blends recommendations for several titles you showed interest in (played,
+  My List, sources or episodes opened) instead of only the last title opened, so it no longer
+  changes completely with every title. Titles recommended by several of them come first; titles
+  you already played are left out. With no history yet it shows weekly trending.
 - Movies/Series: Back jumps straight to the top bar from anywhere in the rows; Back again leaves,
   as in the major streaming apps.
 - Redesigned search: one large rounded search box, results appear as you type (no "Search titles"
