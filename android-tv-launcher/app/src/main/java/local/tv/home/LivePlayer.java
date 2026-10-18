@@ -50,7 +50,7 @@ final class LivePlayer {
 
     /** A stream is playing or opening, so a new view can take it over without reconnecting. */
     static boolean active() {
-        return player != null && alive;
+        return player != null && (alive || player.isPlaying());
     }
 
     /**
@@ -67,7 +67,7 @@ final class LivePlayer {
             player = new MediaPlayer(engine);
             player.setEventListener(LivePlayer::event);
         }
-        if (!restart && alive && streamUrl.equals(url)) {
+        if (!restart && streamUrl.equals(url) && (alive || player.isPlaying())) {
             if (!player.isPlaying()) player.play();
             return true;
         }
@@ -84,10 +84,10 @@ final class LivePlayer {
     }
 
     private static void event(MediaPlayer.Event event) {
+        // Not "Stopped": that comes late from our own stop() when opening a new stream, and would
+        // mark the new stream as finished.
         if (
-            event.type == MediaPlayer.Event.EncounteredError ||
-            event.type == MediaPlayer.Event.EndReached ||
-            event.type == MediaPlayer.Event.Stopped
+            event.type == MediaPlayer.Event.EncounteredError || event.type == MediaPlayer.Event.EndReached
         ) alive = false;
         if (listener != null) listener.onEvent(event);
     }
