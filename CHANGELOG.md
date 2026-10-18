@@ -6,6 +6,13 @@ version below was built from the listed `main` commit. Earlier history is in the
 Note: the release shown as 0.10 below was published with version code 11 (name "0.11" in the
 update feed), so the next release after it used code 12, named 0.12.
 
+## 0.35 (18 Oct 2026)
+
+- A Live TV channel that won't play no longer opens a "Can't play this" panel that blocks the
+  remote. The picture says the channel isn't working, and ▲ ▼ go straight on to the next one;
+  SELECT tries it again and BACK goes to the guide. (Backups are still tried first.) Films and
+  series keep their panel.
+
 ## 0.34 (18 Oct 2026)
 
 Details from the old Sky+ box, checked against David Wheatley's Sky+ web EPG simulator

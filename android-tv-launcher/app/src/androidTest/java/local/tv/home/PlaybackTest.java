@@ -122,6 +122,17 @@ public class PlaybackTest {
                         range = true;
                     }
                 }
+            if (request != null && request.contains("/missing")) {
+                // A broken channel: nothing there.
+                connection
+                    .getOutputStream()
+                    .write(
+                        "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".getBytes(
+                            java.nio.charset.StandardCharsets.US_ASCII
+                        )
+                    );
+                return;
+            }
             String mime = "video/mp4";
             if (request != null && request.contains(".m3u8")) {
                 data = (
@@ -400,6 +411,84 @@ public class PlaybackTest {
             else edit.putString(FreeChannels.PREF, free);
             if (last == null) edit.remove(LiveTvScreen.LAST_CHANNEL);
             else edit.putString(LiveTvScreen.LAST_CHANNEL, last);
+            edit.commit();
+            LiveZapper.session = null;
+            db.clear();
+        }
+    }
+
+    @Test
+    public void aBrokenChannelSaysSoInThePictureAndTheRemoteMovesOn() throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        activity = null;
+        Context context = instrumentation.getTargetContext();
+        SharedPreferences prefs = context.getSharedPreferences("ui", 0);
+        String free = prefs.getString(FreeChannels.PREF, null);
+        boolean updates = prefs.getBoolean("autoUpdates", true);
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        String base = "http://127.0.0.1:" + server.getLocalPort();
+        ChannelDatabase.Writer writer = db.writer("broken-test", () -> {}, n -> {});
+        try {
+            writer.accept(new Playlist.Channel("Alpha", base + "/live.ts?channel=a", "General", "", ""));
+            writer.accept(new Playlist.Channel("Broken", base + "/missing.ts?channel=b", "General", "", ""));
+            writer.commit();
+        } finally {
+            writer.abort();
+        }
+        prefs.edit().putString(FreeChannels.PREF, "off").putBoolean("autoUpdates", false).commit();
+        Instrumentation.ActivityMonitor monitor = instrumentation.addMonitor(
+            VlcPlaybackActivity.class.getName(),
+            null,
+            false
+        );
+        MainActivity main = (MainActivity) instrumentation.startActivitySync(
+            new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        );
+        try {
+            instrumentation.runOnMainSync(() -> main.liveTv.live());
+            await(() -> main.liveTv.cells.size() == 2, 15000);
+            int[] broken = { -1 };
+            instrumentation.runOnMainSync(() -> {
+                for (int i = 0; i < 2; i++) if (
+                    ((android.widget.TextView) main.liveTv.cells.get(i))
+                        .getText()
+                        .toString()
+                        .contains("Broken")
+                ) broken[0] = i;
+            });
+            assertTrue("Broken channel listed", broken[0] >= 0);
+            instrumentation.runOnMainSync(() -> main.liveTv.cells.get(broken[0]).performClick());
+            VlcPlaybackActivity full = (VlcPlaybackActivity) instrumentation.waitForMonitorWithTimeout(
+                monitor,
+                15000
+            );
+            assertNotNull("The full screen opened", full);
+            activity = full;
+            // The failure is shown in the picture, with no panel in the way.
+            await(() -> full.liveFailed, 30000);
+            instrumentation.runOnMainSync(() ->
+                assertFalse(
+                    "No Can't play panel over Live TV",
+                    SidePanel.current != null && SidePanel.current.isShowing()
+                )
+            );
+            UiEvidence.capture("live-channel-not-working");
+            // The remote goes straight on to the other channel.
+            instrumentation.sendKeyDownUpSync(
+                broken[0] == 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN
+            );
+            await(
+                () -> !full.liveFailed && LivePlayer.player() != null && LivePlayer.player().isPlaying(),
+                20000
+            );
+        } finally {
+            instrumentation.removeMonitor(monitor);
+            instrumentation.runOnMainSync(main::finish);
+            SharedPreferences.Editor edit = prefs.edit().putBoolean("autoUpdates", updates);
+            if (free == null) edit.remove(FreeChannels.PREF);
+            else edit.putString(FreeChannels.PREF, free);
             edit.commit();
             LiveZapper.session = null;
             db.clear();
