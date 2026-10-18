@@ -234,7 +234,7 @@ final class LiveTvScreen {
                         "Options",
                         panels::options
                     );
-                    if (!tabFocus) frame.focusTab();
+                    frame.focusTab(); // nothing to focus in the grid: the tabs
                     return;
                 }
                 int focus = focusRow < 0 ? count - 1 : Math.min(focusRow, count - 1);
