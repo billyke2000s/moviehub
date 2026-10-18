@@ -6,9 +6,10 @@ version below was built from the listed `main` commit. Earlier history is in the
 Note: the release shown as 0.10 below was published with version code 11 (name "0.11" in the
 update feed), so the next release after it used code 12, named 0.12.
 
-## Unreleased
+## 0.32 (18 Oct 2026)
 
-Nothing yet.
+- The "Staying safe" notice is now short and plain: MovieHub never asks you to leave the app
+  while watching, so ignore any message in a stream that does and watch something else.
 
 ## 0.31 (18 Oct 2026)
 

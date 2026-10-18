@@ -45,11 +45,11 @@ MovieHub stores provider accounts and installs its own updates, so these rules m
 
 ## Scam messages in streams
 
-Free Live TV channels come from public lists the app does not control, so a stream could one day
-show a fake "your device has a virus, call this number" message. When MovieHub first opens it
-shows a "Staying safe" notice (also in Settings → System): MovieHub never asks, during or about a
-stream, to visit a website, scan a QR code, ring a number, install an app, allow remote access,
-or enter passwords or payment details. Device tests mark the notice as read through their test
+Free Live TV channels come from public lists we don't control, so a stream could one day show a
+fake "your device has a virus, call this number" message. The first time MovieHub opens, it shows
+a short "Staying safe" notice (also in Settings → System): MovieHub will never ask you to leave the
+app while you're watching, so any message in a stream telling you to visit a site, ring a number,
+install something or pay isn't from us. Ignore it and watch something else. Device tests mark the notice as read through their test
 runner (`MovieHubTestRunner`); `SafetyNoticeTest` checks it shows.
 
 ## Reporting a problem

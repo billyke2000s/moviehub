@@ -566,7 +566,7 @@ final class SettingsScreens {
             settingCard(
                 body,
                 SafetyNotice.TITLE,
-                "MovieHub never asks you to leave the app, ring a number or pay during a stream",
+                "Messages in a stream telling you to leave the app aren't from us",
                 null,
                 false,
                 "Read",
