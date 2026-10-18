@@ -17,7 +17,17 @@ final class Secrets {
         prefs = context.getSharedPreferences("accounts", Context.MODE_PRIVATE);
     }
 
+    /**
+     * The Keystore key and decrypted values, kept in memory for the life of the app. Opening the
+     * Android Keystore and decrypting through it is slow on TV boxes, and it used to happen on every
+     * TMDB and Premiumize request. Values stay encrypted on disk as before.
+     */
+    private static SecretKey cachedKey;
+    private static final java.util.Map<String, String> VALUES =
+        new java.util.concurrent.ConcurrentHashMap<>();
+
     private static synchronized SecretKey key() throws Exception {
+        if (cachedKey != null) return cachedKey;
         KeyStore store = KeyStore.getInstance("AndroidKeyStore");
         store.load(null);
         if (!store.containsAlias("tv-home-accounts")) {
@@ -33,7 +43,8 @@ final class Secrets {
             );
             generator.generateKey();
         }
-        return (SecretKey) store.getKey("tv-home-accounts", null);
+        cachedKey = (SecretKey) store.getKey("tv-home-accounts", null);
+        return cachedKey;
     }
 
     void put(String name, String value) throws Exception {
@@ -46,12 +57,16 @@ final class Secrets {
                 cipher.doFinal(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)),
                 Base64.NO_WRAP
             );
-        if (!prefs.edit().putString(name, encoded).commit()) throw new Exception(
-            "Account could not be saved"
-        );
+        if (!prefs.edit().putString(name, encoded).commit()) {
+            VALUES.remove(name);
+            throw new Exception("Account could not be saved");
+        }
+        VALUES.put(name, value);
     }
 
     String get(String name) throws Exception {
+        String known = VALUES.get(name);
+        if (known != null) return known;
         String encoded = prefs.getString(name, "");
         if (encoded.isEmpty()) return "";
         String[] parts = encoded.split(":", 2);
@@ -62,13 +77,16 @@ final class Secrets {
             key(),
             new GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP))
         );
-        return new String(
+        String value = new String(
             cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)),
             java.nio.charset.StandardCharsets.UTF_8
         );
+        VALUES.put(name, value);
+        return value;
     }
 
     void remove(String name) {
+        VALUES.remove(name);
         prefs.edit().remove(name).apply();
     }
 

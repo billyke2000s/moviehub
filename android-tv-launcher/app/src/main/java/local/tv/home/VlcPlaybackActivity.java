@@ -36,7 +36,9 @@ public class VlcPlaybackActivity extends Activity {
     private View pause;
     private ImageView pauseIcon;
     private SeekBar timeline;
-    private TextView timeLeft, status;
+    private TextView timeLeft, status, speed;
+    /** Latest download speed in megabits per second, or -1 when unknown. */
+    private float downloadMbps = -1;
     private AudioManager audio;
     private AudioFocusRequest audioFocus;
     private android.view.View controls;
@@ -62,6 +64,12 @@ public class VlcPlaybackActivity extends Activity {
                 long length = player.getLength(),
                     time = Math.max(0, player.getTime());
                 timeLeft.setText(live ? "LIVE" : length > 0 ? format(Math.max(0, length - time)) : "—");
+                downloadMbps = downloadSpeed();
+                speed.setText(
+                    downloadMbps < 0
+                        ? ""
+                        : String.format(Locale.ROOT, "Downloading at %.1f Mb/s", downloadMbps)
+                );
                 timeline.setEnabled(!live && player.isSeekable() && length > 0);
                 if (!dragging && length > 0) timeline.setProgress(
                     (int) Math.min(1000, (time * 1000) / length)
@@ -210,6 +218,12 @@ public class VlcPlaybackActivity extends Activity {
         title.setMaxLines(1);
         title.setEllipsize(android.text.TextUtils.TruncateAt.END);
         top.addView(title);
+        // How fast the video is arriving: tells a slow connection apart from a slow app.
+        speed = new TextView(this);
+        speed.setTextColor(0xccffffff);
+        speed.setTextSize(14);
+        speed.setShadowLayer(dp(4), 0, dp(1), 0xcc000000);
+        top.addView(speed);
         overlay.addView(top, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
 
         LinearLayout bottom = new LinearLayout(this);
@@ -394,6 +408,24 @@ public class VlcPlaybackActivity extends Activity {
         return item;
     }
 
+    /**
+     * The input bitrate VLC reports for the current media, in megabits per second, or -1.
+     * VLC gives it in kilobytes per second (VLC for Android scales it by 8 × 1024 for bits).
+     */
+    private float downloadSpeed() {
+        if (player == null) return -1;
+        var media = player.getMedia();
+        if (media == null) return -1;
+        try {
+            var stats = media.getStats();
+            return stats == null ? -1 : (stats.inputBitrate * 8f * 1024f) / 1_000_000f;
+        } catch (RuntimeException e) {
+            return -1;
+        } finally {
+            media.release();
+        }
+    }
+
     /** Shows the play or pause icon to match the player. */
     private void showPlaying(boolean playing) {
         if (pauseIcon == null) return;
@@ -483,7 +515,14 @@ public class VlcPlaybackActivity extends Activity {
                 revealControls();
             } else if (event.type == MediaPlayer.Event.Buffering) {
                 if (event.getBuffering() < 100) {
-                    status.setText("Buffering… " + Math.round(event.getBuffering()) + "%");
+                    status.setText(
+                        "Buffering… " +
+                            Math.round(event.getBuffering()) +
+                            "%" +
+                            (downloadMbps < 0
+                                ? ""
+                                : String.format(Locale.ROOT, "  ·  %.1f Mb/s", downloadMbps))
+                    );
                     status.setVisibility(View.VISIBLE);
                 } else status.setVisibility(View.GONE);
             } else if (event.type == MediaPlayer.Event.EndReached) {

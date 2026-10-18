@@ -10,6 +10,16 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.19 (18 Oct 2026)
+
+- Faster menus: your saved logins are unlocked once instead of on every request (every poster row,
+  search and source check used to go through Android's secure storage).
+- Pressing play no longer waits for the watch history to be saved; it saves in the background.
+- Home no longer reloads every installed app's name and icon each time; it reloads only after apps
+  are installed, updated or removed.
+- Player: the download speed shows under the title and next to the buffering percentage, so you can
+  tell a slow connection from a slow app.
+
 ## 0.18 (18 Oct 2026)
 
 - Player controls redone in the streaming-app style: flat icons with no button shapes (rewind 10,
