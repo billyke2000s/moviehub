@@ -109,9 +109,8 @@ final class CloudScreens {
                         directory
                             ? null
                             : () ->
-                                  new AlertDialog.Builder(activity)
-                                      .setTitle(name)
-                                      .setItems(new String[] { "Add to " + kind }, (d, w) -> {
+                                  SidePanel.of(activity, name)
+                                      .option("Add to " + kind, () -> {
                                           try {
                                               activity.media.addPremiumize(name, key, kind);
                                               activity.toast("Added to " + kind);

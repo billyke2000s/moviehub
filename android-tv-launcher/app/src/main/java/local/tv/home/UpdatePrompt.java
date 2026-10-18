@@ -76,10 +76,11 @@ final class UpdatePrompt {
     void offerUpdate() {
         if (availableUpdate == null || updateBusy) return;
         if (!activity.getPackageManager().canRequestPackageInstalls()) {
-            new AlertDialog.Builder(activity)
-                .setTitle("Allow app updates")
-                .setMessage("Allow Home to install updates, then select Update again.")
-                .setPositiveButton("Open settings", (d, w) -> {
+            SidePanel.of(activity, "Allow app updates")
+                .message(
+                    "Android needs your permission once before MovieHub can install its own updates. Allow it in the next screen, then select Update again."
+                )
+                .action("Open settings", () -> {
                     try {
                         activity.startActivity(
                             new Intent(
@@ -91,15 +92,18 @@ final class UpdatePrompt {
                         activity.toast("Open Android Settings to allow app installation");
                     }
                 })
-                .setNegativeButton("Cancel", null)
+                .action("Cancel", null)
                 .show();
             return;
         }
         final AppUpdates.Release release = availableUpdate;
-        new AlertDialog.Builder(activity)
-            .setTitle("Update available")
-            .setMessage("Install version " + release.name + "?")
-            .setPositiveButton("Update", (dialog, which) -> {
+        SidePanel.of(activity, "MovieHub " + release.name + " is ready")
+            .message(
+                release.notes.isEmpty()
+                    ? "Install the new version now? MovieHub restarts when it finishes."
+                    : "What's new\n\n" + release.notes + "\n\nMovieHub restarts when the update finishes."
+            )
+            .action("Update now", () -> {
                 updateBusy = true;
                 if (activity.updateButton != null) {
                     activity.updateButton.setEnabled(false);
@@ -133,7 +137,7 @@ final class UpdatePrompt {
                     }
                 });
             })
-            .setNegativeButton("Later", null)
+            .action("Later", null)
             .show();
     }
 

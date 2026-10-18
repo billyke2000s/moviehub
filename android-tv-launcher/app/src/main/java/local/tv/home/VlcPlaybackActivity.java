@@ -403,17 +403,18 @@ public class VlcPlaybackActivity extends Activity {
         status.setText("Playback unavailable");
         status.setVisibility(View.VISIBLE);
         dialogOpen = true;
-        AlertDialog error = new AlertDialog.Builder(this)
-            .setTitle("Playback error")
-            .setMessage(message)
-            .setPositiveButton("Retry", (d, w) -> startPlayer())
-            .setNegativeButton("Back to sources", (d, w) -> finish())
-            .create();
-        error.setOnDismissListener(d -> {
-            dialogOpen = false;
-            revealControls();
-        });
-        error.show();
+        SidePanel.of(this, "Can't play this")
+            .message(message)
+            .action("Try again", this::startPlayer)
+            .action("Back to sources", this::finish)
+            .onDismiss(this::panelClosed)
+            .show();
+    }
+
+    /** A side panel over the video closed: show the controls again. */
+    private void panelClosed() {
+        dialogOpen = false;
+        revealControls();
     }
 
     private void toggle() {
@@ -443,10 +444,13 @@ public class VlcPlaybackActivity extends Activity {
         String size = track == null ? "Resolution unavailable" : track.width + " × " + track.height;
         MediaPlayer.TrackDescription[] choices = player.getVideoTracks();
         if (choices == null || choices.length < 2) {
-            new AlertDialog.Builder(this)
-                .setTitle("Video")
-                .setMessage(size + "\nChoose a different source for a different resolution.")
-                .setPositiveButton("Close", null)
+            dialogOpen = true;
+            SidePanel.of(this, "Video · " + size)
+                .message(
+                    "This source has one picture quality. Choose a different source for another resolution."
+                )
+                .action("Close", null)
+                .onDismiss(this::panelClosed)
                 .show();
             return;
         }
@@ -476,24 +480,17 @@ public class VlcPlaybackActivity extends Activity {
             if (choices[i].id == current) selected = i;
         }
         dialogOpen = true;
-        AlertDialog dialog = new AlertDialog.Builder(this)
-            .setTitle(title)
-            .setSingleChoiceItems(names, selected, (d, which) -> {
+        SidePanel.of(this, title)
+            .choices(names, selected, which -> {
                 if (player != null) {
                     int choice = choices[which].id;
                     if (type == 2) player.setSpuTrack(choice);
                     else if (type == 1) player.setAudioTrack(choice);
                     else player.setVideoTrack(choice);
                 }
-                d.dismiss();
             })
-            .setNegativeButton("Close", null)
-            .create();
-        dialog.setOnDismissListener(d -> {
-            dialogOpen = false;
-            revealControls();
-        });
-        dialog.show();
+            .onDismiss(this::panelClosed)
+            .show();
     }
 
     private void moreControls() {
@@ -509,41 +506,20 @@ public class VlcPlaybackActivity extends Activity {
                 : "Sleep timer"
         );
         dialogOpen = true;
-        AlertDialog dialog = new AlertDialog.Builder(this)
-            .setTitle("Playback options")
-            .setItems(labels.toArray(new String[0]), (d, which) -> {
-                String label = labels.get(which);
-                overlayHandler.post(() -> {
-                    if (label.startsWith("Playback speed")) chooseSpeed();
-                    else if (label.equals("Picture size")) choosePicture();
-                    else if (label.equals("Subtitle timing")) subtitleTiming();
-                    else chooseSleep();
-                });
-            })
-            .setNegativeButton("Close", null)
-            .create();
-        dialog.setOnDismissListener(d -> {
-            dialogOpen = false;
-            revealControls();
-        });
-        dialog.show();
+        SidePanel panel = SidePanel.of(this, "Playback options").onDismiss(this::panelClosed);
+        for (String label : labels)
+            panel.option(label, () -> {
+                if (label.startsWith("Playback speed")) chooseSpeed();
+                else if (label.equals("Picture size")) choosePicture();
+                else if (label.equals("Subtitle timing")) subtitleTiming();
+                else chooseSleep();
+            });
+        panel.show();
     }
 
     private void options(String title, String[] labels, int selected, java.util.function.IntConsumer action) {
         dialogOpen = true;
-        AlertDialog dialog = new AlertDialog.Builder(this)
-            .setTitle(title)
-            .setSingleChoiceItems(labels, selected, (d, which) -> {
-                action.accept(which);
-                d.dismiss();
-            })
-            .setNegativeButton("Cancel", null)
-            .create();
-        dialog.setOnDismissListener(d -> {
-            dialogOpen = false;
-            revealControls();
-        });
-        dialog.show();
+        SidePanel.of(this, title).choices(labels, selected, action).onDismiss(this::panelClosed).show();
     }
 
     void chooseSpeed() {

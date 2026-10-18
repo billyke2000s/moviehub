@@ -10,6 +10,12 @@ update feed), so the next release after it used code 12, named 0.12.
 
 On `main` but not yet published to TVs:
 
+- Every pop-up (menus, choices, confirmations, the update prompt, player options and errors) is now a
+  panel on the right in MovieHub's own style instead of Android's grey dialogs and menus. The current
+  choice is ticked and selected.
+- Clearer messages when something fails to load: no internet, a timeout, a rejected key, the service
+  being down, or TMDB not connected, each with Try again or Open Settings.
+- The update prompt shows what's new in the version being offered.
 - New Apps screen (from All Apps on Home), like the Google TV app drawer: a search box, Android
   shortcuts (Settings, Wi-Fi, Bluetooth, Display, Sound, Storage, Manage apps, Date & time; only
   those the box has), recently used apps, and every app as its TV banner (icon and name when it has

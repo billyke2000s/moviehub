@@ -174,10 +174,11 @@ final class SourcesScreen {
                         return;
                     }
                     if (source.cache == SourceRepository.Cache.NOT_CACHED) {
-                        new AlertDialog.Builder(activity)
-                            .setTitle("Send to Premiumize?")
-                            .setMessage("Queue this source in your cloud?")
-                            .setPositiveButton("Queue", (d, w) ->
+                        SidePanel.of(activity, "Not ready to play yet")
+                            .message(
+                                "This source is not in your Premiumize cache yet. Send it to your cloud and it will appear in Transfers; it can be played once it finishes."
+                            )
+                            .action("Send to cloud", () ->
                                 activity.async(
                                     () -> repo.queue(source),
                                     id -> {
@@ -186,7 +187,7 @@ final class SourcesScreen {
                                     }
                                 )
                             )
-                            .setNegativeButton("Cancel", null)
+                            .action("Cancel", null)
                             .show();
                         return;
                     }
@@ -248,10 +249,9 @@ final class SourcesScreen {
                     );
                 });
                 card.setOnLongClickListener(v -> {
-                    new AlertDialog.Builder(activity)
-                        .setTitle("Source details")
-                        .setMessage(source.title)
-                        .setPositiveButton("Close", null)
+                    SidePanel.of(activity, "Source details")
+                        .message(source.title)
+                        .action("Close", null)
                         .show();
                     return true;
                 });

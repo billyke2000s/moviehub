@@ -273,22 +273,24 @@ abstract class TvActivity extends Activity {
     }
 
     Dialog form(String title, LinearLayout content) {
-        Dialog d = new Dialog(this);
+        Dialog d = new Dialog(this, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar);
         ScrollView scroll = new ScrollView(this);
         LinearLayout shell = vertical();
-        shell.setPadding(dp(24), dp(20), dp(24), dp(24));
-        shell.setBackgroundColor(0xff101827);
-        shell.addView(text(title, 24));
+        shell.setPadding(dp(28), dp(22), dp(28), dp(24));
+        TextView heading = text(title, 24);
+        heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        shell.addView(heading);
         shell.addView(content);
-        shell.addView(button("Close", d::dismiss));
+        Button close = button("Close", d::dismiss);
+        pill(close, false);
+        LinearLayout.LayoutParams closeLayout = new LinearLayout.LayoutParams(-2, dp(44));
+        closeLayout.topMargin = dp(14);
+        shell.addView(close, closeLayout);
         scroll.addView(shell);
         d.setContentView(scroll);
         d.show();
-        d.getWindow().setLayout(
-            Math.min(dp(520), getResources().getDisplayMetrics().widthPixels - dp(48)),
-            -1
-        );
-        d.getWindow().setGravity(Gravity.RIGHT);
+        // The same floating panel as SidePanel, so every pop-up in the app looks alike.
+        SidePanel.styleWindow(this, d);
         d.getWindow().setSoftInputMode(
             WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE |
                 WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN

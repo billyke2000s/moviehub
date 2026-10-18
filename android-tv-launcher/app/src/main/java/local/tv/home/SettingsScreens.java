@@ -339,17 +339,16 @@ final class SettingsScreens {
         });
         if (connected) form.addView(
             activity.button("Disconnect", () ->
-                new AlertDialog.Builder(activity)
-                    .setTitle("Disconnect " + service + "?")
-                    .setMessage("Remove this connection? Your other accounts and preferences will be kept.")
-                    .setPositiveButton("Disconnect", (d, w) -> {
+                SidePanel.of(activity, "Disconnect " + service + "?")
+                    .message("Remove this connection? Your other accounts and preferences will be kept.")
+                    .action("Disconnect", () -> {
                         activity.secrets.remove(key);
                         if (
                             service.equals("Xtream") || service.equals("M3U playlist")
                         ) ChannelSync.refreshNow(activity);
                         settings();
                     })
-                    .setNegativeButton("Cancel", null)
+                    .action("Cancel", null)
                     .show()
             )
         );
@@ -479,15 +478,12 @@ final class SettingsScreens {
                 String current = activity.prefs.getString(key, fallback);
                 int selected = 0;
                 for (int i = 0; i < codes.length; i++) if (codes[i].equals(current)) selected = i;
-                new AlertDialog.Builder(activity)
-                    .setTitle(title)
-                    .setSingleChoiceItems(names, selected, (d, which) -> {
+                SidePanel.of(activity, title)
+                    .choices(names, selected, which -> {
                         activity.prefs.edit().putString(key, codes[which]).apply();
                         shown[0].setText(names[which]);
                         statusColour(shown[0], !names[which].equals("Off"));
-                        d.dismiss();
                     })
-                    .setNegativeButton("Cancel", null)
                     .show();
             }
         );
@@ -521,15 +517,12 @@ final class SettingsScreens {
                     int selected = 0;
                     for (int i = 0; i < accents.length; i++) if (accents[i] == activity.accent()) selected =
                         i;
-                    new AlertDialog.Builder(activity)
-                        .setTitle("Accent colour")
-                        .setSingleChoiceItems(accentNames, selected, (d, which) -> {
+                    SidePanel.of(activity, "Accent colour")
+                        .choices(accentNames, selected, which -> {
                             activity.prefs.edit().putInt("accent", accents[which]).apply();
                             accentValue[0].setText(accentNames[which]);
                             accentValue[0].setTextColor(accents[which]);
-                            d.dismiss();
                         })
-                        .setNegativeButton("Cancel", null)
                         .show();
                 }
             );
@@ -587,12 +580,11 @@ final class SettingsScreens {
                 false,
                 "Details",
                 () ->
-                    new AlertDialog.Builder(activity)
-                        .setTitle("Metadata attribution")
-                        .setMessage(
+                    SidePanel.of(activity, "Metadata attribution")
+                        .message(
                             "The Movie Database (TMDB)\nhttps://www.themoviedb.org\n\nMetadata is separate from your playback sources."
                         )
-                        .setPositiveButton("Close", null)
+                        .action("Close", null)
                         .show()
             );
         }

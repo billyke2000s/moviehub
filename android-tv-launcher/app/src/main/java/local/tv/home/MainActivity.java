@@ -174,30 +174,35 @@ public class MainActivity extends TvActivity {
                     }
                 });
             } catch (Exception e) {
+                Diagnostics.recovered("Loading a screen", e);
                 runOnUiThread(() -> {
-                    if (!isFinishing() && !isDestroyed() && request == generation) showRequestError();
+                    if (!isFinishing() && !isDestroyed() && request == generation) showRequestError(e);
                 });
             }
         });
     }
 
-    private void showRequestError() {
+    private void showRequestError(Exception failure) {
+        ErrorMessages.Explanation why = ErrorMessages.explain(failure);
         LinearLayout target =
             catalogueDialog != null && catalogueDialog.isShowing() && overlayContent != null
                 ? overlayContent
                 : page;
         TextView pending = findLoading(target);
         if (pending != null) {
-            pending.setText("Unable to load. Check your connection or retry this category.");
+            pending.setText(why.title + ". " + why.detail);
             return;
         }
         clearLoading(target);
-        TextView error = text(
-            "Could not load this content. Check your connection and connected accounts.",
-            18
+        Runnable retry = destination;
+        boolean settings = why.fix == ErrorMessages.Fix.SETTINGS || retry == null;
+        emptyState(
+            target,
+            why.title,
+            why.detail,
+            settings ? "Open Settings" : "Try again",
+            settings ? settingsScreens::settings : retry
         );
-        target.addView(error);
-        target.addView(button("Settings", settingsScreens::settings));
     }
 
     private TextView findLoading(ViewGroup parent) {

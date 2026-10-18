@@ -198,13 +198,10 @@ final class CatalogueScreens {
             );
             Button library = activity.navigationButton("Library", () -> {});
             library.setOnClickListener(v ->
-                new AlertDialog.Builder(activity)
-                    .setTitle("Your library")
-                    .setItems(new String[] { "My library", "Premiumize cloud", "Transfers" }, (d, which) -> {
-                        if (which == 0) activity.libraryScreens.savedLibrary(kind);
-                        else if (which == 1) activity.cloudScreens.cloud("", kind);
-                        else activity.cloudScreens.transfers(kind);
-                    })
+                SidePanel.of(activity, "Your library")
+                    .option("My library", () -> activity.libraryScreens.savedLibrary(kind))
+                    .option("Premiumize cloud", () -> activity.cloudScreens.cloud("", kind))
+                    .option("Transfers", () -> activity.cloudScreens.transfers(kind))
                     .show()
             );
             header.addView(library, new LinearLayout.LayoutParams(activity.dp(88), activity.dp(36)));
@@ -727,9 +724,11 @@ final class CatalogueScreens {
             String[] choices = new String[genres.size() + 1];
             choices[0] = "Any genre";
             for (int i = 0; i < genres.size(); i++) choices[i + 1] = genres.get(i).name;
-            new AlertDialog.Builder(activity)
-                .setTitle("Genre")
-                .setItems(choices, (d, which) -> {
+            int current = 0;
+            for (int i = 0; i < genres.size(); i++) if (genres.get(i).path.endsWith("=" + genre[0])) current =
+                i + 1;
+            SidePanel.of(activity, "Genre")
+                .choices(choices, current, which -> {
                     genre[0] =
                         which == 0
                             ? 0
@@ -755,24 +754,25 @@ final class CatalogueScreens {
         Button ratingButton = activity.button(rating[0] == 0 ? "Any rating" : rating[0] + "+", () -> {});
         content.addView(ratingButton);
         ratingButton.setOnClickListener(v ->
-            new AlertDialog.Builder(activity)
-                .setTitle("Minimum rating")
-                .setItems(new String[] { "Any rating", "5+", "6+", "7+", "8+", "9+" }, (d, which) -> {
-                    rating[0] = which == 0 ? 0 : which + 4;
-                    ratingButton.setText(rating[0] == 0 ? "Any rating" : rating[0] + "+");
-                })
+            SidePanel.of(activity, "Minimum rating")
+                .choices(
+                    new String[] { "Any rating", "5+", "6+", "7+", "8+", "9+" },
+                    rating[0] == 0 ? 0 : rating[0] - 4,
+                    which -> {
+                        rating[0] = which == 0 ? 0 : which + 4;
+                        ratingButton.setText(rating[0] == 0 ? "Any rating" : rating[0] + "+");
+                    }
+                )
                 .show()
         );
         content.addView(activity.muted("Sort order", 14));
         Button sortButton = activity.button(orders[sort[0]], () -> {});
         content.addView(sortButton);
         sortButton.setOnClickListener(v ->
-            new AlertDialog.Builder(activity)
-                .setTitle("Sort order")
-                .setSingleChoiceItems(orders, sort[0], (d, which) -> {
+            SidePanel.of(activity, "Sort order")
+                .choices(orders, sort[0], which -> {
                     sort[0] = which;
                     sortButton.setText(orders[which]);
-                    d.dismiss();
                 })
                 .show()
         );

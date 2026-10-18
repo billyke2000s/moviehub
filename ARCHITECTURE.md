@@ -61,6 +61,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `BackdropView` | Full-bleed background artwork: covers the view pinned top-right, cross-fades between images, keeps the old image while the next loads. Placed behind a screen with `TvActivity.fullBleedBackdrop()`; used on Home and details. |
 | `Artwork` | Image download and caching for posters and backdrops. |
 | `DpadRepeats` | Rate-limits held D-pad keys so a held direction cannot race through lists. |
+| `SidePanel` | The app's pop-up: a rounded panel on the right with a title, message, options or ticked choices and pill buttons. Used everywhere instead of AlertDialog/PopupMenu, also by the player. |
+| `ErrorMessages` | Plain-language explanation and fix (Try again / Open Settings) for a failed load, from the exception type only. |
 | `Diagnostics` | Logs failures the app recovers from (`adb logcat -s MovieHub`), without account details. |
 
 ### Screens (feature classes)
