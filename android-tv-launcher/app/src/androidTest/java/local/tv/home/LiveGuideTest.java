@@ -214,4 +214,61 @@ public class LiveGuideTest {
             () -> activity.liveTv.menu.rows.size() == 10 && activity.liveTv.menu.rows.get(0).hasFocus()
         );
     }
+
+    /** Every row of a guide menu is on screen in full (none cut off at the bottom). */
+    void assertAllRowsOnScreen(int count) {
+        assertEquals(count, activity.liveTv.menu.rows.size());
+        for (View row : activity.liveTv.menu.rows) {
+            android.graphics.Rect visible = new android.graphics.Rect();
+            assertTrue("menu row visible", row.getGlobalVisibleRect(visible));
+            assertTrue("menu row cut off", row.getHeight() > 0 && visible.height() >= row.getHeight());
+        }
+    }
+
+    @Test
+    public void liveTvOpensTheGuideMenuWithEveryRowAndTheTopPartsWorking() {
+        // Live TV from Home: the guide menu first, like the TV Guide button.
+        remote.runOnMainSync(() -> activity.liveTv.start());
+        await(
+            "guide menu",
+            () -> activity.liveTv.menu.rows.size() == 10 && activity.liveTv.menu.rows.get(0).hasFocus()
+        );
+        remote.waitForIdleSync();
+        UiEvidence.capture("live-guide-menu-first");
+        remote.runOnMainSync(() -> assertAllRowsOnScreen(10));
+        // Down to the last row (0 More…) and select: the second page, all on screen too.
+        for (int i = 0; i < 9; i++) remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
+        await("on More…", () -> activity.liveTv.menu.rows.get(9).hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        await(
+            "more",
+            () -> activity.liveTv.menu.rows.size() == 6 && activity.liveTv.menu.rows.get(0).hasFocus()
+        );
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> assertAllRowsOnScreen(6));
+        // BACK: the main menu again; 9 opens Music in the grid.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        await("main menu", () -> activity.liveTv.menu.rows.size() == 10);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_9);
+        await("music", () -> activity.liveTv.filter.equals("section:Music"));
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        await(
+            "menu after music",
+            () -> activity.liveTv.menu.rows.size() == 10 && activity.liveTv.menu.rows.get(0).hasFocus()
+        );
+        // Up from the first row: the parts along the top; right to Reminders, which opens.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        await("top parts", () -> activity.liveTv.menu.tabs.get(0).hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        await("reminders part", () -> activity.liveTv.menu.tabs.get(1).hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        await("reminders open", () -> SidePanel.current != null && SidePanel.current.isShowing());
+        remote.runOnMainSync(() -> SidePanel.current.dismiss());
+        // Right to Search, which opens too.
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> activity.liveTv.menu.tabs.get(2).requestFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        await("search open", () -> SidePanel.current != null && SidePanel.current.isShowing());
+        remote.runOnMainSync(() -> SidePanel.current.dismiss());
+    }
 }

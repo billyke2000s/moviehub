@@ -92,18 +92,29 @@ final class LiveTvScreen {
         return new HashSet<>(activity.prefs.getStringSet("favourites", Collections.emptySet()));
     }
 
+    /** Live TV from Home: the guide menu first, as the satellite box's TV Guide button did. */
+    void start() {
+        refreshChannels();
+        menu.show();
+    }
+
+    /** Straight to All Channels in the grid. */
     void live() {
-        try {
-            ChannelSync.refreshIfStale(activity, true);
-        } catch (Exception e) {
-            Diagnostics.recovered("Starting channel refresh", e);
-        }
+        refreshChannels();
         filter = "all";
         search = "";
         windowOffset = 0;
         programmeFocus = false;
         tabFocus = false;
         guide(0, 0);
+    }
+
+    private void refreshChannels() {
+        try {
+            ChannelSync.refreshIfStale(activity, true);
+        } catch (Exception e) {
+            Diagnostics.recovered("Starting channel refresh", e);
+        }
     }
 
     /** Shows the page starting at {@code start}, focusing row {@code focusRow} (-1 for the last). */
