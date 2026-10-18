@@ -76,6 +76,15 @@ set outside tests): first poster focused on entry, no captions, the hero follows
 row is pinned at the top, only the first rows load on entry, Up reaches the header, and Back from a
 grid opened from the rows returns to the same row.
 
+### Other feature tests (October 2026)
+
+| Test | Covers |
+| --- | --- |
+| `ForYouTest` | For you ranking (shared recommendations rise, seeds and played movies hidden), trending fallback, caching until signals change, old seed migration. Fixture TMDB responses. |
+| `AllAppsTest` | Apps screen: Android shortcuts and Recently used shown, search box not focused on entry, search filters by name, hide and Show hidden. Uses the emulator's installed apps. |
+| `SidePanelTest` | Side panel focuses and ticks the current choice and runs it after closing; `ErrorMessages` explanations never include provider text. |
+| `ArtworkDiskCacheTest` | Artwork disk cache: hit, miss, least-recently-used trimming, oversized files skipped. |
+
 ## Tests call app code directly
 
 Device tests live in the same package as the app (`local.tv.home`), so they call package-private
@@ -88,6 +97,7 @@ member package-private instead.
 
 - Real provider accounts (TMDB, Premiumize, Xtream, M3U) and live provider availability.
 - Installation and updates on the actual target TV box.
+- How real apps' TV banners look on the Apps screen, and the update prompt's notes from a real feed.
 - How the screens look on a real TV (screenshots from the emulator are a partial substitute).
 
 Those need a manual check on the device before a release.
