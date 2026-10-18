@@ -5,7 +5,7 @@ There are three layers of checks. CI runs all of them on every pull request that
 
 | Layer | Where | Needs | Runs in CI step |
 | --- | --- | --- | --- |
-| Core checks (177) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
+| Core checks (191) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
 | Build and lint | Gradle | Android SDK 35 | "Build APK and run Android lint" |
 | Device tests (instrumentation) | `android-tv-launcher/app/src/androidTest/` | Android emulator | `device-tests` job |
 | Signing compatibility | release build vs published APK | signing secrets (same-repo PRs only) | `signed-compatibility` job |
