@@ -89,7 +89,9 @@ public class TvNavigationTest {
                 Dialog dialog = activity.catalogueDialog;
                 focused.set(
                     activity.hasWindowFocus() ||
-                        (dialog != null && dialog.isShowing() && dialog.getWindow().getDecorView().hasWindowFocus())
+                        (dialog != null &&
+                            dialog.isShowing() &&
+                            dialog.getWindow().getDecorView().hasWindowFocus())
                 );
             });
             if (focused.get()) return;
@@ -442,6 +444,8 @@ public class TvNavigationTest {
             );
             back();
             back();
+            back();
+            // The grid was opened from the rows page, so Back returns there before Home.
             back();
         }
     }

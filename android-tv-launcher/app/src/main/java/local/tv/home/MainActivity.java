@@ -131,7 +131,7 @@ public class MainActivity extends TvActivity {
     Secrets secrets;
     MediaRepository media;
     LinearLayout page;
-    private Runnable back;
+    Runnable back;
     Runnable destination;
     HomeScreen.HomeShelf homeShelf;
     int generation;

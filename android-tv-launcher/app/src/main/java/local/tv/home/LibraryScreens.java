@@ -272,8 +272,7 @@ final class LibraryScreens {
     }
 
     void library(String kind) {
-        String type = kind.equals("Movies") ? "movie" : "tv";
-        activity.catalogues.browse(kind, "Trending today", "trending/" + type + "/day", 1);
+        activity.catalogues.rows(kind);
     }
 
     void mediaRow(

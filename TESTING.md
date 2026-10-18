@@ -69,6 +69,13 @@ Eight passing runs are good evidence, not proof. If a device test fails, read it
 lists each failed test with its message on the run (`tests/report-test-failures.py`), and timeouts
 in `ArtworkTest` and `TvNavigationTest` describe the screen state when they fail.
 
+### Catalogue rows
+
+`CatalogueRowsTest` drives the Movies rows page with fixture data (`CatalogueRows.testLoader`, never
+set outside tests): first poster focused on entry, no captions, the hero follows focus, each focused
+row is pinned at the top, only the first rows load on entry, Up reaches the header, and Back from a
+grid opened from the rows returns to the same row.
+
 ## Tests call app code directly
 
 Device tests live in the same package as the app (`local.tv.home`), so they call package-private
