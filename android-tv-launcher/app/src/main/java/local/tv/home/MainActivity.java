@@ -30,6 +30,8 @@ public class MainActivity extends TvActivity {
     final CatalogueScreens catalogues = new CatalogueScreens(this);
     final CatalogueSearch catalogueSearch = new CatalogueSearch(this);
     final LiveTvScreen liveTv = new LiveTvScreen(this);
+    /** Live TV in the phone layout (see {@link DeviceMode}). */
+    final PhoneLive phoneLive = new PhoneLive(this);
     final SettingsScreens settingsScreens = new SettingsScreens(this);
     final CloudScreens cloudScreens = new CloudScreens(this);
     final SeriesScreens seriesScreens = new SeriesScreens(this);
@@ -311,7 +313,9 @@ public class MainActivity extends TvActivity {
         } catch (Exception e) {
             Diagnostics.recovered("Scheduling channel refresh", e);
         }
-        homeScreen.home();
+        // The first time: TV or phone? Then the chosen layout.
+        if (DeviceMode.chosen(this).isEmpty()) LayoutChooser.show(this);
+        else LayoutChooser.open(this);
         // After the first frame, so the notice sits over Home.
         handler.post(() -> SafetyNotice.showOnce(this));
     }

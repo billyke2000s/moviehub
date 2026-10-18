@@ -19,7 +19,7 @@
   <application android:label="MovieHub" android:icon="@drawable/app_icon" android:banner="@drawable/app_banner" android:allowBackup="false" android:enableOnBackInvokedCallback="false" android:usesCleartextTraffic="true" android:theme="@android:style/Theme.Material.NoActionBar">
     <provider android:name=".UpdateApkProvider" android:authorities="${applicationId}.updates" android:exported="false" android:grantUriPermissions="true"/>
     <activity android:name=".VlcPlaybackActivity" android:exported="false" android:screenOrientation="landscape"/>
-    <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="landscape">
+    <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="landscape" android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
         <category android:name="android.intent.category.HOME"/>

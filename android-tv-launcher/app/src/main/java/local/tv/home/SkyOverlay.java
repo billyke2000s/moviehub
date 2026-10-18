@@ -175,8 +175,9 @@ final class SkyOverlay {
         progress.setVisibility(progressValue < 0 ? View.GONE : View.VISIBLE);
         if (progressValue >= 0) progress.setProgress(progressValue);
         source.setText(sourceText);
-        keys.setVisibility(browsing ? View.GONE : View.VISIBLE);
+        keys.setVisibility(browsing || touchRow != null ? View.GONE : View.VISIBLE);
         hint.setVisibility(browsing ? View.VISIBLE : View.GONE);
+        if (touchRow != null) touchRow.setVisibility(browsing ? View.GONE : View.VISIBLE);
         slideIn(banner);
     }
 
@@ -205,6 +206,35 @@ final class SkyOverlay {
 
     boolean bannerShowing() {
         return banner.getVisibility() == View.VISIBLE;
+    }
+
+    // ---- Touch controls (phone layout) ----------------------------------------------------------
+
+    /** Buttons on the banner for touch screens, in place of the colour keys; null on a TV. */
+    private LinearLayout touchRow;
+
+    /** Adds touch buttons to the banner: {@code labels[i]} runs {@code actions[i]}. */
+    void touchControls(String[] labels, Runnable[] actions) {
+        LinearLayout content = (LinearLayout) keys.getParent();
+        touchRow = row();
+        touchRow.setPadding(0, a.dp(10), 0, 0);
+        for (int i = 0; i < labels.length; i++) {
+            Runnable action = actions[i];
+            TextView button = label(16, true, Color.WHITE);
+            button.setText(labels[i]);
+            button.setGravity(Gravity.CENTER);
+            button.setPadding(a.dp(6), a.dp(10), a.dp(6), a.dp(10));
+            GradientDrawable shape = new GradientDrawable();
+            shape.setColor(0x55ffffff);
+            shape.setCornerRadius(a.dp(6));
+            button.setBackground(shape);
+            button.setOnClickListener(v -> action.run());
+            LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(0, -2, 1);
+            layout.rightMargin = a.dp(6);
+            touchRow.addView(button, layout);
+        }
+        content.addView(touchRow, content.indexOfChild(keys) + 1);
+        keys.setVisibility(View.GONE);
     }
 
     // ---- Programme information -----------------------------------------------------------------

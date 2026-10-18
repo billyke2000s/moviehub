@@ -75,8 +75,12 @@ final class LiveZapper {
     private int browseProgramme;
     private ChannelDatabase.Row browseRow;
 
+    /** Phone layout: the banner has touch buttons and a tap on the picture shows or hides it. */
+    final boolean touch;
+
     LiveZapper(VlcPlaybackActivity player, Session session) {
         this.player = player;
+        touch = DeviceMode.phone(player);
         own = session;
         db = ChannelDatabase.get(player);
     }
@@ -84,6 +88,24 @@ final class LiveZapper {
     /** Builds the banner and loads the current channel's backups and listings. */
     void attach(FrameLayout root) {
         overlay = new SkyOverlay(player, root);
+        if (touch) overlay.touchControls(
+            new String[] { "▲ Ch+", "▼ Ch−", "Info", "Source", "Audio", "❚❚ ▶", "Guide" },
+            new Runnable[] {
+                () -> channel(1),
+                () -> channel(-1),
+                () -> {
+                    if (overlay.infoShowing()) hideInfo();
+                    else showInfo();
+                },
+                () -> {
+                    if (copies.size() > 1) player.menus.chooseSource();
+                    else Toast.makeText(player, "This channel has one source", Toast.LENGTH_SHORT).show();
+                },
+                player.menus::audioAndSubtitles,
+                player::toggle,
+                player::finish,
+            }
+        );
         load(own.position, false, true);
     }
 
@@ -530,6 +552,14 @@ final class LiveZapper {
             if (first) player.finish();
         } else handled = false;
         return handled;
+    }
+
+    /** A tap on the picture (phone layout): shows the banner and its buttons, or hides them. */
+    void tapped() {
+        if (overlay.bannerShowing()) {
+            overlay.hideInfo();
+            hideBanner.run();
+        } else showBanner();
     }
 
     /** BACK closes the information panel, then browsing, then the banner, then goes to the guide. */
