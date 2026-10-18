@@ -36,6 +36,18 @@ final class BackdropView extends ImageView {
         // The artwork loader sets a placeholder colour; a full-screen backdrop stays transparent.
     }
 
+    /**
+     * ImageView.setImageBitmap reuses one internal drawable and clears the current image before
+     * setting it, which would hide the previous artwork from the cross-fade. Each bitmap therefore
+     * gets its own drawable here.
+     */
+    @Override
+    public void setImageBitmap(android.graphics.Bitmap bitmap) {
+        setImageDrawable(
+            bitmap == null ? null : new android.graphics.drawable.BitmapDrawable(getResources(), bitmap)
+        );
+    }
+
     @Override
     public void setImageDrawable(Drawable next) {
         if (next == null) return; // keep showing the current artwork until the next one arrives
