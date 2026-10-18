@@ -8,6 +8,28 @@ update feed), so the next release after it used code 12, named 0.12.
 
 ## Unreleased
 
+- Skipping in films is quicker. Pressing −10 s or +10 s several times in a row now makes one
+  jump, 0.75 s after the last press (as Kodi does), instead of reconnecting and buffering at every
+  press. The controls show where the jump will land straight away.
+- Moving along the film's progress bar with the remote jumps once, when you stop, instead of at
+  every step. Letting go of the bar on a touch screen jumps at once.
+- The player's download speed is right: it read about 1000 times too low (often 0.0 Mb/s), and so
+  did the last speed in Diagnostics. It shows how fast the player reads the stream, which follows
+  the stream's bitrate once the buffer is full, not the connection's top speed.
+- A closing player could crash the app if Live TV's shared player was released at that moment
+  (seen in the device tests as "can't get VLCObject instance"); it now lets go of it instead.
+- Live TV: changing channel and browsing other channels in the banner fetch just the one channel
+  needed instead of a page of 151, and the guide fetches the eleven rows it uses.
+- Live TV: the favourites list no longer rewrites its table on every page or channel change, only
+  when favourites change.
+- Live TV: finding a channel by number counts the list once instead of up to three times.
+- Programme guide download: programmes on channels you don't have are skipped before their times
+  are read, and times are read without building a date parser each time.
+- Live TV: all channels, sections and countries are read through an index of each channel's
+  preferred copy instead of sorting out duplicates across the whole list every time (channel
+  database version 8; the upgrade fills it in once).
+- Removed three unused channel queries; the channel database's tables and upgrades moved into
+  `ChannelSchema`.
 - Series: the episode you chose is found in far more season packs (S01 E03, S01Ep03, "Season 1
   Episode 3", E03 in a Season 1 folder, a plain file in an episode folder, and more). A file
   that names exactly that episode still plays straight away; one that very probably is it

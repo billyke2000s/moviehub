@@ -46,6 +46,20 @@ Last updated: 18 October 2026.
 - My List, watch history and watched episodes stay in SharedPreferences (history encrypted).
   They are read only on detail pages and menus and the history is capped at 50, so a database
   would add migration risk without a visible gain (reviewed 18 October 2026).
+- Film skips are combined into one jump 750 ms after the last press, as Kodi's default seek delay
+  does. LibVLC's `--input-fast-seek` (keyframe seeking, which Kodi also uses) was considered and
+  left out: VLC 3 seeks to a keyframe at or before the target, so in files with far-apart keyframes
+  a +10 s skip could land behind where you were (the device-test video has keyframes only at 0 s
+  and 16.7 s). Kodi avoids that by seeking forward to the next keyframe. Revisit only with a test
+  on real files (18 October 2026).
+- The film buffer stays at 1.5 s (`--network-caching=1500`, shared with Live TV). A larger buffer
+  delays the start and every jump, which were the slow parts reported (18 October 2026).
+
+- Big guide lists (all channels, sections, countries) read each channel's preferred copy
+  (`main=1`, database version 8) through an index instead of grouping every copy. Favourites,
+  provider groups and searches still group, because they can match a backup copy only (each copy
+  has its own key, group and name). Checked equal to the grouped queries in SQLite (19 October
+  2026).
 
 ## Open pull requests and branches
 
@@ -65,3 +79,5 @@ Last updated: 18 October 2026.
    the player controls.
 2. Optional: a TMDB account sign-in so My List syncs to a TMDB watchlist and TMDB's personal
    recommendations can be mixed into For you.
+3. Check Live TV on the box with a large channel list (the full free list): guide pages, channel
+   up/down and typing numbers should feel quicker. Diagnostics has no guide timing yet.

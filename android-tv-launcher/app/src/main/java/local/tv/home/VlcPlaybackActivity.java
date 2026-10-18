@@ -77,11 +77,19 @@ public class VlcPlaybackActivity extends Activity {
         ) controls.setVisibility(View.GONE);
     };
     private final Runnable stalled = () -> showError("The source is taking too long to respond.");
+    /** Film skips and seek-bar moves waiting to become one jump (see {@link SkipQueue}). */
+    final SkipQueue skips = new SkipQueue();
+    final Runnable applySkip = () -> {
+        long target = skips.take();
+        if (target >= 0 && player != null && player.isSeekable()) player.setTime(target);
+    };
     private final Runnable tick = new Runnable() {
         public void run() {
+            forgetReleasedLivePlayer();
             if (player != null) {
+                // While a skip is waiting, show where it will land.
                 long length = player.getLength(),
-                    time = Math.max(0, player.getTime());
+                    time = skips.pending() ? skips.target() : Math.max(0, player.getTime());
                 timeLeft.setText(
                     live
                         ? behindLive
@@ -95,7 +103,7 @@ public class VlcPlaybackActivity extends Activity {
                 );
                 // A programme reminder that is due shows over the picture (checked every 15 s).
                 if (++reminderTicks % 15 == 0 && !dialogOpen) showDueReminder();
-                downloadMbps = downloadSpeed();
+                downloadMbps = PlayerOverlay.downloadSpeed(player);
                 if (downloadMbps >= 0) Timings.lastMbps = downloadMbps;
                 speed.setText(
                     downloadMbps < 0
@@ -185,6 +193,7 @@ public class VlcPlaybackActivity extends Activity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        forgetReleasedLivePlayer();
         // A Live TV channel that failed: SELECT tries it again (unless browsing other channels).
         if (
             liveFailed &&
@@ -300,24 +309,6 @@ public class VlcPlaybackActivity extends Activity {
         setContentView(root);
         pause.requestFocus();
         revealControls();
-    }
-
-    /**
-     * The input bitrate VLC reports for the current media, in megabits per second, or -1.
-     * VLC gives it in kilobytes per second (VLC for Android scales it by 8 × 1024 for bits).
-     */
-    private float downloadSpeed() {
-        if (player == null) return -1;
-        var media = player.getMedia();
-        if (media == null) return -1;
-        try {
-            var stats = media.getStats();
-            return stats == null ? -1 : (stats.inputBitrate * 8f * 1024f) / 1_000_000f;
-        } catch (RuntimeException e) {
-            return -1;
-        } finally {
-            media.release();
-        }
     }
 
     /** Shows the play or pause icon to match the player. */
@@ -565,12 +556,18 @@ public class VlcPlaybackActivity extends Activity {
     }
 
     /**
-     * Skips back or forward. Live TV can be rewound only when its stream allows it (many live
-     * streams keep a few minutes); otherwise it says so.
+     * Skips back or forward. Films combine quick presses into one jump ({@link SkipQueue}). Live TV
+     * can be rewound only when its stream allows it (many live streams keep a few minutes);
+     * otherwise it says so.
      */
     void seek(long delta) {
         revealControls();
         if (player == null) return;
+        if (!live && player.isSeekable()) {
+            long length = player.getLength();
+            showSkipTarget(skips.skip(player.getTime(), delta, length), length);
+            return;
+        }
         if (!player.isSeekable()) {
             if (live) Toast.makeText(
                 this,
@@ -583,6 +580,16 @@ public class VlcPlaybackActivity extends Activity {
             length = player.getLength();
         player.setTime(length > 0 ? Math.min(length, target) : target);
         if (live && delta < 0) behindLive = true;
+    }
+
+    /** Shows a waiting film jump on the controls and jumps once the presses stop. */
+    void showSkipTarget(long target, long length) {
+        if (length > 0) {
+            timeline.setProgress((int) Math.min(1000, (target * 1000) / length));
+            timeLeft.setText(format(Math.max(0, length - target)));
+        }
+        overlayHandler.removeCallbacks(applySkip);
+        overlayHandler.postDelayed(applySkip, SkipQueue.DELAY_MS);
     }
 
     /** Catches up with the broadcast after pausing or rewinding live TV: opens the stream again. */
@@ -608,7 +615,18 @@ public class VlcPlaybackActivity extends Activity {
      * Lets go of the player. Live TV's shared player keeps playing here; {@link #onStop} stops it
      * unless the guide's picture has taken it over.
      */
+    /**
+     * Live TV plays on the shared player, which the guide (or a test) can release or replace while
+     * this screen is closing. Calling a released player crashes the app, so this screen lets go of
+     * one that is no longer the shared player.
+     */
+    private void forgetReleasedLivePlayer() {
+        if (live && player != null && player != LivePlayer.player()) player = null;
+    }
+
     private void release() {
+        skips.clear();
+        overlayHandler.removeCallbacks(applySkip);
         if (live) {
             player = null;
             return;
@@ -628,6 +646,7 @@ public class VlcPlaybackActivity extends Activity {
 
     @Override
     public void onStop() {
+        forgetReleasedLivePlayer();
         overlayHandler.removeCallbacksAndMessages(null);
         sleepAt = 0;
         foreground = false;
@@ -660,6 +679,7 @@ public class VlcPlaybackActivity extends Activity {
     @Override
     public void onSaveInstanceState(Bundle out) {
         super.onSaveInstanceState(out);
+        forgetReleasedLivePlayer();
         long now = player == null ? 0 : player.getTime();
         out.putLong("position", Math.max(Math.max(position, resumeCheck), now));
     }

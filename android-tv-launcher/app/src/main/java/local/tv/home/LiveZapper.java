@@ -208,7 +208,7 @@ final class LiveZapper {
         Session s = own;
         worker.execute(() -> {
             try {
-                List<ChannelDatabase.Row> rows = db.browse(s.filter, s.search, s.favourites, position);
+                List<ChannelDatabase.Row> rows = db.browse(s.filter, s.search, s.favourites, position, 1);
                 if (rows.isEmpty()) return;
                 ChannelDatabase.Row row = rows.get(0);
                 List<ChannelDatabase.Row> found = db.copies(row);
@@ -286,7 +286,7 @@ final class LiveZapper {
         int programme = browseProgramme;
         worker.execute(() -> {
             try {
-                List<ChannelDatabase.Row> rows = db.browse(s.filter, s.search, s.favourites, position);
+                List<ChannelDatabase.Row> rows = db.browse(s.filter, s.search, s.favourites, position, 1);
                 if (rows.isEmpty()) return;
                 ChannelDatabase.Row row = rows.get(0);
                 List<ChannelDatabase.Programme> on = listing(row);

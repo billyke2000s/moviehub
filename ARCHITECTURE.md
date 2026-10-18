@@ -106,16 +106,18 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `TmdbCategories` | TMDB discovery routes, genres and filters (no account state). |
 | `Network` | Bounded HTTP(S) streams with manual redirect handling; bearer tokens only sent over HTTPS to the same host. |
 | `Playlist` | M3U/Xtream playlist parsing and URL validation (refuses `http://` unless the user allows it). |
-| `ChannelDatabase`, `ChannelStore`, `ChannelQuery` | On-device SQLite channel database, paging and search. |
-| `EpgImporter`, `EpgMatch` | The free UK XMLTV programme guide (epgshare01): streamed, matched to saved channels by a plain name key, the next day kept in the channel database with titles, descriptions and categories. |
+| `ChannelDatabase`, `ChannelStore`, `ChannelQuery` | On-device SQLite channel database, paging and search. All channels, sections and countries are read from each channel's preferred copy (`main=1`, indexed); favourites, groups and searches group the copies. |
+| `ChannelSchema` | The channel database's tables, indexes and version upgrades (version 8 adds `main`). |
+| `EpgImporter`, `EpgMatch` | The free UK XMLTV programme guide (epgshare01): streamed, matched to saved channels by a plain name key (programmes on other channels skipped unread), the next day kept in the channel database with titles, descriptions and categories. `EpgMatch` also reads XMLTV times (plain Java). |
 | `SkyNumbers`, `GuideOrder`, `ChannelNumbers` | UK satellite channel numbers and sections (`SkyNumbers`, a fixed table matched by name); the whole guide's layout: UK blocks by section, regions in the 800s, radio in the 900s, other countries from 1001 (`GuideOrder`, plain Java); applied to the saved channels after every import (`ChannelNumbers`). |
 | `Reminders`, `ParentalLock` | Programme reminders (kept in preferences, shown while the app is open) and the Live TV PIN lock (a salted hash of the PIN, locked channels and sections). |
 | `FreeChannels` | Which free lists Live TV imports (Free-TV, then iptv-org by country, all, or off); "automatic" (the full list) only without a provider, imported when Live TV is first opened. |
 | `ChannelImporter`, `ChannelSync` | Background channel import (WorkManager), refreshed every 12 hours. |
 | `Secrets` | Account details encrypted with an Android Keystore key; the key and read values are cached in memory. |
 | `VideoFiles` | Chooses the right file in a multi-file release: the film beside extras, or the episode in a season pack (exact matches can play straight away; likely ones are only marked "Suggested episode"). Plain Java. |
+| `SkipQueue` | Combines quick film skips and seek-bar moves into one jump, 750 ms after the last (plain Java). |
 | `AppUpdates`, `UpdateApkProvider` | Downloads and verifies update APKs; shares the verified APK with the system installer. |
-| `VlcPlaybackActivity` | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions (opened directly at the resume point), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`). |
+| `VlcPlaybackActivity` | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions (opened directly at the resume point), skips combined into one jump (`SkipQueue`), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`). |
 | `PlayerOverlay` | Builds the player's on-screen controls (title and download speed, timeline, flat icon controls, Back hint). |
 | `LiveZapper` | Live TV while watching: the satellite remote's keys, channel up/down, number entry, last channel, browsing other channels in the banner, the PIN lock, and backup copies with automatic switching. |
 | `SkyFont` | The Live TV typeface (Hind, OFL, in `assets/fonts`), with the system font as a fallback. |
@@ -130,7 +132,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | SharedPreferences `ui` | UI settings and lists: accent colour, clock, `http` toggle, auto-updates, dock order, pinned apps, hidden and recently used apps, My List, watched episodes, search history, For you interest (`interest`), catalogue region/genre cache, Live TV reminders, the last channel watched (a hashed stream key), and the parental lock (a hash of the PIN, locked channels and sections). |
 | SharedPreferences `accounts` (via `Secrets`) | Encrypted: TMDB key, Premiumize key, Xtream and M3U details, saved library, recent playback. |
 | SharedPreferences `positions` | Playback resume positions. |
-| SQLite `channels-v2.db` | Imported IPTV channels (encrypted stream URLs), groups, channel numbers, sections and countries, favourites, and the programme guide. |
+| SQLite `channels-v2.db` | Imported IPTV channels (encrypted stream URLs), groups, channel numbers, sections and countries, which copy of each channel is preferred (`main`), favourites, and the programme guide. |
 | Cache `artwork/` | Downloaded public artwork (TMDB images, channel logos), at most 80 MB. No account data. |
 | Cache `updates/` | The downloaded update APK, before installation. |
 
