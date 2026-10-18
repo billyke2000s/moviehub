@@ -495,6 +495,7 @@ final class SettingsScreens {
             heading(body, "Your connections");
             accountCard(body, "Xtream", "Live channels from your TV provider");
             accountCard(body, "M3U playlist", "Live channels from a playlist link");
+            freeChannelsCard(body);
             accountCard(body, "TMDB", "Movie and series discovery, details and artwork");
             accountCard(body, "Premiumize", "Playback sources and your cloud library");
         } else if (tab.equals("Appearance")) {
@@ -598,6 +599,40 @@ final class SettingsScreens {
             );
         }
         activity.settingsStyle(body);
+    }
+
+    /** Free public channels from iptv-org for Live TV, by country. */
+    private void freeChannelsCard(LinearLayout body) {
+        String current = FreeChannels.choice(activity);
+        TextView[] shown = new TextView[1];
+        shown[0] = settingCard(
+            body,
+            "Free channels",
+            "Public channels from iptv-org, for Live TV without a TV provider",
+            FreeChannels.label(current),
+            !current.equals("off"),
+            "Change",
+            () -> {
+                String[] names = new String[FreeChannels.CHOICES.length];
+                int selected = 0;
+                for (int i = 0; i < names.length; i++) {
+                    names[i] = FreeChannels.CHOICES[i][1];
+                    if (FreeChannels.CHOICES[i][0].equals(FreeChannels.choice(activity))) selected = i;
+                }
+                SidePanel.of(activity, "Free channels")
+                    .message(
+                        "Channels come from the public iptv-org lists of freely available streams. Some streams may not work, and some need Allow HTTP in System."
+                    )
+                    .choices(names, selected, which -> {
+                        String value = FreeChannels.CHOICES[which][0];
+                        activity.prefs.edit().putString(FreeChannels.PREF, value).apply();
+                        shown[0].setText(FreeChannels.label(value));
+                        statusColour(shown[0], !value.equals("off"));
+                        ChannelSync.refreshNow(activity);
+                    })
+                    .show();
+            }
+        );
     }
 
     /**

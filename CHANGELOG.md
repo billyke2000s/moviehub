@@ -10,6 +10,13 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.21 (18 Oct 2026)
+
+- Live TV works without a TV provider: free public channels from the iptv-org lists for your country
+  (United Kingdom on a UK box). Settings → Accounts → Free channels picks a country, all countries,
+  or off; with "Automatic" they are used only while no Xtream or M3U provider is connected. Some
+  free streams may not work, and some need Allow HTTP.
+
 ## 0.20 (18 Oct 2026)
 
 - New Diagnostics page (Settings → System → Diagnostics): how long TMDB requests, finding sources,

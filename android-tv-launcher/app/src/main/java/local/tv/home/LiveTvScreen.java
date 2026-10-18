@@ -177,7 +177,7 @@ final class LiveTvScreen {
                     filter.equals("favourites") ? "No favourites yet" : "No channels here",
                     filter.equals("favourites")
                         ? "Hold Select on a channel to add it to your favourites."
-                        : "Connect Xtream or an M3U playlist in Settings, or refresh your provider.",
+                        : "Connect Xtream or an M3U playlist, or turn on Free channels, in Settings → Accounts.",
                     "Open Settings",
                     activity.settingsScreens::settings
                 );
