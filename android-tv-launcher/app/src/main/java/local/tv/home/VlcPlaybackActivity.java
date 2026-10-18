@@ -520,7 +520,9 @@ public class VlcPlaybackActivity extends Activity {
     }
 
     /**
-     * Leaving takes two presses, so a stray press does not stop the film.
+     * Back on a film first puts the controls away, then asks "Press Back again", and only leaves
+     * on another press within {@link #EXIT_WINDOW_MS}, so a stray press does not stop the film.
+     * Live TV asks once and leaves on the second press, as before.
      */
     private void onBackKey() {
         long now = SystemClock.elapsedRealtime();
@@ -528,12 +530,17 @@ public class VlcPlaybackActivity extends Activity {
             finish();
             return;
         }
+        if (!live && controls != null && controls.getVisibility() == View.VISIBLE) {
+            overlayHandler.removeCallbacks(hideOverlay);
+            controls.setVisibility(View.GONE);
+            return;
+        }
         backPressedAt = now;
         showExitHint();
     }
 
     private void showExitHint() {
-        revealControls();
+        if (live) revealControls();
         exitHint.setVisibility(View.VISIBLE);
         overlayHandler.removeCallbacks(hideExitHint);
         overlayHandler.postDelayed(hideExitHint, EXIT_WINDOW_MS);

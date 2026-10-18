@@ -118,7 +118,7 @@ final class PlayerOverlay {
         overlay.addView(bottom, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
         root.addView(overlay, new FrameLayout.LayoutParams(-1, -1));
         a.exitHint = new TextView(a);
-        a.exitHint.setText("Press Back again to stop watching");
+        a.exitHint.setText("Press Back again to leave playback");
         a.exitHint.setTextColor(Color.WHITE);
         a.exitHint.setTextSize(16);
         a.exitHint.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
