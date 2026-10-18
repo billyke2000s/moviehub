@@ -77,11 +77,18 @@ public class VlcPlaybackActivity extends Activity {
         ) controls.setVisibility(View.GONE);
     };
     private final Runnable stalled = () -> showError("The source is taking too long to respond.");
+    /** Film skips and seek-bar moves waiting to become one jump (see {@link SkipQueue}). */
+    final SkipQueue skips = new SkipQueue();
+    final Runnable applySkip = () -> {
+        long target = skips.take();
+        if (target >= 0 && player != null && player.isSeekable()) player.setTime(target);
+    };
     private final Runnable tick = new Runnable() {
         public void run() {
             if (player != null) {
+                // While a skip is waiting, show where it will land.
                 long length = player.getLength(),
-                    time = Math.max(0, player.getTime());
+                    time = skips.pending() ? skips.target() : Math.max(0, player.getTime());
                 timeLeft.setText(
                     live
                         ? behindLive
@@ -565,12 +572,18 @@ public class VlcPlaybackActivity extends Activity {
     }
 
     /**
-     * Skips back or forward. Live TV can be rewound only when its stream allows it (many live
-     * streams keep a few minutes); otherwise it says so.
+     * Skips back or forward. Films combine quick presses into one jump ({@link SkipQueue}). Live TV
+     * can be rewound only when its stream allows it (many live streams keep a few minutes);
+     * otherwise it says so.
      */
     void seek(long delta) {
         revealControls();
         if (player == null) return;
+        if (!live && player.isSeekable()) {
+            long length = player.getLength();
+            showSkipTarget(skips.skip(player.getTime(), delta, length), length);
+            return;
+        }
         if (!player.isSeekable()) {
             if (live) Toast.makeText(
                 this,
@@ -583,6 +596,16 @@ public class VlcPlaybackActivity extends Activity {
             length = player.getLength();
         player.setTime(length > 0 ? Math.min(length, target) : target);
         if (live && delta < 0) behindLive = true;
+    }
+
+    /** Shows a waiting film jump on the controls and jumps once the presses stop. */
+    void showSkipTarget(long target, long length) {
+        if (length > 0) {
+            timeline.setProgress((int) Math.min(1000, (target * 1000) / length));
+            timeLeft.setText(format(Math.max(0, length - target)));
+        }
+        overlayHandler.removeCallbacks(applySkip);
+        overlayHandler.postDelayed(applySkip, SkipQueue.DELAY_MS);
     }
 
     /** Catches up with the broadcast after pausing or rewinding live TV: opens the stream again. */
@@ -609,6 +632,8 @@ public class VlcPlaybackActivity extends Activity {
      * unless the guide's picture has taken it over.
      */
     private void release() {
+        skips.clear();
+        overlayHandler.removeCallbacks(applySkip);
         if (live) {
             player = null;
             return;

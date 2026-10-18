@@ -6,6 +6,14 @@ version below was built from the listed `main` commit. Earlier history is in the
 Note: the release shown as 0.10 below was published with version code 11 (name "0.11" in the
 update feed), so the next release after it used code 12, named 0.12.
 
+## Unreleased
+
+- Skipping in films is quicker. Pressing −10 s or +10 s several times in a row now makes one
+  jump, 0.75 s after the last press (as Kodi does), instead of reconnecting and buffering at every
+  press. The controls show where the jump will land straight away.
+- Moving along the film's progress bar with the remote jumps once, when you stop, instead of at
+  every step. Letting go of the bar on a touch screen jumps at once.
+
 ## 0.35 (18 Oct 2026)
 
 - A Live TV channel that won't play no longer opens a "Can't play this" panel that blocks the

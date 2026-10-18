@@ -75,12 +75,17 @@ final class PlayerOverlay {
 
                 public void onStopTrackingTouch(SeekBar bar) {
                     a.dragging = false;
+                    // A finger let go: jump now rather than waiting.
+                    a.overlayHandler.removeCallbacks(a.applySkip);
+                    a.applySkip.run();
                     a.revealControls();
                 }
 
                 public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
                     if (fromUser && a.player != null && !a.live && a.player.isSeekable()) {
-                        a.player.setTime((a.player.getLength() * value) / 1000);
+                        // Moving along the bar jumps once, when it stops, not at every step.
+                        long length = a.player.getLength();
+                        a.showSkipTarget(a.skips.moveTo((length * value) / 1000, length), length);
                         a.revealControls();
                     }
                 }
