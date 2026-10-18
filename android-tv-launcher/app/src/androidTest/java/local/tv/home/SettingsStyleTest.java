@@ -1,0 +1,115 @@
+package local.tv.home;
+
+import static org.junit.Assert.*;
+
+import android.app.Instrumentation;
+import android.content.*;
+import android.view.*;
+import android.widget.*;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import java.util.*;
+import org.junit.*;
+import org.junit.runner.RunWith;
+
+/** Every Settings tab uses the same card style as Accounts. */
+@RunWith(AndroidJUnit4.class)
+public class SettingsStyleTest {
+
+    final Instrumentation remote = InstrumentationRegistry.getInstrumentation();
+    MainActivity activity;
+    SharedPreferences prefs;
+    boolean autoUpdates, clock24;
+
+    @Before
+    public void launch() {
+        Context context = remote.getTargetContext();
+        prefs = context.getSharedPreferences("ui", 0);
+        autoUpdates = prefs.getBoolean("autoUpdates", true);
+        clock24 = prefs.getBoolean("clock24", true);
+        prefs.edit().putBoolean("autoUpdates", false).commit();
+        activity = (MainActivity) remote.startActivitySync(
+            new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        );
+        remote.waitForIdleSync();
+    }
+
+    @After
+    public void cleanup() {
+        remote.runOnMainSync(() -> activity.finish());
+        prefs.edit().putBoolean("autoUpdates", autoUpdates).putBoolean("clock24", clock24).commit();
+    }
+
+    View find(View node, String label) {
+        if (node instanceof TextView && label.contentEquals(((TextView) node).getText())) return node;
+        if (node instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) node).getChildCount(); i++) {
+            View found = find(((ViewGroup) node).getChildAt(i), label);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    /** The scrolling body that holds the selected tab's cards. */
+    LinearLayout body() {
+        View title = find(activity.getWindow().getDecorView(), "Settings");
+        ViewGroup page = (ViewGroup) title.getParent().getParent();
+        LinearLayout layout = (LinearLayout) page.getChildAt(1);
+        ScrollView scroll = (ScrollView) layout.getChildAt(1);
+        return (LinearLayout) scroll.getChildAt(0);
+    }
+
+    void assertCards(String tab) {
+        LinearLayout body = body();
+        assertTrue(tab + " has a heading and cards", body.getChildCount() >= 2);
+        assertTrue(tab + " starts with a heading", body.getChildAt(0) instanceof TextView);
+        for (int i = 1; i < body.getChildCount(); i++) {
+            View child = body.getChildAt(i);
+            assertFalse(tab + ": no bare switches", child instanceof Switch);
+            assertFalse(tab + ": no full-width buttons", child instanceof Button);
+            assertTrue(tab + ": every setting is a card", child instanceof LinearLayout);
+            LinearLayout card = (LinearLayout) child;
+            assertEquals(tab + ": cards are rows", LinearLayout.HORIZONTAL, card.getOrientation());
+            assertTrue(tab + ": title and description", card.getChildAt(0) instanceof LinearLayout);
+        }
+    }
+
+    @Test
+    public void everyTabUsesTheAccountCardStyle() {
+        remote.runOnMainSync(() -> activity.settingsScreens.settings());
+        remote.waitForIdleSync();
+        for (String tab : new String[] { "Accounts", "Appearance", "Playback", "System" }) {
+            remote.runOnMainSync(() -> {
+                View button = find(activity.getWindow().getDecorView(), tab);
+                while (!button.hasOnClickListeners()) button = (View) button.getParent();
+                button.performClick();
+            });
+            remote.waitForIdleSync();
+            remote.runOnMainSync(() -> assertCards(tab));
+            UiEvidence.capture("settings-" + tab.toLowerCase(Locale.ROOT));
+        }
+    }
+
+    @Test
+    public void toggleCardFlipsTheSettingAndItsLabels() {
+        prefs.edit().putBoolean("clock24", true).commit();
+        remote.runOnMainSync(() -> activity.settingsScreens.settings());
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            View tab = find(activity.getWindow().getDecorView(), "Appearance");
+            while (!tab.hasOnClickListeners()) tab = (View) tab.getParent();
+            tab.performClick();
+        });
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            LinearLayout card = (LinearLayout) find(body(), "24-hour clock").getParent().getParent();
+            TextView status = (TextView) card.getChildAt(1);
+            Button action = (Button) card.getChildAt(2);
+            assertEquals("On", status.getText().toString());
+            assertEquals("Turn off", action.getText().toString());
+            action.performClick();
+            assertFalse(prefs.getBoolean("clock24", true));
+            assertEquals("Off", status.getText().toString());
+            assertEquals("Turn on", action.getText().toString());
+        });
+    }
+}
