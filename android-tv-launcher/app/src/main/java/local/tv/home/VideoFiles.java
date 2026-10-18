@@ -34,4 +34,31 @@ final class VideoFiles {
         }
         return 1;
     }
+
+    /**
+     * The file to play straight away, or -1 to let the user choose. For an episode: the only
+     * file matching it. For a movie: the only video file, or one at least three times larger than
+     * any other (the film beside samples or extras).
+     */
+    static int autoPick(List<String> paths, List<Long> sizes, int season, int episode) {
+        boolean wantEpisode = season >= 0 && episode > 0;
+        int best = -1,
+            matches = 0;
+        long bestSize = -1,
+            secondSize = -1;
+        for (int i = 0; i < paths.size(); i++) {
+            int score = score(paths.get(i), "", season, episode);
+            if (score < (wantEpisode ? 2 : 1)) continue;
+            matches++;
+            long size = i < sizes.size() && sizes.get(i) != null ? sizes.get(i) : 0;
+            if (best < 0 || size > bestSize) {
+                secondSize = bestSize;
+                best = i;
+                bestSize = size;
+            } else if (size > secondSize) secondSize = size;
+        }
+        if (matches == 1) return best;
+        if (wantEpisode || matches == 0) return -1;
+        return bestSize > 0 && bestSize >= secondSize * 3 ? best : -1;
+    }
 }

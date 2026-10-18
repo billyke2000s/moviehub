@@ -32,15 +32,19 @@ public class VlcPlaybackActivity extends Activity {
         Toast.makeText(this, "Sleep timer finished", Toast.LENGTH_SHORT).show();
         finish();
     };
-    private Button pause;
+    /** The play/pause control and its icon. */
+    private View pause;
+    private ImageView pauseIcon;
     private SeekBar timeline;
-    private TextView elapsed, duration, status;
+    private TextView timeLeft, status;
     private AudioManager audio;
     private AudioFocusRequest audioFocus;
     private android.view.View controls;
     /** A second Back within this time leaves the player. */
     static final long EXIT_WINDOW_MS = 3000;
     private long backPressedAt;
+    /** Resume point the media was opened at; checked once after playback starts. */
+    private long resumeCheck;
     private TextView exitHint;
     private final Handler overlayHandler = new Handler(Looper.getMainLooper());
     private final Runnable hideExitHint = () -> {
@@ -57,8 +61,7 @@ public class VlcPlaybackActivity extends Activity {
             if (player != null) {
                 long length = player.getLength(),
                     time = Math.max(0, player.getTime());
-                elapsed.setText(live ? "LIVE" : format(time));
-                duration.setText(length > 0 ? format(length) : "—");
+                timeLeft.setText(live ? "LIVE" : length > 0 ? format(Math.max(0, length - time)) : "—");
                 timeline.setEnabled(!live && player.isSeekable() && length > 0);
                 if (!dragging && length > 0) timeline.setProgress(
                     (int) Math.min(1000, (time * 1000) / length)
@@ -128,7 +131,7 @@ public class VlcPlaybackActivity extends Activity {
             }
             if (key == KeyEvent.KEYCODE_MEDIA_PAUSE) {
                 if (player != null) player.pause();
-                pause.setText("Play");
+                showPlaying(false);
                 revealControls();
                 return true;
             }
@@ -215,9 +218,7 @@ public class VlcPlaybackActivity extends Activity {
         bottom.setBackground(shade(android.graphics.drawable.GradientDrawable.Orientation.BOTTOM_TOP));
         LinearLayout progress = new LinearLayout(this);
         progress.setGravity(Gravity.CENTER_VERTICAL);
-        elapsed = label();
-        duration = label();
-        duration.setTextColor(0xffb4bfd2);
+        timeLeft = label();
         timeline = new SeekBar(this);
         timeline.setMax(1000);
         int tint = getSharedPreferences("ui", MODE_PRIVATE).getInt("accent", 0xff8a9eff);
@@ -226,12 +227,7 @@ public class VlcPlaybackActivity extends Activity {
         progress.addView(timeline, new LinearLayout.LayoutParams(0, dp(28), 1));
         LinearLayout.LayoutParams timeLayout = new LinearLayout.LayoutParams(-2, -2);
         timeLayout.leftMargin = dp(16);
-        progress.addView(elapsed, timeLayout);
-        TextView slash = label();
-        slash.setText("  /  ");
-        slash.setTextColor(0xffb4bfd2);
-        progress.addView(slash);
-        progress.addView(duration);
+        progress.addView(timeLeft, timeLayout);
         bottom.addView(progress);
         timeline.setOnSeekBarChangeListener(
             new SeekBar.OnSeekBarChangeListener() {
@@ -253,35 +249,41 @@ public class VlcPlaybackActivity extends Activity {
                 }
             }
         );
+        // Flat icon controls, as streaming apps use: no button shapes; the selected one turns
+        // bright white and grows a little, the others are dimmed.
         LinearLayout buttons = new LinearLayout(this);
         buttons.setGravity(Gravity.CENTER_VERTICAL);
-        buttons.setPadding(0, dp(10), 0, 0);
+        buttons.setPadding(0, dp(8), 0, 0);
         buttons.setClipChildren(false);
         buttons.setClipToPadding(false);
         bottom.setClipChildren(false);
-        if (!live) add(buttons, "−10 s", () -> seek(-10000));
-        pause = add(buttons, "Pause", this::toggle);
-        pause.setMinWidth(dp(110));
-        pause.setMinimumWidth(dp(110));
-        if (!live) add(buttons, "+10 s", () -> seek(10000));
+        if (!live) add(buttons, R.drawable.ic_player_back10, "10", "−10 s", () -> seek(-10000));
+        pause = add(buttons, R.drawable.ic_player_pause, null, "Pause", this::toggle);
+        pauseIcon = (ImageView) ((ViewGroup) pause).getChildAt(0);
+        if (!live) add(buttons, R.drawable.ic_player_forward10, "10", "+10 s", () -> seek(10000));
         buttons.addView(new android.view.View(this), new LinearLayout.LayoutParams(0, 1, 1));
-        add(buttons, "Video", this::resolution);
-        add(buttons, "Audio", () -> tracks(false));
-        add(buttons, "Subtitles", () -> tracks(true));
-        add(buttons, "More", this::moreControls);
+        add(
+            buttons,
+            R.drawable.ic_player_subtitles,
+            "Audio & Subtitles",
+            "Audio & Subtitles",
+            this::audioAndSubtitles
+        );
+        add(buttons, R.drawable.ic_player_video, "Video", "Video", this::resolution);
+        add(buttons, R.drawable.ic_player_more, "More", "More", this::moreControls);
         bottom.addView(buttons, new LinearLayout.LayoutParams(-1, -2));
         overlay.addView(bottom, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
         root.addView(overlay, new FrameLayout.LayoutParams(-1, -1));
         exitHint = new TextView(this);
         exitHint.setText("Press Back again to stop watching");
-        exitHint.setTextColor(0xff10141c);
+        exitHint.setTextColor(Color.WHITE);
         exitHint.setTextSize(16);
         exitHint.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
         exitHint.setPadding(dp(22), dp(10), dp(22), dp(10));
         android.graphics.drawable.GradientDrawable hintShape =
             new android.graphics.drawable.GradientDrawable();
-        hintShape.setColor(0xf2ffffff);
-        hintShape.setCornerRadius(dp(22));
+        hintShape.setColor(0xe6141a24);
+        hintShape.setCornerRadius(dp(6));
         exitHint.setBackground(hintShape);
         exitHint.setVisibility(View.GONE);
         FrameLayout.LayoutParams hintLayout = new FrameLayout.LayoutParams(
@@ -348,42 +350,65 @@ public class VlcPlaybackActivity extends Activity {
         return t;
     }
 
-    private Button add(LinearLayout parent, String title, Runnable action) {
-        Button button = new Button(this);
-        button.setFocusableInTouchMode(true);
-        button.setText(title);
-        button.setTextColor(Color.WHITE);
-        button.setTextSize(15);
-        button.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
-        button.setAllCaps(false);
-        button.setMinWidth(0);
-        button.setMinimumWidth(0);
-        button.setPadding(dp(20), 0, dp(20), 0);
-        button.setBackground(controlBackground(false));
-        button.setOnFocusChangeListener((v, focused) -> {
-            v.setBackground(controlBackground(focused));
-            button.setTextColor(focused ? 0xff10141c : Color.WHITE);
-            v.setScaleX(focused ? 1.06f : 1f);
-            v.setScaleY(focused ? 1.06f : 1f);
-        });
-        button.setOnClickListener(v -> {
+    /**
+     * One flat control: an icon with an optional short label, no background shape. The
+     * description names it for accessibility and tests.
+     */
+    private View add(LinearLayout parent, int icon, String label, String description, Runnable action) {
+        LinearLayout item = new LinearLayout(this);
+        item.setGravity(Gravity.CENTER_VERTICAL);
+        item.setPadding(dp(12), dp(8), dp(12), dp(8));
+        item.setFocusable(true);
+        item.setFocusableInTouchMode(true);
+        item.setContentDescription(description);
+        ImageView image = new ImageView(this);
+        image.setImageResource(icon);
+        item.addView(image, new LinearLayout.LayoutParams(dp(30), dp(30)));
+        TextView text = null;
+        if (label != null) {
+            text = new TextView(this);
+            text.setText(label);
+            text.setTextSize(16);
+            text.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+            LinearLayout.LayoutParams textLayout = new LinearLayout.LayoutParams(-2, -2);
+            textLayout.leftMargin = dp(8);
+            item.addView(text, textLayout);
+        }
+        TextView caption = text;
+        View.OnFocusChangeListener style = (v, focused) -> {
+            int colour = focused ? Color.WHITE : 0x99ffffff;
+            image.setColorFilter(colour);
+            if (caption != null) caption.setTextColor(colour);
+            v.setScaleX(focused ? 1.18f : 1f);
+            v.setScaleY(focused ? 1.18f : 1f);
+        };
+        item.setOnFocusChangeListener(style);
+        style.onFocusChange(item, false);
+        item.setOnClickListener(v -> {
             revealControls();
             action.run();
         });
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, dp(44));
-        lp.setMargins(dp(4), dp(6), dp(8), dp(6));
-        parent.addView(button, lp);
-        return button;
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, dp(52));
+        lp.rightMargin = dp(18);
+        parent.addView(item, lp);
+        return item;
     }
 
-    private android.graphics.drawable.GradientDrawable controlBackground(boolean focused) {
-        android.graphics.drawable.GradientDrawable background =
-            new android.graphics.drawable.GradientDrawable();
-        // A pill: see-through with a light outline, solid white when selected.
-        background.setColor(focused ? 0xffffffff : 0x26ffffff);
-        background.setCornerRadius(dp(22));
-        if (!focused) background.setStroke(dp(1), 0x66ffffff);
-        return background;
+    /** Shows the play or pause icon to match the player. */
+    private void showPlaying(boolean playing) {
+        if (pauseIcon == null) return;
+        pauseIcon.setImageResource(playing ? R.drawable.ic_player_pause : R.drawable.ic_player_play);
+        pause.setContentDescription(playing ? "Pause" : "Play");
+    }
+
+    /** One panel for both, as streaming apps do: pick which one to change. */
+    private void audioAndSubtitles() {
+        dialogOpen = true;
+        SidePanel.of(this, "Audio & Subtitles")
+            .option("Audio", () -> tracks(false))
+            .option("Subtitles", () -> tracks(true))
+            .onDismiss(this::panelClosed)
+            .show();
     }
 
     @Override
@@ -402,7 +427,7 @@ public class VlcPlaybackActivity extends Activity {
             .setOnAudioFocusChangeListener(change -> {
                 if (change < 0 && player != null) {
                     player.pause();
-                    pause.setText("Play");
+                    showPlaying(false);
                     revealControls();
                 }
             })
@@ -425,6 +450,8 @@ public class VlcPlaybackActivity extends Activity {
                 Arrays.asList(
                     "--network-caching=1500",
                     "--no-video-title-show",
+                    // Network files have no subtitle files beside them; do not probe for any.
+                    "--no-sub-autodetect-file",
                     "--audio-language=" +
                         getSharedPreferences("ui", MODE_PRIVATE).getString("audioLanguage", "eng,en"),
                     "--sub-language=" +
@@ -443,15 +470,20 @@ public class VlcPlaybackActivity extends Activity {
                 if (aspect != null) player.setAspectRatio(aspect);
                 overlayHandler.removeCallbacks(stalled);
                 status.setVisibility(View.GONE);
-                if (position > 0 && !live && player.isSeekable()) {
-                    player.setTime(position);
-                    position = 0;
-                }
-                pause.setText("Pause");
+                // The media was opened at the resume point (start-time). If this format ignored
+                // that, seek once as a fallback.
+                long target = resumeCheck;
+                resumeCheck = 0;
+                if (target > 0) overlayHandler.postDelayed(() -> {
+                    if (
+                        player != null && player.isSeekable() && player.getTime() < target - 5000
+                    ) player.setTime(target);
+                }, 1500);
+                showPlaying(true);
                 revealControls();
             } else if (event.type == MediaPlayer.Event.Buffering) {
                 if (event.getBuffering() < 100) {
-                    status.setText("Buffering…");
+                    status.setText("Buffering… " + Math.round(event.getBuffering()) + "%");
                     status.setVisibility(View.VISIBLE);
                 } else status.setVisibility(View.GONE);
             } else if (event.type == MediaPlayer.Event.EndReached) {
@@ -488,6 +520,13 @@ public class VlcPlaybackActivity extends Activity {
         });
         Media media = new Media(engine, Uri.parse(url));
         media.setHWDecoderEnabled(true, false);
+        // Open directly at the resume point instead of starting at 0:00 and then seeking, which
+        // made the player buffer twice.
+        if (!live && position > 1000) {
+            media.addOption(":start-time=" + position / 1000);
+            resumeCheck = position;
+            position = 0;
+        }
         player.setMedia(media);
         media.release();
         player.play();
@@ -501,7 +540,7 @@ public class VlcPlaybackActivity extends Activity {
             if (time > 0 && !live) position = time;
             player.pause();
         }
-        pause.setText("Play");
+        showPlaying(false);
         status.setText("Playback unavailable");
         status.setVisibility(View.VISIBLE);
         dialogOpen = true;
@@ -544,10 +583,10 @@ public class VlcPlaybackActivity extends Activity {
         if (player == null) return;
         if (player.isPlaying()) {
             player.pause();
-            pause.setText("Play");
+            showPlaying(false);
         } else {
             player.play();
-            pause.setText("Pause");
+            showPlaying(true);
         }
     }
 
@@ -722,7 +761,9 @@ public class VlcPlaybackActivity extends Activity {
         foreground = false;
         if (player != null) {
             long time = player.getTime();
-            if (time >= 0) position = time;
+            // Before playback starts the time is 0; keep the resume point the media opened at.
+            if (time > 0) position = time;
+            else if (resumeCheck > 0) position = resumeCheck;
             if (!live) {
                 long length = player.getLength();
                 android.content.SharedPreferences.Editor edit = getSharedPreferences(
@@ -744,7 +785,8 @@ public class VlcPlaybackActivity extends Activity {
     @Override
     public void onSaveInstanceState(Bundle out) {
         super.onSaveInstanceState(out);
-        out.putLong("position", player == null ? position : Math.max(position, player.getTime()));
+        long now = player == null ? 0 : player.getTime();
+        out.putLong("position", Math.max(Math.max(position, resumeCheck), now));
     }
 
     @Override

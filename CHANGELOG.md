@@ -10,6 +10,17 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.18 (18 Oct 2026)
+
+- Player controls redone in the streaming-app style: flat icons with no button shapes (rewind 10,
+  play/pause, forward 10, Audio & Subtitles, Video, More), the selected one bright and slightly
+  larger; the time left shows at the end of the timeline.
+- No pill-shaped buttons anywhere: every button uses the app's standard style.
+- Faster start: when a source holds one obvious file (the film, or your episode in a season pack)
+  it plays straight away instead of asking you to choose a file.
+- Resuming opens the video at your place instead of starting at 0:00 and then jumping, which made
+  it buffer twice. Buffering shows its progress in percent.
+
 ## 0.17 (18 Oct 2026)
 
 - Player: Back no longer stops the video straight away. The first press shows the controls and

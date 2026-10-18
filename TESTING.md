@@ -24,7 +24,7 @@ for t in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest; do
 done
 ```
 
-Expected output: 17 playlist, 9 network, 6 episode/file and 13 channel-query checks passed.
+Expected output: 17 playlist, 9 network, 10 episode/file and 13 channel-query checks passed.
 
 ## Device tests
 

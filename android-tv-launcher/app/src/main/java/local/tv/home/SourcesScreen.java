@@ -253,6 +253,29 @@ final class SourcesScreen {
                             }
                         },
                         files -> {
+                            // Play straight away when the right file is obvious (the film, or
+                            // the episode inside a season pack), as streaming apps do.
+                            List<String> paths = new ArrayList<>();
+                            List<Long> sizes = new ArrayList<>();
+                            for (int i = 0; i < files.length(); i++) {
+                                JSONObject file = files.getJSONObject(i);
+                                paths.add(file.optString("path", file.optString("name", "")));
+                                sizes.add(file.optLong("size", 0));
+                            }
+                            int pick = VideoFiles.autoPick(paths, sizes, season, episode);
+                            String pickLink = pick < 0 ? "" : files.getJSONObject(pick).optString("link");
+                            if (!pickLink.isEmpty()) {
+                                activity.play(
+                                    title,
+                                    pickLink,
+                                    activity.id(
+                                        source.uri + ":" + files.getJSONObject(pick).optString("path", "File")
+                                    ),
+                                    false,
+                                    metadata
+                                );
+                                return;
+                            }
                             activity.screen("", () -> {
                                 activity.playbackTitle = metadata;
                                 torrentSources(imdb, season, episode, title, kind);

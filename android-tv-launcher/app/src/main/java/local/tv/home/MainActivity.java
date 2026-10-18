@@ -205,7 +205,6 @@ public class MainActivity extends TvActivity {
             if (!(pending.getParent() instanceof LinearLayout)) return;
             LinearLayout parent = (LinearLayout) pending.getParent();
             Button action = button(settings ? "Open Settings" : "Try again", () -> {});
-            pill(action, false);
             action.setOnClickListener(v -> {
                 parent.removeView(action);
                 if (settings) settingsScreens.settings();

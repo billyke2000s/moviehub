@@ -232,7 +232,6 @@ final class LiveTvScreen {
 
     private void pagePill(LinearLayout parent, String label, Runnable run) {
         Button button = activity.button(label, run);
-        activity.pill(button, false);
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-2, activity.dp(42));
         layout.rightMargin = activity.dp(12);
         parent.addView(button, layout);

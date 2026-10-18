@@ -79,7 +79,7 @@ final class SidePanel {
         return this;
     }
 
-    /** A button at the bottom. The first one added is the main (white) action. */
+    /** A button at the bottom; the first one added is focused when there are no options. */
     SidePanel action(String label, Runnable run) {
         actions.add(new Object[] { label, run });
         return this;
@@ -153,7 +153,7 @@ final class SidePanel {
             for (int i = 0; i < actions.size(); i++) {
                 Object[] action = actions.get(i);
                 Runnable run = (Runnable) action[1];
-                Button button = pill((String) action[0], i == 0, () -> {
+                Button button = button((String) action[0], () -> {
                     after[0] = run;
                     dialog.dismiss();
                 });
@@ -210,7 +210,7 @@ final class SidePanel {
         return layout;
     }
 
-    /** A full-width rounded row: white with dark text when focused, a tick when it is the current choice. */
+    /** A full-width row: white with dark text when focused, a tick when it is the current choice. */
     private View row(String label, boolean ticked, Runnable run) {
         TextView row = new TextView(activity);
         row.setText(ticked ? "✓   " + label : label);
@@ -225,7 +225,7 @@ final class SidePanel {
         row.setTextColor(idle);
         row.setOnFocusChangeListener((v, focused) -> {
             GradientDrawable shape = new GradientDrawable();
-            shape.setCornerRadius(dp(25));
+            shape.setCornerRadius(dp(7));
             shape.setColor(focused ? 0xfff2f4f8 : ticked ? 0x1fffffff : Color.TRANSPARENT);
             v.setBackground(shape);
             row.setTextColor(focused ? 0xff10141c : idle);
@@ -235,7 +235,8 @@ final class SidePanel {
         return row;
     }
 
-    private Button pill(String label, boolean primary, Runnable run) {
+    /** The app's standard button: a dark rounded box, light with an accent outline when selected. */
+    private Button button(String label, Runnable run) {
         Button button = new Button(activity);
         button.setText(label);
         button.setAllCaps(false);
@@ -245,19 +246,16 @@ final class SidePanel {
         button.setMinimumWidth(0);
         button.setMinHeight(0);
         button.setMinimumHeight(0);
-        button.setPadding(dp(22), 0, dp(22), 0);
+        button.setPadding(dp(16), 0, dp(16), 0);
         button.setFocusable(true);
         button.setFocusableInTouchMode(true);
         button.setOnFocusChangeListener((v, focused) -> {
             GradientDrawable shape = new GradientDrawable();
-            shape.setCornerRadius(dp(22));
-            boolean light = focused || primary;
-            shape.setColor(focused ? 0xffffffff : primary ? 0xffe6e9ef : 0x33ffffff);
-            if (!light) shape.setStroke(dp(1), 0x66ffffff);
+            shape.setCornerRadius(dp(7));
+            shape.setColor(focused ? 0xfff2f4f8 : 0xff171d27);
+            if (focused) shape.setStroke(dp(3), accent());
             v.setBackground(shape);
-            button.setTextColor(light ? 0xff10141c : 0xfff8f8fc);
-            v.setScaleX(focused ? 1.05f : 1f);
-            v.setScaleY(focused ? 1.05f : 1f);
+            button.setTextColor(focused ? 0xff10141c : 0xfff2f4f8);
         });
         button.getOnFocusChangeListener().onFocusChange(button, false);
         button.setOnClickListener(v -> run.run());

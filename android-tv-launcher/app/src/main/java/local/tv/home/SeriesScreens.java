@@ -17,7 +17,7 @@ import org.json.JSONObject;
 
 /**
  * Seasons and episodes for a series on one page, as streaming apps show them: the series artwork
- * and title, season pills, and the chosen season's episodes below. Includes watched-episode marks.
+ * and title, season buttons, and the chosen season's episodes below. Includes watched-episode marks.
  */
 final class SeriesScreens {
 
