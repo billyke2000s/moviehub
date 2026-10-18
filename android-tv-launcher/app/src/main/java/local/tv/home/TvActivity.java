@@ -284,4 +284,78 @@ abstract class TvActivity extends Activity {
             for (int i = 0; i < group.getChildCount(); i++) settingsStyle(group.getChildAt(i));
         }
     }
+
+    /**
+     * Streaming-app style pill button, sized to its label. A primary pill (the main action, like
+     * Play) is solid white; a secondary pill is see-through with a light outline and turns white
+     * when selected.
+     */
+    void pill(Button button, boolean primary) {
+        button.setAllCaps(false);
+        button.setTextSize(15);
+        button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        button.setPadding(dp(22), 0, dp(22), 0);
+        button.setOnFocusChangeListener((v, focused) -> stylePill((Button) v, primary, focused));
+        stylePill(button, primary, button.hasFocus());
+    }
+
+    private void stylePill(Button button, boolean primary, boolean focused) {
+        GradientDrawable shape = new GradientDrawable();
+        shape.setCornerRadius(dp(18));
+        boolean solid = primary || focused;
+        shape.setColor(solid ? 0xfff2f4f8 : 0x40ffffff);
+        if (focused) shape.setStroke(dp(3), accent());
+        else if (!primary) shape.setStroke(dp(1), 0x66ffffff);
+        button.setBackground(shape);
+        button.setTextColor(solid ? 0xff10141c : 0xfff8f8fc);
+        button.setScaleX(focused ? 1.06f : 1f);
+        button.setScaleY(focused ? 1.06f : 1f);
+        button.setTranslationZ(focused ? dp(4) : 0);
+    }
+
+    /**
+     * Puts the current screen on top of full-screen artwork, shaded so text on the left and
+     * content lower down stay readable, as streaming apps do. Returns the artwork view.
+     */
+    BackdropView fullBleedBackdrop() {
+        ViewGroup content = findViewById(android.R.id.content);
+        View screen = content.getChildAt(0);
+        content.removeView(screen);
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(0xff090d14);
+        BackdropView backdrop = new BackdropView(this);
+        root.addView(backdrop, new FrameLayout.LayoutParams(-1, -1));
+        root.addView(
+            shade(GradientDrawable.Orientation.LEFT_RIGHT, new int[] {
+                0xff090d14,
+                0xf0090d14,
+                0xb3090d14,
+                0x40090d14,
+                0x00090d14,
+                0x00090d14,
+            })
+        );
+        root.addView(
+            shade(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {
+                0xb3090d14,
+                0x00090d14,
+                0x00090d14,
+                0x99090d14,
+                0xf2090d14,
+                0xff090d14,
+                0xff090d14,
+            })
+        );
+        screen.setBackgroundColor(Color.TRANSPARENT);
+        root.addView(screen, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(root);
+        return backdrop;
+    }
+
+    private View shade(GradientDrawable.Orientation direction, int[] colours) {
+        View shade = new View(this);
+        shade.setBackground(new GradientDrawable(direction, colours));
+        shade.setLayoutParams(new FrameLayout.LayoutParams(-1, -1));
+        return shade;
+    }
 }

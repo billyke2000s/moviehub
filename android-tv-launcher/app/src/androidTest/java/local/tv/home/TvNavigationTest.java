@@ -357,7 +357,11 @@ public class TvNavigationTest {
         instrumentation.runOnMainSync(() -> {
             assertFullyVisible("Episodes");
             assertFullyVisible("+ My list");
-            assertNotNull(text(root(), "About A series with a longer title"));
+            assertNotNull(text(root(), "A series with a longer title"));
+            assertNull(
+                "The synopsis is shown once, not repeated under an About heading",
+                text(root(), "About A series with a longer title")
+            );
             assertNotNull(text(root(), "Actor One"));
         });
         screenshot("details");

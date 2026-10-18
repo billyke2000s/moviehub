@@ -10,6 +10,9 @@ update feed), so the next release after it used code 12, named 0.12.
 
 On `main` but not yet published to TVs:
 
+- Redesigned title details page: full-screen artwork with the type and genres, a large title,
+  facts, synopsis (shown once, not twice) and pill buttons on the left, the main action in white;
+  then a "More like this" poster row, the collection and the cast as round photos.
 - The Movies/Series title area keeps the same height for every title, so the poster rows no
   longer move when a synopsis is shorter or longer; the title sits higher to make room.
 - Home: the featured title's action is a slim "More info" pill (see-through, white when

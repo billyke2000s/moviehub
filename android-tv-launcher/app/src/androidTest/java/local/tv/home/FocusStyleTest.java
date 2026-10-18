@@ -131,4 +131,65 @@ public class FocusStyleTest {
             assertNull(backdrop.getDrawable());
         });
     }
+
+    int countText(View node, String value) {
+        int count = node instanceof TextView && value.contentEquals(((TextView) node).getText()) ? 1 : 0;
+        if (node instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) node).getChildCount(); i++) count +=
+            countText(((ViewGroup) node).getChildAt(i), value);
+        return count;
+    }
+
+    View findBackdrop(View node) {
+        if (node instanceof BackdropView) return node;
+        if (node instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) node).getChildCount(); i++) {
+            View found = findBackdrop(((ViewGroup) node).getChildAt(i));
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    @Test
+    public void detailsPageIsFullBleedWithOneSynopsisAndPillActions() throws Exception {
+        String overview = "A family drama told across three generations.";
+        org.json.JSONObject title = new org.json.JSONObject()
+            .put("id", 77)
+            .put("media_type", "movie")
+            .put("title", "Fixture film")
+            .put("overview", overview)
+            .put("release_date", "2020-01-01")
+            .put("genres", new org.json.JSONArray().put(new org.json.JSONObject().put("name", "Drama")))
+            .put(
+                "credits",
+                new org.json.JSONObject().put(
+                    "cast",
+                    new org.json.JSONArray().put(
+                        new org.json.JSONObject().put("name", "Actor One").put("character", "Lead")
+                    )
+                )
+            );
+        remote.runOnMainSync(() -> {
+            activity.screen("", () -> {});
+            try {
+                activity.titleDetails.renderDetails(title);
+            } catch (Exception e) {
+                throw new AssertionError(e);
+            }
+        });
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            View root = activity.getWindow().getDecorView();
+            assertNotNull("Artwork fills the screen behind the page", findBackdrop(root));
+            assertEquals("Synopsis appears once", 1, countText(root, overview));
+            View primary = activity.getCurrentFocus();
+            assertTrue("The main action is focused", primary instanceof Button);
+            assertEquals("Find sources", ((Button) primary).getText().toString());
+            assertTrue(
+                "Actions are pills",
+                primary.getBackground() instanceof android.graphics.drawable.GradientDrawable
+            );
+            assertEquals("Cast is listed", 1, countText(root, "Actor One"));
+            assertEquals("Genres in the kicker", 1, countText(root, "MOVIE  ·  DRAMA"));
+        });
+        UiEvidence.capture("details-redesign");
+    }
 }

@@ -23,70 +23,76 @@ final class TitleDetails {
         this.activity = activity;
     }
 
+    /** Poster size in the "More like this" row, in dp (2:3). */
+    static final int RELATED_WIDTH = 120,
+        RELATED_HEIGHT = 180;
+
+    /**
+     * Streaming-app style details page: full-screen artwork with the title, facts, synopsis and
+     * pill buttons on the left, then "More like this" posters, the collection and the cast below.
+     */
     void renderDetails(JSONObject item) throws Exception {
         activity.playbackTitle = item;
         String title = item.optString("title", item.optString("name", "Title")),
             type = item.optString("media_type", "movie");
         int tmdbId = item.optInt("id");
         String kind = type.equals("tv") ? "Series" : "Movies";
-        FrameLayout hero = new FrameLayout(activity);
-        hero.setBackground(activity.box(0xff121c29));
-        hero.setClipToOutline(true);
-        ImageView background = new ImageView(activity);
-        background.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        hero.addView(background, new FrameLayout.LayoutParams(-1, -1));
-        String backdrop = item.optString("backdrop_path");
-        if (backdrop.startsWith("/")) activity.posters.loadImage(
-            background,
-            "https://image.tmdb.org/t/p/w1280" + backdrop
+
+        BackdropView backdrop = activity.fullBleedBackdrop();
+        String art = item.optString("backdrop_path");
+        if (!art.startsWith("/")) art = item.optString("poster_path");
+        if (art.startsWith("/")) activity.posters.loadImage(
+            backdrop,
+            "https://image.tmdb.org/t/p/w1280" + art
         );
-        View shade = new View(activity);
-        shade.setBackground(
-            new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[] {
-                0xfc0d1420,
-                0xe60d1420,
-                0x770d1420,
-            })
-        );
-        hero.addView(shade, new FrameLayout.LayoutParams(-1, -1));
-        LinearLayout layout = activity.row();
-        layout.setGravity(Gravity.CENTER_VERTICAL);
-        layout.setPadding(activity.dp(24), activity.dp(20), activity.dp(24), activity.dp(20));
-        hero.addView(layout, new FrameLayout.LayoutParams(-1, -1));
-        ImageView poster = new ImageView(activity);
-        poster.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        layout.addView(poster, new LinearLayout.LayoutParams(activity.dp(156), activity.dp(234)));
-        String artwork = item.optString("poster_path");
-        if (artwork.startsWith("/")) activity.posters.loadImage(
-            poster,
-            "https://image.tmdb.org/t/p/w500" + artwork
-        );
+
+        // The title block fills most of the first screen and sits at its bottom, over the artwork.
+        LinearLayout hero = activity.vertical();
+        hero.setGravity(Gravity.BOTTOM);
+        hero.setPadding(activity.dp(4), 0, 0, activity.dp(12));
+        int heroHeight = Math.round(activity.getResources().getDisplayMetrics().heightPixels * 0.58f);
+        activity.page.addView(hero, new LinearLayout.LayoutParams(-1, heroHeight));
         LinearLayout info = activity.vertical();
-        info.setPadding(activity.dp(26), 0, 0, 0);
-        layout.addView(info, new LinearLayout.LayoutParams(0, -2, 1));
-        info.addView(activity.muted(type.equals("tv") ? "SERIES" : "MOVIE", 12));
-        TextView heading = activity.compactText(title, 30);
+        int width = Math.round(activity.getResources().getDisplayMetrics().widthPixels * 0.55f);
+        hero.addView(info, new LinearLayout.LayoutParams(width, -2));
+
+        List<String> eyebrow = new ArrayList<>();
+        eyebrow.add(type.equals("tv") ? "SERIES" : "MOVIE");
+        JSONArray genres = item.optJSONArray("genres");
+        if (genres != null) for (int i = 0; i < Math.min(3, genres.length()); i++) eyebrow.add(
+            genres.getJSONObject(i).optString("name").toUpperCase(Locale.ROOT)
+        );
+        TextView kicker = activity.compactText(String.join("  ·  ", eyebrow), 12);
+        kicker.setLetterSpacing(.12f);
+        kicker.setTextColor(0xffc4cede);
+        info.addView(kicker);
+        TextView heading = activity.compactText(title, 36);
         heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         heading.setMaxLines(2);
         heading.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        heading.setShadowLayer(activity.dp(8), 0, activity.dp(1), 0xcc000000);
         info.addView(heading);
-        info.addView(activity.muted(activity.posters.titleMetadata(item), 14));
-        JSONArray genres = item.optJSONArray("genres");
-        List<String> names = new ArrayList<>();
-        if (genres != null) for (int i = 0; i < genres.length(); i++) names.add(
-            genres.getJSONObject(i).optString("name")
-        );
-        if (!names.isEmpty()) info.addView(activity.muted(String.join(" · ", names), 14));
+        TextView facts = activity.compactText(activity.posters.titleMetadata(item), 15);
+        facts.setTextColor(0xffdfe5ee);
+        info.addView(facts);
         TextView synopsis = activity.compactText(item.optString("overview", "No synopsis available."), 16);
-        synopsis.setMaxLines(3);
+        synopsis.setMaxLines(4);
         synopsis.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        info.addView(synopsis);
+        synopsis.setLineSpacing(activity.dp(2), 1f);
+        synopsis.setShadowLayer(activity.dp(4), 0, activity.dp(1), 0xcc000000);
+        LinearLayout.LayoutParams synopsisLayout = new LinearLayout.LayoutParams(-1, -2);
+        synopsisLayout.topMargin = activity.dp(6);
+        info.addView(synopsis, synopsisLayout);
+
         LinearLayout actions = activity.row();
+        actions.setClipChildren(false);
+        actions.setClipToPadding(false);
+        actions.setPadding(0, activity.dp(14), 0, activity.dp(4));
         JSONObject recent = activity.posters.recentForTitle(item);
         Button resume =
             recent == null
                 ? null
-                : activity.chip(actions, "Resume", () ->
+                : action(actions, "▶  Resume", true, () ->
                       activity.play(
                           recent.optString("title", title),
                           recent.optString("url"),
@@ -95,8 +101,7 @@ final class TitleDetails {
                           recent
                       )
                   );
-        if (resume != null) activity.primary(resume);
-        Button play = activity.chip(actions, type.equals("tv") ? "Episodes" : "Find sources", () -> {
+        Button play = action(actions, type.equals("tv") ? "Episodes" : "Find sources", resume == null, () -> {
             activity.prefs.edit().putInt("seed", tmdbId).putString("seedType", type).apply();
             activity.playbackTitle = item;
             if (type.equals("tv")) activity.seriesScreens.seasons(tmdbId, title);
@@ -109,16 +114,62 @@ final class TitleDetails {
                 activity.sources.torrentSources(imdb, -1, -1, title, kind);
             }
         });
-        activity.primary(play);
-        Button saved = activity.chip(
+        Button saved = action(
             actions,
             activity.libraryScreens.isWatchlisted(item) ? "✓ My list" : "+ My list",
+            false,
             () -> {}
         );
         saved.setOnClickListener(v -> {
             activity.libraryScreens.toggleWatchlist(item);
             saved.setText(activity.libraryScreens.isWatchlisted(item) ? "✓ My list" : "+ My list");
         });
+        String trailer = trailerKey(item);
+        if (!trailer.isEmpty()) action(actions, "Trailer", false, () -> {
+            try {
+                activity.startActivity(
+                    new Intent(
+                        Intent.ACTION_VIEW,
+                        android.net.Uri.parse("https://www.youtube.com/watch?v=" + trailer)
+                    )
+                );
+            } catch (Exception e) {
+                activity.toast("No app can open this trailer");
+            }
+        });
+        info.addView(actions);
+
+        if (activity.secrets.has("tmdb")) relatedRow(type, tmdbId);
+        JSONObject collection = item.optJSONObject("belongs_to_collection");
+        if (collection != null) {
+            LinearLayout part = activity.row();
+            part.setPadding(0, activity.dp(6), 0, activity.dp(6));
+            action(part, "Part of " + collection.optString("name", "a collection"), false, () ->
+                activity.catalogues.browse(
+                    kind,
+                    collection.optString("name", "Collection"),
+                    "collection/" + collection.optInt("id"),
+                    1
+                )
+            );
+            activity.page.addView(part);
+        }
+        castRow(item, kind, type);
+        activity.page.addView(new View(activity), new LinearLayout.LayoutParams(-1, activity.dp(24)));
+        if (resume != null) resume.requestFocus();
+        else play.requestFocus();
+    }
+
+    private Button action(LinearLayout parent, String label, boolean primary, Runnable run) {
+        Button button = activity.button(label, run);
+        activity.pill(button, primary);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, activity.dp(38));
+        lp.rightMargin = activity.dp(12);
+        parent.addView(button, lp);
+        return button;
+    }
+
+    private String trailerKey(JSONObject item) throws JSONException {
         JSONArray videos =
             item.optJSONObject("videos") == null
                 ? null
@@ -135,77 +186,134 @@ final class TitleDetails {
                 if (video.optBoolean("official")) break;
             }
         }
-        if (!trailer.isEmpty()) {
-            final String key = trailer;
-            activity.chip(actions, "Trailer", () -> {
-                try {
-                    activity.startActivity(
-                        new Intent(
-                            Intent.ACTION_VIEW,
-                            android.net.Uri.parse("https://www.youtube.com/watch?v=" + key)
-                        )
-                    );
-                } catch (Exception e) {
-                    activity.toast("No app can open this trailer");
+        return trailer;
+    }
+
+    private TextView rowTitle(String text) {
+        TextView title = activity.compactText(text, 18);
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        title.setPadding(activity.dp(4), activity.dp(16), 0, activity.dp(4));
+        return title;
+    }
+
+    /** A row of recommended posters. Hidden if TMDB has none. */
+    private void relatedRow(String type, int tmdbId) {
+        LinearLayout section = activity.vertical();
+        section.addView(rowTitle("More like this"));
+        PosterFeed feed = new PosterFeed(
+            activity,
+            true,
+            type,
+            activity.io,
+            n -> {
+                JSONObject page = activity.media.tmdb(type + "/" + tmdbId + "/recommendations?page=" + n);
+                JSONArray results = page.optJSONArray("results");
+                if (n == 1 && (results == null || results.length() == 0)) activity.runOnUiThread(() ->
+                    section.setVisibility(View.GONE)
+                );
+                return page;
+            },
+            new PosterFeed.Cards() {
+                public View create(ViewGroup parent) {
+                    View card = activity.posters.posterCard(true);
+                    int frame = activity.dp(3);
+                    card.setPadding(frame, frame, frame, frame);
+                    return card;
                 }
-            });
-        }
-        info.addView(actions);
-        activity.page.addView(hero, new LinearLayout.LayoutParams(-1, activity.dp(326)));
-        activity.section(activity.page, "About " + title);
-        activity.page.addView(activity.muted(item.optString("overview", "No synopsis available."), 16));
-        LinearLayout related = activity.row();
-        activity.chip(related, "More like this", () ->
-            activity.catalogues.catalogue(type, type + "/" + tmdbId + "/recommendations", 1)
+
+                public void bind(View card, JSONObject related) {
+                    activity.posters.bindPoster(card, related, true, null);
+                }
+            }
         );
-        JSONObject collection = item.optJSONObject("belongs_to_collection");
-        if (collection != null) activity.chip(related, collection.optString("name", "Collection"), () ->
-            activity.catalogues.browse(
-                kind,
-                collection.optString("name", "Collection"),
-                "collection/" + collection.optInt("id"),
-                1
-            )
-        );
-        activity.page.addView(related);
+        feed.setCardSize(RELATED_WIDTH, RELATED_HEIGHT);
+        feed.setClipToPadding(false);
+        feed.setPadding(0, activity.dp(4), activity.dp(24), activity.dp(4));
+        activity.feeds.add(feed);
+        section.addView(feed, new LinearLayout.LayoutParams(-1, activity.dp(RELATED_HEIGHT + 16)));
+        activity.page.addView(section);
+        feed.start();
+    }
+
+    /** Cast as round photos with names; selecting one browses their other titles. */
+    private void castRow(JSONObject item, String kind, String type) throws JSONException {
         JSONObject credits = item.optJSONObject("credits");
         JSONArray cast = credits == null ? null : credits.optJSONArray("cast");
-        if (cast != null && cast.length() > 0) {
-            activity.section(activity.page, "Cast");
-            LinearLayout actors = activity.horizontal(activity.page);
-            for (int i = 0; i < Math.min(12, cast.length()); i++) {
-                JSONObject person = cast.getJSONObject(i);
-                LinearLayout card = activity.vertical();
-                card.setPadding(activity.dp(8), activity.dp(8), activity.dp(8), activity.dp(8));
-                ImageView photo = new ImageView(activity);
-                photo.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                card.addView(photo, new LinearLayout.LayoutParams(activity.dp(96), activity.dp(112)));
-                String image = person.optString("profile_path");
-                if (image.startsWith("/")) activity.posters.loadImage(
-                    photo,
-                    "https://image.tmdb.org/t/p/w185" + image
+        if (cast == null || cast.length() == 0) return;
+        activity.page.addView(rowTitle("Cast"));
+        HorizontalScrollView scroll = new HorizontalScrollView(activity);
+        scroll.setHorizontalScrollBarEnabled(false);
+        scroll.setClipToPadding(false);
+        LinearLayout people = activity.row();
+        people.setClipChildren(false);
+        people.setPadding(0, activity.dp(6), activity.dp(24), activity.dp(6));
+        scroll.addView(people);
+        activity.page.addView(scroll);
+        for (int i = 0; i < Math.min(15, cast.length()); i++) {
+            JSONObject person = cast.getJSONObject(i);
+            LinearLayout card = activity.vertical();
+            card.setGravity(Gravity.CENTER_HORIZONTAL);
+            card.setFocusable(true);
+            card.setFocusableInTouchMode(true);
+            ImageView photo = new ImageView(activity);
+            photo.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            GradientDrawable ring = new GradientDrawable();
+            ring.setShape(GradientDrawable.OVAL);
+            ring.setColor(0xff1b2433);
+            photo.setBackground(ring);
+            photo.setClipToOutline(true);
+            photo.setOutlineProvider(
+                new android.view.ViewOutlineProvider() {
+                    @Override
+                    public void getOutline(View view, android.graphics.Outline outline) {
+                        outline.setOval(0, 0, view.getWidth(), view.getHeight());
+                    }
+                }
+            );
+            card.addView(photo, new LinearLayout.LayoutParams(activity.dp(92), activity.dp(92)));
+            String image = person.optString("profile_path");
+            if (image.startsWith("/")) activity.posters.loadImage(
+                photo,
+                "https://image.tmdb.org/t/p/w185" + image
+            );
+            TextView name = activity.compactText(person.optString("name"), 13);
+            name.setGravity(Gravity.CENTER);
+            name.setMaxLines(1);
+            name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            card.addView(name, new LinearLayout.LayoutParams(-1, -2));
+            TextView character = activity.muted(person.optString("character"), 11);
+            character.setGravity(Gravity.CENTER);
+            character.setMaxLines(1);
+            character.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            card.addView(character, new LinearLayout.LayoutParams(-1, -2));
+            card.setContentDescription(person.optString("name"));
+            card.setOnFocusChangeListener((v, focused) -> {
+                GradientDrawable outline = new GradientDrawable();
+                outline.setShape(GradientDrawable.OVAL);
+                outline.setColor(0xff1b2433);
+                if (focused) outline.setStroke(activity.dp(3), 0xfff2f4f8);
+                photo.setBackground(outline);
+                photo.setPadding(
+                    focused ? activity.dp(3) : 0,
+                    focused ? activity.dp(3) : 0,
+                    focused ? activity.dp(3) : 0,
+                    focused ? activity.dp(3) : 0
                 );
-                TextView name = activity.compactText(person.optString("name"), 13);
-                name.setMaxLines(1);
-                name.setEllipsize(android.text.TextUtils.TruncateAt.END);
-                card.addView(name);
-                TextView character = activity.muted(person.optString("character"), 11);
-                character.setMaxLines(1);
-                character.setEllipsize(android.text.TextUtils.TruncateAt.END);
-                card.addView(character);
-                activity.focus(card);
-                card.setOnClickListener(v ->
-                    activity.catalogues.browse(
-                        kind,
-                        person.optString("name"),
-                        "person/" + person.optInt("id") + "/" + type + "_credits",
-                        1
-                    )
-                );
-                activity.addRow(actors, card, 122, 172);
-            }
+                v.setScaleX(focused ? 1.08f : 1f);
+                v.setScaleY(focused ? 1.08f : 1f);
+                name.setTypeface(Typeface.DEFAULT, focused ? Typeface.BOLD : Typeface.NORMAL);
+            });
+            card.setOnClickListener(v ->
+                activity.catalogues.browse(
+                    kind,
+                    person.optString("name"),
+                    "person/" + person.optInt("id") + "/" + type + "_credits",
+                    1
+                )
+            );
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(activity.dp(116), -2);
+            lp.rightMargin = activity.dp(10);
+            people.addView(card, lp);
         }
-        if (resume != null) resume.requestFocus();
-        else play.requestFocus();
     }
 }
