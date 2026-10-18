@@ -58,6 +58,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `PosterCards` | Poster card views, binding TMDB items to cards, creating `PosterFeed`s, the long-press poster menu. |
 | `PosterFeed` | Recycled, append-only poster grid/shelf (RecyclerView) with paging, retry and focus preservation. See [docs/continuous-posters.md](docs/continuous-posters.md). |
 | `PosterTitle` | Two-line poster caption that scrolls when focused and too long. |
+| `BackdropView` | Full-bleed background artwork: covers the view pinned top-right, cross-fades between images, keeps the old image while the next loads. Used on Home. |
 | `Artwork` | Image download and caching for posters and backdrops. |
 | `DpadRepeats` | Rate-limits held D-pad keys so a held direction cannot race through lists. |
 | `Diagnostics` | Logs failures the app recovers from (`adb logcat -s MovieHub`), without account details. |

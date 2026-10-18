@@ -89,4 +89,46 @@ public class FocusStyleTest {
             assertNotNull("Soft glow while focused", icon.getBackground());
         });
     }
+
+    @Test
+    public void homeBackdropIsFullBleedAndCrossFades() {
+        remote.runOnMainSync(() -> {
+            BackdropView backdrop = activity.homeShelf.backdrop;
+            View root = activity.getWindow().getDecorView().findViewById(android.R.id.content);
+            assertEquals("Artwork spans the whole screen width", root.getWidth(), backdrop.getWidth());
+            backdrop.setBackgroundColor(0xff182337);
+            assertNull("Loader placeholder colour is ignored", backdrop.getBackground());
+            android.graphics.Bitmap first = android.graphics.Bitmap.createBitmap(
+                160,
+                90,
+                android.graphics.Bitmap.Config.ARGB_8888
+            );
+            android.graphics.Bitmap second = android.graphics.Bitmap.createBitmap(
+                160,
+                90,
+                android.graphics.Bitmap.Config.ARGB_8888
+            );
+            backdrop.setImageBitmap(first);
+            assertNotNull(backdrop.getDrawable());
+            backdrop.setImageDrawable(null);
+            assertNotNull("Previous artwork stays while the next loads", backdrop.getDrawable());
+            backdrop.setImageBitmap(second);
+            assertTrue(
+                "Changing artwork cross-fades",
+                backdrop.getDrawable() instanceof android.graphics.drawable.TransitionDrawable
+            );
+            float[] values = new float[9];
+            backdrop.getImageMatrix().getValues(values);
+            assertEquals("Pinned to the top", 0f, values[android.graphics.Matrix.MTRANS_Y], 0.5f);
+            float scaledWidth = 160 * values[android.graphics.Matrix.MSCALE_X];
+            assertEquals(
+                "Pinned to the right",
+                backdrop.getWidth(),
+                values[android.graphics.Matrix.MTRANS_X] + scaledWidth,
+                1f
+            );
+            backdrop.clear();
+            assertNull(backdrop.getDrawable());
+        });
+    }
 }
