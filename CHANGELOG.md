@@ -16,6 +16,14 @@ update feed), so the next release after it used code 12, named 0.12.
 - The player's download speed is right: it read about 1000 times too low (often 0.0 Mb/s), and so
   did the last speed in Diagnostics. It shows how fast the player reads the stream, which follows
   the stream's bitrate once the buffer is full, not the connection's top speed.
+- Back on a film first hides the controls, then shows "Press Back again to leave playback", and
+  only leaves on another press within 3 seconds. Live TV keeps its own Back.
+- Films and Live TV now have separate player settings, so changing one can never change the other
+  (the values are the same as before).
+- Settings → System → Diagnostics is now Troubleshooting: an internet speed test, checks that each
+  service you use answers (internet, TMDB, Premiumize, stream sources, your TV provider, the
+  programme guide), playback timings, and the recent errors the app recovered from (place and
+  type only, never addresses or account details).
 - A closing player could crash the app if Live TV's shared player was released at that moment
   (seen in the device tests as "can't get VLCObject instance"); it now lets go of it instead.
 

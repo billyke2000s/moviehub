@@ -75,6 +75,20 @@ public class DiagnosticsTest {
             assertTrue(shows(root, "Fixture work"));
             assertTrue(shows(root, "1.5 s last"));
             assertTrue(shows(root, "Last download speed while playing"));
+            assertTrue(shows(root, "Internet speed"));
+            assertTrue(shows(root, "Connections"));
+            assertTrue(shows(root, "Recent errors"));
         });
+        // A recovered error appears with its place and type, never its message.
+        Diagnostics.recovered("Fixture problem", new IllegalStateException("https://example.test/secret"));
+        remote.runOnMainSync(() -> activity.troubleshooting.show());
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            View root = activity.getWindow().getDecorView();
+            assertTrue(shows(root, "Fixture problem"));
+            assertTrue(shows(root, "IllegalStateException"));
+            assertFalse(shows(root, "secret"));
+        });
+        ErrorLog.clear();
     }
 }

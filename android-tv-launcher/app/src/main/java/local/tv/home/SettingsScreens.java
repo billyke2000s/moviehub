@@ -574,8 +574,8 @@ final class SettingsScreens {
             );
             settingCard(
                 body,
-                "Diagnostics",
-                "How long loading, sources and playback take on this box",
+                "Troubleshooting",
+                "Speed test, connection checks, playback timings and recent errors",
                 null,
                 false,
                 "Open",
