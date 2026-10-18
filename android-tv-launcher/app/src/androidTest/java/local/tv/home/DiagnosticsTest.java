@@ -67,7 +67,7 @@ public class DiagnosticsTest {
         assertTrue(stats.get(0).last >= 1500);
         assertEquals("A mark finishes once", 1, stats.get(1).count);
 
-        remote.runOnMainSync(() -> activity.settingsScreens.diagnostics());
+        remote.runOnMainSync(() -> activity.troubleshooting.show());
         remote.waitForIdleSync();
         UiEvidence.capture("diagnostics");
         remote.runOnMainSync(() -> {
