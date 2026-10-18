@@ -89,6 +89,17 @@ final class SettingsScreens {
         choices.get(0).requestFocus();
     }
 
+    private String versionName() {
+        try {
+            return (
+                "Version " +
+                activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0).versionName
+            );
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     private String accountKey(String service) {
         return service.equals("Xtream")
             ? "xtream"
@@ -100,29 +111,67 @@ final class SettingsScreens {
     }
 
     private void accountCard(LinearLayout body, String service, String description) {
-        String key = accountKey(service);
-        boolean connected = activity.secrets.has(key);
+        boolean connected = activity.secrets.has(accountKey(service));
+        settingCard(
+            body,
+            service,
+            description,
+            connected ? "Connected" : "Not connected",
+            connected,
+            connected ? "Manage" : "Connect",
+            () -> accountScreen(service)
+        );
+    }
+
+    /**
+     * One setting, in the style shared by every Settings tab: a bold title and short description on
+     * the left, the current value on the right (green when on or connected), then one action button.
+     * Returns the value label so callers can update it. {@code status} and {@code action} may be null.
+     */
+    private TextView settingCard(
+        LinearLayout body,
+        String title,
+        String description,
+        String status,
+        boolean positive,
+        String action,
+        Runnable onAction
+    ) {
         LinearLayout card = activity.row();
         card.setPadding(activity.dp(18), activity.dp(9), activity.dp(14), activity.dp(9));
         card.setBackground(activity.box(0xff171d27));
         LinearLayout copy = activity.vertical();
-        TextView name = activity.compactText(service, 19);
+        TextView name = activity.compactText(title, 19);
         name.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         copy.addView(name);
         TextView detail = activity.compactText(description, 13);
         detail.setTextColor(0xffaab4c4);
+        detail.setMaxLines(2);
+        detail.setEllipsize(android.text.TextUtils.TruncateAt.END);
         copy.addView(detail);
         card.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
-        TextView status = activity.compactText(connected ? "Connected" : "Not connected", 13);
-        status.setTextColor(connected ? 0xff83ddb4 : 0xffaab4c4);
-        card.addView(status);
-        Button edit = activity.button(connected ? "Manage" : "Connect", () -> accountScreen(service));
-        LinearLayout.LayoutParams action = new LinearLayout.LayoutParams(activity.dp(96), activity.dp(38));
-        action.leftMargin = activity.dp(18);
-        card.addView(edit, action);
+        TextView value = activity.compactText(status == null ? "" : status, 13);
+        statusColour(value, positive);
+        if (status != null) card.addView(value);
+        if (action != null) {
+            Button button = activity.button(action, onAction);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(activity.dp(118), activity.dp(38));
+            lp.leftMargin = activity.dp(18);
+            card.addView(button, lp);
+        }
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, activity.dp(78));
         lp.bottomMargin = activity.dp(8);
         body.addView(card, lp);
+        return value;
+    }
+
+    private void statusColour(TextView value, boolean positive) {
+        value.setTextColor(positive ? 0xff83ddb4 : 0xffaab4c4);
+    }
+
+    /** Section heading at the top of a Settings tab. */
+    private void heading(LinearLayout body, String text) {
+        body.addView(activity.compactText(text, 23));
     }
 
     /** A single-purpose form keeps credentials separate from settings and other providers. */
@@ -191,7 +240,7 @@ final class SettingsScreens {
                         : "Enter your key"
                 );
         }
-        if (service.equals("Xtream") || service.equals("M3U playlist")) toggle(
+        if (service.equals("Xtream") || service.equals("M3U playlist")) formSwitch(
             form,
             "Allow HTTP provider connections",
             "http",
@@ -306,7 +355,8 @@ final class SettingsScreens {
         );
     }
 
-    private void toggle(LinearLayout parent, String title, String key, boolean fallback) {
+    /** A plain on/off switch for use inside an account form. */
+    private void formSwitch(LinearLayout parent, String title, String key, boolean fallback) {
         Switch s = new Switch(activity);
         s.setText(title);
         s.setTextColor(0xfff8f8fc);
@@ -314,6 +364,29 @@ final class SettingsScreens {
         s.setPadding(activity.dp(16), activity.dp(12), activity.dp(16), activity.dp(12));
         s.setOnCheckedChangeListener((v, checked) -> activity.prefs.edit().putBoolean(key, checked).apply());
         parent.addView(s);
+    }
+
+    private void toggle(LinearLayout parent, String title, String description, String key, boolean fallback) {
+        boolean[] on = { activity.prefs.getBoolean(key, fallback) };
+        TextView[] value = new TextView[1];
+        Button[] button = new Button[1];
+        value[0] = settingCard(
+            parent,
+            title,
+            description,
+            on[0] ? "On" : "Off",
+            on[0],
+            on[0] ? "Turn off" : "Turn on",
+            () -> {
+                on[0] = !on[0];
+                activity.prefs.edit().putBoolean(key, on[0]).apply();
+                value[0].setText(on[0] ? "On" : "Off");
+                statusColour(value[0], on[0]);
+                button[0].setText(on[0] ? "Turn off" : "Turn on");
+            }
+        );
+        LinearLayout card = (LinearLayout) parent.getChildAt(parent.getChildCount() - 1);
+        button[0] = (Button) card.getChildAt(card.getChildCount() - 1);
     }
 
     private void languagePreference(
@@ -392,85 +465,128 @@ final class SettingsScreens {
         String value = activity.prefs.getString(key, fallback);
         int chosen = 0;
         for (int i = 0; i < codes.length; i++) if (codes[i].equals(value)) chosen = i;
-        Button control = activity.button(title + ": " + names[chosen], () -> {});
-        control.setOnClickListener(v -> {
-            String current = activity.prefs.getString(key, fallback);
-            int selected = 0;
-            for (int i = 0; i < codes.length; i++) if (codes[i].equals(current)) selected = i;
-            new AlertDialog.Builder(activity)
-                .setTitle(title)
-                .setSingleChoiceItems(names, selected, (d, which) -> {
-                    activity.prefs.edit().putString(key, codes[which]).apply();
-                    control.setText(title + ": " + names[which]);
-                    d.dismiss();
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
-        });
-        parent.addView(control);
+        TextView[] shown = new TextView[1];
+        shown[0] = settingCard(
+            parent,
+            title,
+            subtitles
+                ? "Subtitle language chosen automatically when a video starts"
+                : "Audio language chosen automatically when a video starts",
+            names[chosen],
+            !names[chosen].equals("Off"),
+            "Change",
+            () -> {
+                String current = activity.prefs.getString(key, fallback);
+                int selected = 0;
+                for (int i = 0; i < codes.length; i++) if (codes[i].equals(current)) selected = i;
+                new AlertDialog.Builder(activity)
+                    .setTitle(title)
+                    .setSingleChoiceItems(names, selected, (d, which) -> {
+                        activity.prefs.edit().putString(key, codes[which]).apply();
+                        shown[0].setText(names[which]);
+                        statusColour(shown[0], !names[which].equals("Off"));
+                        d.dismiss();
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            }
+        );
     }
 
     private void settingsTab(LinearLayout body, String tab) {
         body.removeAllViews();
         if (tab.equals("Accounts")) {
-            body.addView(activity.compactText("Your connections", 23));
+            heading(body, "Your connections");
             accountCard(body, "Xtream", "Live channels from your TV provider");
             accountCard(body, "M3U playlist", "Live channels from a playlist link");
             accountCard(body, "TMDB", "Movie and series discovery, details and artwork");
             accountCard(body, "Premiumize", "Playback sources and your cloud library");
         } else if (tab.equals("Appearance")) {
-            toggle(body, "Show featured row", "featured", true);
-            toggle(body, "24-hour clock", "clock24", true);
-            for (int colour : new int[] { 0xff8a9eff, 0xff55aaff, 0xff45c9ac })
-                body.addView(
-                    activity.button(
-                        colour == 0xff8a9eff ? "Violet" : colour == 0xff55aaff ? "Blue" : "Teal",
-                        () -> {
-                            activity.prefs.edit().putInt("accent", colour).apply();
-                            activity.toast("Accent saved");
-                        }
-                    )
-                );
-            body.addView(activity.button("Return home", activity.homeScreen::home));
+            heading(body, "Look and feel");
+            toggle(body, "Featured row", "Artwork and a poster shelf on Home", "featured", true);
+            toggle(body, "24-hour clock", "Show the time as 21:30 instead of 9:30 PM", "clock24", true);
+            String[] accentNames = { "Violet", "Blue", "Teal" };
+            int[] accents = { 0xff8a9eff, 0xff55aaff, 0xff45c9ac };
+            int current = 0;
+            for (int i = 0; i < accents.length; i++) if (accents[i] == activity.accent()) current = i;
+            TextView[] accentValue = new TextView[1];
+            accentValue[0] = settingCard(
+                body,
+                "Accent colour",
+                "Outline colour around the selected item",
+                accentNames[current],
+                true,
+                "Change",
+                () -> {
+                    int selected = 0;
+                    for (int i = 0; i < accents.length; i++) if (accents[i] == activity.accent()) selected =
+                        i;
+                    new AlertDialog.Builder(activity)
+                        .setTitle("Accent colour")
+                        .setSingleChoiceItems(accentNames, selected, (d, which) -> {
+                            activity.prefs.edit().putInt("accent", accents[which]).apply();
+                            accentValue[0].setText(accentNames[which]);
+                            accentValue[0].setTextColor(accents[which]);
+                            d.dismiss();
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+                }
+            );
+            accentValue[0].setTextColor(activity.accent());
         } else if (tab.equals("Playback")) {
-            toggle(body, "Resume playback", "resume", true);
+            heading(body, "Playback preferences");
+            toggle(body, "Resume playback", "Continue from where you stopped", "resume", true);
             languagePreference(body, "Subtitles", "subtitleLanguage", "none", true);
             languagePreference(body, "Audio track", "audioLanguage", "eng,en", false);
         } else {
-            toggle(body, "Check for updates automatically", "autoUpdates", true);
-            body.addView(
-                activity.text(
-                    android.os.Build.MANUFACTURER +
-                        " " +
-                        android.os.Build.MODEL +
-                        " · Android " +
-                        android.os.Build.VERSION.RELEASE,
-                    16
-                )
+            heading(body, "System");
+            toggle(
+                body,
+                "Automatic updates",
+                "Offer new MovieHub versions when they are published",
+                "autoUpdates",
+                true
             );
-            body.addView(
-                activity.button("Check for app updates", () -> {
+            settingCard(
+                body,
+                "MovieHub",
+                "Check now for a newer version of MovieHub",
+                versionName(),
+                true,
+                "Check",
+                () -> {
                     activity.updates.lastUpdateCheck = 0;
                     activity.updates.checkForUpdate(true);
-                })
+                }
             );
-            body.addView(
-                activity.button("Open Android Settings", () -> {
+            settingCard(
+                body,
+                "Android settings",
+                android.os.Build.MANUFACTURER +
+                    " " +
+                    android.os.Build.MODEL +
+                    " · Android " +
+                    android.os.Build.VERSION.RELEASE,
+                null,
+                false,
+                "Open",
+                () -> {
                     try {
                         activity.startActivity(new Intent(Settings.ACTION_SETTINGS));
                     } catch (Exception e) {
                         activity.toast("Android Settings is unavailable");
                     }
-                })
+                }
             );
-            body.addView(
-                activity.text(
-                    "TMDB supplies metadata and artwork. This product uses the TMDB API but is not endorsed or certified by TMDB.",
-                    12
-                )
-            );
-            body.addView(
-                activity.button("Metadata attribution", () ->
+            settingCard(
+                body,
+                "Metadata",
+                "Uses the TMDB API but is not endorsed or certified by TMDB",
+                null,
+                false,
+                "Details",
+                () ->
                     new AlertDialog.Builder(activity)
                         .setTitle("Metadata attribution")
                         .setMessage(
@@ -478,7 +594,6 @@ final class SettingsScreens {
                         )
                         .setPositiveButton("Close", null)
                         .show()
-                )
             );
         }
         activity.settingsStyle(body);

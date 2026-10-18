@@ -10,6 +10,9 @@ update feed), so the next release after it used code 12, named 0.12.
 
 On `main` but not yet published to TVs:
 
+- Settings: Appearance, Playback and System now use the same cards as Accounts (title, short
+  description, current value on the right, one action button) instead of plain switches and
+  full-width buttons. The redundant "Return home" button is gone; Back does the same.
 - Movies and Series open on a new start page in the style of the big streaming apps: a large
   backdrop with the focused title, year, rating and synopsis, above rows of posters by category
   (Trending, Popular, Top rated, release lists and every genre). Posters have no captions, the row
