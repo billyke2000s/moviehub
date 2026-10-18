@@ -38,7 +38,14 @@ public class VlcPlaybackActivity extends Activity {
     private AudioManager audio;
     private AudioFocusRequest audioFocus;
     private android.view.View controls;
+    /** A second Back within this time leaves the player. */
+    static final long EXIT_WINDOW_MS = 3000;
+    private long backPressedAt;
+    private TextView exitHint;
     private final Handler overlayHandler = new Handler(Looper.getMainLooper());
+    private final Runnable hideExitHint = () -> {
+        if (exitHint != null) exitHint.setVisibility(View.GONE);
+    };
     private final Runnable hideOverlay = () -> {
         if (
             controls != null && !dragging && !dialogOpen && player != null && player.isPlaying()
@@ -105,7 +112,16 @@ public class VlcPlaybackActivity extends Activity {
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             int key = event.getKeyCode();
             if (key == KeyEvent.KEYCODE_BACK) {
-                finish();
+                // Leaving takes two presses, so a stray press does not stop the film. Held-key
+                // repeats are ignored for the same reason.
+                if (event.getRepeatCount() > 0) return true;
+                long now = SystemClock.elapsedRealtime();
+                if (ended || player == null || now - backPressedAt < EXIT_WINDOW_MS) {
+                    finish();
+                    return true;
+                }
+                backPressedAt = now;
+                showExitHint();
                 return true;
             }
             if (key == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
@@ -263,6 +279,25 @@ public class VlcPlaybackActivity extends Activity {
         bottom.addView(buttons, new LinearLayout.LayoutParams(-1, -2));
         overlay.addView(bottom, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
         root.addView(overlay, new FrameLayout.LayoutParams(-1, -1));
+        exitHint = new TextView(this);
+        exitHint.setText("Press Back again to stop watching");
+        exitHint.setTextColor(0xff10141c);
+        exitHint.setTextSize(16);
+        exitHint.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+        exitHint.setPadding(dp(22), dp(10), dp(22), dp(10));
+        android.graphics.drawable.GradientDrawable hintShape =
+            new android.graphics.drawable.GradientDrawable();
+        hintShape.setColor(0xf2ffffff);
+        hintShape.setCornerRadius(dp(22));
+        exitHint.setBackground(hintShape);
+        exitHint.setVisibility(View.GONE);
+        FrameLayout.LayoutParams hintLayout = new FrameLayout.LayoutParams(
+            -2,
+            -2,
+            Gravity.CENTER_HORIZONTAL | Gravity.TOP
+        );
+        hintLayout.topMargin = dp(96);
+        root.addView(exitHint, hintLayout);
         root.setOnClickListener(v -> revealControls());
         setContentView(root);
         pause.requestFocus();
@@ -489,6 +524,13 @@ public class VlcPlaybackActivity extends Activity {
     private void panelClosed() {
         dialogOpen = false;
         revealControls();
+    }
+
+    private void showExitHint() {
+        revealControls();
+        exitHint.setVisibility(View.VISIBLE);
+        overlayHandler.removeCallbacks(hideExitHint);
+        overlayHandler.postDelayed(hideExitHint, EXIT_WINDOW_MS);
     }
 
     private void toggle() {

@@ -219,6 +219,24 @@ public class PlaybackTest {
     }
 
     @Test
+    public void leavingThePlayerTakesTwoBackPresses() throws Exception {
+        await(() -> {
+            try {
+                return player() != null && player().isPlaying();
+            } catch (Exception e) {
+                return false;
+            }
+        }, 30000);
+        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        instrumentation.waitForIdleSync();
+        assertFalse("One Back press keeps playing", activity.isFinishing());
+        UiEvidence.capture("player-exit-hint");
+        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        instrumentation.waitForIdleSync();
+        assertTrue("A second Back press leaves", activity.isFinishing());
+    }
+
+    @Test
     public void playsTransportStream() throws Exception {
         playLiveFixture("live.ts");
     }
