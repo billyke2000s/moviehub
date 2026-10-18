@@ -97,10 +97,8 @@ public class LiveGuideTest {
         );
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
         await("page down", () -> activity.liveTv.pageStart == 20 && activity.liveTv.cells.size() == 5);
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        await("on the first row of the last page", () -> focused().startsWith("121  Channel 20"));
+        // Up from the top row turns back a page and lands on its last row.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
         await(
             "back up to the previous page, last row",
