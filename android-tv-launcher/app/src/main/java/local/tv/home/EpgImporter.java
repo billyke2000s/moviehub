@@ -166,8 +166,11 @@ final class EpgImporter {
                     names.clear();
                 } else if ("programme".equals(element)) {
                     programmeChannel = parser.getAttributeValue(null, "channel");
-                    start = time(parser.getAttributeValue(null, "start"));
-                    stop = time(parser.getAttributeValue(null, "stop"));
+                    // Most of the guide is channels not saved here: skip their programmes without
+                    // reading times or text. (Channels come before programmes in XMLTV.)
+                    if (!kept.containsKey(programmeChannel)) programmeChannel = null;
+                    start = programmeChannel == null ? 0 : time(parser.getAttributeValue(null, "start"));
+                    stop = programmeChannel == null ? 0 : time(parser.getAttributeValue(null, "stop"));
                     title = null;
                     description = null;
                     category = null;
@@ -273,6 +276,8 @@ final class EpgImporter {
     /** XMLTV time: "20261018200000 +0100" (the zone may be missing, then UTC). */
     static long time(String value) {
         if (value == null || value.length() < 14) return 0;
+        long quick = EpgMatch.time(value);
+        if (quick != Long.MIN_VALUE) return quick;
         try {
             String text = value.trim();
             if (text.length() == 14) text += " +0000";

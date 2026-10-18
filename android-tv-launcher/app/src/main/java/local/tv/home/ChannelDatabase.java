@@ -102,6 +102,8 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
     private static ChannelDatabase instance;
     private final Secrets secrets;
+    /** The favourites last written to favourite_keys; null until written since the database opened. */
+    private Set<String> writtenFavourites;
 
     static synchronized ChannelDatabase get(Context context) {
         if (instance == null) instance = new ChannelDatabase(context.getApplicationContext());
@@ -109,88 +111,34 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     private ChannelDatabase(Context context) {
-        super(context, "channels-v2.db", null, 7);
+        super(context, "channels-v2.db", null, 8);
         secrets = new Secrets(context);
         setWriteAheadLoggingEnabled(true);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL(
-            "CREATE TABLE channels(_id INTEGER PRIMARY KEY,source TEXT NOT NULL,position INTEGER NOT NULL,name TEXT NOT NULL,grp TEXT NOT NULL,logo TEXT NOT NULL,epg TEXT NOT NULL,key TEXT NOT NULL,url BLOB NOT NULL)"
-        );
-        db.execSQL("CREATE INDEX channels_order ON channels(source,position)");
-        db.execSQL("CREATE INDEX channels_group ON channels(grp,source,position)");
-        db.execSQL("CREATE INDEX channels_key ON channels(key)");
-        db.execSQL("CREATE VIRTUAL TABLE channel_search USING fts4(name,grp)");
-        db.execSQL("CREATE TABLE favourite_keys(key TEXT PRIMARY KEY)");
-        createGuideTables(db);
-        addDuplicateKey(db);
-        addNumbers(db);
+        ChannelSchema.create(db);
     }
 
-    /**
-     * The same channel from several lists (BBC One from Free-TV and from iptv-org) shares a
-     * duplicate key: its country and plain name. The guide shows it once; the others are backups.
-     */
-    private static void addDuplicateKey(SQLiteDatabase db) {
-        // Safe to run twice (a database whose version was rolled back already has the column).
-        boolean present = false;
-        try (Cursor columns = db.rawQuery("PRAGMA table_info(channels)", null)) {
-            while (columns.moveToNext()) if ("dkey".equals(columns.getString(1))) present = true;
+    @Override
+    public void onOpen(SQLiteDatabase db) {
+        super.onOpen(db);
+        // A reopened or upgraded database may hold other favourites (or none): write them again.
+        synchronized (this) {
+            writtenFavourites = null;
         }
-        if (!present) db.execSQL("ALTER TABLE channels ADD COLUMN dkey TEXT NOT NULL DEFAULT ''");
-        db.execSQL("CREATE INDEX IF NOT EXISTS channels_dkey ON channels(dkey)");
     }
 
-    /** Adds a column if it is missing (a database whose version was rolled back may have it). */
-    private static void addColumn(SQLiteDatabase db, String table, String column, String type) {
-        try (Cursor columns = db.rawQuery("PRAGMA table_info(" + table + ")", null)) {
-            while (columns.moveToNext()) if (column.equals(columns.getString(1))) return;
-        }
-        db.execSQL("ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
-    }
-
-    /** Channel numbers, guide sections (version 5) and countries (version 6); filled in by {@link ChannelNumbers#renumber}. */
-    private static void addNumbers(SQLiteDatabase db) {
-        addColumn(db, "channels", "number", "INTEGER NOT NULL DEFAULT 0");
-        addColumn(db, "channels", "section", "TEXT NOT NULL DEFAULT ''");
-        db.execSQL("CREATE INDEX IF NOT EXISTS channels_number ON channels(number)");
-        addColumn(db, "channels", "country", "TEXT NOT NULL DEFAULT ''");
-        addColumn(db, "programmes", "descr", "TEXT NOT NULL DEFAULT ''");
-        addColumn(db, "programmes", "category", "TEXT NOT NULL DEFAULT ''");
-        addColumn(db, "programmes", "flags", "TEXT NOT NULL DEFAULT ''");
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int from, int to) {
+        ChannelSchema.upgrade(db, from);
     }
 
     /** The duplicate key for a channel; "" when its name has nothing usable (never merged). */
     static String duplicateKey(String epgId, String name) {
         String plain = EpgMatch.key(name);
         return plain.isEmpty() ? "" : EpgMatch.country(epgId) + ":" + plain;
-    }
-
-    /**
-     * Programme guide: programmes by guide channel id, and which plain channel keys (see
-     * {@link EpgMatch}) each guide channel matches.
-     */
-    private static void createGuideTables(SQLiteDatabase db) {
-        db.execSQL(
-            "CREATE TABLE IF NOT EXISTS programmes(channel TEXT NOT NULL,start INTEGER NOT NULL,stop INTEGER NOT NULL,title TEXT NOT NULL)"
-        );
-        db.execSQL("CREATE INDEX IF NOT EXISTS programmes_time ON programmes(channel,start)");
-        db.execSQL("CREATE TABLE IF NOT EXISTS epg_map(chkey TEXT NOT NULL,channel TEXT NOT NULL)");
-        db.execSQL("CREATE INDEX IF NOT EXISTS epg_map_match ON epg_map(chkey)");
-    }
-
-    @Override
-    public void onUpgrade(SQLiteDatabase db, int from, int to) {
-        if (from < 2) db.execSQL("CREATE TABLE IF NOT EXISTS favourite_keys(key TEXT PRIMARY KEY)");
-        if (from < 3) createGuideTables(db);
-        if (from < 4) addDuplicateKey(db); // filled in by the next import
-        if (from < 6) {
-            addNumbers(db);
-            ChannelNumbers.renumber(db);
-        }
-        if (from < 7) addNumbers(db); // programme details (flags); filled in by the next guide download
     }
 
     // ---- URL encryption -------------------------------------------------------------------
@@ -357,8 +305,37 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     /** The preferred copy of a channel: SQLite takes the other columns from the MIN row. */
     static final String RANK = "MIN((" + ORDER + ")*1000000000+position)";
 
-    private List<Row> rows(String where, String[] args, int offset) {
+    private List<Row> rows(String where, String[] args, int offset, int limit) {
+        return rows(where, args, offset, limit, false);
+    }
+
+    /**
+     * With {@code mainOnly}, the list is read from the preferred copies (main=1) through an index
+     * instead of grouping every copy. That gives the same rows only for lists whose condition all
+     * copies share (number, section, country); see {@link #sharedByCopies}.
+     */
+    private List<Row> rows(String where, String[] args, int offset, int limit, boolean mainOnly) {
         List<Row> out = new ArrayList<>();
+        if (mainOnly) {
+            try (
+                Cursor c = getReadableDatabase().rawQuery(
+                    "SELECT " +
+                        COLUMNS +
+                        " FROM channels WHERE main=1" +
+                        (where == null ? "" : " AND " + where) +
+                        " ORDER BY number,(" +
+                        ORDER +
+                        ")*1000000000+position LIMIT " +
+                        Math.max(1, limit) +
+                        " OFFSET " +
+                        Math.max(0, offset),
+                    args
+                )
+            ) {
+                while (c.moveToNext()) out.add(row(c));
+            }
+            return out;
+        }
         // SQLite returns the other columns from the row holding MIN(rank), so each duplicate group
         // is shown as its preferred source. Channels are in number order, as on the guide.
         try (
@@ -372,7 +349,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
                     " GROUP BY " +
                     GROUP +
                     " ORDER BY number,rank LIMIT " +
-                    (PAGE + 1) +
+                    Math.max(1, limit) +
                     " OFFSET " +
                     Math.max(0, offset),
                 args
@@ -424,32 +401,36 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
     /** Each query returns up to PAGE+1 rows; an extra row means another page exists. */
     List<Row> all(int offset) {
-        return rows(null, null, offset);
-    }
-
-    List<Row> sports(int offset) {
-        return rows("grp LIKE '%sport%'", null, offset);
-    }
-
-    List<Row> group(String group, int offset) {
-        return rows("grp=?", new String[] { group }, offset);
-    }
-
-    List<Row> search(String text, int offset) {
-        String match = ChannelQuery.fts(text);
-        if (match.isEmpty()) return new ArrayList<>();
-        return rows(
-            "_id IN (SELECT docid FROM channel_search WHERE channel_search MATCH ?)",
-            new String[] { match },
-            offset
-        );
+        return rows(null, null, offset, PAGE + 1);
     }
 
     synchronized List<Row> browse(String filter, String text, Set<String> keys, int offset) {
+        return browse(filter, text, keys, offset, PAGE + 1);
+    }
+
+    /**
+     * Up to {@code limit} rows of a guide list from {@code offset}. Changing channel needs one row
+     * and a guide page eleven, so they ask for those instead of a whole page.
+     */
+    synchronized List<Row> browse(String filter, String text, Set<String> keys, int offset, int limit) {
         List<String> args = new ArrayList<>();
         String where = where(filter, text, keys, args);
         if (where == null) return new ArrayList<>();
-        return rows(where, args.toArray(new String[0]), offset);
+        return rows(where, args.toArray(new String[0]), offset, limit, sharedByCopies(filter, text));
+    }
+
+    /**
+     * Whether a guide list's condition holds for every copy of a channel or for none: all
+     * channels, a section (including Sports) and a country, without a search. Favourites, groups
+     * and searches can match one copy only (each copy has its own key, group and name), so they
+     * group the copies instead.
+     */
+    static boolean sharedByCopies(String filter, String text) {
+        return (
+            (text == null || text.trim().isEmpty()) &&
+            !"favourites".equals(filter) &&
+            !filter.startsWith("group:")
+        );
     }
 
     /**
@@ -461,22 +442,35 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         List<String> args = new ArrayList<>();
         String where = where(filter, text, keys, args);
         if (where == null) return -1;
-        String groups = "SELECT MIN(number) AS n FROM channels WHERE " + where + " GROUP BY " + GROUP;
-        args.add(String.valueOf(number));
-        String[] values = args.toArray(new String[0]);
-        int before = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n<CAST(? AS INTEGER)", values),
-            exact = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n=CAST(? AS INTEGER)", values);
+        // Copies share their number, so for most lists the preferred copies alone give the numbers.
+        String groups = sharedByCopies(filter, text)
+            ? "SELECT number AS n FROM channels WHERE main=1 AND " + where
+            : "SELECT MIN(number) AS n FROM channels WHERE " + where + " GROUP BY " + GROUP;
+        // One pass over the list counts the channels before this number, at it, and in all.
+        // Its three values come before the list's own in the statement, so they are bound first.
+        args.add(0, String.valueOf(Integer.MAX_VALUE));
+        args.add(0, String.valueOf(number));
+        args.add(0, String.valueOf(number));
+        int before = 0,
+            exact = 0,
+            total = 0;
+        try (
+            Cursor c = getReadableDatabase().rawQuery(
+                "SELECT TOTAL(n<CAST(? AS INTEGER)),TOTAL(n=CAST(? AS INTEGER)),TOTAL(n<CAST(? AS INTEGER)) FROM (" +
+                    groups +
+                    ")",
+                args.toArray(new String[0])
+            )
+        ) {
+            if (c.moveToFirst()) {
+                before = c.getInt(0);
+                exact = c.getInt(1);
+                total = c.getInt(2);
+            }
+        }
         if (exact > 0) return before;
         if (!nearest) return -1;
-        values[values.length - 1] = String.valueOf(Integer.MAX_VALUE);
-        int total = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n<CAST(? AS INTEGER)", values);
         return total == 0 ? -1 : Math.min(before, total - 1);
-    }
-
-    private int count(String sql, String[] args) {
-        try (Cursor c = getReadableDatabase().rawQuery(sql, args)) {
-            return c.moveToFirst() ? c.getInt(0) : 0;
-        }
     }
 
     /** The channel with this stream key (its preferred copy's number and section), or null. */
@@ -520,8 +514,10 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
     /** The SQL condition for a guide list, adding its arguments; null when nothing can match. */
     private String where(String filter, String text, Set<String> keys, List<String> args) {
-        SQLiteDatabase db = getWritableDatabase();
-        if ("favourites".equals(filter)) {
+        // The favourites table is rewritten only when the favourites changed, not on every page
+        // and channel change.
+        if ("favourites".equals(filter) && !keys.equals(writtenFavourites)) {
+            SQLiteDatabase db = getWritableDatabase();
             db.beginTransactionNonExclusive();
             try (
                 SQLiteStatement insert = db.compileStatement(
@@ -534,6 +530,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
                     insert.executeInsert();
                 }
                 db.setTransactionSuccessful();
+                writtenFavourites = new HashSet<>(keys);
             } finally {
                 db.endTransaction();
             }
@@ -598,7 +595,6 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         );
     }
 
-    /** Clears all channels, for example after the URL key is lost. */
     // ---- Programme guide --------------------------------------------------------------------
     /** Every plain key the saved channels can be found under in a guide for {@code country}. */
     Set<String> guideKeys(String country) {
@@ -702,6 +698,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         return out;
     }
 
+    /** Clears all channels, for example after the URL key is lost. */
     void clear() {
         SQLiteDatabase db = getWritableDatabase();
         db.beginTransactionNonExclusive();

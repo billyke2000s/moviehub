@@ -55,6 +55,12 @@ Last updated: 18 October 2026.
 - The film buffer stays at 1.5 s (`--network-caching=1500`, shared with Live TV). A larger buffer
   delays the start and every jump, which were the slow parts reported (18 October 2026).
 
+- Big guide lists (all channels, sections, countries) read each channel's preferred copy
+  (`main=1`, database version 8) through an index instead of grouping every copy. Favourites,
+  provider groups and searches still group, because they can match a backup copy only (each copy
+  has its own key, group and name). Checked equal to the grouped queries in SQLite (19 October
+  2026).
+
 ## Open pull requests and branches
 
 - **Dependabot:** #3 (`actions/checkout`) is superseded by checkout@v5 in CI and can be closed.
@@ -73,3 +79,5 @@ Last updated: 18 October 2026.
    the player controls.
 2. Optional: a TMDB account sign-in so My List syncs to a TMDB watchlist and TMDB's personal
    recommendations can be mixed into For you.
+3. Check Live TV on the box with a large channel list (the full free list): guide pages, channel
+   up/down and typing numbers should feel quicker. Diagnostics has no guide timing yet.

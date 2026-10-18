@@ -18,6 +18,18 @@ update feed), so the next release after it used code 12, named 0.12.
   the stream's bitrate once the buffer is full, not the connection's top speed.
 - A closing player could crash the app if Live TV's shared player was released at that moment
   (seen in the device tests as "can't get VLCObject instance"); it now lets go of it instead.
+- Live TV: changing channel and browsing other channels in the banner fetch just the one channel
+  needed instead of a page of 151, and the guide fetches the eleven rows it uses.
+- Live TV: the favourites list no longer rewrites its table on every page or channel change, only
+  when favourites change.
+- Live TV: finding a channel by number counts the list once instead of up to three times.
+- Programme guide download: programmes on channels you don't have are skipped before their times
+  are read, and times are read without building a date parser each time.
+- Live TV: all channels, sections and countries are read through an index of each channel's
+  preferred copy instead of sorting out duplicates across the whole list every time (channel
+  database version 8; the upgrade fills it in once).
+- Removed three unused channel queries; the channel database's tables and upgrades moved into
+  `ChannelSchema`.
 
 ## 0.35 (18 Oct 2026)
 

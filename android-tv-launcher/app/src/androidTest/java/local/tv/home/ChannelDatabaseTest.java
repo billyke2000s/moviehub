@@ -107,10 +107,16 @@ public class ChannelDatabaseTest {
             )
         ) {
             old.execSQL("DROP TABLE favourite_keys");
+            old.execSQL("UPDATE channels SET main=0");
             old.setVersion(1);
         }
         assertEquals(3, db.count());
         assertEquals(channel(0).url, db.url(db.all(0).get(0).id, ChannelQuery.key(channel(0).url)));
+        assertEquals(
+            "The upgrade marks the preferred copies again",
+            3,
+            db.browse("all", "", Collections.emptySet(), 0).size()
+        );
         assertEquals(
             1,
             db.browse("favourites", "", Collections.singleton(ChannelQuery.key(channel(2).url)), 0).size()
@@ -151,6 +157,12 @@ public class ChannelDatabaseTest {
         List<ChannelDatabase.Row> copies = db.copies(rows.get(0));
         assertEquals(2, copies.size());
         assertTrue(db.url(copies.get(1).id, copies.get(1).key).contains("/free/"));
+        // The guide reads all channels from the preferred copies (main=1) through an index; it
+        // must give the same list as grouping every copy.
+        List<ChannelDatabase.Row> guide = db.browse("all", "", Collections.emptySet(), 0);
+        assertEquals(rows.size(), guide.size());
+        for (int i = 0; i < rows.size(); i++) assertEquals(rows.get(i).id, guide.get(i).id);
+        assertEquals(0, db.position("all", "", Collections.emptySet(), rows.get(0).number, false));
     }
 
     @Test
