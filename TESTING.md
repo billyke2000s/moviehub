@@ -74,6 +74,12 @@ Results of 8 parallel runs of the whole suite:
 | After keeping off-edge posters laid out | 6 / 8 |
 | After the Back fix | **8 / 8** |
 
+On 19 October 2026 a further cause was found (named by the improved failure reporter):
+`LivePlayer.stop()` in `PlaybackTest.cleanup` released the shared live player while a closing
+player screen still used it, crashing the app ("can't get VLCObject instance"). A crash ends the
+run before results are written, which is why earlier failures named no test. The player now lets
+go of a shared player that was released or replaced (`forgetReleasedLivePlayer`).
+
 Eight passing runs are good evidence, not proof. If a device test fails, read its annotation: CI
 lists each failed test with its message on the run (`tests/report-test-failures.py`), and timeouts
 in `ArtworkTest` and `TvNavigationTest` describe the screen state when they fail.

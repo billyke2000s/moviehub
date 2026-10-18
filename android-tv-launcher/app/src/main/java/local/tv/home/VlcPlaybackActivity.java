@@ -85,6 +85,7 @@ public class VlcPlaybackActivity extends Activity {
     };
     private final Runnable tick = new Runnable() {
         public void run() {
+            forgetReleasedLivePlayer();
             if (player != null) {
                 // While a skip is waiting, show where it will land.
                 long length = player.getLength(),
@@ -192,6 +193,7 @@ public class VlcPlaybackActivity extends Activity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        forgetReleasedLivePlayer();
         // A Live TV channel that failed: SELECT tries it again (unless browsing other channels).
         if (
             liveFailed &&
@@ -613,6 +615,15 @@ public class VlcPlaybackActivity extends Activity {
      * Lets go of the player. Live TV's shared player keeps playing here; {@link #onStop} stops it
      * unless the guide's picture has taken it over.
      */
+    /**
+     * Live TV plays on the shared player, which the guide (or a test) can release or replace while
+     * this screen is closing. Calling a released player crashes the app, so this screen lets go of
+     * one that is no longer the shared player.
+     */
+    private void forgetReleasedLivePlayer() {
+        if (live && player != null && player != LivePlayer.player()) player = null;
+    }
+
     private void release() {
         skips.clear();
         overlayHandler.removeCallbacks(applySkip);
@@ -635,6 +646,7 @@ public class VlcPlaybackActivity extends Activity {
 
     @Override
     public void onStop() {
+        forgetReleasedLivePlayer();
         overlayHandler.removeCallbacksAndMessages(null);
         sleepAt = 0;
         foreground = false;
@@ -667,6 +679,7 @@ public class VlcPlaybackActivity extends Activity {
     @Override
     public void onSaveInstanceState(Bundle out) {
         super.onSaveInstanceState(out);
+        forgetReleasedLivePlayer();
         long now = player == null ? 0 : player.getTime();
         out.putLong("position", Math.max(Math.max(position, resumeCheck), now));
     }

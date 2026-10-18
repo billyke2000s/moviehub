@@ -13,6 +13,11 @@ update feed), so the next release after it used code 12, named 0.12.
   press. The controls show where the jump will land straight away.
 - Moving along the film's progress bar with the remote jumps once, when you stop, instead of at
   every step. Letting go of the bar on a touch screen jumps at once.
+- The player's download speed is right: it read about 1000 times too low (often 0.0 Mb/s), and so
+  did the last speed in Diagnostics. It shows how fast the player reads the stream, which follows
+  the stream's bitrate once the buffer is full, not the connection's top speed.
+- A closing player could crash the app if Live TV's shared player was released at that moment
+  (seen in the device tests as "can't get VLCObject instance"); it now lets go of it instead.
 
 ## 0.35 (18 Oct 2026)
 
