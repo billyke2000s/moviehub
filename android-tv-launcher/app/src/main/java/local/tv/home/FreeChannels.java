@@ -17,14 +17,14 @@ final class FreeChannels {
 
     /** Choices offered in Settings: preference value and label. */
     static final String[][] CHOICES = {
-        { "auto", "Automatic (only without a TV provider)" },
+        { "auto", "All channels, only without a TV provider" },
         { "off", "Off" },
         { "uk", "United Kingdom" },
         { "ie", "Ireland" },
         { "us", "United States" },
         { "ca", "Canada" },
         { "au", "Australia" },
-        { "all", "All countries (very large)" },
+        { "all", "All channels, always" },
     };
 
     private FreeChannels() {}
@@ -39,15 +39,15 @@ final class FreeChannels {
     }
 
     /**
-     * The playlist to import, or "" when free channels are off. "auto" uses this box's country
-     * (iptv-org calls the United Kingdom "uk", not "gb") and only when no provider is connected.
+     * The playlist to import, or "" when free channels are off. "auto" is the full iptv-org list,
+     * used only while no provider is connected. A country uses its own list (iptv-org calls the
+     * United Kingdom "uk", not "gb").
      */
     static String playlist(Context context, boolean providerConnected) {
         String choice = choice(context);
         if (choice.equals("off") || (choice.equals("auto") && providerConnected)) return "";
-        if (choice.equals("all")) return ROOT + "index.m3u";
-        String country = choice.equals("auto") ? Locale.getDefault().getCountry() : choice;
-        country = country.toLowerCase(Locale.ROOT);
+        if (choice.equals("all") || choice.equals("auto")) return ROOT + "index.m3u";
+        String country = choice.toLowerCase(Locale.ROOT);
         if (country.equals("gb")) country = "uk";
         if (!country.matches("[a-z]{2}")) country = "uk";
         return ROOT + "countries/" + country + ".m3u";

@@ -31,7 +31,11 @@ public class FreeChannelsTest {
     @Test
     public void automaticOnlyWithoutAProviderAndChosenCountriesAlways() {
         prefs.edit().remove(FreeChannels.PREF).commit();
-        assertTrue(FreeChannels.playlist(context, false).startsWith(FreeChannels.ROOT + "countries/"));
+        assertEquals(
+            "The full list by default",
+            FreeChannels.ROOT + "index.m3u",
+            FreeChannels.playlist(context, false)
+        );
         assertEquals("A provider replaces automatic free channels", "", FreeChannels.playlist(context, true));
         prefs.edit().putString(FreeChannels.PREF, "uk").commit();
         assertEquals(FreeChannels.ROOT + "countries/uk.m3u", FreeChannels.playlist(context, true));

@@ -83,7 +83,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `SourcesScreen` | Finds stream sources (Torrentio → MediaFusion → Comet fallback, Premiumize cache) and lists them. |
 | `LibraryScreens` | My List (watchlist), Continue Watching, saved Premiumize library. |
 | `CloudScreens` | Premiumize cloud folders and transfers. |
-| `LiveTvScreen` | IPTV channel browser: groups, search, favourites, paging. |
+| `LiveTvScreen` | Live TV as a classic TV guide grid: ten numbered channels per page, time slots, colour-key paging, groups, search, favourites. |
 | `SettingsScreens` | Settings tabs, account setup (TMDB, Premiumize, Xtream, M3U), languages, toggles. |
 | `ForYou` | The Home "For you" shelf: blends TMDB recommendations for up to six titles you played, saved or opened, ranked and cached on the box. |
 | `UpdatePrompt` | Checks the public release feed and offers a verified update. See [android-tv-launcher/UPDATES.md](android-tv-launcher/UPDATES.md). |
@@ -98,7 +98,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `Network` | Bounded HTTP(S) streams with manual redirect handling; bearer tokens only sent over HTTPS to the same host. |
 | `Playlist` | M3U/Xtream playlist parsing and URL validation (refuses `http://` unless the user allows it). |
 | `ChannelDatabase`, `ChannelStore`, `ChannelQuery` | On-device SQLite channel database, paging and search. |
-| `FreeChannels` | Which public iptv-org playlist (by country, all, or off) Live TV imports; "automatic" only without a provider. |
+| `FreeChannels` | Which public iptv-org playlist (by country, all, or off) Live TV imports; "automatic" (the full list) only without a provider, imported when Live TV is first opened. |
 | `ChannelImporter`, `ChannelSync` | Background channel import (WorkManager), refreshed every 12 hours. |
 | `Secrets` | Account details encrypted with an Android Keystore key; the key and read values are cached in memory. |
 | `VideoFiles` | Chooses the right file in a multi-file release (episode matching). |
