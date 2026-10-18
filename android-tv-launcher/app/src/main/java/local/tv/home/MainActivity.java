@@ -176,32 +176,63 @@ public class MainActivity extends TvActivity {
             } catch (Exception e) {
                 Diagnostics.recovered("Loading a screen", e);
                 runOnUiThread(() -> {
-                    if (!isFinishing() && !isDestroyed() && request == generation) showRequestError(e);
+                    if (!isFinishing() && !isDestroyed() && request == generation) showRequestError(
+                        e,
+                        job,
+                        done
+                    );
                 });
             }
         });
     }
 
-    private void showRequestError(Exception failure) {
+    /**
+     * Explains a failed load where its content would have appeared. "Try again" runs the same
+     * request again on the same screen; "Open Settings" is offered when an account is the problem.
+     */
+    private <T> void showRequestError(Exception failure, Job<T> job, Done<T> done) {
         ErrorMessages.Explanation why = ErrorMessages.explain(failure);
+        boolean settings = why.fix == ErrorMessages.Fix.SETTINGS;
         LinearLayout target =
             catalogueDialog != null && catalogueDialog.isShowing() && overlayContent != null
                 ? overlayContent
                 : page;
         TextView pending = findLoading(target);
         if (pending != null) {
+            // Keep the loading line (screens remove it when their content arrives) and explain there.
+            String loadingText = pending.getText().toString();
             pending.setText(why.title + ". " + why.detail);
+            if (!(pending.getParent() instanceof LinearLayout)) return;
+            LinearLayout parent = (LinearLayout) pending.getParent();
+            Button action = button(settings ? "Open Settings" : "Try again", () -> {});
+            pill(action, false);
+            action.setOnClickListener(v -> {
+                parent.removeView(action);
+                if (settings) settingsScreens.settings();
+                else {
+                    pending.setText(loadingText);
+                    async(job, done);
+                }
+            });
+            LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-2, dp(42));
+            layout.topMargin = dp(6);
+            parent.addView(action, parent.indexOfChild(pending) + 1, layout);
             return;
         }
         clearLoading(target);
-        Runnable retry = destination;
-        boolean settings = why.fix == ErrorMessages.Fix.SETTINGS || retry == null;
+        LinearLayout holder = vertical();
+        target.addView(holder, new LinearLayout.LayoutParams(-1, -2));
         emptyState(
-            target,
+            holder,
             why.title,
             why.detail,
             settings ? "Open Settings" : "Try again",
-            settings ? settingsScreens::settings : retry
+            settings
+                ? settingsScreens::settings
+                : () -> {
+                      target.removeView(holder);
+                      async(job, done);
+                  }
         );
     }
 
