@@ -163,11 +163,11 @@ final class Troubleshooting {
             names.add("Stream sources: " + java.net.URI.create(source).getHost());
             checks.add(() -> Network.bytes(source + "/manifest.json", null, 1024 * 1024, false));
         }
-        String xtream = secrets.get("xtream");
-        if (!xtream.isEmpty()) {
+        // Account details are read inside each check (reading can fail), not on the screen thread.
+        if (secrets.has("xtream")) {
             names.add("TV provider (Xtream)");
             checks.add(() -> {
-                JSONObject account = new JSONObject(xtream);
+                JSONObject account = new JSONObject(secrets.get("xtream"));
                 MediaRepository.connectXtream(
                     account.getString("server"),
                     account.getString("username"),
@@ -176,12 +176,11 @@ final class Troubleshooting {
                 );
             });
         }
-        String m3u = secrets.get("m3u");
-        if (!m3u.isEmpty()) {
+        if (secrets.has("m3u")) {
             names.add("TV provider (playlist)");
             checks.add(() -> {
-                String start = new String(firstBytes(m3u, 512, http), "UTF-8").trim();
-                if (start.startsWith("﻿")) start = start.substring(1);
+                String start = new String(firstBytes(secrets.get("m3u"), 512, http), "UTF-8").trim();
+                if (start.startsWith("\uFEFF")) start = start.substring(1);
                 if (!start.startsWith("#EXTM3U")) throw new java.io.IOException("Not a playlist");
             });
         }
