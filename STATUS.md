@@ -21,7 +21,7 @@ Last updated: 18 October 2026.
 3. **CI runner change.** The `ubuntu-latest` runner label moves to Ubuntu 26 from 19 October 2026;
    watch the first runs after that date.
 4. **Android Gradle plugin 9.4.1** (replacing Dependabot #12) builds with Gradle 9.6.0 and Build
-   Tools 36. It is not in a published version yet; the next publish is the first built with it.
+   Tools 36. First published in 0.16.
 
 ## Open pull requests and branches
 
