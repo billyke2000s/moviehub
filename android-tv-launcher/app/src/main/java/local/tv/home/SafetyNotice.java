@@ -15,15 +15,10 @@ final class SafetyNotice {
 
     static final String TITLE = "Staying safe";
     static final String TEXT =
-        "MovieHub will never ask you, during or about a stream, to:\n\n" +
-        "•  go to a website, scan a QR code or ring a phone number\n" +
-        "•  install another app or let anyone control your TV or computer\n" +
-        "•  enter a password, bank or card details, or pay for anything\n\n" +
-        "Live TV channels come from public lists that MovieHub does not control. If a picture or " +
-        "message on any channel or video tells you to do one of these things, or says your TV or " +
-        "computer has a virus, it is a scam: change channel, ignore it, and never ring the number " +
-        "or visit the site.\n\n" +
-        "This notice is always in Settings → System.";
+        "MovieHub will never ask you to leave the app while you're watching.\n\n" +
+        "If a message in a stream tells you to visit a website, ring a number, install something " +
+        "or pay, it isn't from us. Ignore it and watch something else.\n\n" +
+        "You can read this again in Settings → System.";
 
     private SafetyNotice() {}
 
