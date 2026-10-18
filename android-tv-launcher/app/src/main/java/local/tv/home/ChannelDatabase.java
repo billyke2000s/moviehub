@@ -427,24 +427,6 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         return rows(null, null, offset);
     }
 
-    List<Row> sports(int offset) {
-        return rows("grp LIKE '%sport%'", null, offset);
-    }
-
-    List<Row> group(String group, int offset) {
-        return rows("grp=?", new String[] { group }, offset);
-    }
-
-    List<Row> search(String text, int offset) {
-        String match = ChannelQuery.fts(text);
-        if (match.isEmpty()) return new ArrayList<>();
-        return rows(
-            "_id IN (SELECT docid FROM channel_search WHERE channel_search MATCH ?)",
-            new String[] { match },
-            offset
-        );
-    }
-
     synchronized List<Row> browse(String filter, String text, Set<String> keys, int offset) {
         List<String> args = new ArrayList<>();
         String where = where(filter, text, keys, args);
@@ -598,7 +580,6 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         );
     }
 
-    /** Clears all channels, for example after the URL key is lost. */
     // ---- Programme guide --------------------------------------------------------------------
     /** Every plain key the saved channels can be found under in a guide for {@code country}. */
     Set<String> guideKeys(String country) {
@@ -702,6 +683,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         return out;
     }
 
+    /** Clears all channels, for example after the URL key is lost. */
     void clear() {
         SQLiteDatabase db = getWritableDatabase();
         db.beginTransactionNonExclusive();
