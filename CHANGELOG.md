@@ -18,6 +18,9 @@ update feed), so the next release after it used code 12, named 0.12.
   the stream's bitrate once the buffer is full, not the connection's top speed.
 - A closing player could crash the app if Live TV's shared player was released at that moment
   (seen in the device tests as "can't get VLCObject instance"); it now lets go of it instead.
+- Two marked, empty lists for new sources, ready to fill in: `DefaultSourceProviders.EXTRA` for
+  film and series providers and `FreeChannels.EXTRA` for TV channel lists (AGENTS.md, Adding
+  sources). Empty, so nothing changes yet.
 
 ## 0.35 (18 Oct 2026)
 
