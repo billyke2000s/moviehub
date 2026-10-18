@@ -99,7 +99,11 @@ public class LiveGuideTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         await(
             "second page from the bar",
-            () -> activity.liveTv.pageStart == 10 && activity.liveTv.frame.bar.keys.get(1).hasFocus()
+            () ->
+                activity.liveTv.pageStart == 10 &&
+                activity.liveTv.cells.size() == 10 &&
+                ((TextView) activity.liveTv.cells.get(0)).getText().toString().startsWith("111  ") &&
+                activity.liveTv.frame.bar.keys.get(1).hasFocus()
         );
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
         await("bottom row", () -> focused().startsWith("120  Channel 19"));
