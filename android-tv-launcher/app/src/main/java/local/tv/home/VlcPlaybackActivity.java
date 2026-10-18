@@ -181,12 +181,20 @@ public class VlcPlaybackActivity extends Activity {
         root.addView(status, new FrameLayout.LayoutParams(-1, -1));
         controls = new LinearLayout(this);
         controls.setOrientation(LinearLayout.VERTICAL);
-        controls.setPadding(dp(24), dp(12), dp(24), dp(12));
-        controls.setBackgroundColor(0xe6101827);
+        // Streaming-app style: the controls sit on a soft shade rising from the bottom of the video.
+        controls.setPadding(dp(40), dp(72), dp(40), dp(22));
+        controls.setBackground(
+            new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.BOTTOM_TOP,
+                new int[] { 0xf2000000, 0xcc000000, 0x66000000, 0x00000000 }
+            )
+        );
         TextView title = new TextView(this);
         title.setText(getIntent().getStringExtra("title"));
         title.setTextColor(Color.WHITE);
-        title.setTextSize(22);
+        title.setTextSize(26);
+        title.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+        title.setShadowLayer(dp(6), 0, dp(1), 0xcc000000);
         title.setMaxLines(1);
         title.setEllipsize(android.text.TextUtils.TruncateAt.END);
         controls.addView(title);
@@ -199,6 +207,7 @@ public class VlcPlaybackActivity extends Activity {
         int tint = getSharedPreferences("ui", MODE_PRIVATE).getInt("accent", 0xff8a9eff);
         timeline.setProgressTintList(android.content.res.ColorStateList.valueOf(tint));
         timeline.setThumbTintList(android.content.res.ColorStateList.valueOf(tint));
+        timeline.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(0x66ffffff));
         timeline.setEnabled(false);
         progress.addView(elapsed);
         progress.addView(timeline, new LinearLayout.LayoutParams(0, dp(44), 1));
@@ -257,17 +266,25 @@ public class VlcPlaybackActivity extends Activity {
         button.setFocusableInTouchMode(true);
         button.setText(title);
         button.setTextColor(Color.WHITE);
-        button.setTextSize(16);
+        button.setTextSize(15);
+        button.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
         button.setAllCaps(false);
-        button.setPadding(dp(14), dp(8), dp(14), dp(8));
+        button.setMinWidth(0);
+        button.setMinimumWidth(0);
+        button.setPadding(dp(20), 0, dp(20), 0);
         button.setBackground(controlBackground(false));
-        button.setOnFocusChangeListener((v, focused) -> v.setBackground(controlBackground(focused)));
+        button.setOnFocusChangeListener((v, focused) -> {
+            v.setBackground(controlBackground(focused));
+            button.setTextColor(focused ? 0xff10141c : Color.WHITE);
+            v.setScaleX(focused ? 1.06f : 1f);
+            v.setScaleY(focused ? 1.06f : 1f);
+        });
         button.setOnClickListener(v -> {
             revealControls();
             action.run();
         });
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, dp(52));
-        lp.setMargins(dp(3), dp(4), dp(3), dp(4));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, dp(44));
+        lp.setMargins(dp(4), dp(6), dp(8), dp(6));
         parent.addView(button, lp);
         return button;
     }
@@ -275,12 +292,10 @@ public class VlcPlaybackActivity extends Activity {
     private android.graphics.drawable.GradientDrawable controlBackground(boolean focused) {
         android.graphics.drawable.GradientDrawable background =
             new android.graphics.drawable.GradientDrawable();
-        background.setColor(focused ? 0xff343e62 : 0xff202c43);
-        background.setCornerRadius(dp(12));
-        background.setStroke(
-            dp(focused ? 2 : 1),
-            focused ? getSharedPreferences("ui", MODE_PRIVATE).getInt("accent", 0xff8a9eff) : 0x33ffffff
-        );
+        // A pill: see-through with a light outline, solid white when selected.
+        background.setColor(focused ? 0xffffffff : 0x26ffffff);
+        background.setCornerRadius(dp(22));
+        if (!focused) background.setStroke(dp(1), 0x66ffffff);
         return background;
     }
 

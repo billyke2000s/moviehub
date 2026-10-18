@@ -342,11 +342,116 @@ abstract class TvActivity extends Activity {
         button.setTranslationZ(focused ? dp(4) : 0);
     }
 
+    /** Tags on text inside a {@link #listRow()}: secondary text and small outlined badges. */
+    static final String MUTED = "muted",
+        BADGE = "badge";
+
+    /**
+     * A streaming-style list row (sources, episodes, files, channels): rounded and see-through,
+     * white with dark text when focused. Add children with {@link #rowText} and {@link #badge}.
+     */
+    LinearLayout listRow() {
+        LinearLayout row = row();
+        row.setPadding(dp(14), dp(12), dp(20), dp(12));
+        row.setFocusable(true);
+        row.setFocusableInTouchMode(true);
+        row.setClipToOutline(true);
+        row.setOnFocusChangeListener((v, focused) -> styleListRow(v, focused));
+        styleListRow(row, false);
+        return row;
+    }
+
+    void styleListRow(View row, boolean focused) {
+        GradientDrawable shape = new GradientDrawable();
+        shape.setCornerRadius(dp(14));
+        shape.setColor(focused ? 0xfff2f4f8 : 0x1affffff);
+        row.setBackground(shape);
+        row.setTranslationZ(focused ? dp(4) : 0);
+        listRowColours(row, focused);
+    }
+
+    private void listRowColours(View view, boolean focused) {
+        if (view instanceof TextView) {
+            TextView text = (TextView) view;
+            Object tag = text.getTag();
+            if (BADGE.equals(tag)) {
+                GradientDrawable outline = new GradientDrawable();
+                outline.setCornerRadius(dp(5));
+                outline.setStroke(dp(1), focused ? 0x9910141c : 0x99ffffff);
+                text.setBackground(outline);
+                text.setTextColor(focused ? 0xff10141c : 0xfff2f4f8);
+            } else text.setTextColor(
+                MUTED.equals(tag) ? (focused ? 0xff4a5568 : 0xffa6b2c8) : focused ? 0xff10141c : 0xfff8f8fc
+            );
+        } else if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) listRowColours(group.getChildAt(i), focused);
+        }
+    }
+
+    /** One line of text for a list row: main (bold when {@code strong}) or muted, ellipsized. */
+    TextView rowText(String value, int size, boolean muted, int lines) {
+        TextView text = compactText(value, size);
+        if (muted) text.setTag(MUTED);
+        text.setMaxLines(lines);
+        text.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        return text;
+    }
+
+    /** A small outlined label such as "4K", "HDR" or "12.4 GB". */
+    TextView badge(String value) {
+        TextView badge = compactText(value, 12);
+        badge.setTag(BADGE);
+        badge.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        badge.setPadding(dp(7), dp(1), dp(7), dp(1));
+        badge.setSingleLine(true);
+        listRowColours(badge, false);
+        return badge;
+    }
+
+    /** A thin progress bar in the accent colour, {@code fraction} from 0 to 1. */
+    ProgressBar progress(float fraction) {
+        ProgressBar bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        bar.setMax(1000);
+        bar.setProgress((int) Math.max(0, Math.min(1000, fraction * 1000)));
+        bar.setProgressTintList(android.content.res.ColorStateList.valueOf(accent()));
+        bar.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(0x55ffffff));
+        return bar;
+    }
+
+    /** Page title block: a small spaced kicker, a large bold title and an optional subtitle. */
+    void pageTitle(LinearLayout parent, String kicker, String title, String subtitle) {
+        if (kicker != null && !kicker.isEmpty()) {
+            TextView small = compactText(kicker.toUpperCase(java.util.Locale.ROOT), 12);
+            small.setLetterSpacing(.12f);
+            small.setTextColor(0xffc4cede);
+            parent.addView(small);
+        }
+        TextView heading = compactText(title, 32);
+        heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        heading.setMaxLines(2);
+        heading.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        heading.setShadowLayer(dp(6), 0, dp(1), 0xcc000000);
+        parent.addView(heading);
+        if (subtitle != null && !subtitle.isEmpty()) {
+            TextView under = compactText(subtitle, 15);
+            under.setTextColor(0xffdfe5ee);
+            under.setMaxLines(2);
+            under.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            parent.addView(under);
+        }
+    }
+
     /**
      * Puts the current screen on top of full-screen artwork, shaded so text on the left and
      * content lower down stay readable, as streaming apps do. Returns the artwork view.
      */
     BackdropView fullBleedBackdrop() {
+        return fullBleedBackdrop(false);
+    }
+
+    /** As {@link #fullBleedBackdrop()}; {@code dim} darkens the artwork further for list pages. */
+    BackdropView fullBleedBackdrop(boolean dim) {
         ViewGroup content = findViewById(android.R.id.content);
         View screen = content.getChildAt(0);
         content.removeView(screen);
@@ -375,6 +480,11 @@ abstract class TvActivity extends Activity {
                 0xff090d14,
             })
         );
+        if (dim) {
+            View veil = new View(this);
+            veil.setBackgroundColor(0x99090d14);
+            root.addView(veil, new FrameLayout.LayoutParams(-1, -1));
+        }
         screen.setBackgroundColor(Color.TRANSPARENT);
         root.addView(screen, new FrameLayout.LayoutParams(-1, -1));
         setContentView(root);

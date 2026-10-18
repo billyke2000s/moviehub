@@ -45,7 +45,9 @@ final class LiveTvScreen {
         for (String option : new String[] { "all", "sports", "favourites" }) {
             Button tab = activity.chip(
                 filters,
-                option.substring(0, 1).toUpperCase(Locale.ROOT) + option.substring(1),
+                option.equals("all")
+                    ? "All channels"
+                    : option.substring(0, 1).toUpperCase(Locale.ROOT) + option.substring(1),
                 () -> channelBrowser(option, search, 0)
             );
             if (option.equals(filter)) activity.primary(tab);
@@ -95,7 +97,7 @@ final class LiveTvScreen {
             activity.chip(active, "Clear", () -> channelBrowser("all", "", 0));
             activity.page.addView(active);
         }
-        TextView status = activity.text("Loading saved channels…", 16);
+        TextView status = activity.muted("Loading saved channels…", 14);
         activity.page.addView(status);
         LinearLayout results = activity.vertical();
         activity.page.addView(results);
@@ -129,26 +131,26 @@ final class LiveTvScreen {
                         results.addView(gridRow);
                     }
                     boolean favourite = visibleFavourites.contains(channel.key);
-                    LinearLayout card = activity.vertical();
-                    card.setPadding(activity.dp(16), activity.dp(12), activity.dp(16), activity.dp(12));
-                    card.setBackground(activity.box(0xff182337));
-                    LinearLayout identity = activity.row();
+                    LinearLayout card = activity.listRow();
+                    card.setPadding(activity.dp(10), activity.dp(10), activity.dp(14), activity.dp(10));
                     ImageView logo = new ImageView(activity);
                     logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                    identity.addView(logo, new LinearLayout.LayoutParams(activity.dp(42), activity.dp(42)));
+                    int pad = activity.dp(5);
+                    logo.setPadding(pad, pad, pad, pad);
+                    // Logos stay on a dark tile even when the row turns white, so light logos stay visible.
+                    logo.setBackground(activity.box(0xff0d1320));
+                    card.addView(logo, new LinearLayout.LayoutParams(activity.dp(78), activity.dp(52)));
                     if (channel.logo.startsWith("https://")) activity.posters.loadImage(logo, channel.logo);
-                    TextView name = activity.text((favourite ? "★  " : "") + channel.name, 18);
-                    name.setMaxLines(1);
-                    name.setEllipsize(android.text.TextUtils.TruncateAt.END);
-                    LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(0, -2, 1);
-                    nameParams.leftMargin = activity.dp(12);
-                    identity.addView(name, nameParams);
-                    card.addView(identity);
-                    TextView group = activity.text(channel.group.isEmpty() ? "Live TV" : channel.group, 13);
-                    group.setMaxLines(1);
-                    group.setTextColor(0xffa6b2c8);
-                    card.addView(group);
-                    activity.focus(card);
+                    LinearLayout copy = activity.vertical();
+                    copy.setPadding(activity.dp(12), 0, 0, 0);
+                    TextView name = activity.rowText((favourite ? "★  " : "") + channel.name, 17, false, 1);
+                    name.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+                    copy.addView(name);
+                    copy.addView(
+                        activity.rowText(channel.group.isEmpty() ? "Live TV" : channel.group, 13, true, 1)
+                    );
+                    card.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
+                    activity.styleListRow(card, false);
                     card.setOnClickListener(v ->
                         activity.async(
                             () -> channelsDb().url(channel.id, channel.key),
@@ -164,33 +166,32 @@ final class LiveTvScreen {
                         activity.toast(added ? "Added to favourites" : "Removed from favourites");
                         return true;
                     });
-                    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, activity.dp(105), 1);
-                    lp.setMargins(activity.dp(4), activity.dp(4), activity.dp(4), activity.dp(4));
+                    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, activity.dp(76), 1);
+                    lp.setMargins(activity.dp(4), activity.dp(5), activity.dp(6), activity.dp(5));
                     gridRow.addView(card, lp);
                 }
-                if (count == 0) results.addView(
-                    activity.text("No matching channels. Connect an account or refresh your provider.", 18)
+                if (gridRow != null) while (gridRow.getChildCount() < 3)
+                    gridRow.addView(new View(activity), new LinearLayout.LayoutParams(0, 1, 1));
+                if (count == 0) activity.emptyState(
+                    results,
+                    filter.equals("favourites") ? "No favourites yet" : "No channels here",
+                    filter.equals("favourites")
+                        ? "Hold Select on a channel to add it to your favourites."
+                        : "Connect Xtream or an M3U playlist in Settings, or refresh your provider.",
+                    "Open Settings",
+                    activity.settingsScreens::settings
                 );
                 LinearLayout navigation = activity.row();
-                if (offset > 0) navigation.addView(
-                    activity.button("Previous page", () ->
-                        channelBrowser(filter, search, Math.max(0, offset - ChannelDatabase.PAGE))
-                    )
+                navigation.setPadding(0, activity.dp(14), 0, activity.dp(4));
+                if (offset > 0) pagePill(navigation, "‹  Previous", () ->
+                    channelBrowser(filter, search, Math.max(0, offset - ChannelDatabase.PAGE))
                 );
-                if (items.size() > ChannelDatabase.PAGE) navigation.addView(
-                    activity.button("Next page", () ->
-                        channelBrowser(filter, search, offset + ChannelDatabase.PAGE)
-                    )
-                );
-                navigation.addView(
-                    activity.button("Refresh providers", () -> {
-                        ChannelSync.refreshNow(activity);
-                        channelBrowser(filter, search, 0);
-                    })
+                if (items.size() > ChannelDatabase.PAGE) pagePill(navigation, "Next  ›", () ->
+                    channelBrowser(filter, search, offset + ChannelDatabase.PAGE)
                 );
                 activity.page.addView(navigation);
                 activity.page.addView(
-                    activity.text("Hold Select on a channel to save or remove a favourite", 13)
+                    activity.muted("Hold Select on a channel to save or remove a favourite", 13)
                 );
                 int request = activity.generation;
                 if (sync.running || sync.queued) activity.handler.postDelayed(
@@ -227,6 +228,14 @@ final class LiveTvScreen {
                 );
             }
         );
+    }
+
+    private void pagePill(LinearLayout parent, String label, Runnable run) {
+        Button button = activity.button(label, run);
+        activity.pill(button, false);
+        LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-2, activity.dp(42));
+        layout.rightMargin = activity.dp(12);
+        parent.addView(button, layout);
     }
 
     private static final class FoundChannel extends Exception {}

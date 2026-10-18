@@ -159,6 +159,7 @@ final class LibraryScreens {
     void continueWatching() {
         activity.screen("Continue watching", activity.homeScreen::home);
         activity.resumeRefresh = this::continueWatching;
+        activity.page.addView(activity.muted("Select to resume · Hold Select for more", 13));
         LinearLayout controls = activity.horizontal(activity.page);
         activity.chip(controls, "My list", this::watchlist);
         activity.chip(controls, "Clear history", () ->
@@ -191,12 +192,13 @@ final class LibraryScreens {
                 count++;
                 String title = item.optString("title", "Title"),
                     url = item.getString("url");
-                LinearLayout card = activity.row();
-                card.setPadding(activity.dp(12), activity.dp(12), activity.dp(16), activity.dp(12));
-                card.setBackground(activity.box(0xff141e2c));
+                LinearLayout card = activity.listRow();
+                card.setPadding(activity.dp(10), activity.dp(10), activity.dp(20), activity.dp(10));
                 ImageView artwork = new ImageView(activity);
                 artwork.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                card.addView(artwork, new LinearLayout.LayoutParams(activity.dp(168), activity.dp(94)));
+                artwork.setClipToOutline(true);
+                artwork.setBackground(activity.box(0xff1a2230));
+                card.addView(artwork, new LinearLayout.LayoutParams(activity.dp(192), activity.dp(108)));
                 String path = item.optString("backdrop_path", item.optString("poster_path"));
                 if (path.startsWith("/")) activity.posters.loadImage(
                     artwork,
@@ -204,38 +206,36 @@ final class LibraryScreens {
                 );
                 LinearLayout copy = activity.vertical();
                 copy.setPadding(activity.dp(18), 0, activity.dp(18), 0);
-                TextView name = activity.compactText(title, 19);
-                name.setMaxLines(1);
-                name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                TextView name = activity.rowText(title, 19, false, 1);
+                name.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
                 copy.addView(name);
+                String episode =
+                    item.has("season") && item.has("episode")
+                        ? "S" + item.optInt("season") + " E" + item.optInt("episode") + "   ·   "
+                        : "";
                 copy.addView(
-                    activity.muted(
-                        length > position
-                            ? Math.max(1, (length - position) / 60000) + " min left"
-                            : position / 60000 + " min watched",
-                        14
+                    activity.rowText(
+                        episode +
+                            (length > position
+                                ? Math.max(1, (length - position) / 60000) + " min left"
+                                : position / 60000 + " min watched"),
+                        14,
+                        true,
+                        1
                     )
                 );
                 if (length > 0) {
-                    ProgressBar progress = new ProgressBar(
-                        activity,
-                        null,
-                        android.R.attr.progressBarStyleHorizontal
-                    );
-                    progress.setMax(1000);
-                    progress.setProgress((int) Math.min(1000, (position * 1000) / length));
-                    progress.setProgressTintList(
-                        android.content.res.ColorStateList.valueOf(activity.accent())
-                    );
-                    copy.addView(progress, new LinearLayout.LayoutParams(-1, activity.dp(5)));
+                    LinearLayout.LayoutParams bar = new LinearLayout.LayoutParams(-1, activity.dp(4));
+                    bar.topMargin = activity.dp(8);
+                    copy.addView(activity.progress((float) position / length), bar);
                 }
                 card.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
-                Button resume = activity.button("Resume", () -> activity.play(title, url, key, false, item));
-                card.addView(resume, new LinearLayout.LayoutParams(activity.dp(108), activity.dp(44)));
-                Button more = activity.button("Options", () -> {});
-                card.addView(more, new LinearLayout.LayoutParams(activity.dp(100), activity.dp(44)));
-                more.setOnClickListener(v ->
+                card.addView(activity.rowText("▶  Resume   ⋯", 15, false, 1));
+                activity.styleListRow(card, false);
+                card.setOnClickListener(v -> activity.play(title, url, key, false, item));
+                Runnable more = () ->
                     SidePanel.of(activity, title)
+                        .option("Resume", () -> activity.play(title, url, key, false, item))
                         .option("Start over", () -> {
                             positions.edit().remove(key).apply();
                             activity.play(title, url, key, false, item);
@@ -244,8 +244,16 @@ final class LibraryScreens {
                             positions.edit().remove(key).apply();
                             continueWatching();
                         })
-                        .show()
-                );
+                        .show();
+                card.setOnLongClickListener(v -> {
+                    more.run();
+                    return true;
+                });
+                card.setOnKeyListener((v, keyCode, event) -> {
+                    if (keyCode != android.view.KeyEvent.KEYCODE_MENU) return false;
+                    if (event.getAction() == android.view.KeyEvent.ACTION_UP) more.run();
+                    return true;
+                });
                 LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
                 lp.topMargin = activity.dp(10);
                 activity.page.addView(card, lp);
@@ -280,30 +288,55 @@ final class LibraryScreens {
         Runnable run,
         Runnable more
     ) {
-        LinearLayout card = activity.row();
-        card.setPadding(activity.dp(18), activity.dp(12), activity.dp(12), activity.dp(12));
-        card.setBackground(activity.box(0xff141e2c));
+        mediaRow(target, title, description, action, run, more, -1);
+    }
+
+    /**
+     * A list row for a saved source, cloud file or transfer: select runs {@code run}; holding Select
+     * or pressing Menu runs {@code more}. {@code progress} from 0 to 1 adds a bar; -1 for none.
+     */
+    void mediaRow(
+        LinearLayout target,
+        String title,
+        String description,
+        String action,
+        Runnable run,
+        Runnable more,
+        float progress
+    ) {
+        LinearLayout card = activity.listRow();
+        card.setPadding(activity.dp(20), activity.dp(12), activity.dp(20), activity.dp(12));
         LinearLayout copy = activity.vertical();
-        TextView name = activity.compactText(title, 18);
-        name.setMaxLines(2);
-        name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        TextView name = activity.rowText(title, 17, false, 2);
+        name.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
         copy.addView(name);
-        if (description != null && !description.isEmpty()) {
-            TextView detail = activity.muted(description, 13);
-            detail.setMaxLines(1);
-            detail.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            copy.addView(detail);
+        if (description != null && !description.isEmpty()) copy.addView(
+            activity.rowText(description, 13, true, 1)
+        );
+        if (progress >= 0) {
+            LinearLayout.LayoutParams bar = new LinearLayout.LayoutParams(-1, activity.dp(4));
+            bar.topMargin = activity.dp(6);
+            copy.addView(activity.progress(progress), bar);
         }
         card.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
-        Button open = activity.button(action, run);
-        card.addView(open, new LinearLayout.LayoutParams(activity.dp(100), activity.dp(44)));
+        TextView next = activity.rowText(action + (more != null ? "   ⋯" : ""), 15, false, 1);
+        LinearLayout.LayoutParams nextLayout = new LinearLayout.LayoutParams(-2, -2);
+        nextLayout.leftMargin = activity.dp(16);
+        card.addView(next, nextLayout);
+        activity.styleListRow(card, false);
+        card.setOnClickListener(v -> run.run());
         if (more != null) {
-            Button options = activity.button("Options", more);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(activity.dp(100), activity.dp(44));
-            lp.leftMargin = activity.dp(8);
-            card.addView(options, lp);
+            card.setOnLongClickListener(v -> {
+                more.run();
+                return true;
+            });
+            card.setOnKeyListener((v, key, event) -> {
+                if (key != android.view.KeyEvent.KEYCODE_MENU) return false;
+                if (event.getAction() == android.view.KeyEvent.ACTION_UP) more.run();
+                return true;
+            });
         }
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, activity.dp(88));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.bottomMargin = activity.dp(8);
         target.addView(card, lp);
     }

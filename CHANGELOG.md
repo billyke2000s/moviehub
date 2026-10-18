@@ -10,6 +10,15 @@ update feed), so the next release after it used code 12, named 0.12.
 
 On `main` but not yet published to TVs:
 
+- Redesigned Sources: the title's artwork behind the page, each source as a rounded row with the
+  quality in large type, badges for HDR/Dolby Vision, codec and size, and what Select does (Play,
+  Send to cloud). The file chooser uses the same rows and selects the suggested episode.
+- Series: seasons and episodes on one page, with season pills and the episodes below, opening on
+  the season you are watching. Back from an episode's sources returns to that season.
+- Continue watching, saved library, cloud files and transfers use the same rows (Select plays or
+  opens, hold Select for more), with progress bars for transfers.
+- Live TV channels as rounded tiles with the logo on a dark plate, and clearer empty states.
+- Player controls on a soft shade over the video with pill buttons and a larger title.
 - Every pop-up (menus, choices, confirmations, the update prompt, player options and errors) is now a
   panel on the right in MovieHub's own style instead of Android's grey dialogs and menus. The current
   choice is ticked and selected.
