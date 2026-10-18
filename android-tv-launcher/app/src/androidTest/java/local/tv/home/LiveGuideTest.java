@@ -267,7 +267,8 @@ public class LiveGuideTest {
         // BACK: the main menu again; 9 opens Music in the grid.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         await("main menu", () -> activity.liveTv.menu.rows.size() == 10);
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_9);
+        // The satellite box's order: 8 is Music, 9 Radio.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_8);
         await("music", () -> activity.liveTv.filter.equals("section:Music"));
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         await(
@@ -289,5 +290,40 @@ public class LiveGuideTest {
         await("search open", () -> !activity.hasWindowFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         await("search closed", () -> activity.hasWindowFocus());
+    }
+
+    @Test
+    public void pagesWrapRoundLikeTheSatelliteGuide() {
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await(
+            "first page",
+            () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
+        );
+        // Page up from the first page: the last page.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PAGE_UP);
+        await("last page", () -> activity.liveTv.pageStart == 20 && activity.liveTv.cells.size() == 5);
+        // Page down from the last page: the first again.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PAGE_DOWN);
+        await("first page again", () -> activity.liveTv.pageStart == 0 && activity.liveTv.cells.size() == 10);
+    }
+
+    @Test
+    public void theGuideMenuFollowsTheSatelliteBoxOrderOverTwoPages() {
+        remote.runOnMainSync(() -> activity.liveTv.start());
+        await("menu", () -> activity.liveTv.menu.rows.size() == 10);
+        String[][] first = GuideMenu.pageItems(0),
+            second = GuideMenu.pageItems(1);
+        assertEquals("All Channels", first[0][0]);
+        assertEquals("Entertainment", first[1][0]);
+        assertEquals("Music", first[7][0]);
+        assertEquals("Radio", first[8][0]);
+        assertEquals("More…", first[9][0]);
+        assertEquals("Favourites", second[0][0]);
+        assertEquals("Options", second[second.length - 1][0]);
+        // 0 is More…; BACK goes up a page.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_0);
+        await("second page", () -> activity.liveTv.menu.page == 1 && activity.liveTv.menu.rows.size() == 6);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        await("first page", () -> activity.liveTv.menu.page == 0 && activity.liveTv.menu.rows.size() == 10);
     }
 }

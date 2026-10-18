@@ -89,10 +89,22 @@ final class GuideRows {
             cell.setTextColor(nameFocused ? LiveTvScreen.INK : 0xffffffff);
             for (TextView item : cells) {
                 boolean on = item.hasFocus();
+                // No listings: the faded blue, as the satellite guide drew it.
+                boolean none = ((Slot) item.getTag()).programme == null;
                 item.setBackground(
-                    box(on ? LiveTvScreen.YELLOW : nameFocused ? 0xfffff1a6 : LiveTvScreen.BLUE_DARK)
+                    box(
+                        on
+                            ? LiveTvScreen.YELLOW
+                            : nameFocused
+                              ? 0xfffff1a6
+                              : none
+                                ? LiveTvScreen.FADED
+                                : LiveTvScreen.BLUE
+                    )
                 );
-                item.setTextColor(on || nameFocused ? LiveTvScreen.INK : 0xffdfe6ff);
+                item.setTextColor(
+                    on || nameFocused ? LiveTvScreen.INK : none ? LiveTvScreen.FADED_TEXT : 0xffffffff
+                );
             }
         };
         cell.setOnFocusChangeListener((v, focused) -> restyle.run());

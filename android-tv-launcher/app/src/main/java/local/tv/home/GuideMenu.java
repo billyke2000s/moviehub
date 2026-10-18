@@ -19,10 +19,13 @@ import java.util.Locale;
  */
 final class GuideMenu {
 
-    /** Menu rows: label and the guide list each opens ("" for More…). */
-    static final String[][] MAIN = {
+    /**
+     * The menu, in the satellite box's order: label and the guide list each opens. Favourites is
+     * on the blue key (and on the second page). Long lists split into pages of nine with More… at
+     * the bottom, as the box did.
+     */
+    static final String[][] ITEMS = {
         { "All Channels", "all" },
-        { "Favourites", "favourites" },
         { "Entertainment", "section:Entertainment" },
         { "Movies", "section:Movies" },
         { "Sports", "section:Sports" },
@@ -30,18 +33,20 @@ final class GuideMenu {
         { "Documentaries", "section:Documentaries" },
         { "Kids", "section:Kids" },
         { "Music", "section:Music" },
-        { "More…", "" },
-    };
-
-    /** More…: the other sections, the countries, the lists' own groups and the options. */
-    static final String[][] MORE = {
+        { "Radio", "section:Radio" },
+        { "Favourites", "favourites" },
         { "Religion", "section:Religion" },
         { "Shopping", "section:Shopping" },
-        { "Radio", "section:Radio" },
         { "International", "countries" },
         { "Channel groups from your lists", "groups" },
         { "Options", "options" },
     };
+
+    /** Rows on a page, More… included. */
+    static final int PAGE = 10;
+
+    /** The page shown (0 is the first). */
+    int page;
 
     private final MainActivity activity;
     private final LiveTvScreen guide;
@@ -58,11 +63,29 @@ final class GuideMenu {
 
     /** Live TV opens here first, as the satellite box's TV Guide button did. */
     void show() {
-        build(MAIN, "TV GUIDE", activity.homeScreen::home);
+        page(0);
     }
 
-    private void more() {
-        build(MORE, "MORE", this::show);
+    /** The items on page {@code index}: nine and More… while more follow, else the rest. */
+    static String[][] pageItems(int index) {
+        List<String[]> out = new ArrayList<>();
+        int from = 0;
+        for (int i = 0; i < index; i++) from += PAGE - 1;
+        boolean last = ITEMS.length - from <= PAGE;
+        int to = last ? ITEMS.length : from + PAGE - 1;
+        for (int i = from; i < to; i++) out.add(ITEMS[i]);
+        if (!last) out.add(new String[] { "More…", "" });
+        return out.toArray(new String[0][]);
+    }
+
+    /** Shows a page of the menu; BACK goes up a page, then Home. */
+    private void page(int index) {
+        page = index;
+        build(
+            pageItems(index),
+            index == 0 ? "TV GUIDE" : "MORE",
+            index == 0 ? activity.homeScreen::home : () -> page(index - 1)
+        );
     }
 
     private void build(String[][] items, String heading, Runnable back) {
@@ -144,7 +167,7 @@ final class GuideMenu {
             rows.add(row);
         }
         // A short list (More…) keeps rows the usual height instead of stretching them.
-        int spare = MAIN.length - items.length;
+        int spare = PAGE - items.length;
         if (spare > 0) list.addView(new View(activity), new LinearLayout.LayoutParams(-1, 0, spare));
         page.addView(list, new LinearLayout.LayoutParams(-1, 0, 1));
 
@@ -152,16 +175,16 @@ final class GuideMenu {
             .onUp(() -> rows.get(rows.size() - 1).requestFocus())
             .add(GuideFrame.RED, "Options", guide.panels::options)
             .add(GuideFrame.GREEN, "Reminders", guide.panels::reminders)
-            .add(LiveTvScreen.YELLOW, "Search A–Z", guide.panels::searchPanel)
+            .add(GuideFrame.YELLOW, "Search A–Z", guide.panels::searchPanel)
             .add(GuideFrame.BLUE, "Favourites", () -> guide.show("favourites", ""));
         bar.view.setPadding(activity.dp(34), 0, 0, 0);
         page.addView(bar.view);
         rows.get(0).requestFocus();
     }
 
-    /** The number shown beside a row: 1 to 9 then 0 on the main list, 1 upwards on More…. */
+    /** The number shown beside a row: 1 to 9, then 0 for the tenth. */
     private static int digit(String[][] items, int index) {
-        return items == MAIN ? (index + 1) % 10 : index + 1;
+        return (index + 1) % 10;
     }
 
     /** Number keys open a row; the colour keys do what the key guide at the bottom says. */
@@ -189,7 +212,7 @@ final class GuideMenu {
     private void open(String target) {
         switch (target) {
             case "":
-                more();
+                page(page + 1); // More…
                 break;
             case "countries":
                 guide.panels.countries();
@@ -220,8 +243,8 @@ final class GuideMenu {
         nameLayout.leftMargin = activity.dp(3);
         row.addView(name, nameLayout);
         View.OnFocusChangeListener style = (v, focused) -> {
-            number.setBackground(box(focused ? 0xffe0a400 : LiveTvScreen.BLUE_DARK));
-            number.setTextColor(focused ? LiveTvScreen.INK : 0xffdfe6ff);
+            number.setBackground(box(focused ? LiveTvScreen.YELLOW_DARK : LiveTvScreen.BLUE_DARK));
+            number.setTextColor(focused ? LiveTvScreen.INK : LiveTvScreen.NUMBER_TEXT);
             name.setBackground(box(focused ? LiveTvScreen.YELLOW : LiveTvScreen.BLUE));
             name.setTextColor(focused ? LiveTvScreen.INK : 0xffffffff);
         };
