@@ -295,10 +295,12 @@ final class LiveTvScreen {
                 activity.prefs.edit().putString(LAST_CHANNEL, channel.key).apply();
                 // The guide's picture keeps playing: the full screen takes it over, so the same
                 // channel carries on without reconnecting.
-                activity.resumeRefresh = () -> {
-                    int last = LiveZapper.session == null ? position : LiveZapper.session.position;
-                    guide(last - (last % ROWS), last % ROWS);
-                };
+                activity.resumeRefresh = DeviceMode.phone(activity)
+                    ? activity.phoneLive::refresh
+                    : () -> {
+                          int last = LiveZapper.session == null ? position : LiveZapper.session.position;
+                          guide(last - (last % ROWS), last % ROWS);
+                      };
                 activity.play(channel.name, url, channel.key, true);
             }
         );

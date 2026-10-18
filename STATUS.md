@@ -4,7 +4,7 @@ Last updated: 18 October 2026.
 
 ## Where things stand
 
-- **Latest published version:** 0.30 (version code 30), published 18 October 2026, with update
+- **Latest published version:** 0.31 (version code 31), published 18 October 2026, with update
   notes in the feed. Items under *Unreleased* in [CHANGELOG.md](CHANGELOG.md) are not on TVs yet.
 - **Code structure:** feature classes per area, see [ARCHITECTURE.md](ARCHITECTURE.md).
   `CatalogueScreens` was split (filter sheets in `CatalogueOptions`) and the Live TV guide's
@@ -36,6 +36,10 @@ Last updated: 18 October 2026.
    real failing stream. Moving the live picture between the full screen and the guide (one shared
    LibVLC player, views detached and attached) is tested on the emulator with a local stream,
    not on the X905X5M box.
+
+6. **Phone layout covers Live TV only.** Films, series, My List and settings still open in the TV
+   layout. MainActivity now handles rotation itself (configChanges), so screens are not rebuilt
+   when a phone turns.
 
 ## Decisions
 

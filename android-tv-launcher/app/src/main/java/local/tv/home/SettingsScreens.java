@@ -556,6 +556,15 @@ final class SettingsScreens {
             );
             settingCard(
                 body,
+                "Layout",
+                "TV (remote) or phone and tablet (touch)",
+                DeviceMode.phone(activity) ? "Phone" : "TV",
+                false,
+                "Change",
+                () -> LayoutChooser.show(activity)
+            );
+            settingCard(
+                body,
                 SafetyNotice.TITLE,
                 "MovieHub never asks you to leave the app, ring a number or pay during a stream",
                 null,

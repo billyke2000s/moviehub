@@ -84,6 +84,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `LibraryScreens` | My List (watchlist), Continue Watching, saved Premiumize library. |
 | `CloudScreens` | Premiumize cloud folders and transfers. |
 | `LiveTvScreen` | Live TV as a classic TV guide grid: ten channels per page in satellite number order, time slots, colour-key paging, number entry, favourites, the live picture in the corner. |
+| `DeviceMode`, `LayoutChooser` | TV or phone layout: the first-start question (best guess suggested), kept in preferences, changeable in Settings. |
+| `PhoneLive` | Live TV in the phone layout: portrait touch channel list with tabs, search, now and next; the player gets touch buttons on its banner. |
 | `GuideFrame` | The guide's fixed parts, laid out like the satellite guide: title and clock, the selected programme with the live picture, tabs, time slots, colour keys. |
 | `GuideMenu` | The numbered guide menu (1 All Channels … 0 More…) that BACK from the guide opens. |
 | `GuideRows` | The guide's rows: channel names and programme cells, moving along programmes and through time, SELECT to watch or set a reminder. |

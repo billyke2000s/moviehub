@@ -277,7 +277,10 @@ public class VlcPlaybackActivity extends Activity {
             // The film controls never show over Live TV; the satellite-box overlay does.
             controls.setVisibility(View.GONE);
         }
-        root.setOnClickListener(v -> revealControls());
+        root.setOnClickListener(v -> {
+            if (zapper != null && zapper.touch) zapper.tapped();
+            else revealControls();
+        });
         setContentView(root);
         pause.requestFocus();
         revealControls();

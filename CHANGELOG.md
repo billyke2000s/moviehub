@@ -10,6 +10,16 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.31 (18 Oct 2026)
+
+- The first time MovieHub opens it asks whether it is on a TV with a remote or a phone or tablet
+  by touch (with its best guess suggested, as some TV boxes report themselves as phones). The
+  answer is kept; Settings → System → Layout changes it.
+- Phone layout, starting with Live TV: a portrait channel list with numbers, now and next, section
+  tabs and search; tap to watch, hold for favourites. The player's banner gets touch buttons
+  (channel up and down, info, source, audio, pause, guide), and tapping the picture shows or hides
+  it. Films, series and settings still use the TV layout for now.
+
 ## 0.30 (18 Oct 2026)
 
 - Phones and tablets get a MovieHub icon in the app drawer, so it opens as an ordinary app without
