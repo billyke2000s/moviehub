@@ -311,25 +311,18 @@ final class AppDock {
 
     /** Open, hotbar, hide, app info and uninstall. {@code changed} runs after hide or show. */
     void appMenu(View anchor, App app, Runnable changed) {
-        PopupMenu menu = new PopupMenu(activity, anchor);
         boolean pinned = dockOrder().contains(app.component.flattenToString());
-        menu.getMenu().add(0, 1, 0, "Open");
-        menu.getMenu().add(0, 2, 1, pinned ? "Remove from hotbar" : "Add to hotbar");
         boolean hidden = isHidden(app);
-        menu.getMenu().add(0, 5, 2, hidden ? "Show in Apps" : "Hide from Apps");
-        menu.getMenu().add(0, 3, 3, "App info");
-        try {
-            ApplicationInfo info = activity
-                .getPackageManager()
-                .getApplicationInfo(app.component.getPackageName(), 0);
-            if (
-                (info.flags & ApplicationInfo.FLAG_SYSTEM) == 0 ||
-                (info.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
-            ) menu.getMenu().add(0, 4, 4, "Uninstall");
-        } catch (PackageManager.NameNotFoundException ignored) {}
-        menu.setOnMenuItemClickListener(item -> {
-            int id = item.getItemId();
-            if (id == 5) {
+        SidePanel panel = SidePanel.of(activity, app.label)
+            .option("Open", () -> launch(app))
+            .option(pinned ? "Remove from hotbar" : "Add to hotbar", () -> {
+                List<String> order = dockOrder();
+                String component = app.component.flattenToString();
+                if (!order.remove(component)) order.add(component);
+                saveDockOrder(order);
+                activity.toast(pinned ? "Removed from hotbar" : "Added to hotbar");
+            })
+            .option(hidden ? "Show in Apps" : "Hide from Apps", () -> {
                 setHidden(app, !hidden);
                 activity.toast(
                     hidden
@@ -337,33 +330,31 @@ final class AppDock {
                         : app.label + " is hidden. Use Show hidden to find it."
                 );
                 if (changed != null) changed.run();
-                return true;
-            }
-            if (id == 2) {
-                List<String> order = dockOrder();
-                String component = app.component.flattenToString();
-                if (!order.remove(component)) order.add(component);
-                saveDockOrder(order);
-                activity.toast(pinned ? "Removed from hotbar" : "Added to hotbar");
-                return true;
-            }
-            try {
-                if (id == 1) launch(app);
-                else {
-                    Intent intent = new Intent(
-                        id == 4 ? Intent.ACTION_DELETE : Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                        android.net.Uri.parse("package:" + app.component.getPackageName())
-                    );
-                    refreshAppsOnResume = true;
-                    activity.startActivity(intent);
-                }
-            } catch (Exception e) {
-                refreshAppsOnResume = false;
-                activity.toast("Android could not open this action");
-            }
-            return true;
-        });
-        menu.show();
+            })
+            .option("App info", () -> openSystem(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, app));
+        try {
+            ApplicationInfo info = activity
+                .getPackageManager()
+                .getApplicationInfo(app.component.getPackageName(), 0);
+            if (
+                (info.flags & ApplicationInfo.FLAG_SYSTEM) == 0 ||
+                (info.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+            ) panel.option("Uninstall", () -> openSystem(Intent.ACTION_DELETE, app));
+        } catch (PackageManager.NameNotFoundException ignored) {}
+        panel.show();
+    }
+
+    /** App info or uninstall; the Apps screen refreshes when the user comes back. */
+    private void openSystem(String action, App app) {
+        try {
+            refreshAppsOnResume = true;
+            activity.startActivity(
+                new Intent(action, android.net.Uri.parse("package:" + app.component.getPackageName()))
+            );
+        } catch (Exception e) {
+            refreshAppsOnResume = false;
+            activity.toast("Android could not open this action");
+        }
     }
 
     /** Opens the Apps screen; see {@link AllApps}. */

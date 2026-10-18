@@ -97,6 +97,18 @@ jobs:
           import hashlib,json,os,pathlib
           apk=pathlib.Path('release-files/home.apk')
           data=dict(packageName='local.tv.home',versionCode=int(os.environ['APK_VERSION_CODE']),versionName=os.environ['APK_VERSION_NAME'],sha256=hashlib.sha256(apk.read_bytes()).hexdigest())
+          # "What's new" for the update prompt: the CHANGELOG section headed with this version name.
+          notes=[];inside=False
+          for line in pathlib.Path('CHANGELOG.md').read_text().splitlines():
+              if line.startswith('## '):
+                  if inside: break
+                  inside=line[3:].split(' (')[0].strip()==os.environ['APK_VERSION_NAME']
+                  continue
+              if inside: notes.append(line)
+          text='\n'.join(notes).strip()
+          text=text.replace('\n  ',' ').replace('`','')
+          text='\n'.join(('• '+l[2:]) if l.startswith('- ') else l for l in text.splitlines())
+          if text: data['notes']=text[:2000]
           pathlib.Path('release-files/update.json').write_text(json.dumps(data))
           PY
       - name: Publish update assets

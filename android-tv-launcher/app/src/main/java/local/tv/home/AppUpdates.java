@@ -21,11 +21,18 @@ final class AppUpdates {
 
         final long version;
         final String name, sha;
+        /** "What's new" text from the feed, plain text; empty for feeds published before it existed. */
+        final String notes;
 
         Release(long version, String name, String sha) {
+            this(version, name, sha, "");
+        }
+
+        Release(long version, String name, String sha, String notes) {
             this.version = version;
             this.name = name;
             this.sha = sha;
+            this.notes = notes;
         }
     }
 
@@ -41,7 +48,9 @@ final class AppUpdates {
             .getPackageManager()
             .getPackageInfo(context.getPackageName(), 0)
             .getLongVersionCode();
-        return version > installed ? new Release(version, json.getString("versionName"), sha) : null;
+        String notes = json.optString("notes", "");
+        if (notes.length() > 2000) notes = notes.substring(0, 2000) + "…";
+        return version > installed ? new Release(version, json.getString("versionName"), sha, notes) : null;
     }
 
     static File download(Context context, Release release) throws Exception {

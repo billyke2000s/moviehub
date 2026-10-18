@@ -59,12 +59,10 @@ final class LiveTvScreen {
                         (groups.get(i).name.isEmpty() ? "Ungrouped" : groups.get(i).name) +
                         " · " +
                         groups.get(i).count;
-                    new AlertDialog.Builder(activity)
-                        .setTitle("Channel groups")
-                        .setItems(names, (d, which) ->
+                    SidePanel.of(activity, "Channel groups")
+                        .choices(names, -1, which ->
                             channelBrowser("group:" + groups.get(which).name, search, 0)
                         )
-                        .setNegativeButton("Cancel", null)
                         .show();
                 }
             )

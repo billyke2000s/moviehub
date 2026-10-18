@@ -207,31 +207,20 @@ final class PosterCards {
     }
 
     private void posterActions(View anchor, JSONObject item) {
-        PopupMenu menu = new PopupMenu(activity, anchor);
-        menu.getMenu()
-            .add("View details")
-            .setOnMenuItemClickListener(v -> {
-                tmdbTitle(item);
-                return true;
-            });
-        menu.getMenu()
-            .add(activity.libraryScreens.isWatchlisted(item) ? "Remove from my list" : "Add to my list")
-            .setOnMenuItemClickListener(v -> {
+        String name = item.optString("title", item.optString("name", "Title"));
+        boolean saved = activity.libraryScreens.isWatchlisted(item);
+        String type = item.optString("media_type", item.has("title") ? "movie" : "tv");
+        SidePanel.of(activity, name)
+            .option("View details", () -> tmdbTitle(item))
+            .option(saved ? "Remove from My List" : "Add to My List", () -> {
                 activity.libraryScreens.toggleWatchlist(item);
-                activity.toast(
-                    activity.libraryScreens.isWatchlisted(item) ? "Added to my list" : "Removed from my list"
-                );
+                activity.toast(saved ? "Removed from My List" : "Added to My List");
                 if (activity.myListRefresh != null) activity.myListRefresh.run();
-                return true;
-            });
-        menu.getMenu()
-            .add("More like this")
-            .setOnMenuItemClickListener(v -> {
-                String type = item.optString("media_type", item.has("title") ? "movie" : "tv");
-                activity.catalogues.catalogue(type, type + "/" + item.optInt("id") + "/recommendations", 1);
-                return true;
-            });
-        menu.show();
+            })
+            .option("More like this", () ->
+                activity.catalogues.catalogue(type, type + "/" + item.optInt("id") + "/recommendations", 1)
+            )
+            .show();
     }
 
     JSONObject recentForTitle(JSONObject item) {

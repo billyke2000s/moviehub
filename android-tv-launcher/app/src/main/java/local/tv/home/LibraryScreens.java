@@ -17,6 +17,7 @@ import org.json.*;
 /** My List, Continue Watching and saved provider libraries. */
 final class LibraryScreens {
 
+    private static final String[] SORTS = { "Recently added", "Title A–Z", "Title Z–A" };
     private final MainActivity activity;
 
     LibraryScreens(MainActivity activity) {
@@ -95,12 +96,10 @@ final class LibraryScreens {
             if (kind.equals(filter)) activity.primary(tab);
         }
         activity.chip(tools, "Sort: " + sort, () ->
-            new AlertDialog.Builder(activity)
-                .setTitle("Sort My list")
-                .setItems(new String[] { "Recently added", "Title A–Z", "Title Z–A" }, (d, which) -> {
-                    String value = new String[] { "Recently added", "Title A–Z", "Title Z–A" }[which];
-                    activity.prefs.edit().putString("watchlistSort", value).apply();
-                    watchlist(filter, value);
+            SidePanel.of(activity, "Sort My list")
+                .choices(SORTS, java.util.Arrays.asList(SORTS).indexOf(sort), which -> {
+                    activity.prefs.edit().putString("watchlistSort", SORTS[which]).apply();
+                    watchlist(filter, SORTS[which]);
                 })
                 .show()
         );
@@ -163,10 +162,9 @@ final class LibraryScreens {
         LinearLayout controls = activity.horizontal(activity.page);
         activity.chip(controls, "My list", this::watchlist);
         activity.chip(controls, "Clear history", () ->
-            new AlertDialog.Builder(activity)
-                .setTitle("Clear viewing history?")
-                .setMessage("This removes saved playback progress on this device.")
-                .setPositiveButton("Clear", (d, w) -> {
+            SidePanel.of(activity, "Clear viewing history?")
+                .message("This removes saved playback progress on this device. My List is kept.")
+                .action("Clear history", () -> {
                     activity.getSharedPreferences("positions", Context.MODE_PRIVATE).edit().clear().apply();
                     try {
                         activity.secrets.put("recentPlayback", "[]");
@@ -175,7 +173,7 @@ final class LibraryScreens {
                     }
                     continueWatching();
                 })
-                .setNegativeButton("Cancel", null)
+                .action("Cancel", null)
                 .show()
         );
         try {
@@ -237,16 +235,15 @@ final class LibraryScreens {
                 Button more = activity.button("Options", () -> {});
                 card.addView(more, new LinearLayout.LayoutParams(activity.dp(100), activity.dp(44)));
                 more.setOnClickListener(v ->
-                    new AlertDialog.Builder(activity)
-                        .setTitle(title)
-                        .setItems(
-                            new String[] { "Start over", "Remove from Continue watching" },
-                            (d, which) -> {
-                                positions.edit().remove(key).apply();
-                                if (which == 0) activity.play(title, url, key, false, item);
-                                else continueWatching();
-                            }
-                        )
+                    SidePanel.of(activity, title)
+                        .option("Start over", () -> {
+                            positions.edit().remove(key).apply();
+                            activity.play(title, url, key, false, item);
+                        })
+                        .option("Remove from Continue watching", () -> {
+                            positions.edit().remove(key).apply();
+                            continueWatching();
+                        })
                         .show()
                 );
                 LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
@@ -347,22 +344,19 @@ final class LibraryScreens {
                         } else activity.play(title, url, key, false);
                     },
                     () ->
-                        new AlertDialog.Builder(activity)
-                            .setTitle(title)
-                            .setItems(new String[] { "Remove from library" }, (dialog, which) ->
-                                new AlertDialog.Builder(activity)
-                                    .setTitle("Remove " + title + "?")
-                                    .setPositiveButton("Remove", (d, w) -> {
-                                        try {
-                                            activity.media.remove(key);
-                                            savedLibrary(kind);
-                                        } catch (Exception e) {
-                                            activity.toast("Could not remove this source");
-                                        }
-                                    })
-                                    .setNegativeButton("Cancel", null)
-                                    .show()
+                        SidePanel.of(activity, "Remove " + title + "?")
+                            .message(
+                                "It is removed from your library on this box. The file itself is not deleted."
                             )
+                            .action("Remove", () -> {
+                                try {
+                                    activity.media.remove(key);
+                                    savedLibrary(kind);
+                                } catch (Exception e) {
+                                    activity.toast("Could not remove this source");
+                                }
+                            })
+                            .action("Cancel", null)
                             .show()
                 );
             }

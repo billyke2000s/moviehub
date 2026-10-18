@@ -1,0 +1,273 @@
+package local.tv.home;
+
+import android.app.Activity;
+import android.app.Dialog;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.text.TextUtils;
+import android.view.Gravity;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.IntConsumer;
+
+/**
+ * A panel that slides in on the right, in the app's own style, used instead of Android's grey
+ * pop-up dialogs and menus. Works from any activity (also the player).
+ *
+ * <pre>
+ * SidePanel.of(activity, "Sort My list")
+ *     .choices(names, selected, which -&gt; sortBy(which))
+ *     .show();
+ * </pre>
+ */
+final class SidePanel {
+
+    static final int BACKGROUND = 0xff101722;
+
+    private final Activity activity;
+    private final String title;
+    private String message;
+    private View content;
+    private final List<Object[]> options = new ArrayList<>();
+    private final List<Object[]> actions = new ArrayList<>();
+    private String[] choiceNames;
+    private int choiceSelected = -1;
+    private IntConsumer choicePick;
+    private Runnable dismissed;
+    /** The last panel shown; tests read it. */
+    static Dialog current;
+
+    private SidePanel(Activity activity, String title) {
+        this.activity = activity;
+        this.title = title;
+    }
+
+    static SidePanel of(Activity activity, String title) {
+        return new SidePanel(activity, title);
+    }
+
+    SidePanel message(String text) {
+        message = text;
+        return this;
+    }
+
+    /** Any custom content (form fields and so on), shown under the title. */
+    SidePanel content(View view) {
+        content = view;
+        return this;
+    }
+
+    /** A menu entry. The panel closes, then {@code run} runs. */
+    SidePanel option(String label, Runnable run) {
+        options.add(new Object[] { label, run });
+        return this;
+    }
+
+    /** One choice of several; the current one is ticked and focused. */
+    SidePanel choices(String[] names, int selected, IntConsumer pick) {
+        choiceNames = names;
+        choiceSelected = selected;
+        choicePick = pick;
+        return this;
+    }
+
+    /** A button at the bottom. The first one added is the main (white) action. */
+    SidePanel action(String label, Runnable run) {
+        actions.add(new Object[] { label, run });
+        return this;
+    }
+
+    SidePanel onDismiss(Runnable run) {
+        dismissed = run;
+        return this;
+    }
+
+    Dialog show() {
+        Dialog dialog = new Dialog(activity, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar);
+        // The chosen action runs after the panel has closed, so it can open another panel.
+        Runnable[] after = new Runnable[1];
+        LinearLayout body = new LinearLayout(activity);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setPadding(dp(28), dp(26), dp(28), dp(24));
+
+        TextView heading = new TextView(activity);
+        heading.setText(title);
+        heading.setTextSize(24);
+        heading.setTextColor(0xfff8f8fc);
+        heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        heading.setMaxLines(2);
+        heading.setEllipsize(TextUtils.TruncateAt.END);
+        body.addView(heading);
+
+        if (message != null) {
+            TextView text = new TextView(activity);
+            text.setText(message);
+            text.setTextSize(16);
+            text.setTextColor(0xffb4bfd2);
+            text.setLineSpacing(0, 1.15f);
+            text.setPadding(0, dp(10), 0, 0);
+            body.addView(text);
+        }
+
+        LinearLayout list = new LinearLayout(activity);
+        list.setOrientation(LinearLayout.VERTICAL);
+        list.setPadding(0, dp(14), 0, dp(6));
+        View focus = null;
+        if (content != null) list.addView(content);
+        for (Object[] option : options) {
+            Runnable run = (Runnable) option[1];
+            View row = row((String) option[0], false, () -> {
+                after[0] = run;
+                dialog.dismiss();
+            });
+            list.addView(row, rowLayout());
+            if (focus == null) focus = row;
+        }
+        if (choiceNames != null) for (int i = 0; i < choiceNames.length; i++) {
+            int which = i;
+            View row = row(choiceNames[i], i == choiceSelected, () -> {
+                after[0] = () -> choicePick.accept(which);
+                dialog.dismiss();
+            });
+            list.addView(row, rowLayout());
+            if (i == choiceSelected || (focus == null && i == 0)) focus = row;
+        }
+        ScrollView scroll = new ScrollView(activity);
+        scroll.setVerticalScrollBarEnabled(false);
+        scroll.setClipToPadding(false);
+        scroll.addView(list);
+        body.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+
+        if (!actions.isEmpty()) {
+            LinearLayout buttons = new LinearLayout(activity);
+            buttons.setPadding(0, dp(12), 0, 0);
+            for (int i = 0; i < actions.size(); i++) {
+                Object[] action = actions.get(i);
+                Runnable run = (Runnable) action[1];
+                Button button = pill((String) action[0], i == 0, () -> {
+                    after[0] = run;
+                    dialog.dismiss();
+                });
+                LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-2, dp(44));
+                layout.rightMargin = dp(12);
+                buttons.addView(button, layout);
+                if (focus == null && i == 0) focus = button;
+            }
+            body.addView(buttons);
+        }
+
+        dialog.setContentView(body);
+        dialog.setOnDismissListener(d -> {
+            if (current == dialog) current = null;
+            if (dismissed != null) dismissed.run();
+            if (after[0] != null) after[0].run();
+        });
+        current = dialog;
+        dialog.show();
+        styleWindow(activity, dialog);
+        if (focus != null) focus.requestFocus();
+        return dialog;
+    }
+
+    /** The shared panel look: floating on the right, full height, rounded, dimming the screen. */
+    static void styleWindow(Activity activity, Dialog dialog) {
+        Window window = dialog.getWindow();
+        if (window == null) return;
+        float density = activity.getResources().getDisplayMetrics().density;
+        GradientDrawable shape = new GradientDrawable();
+        shape.setColor(BACKGROUND);
+        shape.setCornerRadius(18 * density);
+        window.setBackgroundDrawable(shape);
+        window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+        window.setDimAmount(.55f);
+        int width = activity.getResources().getDisplayMetrics().widthPixels,
+            height = activity.getResources().getDisplayMetrics().heightPixels;
+        window.setLayout(
+            Math.min((int) (460 * density), width - (int) (48 * density)),
+            height - (int) (48 * density)
+        );
+        WindowManager.LayoutParams attributes = window.getAttributes();
+        attributes.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
+        attributes.x = (int) (24 * density);
+        window.setAttributes(attributes);
+        window
+            .getDecorView()
+            .setSystemUiVisibility(activity.getWindow().getDecorView().getSystemUiVisibility());
+    }
+
+    private LinearLayout.LayoutParams rowLayout() {
+        LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, dp(50));
+        layout.bottomMargin = dp(6);
+        return layout;
+    }
+
+    /** A full-width rounded row: white with dark text when focused, a tick when it is the current choice. */
+    private View row(String label, boolean ticked, Runnable run) {
+        TextView row = new TextView(activity);
+        row.setText(ticked ? "✓   " + label : label);
+        row.setTextSize(17);
+        row.setSingleLine(true);
+        row.setEllipsize(TextUtils.TruncateAt.END);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(20), 0, dp(20), 0);
+        row.setFocusable(true);
+        row.setFocusableInTouchMode(true);
+        int idle = ticked ? accent() : 0xfff2f4f8;
+        row.setTextColor(idle);
+        row.setOnFocusChangeListener((v, focused) -> {
+            GradientDrawable shape = new GradientDrawable();
+            shape.setCornerRadius(dp(25));
+            shape.setColor(focused ? 0xfff2f4f8 : ticked ? 0x1fffffff : Color.TRANSPARENT);
+            v.setBackground(shape);
+            row.setTextColor(focused ? 0xff10141c : idle);
+        });
+        row.getOnFocusChangeListener().onFocusChange(row, false);
+        row.setOnClickListener(v -> run.run());
+        return row;
+    }
+
+    private Button pill(String label, boolean primary, Runnable run) {
+        Button button = new Button(activity);
+        button.setText(label);
+        button.setAllCaps(false);
+        button.setTextSize(16);
+        button.setSingleLine(true);
+        button.setMinWidth(0);
+        button.setMinimumWidth(0);
+        button.setMinHeight(0);
+        button.setMinimumHeight(0);
+        button.setPadding(dp(22), 0, dp(22), 0);
+        button.setFocusable(true);
+        button.setFocusableInTouchMode(true);
+        button.setOnFocusChangeListener((v, focused) -> {
+            GradientDrawable shape = new GradientDrawable();
+            shape.setCornerRadius(dp(22));
+            boolean light = focused || primary;
+            shape.setColor(focused ? 0xffffffff : primary ? 0xffe6e9ef : 0x33ffffff);
+            if (!light) shape.setStroke(dp(1), 0x66ffffff);
+            v.setBackground(shape);
+            button.setTextColor(light ? 0xff10141c : 0xfff8f8fc);
+            v.setScaleX(focused ? 1.05f : 1f);
+            v.setScaleY(focused ? 1.05f : 1f);
+        });
+        button.getOnFocusChangeListener().onFocusChange(button, false);
+        button.setOnClickListener(v -> run.run());
+        return button;
+    }
+
+    private int accent() {
+        return activity.getSharedPreferences("ui", 0).getInt("accent", 0xff8a9eff);
+    }
+
+    private int dp(float value) {
+        return (int) (value * activity.getResources().getDisplayMetrics().density + .5f);
+    }
+}
