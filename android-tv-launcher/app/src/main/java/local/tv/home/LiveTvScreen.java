@@ -302,6 +302,7 @@ final class LiveTvScreen {
         if (filter.equals("favourites")) return "Favourites";
         if (filter.equals("sports")) return "Sports";
         if (filter.startsWith("section:")) return filter.substring(8);
+        if (filter.startsWith("country:")) return GuideOrder.name(filter.substring(8));
         if (filter.startsWith("group:")) return filter.substring(6).isEmpty()
             ? "Ungrouped"
             : filter.substring(6);

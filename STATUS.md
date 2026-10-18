@@ -4,7 +4,7 @@ Last updated: 18 October 2026.
 
 ## Where things stand
 
-- **Latest published version:** 0.24 (version code 24), published 18 October 2026, with update
+- **Latest published version:** 0.25 (version code 25), published 18 October 2026, with update
   notes in the feed. Items under *Unreleased* in [CHANGELOG.md](CHANGELOG.md) are not on TVs yet.
 - **Code structure:** feature classes per area, see [ARCHITECTURE.md](ARCHITECTURE.md).
   `CatalogueScreens` was split (filter sheets in `CatalogueOptions`) and the Live TV guide's
@@ -27,7 +27,10 @@ Last updated: 18 October 2026.
 
 5. **Live TV satellite features are only tested on fixtures.** Channel numbers come from a fixed
    table of UK satellite numbers (June 2026) matched by name, so some channels may get none or a
-   wrong one. Pausing live TV relies on LibVLC: whether a real stream resumes where it paused or
+   wrong one. The guide layout was checked by running the real Free-TV and iptv-org lists
+   (18 October 2026, about 12,500 channels) through `GuideOrder` on a computer, not on the box.
+   A channel's country comes from its guide id, a provider prefix or a country-named group; free
+   channels with none of these are filed as international. Pausing live TV relies on LibVLC: whether a real stream resumes where it paused or
    jumps to live depends on the stream, and rewinding works only on streams that allow seeking.
    Reminders show only while MovieHub is open. Automatic backup switching has not been seen on a
    real failing stream.

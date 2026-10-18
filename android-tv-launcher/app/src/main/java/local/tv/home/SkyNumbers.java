@@ -26,10 +26,9 @@ final class SkyNumbers {
         "Kids",
         "Religion",
         "Shopping",
+        "Radio",
+        "International",
     };
-
-    /** Unknown channels are numbered from here when some channels have satellite numbers. */
-    static final int FIRST_UNLISTED = 1001;
 
     private static final Map<String, Integer> NUMBERS = new HashMap<>();
 
@@ -182,17 +181,17 @@ final class SkyNumbers {
     private SkyNumbers() {}
 
     /**
-     * The satellite number for a channel, or 0. Only UK channels and channels whose country is
-     * unknown are numbered, so another country's "Gold" or "Drama" keeps its own place. Provider
-     * prefixes such as "UK: " or "UK | " are ignored.
+     * The satellite number for a channel, or 0. Channels from other countries ({@code home} false)
+     * only get a number when it is a news channel the UK guide carries (CNN, France 24 …), so
+     * another country's "Gold" or "Drama" keeps its own place. Provider prefixes such as "UK: "
+     * or "UK | " are ignored.
      */
-    static int number(String epgId, String name) {
-        String country = EpgMatch.country(epgId);
-        if (!country.isEmpty() && !country.equals("uk") && !country.equals("gb")) return 0;
+    static int number(String epgId, String name, boolean home) {
         String plain = name == null ? "" : name.replaceFirst("(?i)^\\s*(uk|gb)\\s*[:|\\-]\\s*", "");
         Integer found = NUMBERS.get(EpgMatch.key(plain));
         if (found == null && epgId != null && !epgId.isEmpty()) found = NUMBERS.get(EpgMatch.key(epgId));
-        return found == null ? 0 : found;
+        if (found == null) return 0;
+        return home || (found >= 500 && found < 580) ? found : 0;
     }
 
     /**

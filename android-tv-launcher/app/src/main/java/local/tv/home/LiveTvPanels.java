@@ -95,7 +95,27 @@ final class LiveTvPanels {
                         if (which == 0) guide.show("all", "");
                         else if (which == 1) guide.show("favourites", "");
                         else if (which == names.size() - 1) groups();
+                        else if (names.get(which).equals(GuideOrder.INTERNATIONAL)) countries();
                         else guide.show("section:" + names.get(which), "");
+                    })
+                    .show();
+            }
+        );
+    }
+
+    /** International channels by country: Ireland, the United States … then A to Z. */
+    void countries() {
+        activity.async(
+            () -> guide.channelsDb().countries(),
+            countries -> {
+                String[] names = new String[countries.size() + 1];
+                names[0] = "All international channels";
+                for (int i = 0; i < countries.size(); i++) names[i + 1] =
+                    GuideOrder.name(countries.get(i).name) + " · " + countries.get(i).count;
+                SidePanel.of(activity, "International")
+                    .choices(names, -1, which -> {
+                        if (which == 0) guide.show("section:" + GuideOrder.INTERNATIONAL, "");
+                        else guide.show("country:" + countries.get(which - 1).name, "");
                     })
                     .show();
             }

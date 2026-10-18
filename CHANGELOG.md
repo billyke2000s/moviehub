@@ -10,6 +10,21 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.25 (18 Oct 2026)
+
+Live TV is organised like a UK satellite guide instead of one long list:
+
+- Every UK channel has a number in the right place, not just the ones the satellite guide lists:
+  other entertainment channels follow 182, films the 300s, music the 350s, sport the 400s, news
+  the 500s, religion the 580s, kids the 600s and shopping the 660s. Regional BBC One and BBC Two
+  and the BBC red-button streams are in the 800s.
+- Radio stations have their own Radio section (UK radio is 901 onwards) instead of sitting among
+  TV channels.
+- Channels from other countries are in a new International section, numbered from 1001 country
+  by country: Ireland, the United States, Canada, Australia and New Zealand first, then A to Z.
+  Choosing International on the blue key lists the countries.
+- Entertainment, Movies, Sports, News and the other sections now hold UK channels only.
+
 ## 0.24 (18 Oct 2026)
 
 Live TV now has the rest of what the old satellite boxes did:
