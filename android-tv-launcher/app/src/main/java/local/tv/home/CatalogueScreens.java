@@ -251,8 +251,11 @@ final class CatalogueScreens {
             previewTitle.setSingleLine(true);
             previewTitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
             previewMeta = activity.muted("", 13);
+            previewMeta.setSingleLine(true);
             previewSummary = activity.muted("Browse full posters. Hold Select for quick actions.", 14);
-            previewSummary.setMaxLines(2);
+            // A fixed number of lines keeps the hero the same height for every title, so the posters
+            // below never move when the synopsis is shorter or longer.
+            previewSummary.setLines(2);
             previewSummary.setEllipsize(android.text.TextUtils.TruncateAt.END);
             preview.addView(previewTitle);
             preview.addView(previewMeta);
@@ -285,9 +288,9 @@ final class CatalogueScreens {
             activity.destination = () -> rows(kind);
             collection.setText("");
             collection.setVisibility(View.GONE);
-            hero.setPadding(activity.dp(8), activity.dp(28), activity.dp(8), activity.dp(10));
+            hero.setPadding(activity.dp(8), activity.dp(4), activity.dp(8), activity.dp(10));
             previewTitle.setTextSize(30);
-            previewSummary.setMaxLines(3);
+            previewSummary.setLines(3);
             previewSummary.setText("Hold Select on a poster for quick actions.");
             if (pendingPreview != null) activity.handler.removeCallbacks(pendingPreview);
             content.removeAllViews();
@@ -356,7 +359,7 @@ final class CatalogueScreens {
             collection.setVisibility(View.VISIBLE);
             hero.setPadding(activity.dp(8), activity.dp(8), activity.dp(8), activity.dp(6));
             previewTitle.setTextSize(24);
-            previewSummary.setMaxLines(2);
+            previewSummary.setLines(2);
             if (pendingPreview != null) activity.handler.removeCallbacks(pendingPreview);
             backdrop.setTag(null);
             backdrop.setImageDrawable(null);

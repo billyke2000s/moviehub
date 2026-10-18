@@ -99,7 +99,10 @@ final class HomeScreen {
         summary.setShadowLayer(activity.dp(4), 0, activity.dp(1), 0xcc000000);
         copy.addView(summary);
         Button open = activity.button("Connect TMDB", () -> activity.settingsScreens.accountScreen("TMDB"));
-        copy.addView(open, new LinearLayout.LayoutParams(activity.dp(170), activity.dp(36)));
+        pill(open);
+        LinearLayout.LayoutParams openLayout = new LinearLayout.LayoutParams(-2, activity.dp(34));
+        openLayout.topMargin = activity.dp(8);
+        copy.addView(open, openLayout);
         hero.addView(copy, new FrameLayout.LayoutParams(activity.dp(510), -1));
         LinearLayout.LayoutParams heroLayout = new LinearLayout.LayoutParams(-1, 0, 1);
         heroLayout.setMargins(0, activity.dp(6), 0, activity.dp(4));
@@ -195,6 +198,29 @@ final class HomeScreen {
             new LinearLayout.LayoutParams(activity.dp(104), activity.dp(62))
         );
         activity.page.post(() -> top.getChildAt(0).requestFocus());
+    }
+
+    /**
+     * Streaming-app style action button for the featured title: a slim rounded pill, see-through
+     * at rest and white with dark text when selected, sized to its label.
+     */
+    private void pill(Button button) {
+        button.setTextSize(15);
+        button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        button.setPadding(activity.dp(22), 0, activity.dp(22), 0);
+        button.setOnFocusChangeListener((v, focused) -> stylePill((Button) v, focused));
+        stylePill(button, button.hasFocus());
+    }
+
+    private void stylePill(Button button, boolean focused) {
+        GradientDrawable shape = new GradientDrawable();
+        shape.setCornerRadius(activity.dp(17));
+        shape.setColor(focused ? 0xfff2f4f8 : 0x40ffffff);
+        if (!focused) shape.setStroke(activity.dp(1), 0x66ffffff);
+        button.setBackground(shape);
+        button.setTextColor(focused ? 0xff10141c : 0xfff8f8fc);
+        button.setScaleX(focused ? 1.05f : 1f);
+        button.setScaleY(focused ? 1.05f : 1f);
     }
 
     /**
@@ -306,7 +332,7 @@ final class HomeScreen {
             String name = item.optString("title", item.optString("name", "Title"));
             heading.setText(name);
             summary.setText(item.optString("overview", ""));
-            open.setText("View details");
+            open.setText("More info");
             open.setOnClickListener(v -> activity.posters.tmdbTitle(item));
             String art = item.optString("backdrop_path");
             if (pendingArt != null) activity.handler.removeCallbacks(pendingArt);

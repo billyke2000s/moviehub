@@ -71,7 +71,15 @@ public class CatalogueRowsTest {
                     .put("id", Math.abs(path.hashCode() % 100000) * 100 + i)
                     .put("media_type", "movie")
                     .put("title", path + " #" + i)
-                    .put("overview", "Synopsis of " + path + " #" + i)
+                    .put(
+                        "overview",
+                        i % 2 == 0
+                            ? "Short synopsis."
+                            : new String(new char[12]).replace(
+                                  "\0",
+                                  "A much longer synopsis that wraps over several lines. "
+                              )
+                    )
             );
             return new JSONObject().put("results", items).put("total_pages", 1);
         };
@@ -142,8 +150,16 @@ public class CatalogueRowsTest {
         int initiallyLoaded = requested.size();
         assertTrue("Only the first rows load on entry, not every genre: " + requested, initiallyLoaded <= 3);
 
-        key(KeyEvent.KEYCODE_DPAD_RIGHT);
-        key(KeyEvent.KEYCODE_DPAD_RIGHT);
+        int[] rowsTop = new int[2];
+        remote.runOnMainSync(() -> rows().scroll.getLocationOnScreen(rowsTop));
+        for (int i = 0; i < 2; i++) {
+            key(KeyEvent.KEYCODE_DPAD_RIGHT);
+            remote.runOnMainSync(() -> {
+                int[] now = new int[2];
+                rows().scroll.getLocationOnScreen(now);
+                assertEquals("Posters stay put when the synopsis length changes", rowsTop[1], now[1]);
+            });
+        }
         remote.runOnMainSync(() ->
             assertEquals(
                 "trending/movie/day #3",
