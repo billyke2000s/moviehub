@@ -32,6 +32,8 @@ final class LiveTvScreen {
 
     /** Channels per guide page, as on the classic guides. */
     static final int ROWS = 10;
+    /** The guide shows three half-hour slots. */
+    static final long WINDOW_MS = 90L * 60 * 1000;
     /** Guide colours. */
     static final int NAVY = 0xff10175a,
         BLUE = 0xff1f3fa8,
@@ -109,6 +111,9 @@ final class LiveTvScreen {
         slots.addView(today, new LinearLayout.LayoutParams(0, -2, 34));
         Calendar slot = Calendar.getInstance();
         slot.set(Calendar.MINUTE, slot.get(Calendar.MINUTE) < 30 ? 0 : 30);
+        slot.set(Calendar.SECOND, 0);
+        slot.set(Calendar.MILLISECOND, 0);
+        long windowStart = slot.getTimeInMillis();
         LinearLayout times = activity.row();
         for (int i = 0; i < 3; i++) {
             times.addView(text(clockTime(slot.getTime()), 17, true), new LinearLayout.LayoutParams(0, -2, 1));
@@ -135,8 +140,32 @@ final class LiveTvScreen {
         String listFilter = filter,
             listSearch = search;
         activity.async(
-            () -> channelsDb().browse(listFilter, listSearch, favouriteKeys(), pageStart),
-            items -> {
+            () -> {
+                List<ChannelDatabase.Row> rows = channelsDb().browse(
+                    listFilter,
+                    listSearch,
+                    favouriteKeys(),
+                    pageStart
+                );
+                // Programmes for the ten rows shown, across the three half-hour slots.
+                List<List<ChannelDatabase.Programme>> listings = new ArrayList<>();
+                for (int i = 0; i < Math.min(ROWS, rows.size()); i++) listings.add(
+                    channelsDb().programmes(
+                        rows.get(i),
+                        EpgImporter.COUNTRY,
+                        windowStart,
+                        windowStart + WINDOW_MS
+                    )
+                );
+                return new Object[] { rows, listings };
+            },
+            result -> {
+                @SuppressWarnings("unchecked")
+                List<ChannelDatabase.Row> items = (List<ChannelDatabase.Row>) result[0];
+                @SuppressWarnings("unchecked")
+                List<List<ChannelDatabase.Programme>> listings = (List<
+                    List<ChannelDatabase.Programme>
+                >) result[1];
                 grid.removeAllViews();
                 showStatus(status);
                 cells.clear();
@@ -146,6 +175,8 @@ final class LiveTvScreen {
                 for (int i = 0; i < count; i++) addRow(
                     grid,
                     items.get(i),
+                    listings.get(i),
+                    windowStart,
                     pageStart + i,
                     i,
                     count,
@@ -189,6 +220,8 @@ final class LiveTvScreen {
     private void addRow(
         LinearLayout grid,
         ChannelDatabase.Row channel,
+        List<ChannelDatabase.Programme> listing,
+        long windowStart,
         int position,
         int row,
         int count,
@@ -210,20 +243,24 @@ final class LiveTvScreen {
         cell.setFocusable(true);
         cell.setFocusableInTouchMode(true);
         cell.setContentDescription(channel.name);
-        TextView programme = text(
-            (channel.group.isEmpty() ? "" : channel.group + "  ·  ") + "No programme information",
-            17,
-            true
-        );
-        programme.setSingleLine(true);
-        programme.setEllipsize(TextUtils.TruncateAt.END);
-        programme.setGravity(Gravity.CENTER_VERTICAL);
-        programme.setPadding(activity.dp(10), 0, activity.dp(8), 0);
+        List<TextView> programmes = programmeCells(channel, listing, windowStart);
+        LinearLayout programme = activity.row();
+        for (TextView item : programmes) {
+            LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(
+                0,
+                -1,
+                ((LinearLayout.LayoutParams) item.getLayoutParams()).weight
+            );
+            layout.rightMargin = activity.dp(3);
+            programme.addView(item, layout);
+        }
         View.OnFocusChangeListener style = (v, focused) -> {
             cell.setBackground(box(focused ? YELLOW : BLUE));
             cell.setTextColor(focused ? INK : 0xffffffff);
-            programme.setBackground(box(focused ? 0xfffff1a6 : BLUE_DARK));
-            programme.setTextColor(focused ? INK : 0xffdfe6ff);
+            for (TextView item : programmes) {
+                item.setBackground(box(focused ? 0xfffff1a6 : BLUE_DARK));
+                item.setTextColor(focused ? INK : 0xffdfe6ff);
+            }
         };
         cell.setOnFocusChangeListener(style);
         style.onFocusChange(cell, false);
@@ -244,6 +281,10 @@ final class LiveTvScreen {
         });
         cell.setOnKeyListener((v, key, event) -> {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return isGuideKey(key);
+            if (key >= KeyEvent.KEYCODE_0 && key <= KeyEvent.KEYCODE_9) {
+                typeDigit(key - KeyEvent.KEYCODE_0);
+                return true;
+            }
             if (key == KeyEvent.KEYCODE_DPAD_DOWN && row == count - 1 && more) {
                 guide(pageStart + ROWS, 0);
                 return true;
@@ -260,11 +301,11 @@ final class LiveTvScreen {
                 if (more) guide(pageStart + ROWS, row);
                 return true;
             }
-            if (key == KeyEvent.KEYCODE_PROG_YELLOW) {
+            if (colour(key) == 'y') {
                 searchPanel();
                 return true;
             }
-            if (key == KeyEvent.KEYCODE_PROG_BLUE) {
+            if (colour(key) == 'b') {
                 groups();
                 return true;
             }
@@ -284,30 +325,141 @@ final class LiveTvScreen {
         grid.addView(line, lineLayout);
     }
 
-    private static boolean isPageUp(int key) {
+    private boolean isPageUp(int key) {
+        return colour(key) == 'r' || key == KeyEvent.KEYCODE_CHANNEL_UP || key == KeyEvent.KEYCODE_PAGE_UP;
+    }
+
+    private boolean isPageDown(int key) {
         return (
-            key == KeyEvent.KEYCODE_PROG_RED ||
-            key == KeyEvent.KEYCODE_CHANNEL_UP ||
-            key == KeyEvent.KEYCODE_PAGE_UP
+            colour(key) == 'g' || key == KeyEvent.KEYCODE_CHANNEL_DOWN || key == KeyEvent.KEYCODE_PAGE_DOWN
         );
     }
 
-    private static boolean isPageDown(int key) {
-        return (
-            key == KeyEvent.KEYCODE_PROG_GREEN ||
-            key == KeyEvent.KEYCODE_CHANNEL_DOWN ||
-            key == KeyEvent.KEYCODE_PAGE_DOWN
-        );
-    }
-
-    private static boolean isGuideKey(int key) {
+    private boolean isGuideKey(int key) {
         return (
             isPageUp(key) ||
             isPageDown(key) ||
-            key == KeyEvent.KEYCODE_PROG_YELLOW ||
-            key == KeyEvent.KEYCODE_PROG_BLUE ||
-            key == KeyEvent.KEYCODE_MENU
+            colour(key) != 0 ||
+            key == KeyEvent.KEYCODE_MENU ||
+            (key >= KeyEvent.KEYCODE_0 && key <= KeyEvent.KEYCODE_9)
         );
+    }
+
+    /** Remote colour-key preferences, set by "Set up coloured buttons". */
+    static final String[] COLOUR_PREFS = { "remoteRed", "remoteGreen", "remoteYellow", "remoteBlue" };
+    static final char[] COLOURS = { 'r', 'g', 'y', 'b' };
+
+    /**
+     * Which colour key this is ('r', 'g', 'y', 'b') or 0. Remotes send different codes for the
+     * colour keys: the standard ones, F1–F4 on many air-mouse remotes, or whatever was taught in
+     * "Set up coloured buttons".
+     */
+    char colour(int key) {
+        for (int i = 0; i < 4; i++) if (activity.prefs.getInt(COLOUR_PREFS[i], -1) == key) return COLOURS[i];
+        if (key == KeyEvent.KEYCODE_PROG_RED || key == KeyEvent.KEYCODE_F1) return 'r';
+        if (key == KeyEvent.KEYCODE_PROG_GREEN || key == KeyEvent.KEYCODE_F2) return 'g';
+        if (key == KeyEvent.KEYCODE_PROG_YELLOW || key == KeyEvent.KEYCODE_F3) return 'y';
+        if (key == KeyEvent.KEYCODE_PROG_BLUE || key == KeyEvent.KEYCODE_F4) return 'b';
+        return 0;
+    }
+
+    /** Teaches the guide this remote's colour keys: press red, green, yellow, then blue. */
+    void learnColourKeys(int step) {
+        if (step >= 4) {
+            activity.toast("Coloured buttons set up");
+            guide(pageStart, 0);
+            return;
+        }
+        String[] names = { "RED", "GREEN", "YELLOW", "BLUE" };
+        android.app.Dialog panel = SidePanel.of(activity, "Press the " + names[step] + " button")
+            .message(
+                "Press the " +
+                    names[step].toLowerCase(Locale.ROOT) +
+                    " button on your remote now. Back cancels."
+            )
+            .show();
+        panel.setOnKeyListener((d, key, event) -> {
+            if (key == KeyEvent.KEYCODE_BACK) return false;
+            boolean navigation =
+                key == KeyEvent.KEYCODE_DPAD_UP ||
+                key == KeyEvent.KEYCODE_DPAD_DOWN ||
+                key == KeyEvent.KEYCODE_DPAD_LEFT ||
+                key == KeyEvent.KEYCODE_DPAD_RIGHT ||
+                key == KeyEvent.KEYCODE_DPAD_CENTER ||
+                key == KeyEvent.KEYCODE_ENTER;
+            if (navigation) return true;
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                activity.prefs.edit().putInt(COLOUR_PREFS[step], key).apply();
+                panel.dismiss();
+                learnColourKeys(step + 1);
+            }
+            return true;
+        });
+    }
+
+    private final StringBuilder typed = new StringBuilder();
+    private final Runnable jump = this::jumpToTyped;
+
+    /** Number keys go straight to a channel, as on a satellite box: "151" opens channel 151. */
+    private void typeDigit(int digit) {
+        if (typed.length() >= 6) typed.setLength(0);
+        typed.append(digit);
+        activity.toast("Channel " + typed);
+        activity.handler.removeCallbacks(jump);
+        activity.handler.postDelayed(jump, 1500);
+    }
+
+    private void jumpToTyped() {
+        if (typed.length() == 0) return;
+        int number = Integer.parseInt(typed.toString());
+        typed.setLength(0);
+        int position = Math.max(0, number - 101);
+        guide(position - (position % ROWS), position % ROWS);
+    }
+
+    /**
+     * The programme cells across the 90-minute window, sized by how much of it each programme
+     * fills, with "No information" in any gap; one cell when there is no guide for the channel.
+     */
+    private List<TextView> programmeCells(
+        ChannelDatabase.Row channel,
+        List<ChannelDatabase.Programme> listing,
+        long windowStart
+    ) {
+        List<TextView> out = new ArrayList<>();
+        long windowEnd = windowStart + WINDOW_MS;
+        if (listing.isEmpty()) {
+            out.add(
+                programmeCell(
+                    (channel.group.isEmpty() ? "" : channel.group + "  ·  ") + "No programme information",
+                    1
+                )
+            );
+            return out;
+        }
+        long at = windowStart;
+        for (ChannelDatabase.Programme item : listing) {
+            long from = Math.max(item.start, windowStart),
+                to = Math.min(item.stop, windowEnd);
+            if (to <= at) continue;
+            if (from > at + 60000) out.add(programmeCell("", (from - at) / 60000f));
+            from = Math.max(from, at);
+            out.add(programmeCell(item.title, (to - from) / 60000f));
+            at = to;
+            if (at >= windowEnd) break;
+        }
+        if (windowEnd - at > 60000) out.add(programmeCell("", (windowEnd - at) / 60000f));
+        return out;
+    }
+
+    private TextView programmeCell(String title, float minutes) {
+        TextView item = text(title, 17, true);
+        item.setSingleLine(true);
+        item.setEllipsize(TextUtils.TruncateAt.END);
+        item.setGravity(Gravity.CENTER_VERTICAL);
+        item.setPadding(activity.dp(8), 0, activity.dp(4), 0);
+        item.setLayoutParams(new LinearLayout.LayoutParams(0, -1, Math.max(1f, minutes)));
+        return item;
     }
 
     /** Everything the colour keys do, for remotes without colour keys. */
@@ -318,6 +470,7 @@ final class LiveTvScreen {
             .option("Sports", () -> show("sports", ""))
             .option("Groups", this::groups)
             .option("Search", this::searchPanel)
+            .option("Set up coloured buttons", () -> learnColourKeys(0))
             .option("Refresh channels", () -> {
                 ChannelSync.refreshNow(activity);
                 guide(0, 0);
