@@ -1,5 +1,9 @@
 # MovieHub for Android TV
 
+> **MovieHub does not host, store, upload or distribute any films, programmes, channels or
+> streams.** It is a launcher and player: it only plays what the person using it chooses from their
+> own accounts or from third-party lists and services. See [Content and copyright](#content-and-copyright).
+
 A native Android TV launcher for Android 9 or newer. It replaces the TV's home screen and brings
 together installed apps, movies and series, live TV and playback in one remote-friendly interface.
 Its icon is a simple house with a play button (vector drawables in `app/src/main/res/drawable`).
@@ -60,6 +64,28 @@ Full setup, formatting and conventions are in [DEVELOPMENT.md](DEVELOPMENT.md).
 Automated tests use local fixtures. They do not prove that a real TMDB, Premiumize or Xtream
 account works, or that the app installs and updates correctly on a specific TV box. Check those on
 the device before a release.
+
+## Content and copyright
+
+- **No content is hosted here.** This repository and the app contain software only. No video,
+  stream, channel or programme is stored in this repository, in its releases or on any server run
+  for this project.
+- **Where streams come from.** Everything the app plays comes from services and lists run by
+  others and chosen by the user: the user's own Xtream or M3U provider, Premiumize, the public
+  [Free-TV](https://github.com/Free-TV/IPTV) and [iptv-org](https://github.com/iptv-org/iptv)
+  channel lists, and the third-party source finders listed under Features. This project does not
+  control, check or endorse what those services and lists contain, and has no affiliation with
+  them or with any broadcaster, studio or satellite provider.
+- **Your responsibility.** You are responsible for making sure you have the right to watch what
+  you play, and that using any provider, list or service is legal where you live. Use only
+  content you are licensed to access.
+- **Names and trademarks.** TV channel names, logos and programme information belong to their
+  owners and are shown only to identify what is playing. The guide's look is inspired by classic
+  UK satellite boxes; this project is not affiliated with or endorsed by Sky or any broadcaster.
+- **Takedown requests.** If you believe something in this repository infringes your rights,
+  contact the owner privately through GitHub and it will be looked at promptly.
+
+This notice is provided for clarity. It is not legal advice.
 
 ## License
 
