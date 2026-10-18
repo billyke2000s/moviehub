@@ -26,7 +26,6 @@ Nothing yet.
 - Updates show what's new before installing.
 - Faster artwork: images you have seen are kept on the box and load instantly.
 - Home: the featured title's button is back to the "View details" style, sized to its label.
-- Player engine (LibVLC) updated to 3.7.7.
 
 ## 0.14 (18 Oct 2026)
 
