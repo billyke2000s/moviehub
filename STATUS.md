@@ -4,7 +4,7 @@ Last updated: 18 October 2026.
 
 ## Where things stand
 
-- **Latest published version:** 0.34 (version code 34), published 18 October 2026, with update
+- **Latest published version:** 0.35 (version code 35), published 18 October 2026, with update
   notes in the feed. Items under *Unreleased* in [CHANGELOG.md](CHANGELOG.md) are not on TVs yet.
 - **Code structure:** feature classes per area, see [ARCHITECTURE.md](ARCHITECTURE.md).
   `CatalogueScreens` was split (filter sheets in `CatalogueOptions`) and the Live TV guide's

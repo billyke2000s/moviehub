@@ -6,6 +6,18 @@ version below was built from the listed `main` commit. Earlier history is in the
 Note: the release shown as 0.10 below was published with version code 11 (name "0.11" in the
 update feed), so the next release after it used code 12, named 0.12.
 
+## 0.35 (18 Oct 2026)
+
+- A Live TV channel that won't play no longer opens a "Can't play this" panel that blocks the
+  remote. The picture says the channel isn't working, and ▲ ▼ go straight on to the next one;
+  SELECT tries it again and BACK goes to the guide. (Backups are still tried first.) Films and
+  series keep their panel.
+- Down past the bottom row of the guide turns the page again (round to the first page after the
+  last), instead of moving onto the colour keys. The colour keys are a guide to the remote again;
+  without coloured buttons, BACK opens the guide menu, which has Reminders, Search and Options
+  along the top and Favourites on its second page.
+- In the guide menu, Down from the last row goes round to the top, as on the satellite box.
+
 ## 0.34 (18 Oct 2026)
 
 Details from the old Sky+ box, checked against David Wheatley's Sky+ web EPG simulator

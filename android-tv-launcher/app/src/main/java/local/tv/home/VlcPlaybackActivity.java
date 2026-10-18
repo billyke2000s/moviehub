@@ -33,6 +33,8 @@ public class VlcPlaybackActivity extends Activity {
     boolean triedAlternative;
     /** The next live start opens the stream again instead of carrying on. */
     private boolean restartLive;
+    /** Live TV: this channel failed; the message is in the picture and SELECT tries again. */
+    boolean liveFailed;
     /** Live TV was paused, so the picture is behind the live broadcast until "Back to live". */
     boolean behindLive;
     /** Paused by the viewer (the player reports pausing a moment later, so this is kept here). */
@@ -183,6 +185,20 @@ public class VlcPlaybackActivity extends Activity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        // A Live TV channel that failed: SELECT tries it again (unless browsing other channels).
+        if (
+            liveFailed &&
+            zapper != null &&
+            !zapper.browsing() &&
+            (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER ||
+                event.getKeyCode() == KeyEvent.KEYCODE_ENTER)
+        ) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+                restartLive = true;
+                startPlayer();
+            }
+            return true;
+        }
         // Live TV from the guide: the satellite remote (see LiveZapper.key).
         if (zapper != null && zapper.key(event)) return true;
         if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
@@ -340,6 +356,8 @@ public class VlcPlaybackActivity extends Activity {
 
     private void startPlayer() {
         if (!foreground) return;
+        liveFailed = false;
+        status.setBackgroundColor(Color.TRANSPARENT);
         release();
         status.setText("Opening source…");
         status.setVisibility(View.VISIBLE);
@@ -473,6 +491,23 @@ public class VlcPlaybackActivity extends Activity {
             player.pause();
         }
         showPlaying(false);
+        if (zapper != null) {
+            // Live TV: say so in the picture, with no panel in the way, so ▲ ▼ go straight on to
+            // the next channel. SELECT tries this one again.
+            liveFailed = true;
+            boolean generic =
+                message.startsWith("This source could not") || message.startsWith("The source is taking");
+            status.setText(
+                (generic ? "This channel isn't working right now." : message) +
+                    (zapper.touch
+                        ? "\n\nTap the picture for the channel buttons"
+                        : "\n\n▲ ▼  change channel     SELECT  try again     BACK  guide")
+            );
+            status.setBackgroundColor(0xd9000000);
+            status.setVisibility(View.VISIBLE);
+            zapper.showBanner();
+            return;
+        }
         status.setText("Playback unavailable");
         status.setVisibility(View.VISIBLE);
         dialogOpen = true;

@@ -115,12 +115,11 @@ final class GuideFrame {
         grid = activity.vertical();
         page.addView(grid, new LinearLayout.LayoutParams(-1, 0, 1));
 
-        // Colour keys, as on the remote. Each is a button too (Down from the bottom row), for
-        // remotes without coloured buttons.
+        // Colour keys, as on the remote (a guide to its buttons; the guide menu has the same jobs).
         bar = new KeyBar(activity)
             .onUp(guide::focusLastRow)
-            .add(RED, "Page up", () -> guide.pageFromBar(-1, 0))
-            .add(GREEN, "Page down", () -> guide.pageFromBar(1, 1))
+            .add(RED, "Page up", () -> guide.pageFromBar(-1))
+            .add(GREEN, "Page down", () -> guide.pageFromBar(1))
             .add(YELLOW, "Search", guide.panels::searchPanel)
             .add(BLUE, "Sections", guide.menu::show);
         bar.view.setPadding(0, activity.dp(4), 0, 0);

@@ -11,9 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The colour-key guide along the bottom of the Live TV guide and its menu. Each key is also a
- * button: move onto it with the D-pad (Down from the bottom row) and press SELECT, so remotes
- * without coloured buttons can do everything too. The chosen key turns yellow.
+ * The colour-key guide along the bottom of the Live TV guide and its menu. The keys are a guide to
+ * the remote's coloured buttons; without them, the same jobs are in the guide menu (BACK).
  */
 final class KeyBar {
 
@@ -39,8 +38,10 @@ final class KeyBar {
         LinearLayout key = activity.row();
         key.setGravity(Gravity.CENTER_VERTICAL);
         key.setPadding(activity.dp(6), activity.dp(3), activity.dp(10), activity.dp(3));
-        key.setFocusable(true);
-        key.setFocusableInTouchMode(true);
+        // Not reached with the D-pad: Down pages the guide and BACK opens the guide menu, whose
+        // top row (Reminders, Search, Options) and second page (Favourites) do the same jobs.
+        // A tap still works on touch screens.
+        key.setFocusable(false);
         key.setContentDescription(label);
         View swatch = new View(activity);
         swatch.setBackground(box(colour, 0x55ffffff));

@@ -156,7 +156,7 @@ final class GuideMenu {
                     return true;
                 }
                 if (key == KeyEvent.KEYCODE_DPAD_DOWN && index == items.length - 1) {
-                    bar.focus(0); // below the list: the colour keys, which can be chosen too
+                    rows.get(0).requestFocus(); // round to the top, as on the satellite box
                     return true;
                 }
                 return shortcut(items, key);
