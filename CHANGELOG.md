@@ -10,6 +10,12 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.17 (18 Oct 2026)
+
+- Player: Back no longer stops the video straight away. The first press shows the controls and
+  "Press Back again to stop watching"; a second press within 3 seconds leaves. Holding Back does
+  not count as several presses.
+
 ## 0.16 (18 Oct 2026)
 
 - Player: the title now sits at the top; at the bottom a full-width slim timeline with the time on
