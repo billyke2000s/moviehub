@@ -4,8 +4,8 @@ Last updated: 18 October 2026.
 
 ## Where things stand
 
-- **Latest published version:** 0.14 (version code 14), published 18 October 2026. The 0.15
-  section of [CHANGELOG.md](CHANGELOG.md) is merged and is to be published as version code 15.
+- **Latest published version:** 0.15 (version code 15), published 18 October 2026, with update
+  notes in the feed. Items under *Unreleased* in [CHANGELOG.md](CHANGELOG.md) are not on TVs yet.
 - **Code structure:** feature classes per area, see [ARCHITECTURE.md](ARCHITECTURE.md).
   `CatalogueScreens` was split (filter sheets in `CatalogueOptions`); no file is over 700 lines.
 - **CI on `main`:** build, lint, signing and device tests pass.
@@ -20,8 +20,8 @@ Last updated: 18 October 2026.
    type to logcat (tag `MovieHub`).
 3. **CI runner change.** The `ubuntu-latest` runner label moves to Ubuntu 26 from 19 October 2026;
    watch the first runs after that date.
-4. **Android Gradle plugin 9 (Dependabot #12)** is a major upgrade (it needs Gradle 9 and changes
-   defaults). It is tried separately; see its pull request for the result.
+4. **Android Gradle plugin 9.4.1** (replacing Dependabot #12) builds with Gradle 9.6.0 and Build
+   Tools 36. It is not in a published version yet; the next publish is the first built with it.
 
 ## Open pull requests and branches
 
