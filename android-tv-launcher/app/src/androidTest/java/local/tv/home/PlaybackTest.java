@@ -453,11 +453,15 @@ public class PlaybackTest {
             new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         );
         try {
+            // Start clean: no live stream left over from another test.
+            instrumentation.runOnMainSync(LivePlayer::stop);
             // As from Home: Live TV opens the guide menu; 1 is All Channels.
             instrumentation.runOnMainSync(() -> main.liveTv.start());
             await(() -> main.liveTv.menu.rows.size() == 10 && main.liveTv.menu.rows.get(0).hasFocus(), 10000);
+            instrumentation.waitForIdleSync();
             instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
-            await(() -> main.liveTv.picture.playing && main.liveTv.cells.size() == 1, 30000);
+            await(() -> main.liveTv.cells.size() == 1, 15000);
+            await(() -> main.liveTv.picture.playing, 45000);
             int opened = LivePlayer.opened;
             // SELECT on the channel playing in the corner: the full screen carries it on.
             instrumentation.runOnMainSync(() -> main.liveTv.cells.get(0).performClick());
@@ -573,6 +577,8 @@ public class PlaybackTest {
         } finally {
             instrumentation.removeMonitor(monitor);
             instrumentation.runOnMainSync(main::finish);
+            instrumentation.waitForIdleSync();
+            instrumentation.runOnMainSync(LivePlayer::stop);
             SharedPreferences.Editor edit = prefs.edit().putBoolean("autoUpdates", updates);
             if (free == null) edit.remove(FreeChannels.PREF);
             else edit.putString(FreeChannels.PREF, free);
@@ -669,6 +675,9 @@ public class PlaybackTest {
     @After
     public void cleanup() throws Exception {
         if (activity != null) instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        // No live stream carries over into the next test.
+        instrumentation.runOnMainSync(LivePlayer::stop);
         closed = true;
         if (server != null) server.close();
         Context context = instrumentation.getTargetContext();

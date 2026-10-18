@@ -17,6 +17,9 @@ update feed), so the next release after it used code 12, named 0.12.
   without coloured buttons, BACK opens the guide menu, which has Reminders, Search and Options
   along the top and Favourites on its second page.
 - In the guide menu, Down from the last row goes round to the top, as on the satellite box.
+- Going back from the full screen to the guide, the corner picture could stay black on some
+  boxes even though the channel carried on. The picture's decoder now restarts on the corner's
+  view (no reconnecting), so the picture shows.
 
 ## 0.34 (18 Oct 2026)
 
