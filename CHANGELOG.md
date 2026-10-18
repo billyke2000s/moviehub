@@ -8,7 +8,7 @@ update feed), so the next release after it used code 12, named 0.12.
 
 ## Unreleased
 
-Nothing yet.
+- Build: Android Gradle plugin 9.4.1 with Gradle 9.6.0 (no change in the app itself).
 
 ## 0.15 (18 Oct 2026)
 
