@@ -3,9 +3,23 @@
 Versions are published to TVs through the in-app updater (`android-tv-latest` release). Each
 version below was built from the listed `main` commit. Earlier history is in the git log.
 
+Note: the release shown as 0.10 below was published with version code 11 (name "0.11" in the
+update feed), so the next release after it used code 12, named 0.12.
+
 ## Unreleased
 
 On `main` but not yet published to TVs:
+
+- Movies and Series open on a new start page in the style of the big streaming apps: a large
+  backdrop with the focused title, year, rating and synopsis, above rows of posters by category
+  (Trending, Popular, Top rated, release lists and every genre). Posters have no captions, the row
+  being browsed always sits fully in view, rows load as you reach them, and your place is kept when
+  you open a title and come back. Browse, Filters, Search and Library work as before; a category
+  chosen there opens as a full grid, and Back returns to the rows.
+
+## 0.12 (18 Oct 2026)
+
+Published from `main` after PRs #25 and #26:
 
 - Full portrait posters and redesigned movie/series browsing with filter overlays (PR #20).
 - The catalogue no longer jumps back to the top when the first page arrives; long category lists

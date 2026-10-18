@@ -17,8 +17,9 @@ before changing code.
 
 - Run the core checks locally. Open a pull request and read the CI result before saying a change
   works.
-- Device tests are currently flaky. Do not call a red run "unrelated" without evidence: compare it
-  with a run of unchanged `main`, and say plainly what you compared.
+- Device tests were made reliable in October 2026 (8/8 parallel runs). If one fails, treat it as a
+  real problem until shown otherwise: read its annotation, and compare with unchanged `main` before
+  calling it unrelated.
 - Never claim something was tested on a real TV or a real provider account unless it was. The
   fixtures do not prove live provider behaviour.
 - If you could not run something, say so in the PR description.

@@ -24,13 +24,24 @@ final class CatalogueScreens {
     }
 
     CatalogueScreen catalogue;
+    /** Remembered rows pages ("Movies", "Series"), restored when coming back from a title. */
+    final Map<String, CatalogueRows.Saved> rowStates = new HashMap<>();
+
+    /** Opens the Movies or Series start page: Netflix-style rows of categories. */
+    void rows(String kind) {
+        if (catalogue == null || !catalogue.kind.equals(kind)) {
+            catalogue = new CatalogueScreen(kind);
+            catalogue.refreshGenres();
+        }
+        catalogue.showRows();
+    }
 
     private String catalogueRegion() {
         String fallback = Locale.getDefault().getCountry();
         return activity.prefs.getString("catalogueRegion", fallback.matches("[A-Z]{2}") ? fallback : "GB");
     }
 
-    private List<TmdbCategories.Entry> catalogueGenres(String type) {
+    List<TmdbCategories.Entry> catalogueGenres(String type) {
         LinkedHashMap<Integer, TmdbCategories.Entry> rows = new LinkedHashMap<>();
         for (TmdbCategories.Entry entry : TmdbCategories.genres(type)) {
             String raw = entry.path.substring(entry.path.lastIndexOf('=') + 1);
@@ -150,6 +161,14 @@ final class CatalogueScreens {
         final LinearLayout content, controls;
         final ImageView backdrop;
         final TextView collection, previewTitle, previewMeta, previewSummary;
+        final LinearLayout hero;
+        final Button backButton;
+        /** The header button focused when the screen opens. */
+        final View initialFocus;
+        /** The rows page, while it is showing. */
+        CatalogueRows rowsView;
+        /** True when a grid was opened from the rows page, so Back returns to the rows. */
+        boolean fromRows;
         final ArrayDeque<TmdbCategories.Entry> overlayPages = new ArrayDeque<>();
         PosterFeed feed;
         boolean closed;
@@ -163,7 +182,7 @@ final class CatalogueScreens {
             activity.fixedScreen(kind, activity.homeScreen::home);
             LinearLayout header = (LinearLayout) activity.page.getChildAt(0);
             controls = header;
-            View backButton = header.getChildAt(1);
+            backButton = (Button) header.getChildAt(1);
             header.removeView(backButton);
             header.addView(
                 activity.navigationButton("Search", () -> activity.catalogueSearch.searchCatalogue(kind)),
@@ -196,21 +215,36 @@ final class CatalogueScreens {
             root.setBackgroundColor(0xff090d14);
             backdrop = new ImageView(activity);
             backdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            backdrop.setAlpha(.2f);
+            backdrop.setAlpha(.6f);
             root.addView(backdrop, new FrameLayout.LayoutParams(-1, -1));
-            View shade = new View(activity);
-            shade.setBackground(
+            // Darken the left (behind the text) and the lower half (behind the posters), leaving the
+            // artwork visible at the top right, as streaming apps do.
+            View sideShade = new View(activity);
+            sideShade.setBackground(
+                new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[] {
+                    0xf2090d14,
+                    0xb3090d14,
+                    0x33090d14,
+                    0x00090d14,
+                })
+            );
+            root.addView(sideShade, new FrameLayout.LayoutParams(-1, -1));
+            View lowerShade = new View(activity);
+            lowerShade.setBackground(
                 new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {
+                    0x66090d14,
+                    0x00090d14,
                     0xaa090d14,
-                    0xdd090d14,
+                    0xff090d14,
                     0xff090d14,
                 })
             );
-            root.addView(shade, new FrameLayout.LayoutParams(-1, -1));
+            root.addView(lowerShade, new FrameLayout.LayoutParams(-1, -1));
             activity.page.setBackgroundColor(Color.TRANSPARENT);
             root.addView(activity.page, new FrameLayout.LayoutParams(-1, -1));
             activity.setContentView(root);
             LinearLayout preview = activity.vertical();
+            hero = preview;
             preview.setPadding(activity.dp(8), activity.dp(8), activity.dp(8), activity.dp(6));
             previewTitle = activity.compactText("Discover your next watch", 24);
             previewTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
@@ -223,16 +257,66 @@ final class CatalogueScreens {
             preview.addView(previewTitle);
             preview.addView(previewMeta);
             preview.addView(previewSummary);
-            activity.page.addView(preview, new LinearLayout.LayoutParams(-1, activity.dp(112)));
+            activity.page.addView(preview, new LinearLayout.LayoutParams(-1, -2));
             collection = activity.compactText("Trending today", 16);
             collection.setTextColor(0xffaab7cb);
             activity.page.addView(collection, new LinearLayout.LayoutParams(-1, activity.dp(28)));
             content = activity.vertical();
             activity.page.addView(content, new LinearLayout.LayoutParams(-1, 0, 1));
-            header.getChildAt(1).requestFocus();
+            initialFocus = header.getChildAt(1);
+            initialFocus.requestFocus();
+        }
+
+        /** Shows the rows page in this screen. Browse and Filters still open over it. */
+        void showRows() {
+            if (closed) return;
+            if (feed != null && path != null) activity.rememberCatalogue(type + ":" + path, feed.snapshot());
+            if (activity.catalogueDialog != null) activity.catalogueDialog.dismiss();
+            activity.generation++;
+            if (feed != null) {
+                feed.close();
+                activity.feeds.remove(feed);
+                feed = null;
+            }
+            path = null;
+            selected = null;
+            fromRows = false;
+            setBack(activity.homeScreen::home);
+            activity.destination = () -> rows(kind);
+            collection.setText("");
+            collection.setVisibility(View.GONE);
+            hero.setPadding(activity.dp(8), activity.dp(28), activity.dp(8), activity.dp(10));
+            previewTitle.setTextSize(30);
+            previewSummary.setMaxLines(3);
+            previewSummary.setText("Hold Select on a poster for quick actions.");
+            if (pendingPreview != null) activity.handler.removeCallbacks(pendingPreview);
+            content.removeAllViews();
+            if (rowsView != null) rowsView.close();
+            rowsView = new CatalogueRows(activity, this);
+            content.addView(rowsView.build(rowStates.remove(kind)), new LinearLayout.LayoutParams(-1, -1));
+        }
+
+        /** Sets what both the Back key and the on-screen Back button do. */
+        private void setBack(Runnable action) {
+            activity.back = action;
+            backButton.setOnClickListener(v -> action.run());
+        }
+
+        private void leaveRows() {
+            if (rowsView == null) return;
+            CatalogueRows.Saved saved = rowsView.close();
+            if (saved != null) rowStates.put(kind, saved);
+            rowsView = null;
+            fromRows = true;
+            setBack(this::showRows);
         }
 
         void close() {
+            if (rowsView != null) {
+                CatalogueRows.Saved saved = rowsView.close();
+                if (saved != null) rowStates.put(kind, saved);
+                rowsView = null;
+            }
             closed = true;
             if (pendingPreview != null) activity.handler.removeCallbacks(pendingPreview);
         }
@@ -259,10 +343,20 @@ final class CatalogueScreens {
             if (feed != null && path != null) activity.rememberCatalogue(type + ":" + path, feed.snapshot());
             if (activity.catalogueDialog != null) activity.catalogueDialog.dismiss();
             activity.generation++;
+            leaveRows();
             selected = name;
             path = route;
-            activity.destination = () -> browse(kind, name, route, 1);
+            activity.destination = fromRows
+                ? () -> {
+                      rows(kind);
+                      browse(kind, name, route, 1);
+                  }
+                : () -> browse(kind, name, route, 1);
             collection.setText(name);
+            collection.setVisibility(View.VISIBLE);
+            hero.setPadding(activity.dp(8), activity.dp(8), activity.dp(8), activity.dp(6));
+            previewTitle.setTextSize(24);
+            previewSummary.setMaxLines(2);
             if (pendingPreview != null) activity.handler.removeCallbacks(pendingPreview);
             backdrop.setTag(null);
             backdrop.setImageDrawable(null);
@@ -391,7 +485,7 @@ final class CatalogueScreens {
         }
     }
 
-    private JSONObject cataloguePage(String type, String path, int number) throws Exception {
+    JSONObject cataloguePage(String type, String path, int number) throws Exception {
         if (path.startsWith("collection/")) {
             JSONArray parts = activity.media.tmdb(path).getJSONArray("parts");
             List<JSONObject> sorted = new ArrayList<>();

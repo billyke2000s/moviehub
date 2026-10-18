@@ -33,11 +33,16 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     private final boolean horizontal;
     private long lastFocused = Long.MIN_VALUE;
     private int columns = 4;
+    /** Size of each poster in a horizontal feed, in dp. */
+    private int cardWidthDp = 108,
+        cardHeightDp = 150;
     private boolean pendingBelow;
     Runnable onFirstItems;
     private int next = 1,
         total = 1;
     private boolean loading, closed, failed, capped;
+    /** False until start() or restore(); an unstarted feed never fetches, even when laid out. */
+    private boolean started;
     private View pendingFrom;
     private final FeedAdapter adapter = new FeedAdapter();
 
@@ -140,6 +145,11 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     private long restoredFocus = Long.MIN_VALUE;
 
     void restore(State state) {
+        restore(state, true);
+    }
+
+    /** Restores saved posters and position; focuses the saved poster only when {@code refocus}. */
+    void restore(State state, boolean refocus) {
         items.clear();
         items.addAll(state.items);
         seen.clear();
@@ -147,7 +157,8 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
         next = state.next;
         total = state.total;
         capped = state.capped;
-        restoredFocus = state.focused;
+        restoredFocus = refocus ? state.focused : Long.MIN_VALUE;
+        started = true;
         adapter.notifyDataSetChanged();
         getLayoutManager().onRestoreInstanceState(state.layout);
         post(this::prefetch);
@@ -219,12 +230,19 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
         super.onDetachedFromWindow();
     }
 
+    /** Sets the poster size for a horizontal feed. Call before the feed starts. */
+    void setCardSize(int widthDp, int heightDp) {
+        cardWidthDp = widthDp;
+        cardHeightDp = heightDp;
+    }
+
     void setColumns(int value) {
         columns = value;
         ((GridLayoutManager) getLayoutManager()).setSpanCount(value);
     }
 
     void start() {
+        started = true;
         loadMore();
     }
 
@@ -233,7 +251,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     }
 
     private void prefetch() {
-        if (closed || loading || failed || next > total) return;
+        if (!started || closed || loading || failed || next > total) return;
         LinearLayoutManager manager = (LinearLayoutManager) getLayoutManager();
         int last = manager.findLastVisibleItemPosition();
         if (last >= items.size() - (horizontal ? 6 : 12)) post(() -> {
@@ -242,7 +260,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     }
 
     void loadMore() {
-        if (closed || loading || next > total) return;
+        if (!started || closed || loading || next > total) return;
         loading = true;
         failed = false;
         statusChanged();
@@ -463,8 +481,8 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
                 card = status;
             } else card = cards.create(parent);
             LayoutParams lp = new LayoutParams(
-                horizontal ? dp(type == 1 ? 170 : 108) : LayoutParams.MATCH_PARENT,
-                horizontal ? dp(150) : type == 1 ? dp(48) : LayoutParams.WRAP_CONTENT
+                horizontal ? dp(type == 1 ? 170 : cardWidthDp) : LayoutParams.MATCH_PARENT,
+                horizontal ? dp(cardHeightDp) : type == 1 ? dp(48) : LayoutParams.WRAP_CONTENT
             );
             lp.setMargins(dp(4), dp(4), dp(4), dp(4));
             card.setLayoutParams(lp);

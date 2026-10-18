@@ -68,7 +68,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | --- | --- |
 | `HomeScreen` | Home: top navigation, featured artwork, poster shelf (`HomeShelf`), clock, Update/Settings buttons. |
 | `AppDock` | The installed-app dock on Home (long-press Select to lift, move, remove) and All Apps. |
-| `CatalogueScreens` | Movies/Series catalogues: category hub, poster grid (`CatalogueScreen`), Browse and filter sheets, region choice. See [docs/tmdb-categories.md](docs/tmdb-categories.md). |
+| `CatalogueRows` | The Movies/Series start page: a hero area for the focused title above Netflix-style rows (Trending, Popular, Top rated, release lists, then genres). The focused row is pinned at the top of the rows area, rows load as they come near, and position is restored after opening a title. |
+| `CatalogueScreens` | The Movies/Series screen (`CatalogueScreen`): header, hero and either the rows page or a single-category poster grid ("see all", Browse and filter results), plus the Browse and filter sheets. Back from a grid opened from the rows returns to the rows. See [docs/tmdb-categories.md](docs/tmdb-categories.md). |
 | `CatalogueSearch` | Search by title, person or company; recent searches. |
 | `TitleDetails` | The details page for one movie or series (cast, collections, trailers, My List, resume). |
 | `SeriesScreens` | Seasons and episodes, watched-episode marks. |
