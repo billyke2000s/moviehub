@@ -72,8 +72,13 @@ abstract class TvActivity extends Activity {
                 : background
         );
         focusText(view, focused ? 0xff10141c : 0xfff2f4f8);
-        view.setScaleX(focused ? 1.025f : 1f);
-        view.setScaleY(focused ? 1.025f : 1f);
+        // Small items (posters, buttons, app tiles) grow slightly. Wide items such as list rows would
+        // grow into their neighbours and past the screen edge, so they only change colour.
+        boolean grow = focused && view.getWidth() < getResources().getDisplayMetrics().widthPixels * 0.4f;
+        view.setScaleX(grow ? 1.025f : 1f);
+        view.setScaleY(grow ? 1.025f : 1f);
+        // Draw the focused item above its neighbours so its outline is never hidden behind them.
+        view.setTranslationZ(focused ? dp(4) : 0);
     }
 
     void focusText(View view, int colour) {
