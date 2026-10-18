@@ -145,19 +145,10 @@ final class CatalogueSearch {
      */
     void searchCatalogue(String kind, String initial) {
         activity.screen("Search", () -> activity.libraryScreens.library(kind));
-        LinearLayout holder = activity.vertical();
-        EditText query = activity.field(holder, "Search", false, initial);
-        holder.removeViewAt(0); // the field's own label; the box has a hint instead
-        query.setHint("Search movies, series and people");
+        EditText query = activity.searchBox(activity.page, "Search movies, series and people");
         query.setTextSize(22);
         query.setPadding(activity.dp(24), activity.dp(14), activity.dp(24), activity.dp(14));
-        styleSearchBox(query, false);
-        View.OnFocusChangeListener keyboardHandling = query.getOnFocusChangeListener();
-        query.setOnFocusChangeListener((v, focused) -> {
-            keyboardHandling.onFocusChange(v, focused);
-            styleSearchBox(query, focused);
-        });
-        activity.page.addView(holder, new LinearLayout.LayoutParams(-1, -2));
+        query.setText(initial);
         LinearLayout results = activity.vertical();
         results.setClipChildren(false);
         activity.page.addView(results, new LinearLayout.LayoutParams(-1, -2));
@@ -187,14 +178,6 @@ final class CatalogueSearch {
         if (initial.isEmpty()) search.showRecent();
         else search.run(initial);
         query.requestFocus();
-    }
-
-    private void styleSearchBox(EditText box, boolean focused) {
-        GradientDrawable shape = new GradientDrawable();
-        shape.setCornerRadius(activity.dp(30));
-        shape.setColor(focused ? 0x33ffffff : 0x1fffffff);
-        shape.setStroke(activity.dp(focused ? 3 : 1), focused ? activity.accent() : 0x40ffffff);
-        box.setBackground(shape);
     }
 
     /** One search page: debounced typing, result rows and recent searches. */
