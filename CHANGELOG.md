@@ -10,6 +10,11 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.30 (18 Oct 2026)
+
+- Phones and tablets get a MovieHub icon in the app drawer, so it opens as an ordinary app without
+  being made the home screen. TVs are unchanged. It is still laid out for a TV and a remote.
+
 ## 0.29 (18 Oct 2026)
 
 - The guide's coloured buttons are back to how they were, as on the satellite guide: red page up,
