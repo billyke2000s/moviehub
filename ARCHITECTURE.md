@@ -72,8 +72,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | File | Screens |
 | --- | --- |
 | `HomeScreen` | Home: top navigation, featured artwork, poster shelf (`HomeShelf`), clock, Update/Settings buttons, and a MemoryClean icon when that app is installed. |
-| `AppDock` | Installed apps: the dock on Home (long-press Select to lift, move, remove), launching (remembers recently used), hiding, and the app menu. |
-| `AllApps` | The Apps screen: search, Android settings shortcuts, recently used, and every app as a TV banner tile. |
+| `AppDock` | Installed apps (one entry per app: a package's TV and phone launcher entries with the same name are merged), the dock on Home (long-press Select to lift, move, remove), launching (remembers recently used), hiding, and the app menu. |
+| `AllApps` | The Apps screen: search, Android settings shortcuts, recently used, and every app as a TV banner tile (three rows first, the rest straight after the first draw). |
 | `CatalogueRows` | The Movies/Series start page: a hero area for the focused title above Netflix-style rows (Trending, Popular, Top rated, release lists, then genres). The focused row is pinned at the top of the rows area, rows load as they come near, and position is restored after opening a title. |
 | `CatalogueScreens` | The Movies/Series screen (`CatalogueScreen`): header, hero and either the rows page or a single-category poster grid ("see all", Browse and filter results), plus the Browse and filter overlay. Back from a grid opened from the rows returns to the rows. See [docs/tmdb-categories.md](docs/tmdb-categories.md). |
 | `CatalogueOptions` | The Browse and Filters sheets' contents: category and genre lists, region, years, languages, countries, streaming services and the "Refine results" form. |
@@ -113,7 +113,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `FreeChannels` | Which free lists Live TV imports (Free-TV, then iptv-org by country, all, or off); "automatic" (the full list) only without a provider, imported when Live TV is first opened. |
 | `ChannelImporter`, `ChannelSync` | Background channel import (WorkManager), refreshed every 12 hours. |
 | `Secrets` | Account details encrypted with an Android Keystore key; the key and read values are cached in memory. |
-| `VideoFiles` | Chooses the right file in a multi-file release (episode matching). |
+| `VideoFiles` | Chooses the right file in a multi-file release: the film beside extras, or the episode in a season pack (exact matches can play straight away; likely ones are only marked "Suggested episode"). Plain Java. |
 | `AppUpdates`, `UpdateApkProvider` | Downloads and verifies update APKs; shares the verified APK with the system installer. |
 | `VlcPlaybackActivity` | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions (opened directly at the resume point), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`). |
 | `PlayerOverlay` | Builds the player's on-screen controls (title and download speed, timeline, flat icon controls, Back hint). |
