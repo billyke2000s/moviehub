@@ -20,8 +20,8 @@ On `main` but not yet published to TVs:
   then a "More like this" poster row, the collection and the cast as round photos.
 - The Movies/Series title area keeps the same height for every title, so the poster rows no
   longer move when a synopsis is shorter or longer; the title sits higher to make room.
-- Home: the featured title's action is a slim "More info" pill (see-through, white when
-  selected) instead of a heavy dark button.
+- Home: the featured title's "View details" button keeps its usual style but is sized to its
+  label instead of a long fixed width. (0.14 briefly showed it as a "More info" pill.)
 
 ## 0.13 (18 Oct 2026)
 

@@ -218,7 +218,7 @@ public class TvNavigationTest {
         screenshot("home-artwork");
         instrumentation.runOnMainSync(() -> {
             assertFullyVisible("All Apps");
-            assertFullyVisible("More info");
+            assertFullyVisible("View details");
         });
         instrumentation.runOnMainSync(() -> text(root(), "Movies").requestFocus());
         instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
