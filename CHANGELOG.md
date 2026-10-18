@@ -6,6 +6,24 @@ version below was built from the listed `main` commit. Earlier history is in the
 Note: the release shown as 0.10 below was published with version code 11 (name "0.11" in the
 update feed), so the next release after it used code 12, named 0.12.
 
+## 0.33 (18 Oct 2026)
+
+- The channel guide is back to the dark-blue look from 0.26: the time and list name at the top
+  left, Options and the live picture at the top right, the original sizes, colours and typeface,
+  and square colour keys. The light-blue redesign from 0.28 (programme preview and tabs) is gone;
+  sections are on the blue key and the guide menu. Scrolling right through the day, reminders and
+  the rest are kept.
+- The TV Guide menu is in the same dark blue as the guide.
+- No coloured buttons on your remote? The colour keys at the bottom of the guide and the menu can
+  now be chosen: press Down past the bottom row, move along them and press SELECT. Page down stays
+  selected, so SELECT again turns another page. While watching, SELECT twice opens Options, which
+  now also has Programme information, so it covers every coloured button.
+- Live TV now opens on the TV Guide menu first, like the old satellite box's TV Guide button.
+  Pick a list (or press its number) to see the channels; BACK from the channels comes back here.
+- Every row of the menu now fits on the screen, so 9 Music and 0 More… are no longer cut off.
+- REMINDERS, SEARCH and OPTIONS along the top of the menu now work: press Up from the first row,
+  then Left and Right.
+
 ## 0.32 (18 Oct 2026)
 
 - The "Staying safe" notice is now short and plain: MovieHub never asks you to leave the app

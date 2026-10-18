@@ -35,7 +35,7 @@ final class HomeScreen {
         for (String kind : new String[] { "Live TV", "Movies", "Series", "My list", "Continue" })
             top.addView(
                 activity.navigationButton(kind, () -> {
-                    if (kind.equals("Live TV")) activity.liveTv.live();
+                    if (kind.equals("Live TV")) activity.liveTv.start();
                     else if (kind.equals("My list")) activity.libraryScreens.watchlist();
                     else if (kind.equals("Continue")) activity.libraryScreens.continueWatching();
                     else activity.libraryScreens.library(kind);

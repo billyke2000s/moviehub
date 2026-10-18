@@ -59,11 +59,9 @@ final class LiveTvScreen {
 
     /** The guide frame (header, picture, footer) stays while paging; only the grid reloads. */
     private int frameGeneration = -1;
-    /** The guide's fixed parts (header, programme preview, tabs, slots, keys) and its menu. */
+    /** The guide's fixed parts (header, picture, slots, keys) and its menu. */
     final GuideFrame frame;
     final GuideMenu menu;
-    /** The tabs have the focus (moving along them changes the list). */
-    boolean tabFocus;
     /** The guide rows: channel names and programme cells, and moving along them. */
     final GuideRows rows;
     /** A programme cell has the focus (not a channel name), at this point in time. */
@@ -92,18 +90,28 @@ final class LiveTvScreen {
         return new HashSet<>(activity.prefs.getStringSet("favourites", Collections.emptySet()));
     }
 
+    /** Live TV from Home: the guide menu first, as the satellite box's TV Guide button did. */
+    void start() {
+        refreshChannels();
+        menu.show();
+    }
+
+    /** Straight to All Channels in the grid. */
     void live() {
+        refreshChannels();
+        filter = "all";
+        search = "";
+        windowOffset = 0;
+        programmeFocus = false;
+        guide(0, 0);
+    }
+
+    private void refreshChannels() {
         try {
             ChannelSync.refreshIfStale(activity, true);
         } catch (Exception e) {
             Diagnostics.recovered("Starting channel refresh", e);
         }
-        filter = "all";
-        search = "";
-        windowOffset = 0;
-        programmeFocus = false;
-        tabFocus = false;
-        guide(0, 0);
     }
 
     /** Shows the page starting at {@code start}, focusing row {@code focusRow} (-1 for the last). */
@@ -126,7 +134,36 @@ final class LiveTvScreen {
         startPicture();
     }
 
-    /** Down from the tabs: the first row of the grid. */
+    /** Whether there is a page after this one. */
+    boolean hasMore;
+    /** The bar key to focus when the page arrives (paged from the bar), or -1. */
+    private int barKey = -1;
+
+    /** Down from the bottom row: the colour keys, on Page down. */
+    void focusKeys() {
+        frame.bar.focus(1);
+    }
+
+    /** Up from the colour keys: the bottom row, on its name or the programme at the cursor. */
+    void focusLastRow() {
+        if (cells.isEmpty()) {
+            frame.focusTop();
+            return;
+        }
+        int last = cells.size() - 1;
+        if (programmeFocus) rows.focusAt(last, cursorTime);
+        else cells.get(last).requestFocus();
+    }
+
+    /** Page up or Page down chosen in the bar: turns the page and keeps the focus on that key. */
+    void pageFromBar(int direction, int key) {
+        int target = pageStart + direction * ROWS;
+        if (target < 0 || (direction > 0 && !hasMore)) return;
+        barKey = key;
+        guide(target, 0);
+    }
+
+    /** Down from the Options button: the first row of the grid. */
     void focusFirstRow() {
         if (!cells.isEmpty()) {
             if (programmeFocus) rows.focusAt(0, cursorTime);
@@ -134,9 +171,9 @@ final class LiveTvScreen {
         }
     }
 
-    /** Up from the top row of the first page: the tabs. */
+    /** Up from the top row of the first page: the Options button. */
     void focusTabs() {
-        frame.focusTab();
+        frame.focusTop();
     }
 
     /** The first time slot shown: now's half hour, moved on by ◀ ▶. */
@@ -204,6 +241,7 @@ final class LiveTvScreen {
                 rows.clear();
                 int count = Math.min(items.size(), ROWS);
                 boolean more = items.size() > ROWS;
+                hasMore = more;
                 Set<String> favourites = favouriteKeys(),
                     reminders = new HashSet<>();
                 for (Reminders.Reminder item : Reminders.all(activity)) reminders.add(item.id());
@@ -234,12 +272,15 @@ final class LiveTvScreen {
                         "Options",
                         panels::options
                     );
-                    frame.focusTab(); // nothing to focus in the grid: the tabs
+                    frame.focusTop(); // nothing to focus in the grid: the Options button
                     return;
                 }
                 int focus = focusRow < 0 ? count - 1 : Math.min(focusRow, count - 1);
-                if (tabFocus) frame.focusTab();
-                else if (programmeFocus) rows.focusAt(focus, cursorTime);
+                if (barKey >= 0) {
+                    // Paged with a key in the bar: stay on it, so SELECT pages again.
+                    frame.bar.focus(barKey);
+                    barKey = -1;
+                } else if (programmeFocus) rows.focusAt(focus, cursorTime);
                 else cells.get(focus).requestFocus();
             }
         );
@@ -499,7 +540,6 @@ final class LiveTvScreen {
         search = newSearch;
         windowOffset = 0;
         programmeFocus = false;
-        tabFocus = false;
         guide(0, 0);
     }
 

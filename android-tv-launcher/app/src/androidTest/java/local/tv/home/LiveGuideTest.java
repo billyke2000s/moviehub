@@ -88,12 +88,31 @@ public class LiveGuideTest {
             () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
         );
         UiEvidence.capture("live-guide");
+        // Down past the bottom row: the colour keys, on Page down (for remotes without colours).
         for (int i = 0; i < 10; i++) {
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
             remote.waitForIdleSync();
         }
+        await("on Page down", () -> activity.liveTv.frame.bar.keys.get(1).hasFocus());
+        UiEvidence.capture("live-guide-key-bar");
+        // SELECT turns the page and stays on the key; Up goes back to the bottom row.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         await(
-            "second page",
+            "second page from the bar",
+            () ->
+                activity.liveTv.pageStart == 10 &&
+                activity.liveTv.cells.size() == 10 &&
+                ((TextView) activity.liveTv.cells.get(0)).getText().toString().startsWith("111  ") &&
+                activity.liveTv.frame.bar.keys.get(1).hasFocus()
+        );
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        await("bottom row", () -> focused().startsWith("120  Channel 19"));
+        for (int i = 0; i < 9; i++) {
+            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+            remote.waitForIdleSync();
+        }
+        await(
+            "second page, top row",
             () -> activity.liveTv.pageStart == 10 && focused().startsWith("111  Channel 10")
         );
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN); // green: page down
@@ -119,6 +138,7 @@ public class LiveGuideTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_2);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_3);
         await("typed 123", () -> activity.liveTv.pageStart == 20 && focused().startsWith("123  Channel 22"));
+        remote.waitForIdleSync();
         // Right moves onto the programmes, keeping the channel names on the left.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
         await("on the programme", () -> activity.liveTv.rows.programmes.get(2).get(0).hasFocus());
@@ -171,28 +191,16 @@ public class LiveGuideTest {
     }
 
     @Test
-    public void tabsAndTheGuideMenuWorkLikeTheSatelliteGuide() {
+    public void optionsAboveTheGridAndTheGuideMenuBehindBack() {
         remote.runOnMainSync(() -> activity.liveTv.live());
         await(
             "first page",
             () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
         );
-        // Up from the top row: the tabs, on All Channels.
+        UiEvidence.capture("live-guide-classic");
+        // Up from the top row: the Options button; down again: the first row.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
-        await("on the tabs", () -> activity.liveTv.frame.tabs.get(0).hasFocus());
-        UiEvidence.capture("live-guide-tabs");
-        // Right: Favourites, shown straight away with the focus kept on the tabs.
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
-        await(
-            "favourites tab",
-            () -> activity.liveTv.filter.equals("favourites") && activity.liveTv.frame.tabs.get(1).hasFocus()
-        );
-        // Left again and down: back in All Channels on the first row.
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
-        await(
-            "all channels tab",
-            () -> activity.liveTv.filter.equals("all") && activity.liveTv.cells.size() == 10
-        );
+        await("on Options", () -> activity.liveTv.frame.optionsButton.hasFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
         await("first row", () -> focused().startsWith("101  Channel 00"));
         // BACK: the guide menu; 1 opens All Channels again.
@@ -213,5 +221,73 @@ public class LiveGuideTest {
             "sections",
             () -> activity.liveTv.menu.rows.size() == 10 && activity.liveTv.menu.rows.get(0).hasFocus()
         );
+    }
+
+    /** Every row of a guide menu is on screen in full (none cut off at the bottom). */
+    void assertAllRowsOnScreen(int count) {
+        assertEquals(count, activity.liveTv.menu.rows.size());
+        for (View row : activity.liveTv.menu.rows) {
+            android.graphics.Rect visible = new android.graphics.Rect();
+            assertTrue("menu row visible", row.getGlobalVisibleRect(visible));
+            assertTrue("menu row cut off", row.getHeight() > 0 && visible.height() >= row.getHeight());
+        }
+    }
+
+    @Test
+    public void liveTvOpensTheGuideMenuWithEveryRowAndTheTopPartsWorking() {
+        // Live TV from Home: the guide menu first, like the TV Guide button.
+        remote.runOnMainSync(() -> activity.liveTv.start());
+        await(
+            "guide menu",
+            () -> activity.liveTv.menu.rows.size() == 10 && activity.liveTv.menu.rows.get(0).hasFocus()
+        );
+        remote.waitForIdleSync();
+        UiEvidence.capture("live-guide-menu-first");
+        remote.runOnMainSync(() -> assertAllRowsOnScreen(10));
+        // Down to the last row (0 More…) and select: the second page, all on screen too.
+        for (int i = 0; i < 9; i++) remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
+        await("on More…", () -> activity.liveTv.menu.rows.get(9).hasFocus());
+        // Below the list: the colour keys, chosen with SELECT (for remotes without colours).
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
+        await("on the Options key", () -> activity.liveTv.menu.bar.keys.get(0).hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        await("options open", () -> SidePanel.current != null && SidePanel.current.isShowing());
+        remote.runOnMainSync(() -> SidePanel.current.dismiss());
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> activity.liveTv.menu.bar.keys.get(0).requestFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        await("back on More…", () -> activity.liveTv.menu.rows.get(9).hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        await(
+            "more",
+            () -> activity.liveTv.menu.rows.size() == 6 && activity.liveTv.menu.rows.get(0).hasFocus()
+        );
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> assertAllRowsOnScreen(6));
+        // BACK: the main menu again; 9 opens Music in the grid.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        await("main menu", () -> activity.liveTv.menu.rows.size() == 10);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_9);
+        await("music", () -> activity.liveTv.filter.equals("section:Music"));
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        await(
+            "menu after music",
+            () -> activity.liveTv.menu.rows.size() == 10 && activity.liveTv.menu.rows.get(0).hasFocus()
+        );
+        // Up from the first row: the parts along the top; right to Reminders, which opens.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        await("top parts", () -> activity.liveTv.menu.tabs.get(0).hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        await("reminders part", () -> activity.liveTv.menu.tabs.get(1).hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        await("reminders open", () -> SidePanel.current != null && SidePanel.current.isShowing());
+        remote.runOnMainSync(() -> SidePanel.current.dismiss());
+        // Search opens its form (a dialog over the menu, so the menu loses the window focus).
+        await("menu focused again", () -> activity.hasWindowFocus());
+        remote.runOnMainSync(() -> activity.liveTv.menu.tabs.get(2).requestFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        await("search open", () -> !activity.hasWindowFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        await("search closed", () -> activity.hasWindowFocus());
     }
 }
