@@ -102,7 +102,7 @@ public class VlcPlaybackActivity extends Activity {
                 );
                 // A programme reminder that is due shows over the picture (checked every 15 s).
                 if (++reminderTicks % 15 == 0 && !dialogOpen) showDueReminder();
-                downloadMbps = downloadSpeed();
+                downloadMbps = PlayerOverlay.downloadSpeed(player);
                 if (downloadMbps >= 0) Timings.lastMbps = downloadMbps;
                 speed.setText(
                     downloadMbps < 0
@@ -307,24 +307,6 @@ public class VlcPlaybackActivity extends Activity {
         setContentView(root);
         pause.requestFocus();
         revealControls();
-    }
-
-    /**
-     * The input bitrate VLC reports for the current media, in megabits per second, or -1.
-     * VLC gives it in kilobytes per second (VLC for Android scales it by 8 × 1024 for bits).
-     */
-    private float downloadSpeed() {
-        if (player == null) return -1;
-        var media = player.getMedia();
-        if (media == null) return -1;
-        try {
-            var stats = media.getStats();
-            return stats == null ? -1 : (stats.inputBitrate * 8f * 1024f) / 1_000_000f;
-        } catch (RuntimeException e) {
-            return -1;
-        } finally {
-            media.release();
-        }
     }
 
     /** Shows the play or pause icon to match the player. */

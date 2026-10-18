@@ -239,4 +239,22 @@ final class PlayerOverlay {
         parent.addView(item, lp);
         return item;
     }
+
+    /**
+     * The input bitrate VLC reports for the current media, in megabits per second, or -1.
+     * VLC gives it in kilobytes per second (VLC for Android scales it by 8 × 1024 for bits).
+     */
+    static float downloadSpeed(org.videolan.libvlc.MediaPlayer player) {
+        if (player == null) return -1;
+        var media = player.getMedia();
+        if (media == null) return -1;
+        try {
+            var stats = media.getStats();
+            return stats == null ? -1 : (stats.inputBitrate * 8f * 1024f) / 1_000_000f;
+        } catch (RuntimeException e) {
+            return -1;
+        } finally {
+            media.release();
+        }
+    }
 }
