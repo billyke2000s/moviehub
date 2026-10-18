@@ -2,12 +2,15 @@ package local.tv.home;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /**
- * Free live channels from the public iptv-org playlists (https://github.com/iptv-org/iptv), used
- * for Live TV when no Xtream or M3U provider is connected. iptv-org lists publicly available
- * streams submitted by its users; it hosts no video itself.
+ * Free live channels for Live TV when no Xtream or M3U provider is connected: Free-TV/IPTV
+ * (https://github.com/Free-TV/IPTV, free-to-air and free ad-supported channels) and the public
+ * iptv-org playlists (https://github.com/iptv-org/iptv). Both list publicly available streams
+ * and host no video themselves.
  */
 final class FreeChannels {
 
@@ -38,10 +41,40 @@ final class FreeChannels {
         return value.toUpperCase(Locale.ROOT);
     }
 
+    /** A free channel list: its source id in the database, name, address and optional first group. */
+    static final class Source {
+
+        final String id, name, url, firstGroup;
+
+        Source(String id, String name, String url, String firstGroup) {
+            this.id = id;
+            this.name = name;
+            this.url = url;
+            this.firstGroup = firstGroup;
+        }
+    }
+
+    /** Free-TV/IPTV: a curated list of free-to-air and free ad-supported channels. */
+    static final String FREE_TV = "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8";
+
     /**
-     * The playlist to import, or "" when free channels are off. "auto" is the full iptv-org list,
-     * used only while no provider is connected. A country uses its own list (iptv-org calls the
-     * United Kingdom "uk", not "gb").
+     * The free lists to import. Free-TV comes first (its UK channels lead, so BBC One is 101) and
+     * iptv-org adds the rest; a channel in both appears once and the other copy is its backup.
+     * A country choice narrows iptv-org to that country; "off" imports nothing.
+     */
+    static List<Source> sources(Context context, boolean providerConnected) {
+        List<Source> out = new ArrayList<>();
+        String iptvOrg = playlist(context, providerConnected);
+        if (iptvOrg.isEmpty()) return out;
+        out.add(new Source("fta", "Free-TV", FREE_TV, "UK"));
+        out.add(new Source("free", "iptv-org", iptvOrg, null));
+        return out;
+    }
+
+    /**
+     * The iptv-org playlist, or "" when free channels are off. "auto" is the full list, used only
+     * while no provider is connected. A country uses its own list (iptv-org calls the United
+     * Kingdom "uk", not "gb").
      */
     static String playlist(Context context, boolean providerConnected) {
         String choice = choice(context);

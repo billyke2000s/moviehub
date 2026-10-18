@@ -98,11 +98,16 @@ final class PlayerMenus {
                       " min left"
                 : "Sleep timer"
         );
+        if (a.zapper != null && a.zapper.copies().size() > 1) labels.add(
+            0,
+            "Source · " + a.zapper.sourceLabel()
+        );
         a.dialogOpen = true;
         SidePanel panel = SidePanel.of(a, "Playback options").onDismiss(a::panelClosed);
         for (String label : labels)
             panel.option(label, () -> {
-                if (label.startsWith("Playback speed")) chooseSpeed();
+                if (label.startsWith("Source")) chooseSource();
+                else if (label.startsWith("Playback speed")) chooseSpeed();
                 else if (label.equals("Picture size")) choosePicture();
                 else if (label.equals("Subtitle timing")) subtitleTiming();
                 else chooseSleep();
@@ -170,5 +175,17 @@ final class PlayerMenus {
                 if (a.sleepAt > 0) a.overlayHandler.postDelayed(a.sleep, minutes[which] * 60000L);
             }
         );
+    }
+
+    /** The copies of this Live TV channel from the free lists; the current one is ticked. */
+    void chooseSource() {
+        java.util.List<ChannelDatabase.Row> copies = a.zapper.copies();
+        String[] names = new String[copies.size()];
+        int current = 0;
+        for (int i = 0; i < names.length; i++) {
+            names[i] = "Source " + (i + 1) + "  ·  " + copies.get(i).name;
+            if (a.zapper.sourceLabel().startsWith(i + 1 + " ")) current = i;
+        }
+        options("Source", names, current, which -> a.zapper.useCopy(which, null));
     }
 }
