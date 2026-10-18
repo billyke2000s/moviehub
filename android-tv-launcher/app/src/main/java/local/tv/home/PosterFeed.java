@@ -41,6 +41,8 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     private int next = 1,
         total = 1;
     private boolean loading, closed, failed, capped;
+    /** False until start() or restore(); an unstarted feed never fetches, even when laid out. */
+    private boolean started;
     private View pendingFrom;
     private final FeedAdapter adapter = new FeedAdapter();
 
@@ -156,6 +158,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
         total = state.total;
         capped = state.capped;
         restoredFocus = refocus ? state.focused : Long.MIN_VALUE;
+        started = true;
         adapter.notifyDataSetChanged();
         getLayoutManager().onRestoreInstanceState(state.layout);
         post(this::prefetch);
@@ -239,6 +242,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     }
 
     void start() {
+        started = true;
         loadMore();
     }
 
@@ -247,7 +251,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     }
 
     private void prefetch() {
-        if (closed || loading || failed || next > total) return;
+        if (!started || closed || loading || failed || next > total) return;
         LinearLayoutManager manager = (LinearLayoutManager) getLayoutManager();
         int last = manager.findLastVisibleItemPosition();
         if (last >= items.size() - (horizontal ? 6 : 12)) post(() -> {
@@ -256,7 +260,7 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
     }
 
     void loadMore() {
-        if (closed || loading || next > total) return;
+        if (!started || closed || loading || next > total) return;
         loading = true;
         failed = false;
         statusChanged();
