@@ -130,6 +130,8 @@ public class MainActivity extends TvActivity {
     final Artwork artworkLoader = new Artwork();
     Secrets secrets;
     MediaRepository media;
+    /** The Home "For you" shelf; see {@link ForYou}. */
+    ForYou forYou;
     LinearLayout page;
     Runnable back;
     Runnable destination;
@@ -234,6 +236,7 @@ public class MainActivity extends TvActivity {
         secrets = new Secrets(this);
         media = new MediaRepository(secrets);
         prefs = getSharedPreferences("ui", MODE_PRIVATE);
+        forYou = new ForYou(prefs, secrets, path -> media.tmdb(path));
         try {
             ChannelSync.schedule(this);
         } catch (Exception e) {

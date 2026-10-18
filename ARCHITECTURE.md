@@ -79,6 +79,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `CloudScreens` | Premiumize cloud folders and transfers. |
 | `LiveTvScreen` | IPTV channel browser: groups, search, favourites, paging. |
 | `SettingsScreens` | Settings tabs, account setup (TMDB, Premiumize, Xtream, M3U), languages, toggles. |
+| `ForYou` | The Home "For you" shelf: blends TMDB recommendations for up to six titles you played, saved or opened, ranked and cached on the box. |
 | `UpdatePrompt` | Checks the public release feed and offers a verified update. See [android-tv-launcher/UPDATES.md](android-tv-launcher/UPDATES.md). |
 
 ### Data and services
@@ -101,7 +102,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 
 | Store | Contents |
 | --- | --- |
-| SharedPreferences `ui` | UI settings and lists: accent colour, clock, `http` toggle, auto-updates, dock order, pinned apps, My List, watched episodes, search history, catalogue region/genre cache. |
+| SharedPreferences `ui` | UI settings and lists: accent colour, clock, `http` toggle, auto-updates, dock order, pinned apps, My List, watched episodes, search history, For you interest (`interest`), catalogue region/genre cache. |
 | SharedPreferences `accounts` (via `Secrets`) | Encrypted: TMDB key, Premiumize key, Xtream and M3U details, saved library, recent playback. |
 | SharedPreferences `positions` | Playback resume positions. |
 | SQLite `channels-v2.db` | Imported IPTV channels (encrypted stream URLs), groups and favourites. |

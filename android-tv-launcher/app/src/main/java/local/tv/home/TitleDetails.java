@@ -102,7 +102,7 @@ final class TitleDetails {
                       )
                   );
         Button play = action(actions, type.equals("tv") ? "Episodes" : "Find sources", resume == null, () -> {
-            activity.prefs.edit().putInt("seed", tmdbId).putString("seedType", type).apply();
+            ForYou.noteInterest(activity.prefs, type, tmdbId);
             activity.playbackTitle = item;
             if (type.equals("tv")) activity.seriesScreens.seasons(tmdbId, title);
             else {
