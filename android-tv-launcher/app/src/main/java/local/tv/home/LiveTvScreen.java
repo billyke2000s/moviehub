@@ -1,11 +1,8 @@
 package local.tv.home;
 
 import android.graphics.drawable.GradientDrawable;
-import android.text.TextUtils;
-import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import java.text.SimpleDateFormat;
@@ -62,10 +59,11 @@ final class LiveTvScreen {
 
     /** The guide frame (header, picture, footer) stays while paging; only the grid reloads. */
     private int frameGeneration = -1;
-    private TextView when, listTitle, status, pictureLabel;
-    private final List<TextView> slotLabels = new ArrayList<>();
-    private TextView dayLabel;
-    private final List<TextView> dayTabs = new ArrayList<>();
+    /** The guide's fixed parts (header, programme preview, tabs, slots, keys) and its menu. */
+    final GuideFrame frame;
+    final GuideMenu menu;
+    /** The tabs have the focus (moving along them changes the list). */
+    boolean tabFocus;
     /** The guide rows: channel names and programme cells, and moving along them. */
     final GuideRows rows;
     /** A programme cell has the focus (not a channel name), at this point in time. */
@@ -76,15 +74,14 @@ final class LiveTvScreen {
     /** The slots go up to a day ahead, as far as the programme guide reaches. */
     static final long MAX_OFFSET = 24L * 60 * 60 * 1000,
         HALF_HOUR = 30L * 60 * 1000;
-    private LinearLayout grid;
-    private Button optionsButton;
-    private android.widget.FrameLayout pictureBox;
     private int loadTicket;
 
     LiveTvScreen(MainActivity activity) {
         this.activity = activity;
         panels = new LiveTvPanels(activity, this);
         rows = new GuideRows(activity, this);
+        frame = new GuideFrame(activity, this);
+        menu = new GuideMenu(activity, this);
     }
 
     ChannelDatabase channelsDb() {
@@ -105,145 +102,41 @@ final class LiveTvScreen {
         search = "";
         windowOffset = 0;
         programmeFocus = false;
+        tabFocus = false;
         guide(0, 0);
     }
 
     /** Shows the page starting at {@code start}, focusing row {@code focusRow} (-1 for the last). */
     void guide(int start, int focusRow) {
         pageStart = Math.max(0, start);
-        if (frameGeneration != activity.generation || grid == null) buildFrame();
-        when.setText(clock(new Date()));
-        listTitle.setText(listName().toUpperCase(Locale.ROOT));
-        long first = windowStart();
-        boolean today = new SimpleDateFormat("yyyyMMdd", Locale.UK)
-            .format(new Date(first))
-            .equals(new SimpleDateFormat("yyyyMMdd", Locale.UK).format(new Date()));
-        dayLabel.setText(today ? "Today" : new SimpleDateFormat("EEE", Locale.UK).format(new Date(first)));
-        for (int i = 0; i < slotLabels.size(); i++) slotLabels
-            .get(i)
-            .setText(clockTime(new Date(first + i * 30 * 60000L)));
-        for (int i = 0; i < dayTabs.size(); i++) {
-            long day = System.currentTimeMillis() + i * MAX_OFFSET;
-            boolean shown = (i == 0) == today;
-            TextView tab = dayTabs.get(i);
-            tab.setText(
-                (i == 0 ? "Today " : "") + new SimpleDateFormat("EEE d MMM", Locale.UK).format(new Date(day))
-            );
-            tab.setBackground(box(shown ? YELLOW : BLUE_DARK));
-            tab.setTextColor(shown ? INK : 0xffdfe6ff);
-        }
+        if (frameGeneration != activity.generation || frame.grid == null) buildFrame();
+        frame.update(windowStart());
         loadPage(focusRow);
     }
 
-    /** The guide's fixed parts: header with the live picture, time slots, grid area and keys. */
+    /** The guide's fixed parts; BACK goes to the guide menu. */
     private void buildFrame() {
-        activity.fixedScreen(null, activity.homeScreen::home);
-        LinearLayout page = activity.page;
-        page.setPadding(activity.dp(40), activity.dp(18), activity.dp(40), activity.dp(14));
-        page.setBackground(
-            new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {
-                // Dark bands top and bottom with a lighter blue sweep behind the grid, as on the
-                // old satellite-box guide.
-                NAVY,
-                NAVY,
-                0xff2a43a6,
-                0xff6a8ce0,
-                0xff3654b8,
-                0xff1d2f86,
-                NAVY,
-            })
-        );
-
-        // Header: the time and date and the list name on the left; on the right the Options
-        // button and the live picture, as the satellite guide kept the channel playing there.
-        LinearLayout header = activity.row();
-        header.setGravity(Gravity.TOP);
-        LinearLayout titles = activity.vertical();
-        when = text("", 20, false);
-        titles.addView(when);
-        listTitle = text("", 30, true);
-        titles.addView(listTitle);
-        status = text("", 13, false);
-        status.setTextColor(0xffc9d3ff);
-        titles.addView(status);
-        header.addView(titles, new LinearLayout.LayoutParams(0, -2, 1));
-        optionsButton = activity.button("Options", panels::options);
-        LinearLayout.LayoutParams optionsLayout = new LinearLayout.LayoutParams(-2, activity.dp(40));
-        optionsLayout.rightMargin = activity.dp(16);
-        header.addView(optionsButton, optionsLayout);
-        pictureBox = new android.widget.FrameLayout(activity);
-        pictureBox.setBackground(box(0xff000000));
-        pictureLabel = text("", 13, true);
-        pictureLabel.setGravity(Gravity.CENTER);
-        pictureLabel.setShadowLayer(activity.dp(4), 0, activity.dp(1), 0xcc000000);
-        pictureBox.addView(pictureLabel, new android.widget.FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
-        header.addView(pictureBox, new LinearLayout.LayoutParams(activity.dp(160), activity.dp(90)));
-        activity.page.addView(header);
-
-        // The day bar: today and tomorrow (as far as the programme guide reaches), the day shown
-        // in yellow. The yellow key moves between them.
-        LinearLayout days = activity.row();
-        days.setPadding(0, activity.dp(4), 0, activity.dp(2));
-        dayTabs.clear();
-        for (int i = 0; i < 2; i++) {
-            TextView tab = text("", 15, true);
-            tab.setPadding(activity.dp(12), activity.dp(2), activity.dp(12), activity.dp(2));
-            LinearLayout.LayoutParams tabLayout = new LinearLayout.LayoutParams(-2, -2);
-            tabLayout.rightMargin = activity.dp(8);
-            days.addView(tab, tabLayout);
-            dayTabs.add(tab);
-        }
-        page.addView(days);
-
-        // Time slots, like "Today 8.00pm 8.30pm 9.00pm".
-        LinearLayout slots = activity.row();
-        dayLabel = text("Today", 17, true);
-        dayLabel.setGravity(Gravity.END);
-        dayLabel.setPadding(0, 0, activity.dp(10), 0);
-        slots.addView(dayLabel, new LinearLayout.LayoutParams(0, -2, 34));
-        LinearLayout times = activity.row();
-        slotLabels.clear();
-        for (int i = 0; i < 3; i++) {
-            TextView label = text("", 17, true);
-            slotLabels.add(label);
-            times.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
-        }
-        slots.addView(times, new LinearLayout.LayoutParams(0, -2, 66));
-        page.addView(slots);
-
-        grid = activity.vertical();
-        page.addView(grid, new LinearLayout.LayoutParams(-1, 0, 1));
-
-        // Colour keys, as on the remote.
-        LinearLayout keys = activity.row();
-        keys.setPadding(0, activity.dp(6), 0, 0);
-        colourKey(keys, 0xffe53935, "Page up");
-        colourKey(keys, 0xff43a047, "Page down");
-        colourKey(keys, YELLOW, "+24 hours");
-        colourKey(keys, 0xff1e63d6, "Sections");
-        page.addView(keys);
-        // "Press SELECT to view", with SELECT on a yellow key as the old guide printed it.
-        android.text.SpannableString select = new android.text.SpannableString(
-            "Press  SELECT  to view  ·  ◀ ▶ through the day  ·  i for information  ·  Hold  SELECT  on a name for favourites"
-        );
-        for (
-            int at = select.toString().indexOf(" SELECT ");
-            at >= 0;
-            at = select.toString().indexOf(" SELECT ", at + 1)
-        ) {
-            select.setSpan(new android.text.style.BackgroundColorSpan(YELLOW), at, at + 8, 0);
-            select.setSpan(new android.text.style.ForegroundColorSpan(INK), at, at + 8, 0);
-        }
-        TextView press = text("", 16, true);
-        press.setText(select);
-        page.addView(press);
-
+        activity.fixedScreen(null, menu::show);
+        frame.build();
         frameGeneration = activity.generation;
         activity.leaving = () -> {
             picture.stop();
             frameGeneration = -1;
         };
         startPicture();
+    }
+
+    /** Down from the tabs: the first row of the grid. */
+    void focusFirstRow() {
+        if (!cells.isEmpty()) {
+            if (programmeFocus) rows.focusAt(0, cursorTime);
+            else cells.get(0).requestFocus();
+        }
+    }
+
+    /** Up from the top row of the first page: the tabs. */
+    void focusTabs() {
+        frame.focusTab();
     }
 
     /** The first time slot shown: now's half hour, moved on by ◀ ▶. */
@@ -262,12 +155,13 @@ final class LiveTvScreen {
 
     /** Plays the last channel watched in the guide's corner (unless turned off or locked). */
     void startPicture() {
-        if (pictureBox != null) picture.show(activity, pictureBox, pictureLabel);
+        if (frame.pictureBox != null) picture.show(activity, frame.pictureBox, frame.pictureLabel);
     }
 
     /** Loads the current page of channels and their programmes into the grid. */
     private void loadPage(int focusRow) {
         int ticket = ++loadTicket;
+        LinearLayout grid = frame.grid;
         grid.removeAllViews();
         cells.clear();
         rows.clear();
@@ -305,7 +199,7 @@ final class LiveTvScreen {
                     List<ChannelDatabase.Programme>
                 >) result[1];
                 grid.removeAllViews();
-                showStatus(status);
+                showStatus(frame.status);
                 cells.clear();
                 rows.clear();
                 int count = Math.min(items.size(), ROWS);
@@ -340,17 +234,18 @@ final class LiveTvScreen {
                         "Options",
                         panels::options
                     );
-                    optionsButton.requestFocus();
+                    if (!tabFocus) frame.focusTab();
                     return;
                 }
                 int focus = focusRow < 0 ? count - 1 : Math.min(focusRow, count - 1);
-                if (programmeFocus) rows.focusAt(focus, cursorTime);
+                if (tabFocus) frame.focusTab();
+                else if (programmeFocus) rows.focusAt(focus, cursorTime);
                 else cells.get(focus).requestFocus();
             }
         );
     }
 
-    private String listName() {
+    String listName() {
         if (!search.isEmpty()) return "Search: " + search;
         if (filter.equals("favourites")) return "Favourites";
         if (filter.equals("sports")) return "Sports";
@@ -432,13 +327,11 @@ final class LiveTvScreen {
     }
 
     private boolean isPageUp(int key) {
-        return colour(key) == 'r' || key == KeyEvent.KEYCODE_CHANNEL_UP || key == KeyEvent.KEYCODE_PAGE_UP;
+        return key == KeyEvent.KEYCODE_CHANNEL_UP || key == KeyEvent.KEYCODE_PAGE_UP;
     }
 
     private boolean isPageDown(int key) {
-        return (
-            colour(key) == 'g' || key == KeyEvent.KEYCODE_CHANNEL_DOWN || key == KeyEvent.KEYCODE_PAGE_DOWN
-        );
+        return key == KeyEvent.KEYCODE_CHANNEL_DOWN || key == KeyEvent.KEYCODE_PAGE_DOWN;
     }
 
     /** The row that has the focus (its name or a programme), so a refresh keeps the place. */
@@ -473,18 +366,21 @@ final class LiveTvScreen {
         return true;
     }
 
-    /**
-     * The yellow key: the same time tomorrow, then back to now, as far as the programme guide
-     * reaches.
-     */
+    /** Yellow (+24 hours): the same time tomorrow, as far as the programme guide reaches. */
     void nextDay(int row) {
-        if (windowOffset == 0) {
-            windowOffset += MAX_OFFSET;
-            cursorTime += MAX_OFFSET;
-        } else {
-            cursorTime = Math.max(nowSlot(), cursorTime - windowOffset);
-            windowOffset = 0;
-        }
+        long step = Math.min(MAX_OFFSET, MAX_OFFSET - windowOffset);
+        if (step <= 0) return;
+        windowOffset += step;
+        cursorTime += step;
+        guide(pageStart, row);
+    }
+
+    /** Blue (−24 hours): the same time a day earlier, not before now. */
+    void previousDay(int row) {
+        if (windowOffset == 0) return;
+        long step = Math.min(MAX_OFFSET, windowOffset);
+        windowOffset -= step;
+        cursorTime = Math.max(nowSlot(), cursorTime - step);
         guide(pageStart, row);
     }
 
@@ -502,12 +398,21 @@ final class LiveTvScreen {
             if (more) guide(pageStart + ROWS, row);
             return true;
         }
-        if (colour(key) == 'y') {
+        char colour = colour(key);
+        if (colour == 'r') {
+            panels.reminders();
+            return true;
+        }
+        if (colour == 'g') {
+            panels.searchPanel();
+            return true;
+        }
+        if (colour == 'y') {
             nextDay(row);
             return true;
         }
-        if (colour(key) == 'b') {
-            panels.sections();
+        if (colour == 'b') {
+            previousDay(row);
             return true;
         }
         if (key == KeyEvent.KEYCODE_MENU) {
@@ -595,6 +500,7 @@ final class LiveTvScreen {
         search = newSearch;
         windowOffset = 0;
         programmeFocus = false;
+        tabFocus = false;
         guide(0, 0);
     }
 
@@ -647,21 +553,6 @@ final class LiveTvScreen {
         shape.setCornerRadius(activity.dp(3));
         shape.setStroke(activity.dp(1), 0x55ffffff);
         return shape;
-    }
-
-    private void colourKey(LinearLayout parent, int colour, String label) {
-        View swatch = new View(activity);
-        swatch.setBackground(box(colour));
-        LinearLayout.LayoutParams swatchLayout = new LinearLayout.LayoutParams(
-            activity.dp(18),
-            activity.dp(18)
-        );
-        swatchLayout.rightMargin = activity.dp(6);
-        parent.addView(swatch, swatchLayout);
-        TextView text = text(label, 17, true);
-        LinearLayout.LayoutParams textLayout = new LinearLayout.LayoutParams(-2, -2);
-        textLayout.rightMargin = activity.dp(34);
-        parent.addView(text, textLayout);
     }
 
     /** "8.00pm Mon 18 Jul", as the classic guides wrote it. */

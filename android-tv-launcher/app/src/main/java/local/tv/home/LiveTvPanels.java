@@ -61,7 +61,7 @@ final class LiveTvPanels {
         SidePanel.of(activity, "Live TV")
             .option("All channels", () -> guide.show("all", ""))
             .option("Favourites", () -> guide.show("favourites", ""))
-            .option("Sections", this::sections)
+            .option("Guide menu", guide.menu::show)
             .option("Search", this::searchPanel)
             .option("Reminders", this::reminders)
             .option("Parental lock", this::parentalLock)
@@ -75,32 +75,6 @@ final class LiveTvPanels {
                 guide.guide(0, 0);
             })
             .show();
-    }
-
-    /**
-     * The satellite guide's sections (the blue key): all channels, favourites, Entertainment,
-     * Movies, Sports … and the channel lists' own groups.
-     */
-    void sections() {
-        activity.async(
-            () -> guide.channelsDb().sections(),
-            sections -> {
-                List<String> names = new ArrayList<>();
-                names.add("All channels");
-                names.add("Favourites");
-                names.addAll(sections);
-                names.add("Channel groups from your lists");
-                SidePanel.of(activity, "TV Guide")
-                    .choices(names.toArray(new String[0]), -1, which -> {
-                        if (which == 0) guide.show("all", "");
-                        else if (which == 1) guide.show("favourites", "");
-                        else if (which == names.size() - 1) groups();
-                        else if (names.get(which).equals(GuideOrder.INTERNATIONAL)) countries();
-                        else guide.show("section:" + names.get(which), "");
-                    })
-                    .show();
-            }
-        );
     }
 
     /** International channels by country: Ireland, the United States … then A to Z. */
