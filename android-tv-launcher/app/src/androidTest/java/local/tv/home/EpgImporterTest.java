@@ -56,7 +56,7 @@ public class EpgImporterTest {
             start +
             "\" stop=\"" +
             stop +
-            "\" channel=\"BBC.One.HD.uk\"><title>EastEnders</title></programme>" +
+            "\" channel=\"BBC.One.HD.uk\"><title>EastEnders</title><desc>Drama in Walford.</desc><category>Soap</category></programme>" +
             "<programme start=\"" +
             start +
             "\" stop=\"" +
@@ -90,8 +90,15 @@ public class EpgImporterTest {
                     matches.add(new String[] { key, channel });
                 }
 
-                public void programme(String channel, long a, long b, String title) {
-                    programmes.add(new Object[] { channel, a, b, title });
+                public void programme(
+                    String channel,
+                    long a,
+                    long b,
+                    String title,
+                    String desc,
+                    String category
+                ) {
+                    programmes.add(new Object[] { channel, a, b, title, desc, category });
                 }
             }
         );
@@ -102,7 +109,14 @@ public class EpgImporterTest {
         try {
             for (String[] m : matches) writer.match(m[0], m[1]);
             for (Object[] p : programmes)
-                writer.programme((String) p[0], (Long) p[1], (Long) p[2], (String) p[3]);
+                writer.programme(
+                    (String) p[0],
+                    (Long) p[1],
+                    (Long) p[2],
+                    (String) p[3],
+                    (String) p[4],
+                    (String) p[5]
+                );
             writer.commit();
         } finally {
             writer.finish();
@@ -111,5 +125,8 @@ public class EpgImporterTest {
         List<ChannelDatabase.Programme> on = db.programmes(bbc, EpgImporter.COUNTRY, now, now + 90 * 60000);
         assertEquals(1, on.size());
         assertEquals("EastEnders", on.get(0).title);
+        assertEquals("Drama in Walford.", on.get(0).description);
+        assertEquals("Soap", on.get(0).category);
+        assertEquals("BBC One has its satellite number", 101, bbc.number);
     }
 }

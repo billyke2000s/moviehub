@@ -31,6 +31,9 @@ public class VlcPlaybackActivity extends Activity {
     private long position;
     boolean live, ended, foreground, dragging, dialogOpen;
     boolean triedAlternative;
+    /** Live TV was paused, so the picture is behind the live broadcast until "Back to live". */
+    boolean behindLive;
+    private int reminderTicks;
     float playbackRate = 1f;
     long sleepAt;
     String aspect;
@@ -73,7 +76,19 @@ public class VlcPlaybackActivity extends Activity {
             if (player != null) {
                 long length = player.getLength(),
                     time = Math.max(0, player.getTime());
-                timeLeft.setText(live ? "LIVE" : length > 0 ? format(Math.max(0, length - time)) : "—");
+                timeLeft.setText(
+                    live
+                        ? behindLive
+                            ? player.isPlaying()
+                                ? "BEHIND LIVE"
+                                : "PAUSED"
+                            : "LIVE"
+                        : length > 0
+                          ? format(Math.max(0, length - time))
+                          : "—"
+                );
+                // A programme reminder that is due shows over the picture (checked every 15 s).
+                if (++reminderTicks % 15 == 0 && !dialogOpen) showDueReminder();
                 downloadMbps = downloadSpeed();
                 if (downloadMbps >= 0) Timings.lastMbps = downloadMbps;
                 speed.setText(
@@ -127,6 +142,24 @@ public class VlcPlaybackActivity extends Activity {
     private boolean zapperKey(KeyEvent event) {
         int key = event.getKeyCode();
         boolean hidden = controls.getVisibility() != View.VISIBLE;
+        // Browsing in the banner: up and down move between channels, left and right between
+        // programmes, SELECT watches the channel shown.
+        if (
+            zapper.browsing() ||
+            (hidden && (key == KeyEvent.KEYCODE_DPAD_LEFT || key == KeyEvent.KEYCODE_DPAD_RIGHT))
+        ) {
+            int channel = key == KeyEvent.KEYCODE_DPAD_UP ? 1 : key == KeyEvent.KEYCODE_DPAD_DOWN ? -1 : 0,
+                programme =
+                    key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : key == KeyEvent.KEYCODE_DPAD_LEFT ? -1 : 0;
+            boolean select = key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER;
+            if (channel != 0 || programme != 0 || select) {
+                if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                    if (select) zapper.browseSelect();
+                    else zapper.browse(channel, zapper.browsing() ? programme : Math.max(0, programme));
+                }
+                return true;
+            }
+        }
         boolean up = key == KeyEvent.KEYCODE_CHANNEL_UP || key == KeyEvent.KEYCODE_PAGE_UP,
             down = key == KeyEvent.KEYCODE_CHANNEL_DOWN || key == KeyEvent.KEYCODE_PAGE_DOWN;
         if (hidden && key == KeyEvent.KEYCODE_DPAD_UP) up = true;
@@ -168,6 +201,7 @@ public class VlcPlaybackActivity extends Activity {
             return;
         }
         id = newId;
+        behindLive = false;
         if (titleView != null) titleView.setText(title);
         position = 0;
         resumeCheck = 0;
@@ -187,8 +221,12 @@ public class VlcPlaybackActivity extends Activity {
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
             // Handled here, never by Android's default, and acted on when the key is released
-            // (as Android does), so a held key counts as one press.
-            if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) onBackKey();
+            // (as Android does), so a held key counts as one press. Back first closes the banner
+            // when browsing other channels in it.
+            if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
+                if (zapper != null && zapper.browsing()) zapper.endBrowse();
+                else onBackKey();
+            }
             return true;
         }
         if (zapper != null && zapperKey(event)) return true;
@@ -205,6 +243,7 @@ public class VlcPlaybackActivity extends Activity {
             }
             if (key == KeyEvent.KEYCODE_MEDIA_PAUSE) {
                 if (player != null) player.pause();
+                if (live) behindLive = true;
                 showPlaying(false);
                 revealControls();
                 return true;
@@ -214,7 +253,8 @@ public class VlcPlaybackActivity extends Activity {
                 return true;
             }
             if (key == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD) {
-                seek(10000);
+                if (live && behindLive && (player == null || !player.isSeekable())) backToLive();
+                else seek(10000);
                 return true;
             }
             if (key >= KeyEvent.KEYCODE_DPAD_UP && key <= KeyEvent.KEYCODE_DPAD_CENTER) {
@@ -495,6 +535,7 @@ public class VlcPlaybackActivity extends Activity {
         if (player == null) return;
         if (player.isPlaying()) {
             player.pause();
+            if (live) behindLive = true;
             showPlaying(false);
         } else {
             player.play();
@@ -502,13 +543,42 @@ public class VlcPlaybackActivity extends Activity {
         }
     }
 
+    /**
+     * Skips back or forward. Live TV can be rewound only when its stream allows it (many live
+     * streams keep a few minutes); otherwise it says so.
+     */
     void seek(long delta) {
         revealControls();
-        if (player != null && !live && player.isSeekable()) {
-            long target = Math.max(0, player.getTime() + delta),
-                length = player.getLength();
-            player.setTime(length > 0 ? Math.min(length, target) : target);
+        if (player == null) return;
+        if (!player.isSeekable()) {
+            if (live) Toast.makeText(
+                this,
+                delta < 0 ? "This channel can't be rewound" : "Already live",
+                Toast.LENGTH_SHORT
+            ).show();
+            return;
         }
+        long target = Math.max(0, player.getTime() + delta),
+            length = player.getLength();
+        player.setTime(length > 0 ? Math.min(length, target) : target);
+        if (live && delta < 0) behindLive = true;
+    }
+
+    /** Catches up with the broadcast after pausing or rewinding live TV: opens the stream again. */
+    void backToLive() {
+        behindLive = false;
+        startPlayer();
+    }
+
+    /** "Watch now" on a reminder: changes channel here, or leaves for the guide to open it. */
+    private void showDueReminder() {
+        Reminders.show(this, reminder -> {
+            if (zapper != null) zapper.tuneKey(reminder.key);
+            else {
+                Reminders.pending = reminder;
+                finish();
+            }
+        });
     }
 
     private void release() {

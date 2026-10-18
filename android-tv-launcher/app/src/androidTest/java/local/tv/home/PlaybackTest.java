@@ -283,8 +283,77 @@ public class PlaybackTest {
                 () -> activity.zapper.position() == 0 && "Alpha".contentEquals(activity.titleView.getText()),
                 10000
             );
+            // Browsing in the banner without changing channel: Right with the controls hidden,
+            // Up to the next channel, SELECT to watch it.
+            await(() -> player() != null && player().isPlaying(), 30000);
+            SystemClock.sleep(500);
+            instrumentation.runOnMainSync(() -> activity.controls.setVisibility(View.GONE));
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+            await(() -> activity.zapper.browsing(), 5000);
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+            await(() -> activity.zapper.browsePosition == 1, 5000);
+            assertEquals("Browsing does not change channel", 0, activity.zapper.position());
+            UiEvidence.capture("live-browse");
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+            await(
+                () -> activity.zapper.position() == 1 && "Bravo".contentEquals(activity.titleView.getText()),
+                10000
+            );
+            // Pausing live TV, then catching up with the broadcast.
+            await(() -> player() != null && player().isPlaying(), 30000);
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_MEDIA_PAUSE);
+            await(() -> activity.behindLive && player() != null && !player().isPlaying(), 5000);
+            instrumentation.runOnMainSync(activity::backToLive);
+            await(() -> !activity.behindLive && player() != null && player().isPlaying(), 30000);
         } finally {
             LiveZapper.session = null;
+            db.clear();
+        }
+    }
+
+    @Test
+    public void theGuidePlaysTheLastChannelInItsCorner() throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        activity = null;
+        Context context = instrumentation.getTargetContext();
+        SharedPreferences prefs = context.getSharedPreferences("ui", 0);
+        String free = prefs.getString(FreeChannels.PREF, null),
+            last = prefs.getString(LiveTvScreen.LAST_CHANNEL, null);
+        boolean updates = prefs.getBoolean("autoUpdates", true);
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        String url = "http://127.0.0.1:" + server.getLocalPort() + "/live.ts?channel=a";
+        ChannelDatabase.Writer writer = db.writer("picture-test", () -> {}, n -> {});
+        try {
+            writer.accept(new Playlist.Channel("Alpha", url, "General", "", ""));
+            writer.commit();
+        } finally {
+            writer.abort();
+        }
+        prefs
+            .edit()
+            .putString(FreeChannels.PREF, "off")
+            .putBoolean("autoUpdates", false)
+            .putString(LiveTvScreen.LAST_CHANNEL, ChannelQuery.key(url))
+            .commit();
+        MainActivity main = (MainActivity) instrumentation.startActivitySync(
+            new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        );
+        try {
+            instrumentation.runOnMainSync(() -> main.liveTv.live());
+            await(() -> main.liveTv.picture.playing, 30000);
+            UiEvidence.capture("guide-picture");
+        } finally {
+            instrumentation.runOnMainSync(main::finish);
+            // The picture stops when the guide closes.
+            await(() -> !main.liveTv.picture.playing, 10000);
+            SharedPreferences.Editor edit = prefs.edit().putBoolean("autoUpdates", updates);
+            if (free == null) edit.remove(FreeChannels.PREF);
+            else edit.putString(FreeChannels.PREF, free);
+            if (last == null) edit.remove(LiveTvScreen.LAST_CHANNEL);
+            else edit.putString(LiveTvScreen.LAST_CHANNEL, last);
+            edit.commit();
             db.clear();
         }
     }
