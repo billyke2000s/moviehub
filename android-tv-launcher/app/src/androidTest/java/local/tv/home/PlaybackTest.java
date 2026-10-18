@@ -210,13 +210,13 @@ public class PlaybackTest {
             }
         }, 30000);
         MediaPlayer engine = player();
-        option(activity::chooseSpeed, 1);
+        option(activity.menus::chooseSpeed, 1);
         assertEquals(1.25f, engine.getRate(), .01f);
-        option(activity::choosePicture, 1);
+        option(activity.menus::choosePicture, 1);
         assertEquals("16:9", engine.getAspectRatio());
-        option(activity::chooseSleep, 1);
+        option(activity.menus::chooseSleep, 1);
         assertTrue(activity.sleepAt > SystemClock.elapsedRealtime());
-        option(activity::chooseSleep, 0);
+        option(activity.menus::chooseSleep, 0);
         assertEquals(0, activity.sleepAt);
         UiEvidence.capture("playback-options");
     }

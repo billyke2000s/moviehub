@@ -102,6 +102,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `VideoFiles` | Chooses the right file in a multi-file release (episode matching). |
 | `AppUpdates`, `UpdateApkProvider` | Downloads and verifies update APKs; shares the verified APK with the system installer. |
 | `VlcPlaybackActivity` | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions (opened directly at the resume point), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`). |
+| `PlayerOverlay` | Builds the player's on-screen controls (title and download speed, timeline, flat icon controls, Back hint). |
+| `PlayerMenus` | The player's side panels: audio, subtitles, video track, speed, picture size, subtitle timing, sleep timer. |
 
 ## Where data is stored
 
