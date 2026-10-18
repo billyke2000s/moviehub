@@ -45,10 +45,15 @@ final class ChannelSync {
         WorkManager.getInstance(context).enqueueUniqueWork(NOW, ExistingWorkPolicy.REPLACE, request);
     }
 
-    /** Imports now if channels were never imported or the last success is older than the refresh interval. */
-    static void refreshIfStale(Context context) {
+    /**
+     * Imports now if channels were never imported or the last success is older than the refresh
+     * interval. Free channels alone are imported only when Live TV is opened ({@code liveTvOpened}),
+     * so the full public list is not downloaded by people who never use Live TV.
+     */
+    static void refreshIfStale(Context context, boolean liveTvOpened) {
         Secrets secrets = new Secrets(context);
-        if (!secrets.has("m3u") && !secrets.has("xtream")) return;
+        boolean provider = secrets.has("m3u") || secrets.has("xtream");
+        if (!provider && (!liveTvOpened || FreeChannels.playlist(context, false).isEmpty())) return;
         ChannelImporter.Status status = ChannelImporter.status(context);
         long last = status.lastSuccess;
         if (

@@ -24,6 +24,7 @@ public class TvNavigationTest {
     private final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
     private MainActivity activity;
     private boolean autoUpdates;
+    private String freeChannels;
 
     private View text(View view, String label) {
         if (view instanceof TextView && label.contentEquals(((TextView) view).getText())) return view;
@@ -178,6 +179,9 @@ public class TvNavigationTest {
         }
         autoUpdates = context.getSharedPreferences("ui", 0).getBoolean("autoUpdates", true);
         context.getSharedPreferences("ui", 0).edit().putBoolean("autoUpdates", false).commit();
+        // Opening Live TV would otherwise download the full public channel list during the test.
+        freeChannels = context.getSharedPreferences("ui", 0).getString(FreeChannels.PREF, null);
+        context.getSharedPreferences("ui", 0).edit().putString(FreeChannels.PREF, "off").commit();
         activity = (MainActivity) instrumentation.startActivitySync(
             new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         );
@@ -308,6 +312,9 @@ public class TvNavigationTest {
         Context context = instrumentation.getTargetContext();
         autoUpdates = context.getSharedPreferences("ui", 0).getBoolean("autoUpdates", true);
         context.getSharedPreferences("ui", 0).edit().putBoolean("autoUpdates", false).commit();
+        // Opening Live TV would otherwise download the full public channel list during the test.
+        freeChannels = context.getSharedPreferences("ui", 0).getString(FreeChannels.PREF, null);
+        context.getSharedPreferences("ui", 0).edit().putString(FreeChannels.PREF, "off").commit();
         activity = (MainActivity) instrumentation.startActivitySync(
             new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         );
@@ -391,6 +398,9 @@ public class TvNavigationTest {
         Context context = instrumentation.getTargetContext();
         autoUpdates = context.getSharedPreferences("ui", 0).getBoolean("autoUpdates", true);
         context.getSharedPreferences("ui", 0).edit().putBoolean("autoUpdates", false).commit();
+        // Opening Live TV would otherwise download the full public channel list during the test.
+        freeChannels = context.getSharedPreferences("ui", 0).getString(FreeChannels.PREF, null);
+        context.getSharedPreferences("ui", 0).edit().putString(FreeChannels.PREF, "off").commit();
         activity = (MainActivity) instrumentation.startActivitySync(
             new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         );
@@ -462,6 +472,7 @@ public class TvNavigationTest {
             .getSharedPreferences("ui", 0)
             .edit()
             .putBoolean("autoUpdates", autoUpdates)
+            .putString(FreeChannels.PREF, freeChannels == null ? "auto" : freeChannels)
             .commit();
         ChannelDatabase.get(instrumentation.getTargetContext()).clear();
     }

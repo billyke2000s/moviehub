@@ -10,6 +10,18 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.21 (18 Oct 2026)
+
+- Live TV works without a TV provider: the full public iptv-org channel list is loaded the first
+  time you open Live TV. Settings → Accounts → Free channels can switch to one country, keep the
+  full list even with a provider, or turn it off. Some free streams may not work, and some need
+  Allow HTTP.
+- Live TV redesigned as a classic satellite TV guide: a blue full-screen grid of ten channels per
+  page numbered from 101, half-hour time slots across the top, the selected channel in yellow, and
+  colour keys (red/green page up and down, yellow search, blue groups; CH+/CH- also page). Options
+  covers the same for remotes without colour keys. Programme titles need a programme guide from a
+  provider; the free list has none, so rows say "No programme information".
+
 ## 0.20 (18 Oct 2026)
 
 - New Diagnostics page (Settings → System → Diagnostics): how long TMDB requests, finding sources,

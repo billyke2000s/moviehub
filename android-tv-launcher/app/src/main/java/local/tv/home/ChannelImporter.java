@@ -77,7 +77,7 @@ final class ChannelImporter {
                     anySource = true;
                     configured.add("m3u");
                     try {
-                        total += importM3u(db, playlist, http, cancel, total);
+                        total += importM3u(db, "m3u", playlist, http, cancel, total);
                     } catch (Exception e) {
                         problems.add("M3U: " + describe(e));
                     }
@@ -90,6 +90,16 @@ final class ChannelImporter {
                         total += importXtream(db, new JSONObject(account), http, cancel, total);
                     } catch (Exception e) {
                         problems.add("Xtream: " + describe(e));
+                    }
+                }
+                String free = FreeChannels.playlist(context, anySource);
+                if (!free.isEmpty()) {
+                    anySource = true;
+                    configured.add("free");
+                    try {
+                        total += importM3u(db, "free", free, http, cancel, total);
+                    } catch (Exception e) {
+                        problems.add("Free channels: " + describe(e));
                     }
                 }
                 cancel.check();
@@ -161,12 +171,13 @@ final class ChannelImporter {
 
     private static int importM3u(
         ChannelDatabase db,
+        String source,
         String url,
         boolean http,
         ChannelDatabase.Cancel cancel,
         int base
     ) throws Exception {
-        ChannelDatabase.Writer writer = db.writer("m3u", cancel, n -> progress = base + n);
+        ChannelDatabase.Writer writer = db.writer(source, cancel, n -> progress = base + n);
         try (InputStream in = Network.open(url, null, Network.CATALOGUE_MAX, http)) {
             Playlist.parse(new InputStreamReader(in, StandardCharsets.UTF_8), url, http, writer);
             if (writer.count() == 0) throw new IOException("playlist has no playable channels");

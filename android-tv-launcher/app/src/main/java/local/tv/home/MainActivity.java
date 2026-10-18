@@ -323,7 +323,7 @@ public class MainActivity extends TvActivity {
         handler.post(ticker);
         updates.checkForUpdate();
         try {
-            ChannelSync.refreshIfStale(this);
+            ChannelSync.refreshIfStale(this, false);
         } catch (Exception e) {
             Diagnostics.recovered("Starting stale channel refresh", e);
         }

@@ -16,7 +16,7 @@ Its icon is a simple house with a play button (vector drawables in `app/src/main
   Comet, with Premiumize cloud, cache and transfers. Plays with LibVLC, with subtitle and audio
   language preferences, track choice, speed, picture ratio, subtitle timing and a sleep timer.
 - **My List and Continue Watching**: saved titles, resume positions and watched episodes.
-- **Live TV**: Xtream and M3U playlists imported in the background into an on-device database, with
+- **Live TV**: free public channels from [iptv-org](https://github.com/iptv-org/iptv) by country, or Xtream and M3U playlists imported in the background into an on-device database, with
   no channel-count limit. Search by name or group, favourites, and automatic refresh every 12 hours.
   A failed refresh keeps the previous list.
 - **Updates**: an Update button appears beside Settings only when a newer signed version is

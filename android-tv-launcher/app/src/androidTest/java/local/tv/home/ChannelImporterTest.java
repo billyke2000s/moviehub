@@ -3,6 +3,7 @@ package local.tv.home;
 import static org.junit.Assert.*;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import java.io.*;
@@ -23,6 +24,7 @@ public class ChannelImporterTest {
     private volatile boolean closed, broken, rejected;
     private String root;
     private boolean oldHttp;
+    private String oldFree;
 
     @Before
     public void prepare() throws Exception {
@@ -32,6 +34,9 @@ public class ChannelImporterTest {
         db.clear();
         oldHttp = context.getSharedPreferences("ui", 0).getBoolean("http", false);
         context.getSharedPreferences("ui", 0).edit().putBoolean("http", true).commit();
+        // These tests cover provider imports; the free public list would add thousands of channels.
+        oldFree = context.getSharedPreferences("ui", 0).getString(FreeChannels.PREF, null);
+        context.getSharedPreferences("ui", 0).edit().putString(FreeChannels.PREF, "off").commit();
         server = new ServerSocket(0, 8, InetAddress.getByName("127.0.0.1"));
         root = "http://127.0.0.1:" + server.getLocalPort();
         new Thread(() -> {
@@ -168,6 +173,10 @@ public class ChannelImporterTest {
 
     @After
     public void cleanup() throws Exception {
+        SharedPreferences.Editor restore = context.getSharedPreferences("ui", 0).edit();
+        if (oldFree == null) restore.remove(FreeChannels.PREF);
+        else restore.putString(FreeChannels.PREF, oldFree);
+        restore.commit();
         closed = true;
         if (server != null) server.close();
         secrets.remove("xtream");
