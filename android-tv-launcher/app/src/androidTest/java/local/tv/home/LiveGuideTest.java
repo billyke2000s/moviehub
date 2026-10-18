@@ -119,6 +119,7 @@ public class LiveGuideTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_2);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_3);
         await("typed 123", () -> activity.liveTv.pageStart == 20 && focused().startsWith("123  Channel 22"));
+        remote.waitForIdleSync();
         // Right moves onto the programmes, keeping the channel names on the left.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
         await("on the programme", () -> activity.liveTv.rows.programmes.get(2).get(0).hasFocus());
@@ -264,11 +265,12 @@ public class LiveGuideTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         await("reminders open", () -> SidePanel.current != null && SidePanel.current.isShowing());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
-        // Right to Search, which opens too.
-        remote.waitForIdleSync();
+        // Search opens its form (a dialog over the menu, so the menu loses the window focus).
+        await("menu focused again", () -> activity.hasWindowFocus());
         remote.runOnMainSync(() -> activity.liveTv.menu.tabs.get(2).requestFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
-        await("search open", () -> SidePanel.current != null && SidePanel.current.isShowing());
-        remote.runOnMainSync(() -> SidePanel.current.dismiss());
+        await("search open", () -> !activity.hasWindowFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        await("search closed", () -> activity.hasWindowFocus());
     }
 }
