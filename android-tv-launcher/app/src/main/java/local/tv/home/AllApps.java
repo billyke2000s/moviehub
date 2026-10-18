@@ -92,8 +92,10 @@ final class AllApps {
         );
         fill("");
         // Start on the first app, not the search box, so the keyboard does not open by itself.
-        View first = firstTile();
-        if (first != null) first.requestFocus();
+        activity.page.post(() -> {
+            View first = firstTile();
+            if (first != null) first.requestFocus();
+        });
     }
 
     /** Fills the app grid with the apps whose name contains the search. */
@@ -128,10 +130,10 @@ final class AllApps {
         return firstFocusable(source);
     }
 
+    /** The first shortcut pill or app tile (not the search box or a scroll container). */
     private View firstFocusable(View view) {
-        if (
-            view.isFocusable() && view.getVisibility() == View.VISIBLE && !(view instanceof EditText)
-        ) return view;
+        boolean control = view instanceof Button || view.getTag() instanceof String;
+        if (control && view.isFocusable() && view.getVisibility() == View.VISIBLE) return view;
         if (view instanceof android.view.ViewGroup) {
             android.view.ViewGroup group = (android.view.ViewGroup) view;
             for (int i = 0; i < group.getChildCount(); i++) {

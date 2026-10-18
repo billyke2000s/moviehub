@@ -9,6 +9,7 @@ import android.widget.*;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.json.JSONArray;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -81,6 +82,12 @@ public class AllAppsTest {
 
         remote.runOnMainSync(() -> activity.dock.allApps());
         remote.waitForIdleSync();
+        long end = android.os.SystemClock.uptimeMillis() + 5000;
+        AtomicBoolean focused = new AtomicBoolean();
+        while (!focused.get() && android.os.SystemClock.uptimeMillis() < end) {
+            remote.runOnMainSync(() -> focused.set(activity.getCurrentFocus() != null));
+            if (!focused.get()) android.os.SystemClock.sleep(100);
+        }
         UiEvidence.capture("all-apps");
         remote.runOnMainSync(() -> {
             List<String> shown = texts(activity.appsScreen.extras, new ArrayList<>());
