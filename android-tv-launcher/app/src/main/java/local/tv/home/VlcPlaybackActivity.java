@@ -396,79 +396,7 @@ public class VlcPlaybackActivity extends Activity {
         player.setRate(playbackRate);
         if (aspect != null) player.setAspectRatio(aspect);
         player.attachViews(video, null, false, false);
-        player.setEventListener(event -> {
-            if (!foreground || player == null) return;
-            if (event.type == MediaPlayer.Event.Playing) {
-                Timings.finish("play", "Press play to picture");
-                Timings.finish("stall", "Buffering pause while watching");
-                playedOnce = true;
-                player.setRate(playbackRate);
-                if (aspect != null) player.setAspectRatio(aspect);
-                overlayHandler.removeCallbacks(stalled);
-                status.setVisibility(View.GONE);
-                // The media was opened at the resume point (start-time). If this format ignored
-                // that, seek once as a fallback.
-                long target = resumeCheck;
-                resumeCheck = 0;
-                if (target > 0) overlayHandler.postDelayed(() -> {
-                    if (
-                        player != null && player.isSeekable() && player.getTime() < target - 5000
-                    ) player.setTime(target);
-                }, 1500);
-                showPlaying(true);
-                revealControls();
-            } else if (event.type == MediaPlayer.Event.Buffering) {
-                if (event.getBuffering() < 100) {
-                    if (playedOnce) Timings.markOnce("stall");
-                    if (playedOnce && zapper != null && !buffering) zapper.bufferingStarted();
-                    buffering = true;
-                    status.setText(
-                        "Buffering… " +
-                            Math.round(event.getBuffering()) +
-                            "%" +
-                            (downloadMbps < 0
-                                ? ""
-                                : String.format(Locale.ROOT, "  ·  %.1f Mb/s", downloadMbps))
-                    );
-                    status.setVisibility(View.VISIBLE);
-                } else {
-                    status.setVisibility(View.GONE);
-                    Timings.finish("stall", "Buffering pause while watching");
-                    buffering = false;
-                    if (zapper != null) zapper.bufferingEnded();
-                }
-            } else if (event.type == MediaPlayer.Event.EndReached) {
-                ended = true;
-                getSharedPreferences("positions", MODE_PRIVATE).edit().remove(id).apply();
-                String episode = getIntent().getStringExtra("episodeKey");
-                if (episode != null && !episode.isEmpty()) {
-                    android.content.SharedPreferences prefs = getSharedPreferences("ui", MODE_PRIVATE);
-                    Set<String> watched = new HashSet<>(
-                        prefs.getStringSet("watchedEpisodes", Collections.emptySet())
-                    );
-                    watched.add(episode);
-                    prefs.edit().putStringSet("watchedEpisodes", watched).apply();
-                }
-                finish();
-            } else if (event.type == MediaPlayer.Event.EncounteredError) {
-                if (
-                    live &&
-                    !triedAlternative &&
-                    (Uri.parse(url).getPath().endsWith(".ts") || Uri.parse(url).getPath().endsWith(".m3u8"))
-                ) {
-                    triedAlternative = true;
-                    Uri original = Uri.parse(url);
-                    String path = original.getEncodedPath();
-                    path = path.endsWith(".ts")
-                        ? path.substring(0, path.length() - 3) + ".m3u8"
-                        : path.substring(0, path.length() - 5) + ".ts";
-                    url = original.buildUpon().encodedPath(path).build().toString();
-                    video.post(this::startPlayer);
-                } else showError(
-                    "This source could not be played. Try another source or retry the connection."
-                );
-            }
-        });
+        player.setEventListener(this::onPlayerEvent);
         Media media = new Media(engine, Uri.parse(url));
         media.setHWDecoderEnabled(true, false);
         // Open directly at the resume point instead of starting at 0:00 and then seeking, which
@@ -481,6 +409,77 @@ public class VlcPlaybackActivity extends Activity {
         player.setMedia(media);
         media.release();
         player.play();
+    }
+
+    /** The player's events: playing, buffering, the end, and errors (which try the other format). */
+    private void onPlayerEvent(MediaPlayer.Event event) {
+        if (!foreground || player == null) return;
+        if (event.type == MediaPlayer.Event.Playing) {
+            Timings.finish("play", "Press play to picture");
+            Timings.finish("stall", "Buffering pause while watching");
+            playedOnce = true;
+            player.setRate(playbackRate);
+            if (aspect != null) player.setAspectRatio(aspect);
+            overlayHandler.removeCallbacks(stalled);
+            status.setVisibility(View.GONE);
+            // The media was opened at the resume point (start-time). If this format ignored
+            // that, seek once as a fallback.
+            long target = resumeCheck;
+            resumeCheck = 0;
+            if (target > 0) overlayHandler.postDelayed(() -> {
+                if (player != null && player.isSeekable() && player.getTime() < target - 5000) player.setTime(
+                    target
+                );
+            }, 1500);
+            showPlaying(true);
+            revealControls();
+        } else if (event.type == MediaPlayer.Event.Buffering) {
+            if (event.getBuffering() < 100) {
+                if (playedOnce) Timings.markOnce("stall");
+                if (playedOnce && zapper != null && !buffering) zapper.bufferingStarted();
+                buffering = true;
+                status.setText(
+                    "Buffering… " +
+                        Math.round(event.getBuffering()) +
+                        "%" +
+                        (downloadMbps < 0 ? "" : String.format(Locale.ROOT, "  ·  %.1f Mb/s", downloadMbps))
+                );
+                status.setVisibility(View.VISIBLE);
+            } else {
+                status.setVisibility(View.GONE);
+                Timings.finish("stall", "Buffering pause while watching");
+                buffering = false;
+                if (zapper != null) zapper.bufferingEnded();
+            }
+        } else if (event.type == MediaPlayer.Event.EndReached) {
+            ended = true;
+            getSharedPreferences("positions", MODE_PRIVATE).edit().remove(id).apply();
+            String episode = getIntent().getStringExtra("episodeKey");
+            if (episode != null && !episode.isEmpty()) {
+                android.content.SharedPreferences prefs = getSharedPreferences("ui", MODE_PRIVATE);
+                Set<String> watched = new HashSet<>(
+                    prefs.getStringSet("watchedEpisodes", Collections.emptySet())
+                );
+                watched.add(episode);
+                prefs.edit().putStringSet("watchedEpisodes", watched).apply();
+            }
+            finish();
+        } else if (event.type == MediaPlayer.Event.EncounteredError) {
+            if (
+                live &&
+                !triedAlternative &&
+                (Uri.parse(url).getPath().endsWith(".ts") || Uri.parse(url).getPath().endsWith(".m3u8"))
+            ) {
+                triedAlternative = true;
+                Uri original = Uri.parse(url);
+                String path = original.getEncodedPath();
+                path = path.endsWith(".ts")
+                    ? path.substring(0, path.length() - 3) + ".m3u8"
+                    : path.substring(0, path.length() - 5) + ".ts";
+                url = original.buildUpon().encodedPath(path).build().toString();
+                video.post(this::startPlayer);
+            } else showError("This source could not be played. Try another source or retry the connection.");
+        }
     }
 
     private void showError(String message) {
