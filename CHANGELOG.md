@@ -12,6 +12,11 @@ update feed), so the next release after it used code 12, named 0.12.
   remote. The picture says the channel isn't working, and ▲ ▼ go straight on to the next one;
   SELECT tries it again and BACK goes to the guide. (Backups are still tried first.) Films and
   series keep their panel.
+- Down past the bottom row of the guide turns the page again (round to the first page after the
+  last), instead of moving onto the colour keys. The colour keys are a guide to the remote again;
+  without coloured buttons, BACK opens the guide menu, which has Reminders, Search and Options
+  along the top and Favourites on its second page.
+- In the guide menu, Down from the last row goes round to the top, as on the satellite box.
 
 ## 0.34 (18 Oct 2026)
 

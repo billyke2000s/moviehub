@@ -145,13 +145,6 @@ final class LiveTvScreen {
 
     /** Whether there is a page after this one. */
     boolean hasMore;
-    /** The bar key to focus when the page arrives (paged from the bar), or -1. */
-    private int barKey = -1;
-
-    /** Down from the bottom row: the colour keys, on Page down. */
-    void focusKeys() {
-        frame.bar.focus(1);
-    }
 
     /** Up from the colour keys: the bottom row, on its name or the programme at the cursor. */
     void focusLastRow() {
@@ -164,9 +157,8 @@ final class LiveTvScreen {
         else cells.get(last).requestFocus();
     }
 
-    /** Page up or Page down chosen in the bar: turns the page and keeps the focus on that key. */
-    void pageFromBar(int direction, int key) {
-        barKey = key;
+    /** Page up or Page down tapped in the key guide (touch screens). */
+    void pageFromBar(int direction) {
         turnPage(direction, 0);
     }
 
@@ -178,7 +170,6 @@ final class LiveTvScreen {
         if (direction > 0) {
             if (hasMore) guide(pageStart + ROWS, row);
             else if (pageStart > 0) guide(0, row);
-            else barKey = -1;
             return;
         }
         if (pageStart > 0) {
@@ -194,7 +185,6 @@ final class LiveTvScreen {
             last -> {
                 if (request != activity.generation || !listFilter.equals(filter)) return;
                 if (last >= ROWS) guide(last - (last % ROWS), row);
-                else barKey = -1;
             }
         );
     }
@@ -312,11 +302,7 @@ final class LiveTvScreen {
                     return;
                 }
                 int focus = focusRow < 0 ? count - 1 : Math.min(focusRow, count - 1);
-                if (barKey >= 0) {
-                    // Paged with a key in the bar: stay on it, so SELECT pages again.
-                    frame.bar.focus(barKey);
-                    barKey = -1;
-                } else if (programmeFocus) rows.focusAt(focus, cursorTime);
+                if (programmeFocus) rows.focusAt(focus, cursorTime);
                 else cells.get(focus).requestFocus();
             }
         );

@@ -130,9 +130,9 @@ final class GuideRows {
                 return true;
             }
             if (key == KeyEvent.KEYCODE_DPAD_DOWN && row == count - 1) {
-                // Below the bottom row: the colour keys (Page down turns the page).
+                // Below the bottom row: the next page (round to the first after the last).
                 guide.programmeFocus = false;
-                guide.focusKeys();
+                guide.turnPage(1, 0);
                 return true;
             }
             if (key == KeyEvent.KEYCODE_DPAD_UP && row == 0) {
@@ -194,7 +194,7 @@ final class GuideRows {
                         -1
                     );
                     else if (target < 0) guide.focusTabs();
-                    else if (target >= count) guide.focusKeys();
+                    else if (target >= count) guide.turnPage(1, 0);
                     return true;
                 }
                 if (key == KeyEvent.KEYCODE_INFO) {
