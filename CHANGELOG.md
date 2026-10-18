@@ -30,6 +30,15 @@ update feed), so the next release after it used code 12, named 0.12.
   database version 8; the upgrade fills it in once).
 - Removed three unused channel queries; the channel database's tables and upgrades moved into
   `ChannelSchema`.
+- Series: the episode you chose is found in far more season packs (S01 E03, S01Ep03, "Season 1
+  Episode 3", E03 in a Season 1 folder, a plain file in an episode folder, and more). A file
+  that names exactly that episode still plays straight away; one that very probably is it
+  (a bare "03 - Title", a double episode) is marked "Suggested episode" for you to confirm and
+  has the focus. Names that could mean something else (720p, x264, years, another season) are
+  never marked. A show called "Extras" no longer loses its episodes.
+- Apps: an app with separate TV and phone launcher entries is listed once (apps from different
+  packages with the same name are still both shown). The Apps screen shows its first rows at once
+  and the rest straight after.
 
 ## 0.35 (18 Oct 2026)
 
