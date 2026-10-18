@@ -170,7 +170,7 @@ final class LiveTvPanels {
     }
 
     /** One programme in full, with a reminder to set or cancel. */
-    private void programme(ChannelDatabase.Row channel, int position, ChannelDatabase.Programme item) {
+    void programme(ChannelDatabase.Row channel, int position, ChannelDatabase.Programme item) {
         boolean reminder = Reminders.has(activity, channel, item);
         String about =
             times(item) +
