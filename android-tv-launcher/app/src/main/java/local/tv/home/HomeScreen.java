@@ -124,11 +124,9 @@ final class HomeScreen {
                 loading.setText("Connect TMDB in Settings to see artwork and recommendations.");
                 return;
             }
-            String seedType = activity.prefs.getString("seedType", "movie");
-            int seed = activity.prefs.getInt("seed", 0);
             shelf.load(path, pageNumber ->
                 path.isEmpty()
-                    ? activity.media.featuredPage(seedType, seed, pageNumber)
+                    ? activity.forYou.page(pageNumber)
                     : activity.media.tmdb(path + "?page=" + pageNumber)
             );
         };

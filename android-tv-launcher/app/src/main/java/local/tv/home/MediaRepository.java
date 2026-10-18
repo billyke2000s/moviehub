@@ -11,20 +11,6 @@ final class MediaRepository {
         this.secrets = secrets;
     }
 
-    JSONArray featured(String type, int seed) throws Exception {
-        return featuredPage(type, seed, 1).getJSONArray("results");
-    }
-
-    JSONObject featuredPage(String type, int seed, int page) throws Exception {
-        String path = seed > 0 ? type + "/" + seed + "/recommendations" : "trending/all/week";
-        JSONObject response = tmdb(path + "?page=" + page);
-        JSONArray result = response.getJSONArray("results");
-        if (seed > 0) for (int i = 0; i < result.length(); i++) result
-            .getJSONObject(i)
-            .put("media_type", type);
-        return response;
-    }
-
     static JSONObject connectXtream(String server, String username, String password, boolean http)
         throws Exception {
         String safe = Playlist.networkUrl(server, http).replaceAll("/+$", "");
