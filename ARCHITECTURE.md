@@ -114,8 +114,9 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `ChannelImporter`, `ChannelSync` | Background channel import (WorkManager), refreshed every 12 hours. |
 | `Secrets` | Account details encrypted with an Android Keystore key; the key and read values are cached in memory. |
 | `VideoFiles` | Chooses the right file in a multi-file release (episode matching). |
+| `SkipQueue` | Combines quick film skips and seek-bar moves into one jump, 750 ms after the last (plain Java). |
 | `AppUpdates`, `UpdateApkProvider` | Downloads and verifies update APKs; shares the verified APK with the system installer. |
-| `VlcPlaybackActivity` | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions (opened directly at the resume point), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`). |
+| `VlcPlaybackActivity` | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions (opened directly at the resume point), skips combined into one jump (`SkipQueue`), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`). |
 | `PlayerOverlay` | Builds the player's on-screen controls (title and download speed, timeline, flat icon controls, Back hint). |
 | `LiveZapper` | Live TV while watching: the satellite remote's keys, channel up/down, number entry, last channel, browsing other channels in the banner, the PIN lock, and backup copies with automatic switching. |
 | `SkyFont` | The Live TV typeface (Hind, OFL, in `assets/fonts`), with the system font as a fallback. |
