@@ -10,6 +10,21 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.26 (18 Oct 2026)
+
+- Live TV keeps one player running: going from the guide's corner picture to the full screen and
+  back carries the same stream on, with no reconnecting or buffering. Films and series are not
+  affected.
+- The full-screen Live TV picture looks like the classic UK satellite box: the film controls are
+  gone, and the banner has a light-blue title strip with the yellow channel number, name and
+  clock over a deep-blue panel with Now and Next, a progress bar and the colour keys.
+- Satellite remote: SELECT shows the banner (SELECT again opens Options), i or yellow shows the
+  programme information panel, red is audio and subtitles, green the source, blue (or MENU)
+  Options, ◀ ▶ browse what is on, ▲ ▼ change channel.
+- Pausing live TV shows a pause bar; playing on behind live says how to catch up.
+- BACK in Live TV closes whatever is open, then goes straight back to the guide (one press: the
+  picture carries on in the corner). Films still need BACK twice.
+
 ## 0.25 (18 Oct 2026)
 
 Live TV is organised like a UK satellite guide instead of one long list:

@@ -299,13 +299,108 @@ public class PlaybackTest {
                 () -> activity.zapper.position() == 1 && "Bravo".contentEquals(activity.titleView.getText()),
                 10000
             );
+            // The satellite-box overlay: the banner on every change, i for programme information,
+            // BACK closes it again without leaving.
+            await(() -> activity.zapper.overlay.bannerShowing(), 5000);
+            assertEquals("No film controls over Live TV", View.GONE, activity.controls.getVisibility());
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_INFO);
+            await(() -> activity.zapper.overlay.infoShowing(), 5000);
+            UiEvidence.capture("live-information");
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+            await(() -> !activity.zapper.overlay.infoShowing(), 5000);
+            assertFalse("BACK closed the panel, not the player", activity.isFinishing());
             // Pausing live TV, then catching up with the broadcast.
             await(() -> player() != null && player().isPlaying(), 30000);
             instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_MEDIA_PAUSE);
             await(() -> activity.behindLive && player() != null && !player().isPlaying(), 5000);
+            await(() -> activity.zapper.overlay.pauseShowing(), 5000);
+            UiEvidence.capture("live-paused");
             instrumentation.runOnMainSync(activity::backToLive);
             await(() -> !activity.behindLive && player() != null && player().isPlaying(), 30000);
         } finally {
+            LiveZapper.session = null;
+            db.clear();
+        }
+    }
+
+    @Test
+    public void liveTvMovesBetweenTheGuideAndFullScreenWithoutReconnecting() throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        activity = null;
+        Context context = instrumentation.getTargetContext();
+        SharedPreferences prefs = context.getSharedPreferences("ui", 0);
+        String free = prefs.getString(FreeChannels.PREF, null),
+            last = prefs.getString(LiveTvScreen.LAST_CHANNEL, null);
+        boolean updates = prefs.getBoolean("autoUpdates", true);
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        String url = "http://127.0.0.1:" + server.getLocalPort() + "/live.ts?channel=a";
+        ChannelDatabase.Writer writer = db.writer("handover-test", () -> {}, n -> {});
+        try {
+            writer.accept(new Playlist.Channel("Alpha", url, "General", "", ""));
+            writer.commit();
+        } finally {
+            writer.abort();
+        }
+        prefs
+            .edit()
+            .putString(FreeChannels.PREF, "off")
+            .putBoolean("autoUpdates", false)
+            .putString(LiveTvScreen.LAST_CHANNEL, ChannelQuery.key(url))
+            .commit();
+        Instrumentation.ActivityMonitor monitor = instrumentation.addMonitor(
+            VlcPlaybackActivity.class.getName(),
+            null,
+            false
+        );
+        MainActivity main = (MainActivity) instrumentation.startActivitySync(
+            new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        );
+        try {
+            instrumentation.runOnMainSync(() -> main.liveTv.live());
+            await(() -> main.liveTv.picture.playing && main.liveTv.cells.size() == 1, 30000);
+            int opened = LivePlayer.opened;
+            // SELECT on the channel playing in the corner: the full screen carries it on.
+            instrumentation.runOnMainSync(() -> main.liveTv.cells.get(0).performClick());
+            VlcPlaybackActivity full = (VlcPlaybackActivity) instrumentation.waitForMonitorWithTimeout(
+                monitor,
+                15000
+            );
+            assertNotNull("The full screen opened", full);
+            activity = full;
+            await(
+                () -> LivePlayer.owns(full) && LivePlayer.player() != null && LivePlayer.player().isPlaying(),
+                15000
+            );
+            assertEquals("The full screen carried on the guide's stream", opened, LivePlayer.opened);
+            UiEvidence.capture("live-full-screen");
+            // BACK (after closing the banner) returns to the guide, whose picture carries on.
+            for (int i = 0; i < 3 && !full.isFinishing(); i++) {
+                instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+                instrumentation.waitForIdleSync();
+            }
+            await(() -> full.isFinishing() || full.isDestroyed(), 5000);
+            await(
+                () ->
+                    main.liveTv.picture.playing &&
+                    !LivePlayer.owns(full) &&
+                    LivePlayer.player() != null &&
+                    LivePlayer.player().isPlaying(),
+                15000
+            );
+            assertEquals("The guide carried on the full screen's stream", opened, LivePlayer.opened);
+            UiEvidence.capture("live-back-in-guide");
+        } finally {
+            instrumentation.removeMonitor(monitor);
+            instrumentation.runOnMainSync(main::finish);
+            await(() -> !main.liveTv.picture.playing, 10000);
+            SharedPreferences.Editor edit = prefs.edit().putBoolean("autoUpdates", updates);
+            if (free == null) edit.remove(FreeChannels.PREF);
+            else edit.putString(FreeChannels.PREF, free);
+            if (last == null) edit.remove(LiveTvScreen.LAST_CHANNEL);
+            else edit.putString(LiveTvScreen.LAST_CHANNEL, last);
+            edit.commit();
             LiveZapper.session = null;
             db.clear();
         }

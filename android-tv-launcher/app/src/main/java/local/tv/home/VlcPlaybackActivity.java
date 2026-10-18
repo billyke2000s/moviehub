@@ -31,8 +31,12 @@ public class VlcPlaybackActivity extends Activity {
     private long position;
     boolean live, ended, foreground, dragging, dialogOpen;
     boolean triedAlternative;
+    /** The next live start opens the stream again instead of carrying on. */
+    private boolean restartLive;
     /** Live TV was paused, so the picture is behind the live broadcast until "Back to live". */
     boolean behindLive;
+    /** Paused by the viewer (the player reports pausing a moment later, so this is kept here). */
+    boolean paused;
     private int reminderTicks;
     float playbackRate = 1f;
     long sleepAt;
@@ -117,6 +121,11 @@ public class VlcPlaybackActivity extends Activity {
     }
 
     void revealControls() {
+        if (zapper != null) {
+            // Live TV from the guide shows the satellite-box overlay instead of film controls.
+            if (zapper.overlay != null) zapper.overlay.pause(paused, behindLive);
+            return;
+        }
         if (controls == null) return;
         boolean hidden = controls.getVisibility() != View.VISIBLE;
         controls.setVisibility(View.VISIBLE);
@@ -138,52 +147,6 @@ public class VlcPlaybackActivity extends Activity {
             );
     }
 
-    /** Satellite-box remote keys while watching Live TV from the guide. */
-    private boolean zapperKey(KeyEvent event) {
-        int key = event.getKeyCode();
-        boolean hidden = controls.getVisibility() != View.VISIBLE;
-        // Browsing in the banner: up and down move between channels, left and right between
-        // programmes, SELECT watches the channel shown.
-        if (
-            zapper.browsing() ||
-            (hidden && (key == KeyEvent.KEYCODE_DPAD_LEFT || key == KeyEvent.KEYCODE_DPAD_RIGHT))
-        ) {
-            int channel = key == KeyEvent.KEYCODE_DPAD_UP ? 1 : key == KeyEvent.KEYCODE_DPAD_DOWN ? -1 : 0,
-                programme =
-                    key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : key == KeyEvent.KEYCODE_DPAD_LEFT ? -1 : 0;
-            boolean select = key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER;
-            if (channel != 0 || programme != 0 || select) {
-                if (event.getAction() == KeyEvent.ACTION_DOWN) {
-                    if (select) zapper.browseSelect();
-                    else zapper.browse(channel, zapper.browsing() ? programme : Math.max(0, programme));
-                }
-                return true;
-            }
-        }
-        boolean up = key == KeyEvent.KEYCODE_CHANNEL_UP || key == KeyEvent.KEYCODE_PAGE_UP,
-            down = key == KeyEvent.KEYCODE_CHANNEL_DOWN || key == KeyEvent.KEYCODE_PAGE_DOWN;
-        if (hidden && key == KeyEvent.KEYCODE_DPAD_UP) up = true;
-        if (hidden && key == KeyEvent.KEYCODE_DPAD_DOWN) down = true;
-        boolean digit = key >= KeyEvent.KEYCODE_0 && key <= KeyEvent.KEYCODE_9;
-        boolean handled =
-            up ||
-            down ||
-            digit ||
-            key == KeyEvent.KEYCODE_LAST_CHANNEL ||
-            key == KeyEvent.KEYCODE_INFO ||
-            key == KeyEvent.KEYCODE_GUIDE;
-        if (!handled || event.getAction() != KeyEvent.ACTION_DOWN) return handled;
-        if (event.getRepeatCount() > 0 && !(up || down)) return true;
-        if (up) zapper.channel(1);
-        else if (down) zapper.channel(-1);
-        else if (digit) zapper.typeDigit(key - KeyEvent.KEYCODE_0);
-        else if (key == KeyEvent.KEYCODE_LAST_CHANNEL) zapper.lastChannel();
-        else if (key == KeyEvent.KEYCODE_GUIDE) finish();
-        // back to the guide
-        else zapper.showBanner();
-        return true;
-    }
-
     /**
      * Plays another stream in place: the next channel, or a backup copy of this one. Called by
      * {@link LiveZapper}.
@@ -202,6 +165,7 @@ public class VlcPlaybackActivity extends Activity {
         }
         id = newId;
         behindLive = false;
+        paused = false;
         if (titleView != null) titleView.setText(title);
         position = 0;
         resumeCheck = 0;
@@ -219,17 +183,14 @@ public class VlcPlaybackActivity extends Activity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        // Live TV from the guide: the satellite remote (see LiveZapper.key).
+        if (zapper != null && zapper.key(event)) return true;
         if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
             // Handled here, never by Android's default, and acted on when the key is released
-            // (as Android does), so a held key counts as one press. Back first closes the banner
-            // when browsing other channels in it.
-            if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
-                if (zapper != null && zapper.browsing()) zapper.endBrowse();
-                else onBackKey();
-            }
+            // (as Android does), so a held key counts as one press.
+            if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) onBackKey();
             return true;
         }
-        if (zapper != null && zapperKey(event)) return true;
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             int key = event.getKeyCode();
             if (key == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
@@ -238,12 +199,14 @@ public class VlcPlaybackActivity extends Activity {
             }
             if (key == KeyEvent.KEYCODE_MEDIA_PLAY) {
                 if (player != null) player.play();
+                paused = false;
                 revealControls();
                 return true;
             }
             if (key == KeyEvent.KEYCODE_MEDIA_PAUSE) {
                 if (player != null) player.pause();
                 if (live) behindLive = true;
+                paused = true;
                 showPlaying(false);
                 revealControls();
                 return true;
@@ -311,6 +274,8 @@ public class VlcPlaybackActivity extends Activity {
         if (live && guide != null) {
             zapper = new LiveZapper(this, guide);
             zapper.attach(root);
+            // The film controls never show over Live TV; the satellite-box overlay does.
+            controls.setVisibility(View.GONE);
         }
         root.setOnClickListener(v -> revealControls());
         setContentView(root);
@@ -359,6 +324,7 @@ public class VlcPlaybackActivity extends Activity {
             .setOnAudioFocusChangeListener(change -> {
                 if (change < 0 && player != null) {
                     player.pause();
+                    paused = true;
                     showPlaying(false);
                     revealControls();
                 }
@@ -377,98 +343,16 @@ public class VlcPlaybackActivity extends Activity {
         overlayHandler.removeCallbacks(stalled);
         // Live TV with backups moves on sooner than a film would.
         overlayHandler.postDelayed(stalled, zapper != null ? 15000 : 45000);
-        engine = new LibVLC(
-            this,
-            new ArrayList<>(
-                Arrays.asList(
-                    "--network-caching=1500",
-                    "--no-video-title-show",
-                    // Network files have no subtitle files beside them; do not probe for any.
-                    "--no-sub-autodetect-file",
-                    "--audio-language=" +
-                        getSharedPreferences("ui", MODE_PRIVATE).getString("audioLanguage", "eng,en"),
-                    "--sub-language=" +
-                        getSharedPreferences("ui", MODE_PRIVATE).getString("subtitleLanguage", "none")
-                )
-            )
-        );
+        if (live) {
+            startLive();
+            return;
+        }
+        engine = new LibVLC(this, new ArrayList<>(LivePlayer.options(this)));
         player = new MediaPlayer(engine);
         player.setRate(playbackRate);
         if (aspect != null) player.setAspectRatio(aspect);
         player.attachViews(video, null, false, false);
-        player.setEventListener(event -> {
-            if (!foreground || player == null) return;
-            if (event.type == MediaPlayer.Event.Playing) {
-                Timings.finish("play", "Press play to picture");
-                Timings.finish("stall", "Buffering pause while watching");
-                playedOnce = true;
-                player.setRate(playbackRate);
-                if (aspect != null) player.setAspectRatio(aspect);
-                overlayHandler.removeCallbacks(stalled);
-                status.setVisibility(View.GONE);
-                // The media was opened at the resume point (start-time). If this format ignored
-                // that, seek once as a fallback.
-                long target = resumeCheck;
-                resumeCheck = 0;
-                if (target > 0) overlayHandler.postDelayed(() -> {
-                    if (
-                        player != null && player.isSeekable() && player.getTime() < target - 5000
-                    ) player.setTime(target);
-                }, 1500);
-                showPlaying(true);
-                revealControls();
-            } else if (event.type == MediaPlayer.Event.Buffering) {
-                if (event.getBuffering() < 100) {
-                    if (playedOnce) Timings.markOnce("stall");
-                    if (playedOnce && zapper != null && !buffering) zapper.bufferingStarted();
-                    buffering = true;
-                    status.setText(
-                        "Buffering… " +
-                            Math.round(event.getBuffering()) +
-                            "%" +
-                            (downloadMbps < 0
-                                ? ""
-                                : String.format(Locale.ROOT, "  ·  %.1f Mb/s", downloadMbps))
-                    );
-                    status.setVisibility(View.VISIBLE);
-                } else {
-                    status.setVisibility(View.GONE);
-                    Timings.finish("stall", "Buffering pause while watching");
-                    buffering = false;
-                    if (zapper != null) zapper.bufferingEnded();
-                }
-            } else if (event.type == MediaPlayer.Event.EndReached) {
-                ended = true;
-                getSharedPreferences("positions", MODE_PRIVATE).edit().remove(id).apply();
-                String episode = getIntent().getStringExtra("episodeKey");
-                if (episode != null && !episode.isEmpty()) {
-                    android.content.SharedPreferences prefs = getSharedPreferences("ui", MODE_PRIVATE);
-                    Set<String> watched = new HashSet<>(
-                        prefs.getStringSet("watchedEpisodes", Collections.emptySet())
-                    );
-                    watched.add(episode);
-                    prefs.edit().putStringSet("watchedEpisodes", watched).apply();
-                }
-                finish();
-            } else if (event.type == MediaPlayer.Event.EncounteredError) {
-                if (
-                    live &&
-                    !triedAlternative &&
-                    (Uri.parse(url).getPath().endsWith(".ts") || Uri.parse(url).getPath().endsWith(".m3u8"))
-                ) {
-                    triedAlternative = true;
-                    Uri original = Uri.parse(url);
-                    String path = original.getEncodedPath();
-                    path = path.endsWith(".ts")
-                        ? path.substring(0, path.length() - 3) + ".m3u8"
-                        : path.substring(0, path.length() - 5) + ".ts";
-                    url = original.buildUpon().encodedPath(path).build().toString();
-                    video.post(this::startPlayer);
-                } else showError(
-                    "This source could not be played. Try another source or retry the connection."
-                );
-            }
-        });
+        player.setEventListener(this::onPlayerEvent);
         Media media = new Media(engine, Uri.parse(url));
         media.setHWDecoderEnabled(true, false);
         // Open directly at the resume point instead of starting at 0:00 and then seeking, which
@@ -481,6 +365,99 @@ public class VlcPlaybackActivity extends Activity {
         player.setMedia(media);
         media.release();
         player.play();
+    }
+
+    /**
+     * Live TV uses the one shared live player: when the guide's picture is already playing this
+     * channel, it carries on and only moves to the full screen (no reconnecting or buffering).
+     * {@code restartLive} opens the stream again (Back to live, Try again).
+     */
+    private void startLive() {
+        boolean carriedOn = LivePlayer.play(this, url, LivePlayer.options(this), restartLive);
+        restartLive = false;
+        player = LivePlayer.player();
+        LivePlayer.attach(this, video, this::onPlayerEvent);
+        player.setRate(playbackRate);
+        if (aspect != null) player.setAspectRatio(aspect);
+        if (carriedOn && player.isPlaying()) {
+            // Already playing: no "Playing" event will come, so show it as playing now.
+            playedOnce = true;
+            overlayHandler.removeCallbacks(stalled);
+            status.setVisibility(View.GONE);
+            showPlaying(true);
+            revealControls();
+        }
+    }
+
+    /** The player's events: playing, buffering, the end, and errors (which try the other format). */
+    private void onPlayerEvent(MediaPlayer.Event event) {
+        if (!foreground || player == null) return;
+        if (event.type == MediaPlayer.Event.Playing) {
+            Timings.finish("play", "Press play to picture");
+            Timings.finish("stall", "Buffering pause while watching");
+            playedOnce = true;
+            player.setRate(playbackRate);
+            if (aspect != null) player.setAspectRatio(aspect);
+            overlayHandler.removeCallbacks(stalled);
+            status.setVisibility(View.GONE);
+            // The media was opened at the resume point (start-time). If this format ignored
+            // that, seek once as a fallback.
+            long target = resumeCheck;
+            resumeCheck = 0;
+            if (target > 0) overlayHandler.postDelayed(() -> {
+                if (player != null && player.isSeekable() && player.getTime() < target - 5000) player.setTime(
+                    target
+                );
+            }, 1500);
+            showPlaying(true);
+            revealControls();
+        } else if (event.type == MediaPlayer.Event.Buffering) {
+            if (event.getBuffering() < 100) {
+                if (playedOnce) Timings.markOnce("stall");
+                if (playedOnce && zapper != null && !buffering) zapper.bufferingStarted();
+                buffering = true;
+                status.setText(
+                    "Buffering… " +
+                        Math.round(event.getBuffering()) +
+                        "%" +
+                        (downloadMbps < 0 ? "" : String.format(Locale.ROOT, "  ·  %.1f Mb/s", downloadMbps))
+                );
+                status.setVisibility(View.VISIBLE);
+            } else {
+                status.setVisibility(View.GONE);
+                Timings.finish("stall", "Buffering pause while watching");
+                buffering = false;
+                if (zapper != null) zapper.bufferingEnded();
+            }
+        } else if (event.type == MediaPlayer.Event.EndReached) {
+            ended = true;
+            getSharedPreferences("positions", MODE_PRIVATE).edit().remove(id).apply();
+            String episode = getIntent().getStringExtra("episodeKey");
+            if (episode != null && !episode.isEmpty()) {
+                android.content.SharedPreferences prefs = getSharedPreferences("ui", MODE_PRIVATE);
+                Set<String> watched = new HashSet<>(
+                    prefs.getStringSet("watchedEpisodes", Collections.emptySet())
+                );
+                watched.add(episode);
+                prefs.edit().putStringSet("watchedEpisodes", watched).apply();
+            }
+            finish();
+        } else if (event.type == MediaPlayer.Event.EncounteredError) {
+            if (
+                live &&
+                !triedAlternative &&
+                (Uri.parse(url).getPath().endsWith(".ts") || Uri.parse(url).getPath().endsWith(".m3u8"))
+            ) {
+                triedAlternative = true;
+                Uri original = Uri.parse(url);
+                String path = original.getEncodedPath();
+                path = path.endsWith(".ts")
+                    ? path.substring(0, path.length() - 3) + ".m3u8"
+                    : path.substring(0, path.length() - 5) + ".ts";
+                url = original.buildUpon().encodedPath(path).build().toString();
+                video.post(this::startPlayer);
+            } else showError("This source could not be played. Try another source or retry the connection.");
+        }
     }
 
     private void showError(String message) {
@@ -498,8 +475,11 @@ public class VlcPlaybackActivity extends Activity {
         dialogOpen = true;
         SidePanel.of(this, "Can't play this")
             .message(message)
-            .action("Try again", this::startPlayer)
-            .action("Back to sources", this::finish)
+            .action("Try again", () -> {
+                restartLive = true;
+                startPlayer();
+            })
+            .action(zapper != null ? "Back to the guide" : "Back to sources", this::finish)
             .onDismiss(this::panelClosed)
             .show();
     }
@@ -536,11 +516,14 @@ public class VlcPlaybackActivity extends Activity {
         if (player.isPlaying()) {
             player.pause();
             if (live) behindLive = true;
+            paused = true;
             showPlaying(false);
         } else {
             player.play();
+            paused = false;
             showPlaying(true);
         }
+        revealControls();
     }
 
     /**
@@ -567,6 +550,8 @@ public class VlcPlaybackActivity extends Activity {
     /** Catches up with the broadcast after pausing or rewinding live TV: opens the stream again. */
     void backToLive() {
         behindLive = false;
+        paused = false;
+        restartLive = true;
         startPlayer();
     }
 
@@ -581,7 +566,15 @@ public class VlcPlaybackActivity extends Activity {
         });
     }
 
+    /**
+     * Lets go of the player. Live TV's shared player keeps playing here; {@link #onStop} stops it
+     * unless the guide's picture has taken it over.
+     */
     private void release() {
+        if (live) {
+            player = null;
+            return;
+        }
         if (player != null) {
             player.setEventListener(null);
             player.stop();
@@ -619,6 +612,9 @@ public class VlcPlaybackActivity extends Activity {
             }
         }
         release();
+        // Back to the guide: its picture has already taken the live player over, so it plays on.
+        // Anywhere else, nothing took it over, so it stops.
+        if (live) LivePlayer.stopIfOwner(this);
         if (audio != null && audioFocus != null) audio.abandonAudioFocusRequest(audioFocus);
         super.onStop();
     }
@@ -635,6 +631,7 @@ public class VlcPlaybackActivity extends Activity {
         if (zapper != null) zapper.close();
         overlayHandler.removeCallbacksAndMessages(null);
         release();
+        if (live) LivePlayer.stopIfOwner(this);
         super.onDestroy();
     }
 }

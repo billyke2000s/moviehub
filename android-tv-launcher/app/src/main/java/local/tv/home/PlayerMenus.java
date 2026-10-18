@@ -87,6 +87,18 @@ final class PlayerMenus {
     }
 
     void moreControls() {
+        options(false);
+    }
+
+    /**
+     * Live TV's Options (SELECT twice, the blue key or MENU): there are no on-screen controls, so
+     * pause and audio and subtitles are here too.
+     */
+    void liveOptions() {
+        options(true);
+    }
+
+    private void options(boolean liveTv) {
         List<String> labels = new ArrayList<>();
         if (!a.live) labels.add("Playback speed · " + a.playbackRate + "×");
         labels.add("Picture size");
@@ -103,11 +115,17 @@ final class PlayerMenus {
             "Source · " + a.zapper.sourceLabel()
         );
         if (a.live && a.behindLive) labels.add(0, "Back to live");
+        if (liveTv) {
+            labels.add(0, "Audio & subtitles");
+            labels.add(0, a.player != null && a.player.isPlaying() ? "Pause" : "Play");
+        }
         a.dialogOpen = true;
-        SidePanel panel = SidePanel.of(a, "Playback options").onDismiss(a::panelClosed);
+        SidePanel panel = SidePanel.of(a, liveTv ? "Options" : "Playback options").onDismiss(a::panelClosed);
         for (String label : labels)
             panel.option(label, () -> {
-                if (label.equals("Back to live")) a.backToLive();
+                if (label.equals("Pause") || label.equals("Play")) a.toggle();
+                else if (label.equals("Audio & subtitles")) audioAndSubtitles();
+                else if (label.equals("Back to live")) a.backToLive();
                 else if (label.startsWith("Source")) chooseSource();
                 else if (label.startsWith("Playback speed")) chooseSpeed();
                 else if (label.equals("Picture size")) choosePicture();

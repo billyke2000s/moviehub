@@ -447,7 +447,8 @@ final class LiveTvScreen {
                     position
                 );
                 activity.prefs.edit().putString(LAST_CHANNEL, channel.key).apply();
-                picture.stop();
+                // The guide's picture keeps playing: the full screen takes it over, so the same
+                // channel carries on without reconnecting.
                 activity.resumeRefresh = () -> {
                     int last = LiveZapper.session == null ? position : LiveZapper.session.position;
                     guide(last - (last % ROWS), last % ROWS);
@@ -510,7 +511,11 @@ final class LiveTvScreen {
      * "Set up coloured buttons".
      */
     char colour(int key) {
-        for (int i = 0; i < 4; i++) if (activity.prefs.getInt(COLOUR_PREFS[i], -1) == key) return COLOURS[i];
+        return colour(activity.prefs, key);
+    }
+
+    static char colour(android.content.SharedPreferences prefs, int key) {
+        for (int i = 0; i < 4; i++) if (prefs.getInt(COLOUR_PREFS[i], -1) == key) return COLOURS[i];
         if (key == KeyEvent.KEYCODE_PROG_RED || key == KeyEvent.KEYCODE_F1) return 'r';
         if (key == KeyEvent.KEYCODE_PROG_GREEN || key == KeyEvent.KEYCODE_F2) return 'g';
         if (key == KeyEvent.KEYCODE_PROG_YELLOW || key == KeyEvent.KEYCODE_F3) return 'y';

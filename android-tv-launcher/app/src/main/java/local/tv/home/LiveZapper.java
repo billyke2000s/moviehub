@@ -1,16 +1,7 @@
 package local.tv.home;
 
-import android.content.res.ColorStateList;
-import android.graphics.Color;
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
-import android.text.TextUtils;
-import android.view.Gravity;
-import android.view.View;
+import android.view.KeyEvent;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.Date;
@@ -67,14 +58,13 @@ final class LiveZapper {
         previousPosition = -1,
         request;
     private final List<Long> stalls = new ArrayList<>();
-    private LinearLayout banner;
-    private TextView bannerNumber, bannerName, bannerNow, bannerNext, bannerAbout, bannerSource, bannerHint;
-    private ProgressBar bannerProgress;
+    /** The banner, programme information and pause bar (package-private for tests). */
+    SkyOverlay overlay;
     private final StringBuilder typed = new StringBuilder();
     private final Runnable jump = this::jumpToTyped;
     private final Runnable hideBanner = () -> {
         browsing = false;
-        if (banner != null) banner.setVisibility(View.GONE);
+        if (overlay != null) overlay.hideBanner();
     };
     private final Runnable stalledTooLong = () -> failover("The stream kept buffering");
 
@@ -93,7 +83,7 @@ final class LiveZapper {
 
     /** Builds the banner and loads the current channel's backups and listings. */
     void attach(FrameLayout root) {
-        buildBanner(root);
+        overlay = new SkyOverlay(player, root);
         load(own.position, false, true);
     }
 
@@ -125,7 +115,9 @@ final class LiveZapper {
         endBrowse();
         if (typed.length() >= 6) typed.setLength(0);
         typed.append(digit);
-        showBannerText(typed.toString(), "", "", "", "", -1);
+        overlay.typing(typed.toString());
+        player.overlayHandler.removeCallbacks(hideBanner);
+        player.overlayHandler.postDelayed(hideBanner, BANNER_MS);
         player.overlayHandler.removeCallbacks(jump);
         player.overlayHandler.postDelayed(jump, 1500);
     }
@@ -368,8 +360,11 @@ final class LiveZapper {
 
     private ChannelDatabase.Row bannerRow;
     private List<ChannelDatabase.Programme> bannerListing = new ArrayList<>();
+    /** The channel and programme the banner shows, for the information panel. */
+    private ChannelDatabase.Row shownRow;
+    private ChannelDatabase.Programme shownProgramme;
 
-    /** Shows the banner for the current channel again (the Info key). */
+    /** Shows the banner for the current channel again (SELECT, the Info key). */
     void showBanner() {
         endBrowse();
         if (bannerRow != null) showBanner(bannerRow, bannerListing);
@@ -394,123 +389,151 @@ final class LiveZapper {
         long now = System.currentTimeMillis();
         ChannelDatabase.Programme shown = index < listing.size() ? listing.get(index) : null,
             next = index + 1 < listing.size() ? listing.get(index + 1) : null;
+        shownRow = row;
+        shownProgramme = shown;
         boolean onNow = shown != null && shown.start <= now && shown.stop > now;
         int progress = onNow
             ? (int) (((now - shown.start) * 1000) / Math.max(1, shown.stop - shown.start))
             : -1;
-        showBannerText(
+        overlay.banner(
             String.valueOf(row.number),
             row.name,
-            shown == null
-                ? "No programme information"
-                : (onNow ? "Now    " : "") +
-                      LiveTvScreen.clockTime(new Date(shown.start)) +
-                      "   " +
-                      shown.title,
-            next == null ? "" : "Next   " + LiveTvScreen.clockTime(new Date(next.start)) + "   " + next.title,
+            shown == null ? "No programme information" : shown.title,
+            shown == null ? "" : (onNow ? "Now " : "") + LiveTvScreen.clockTime(new Date(shown.start)),
+            next == null ? "" : next.title,
+            next == null ? "" : "Next " + LiveTvScreen.clockTime(new Date(next.start)),
             shown == null ? "" : shown.description,
-            progress
+            progress,
+            copies.size() > 1 && !browse ? "Source " + sourceLabel() : "",
+            browse
         );
-        bannerHint.setVisibility(browse ? View.VISIBLE : View.GONE);
-        if (browse) {
-            player.overlayHandler.removeCallbacks(hideBanner);
-            player.overlayHandler.postDelayed(hideBanner, BROWSE_MS);
-        }
+        if (overlay.infoShowing()) showInfo();
+        player.overlayHandler.removeCallbacks(hideBanner);
+        player.overlayHandler.postDelayed(hideBanner, browse ? BROWSE_MS : BANNER_MS);
     }
 
-    private void showBannerText(
-        String number,
-        String name,
-        String now,
-        String next,
-        String about,
-        int progress
-    ) {
-        if (banner == null) return;
-        bannerNumber.setText(number);
-        bannerName.setText(name);
-        bannerNow.setText(now);
-        bannerNext.setText(next);
-        bannerAbout.setText(about);
-        bannerAbout.setVisibility(about.isEmpty() ? View.GONE : View.VISIBLE);
-        bannerProgress.setVisibility(progress < 0 ? View.GONE : View.VISIBLE);
-        if (progress >= 0) bannerProgress.setProgress(progress);
-        bannerSource.setText(copies.size() > 1 ? "Source " + sourceLabel() : "");
-        bannerHint.setVisibility(View.GONE);
-        banner.setVisibility(View.VISIBLE);
+    /** The "i" panel: the programme the banner shows, in full. Shown until closed. */
+    void showInfo() {
+        if (shownRow == null) return;
+        player.overlayHandler.removeCallbacks(hideBanner);
+        ChannelDatabase.Programme item = shownProgramme;
+        String when =
+            item == null
+                ? ""
+                : LiveTvScreen.clockTime(new Date(item.start)) +
+                  " – " +
+                  LiveTvScreen.clockTime(new Date(item.stop)) +
+                  "   (" +
+                  Math.max(1, (item.stop - item.start) / 60000) +
+                  " mins)" +
+                  (item.category.isEmpty() ? "" : "   ·   " + item.category);
+        overlay.info(
+            shownRow.number + "  " + shownRow.name,
+            item == null ? "No programme information" : item.title,
+            when,
+            item == null ? "" : item.description
+        );
+    }
+
+    void hideInfo() {
+        overlay.hideInfo();
         player.overlayHandler.removeCallbacks(hideBanner);
         player.overlayHandler.postDelayed(hideBanner, BANNER_MS);
     }
 
+    // ---- Remote keys ----------------------------------------------------------------------------
+
     /**
-     * The classic satellite-box banner: a blue bar across the bottom with the channel number in
-     * yellow, the channel name, what is on now and next, how far through it is and what it is
-     * about. While browsing, a line says how to watch the channel shown.
+     * The satellite remote while watching Live TV. Returns true when the key was used.
+     *
+     * <ul>
+     *   <li>▲ ▼, CH+ CH-: change channel (in the banner while browsing: other channels).
+     *   <li>◀ ▶: browse what is on, without changing channel; SELECT watches the channel shown.
+     *   <li>SELECT: the banner; SELECT again: options. Numbers, last channel, GUIDE.
+     *   <li>i (or yellow): programme information. Red: audio and subtitles. Green: source.
+     *       Blue (or MENU): options.
+     *   <li>BACK: closes what is open; then back to the guide, whose picture carries on.
+     * </ul>
      */
-    private void buildBanner(FrameLayout root) {
-        banner = new LinearLayout(player);
-        banner.setOrientation(LinearLayout.HORIZONTAL);
-        banner.setGravity(Gravity.CENTER_VERTICAL);
-        banner.setPadding(player.dp(18), player.dp(12), player.dp(22), player.dp(12));
-        GradientDrawable shape = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {
-            0xf02a43a6,
-            0xf0182a7a,
-        });
-        shape.setCornerRadius(player.dp(6));
-        shape.setStroke(player.dp(2), 0xaaffffff);
-        banner.setBackground(shape);
-        bannerNumber = label(30, true);
-        bannerNumber.setTextColor(LiveTvScreen.YELLOW);
-        bannerNumber.setMinWidth(player.dp(90));
-        banner.addView(bannerNumber);
-        LinearLayout middle = new LinearLayout(player);
-        middle.setOrientation(LinearLayout.VERTICAL);
-        bannerName = label(24, true);
-        middle.addView(bannerName);
-        bannerNow = label(18, true);
-        middle.addView(bannerNow);
-        bannerProgress = new ProgressBar(player, null, android.R.attr.progressBarStyleHorizontal);
-        bannerProgress.setMax(1000);
-        bannerProgress.setProgressTintList(ColorStateList.valueOf(LiveTvScreen.YELLOW));
-        bannerProgress.setProgressBackgroundTintList(ColorStateList.valueOf(0x66ffffff));
-        LinearLayout.LayoutParams progressLayout = new LinearLayout.LayoutParams(
-            player.dp(260),
-            player.dp(6)
-        );
-        progressLayout.topMargin = player.dp(3);
-        progressLayout.bottomMargin = player.dp(3);
-        middle.addView(bannerProgress, progressLayout);
-        bannerNext = label(18, false);
-        bannerNext.setTextColor(0xffc9d6ff);
-        middle.addView(bannerNext);
-        bannerAbout = label(15, false);
-        bannerAbout.setTextColor(0xffdfe6ff);
-        bannerAbout.setSingleLine(false);
-        bannerAbout.setMaxLines(2);
-        middle.addView(bannerAbout);
-        bannerHint = label(15, true);
-        bannerHint.setTextColor(LiveTvScreen.YELLOW);
-        bannerHint.setText("SELECT to watch  ·  ◀ ▶ later programmes  ·  BACK to close");
-        middle.addView(bannerHint);
-        LinearLayout.LayoutParams middleLayout = new LinearLayout.LayoutParams(0, -2, 1);
-        middleLayout.leftMargin = player.dp(14);
-        banner.addView(middle, middleLayout);
-        bannerSource = label(15, false);
-        bannerSource.setTextColor(0xffc9d6ff);
-        banner.addView(bannerSource);
-        banner.setVisibility(View.GONE);
-        FrameLayout.LayoutParams layout = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
-        layout.setMargins(player.dp(40), 0, player.dp(40), player.dp(30));
-        root.addView(banner, layout);
+    boolean key(KeyEvent event) {
+        int key = event.getKeyCode();
+        boolean down = event.getAction() == KeyEvent.ACTION_DOWN,
+            first = down && event.getRepeatCount() == 0;
+        if (key == KeyEvent.KEYCODE_BACK) {
+            if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) back();
+            return true;
+        }
+        char colour = LiveTvScreen.colour(player.getSharedPreferences("ui", 0), key);
+        boolean select = key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER;
+        if (browsing) {
+            int channel = key == KeyEvent.KEYCODE_DPAD_UP ? 1 : key == KeyEvent.KEYCODE_DPAD_DOWN ? -1 : 0,
+                programme =
+                    key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : key == KeyEvent.KEYCODE_DPAD_LEFT ? -1 : 0;
+            if (channel != 0 || programme != 0 || select) {
+                if (down) {
+                    if (select) {
+                        if (first) browseSelect();
+                    } else browse(channel, programme);
+                }
+                return true;
+            }
+        }
+        if (key == KeyEvent.KEYCODE_DPAD_LEFT || key == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            if (first) browse(0, key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : 0);
+            return true;
+        }
+        boolean up =
+                key == KeyEvent.KEYCODE_CHANNEL_UP ||
+                key == KeyEvent.KEYCODE_PAGE_UP ||
+                key == KeyEvent.KEYCODE_DPAD_UP,
+            downKey =
+                key == KeyEvent.KEYCODE_CHANNEL_DOWN ||
+                key == KeyEvent.KEYCODE_PAGE_DOWN ||
+                key == KeyEvent.KEYCODE_DPAD_DOWN;
+        if (up || downKey) {
+            if (down) channel(up ? 1 : -1);
+            return true;
+        }
+        if (key >= KeyEvent.KEYCODE_0 && key <= KeyEvent.KEYCODE_9) {
+            if (first) typeDigit(key - KeyEvent.KEYCODE_0);
+            return true;
+        }
+        boolean handled = true;
+        if (select) {
+            if (first) {
+                if (overlay.bannerShowing()) player.menus.liveOptions();
+                else showBanner();
+            }
+        } else if (key == KeyEvent.KEYCODE_INFO || colour == 'y') {
+            if (first) {
+                if (overlay.infoShowing()) hideInfo();
+                else {
+                    if (!overlay.bannerShowing()) showBanner();
+                    showInfo();
+                }
+            }
+        } else if (colour == 'r') {
+            if (first) player.menus.audioAndSubtitles();
+        } else if (colour == 'g') {
+            if (first) {
+                if (copies.size() > 1) player.menus.chooseSource();
+                else Toast.makeText(player, "This channel has one source", Toast.LENGTH_SHORT).show();
+            }
+        } else if (colour == 'b' || key == KeyEvent.KEYCODE_MENU) {
+            if (first) player.menus.liveOptions();
+        } else if (key == KeyEvent.KEYCODE_LAST_CHANNEL) {
+            if (first) lastChannel();
+        } else if (key == KeyEvent.KEYCODE_GUIDE) {
+            if (first) player.finish();
+        } else handled = false;
+        return handled;
     }
 
-    private TextView label(int size, boolean bold) {
-        TextView text = new TextView(player);
-        text.setTextColor(Color.WHITE);
-        text.setTextSize(size);
-        text.setSingleLine(true);
-        text.setEllipsize(TextUtils.TruncateAt.END);
-        if (bold) text.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        return text;
+    /** BACK closes the information panel, then browsing, then the banner, then goes to the guide. */
+    private void back() {
+        if (overlay.infoShowing()) hideInfo();
+        else if (browsing) endBrowse();
+        else if (overlay.bannerShowing()) hideBanner.run();
+        else player.finish();
     }
 }
