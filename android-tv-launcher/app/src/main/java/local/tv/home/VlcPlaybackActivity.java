@@ -98,7 +98,7 @@ public class VlcPlaybackActivity extends Activity {
                                 : "PAUSED"
                             : "LIVE"
                         : length > 0
-                          ? format(Math.max(0, length - time))
+                          ? PlayerOverlay.timeLeft(Math.max(0, length - time))
                           : "—"
                 );
                 // A programme reminder that is due shows over the picture (checked every 15 s).
@@ -121,13 +121,6 @@ public class VlcPlaybackActivity extends Activity {
 
     int dp(int n) {
         return (int) (n * getResources().getDisplayMetrics().density + .5f);
-    }
-
-    private static String format(long millis) {
-        long seconds = millis / 1000;
-        return seconds >= 3600
-            ? String.format(Locale.ROOT, "%d:%02d:%02d", seconds / 3600, (seconds / 60) % 60, seconds % 60)
-            : String.format(Locale.ROOT, "%d:%02d", seconds / 60, seconds % 60);
     }
 
     void revealControls() {
@@ -593,7 +586,7 @@ public class VlcPlaybackActivity extends Activity {
     void showSkipTarget(long target, long length) {
         if (length > 0) {
             timeline.setProgress((int) Math.min(1000, (target * 1000) / length));
-            timeLeft.setText(format(Math.max(0, length - target)));
+            timeLeft.setText(PlayerOverlay.timeLeft(Math.max(0, length - target)));
         }
         overlayHandler.removeCallbacks(applySkip);
         overlayHandler.postDelayed(applySkip, SkipQueue.DELAY_MS);

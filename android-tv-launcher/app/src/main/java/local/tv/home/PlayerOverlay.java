@@ -259,4 +259,18 @@ final class PlayerOverlay {
             media.release();
         }
     }
+
+    /** Time left as "1:02:03" or "2:03". */
+    static String timeLeft(long millis) {
+        long seconds = millis / 1000;
+        return seconds >= 3600
+            ? String.format(
+                  java.util.Locale.ROOT,
+                  "%d:%02d:%02d",
+                  seconds / 3600,
+                  (seconds / 60) % 60,
+                  seconds % 60
+              )
+            : String.format(java.util.Locale.ROOT, "%d:%02d", seconds / 60, seconds % 60);
+    }
 }
