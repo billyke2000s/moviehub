@@ -277,6 +277,7 @@ final class SourcesScreen {
                                 }
                             );
                             View first = null;
+                            boolean suggested = false;
                             for (int i = 0; i < files.length(); i++) {
                                 JSONObject file = files.getJSONObject(i);
                                 String link = file.getString("link"),
@@ -311,7 +312,8 @@ final class SourcesScreen {
                                 LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
                                 lp.topMargin = activity.dp(8);
                                 activity.page.addView(row, lp);
-                                if (match >= 2 || first == null) first = row;
+                                if (first == null || (match >= 2 && !suggested)) first = row;
+                                suggested |= match >= 2;
                             }
                             if (first != null) first.requestFocus();
                         }
