@@ -70,6 +70,7 @@ final class ChannelImporter {
             List<String> problems = new ArrayList<>();
             int total = 0;
             boolean anySource = false;
+            String guideNote = "";
             try {
                 migrateLegacy(context, db, cancel);
                 String playlist = secrets.get("m3u");
@@ -104,6 +105,21 @@ final class ChannelImporter {
                 }
                 cancel.check();
                 if (problems.isEmpty()) db.removeSourcesExcept(configured);
+                // The free programme guide; a failure here never counts against the channels.
+                if (anySource && db.count() > 0) try {
+                    EpgImporter.Result guide = EpgImporter.run(context, db, cancel);
+                    guideNote =
+                        guide.programmes > 0
+                            ? String.format(
+                                  Locale.getDefault(),
+                                  " · programme guide for %,d channels",
+                                  guide.channels
+                              )
+                            : " · no programme guide matched";
+                } catch (Exception e) {
+                    Diagnostics.recovered("Programme guide", e);
+                    guideNote = " · programme guide unavailable";
+                }
             } catch (Exception e) {
                 problems.add(describe(e));
             } finally {
@@ -112,7 +128,7 @@ final class ChannelImporter {
             String message = !anySource
                 ? "No live TV account connected"
                 : problems.isEmpty()
-                  ? String.format(Locale.getDefault(), "%,d channels updated", total)
+                  ? String.format(Locale.getDefault(), "%,d channels updated", total) + guideNote
                   : String.join("\n", problems);
             SharedPreferences.Editor edit = prefs(context)
                 .edit()

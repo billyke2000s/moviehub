@@ -17,14 +17,14 @@ Pure-Java rules for playlists, URLs, channel search and episode matching. They d
 ```sh
 mkdir -p build/core-tests
 javac -d build/core-tests \
-  android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery}.java \
-  android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest}.java
-for t in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest; do
+  android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch}.java \
+  android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest}.java
+for t in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest EpgMatchTest; do
   java -Xmx64m -cp build/core-tests local.tv.home.$t
 done
 ```
 
-Expected output: 17 playlist, 9 network, 10 episode/file and 13 channel-query checks passed.
+Expected output: 17 playlist, 9 network, 10 episode/file 13 channel-query and 10 programme-guide matching checks passed.
 
 ## Device tests
 

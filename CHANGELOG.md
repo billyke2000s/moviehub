@@ -10,6 +10,15 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.22 (18 Oct 2026)
+
+- Live TV guide shows what is on: a free UK programme guide (epgshare01) is downloaded with the
+  channels, about once a day, and programmes fill the half-hour slots. Channels are matched by
+  name, so many UK channels have listings; others still say "No programme information".
+- Coloured buttons: remotes that send other codes for them now work too, and Options → Set up
+  coloured buttons teaches the guide your remote's buttons.
+- Number keys jump straight to a channel: type 151 to go to channel 151.
+
 ## 0.21 (18 Oct 2026)
 
 - Live TV works without a TV provider: the full public iptv-org channel list is loaded the first

@@ -33,8 +33,8 @@ jobs:
       - name: Verify core rules
         run: |
           mkdir -p build/core-tests
-          javac -d build/core-tests android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery}.java android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest}.java
-          for test in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest; do java -Xmx64m -cp build/core-tests local.tv.home.$test; done
+          javac -d build/core-tests android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch}.java android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest}.java
+          for test in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest EpgMatchTest; do java -Xmx64m -cp build/core-tests local.tv.home.$test; done
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules

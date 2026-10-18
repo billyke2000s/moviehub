@@ -22,13 +22,33 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
         final long id;
         final String name, group, logo, key;
+        /** The playlist's programme-guide id (tvg-id), or "". */
+        final String epg;
 
         Row(long id, String name, String group, String logo, String key) {
+            this(id, name, group, logo, key, "");
+        }
+
+        Row(long id, String name, String group, String logo, String key, String epg) {
             this.id = id;
             this.name = name;
             this.group = group;
             this.logo = logo;
             this.key = key;
+            this.epg = epg == null ? "" : epg;
+        }
+    }
+
+    /** One programme in the guide. Times are in milliseconds since 1970. */
+    static final class Programme {
+
+        final long start, stop;
+        final String title;
+
+        Programme(long start, long stop, String title) {
+            this.start = start;
+            this.stop = stop;
+            this.title = title;
         }
     }
 
@@ -52,7 +72,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     private ChannelDatabase(Context context) {
-        super(context, "channels-v2.db", null, 2);
+        super(context, "channels-v2.db", null, 3);
         secrets = new Secrets(context);
         setWriteAheadLoggingEnabled(true);
     }
@@ -67,11 +87,26 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         db.execSQL("CREATE INDEX channels_key ON channels(key)");
         db.execSQL("CREATE VIRTUAL TABLE channel_search USING fts4(name,grp)");
         db.execSQL("CREATE TABLE favourite_keys(key TEXT PRIMARY KEY)");
+        createGuideTables(db);
+    }
+
+    /**
+     * Programme guide: programmes by guide channel id, and which plain channel keys (see
+     * {@link EpgMatch}) each guide channel matches.
+     */
+    private static void createGuideTables(SQLiteDatabase db) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS programmes(channel TEXT NOT NULL,start INTEGER NOT NULL,stop INTEGER NOT NULL,title TEXT NOT NULL)"
+        );
+        db.execSQL("CREATE INDEX IF NOT EXISTS programmes_time ON programmes(channel,start)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS epg_map(chkey TEXT NOT NULL,channel TEXT NOT NULL)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS epg_map_match ON epg_map(chkey)");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int from, int to) {
         if (from < 2) db.execSQL("CREATE TABLE IF NOT EXISTS favourite_keys(key TEXT PRIMARY KEY)");
+        if (from < 3) createGuideTables(db);
     }
 
     // ---- URL encryption -------------------------------------------------------------------
@@ -224,7 +259,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     // ---- Queries --------------------------------------------------------------------------
-    private static final String COLUMNS = "_id,name,grp,logo,key";
+    private static final String COLUMNS = "_id,name,grp,logo,key,epg";
 
     private List<Row> rows(String where, String[] args, int offset) {
         List<Row> out = new ArrayList<>();
@@ -243,7 +278,14 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         ) {
             while (c.moveToNext())
                 out.add(
-                    new Row(c.getLong(0), c.getString(1), c.getString(2), c.getString(3), c.getString(4))
+                    new Row(
+                        c.getLong(0),
+                        c.getString(1),
+                        c.getString(2),
+                        c.getString(3),
+                        c.getString(4),
+                        c.getString(5)
+                    )
                 );
         }
         return out;
@@ -351,6 +393,83 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     /** Clears all channels, for example after the URL key is lost. */
+    // ---- Programme guide --------------------------------------------------------------------
+    /** Every plain key the saved channels can be found under in a guide for {@code country}. */
+    Set<String> guideKeys(String country) {
+        Set<String> keys = new HashSet<>();
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT epg,name FROM channels", null)) {
+            while (c.moveToNext()) keys.addAll(EpgMatch.keys(c.getString(0), c.getString(1), country));
+        }
+        return keys;
+    }
+
+    /** Replaces the whole programme guide in one transaction; a failed download keeps the old one. */
+    final class GuideWriter {
+
+        private final SQLiteDatabase db = getWritableDatabase();
+        private final SQLiteStatement map, programme;
+        int programmes;
+
+        GuideWriter() {
+            db.beginTransactionNonExclusive();
+            db.delete("programmes", null, null);
+            db.delete("epg_map", null, null);
+            map = db.compileStatement("INSERT INTO epg_map(chkey,channel) VALUES(?,?)");
+            programme = db.compileStatement(
+                "INSERT INTO programmes(channel,start,stop,title) VALUES(?,?,?,?)"
+            );
+        }
+
+        void match(String key, String channel) {
+            map.bindString(1, key);
+            map.bindString(2, channel);
+            map.executeInsert();
+        }
+
+        void programme(String channel, long start, long stop, String title) {
+            programme.bindString(1, channel);
+            programme.bindLong(2, start);
+            programme.bindLong(3, stop);
+            programme.bindString(4, title);
+            programme.executeInsert();
+            programmes++;
+        }
+
+        void commit() {
+            db.setTransactionSuccessful();
+        }
+
+        /** Ends the transaction; without commit() nothing changes. */
+        void finish() {
+            map.close();
+            programme.close();
+            db.endTransaction();
+        }
+    }
+
+    /** Programmes on this channel overlapping [from, to), in time order. */
+    List<Programme> programmes(Row row, String country, long from, long to) {
+        List<Programme> out = new ArrayList<>();
+        List<String> keys = EpgMatch.keys(row.epg, row.name, country);
+        if (keys.isEmpty()) return out;
+        StringBuilder in = new StringBuilder();
+        List<String> args = new ArrayList<>(keys);
+        for (int i = 0; i < keys.size(); i++) in.append(i == 0 ? "?" : ",?");
+        args.add(String.valueOf(to));
+        args.add(String.valueOf(from));
+        try (
+            Cursor c = getReadableDatabase().rawQuery(
+                "SELECT start,stop,title FROM programmes WHERE channel=(SELECT channel FROM epg_map WHERE chkey IN (" +
+                    in +
+                    ") LIMIT 1) AND start<? AND stop>? ORDER BY start LIMIT 12",
+                args.toArray(new String[0])
+            )
+        ) {
+            while (c.moveToNext()) out.add(new Programme(c.getLong(0), c.getLong(1), c.getString(2)));
+        }
+        return out;
+    }
+
     void clear() {
         SQLiteDatabase db = getWritableDatabase();
         db.beginTransactionNonExclusive();

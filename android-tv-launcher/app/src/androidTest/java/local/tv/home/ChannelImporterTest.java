@@ -37,6 +37,7 @@ public class ChannelImporterTest {
         // These tests cover provider imports; the free public list would add thousands of channels.
         oldFree = context.getSharedPreferences("ui", 0).getString(FreeChannels.PREF, null);
         context.getSharedPreferences("ui", 0).edit().putString(FreeChannels.PREF, "off").commit();
+        EpgImporter.guideUrl = ""; // no real programme-guide download in these tests
         server = new ServerSocket(0, 8, InetAddress.getByName("127.0.0.1"));
         root = "http://127.0.0.1:" + server.getLocalPort();
         new Thread(() -> {
@@ -173,6 +174,7 @@ public class ChannelImporterTest {
 
     @After
     public void cleanup() throws Exception {
+        EpgImporter.guideUrl = EpgImporter.UK_GUIDE;
         SharedPreferences.Editor restore = context.getSharedPreferences("ui", 0).edit();
         if (oldFree == null) restore.remove(FreeChannels.PREF);
         else restore.putString(FreeChannels.PREF, oldFree);
