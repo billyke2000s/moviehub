@@ -10,6 +10,13 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.20 (18 Oct 2026)
+
+- New Diagnostics page (Settings → System → Diagnostics): how long TMDB requests, finding sources,
+  the Premiumize cache check and file link, artwork, "press play to picture" and buffering pauses
+  take on this box, plus the last download speed. Only names and times are shown.
+- Code tidy-up with no visible change: the player is split into three smaller files.
+
 ## 0.19 (18 Oct 2026)
 
 - Faster menus: your saved logins are unlocked once instead of on every request (every poster row,

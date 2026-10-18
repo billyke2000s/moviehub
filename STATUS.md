@@ -23,6 +23,12 @@ Last updated: 18 October 2026.
 4. **Android Gradle plugin 9.4.1** (replacing Dependabot #12) builds with Gradle 9.6.0 and Build
    Tools 36. First published in 0.16.
 
+## Decisions
+
+- My List, watch history and watched episodes stay in SharedPreferences (history encrypted).
+  They are read only on detail pages and menus and the history is capped at 50, so a database
+  would add migration risk without a visible gain (reviewed 18 October 2026).
+
 ## Open pull requests and branches
 
 - **Dependabot:** #3 (`actions/checkout`) is superseded by checkout@v5 in CI and can be closed.

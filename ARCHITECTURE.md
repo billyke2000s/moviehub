@@ -64,6 +64,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `DpadRepeats` | Rate-limits held D-pad keys so a held direction cannot race through lists. |
 | `SidePanel` | The app's pop-up: a rounded panel on the right with a title, message, options or ticked choices and standard buttons. Used everywhere instead of AlertDialog/PopupMenu, also by the player. |
 | `ErrorMessages` | Plain-language explanation and fix (Try again / Open Settings) for a failed load, from the exception type only. |
+| `Timings` | In-memory timings (TMDB, sources, Premiumize, artwork, press play to picture, buffering pauses) shown on Settings → System → Diagnostics. Names and durations only. |
 | `Diagnostics` | Logs failures the app recovers from (`adb logcat -s MovieHub`), without account details. |
 
 ### Screens (feature classes)
@@ -102,6 +103,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `VideoFiles` | Chooses the right file in a multi-file release (episode matching). |
 | `AppUpdates`, `UpdateApkProvider` | Downloads and verifies update APKs; shares the verified APK with the system installer. |
 | `VlcPlaybackActivity` | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions (opened directly at the resume point), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`). |
+| `PlayerOverlay` | Builds the player's on-screen controls (title and download speed, timeline, flat icon controls, Back hint). |
+| `PlayerMenus` | The player's side panels: audio, subtitles, video track, speed, picture size, subtitle timing, sleep timer. |
 
 ## Where data is stored
 

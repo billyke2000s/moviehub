@@ -120,12 +120,13 @@ final class MediaRepository {
     JSONObject tmdb(String path) throws Exception {
         String key = secrets.get("tmdb");
         if (key.isEmpty()) throw new Exception("Connect TMDB first");
-        return new JSONObject(
-            Network.text(
-                tmdbUrl(path + (path.contains("?") ? "&" : "?") + "language=en-US", key),
-                null,
-                false
-            )
+        long started = Timings.start();
+        String body = Network.text(
+            tmdbUrl(path + (path.contains("?") ? "&" : "?") + "language=en-US", key),
+            null,
+            false
         );
+        Timings.record("TMDB request", started);
+        return new JSONObject(body);
     }
 }

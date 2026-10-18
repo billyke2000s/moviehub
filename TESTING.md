@@ -83,6 +83,8 @@ grid opened from the rows returns to the same row.
 | `ForYouTest` | For you ranking (shared recommendations rise, seeds and played movies hidden), trending fallback, caching until signals change, old seed migration. Fixture TMDB responses. |
 | `AllAppsTest` | Apps screen: Android shortcuts and Recently used shown, search box not focused on entry, search filters by name, hide and Show hidden. Uses the emulator's installed apps. |
 | `SidePanelTest` | Side panel focuses and ticks the current choice and runs it after closing; `ErrorMessages` explanations never include provider text. |
+| `DiagnosticsTest` | Timings record and finish once; the Diagnostics page lists them. |
+| `SecretsTest` | Encrypted on disk, cached reads, replace and remove. |
 | `ArtworkDiskCacheTest` | Artwork disk cache: hit, miss, least-recently-used trimming, oversized files skipped. |
 
 ## Tests call app code directly

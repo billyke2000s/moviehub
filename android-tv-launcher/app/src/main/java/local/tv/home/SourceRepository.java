@@ -42,9 +42,10 @@ final class SourceRepository {
         for (String provider : providers) {
             try {
                 List<Source> batch = new ArrayList<>();
-                JSONArray streams = new JSONObject(
-                    Network.text(provider + "/stream/" + type + "/" + id + ".json", null, false)
-                ).getJSONArray("streams");
+                long started = Timings.start();
+                String body = Network.text(provider + "/stream/" + type + "/" + id + ".json", null, false);
+                Timings.record("Finding stream sources", started);
+                JSONArray streams = new JSONObject(body).getJSONArray("streams");
                 for (int i = 0; i < streams.length() && batch.size() < 200; i++) {
                     JSONObject stream = streams.getJSONObject(i);
                     String hash = stream.optString("infoHash"),
@@ -85,7 +86,9 @@ final class SourceRepository {
             form.append("items%5B%5D=").append(Network.q(source.uri));
         }
         if (items.isEmpty()) return items;
+        long started = Timings.start();
         JSONObject reply = post("cache/check", form.toString());
+        Timings.record("Premiumize cache check", started);
         JSONArray statuses = reply.getJSONArray("response");
         if (statuses.length() != items.size()) throw new Exception("Incomplete cache response");
         for (int i = 0; i < items.size(); i++) {
@@ -109,7 +112,10 @@ final class SourceRepository {
     }
 
     JSONArray direct(Source source) throws Exception {
-        return post("transfer/directdl", "src=" + Network.q(source.uri)).getJSONArray("content");
+        long started = Timings.start();
+        JSONArray files = post("transfer/directdl", "src=" + Network.q(source.uri)).getJSONArray("content");
+        Timings.record("Premiumize file link", started);
+        return files;
     }
 
     String queue(Source source) throws Exception {
