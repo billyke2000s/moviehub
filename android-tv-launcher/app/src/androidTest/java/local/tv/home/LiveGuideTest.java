@@ -172,28 +172,16 @@ public class LiveGuideTest {
     }
 
     @Test
-    public void tabsAndTheGuideMenuWorkLikeTheSatelliteGuide() {
+    public void optionsAboveTheGridAndTheGuideMenuBehindBack() {
         remote.runOnMainSync(() -> activity.liveTv.live());
         await(
             "first page",
             () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
         );
-        // Up from the top row: the tabs, on All Channels.
+        UiEvidence.capture("live-guide-classic");
+        // Up from the top row: the Options button; down again: the first row.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
-        await("on the tabs", () -> activity.liveTv.frame.tabs.get(0).hasFocus());
-        UiEvidence.capture("live-guide-tabs");
-        // Right: Favourites, shown straight away with the focus kept on the tabs.
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
-        await(
-            "favourites tab",
-            () -> activity.liveTv.filter.equals("favourites") && activity.liveTv.frame.tabs.get(1).hasFocus()
-        );
-        // Left again and down: back in All Channels on the first row.
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
-        await(
-            "all channels tab",
-            () -> activity.liveTv.filter.equals("all") && activity.liveTv.cells.size() == 10
-        );
+        await("on Options", () -> activity.liveTv.frame.optionsButton.hasFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
         await("first row", () -> focused().startsWith("101  Channel 00"));
         // BACK: the guide menu; 1 opens All Channels again.

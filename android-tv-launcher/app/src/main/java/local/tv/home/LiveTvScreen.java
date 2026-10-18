@@ -59,11 +59,9 @@ final class LiveTvScreen {
 
     /** The guide frame (header, picture, footer) stays while paging; only the grid reloads. */
     private int frameGeneration = -1;
-    /** The guide's fixed parts (header, programme preview, tabs, slots, keys) and its menu. */
+    /** The guide's fixed parts (header, picture, slots, keys) and its menu. */
     final GuideFrame frame;
     final GuideMenu menu;
-    /** The tabs have the focus (moving along them changes the list). */
-    boolean tabFocus;
     /** The guide rows: channel names and programme cells, and moving along them. */
     final GuideRows rows;
     /** A programme cell has the focus (not a channel name), at this point in time. */
@@ -105,7 +103,6 @@ final class LiveTvScreen {
         search = "";
         windowOffset = 0;
         programmeFocus = false;
-        tabFocus = false;
         guide(0, 0);
     }
 
@@ -137,7 +134,7 @@ final class LiveTvScreen {
         startPicture();
     }
 
-    /** Down from the tabs: the first row of the grid. */
+    /** Down from the Options button: the first row of the grid. */
     void focusFirstRow() {
         if (!cells.isEmpty()) {
             if (programmeFocus) rows.focusAt(0, cursorTime);
@@ -145,9 +142,9 @@ final class LiveTvScreen {
         }
     }
 
-    /** Up from the top row of the first page: the tabs. */
+    /** Up from the top row of the first page: the Options button. */
     void focusTabs() {
-        frame.focusTab();
+        frame.focusTop();
     }
 
     /** The first time slot shown: now's half hour, moved on by ◀ ▶. */
@@ -245,12 +242,11 @@ final class LiveTvScreen {
                         "Options",
                         panels::options
                     );
-                    frame.focusTab(); // nothing to focus in the grid: the tabs
+                    frame.focusTop(); // nothing to focus in the grid: the Options button
                     return;
                 }
                 int focus = focusRow < 0 ? count - 1 : Math.min(focusRow, count - 1);
-                if (tabFocus) frame.focusTab();
-                else if (programmeFocus) rows.focusAt(focus, cursorTime);
+                if (programmeFocus) rows.focusAt(focus, cursorTime);
                 else cells.get(focus).requestFocus();
             }
         );
@@ -510,7 +506,6 @@ final class LiveTvScreen {
         search = newSearch;
         windowOffset = 0;
         programmeFocus = false;
-        tabFocus = false;
         guide(0, 0);
     }
 

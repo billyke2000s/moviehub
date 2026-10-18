@@ -6,6 +6,14 @@ version below was built from the listed `main` commit. Earlier history is in the
 Note: the release shown as 0.10 below was published with version code 11 (name "0.11" in the
 update feed), so the next release after it used code 12, named 0.12.
 
+## 0.34 (18 Oct 2026)
+
+- The channel guide is back to the dark-blue look from 0.26: the time and list name at the top
+  left, Options and the live picture at the top right, the original sizes, colours and typeface,
+  and square colour keys. The light-blue redesign from 0.28 (programme preview and tabs) is gone;
+  sections are on the blue key and the guide menu. Scrolling right through the day, reminders and
+  the rest are kept.
+
 ## 0.33 (18 Oct 2026)
 
 - Live TV now opens on the TV Guide menu first, like the old satellite box's TV Guide button.

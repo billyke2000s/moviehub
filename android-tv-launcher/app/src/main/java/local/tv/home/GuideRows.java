@@ -61,7 +61,7 @@ final class GuideRows {
     ) {
         LinearLayout line = activity.row();
         line.setClipChildren(false);
-        TextView cell = text(guide.label(channel, favourites.contains(channel.key)), 17);
+        TextView cell = text(guide.label(channel, favourites.contains(channel.key)), 19);
         cell.setPadding(activity.dp(10), 0, activity.dp(8), 0);
         cell.setFocusable(true);
         cell.setFocusableInTouchMode(true);
@@ -83,21 +83,19 @@ final class GuideRows {
             boolean nameFocused = cell.hasFocus();
             boolean rowFocused = nameFocused;
             for (TextView item : cells) rowFocused |= item.hasFocus();
-            // As on the satellite guide, the row's channel name lights up with its programme.
-            cell.setBackground(box(rowFocused ? LiveTvScreen.YELLOW : GuideFrame.CELL));
-            cell.setTextColor(rowFocused ? LiveTvScreen.INK : 0xffffffff);
+            cell.setBackground(
+                box(nameFocused ? LiveTvScreen.YELLOW : rowFocused ? 0xff4d7ce0 : LiveTvScreen.BLUE)
+            );
+            cell.setTextColor(nameFocused ? LiveTvScreen.INK : 0xffffffff);
             for (TextView item : cells) {
                 boolean on = item.hasFocus();
                 item.setBackground(
-                    box(on ? LiveTvScreen.YELLOW : nameFocused ? 0xfffff1a6 : GuideFrame.CELL)
+                    box(on ? LiveTvScreen.YELLOW : nameFocused ? 0xfffff1a6 : LiveTvScreen.BLUE_DARK)
                 );
                 item.setTextColor(on || nameFocused ? LiveTvScreen.INK : 0xffdfe6ff);
             }
         };
-        cell.setOnFocusChangeListener((v, focused) -> {
-            if (focused) guide.frame.preview(channel, onNow(listing));
-            restyle.run();
-        });
+        cell.setOnFocusChangeListener((v, focused) -> restyle.run());
         restyle.run();
         cell.setOnClickListener(v -> guide.open(channel, position));
         cell.setOnLongClickListener(v -> {
@@ -145,7 +143,6 @@ final class GuideRows {
                     // when it lies outside it.
                     if (guide.cursorTime < slot.from || guide.cursorTime >= slot.to) guide.cursorTime =
                         slot.from;
-                    guide.frame.preview(channel, slot.programme);
                 }
                 restyle.run();
             });
@@ -203,13 +200,6 @@ final class GuideRows {
         LinearLayout.LayoutParams lineLayout = new LinearLayout.LayoutParams(-1, 0, 1);
         lineLayout.topMargin = activity.dp(4);
         grid.addView(line, lineLayout);
-    }
-
-    /** The programme on now (or the first one listed), for the preview at the top. */
-    private static ChannelDatabase.Programme onNow(List<ChannelDatabase.Programme> listing) {
-        long now = System.currentTimeMillis();
-        for (ChannelDatabase.Programme item : listing) if (item.start <= now && item.stop > now) return item;
-        return listing.isEmpty() ? null : listing.get(0);
     }
 
     private void focus(List<TextView> cells, int index) {
@@ -298,7 +288,7 @@ final class GuideRows {
     }
 
     private TextView cell(String title, Slot slot) {
-        TextView item = text(title, 16);
+        TextView item = text(title, 17);
         item.setPadding(activity.dp(8), 0, activity.dp(4), 0);
         item.setTag(slot);
         item.setContentDescription(
@@ -313,7 +303,7 @@ final class GuideRows {
     private TextView text(String value, int size) {
         TextView label = activity.compactText(value, size);
         label.setTextColor(0xffffffff);
-        SkyFont.apply(label, true);
+        label.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
         label.setSingleLine(true);
         label.setEllipsize(TextUtils.TruncateAt.END);
         label.setGravity(Gravity.CENTER_VERTICAL);
