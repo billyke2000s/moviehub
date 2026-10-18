@@ -111,7 +111,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     private ChannelDatabase(Context context) {
-        super(context, "channels-v2.db", null, 7);
+        super(context, "channels-v2.db", null, 8);
         secrets = new Secrets(context);
         setWriteAheadLoggingEnabled(true);
     }
@@ -158,6 +158,9 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         addColumn(db, "channels", "number", "INTEGER NOT NULL DEFAULT 0");
         addColumn(db, "channels", "section", "TEXT NOT NULL DEFAULT ''");
         db.execSQL("CREATE INDEX IF NOT EXISTS channels_number ON channels(number)");
+        // 1 on each channel's preferred copy (version 8); filled in by ChannelNumbers.renumber.
+        addColumn(db, "channels", "main", "INTEGER NOT NULL DEFAULT 0");
+        db.execSQL("CREATE INDEX IF NOT EXISTS channels_main ON channels(main,number)");
         addColumn(db, "channels", "country", "TEXT NOT NULL DEFAULT ''");
         addColumn(db, "programmes", "descr", "TEXT NOT NULL DEFAULT ''");
         addColumn(db, "programmes", "category", "TEXT NOT NULL DEFAULT ''");
@@ -202,6 +205,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             ChannelNumbers.renumber(db);
         }
         if (from < 7) addNumbers(db); // programme details (flags); filled in by the next guide download
+        if (from >= 6 && from < 8) ChannelNumbers.renumber(db); // marks the preferred copies (main)
     }
 
     // ---- URL encryption -------------------------------------------------------------------
@@ -369,7 +373,36 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     static final String RANK = "MIN((" + ORDER + ")*1000000000+position)";
 
     private List<Row> rows(String where, String[] args, int offset, int limit) {
+        return rows(where, args, offset, limit, false);
+    }
+
+    /**
+     * With {@code mainOnly}, the list is read from the preferred copies (main=1) through an index
+     * instead of grouping every copy. That gives the same rows only for lists whose condition all
+     * copies share (number, section, country); see {@link #sharedByCopies}.
+     */
+    private List<Row> rows(String where, String[] args, int offset, int limit, boolean mainOnly) {
         List<Row> out = new ArrayList<>();
+        if (mainOnly) {
+            try (
+                Cursor c = getReadableDatabase().rawQuery(
+                    "SELECT " +
+                        COLUMNS +
+                        " FROM channels WHERE main=1" +
+                        (where == null ? "" : " AND " + where) +
+                        " ORDER BY number,(" +
+                        ORDER +
+                        ")*1000000000+position LIMIT " +
+                        Math.max(1, limit) +
+                        " OFFSET " +
+                        Math.max(0, offset),
+                    args
+                )
+            ) {
+                while (c.moveToNext()) out.add(row(c));
+            }
+            return out;
+        }
         // SQLite returns the other columns from the row holding MIN(rank), so each duplicate group
         // is shown as its preferred source. Channels are in number order, as on the guide.
         try (
@@ -450,7 +483,21 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         List<String> args = new ArrayList<>();
         String where = where(filter, text, keys, args);
         if (where == null) return new ArrayList<>();
-        return rows(where, args.toArray(new String[0]), offset, limit);
+        return rows(where, args.toArray(new String[0]), offset, limit, sharedByCopies(filter, text));
+    }
+
+    /**
+     * Whether a guide list's condition holds for every copy of a channel or for none: all
+     * channels, a section (including Sports) and a country, without a search. Favourites, groups
+     * and searches can match one copy only (each copy has its own key, group and name), so they
+     * group the copies instead.
+     */
+    static boolean sharedByCopies(String filter, String text) {
+        return (
+            (text == null || text.trim().isEmpty()) &&
+            !"favourites".equals(filter) &&
+            !filter.startsWith("group:")
+        );
     }
 
     /**
@@ -462,7 +509,10 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         List<String> args = new ArrayList<>();
         String where = where(filter, text, keys, args);
         if (where == null) return -1;
-        String groups = "SELECT MIN(number) AS n FROM channels WHERE " + where + " GROUP BY " + GROUP;
+        // Copies share their number, so for most lists the preferred copies alone give the numbers.
+        String groups = sharedByCopies(filter, text)
+            ? "SELECT number AS n FROM channels WHERE main=1 AND " + where
+            : "SELECT MIN(number) AS n FROM channels WHERE " + where + " GROUP BY " + GROUP;
         // One pass over the list counts the channels before this number, at it, and in all.
         // Its three values come before the list's own in the statement, so they are bound first.
         args.add(0, String.valueOf(Integer.MAX_VALUE));
