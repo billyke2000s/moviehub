@@ -1,6 +1,5 @@
 package local.tv.home;
 
-import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -66,6 +65,7 @@ final class LiveTvScreen {
     private TextView when, listTitle, status, pictureLabel;
     private final List<TextView> slotLabels = new ArrayList<>();
     private TextView dayLabel;
+    private final List<TextView> dayTabs = new ArrayList<>();
     /** The guide rows: channel names and programme cells, and moving along them. */
     final GuideRows rows;
     /** A programme cell has the focus (not a channel name), at this point in time. */
@@ -122,6 +122,16 @@ final class LiveTvScreen {
         for (int i = 0; i < slotLabels.size(); i++) slotLabels
             .get(i)
             .setText(clockTime(new Date(first + i * 30 * 60000L)));
+        for (int i = 0; i < dayTabs.size(); i++) {
+            long day = System.currentTimeMillis() + i * MAX_OFFSET;
+            boolean shown = (i == 0) == today;
+            TextView tab = dayTabs.get(i);
+            tab.setText(
+                (i == 0 ? "Today " : "") + new SimpleDateFormat("EEE d MMM", Locale.UK).format(new Date(day))
+            );
+            tab.setBackground(box(shown ? YELLOW : BLUE_DARK));
+            tab.setTextColor(shown ? INK : 0xffdfe6ff);
+        }
         loadPage(focusRow);
     }
 
@@ -170,6 +180,21 @@ final class LiveTvScreen {
         header.addView(pictureBox, new LinearLayout.LayoutParams(activity.dp(160), activity.dp(90)));
         activity.page.addView(header);
 
+        // The day bar: today and tomorrow (as far as the programme guide reaches), the day shown
+        // in yellow. The yellow key moves between them.
+        LinearLayout days = activity.row();
+        days.setPadding(0, activity.dp(4), 0, activity.dp(2));
+        dayTabs.clear();
+        for (int i = 0; i < 2; i++) {
+            TextView tab = text("", 15, true);
+            tab.setPadding(activity.dp(12), activity.dp(2), activity.dp(12), activity.dp(2));
+            LinearLayout.LayoutParams tabLayout = new LinearLayout.LayoutParams(-2, -2);
+            tabLayout.rightMargin = activity.dp(8);
+            days.addView(tab, tabLayout);
+            dayTabs.add(tab);
+        }
+        page.addView(days);
+
         // Time slots, like "Today 8.00pm 8.30pm 9.00pm".
         LinearLayout slots = activity.row();
         dayLabel = text("Today", 17, true);
@@ -194,7 +219,7 @@ final class LiveTvScreen {
         keys.setPadding(0, activity.dp(6), 0, 0);
         colourKey(keys, 0xffe53935, "Page up");
         colourKey(keys, 0xff43a047, "Page down");
-        colourKey(keys, YELLOW, "Search");
+        colourKey(keys, YELLOW, "+24 hours");
         colourKey(keys, 0xff1e63d6, "Sections");
         page.addView(keys);
         // "Press SELECT to view", with SELECT on a yellow key as the old guide printed it.
@@ -438,6 +463,21 @@ final class LiveTvScreen {
         return true;
     }
 
+    /**
+     * The yellow key: the same time tomorrow, then back to now, as far as the programme guide
+     * reaches.
+     */
+    void nextDay(int row) {
+        if (windowOffset == 0) {
+            windowOffset += MAX_OFFSET;
+            cursorTime += MAX_OFFSET;
+        } else {
+            cursorTime = Math.max(nowSlot(), cursorTime - windowOffset);
+            windowOffset = 0;
+        }
+        guide(pageStart, row);
+    }
+
     /** Keys that work the same on a channel name and a programme: numbers, paging, colour keys. */
     boolean sharedKey(int key, int row, boolean more) {
         if (key >= KeyEvent.KEYCODE_0 && key <= KeyEvent.KEYCODE_9) {
@@ -453,7 +493,7 @@ final class LiveTvScreen {
             return true;
         }
         if (colour(key) == 'y') {
-            panels.searchPanel();
+            nextDay(row);
             return true;
         }
         if (colour(key) == 'b') {
@@ -587,7 +627,7 @@ final class LiveTvScreen {
     private TextView text(String value, int size, boolean bold) {
         TextView label = activity.compactText(value, size);
         label.setTextColor(0xffffffff);
-        if (bold) label.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        SkyFont.apply(label, bold);
         return label;
     }
 

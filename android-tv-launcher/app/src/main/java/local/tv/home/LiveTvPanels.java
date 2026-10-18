@@ -179,6 +179,7 @@ final class LiveTvPanels {
             " " +
             channel.name +
             (item.category.isEmpty() ? "" : "  ·  " + item.category) +
+            (item.tags().isEmpty() ? "" : "  ·  " + item.tags()) +
             (item.description.isEmpty() ? "" : "\n\n" + item.description);
         SidePanel.of(activity, item.title)
             .message(about)

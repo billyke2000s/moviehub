@@ -63,4 +63,5 @@ the device before a release.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). The Live TV screens use the Hind typeface (Indian Type Foundry), bundled under
+the SIL Open Font License 1.1: see `android-tv-launcher/app/src/main/assets/fonts/Hind-OFL.txt`.

@@ -147,6 +147,15 @@ public class LiveGuideTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_INFO);
         await("programme information", () -> SidePanel.current != null && SidePanel.current.isShowing());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
+        // Yellow: the same time tomorrow, then back to now.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_YELLOW);
+        await(
+            "tomorrow",
+            () -> activity.liveTv.windowOffset == LiveTvScreen.MAX_OFFSET && activity.liveTv.cells.size() == 5
+        );
+        UiEvidence.capture("live-guide-tomorrow");
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_YELLOW);
+        await("today", () -> activity.liveTv.windowOffset == 0 && activity.liveTv.cells.size() == 5);
         // A locked channel asks for the PIN instead of playing.
         ChannelDatabase.Row row = ChannelDatabase.get(activity)
             .browse("all", "", java.util.Collections.emptySet(), 22)

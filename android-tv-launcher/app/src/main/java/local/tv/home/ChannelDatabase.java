@@ -58,13 +58,34 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
         final long start, stop;
         final String title, description, category;
+        /** Details for the guide's tags; see {@link EpgImporter#flags}. */
+        final String flags;
 
         Programme(long start, long stop, String title, String description, String category) {
+            this(start, stop, title, description, category, "");
+        }
+
+        Programme(long start, long stop, String title, String description, String category, String flags) {
             this.start = start;
             this.stop = stop;
             this.title = title;
             this.description = description == null ? "" : description;
             this.category = category == null ? "" : category;
+            this.flags = flags == null ? "" : flags;
+        }
+
+        /** The details as the satellite guide's tags: "S1 Ep3  [15] [S] [HD] [New]", or "". */
+        String tags() {
+            if (flags.isEmpty()) return "";
+            StringBuilder out = new StringBuilder();
+            for (String item : flags.split("\\|")) {
+                if (out.length() > 0) out.append("  ");
+                boolean episode =
+                    item.contains(" ") ||
+                    (item.startsWith("S") && item.length() > 2 && Character.isDigit(item.charAt(1)));
+                out.append(episode ? item : "[" + item + "]");
+            }
+            return out.toString();
         }
     }
 
@@ -88,7 +109,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     private ChannelDatabase(Context context) {
-        super(context, "channels-v2.db", null, 6);
+        super(context, "channels-v2.db", null, 7);
         secrets = new Secrets(context);
         setWriteAheadLoggingEnabled(true);
     }
@@ -138,6 +159,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         addColumn(db, "channels", "country", "TEXT NOT NULL DEFAULT ''");
         addColumn(db, "programmes", "descr", "TEXT NOT NULL DEFAULT ''");
         addColumn(db, "programmes", "category", "TEXT NOT NULL DEFAULT ''");
+        addColumn(db, "programmes", "flags", "TEXT NOT NULL DEFAULT ''");
     }
 
     /** The duplicate key for a channel; "" when its name has nothing usable (never merged). */
@@ -168,6 +190,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             addNumbers(db);
             ChannelNumbers.renumber(db);
         }
+        if (from < 7) addNumbers(db); // programme details (flags); filled in by the next guide download
     }
 
     // ---- URL encryption -------------------------------------------------------------------
@@ -599,7 +622,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             db.delete("epg_map", null, null);
             map = db.compileStatement("INSERT INTO epg_map(chkey,channel) VALUES(?,?)");
             programme = db.compileStatement(
-                "INSERT INTO programmes(channel,start,stop,title,descr,category) VALUES(?,?,?,?,?,?)"
+                "INSERT INTO programmes(channel,start,stop,title,descr,category,flags) VALUES(?,?,?,?,?,?,?)"
             );
         }
 
@@ -615,7 +638,8 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             long stop,
             String title,
             String description,
-            String category
+            String category,
+            String flags
         ) {
             programme.bindString(1, channel);
             programme.bindLong(2, start);
@@ -623,6 +647,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             programme.bindString(4, title);
             programme.bindString(5, description == null ? "" : description);
             programme.bindString(6, category == null ? "" : category);
+            programme.bindString(7, flags == null ? "" : flags);
             programme.executeInsert();
             programmes++;
         }
@@ -655,7 +680,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         args.add(String.valueOf(from));
         try (
             Cursor c = getReadableDatabase().rawQuery(
-                "SELECT start,stop,title,descr,category FROM programmes WHERE channel=(SELECT channel FROM epg_map WHERE chkey IN (" +
+                "SELECT start,stop,title,descr,category,flags FROM programmes WHERE channel=(SELECT channel FROM epg_map WHERE chkey IN (" +
                     in +
                     ") LIMIT 1) AND start<? AND stop>? ORDER BY start LIMIT " +
                     limit,
@@ -664,7 +689,14 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         ) {
             while (c.moveToNext())
                 out.add(
-                    new Programme(c.getLong(0), c.getLong(1), c.getString(2), c.getString(3), c.getString(4))
+                    new Programme(
+                        c.getLong(0),
+                        c.getLong(1),
+                        c.getString(2),
+                        c.getString(3),
+                        c.getString(4),
+                        c.getString(5)
+                    )
                 );
         }
         return out;

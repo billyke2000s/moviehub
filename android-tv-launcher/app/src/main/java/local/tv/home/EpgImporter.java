@@ -41,7 +41,8 @@ final class EpgImporter {
             long stop,
             String title,
             String description,
-            String category
+            String category,
+            String flags
         ) throws Exception;
     }
 
@@ -85,10 +86,19 @@ final class EpgImporter {
                         long stop,
                         String title,
                         String description,
-                        String category
+                        String category,
+                        String flags
                     ) throws Exception {
                         cancel.check();
-                        programmes.add(new Object[] { channel, start, stop, title, description, category });
+                        programmes.add(new Object[] {
+                            channel,
+                            start,
+                            stop,
+                            title,
+                            description,
+                            category,
+                            flags,
+                        });
                     }
                 }
             );
@@ -105,7 +115,8 @@ final class EpgImporter {
                         (Long) item[2],
                         (String) item[3],
                         (String) item[4],
-                        (String) item[5]
+                        (String) item[5],
+                        (String) item[6]
                     );
                 writer.commit();
             } finally {
@@ -139,6 +150,14 @@ final class EpgImporter {
         String title = null,
             description = null,
             category = null;
+        // Details the satellite guide showed as icons: subtitles, HD, age rating, new, episode.
+        boolean subtitles = false,
+            hd = false,
+            fresh = false,
+            inRating = false,
+            onscreenEpisode = false;
+        String rating = null,
+            episode = null;
         for (int event = parser.getEventType(); event != XmlPullParser.END_DOCUMENT; event = parser.next()) {
             if (event == XmlPullParser.START_TAG) {
                 element = parser.getName();
@@ -152,6 +171,15 @@ final class EpgImporter {
                     title = null;
                     description = null;
                     category = null;
+                    subtitles = hd = fresh = false;
+                    rating = episode = null;
+                } else if (programmeChannel != null) {
+                    if ("subtitles".equals(element)) subtitles = true;
+                    else if ("new".equals(element) || "premiere".equals(element)) fresh = true;
+                    else if ("rating".equals(element)) inRating = true;
+                    else if ("episode-num".equals(element)) onscreenEpisode = "onscreen".equals(
+                        parser.getAttributeValue(null, "system")
+                    );
                 }
             } else if (event == XmlPullParser.TEXT && element != null) {
                 if (channelId != null && "display-name".equals(element)) names.add(parser.getText());
@@ -163,6 +191,19 @@ final class EpgImporter {
                 else if (
                     programmeChannel != null && "category".equals(element) && category == null
                 ) category = parser.getText();
+                else if (programmeChannel != null && "quality".equals(element)) hd |= parser
+                    .getText()
+                    .toUpperCase(java.util.Locale.ROOT)
+                    .contains("HD");
+                else if (
+                    programmeChannel != null && inRating && "value".equals(element) && rating == null
+                ) rating = parser.getText().trim();
+                else if (
+                    programmeChannel != null &&
+                    "episode-num".equals(element) &&
+                    onscreenEpisode &&
+                    episode == null
+                ) episode = parser.getText().trim();
             } else if (event == XmlPullParser.END_TAG) {
                 String name = parser.getName();
                 if ("channel".equals(name) && channelId != null) {
@@ -189,16 +230,32 @@ final class EpgImporter {
                             stop,
                             title.trim(),
                             shorten(description),
-                            category == null ? "" : category.trim()
+                            category == null ? "" : category.trim(),
+                            flags(episode, rating, subtitles, hd, fresh)
                         );
                         result.programmes++;
                     }
                     programmeChannel = null;
                 }
+                if ("rating".equals(name)) inRating = false;
                 element = null;
             }
         }
         return result;
+    }
+
+    /**
+     * A programme's details for the guide's tags, separated by "|": the on-screen episode
+     * ("S1 Ep3"), the age rating, "S" (subtitles), "HD" and "New", in that order when present.
+     */
+    static String flags(String episode, String rating, boolean subtitles, boolean hd, boolean fresh) {
+        List<String> out = new ArrayList<>();
+        if (episode != null && !episode.isEmpty() && episode.length() <= 20) out.add(episode);
+        if (rating != null && !rating.isEmpty() && rating.length() <= 6) out.add(rating);
+        if (subtitles) out.add("S");
+        if (hd) out.add("HD");
+        if (fresh) out.add("New");
+        return String.join("|", out);
     }
 
     private static String shorten(String text) {

@@ -10,6 +10,18 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.27 (18 Oct 2026)
+
+- Staying safe: when MovieHub first opens it explains that it will never ask you, during or about
+  a stream, to go to a website, ring a number, install anything, let anyone control your devices
+  or pay, and that any channel saying so is a scam. It stays in Settings → System.
+- Live TV uses a cleaner TV typeface (Hind, free to use) in the guide, banner and panels.
+- The guide has a day bar (today and tomorrow), and the yellow key jumps to the same time
+  tomorrow and back. Search is still in Options.
+- Programme details where the free guide has them: episode ("S1 Ep3"), age rating, subtitles,
+  HD and New, shown in the banner and the programme information.
+- The banner slides up when it appears.
+
 ## 0.26 (18 Oct 2026)
 
 - Live TV keeps one player running: going from the guide's corner picture to the full screen and
