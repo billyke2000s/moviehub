@@ -65,6 +65,17 @@ final class LiveTvScreen {
     private int frameGeneration = -1;
     private TextView when, listTitle, status, pictureLabel;
     private final List<TextView> slotLabels = new ArrayList<>();
+    private TextView dayLabel;
+    /** The guide rows: channel names and programme cells, and moving along them. */
+    final GuideRows rows;
+    /** A programme cell has the focus (not a channel name), at this point in time. */
+    boolean programmeFocus;
+    long cursorTime;
+    /** How far the time slots have moved on from now (multiples of half an hour). */
+    long windowOffset;
+    /** The slots go up to a day ahead, as far as the programme guide reaches. */
+    static final long MAX_OFFSET = 24L * 60 * 60 * 1000,
+        HALF_HOUR = 30L * 60 * 1000;
     private LinearLayout grid;
     private Button optionsButton;
     private android.widget.FrameLayout pictureBox;
@@ -73,6 +84,7 @@ final class LiveTvScreen {
     LiveTvScreen(MainActivity activity) {
         this.activity = activity;
         panels = new LiveTvPanels(activity, this);
+        rows = new GuideRows(activity, this);
     }
 
     ChannelDatabase channelsDb() {
@@ -91,6 +103,8 @@ final class LiveTvScreen {
         }
         filter = "all";
         search = "";
+        windowOffset = 0;
+        programmeFocus = false;
         guide(0, 0);
     }
 
@@ -100,9 +114,14 @@ final class LiveTvScreen {
         if (frameGeneration != activity.generation || grid == null) buildFrame();
         when.setText(clock(new Date()));
         listTitle.setText(listName().toUpperCase(Locale.ROOT));
+        long first = windowStart();
+        boolean today = new SimpleDateFormat("yyyyMMdd", Locale.UK)
+            .format(new Date(first))
+            .equals(new SimpleDateFormat("yyyyMMdd", Locale.UK).format(new Date()));
+        dayLabel.setText(today ? "Today" : new SimpleDateFormat("EEE", Locale.UK).format(new Date(first)));
         for (int i = 0; i < slotLabels.size(); i++) slotLabels
             .get(i)
-            .setText(clockTime(new Date(windowStart() + i * 30 * 60000L)));
+            .setText(clockTime(new Date(first + i * 30 * 60000L)));
         loadPage(focusRow);
     }
 
@@ -153,10 +172,10 @@ final class LiveTvScreen {
 
         // Time slots, like "Today 8.00pm 8.30pm 9.00pm".
         LinearLayout slots = activity.row();
-        TextView today = text("Today", 17, true);
-        today.setGravity(Gravity.END);
-        today.setPadding(0, 0, activity.dp(10), 0);
-        slots.addView(today, new LinearLayout.LayoutParams(0, -2, 34));
+        dayLabel = text("Today", 17, true);
+        dayLabel.setGravity(Gravity.END);
+        dayLabel.setPadding(0, 0, activity.dp(10), 0);
+        slots.addView(dayLabel, new LinearLayout.LayoutParams(0, -2, 34));
         LinearLayout times = activity.row();
         slotLabels.clear();
         for (int i = 0; i < 3; i++) {
@@ -180,7 +199,7 @@ final class LiveTvScreen {
         page.addView(keys);
         // "Press SELECT to view", with SELECT on a yellow key as the old guide printed it.
         android.text.SpannableString select = new android.text.SpannableString(
-            "Press  SELECT  to view  ·  ▶ for programme info  ·  Hold  SELECT  for favourites"
+            "Press  SELECT  to view  ·  ◀ ▶ through the day  ·  i for information  ·  Hold  SELECT  on a name for favourites"
         );
         for (
             int at = select.toString().indexOf(" SELECT ");
@@ -202,8 +221,13 @@ final class LiveTvScreen {
         startPicture();
     }
 
-    /** The start of the half hour now: the guide's first time slot. */
-    private static long windowStart() {
+    /** The first time slot shown: now's half hour, moved on by ◀ ▶. */
+    long windowStart() {
+        return nowSlot() + windowOffset;
+    }
+
+    /** The start of the half hour now. */
+    private static long nowSlot() {
         Calendar slot = Calendar.getInstance();
         slot.set(Calendar.MINUTE, slot.get(Calendar.MINUTE) < 30 ? 0 : 30);
         slot.set(Calendar.SECOND, 0);
@@ -221,6 +245,7 @@ final class LiveTvScreen {
         int ticket = ++loadTicket;
         grid.removeAllViews();
         cells.clear();
+        rows.clear();
         grid.addView(text("Loading channels…", 18, false));
         String listFilter = filter,
             listSearch = search;
@@ -257,12 +282,14 @@ final class LiveTvScreen {
                 grid.removeAllViews();
                 showStatus(status);
                 cells.clear();
+                rows.clear();
                 int count = Math.min(items.size(), ROWS);
                 boolean more = items.size() > ROWS;
                 Set<String> favourites = favouriteKeys(),
                     reminders = new HashSet<>();
                 for (Reminders.Reminder item : Reminders.all(activity)) reminders.add(item.id());
-                for (int i = 0; i < count; i++) addRow(
+                for (int i = 0; i < count; i++) rows.add(
+                    grid,
                     items.get(i),
                     listings.get(i),
                     windowStart,
@@ -292,7 +319,8 @@ final class LiveTvScreen {
                     return;
                 }
                 int focus = focusRow < 0 ? count - 1 : Math.min(focusRow, count - 1);
-                cells.get(focus).requestFocus();
+                if (programmeFocus) rows.focusAt(focus, cursorTime);
+                else cells.get(focus).requestFocus();
             }
         );
     }
@@ -318,108 +346,6 @@ final class LiveTvScreen {
             (favourite ? "★ " : "") +
             channel.name
         );
-    }
-
-    private void addRow(
-        ChannelDatabase.Row channel,
-        List<ChannelDatabase.Programme> listing,
-        long windowStart,
-        int position,
-        int row,
-        int count,
-        boolean more,
-        Set<String> favourites,
-        Set<String> reminders
-    ) {
-        LinearLayout line = activity.row();
-        line.setClipChildren(false);
-        TextView cell = text(label(channel, favourites.contains(channel.key)), 19, true);
-        cell.setSingleLine(true);
-        cell.setEllipsize(TextUtils.TruncateAt.END);
-        cell.setGravity(Gravity.CENTER_VERTICAL);
-        cell.setPadding(activity.dp(10), 0, activity.dp(8), 0);
-        cell.setFocusable(true);
-        cell.setFocusableInTouchMode(true);
-        cell.setContentDescription(channel.name);
-        List<TextView> programmes = programmeCells(channel, listing, windowStart, reminders);
-        LinearLayout programme = activity.row();
-        for (TextView item : programmes) {
-            LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(
-                0,
-                -1,
-                ((LinearLayout.LayoutParams) item.getLayoutParams()).weight
-            );
-            layout.rightMargin = activity.dp(3);
-            programme.addView(item, layout);
-        }
-        View.OnFocusChangeListener style = (v, focused) -> {
-            cell.setBackground(box(focused ? YELLOW : BLUE));
-            cell.setTextColor(focused ? INK : 0xffffffff);
-            for (TextView item : programmes) {
-                item.setBackground(box(focused ? 0xfffff1a6 : BLUE_DARK));
-                item.setTextColor(focused ? INK : 0xffdfe6ff);
-            }
-        };
-        cell.setOnFocusChangeListener(style);
-        style.onFocusChange(cell, false);
-        cell.setOnClickListener(v -> open(channel, position));
-        cell.setOnLongClickListener(v -> {
-            Set<String> keys = favouriteKeys();
-            boolean added = keys.add(channel.key);
-            if (!added) keys.remove(channel.key);
-            activity.prefs.edit().putStringSet("favourites", keys).apply();
-            cell.setText(label(channel, added));
-            activity.toast(added ? "Added to favourites" : "Removed from favourites");
-            return true;
-        });
-        cell.setOnKeyListener((v, key, event) -> {
-            if (event.getAction() != KeyEvent.ACTION_DOWN) return isGuideKey(key);
-            if (key >= KeyEvent.KEYCODE_0 && key <= KeyEvent.KEYCODE_9) {
-                typeDigit(key - KeyEvent.KEYCODE_0);
-                return true;
-            }
-            if (key == KeyEvent.KEYCODE_DPAD_RIGHT || key == KeyEvent.KEYCODE_INFO) {
-                panels.programmeInfo(channel, position);
-                return true;
-            }
-            if (key == KeyEvent.KEYCODE_DPAD_DOWN && row == count - 1 && more) {
-                guide(pageStart + ROWS, 0);
-                return true;
-            }
-            if (key == KeyEvent.KEYCODE_DPAD_UP && row == 0 && pageStart > 0) {
-                guide(pageStart - ROWS, -1);
-                return true;
-            }
-            if (isPageUp(key)) {
-                if (pageStart > 0) guide(pageStart - ROWS, row);
-                return true;
-            }
-            if (isPageDown(key)) {
-                if (more) guide(pageStart + ROWS, row);
-                return true;
-            }
-            if (colour(key) == 'y') {
-                panels.searchPanel();
-                return true;
-            }
-            if (colour(key) == 'b') {
-                panels.sections();
-                return true;
-            }
-            if (key == KeyEvent.KEYCODE_MENU) {
-                panels.options();
-                return true;
-            }
-            return false;
-        });
-        cells.add(cell);
-        LinearLayout.LayoutParams cellLayout = new LinearLayout.LayoutParams(0, -1, 34);
-        cellLayout.rightMargin = activity.dp(8);
-        line.addView(cell, cellLayout);
-        line.addView(programme, new LinearLayout.LayoutParams(0, -1, 66));
-        LinearLayout.LayoutParams lineLayout = new LinearLayout.LayoutParams(-1, 0, 1);
-        lineLayout.topMargin = activity.dp(4);
-        grid.addView(line, lineLayout);
     }
 
     /**
@@ -490,7 +416,58 @@ final class LiveTvScreen {
         );
     }
 
-    private boolean isGuideKey(int key) {
+    /**
+     * ▶ past the last slot: moves the times on until {@code target} is shown, keeping to
+     * {@code row}.
+     */
+    void later(long target, int row) {
+        if (windowOffset >= MAX_OFFSET) return;
+        while (windowStart() + WINDOW_MS <= target && windowOffset < MAX_OFFSET) windowOffset += HALF_HOUR;
+        cursorTime = target;
+        programmeFocus = true;
+        guide(pageStart, row);
+    }
+
+    /** ◀ before the first slot: moves the times back towards now. False when already at now. */
+    boolean earlier(long target, int row) {
+        if (windowOffset <= 0) return false;
+        while (windowStart() > target && windowOffset > 0) windowOffset -= HALF_HOUR;
+        cursorTime = Math.max(target, windowStart());
+        programmeFocus = true;
+        guide(pageStart, row);
+        return true;
+    }
+
+    /** Keys that work the same on a channel name and a programme: numbers, paging, colour keys. */
+    boolean sharedKey(int key, int row, boolean more) {
+        if (key >= KeyEvent.KEYCODE_0 && key <= KeyEvent.KEYCODE_9) {
+            typeDigit(key - KeyEvent.KEYCODE_0);
+            return true;
+        }
+        if (isPageUp(key)) {
+            if (pageStart > 0) guide(pageStart - ROWS, row);
+            return true;
+        }
+        if (isPageDown(key)) {
+            if (more) guide(pageStart + ROWS, row);
+            return true;
+        }
+        if (colour(key) == 'y') {
+            panels.searchPanel();
+            return true;
+        }
+        if (colour(key) == 'b') {
+            panels.sections();
+            return true;
+        }
+        if (key == KeyEvent.KEYCODE_MENU) {
+            panels.options();
+            return true;
+        }
+        return false;
+    }
+
+    boolean isGuideKey(int key) {
         return (
             isPageUp(key) ||
             isPageDown(key) ||
@@ -557,67 +534,17 @@ final class LiveTvScreen {
                     filter = "all";
                     search = "";
                 }
+                programmeFocus = false;
                 guide(found[0] - (found[0] % ROWS), found[0] % ROWS);
             }
         );
     }
 
-    /**
-     * The programme cells across the 90-minute window, sized by how much of it each programme
-     * fills, with "No information" in any gap; one cell when there is no guide for the channel.
-     * A programme with a reminder set is marked with a clock.
-     */
-    private List<TextView> programmeCells(
-        ChannelDatabase.Row channel,
-        List<ChannelDatabase.Programme> listing,
-        long windowStart,
-        Set<String> reminders
-    ) {
-        List<TextView> out = new ArrayList<>();
-        long windowEnd = windowStart + WINDOW_MS;
-        if (listing.isEmpty()) {
-            out.add(
-                programmeCell(
-                    (channel.group.isEmpty() ? "" : channel.group + "  ·  ") + "No programme information",
-                    1
-                )
-            );
-            return out;
-        }
-        long at = windowStart;
-        for (ChannelDatabase.Programme item : listing) {
-            long from = Math.max(item.start, windowStart),
-                to = Math.min(item.stop, windowEnd);
-            if (to <= at) continue;
-            if (from > at + 60000) out.add(programmeCell("", (from - at) / 60000f));
-            from = Math.max(from, at);
-            // Arrows show a programme starting before or running past the slots shown.
-            String title =
-                (reminders.contains(channel.key + "@" + item.start) ? "⏰ " : "") +
-                (item.start < windowStart ? "‹ " : "") +
-                item.title +
-                (item.stop > windowEnd ? "  ›" : "");
-            out.add(programmeCell(title, (to - from) / 60000f));
-            at = to;
-            if (at >= windowEnd) break;
-        }
-        if (windowEnd - at > 60000) out.add(programmeCell("", (windowEnd - at) / 60000f));
-        return out;
-    }
-
-    private TextView programmeCell(String title, float minutes) {
-        TextView item = text(title, 17, true);
-        item.setSingleLine(true);
-        item.setEllipsize(TextUtils.TruncateAt.END);
-        item.setGravity(Gravity.CENTER_VERTICAL);
-        item.setPadding(activity.dp(8), 0, activity.dp(4), 0);
-        item.setLayoutParams(new LinearLayout.LayoutParams(0, -1, Math.max(1f, minutes)));
-        return item;
-    }
-
     void show(String newFilter, String newSearch) {
         filter = newFilter;
         search = newSearch;
+        windowOffset = 0;
+        programmeFocus = false;
         guide(0, 0);
     }
 

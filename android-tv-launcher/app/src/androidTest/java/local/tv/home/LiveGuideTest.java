@@ -119,8 +119,32 @@ public class LiveGuideTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_2);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_3);
         await("typed 123", () -> activity.liveTv.pageStart == 20 && focused().startsWith("123  Channel 22"));
-        // Right shows what is on (the programme information panel).
+        // Right moves onto the programmes, keeping the channel names on the left.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        await("on the programme", () -> activity.liveTv.rows.programmes.get(2).get(0).hasFocus());
+        // Right again, past the last slot, moves the times on half an hour (same row).
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        await(
+            "times moved on",
+            () ->
+                activity.liveTv.windowOffset == LiveTvScreen.HALF_HOUR &&
+                activity.liveTv.rows.programmes.size() == 5 &&
+                activity.liveTv.rows.programmes.get(2).get(0).hasFocus()
+        );
+        UiEvidence.capture("live-guide-later");
+        // Left goes back to now, then onto the channel name.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
+        await(
+            "back to now",
+            () ->
+                activity.liveTv.windowOffset == 0 &&
+                activity.liveTv.rows.programmes.size() == 5 &&
+                activity.liveTv.rows.programmes.get(2).get(0).hasFocus()
+        );
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
+        await("on the channel name", () -> focused().startsWith("123  Channel 22"));
+        // i shows the programme information.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_INFO);
         await("programme information", () -> SidePanel.current != null && SidePanel.current.isShowing());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
         // A locked channel asks for the PIN instead of playing.

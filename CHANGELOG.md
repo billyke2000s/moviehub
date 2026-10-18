@@ -24,6 +24,11 @@ Nothing yet.
 - Pausing live TV shows a pause bar; playing on behind live says how to catch up.
 - BACK in Live TV closes whatever is open, then goes straight back to the guide (one press: the
   picture carries on in the corner). Films still need BACK twice.
+- The guide moves like the satellite guide: ▶ goes along a channel's programmes and, past the
+  last slot, moves the times on (the channel names stay on the left); ◀ comes back towards now
+  and then to the channel name; ▲ ▼ keep to the same time on the next channel. SELECT on what is
+  on now watches it, and on a later programme sets (or cancels) a reminder. i (or holding SELECT)
+  shows the programme's details.
 
 ## 0.25 (18 Oct 2026)
 
