@@ -88,7 +88,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     private ChannelDatabase(Context context) {
-        super(context, "channels-v2.db", null, 5);
+        super(context, "channels-v2.db", null, 6);
         secrets = new Secrets(context);
         setWriteAheadLoggingEnabled(true);
     }
@@ -130,11 +130,12 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         db.execSQL("ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
     }
 
-    /** Channel numbers and guide sections (version 5); filled in by {@link ChannelNumbers#renumber}. */
+    /** Channel numbers, guide sections (version 5) and countries (version 6); filled in by {@link ChannelNumbers#renumber}. */
     private static void addNumbers(SQLiteDatabase db) {
         addColumn(db, "channels", "number", "INTEGER NOT NULL DEFAULT 0");
         addColumn(db, "channels", "section", "TEXT NOT NULL DEFAULT ''");
         db.execSQL("CREATE INDEX IF NOT EXISTS channels_number ON channels(number)");
+        addColumn(db, "channels", "country", "TEXT NOT NULL DEFAULT ''");
         addColumn(db, "programmes", "descr", "TEXT NOT NULL DEFAULT ''");
         addColumn(db, "programmes", "category", "TEXT NOT NULL DEFAULT ''");
     }
@@ -163,7 +164,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         if (from < 2) db.execSQL("CREATE TABLE IF NOT EXISTS favourite_keys(key TEXT PRIMARY KEY)");
         if (from < 3) createGuideTables(db);
         if (from < 4) addDuplicateKey(db); // filled in by the next import
-        if (from < 5) {
+        if (from < 6) {
             addNumbers(db);
             ChannelNumbers.renumber(db);
         }
@@ -467,6 +468,22 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         }
     }
 
+    /** International channels' countries in guide order, with how many channels each has. */
+    List<Group> countries() {
+        List<Group> out = new ArrayList<>();
+        try (
+            Cursor c = getReadableDatabase().rawQuery(
+                "SELECT country,COUNT(DISTINCT " +
+                    GROUP +
+                    ") FROM channels WHERE section='International' GROUP BY country ORDER BY MIN(number)",
+                null
+            )
+        ) {
+            while (c.moveToNext()) out.add(new Group(c.getString(0), c.getInt(1)));
+        }
+        return out;
+    }
+
     /** Sections that have channels, in the guide's order. */
     List<String> sections() {
         Set<String> present = new HashSet<>();
@@ -506,6 +523,10 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         }
         if (filter.startsWith("section:")) {
             where += " AND section=?";
+            args.add(filter.substring(8));
+        }
+        if (filter.startsWith("country:")) {
+            where += " AND section='International' AND country=?";
             args.add(filter.substring(8));
         }
         if ("sports".equals(filter)) where += " AND section='Sports'";
