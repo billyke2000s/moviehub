@@ -102,6 +102,8 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
     private static ChannelDatabase instance;
     private final Secrets secrets;
+    /** The favourites last written to favourite_keys; null until written since the database opened. */
+    private Set<String> writtenFavourites;
 
     static synchronized ChannelDatabase get(Context context) {
         if (instance == null) instance = new ChannelDatabase(context.getApplicationContext());
@@ -179,6 +181,15 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         db.execSQL("CREATE INDEX IF NOT EXISTS programmes_time ON programmes(channel,start)");
         db.execSQL("CREATE TABLE IF NOT EXISTS epg_map(chkey TEXT NOT NULL,channel TEXT NOT NULL)");
         db.execSQL("CREATE INDEX IF NOT EXISTS epg_map_match ON epg_map(chkey)");
+    }
+
+    @Override
+    public void onOpen(SQLiteDatabase db) {
+        super.onOpen(db);
+        // A reopened or upgraded database may hold other favourites (or none): write them again.
+        synchronized (this) {
+            writtenFavourites = null;
+        }
     }
 
     @Override
@@ -357,7 +368,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     /** The preferred copy of a channel: SQLite takes the other columns from the MIN row. */
     static final String RANK = "MIN((" + ORDER + ")*1000000000+position)";
 
-    private List<Row> rows(String where, String[] args, int offset) {
+    private List<Row> rows(String where, String[] args, int offset, int limit) {
         List<Row> out = new ArrayList<>();
         // SQLite returns the other columns from the row holding MIN(rank), so each duplicate group
         // is shown as its preferred source. Channels are in number order, as on the guide.
@@ -372,7 +383,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
                     " GROUP BY " +
                     GROUP +
                     " ORDER BY number,rank LIMIT " +
-                    (PAGE + 1) +
+                    Math.max(1, limit) +
                     " OFFSET " +
                     Math.max(0, offset),
                 args
@@ -424,14 +435,22 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
     /** Each query returns up to PAGE+1 rows; an extra row means another page exists. */
     List<Row> all(int offset) {
-        return rows(null, null, offset);
+        return rows(null, null, offset, PAGE + 1);
     }
 
     synchronized List<Row> browse(String filter, String text, Set<String> keys, int offset) {
+        return browse(filter, text, keys, offset, PAGE + 1);
+    }
+
+    /**
+     * Up to {@code limit} rows of a guide list from {@code offset}. Changing channel needs one row
+     * and a guide page eleven, so they ask for those instead of a whole page.
+     */
+    synchronized List<Row> browse(String filter, String text, Set<String> keys, int offset, int limit) {
         List<String> args = new ArrayList<>();
         String where = where(filter, text, keys, args);
         if (where == null) return new ArrayList<>();
-        return rows(where, args.toArray(new String[0]), offset);
+        return rows(where, args.toArray(new String[0]), offset, limit);
     }
 
     /**
@@ -444,21 +463,31 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         String where = where(filter, text, keys, args);
         if (where == null) return -1;
         String groups = "SELECT MIN(number) AS n FROM channels WHERE " + where + " GROUP BY " + GROUP;
-        args.add(String.valueOf(number));
-        String[] values = args.toArray(new String[0]);
-        int before = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n<CAST(? AS INTEGER)", values),
-            exact = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n=CAST(? AS INTEGER)", values);
+        // One pass over the list counts the channels before this number, at it, and in all.
+        // Its three values come before the list's own in the statement, so they are bound first.
+        args.add(0, String.valueOf(Integer.MAX_VALUE));
+        args.add(0, String.valueOf(number));
+        args.add(0, String.valueOf(number));
+        int before = 0,
+            exact = 0,
+            total = 0;
+        try (
+            Cursor c = getReadableDatabase().rawQuery(
+                "SELECT TOTAL(n<CAST(? AS INTEGER)),TOTAL(n=CAST(? AS INTEGER)),TOTAL(n<CAST(? AS INTEGER)) FROM (" +
+                    groups +
+                    ")",
+                args.toArray(new String[0])
+            )
+        ) {
+            if (c.moveToFirst()) {
+                before = c.getInt(0);
+                exact = c.getInt(1);
+                total = c.getInt(2);
+            }
+        }
         if (exact > 0) return before;
         if (!nearest) return -1;
-        values[values.length - 1] = String.valueOf(Integer.MAX_VALUE);
-        int total = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n<CAST(? AS INTEGER)", values);
         return total == 0 ? -1 : Math.min(before, total - 1);
-    }
-
-    private int count(String sql, String[] args) {
-        try (Cursor c = getReadableDatabase().rawQuery(sql, args)) {
-            return c.moveToFirst() ? c.getInt(0) : 0;
-        }
     }
 
     /** The channel with this stream key (its preferred copy's number and section), or null. */
@@ -502,8 +531,10 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
     /** The SQL condition for a guide list, adding its arguments; null when nothing can match. */
     private String where(String filter, String text, Set<String> keys, List<String> args) {
-        SQLiteDatabase db = getWritableDatabase();
-        if ("favourites".equals(filter)) {
+        // The favourites table is rewritten only when the favourites changed, not on every page
+        // and channel change.
+        if ("favourites".equals(filter) && !keys.equals(writtenFavourites)) {
+            SQLiteDatabase db = getWritableDatabase();
             db.beginTransactionNonExclusive();
             try (
                 SQLiteStatement insert = db.compileStatement(
@@ -516,6 +547,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
                     insert.executeInsert();
                 }
                 db.setTransactionSuccessful();
+                writtenFavourites = new HashSet<>(keys);
             } finally {
                 db.endTransaction();
             }

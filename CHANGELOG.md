@@ -6,6 +6,17 @@ version below was built from the listed `main` commit. Earlier history is in the
 Note: the release shown as 0.10 below was published with version code 11 (name "0.11" in the
 update feed), so the next release after it used code 12, named 0.12.
 
+## Unreleased
+
+- Live TV: changing channel and browsing other channels in the banner fetch just the one channel
+  needed instead of a page of 151, and the guide fetches the eleven rows it uses.
+- Live TV: the favourites list no longer rewrites its table on every page or channel change, only
+  when favourites change.
+- Live TV: finding a channel by number counts the list once instead of up to three times.
+- Programme guide download: programmes on channels you don't have are skipped before their times
+  are read, and times are read without building a date parser each time.
+- Removed three unused channel queries.
+
 ## 0.35 (18 Oct 2026)
 
 - A Live TV channel that won't play no longer opens a "Can't play this" panel that blocks the

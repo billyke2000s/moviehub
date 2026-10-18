@@ -235,11 +235,13 @@ final class LiveTvScreen {
         long windowStart = windowStart();
         activity.async(
             () -> {
+                // The rows shown, and one more to tell whether another page follows.
                 List<ChannelDatabase.Row> rows = channelsDb().browse(
                     listFilter,
                     listSearch,
                     favouriteKeys(),
-                    start
+                    start,
+                    ROWS + 1
                 );
                 // Programmes for the ten rows shown, across the three half-hour slots.
                 List<List<ChannelDatabase.Programme>> listings = new ArrayList<>();

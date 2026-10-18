@@ -107,7 +107,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `Network` | Bounded HTTP(S) streams with manual redirect handling; bearer tokens only sent over HTTPS to the same host. |
 | `Playlist` | M3U/Xtream playlist parsing and URL validation (refuses `http://` unless the user allows it). |
 | `ChannelDatabase`, `ChannelStore`, `ChannelQuery` | On-device SQLite channel database, paging and search. |
-| `EpgImporter`, `EpgMatch` | The free UK XMLTV programme guide (epgshare01): streamed, matched to saved channels by a plain name key, the next day kept in the channel database with titles, descriptions and categories. |
+| `EpgImporter`, `EpgMatch` | The free UK XMLTV programme guide (epgshare01): streamed, matched to saved channels by a plain name key (programmes on other channels skipped unread), the next day kept in the channel database with titles, descriptions and categories. `EpgMatch` also reads XMLTV times (plain Java). |
 | `SkyNumbers`, `GuideOrder`, `ChannelNumbers` | UK satellite channel numbers and sections (`SkyNumbers`, a fixed table matched by name); the whole guide's layout: UK blocks by section, regions in the 800s, radio in the 900s, other countries from 1001 (`GuideOrder`, plain Java); applied to the saved channels after every import (`ChannelNumbers`). |
 | `Reminders`, `ParentalLock` | Programme reminders (kept in preferences, shown while the app is open) and the Live TV PIN lock (a salted hash of the PIN, locked channels and sections). |
 | `FreeChannels` | Which free lists Live TV imports (Free-TV, then iptv-org by country, all, or off); "automatic" (the full list) only without a provider, imported when Live TV is first opened. |

@@ -65,3 +65,9 @@ Last updated: 18 October 2026.
    the player controls.
 2. Optional: a TMDB account sign-in so My List syncs to a TMDB watchlist and TMDB's personal
    recommendations can be mixed into For you.
+3. Live TV with large channel lists: every guide list query groups duplicate channels
+   (`GROUP BY dkey`) across the whole channel table, so it cannot use an index and costs more as
+   the list grows (the full iptv-org list is tens of thousands of channels). Marking each
+   channel's preferred copy when channels are numbered (a `main` column, filled in by
+   `ChannelNumbers.renumber`) would let pages and channel changes use an index. It needs a
+   database version 8 migration, so measure on the box first (Settings → System → Diagnostics).
