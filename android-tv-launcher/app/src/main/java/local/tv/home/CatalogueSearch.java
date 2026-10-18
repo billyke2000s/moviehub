@@ -97,7 +97,7 @@ final class CatalogueSearch {
                             );
                     choices.add(new TmdbCategories.Entry(item.getString("name"), route));
                 }
-                activity.catalogues.categoryChoices(target, kind, choices);
+                activity.catalogues.options.categoryChoices(target, kind, choices);
                 if (choices.isEmpty()) target.addView(activity.text("No matches found", 16));
                 LinearLayout pages = activity.row();
                 if (number > 1) pages.addView(
