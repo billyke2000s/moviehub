@@ -299,13 +299,19 @@ final class SourcesScreen {
                                     torrentSources(imdb, season, episode, title, kind);
                                 }
                             );
+                            // Focus starts on the suggested episode: an exact match before a likely one.
                             View first = null;
-                            boolean suggested = false;
+                            int firstRank = -1;
                             for (int i = 0; i < files.length(); i++) {
                                 JSONObject file = files.getJSONObject(i);
                                 String link = file.getString("link"),
                                     name = file.optString("path", "File");
-                                int match = VideoFiles.score(name, "", season, episode);
+                                boolean suggest = VideoFiles.suggested(name, season, episode);
+                                int rank = !suggest
+                                    ? 0
+                                    : VideoFiles.score(name, "", season, episode) == VideoFiles.EXACT
+                                      ? 2
+                                      : 1;
                                 LinearLayout row = activity.listRow();
                                 LinearLayout fileCopy = activity.vertical();
                                 String shortName = name.substring(name.lastIndexOf('/') + 1);
@@ -314,7 +320,7 @@ final class SourcesScreen {
                                     activity.rowText(name, 12, true, 1)
                                 );
                                 row.addView(fileCopy, new LinearLayout.LayoutParams(0, -2, 1));
-                                if (match >= 2) {
+                                if (suggest) {
                                     LinearLayout.LayoutParams badgeLayout = new LinearLayout.LayoutParams(
                                         -2,
                                         -2
@@ -335,8 +341,10 @@ final class SourcesScreen {
                                 LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
                                 lp.topMargin = activity.dp(8);
                                 activity.page.addView(row, lp);
-                                if (first == null || (match >= 2 && !suggested)) first = row;
-                                suggested |= match >= 2;
+                                if (rank > firstRank) {
+                                    first = row;
+                                    firstRank = rank;
+                                }
                             }
                             if (first != null) first.requestFocus();
                         }
