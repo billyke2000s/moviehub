@@ -49,6 +49,8 @@ final class LiveZapper {
     static final int STALLS_PER_MINUTE = 3;
 
     private final VlcPlaybackActivity player;
+    /** This player's own copy, so a later guide visit or test clearing the shared one is safe. */
+    private final Session own;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final ChannelDatabase db;
     private List<ChannelDatabase.Row> copies = new ArrayList<>();
@@ -65,19 +67,20 @@ final class LiveZapper {
     };
     private final Runnable stalledTooLong = () -> failover("The stream kept buffering");
 
-    LiveZapper(VlcPlaybackActivity player) {
+    LiveZapper(VlcPlaybackActivity player, Session session) {
         this.player = player;
+        own = session;
         db = ChannelDatabase.get(player);
     }
 
     /** Builds the banner and loads the current channel's backups and listings. */
     void attach(FrameLayout root) {
         buildBanner(root);
-        load(session.position, false, true);
+        load(own.position, false, true);
     }
 
     int position() {
-        return session.position;
+        return own.position;
     }
 
     String sourceLabel() {
@@ -91,7 +94,7 @@ final class LiveZapper {
     // ---- Changing channel -----------------------------------------------------------------
 
     void channel(int delta) {
-        tune(Math.max(0, session.position + delta));
+        tune(Math.max(0, own.position + delta));
     }
 
     void lastChannel() {
@@ -114,7 +117,7 @@ final class LiveZapper {
     }
 
     private void tune(int position) {
-        if (position == session.position) {
+        if (position == own.position) {
             showBanner();
             return;
         }
@@ -127,7 +130,7 @@ final class LiveZapper {
      */
     private void load(int position, boolean play, boolean current) {
         int ticket = ++request;
-        Session s = session;
+        Session s = own;
         worker.execute(() -> {
             try {
                 List<ChannelDatabase.Row> rows = db.browse(s.filter, s.search, s.favourites, position);
@@ -240,7 +243,7 @@ final class LiveZapper {
             else if (item.start >= now && next == null) next = item;
         }
         showBannerText(
-            String.valueOf(101 + session.position),
+            String.valueOf(101 + own.position),
             row.name,
             current == null
                 ? "No programme information"

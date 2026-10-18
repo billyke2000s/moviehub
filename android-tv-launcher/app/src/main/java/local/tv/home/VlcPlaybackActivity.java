@@ -267,8 +267,9 @@ public class VlcPlaybackActivity extends Activity {
         status.setText("Opening source…");
         root.addView(status, new FrameLayout.LayoutParams(-1, -1));
         PlayerOverlay.build(this, root);
-        if (live && LiveZapper.session != null) {
-            zapper = new LiveZapper(this);
+        LiveZapper.Session guide = LiveZapper.session;
+        if (live && guide != null) {
+            zapper = new LiveZapper(this, guide);
             zapper.attach(root);
         }
         root.setOnClickListener(v -> revealControls());
