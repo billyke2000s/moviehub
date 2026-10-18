@@ -359,7 +359,7 @@ public class VlcPlaybackActivity extends Activity {
             startLive();
             return;
         }
-        engine = new LibVLC(this, new ArrayList<>(LivePlayer.options(this)));
+        engine = new LibVLC(this, new ArrayList<>(PlayerOptions.film(this)));
         player = new MediaPlayer(engine);
         player.setRate(playbackRate);
         if (aspect != null) player.setAspectRatio(aspect);
@@ -385,7 +385,7 @@ public class VlcPlaybackActivity extends Activity {
      * {@code restartLive} opens the stream again (Back to live, Try again).
      */
     private void startLive() {
-        boolean carriedOn = LivePlayer.play(this, url, LivePlayer.options(this), restartLive);
+        boolean carriedOn = LivePlayer.play(this, url, PlayerOptions.live(this), restartLive);
         restartLive = false;
         player = LivePlayer.player();
         LivePlayer.attach(this, video, this::onPlayerEvent);

@@ -31,19 +31,6 @@ final class LivePlayer {
 
     private LivePlayer() {}
 
-    /** The engine options every player uses (live and films), from the viewer's settings. */
-    static List<String> options(Context context) {
-        android.content.SharedPreferences prefs = context.getSharedPreferences("ui", Context.MODE_PRIVATE);
-        return java.util.Arrays.asList(
-            "--network-caching=1500",
-            "--no-video-title-show",
-            // Network files have no subtitle files beside them; do not probe for any.
-            "--no-sub-autodetect-file",
-            "--audio-language=" + prefs.getString("audioLanguage", "eng,en"),
-            "--sub-language=" + prefs.getString("subtitleLanguage", "none")
-        );
-    }
-
     static MediaPlayer player() {
         return player;
     }
