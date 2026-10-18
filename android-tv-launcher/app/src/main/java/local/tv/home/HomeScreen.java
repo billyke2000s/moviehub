@@ -55,7 +55,7 @@ final class HomeScreen {
             activity.updates.availableUpdate == null ? View.GONE : View.VISIBLE
         );
         top.addView(activity.updateButton);
-        activity.dock.queryApps();
+        activity.dock.ensureApps();
         AppDock.App memoryClean = activity.dock.findApp(MEMORY_CLEAN);
         if (memoryClean != null) {
             LinearLayout.LayoutParams iconLayout = new LinearLayout.LayoutParams(

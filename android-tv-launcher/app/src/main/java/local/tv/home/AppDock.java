@@ -43,7 +43,19 @@ final class AppDock {
         }
     }
 
+    /**
+     * Set when apps are installed, updated or removed (see MainActivity's package receiver).
+     * Loading every app's name and icon is slow, so Home reuses the list until then.
+     */
+    volatile boolean appsStale = true;
+
+    /** Loads the app list only if it changed since the last load. */
+    void ensureApps() {
+        if (appsStale || apps.isEmpty()) queryApps();
+    }
+
     void queryApps() {
+        appsStale = false;
         apps.clear();
         Set<ComponentName> seen = new HashSet<>();
         for (String category : new String[] { Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER })

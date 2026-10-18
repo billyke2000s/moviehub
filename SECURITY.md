@@ -8,6 +8,8 @@ MovieHub stores provider accounts and installs its own updates, so these rules m
   Account details are entered on the TV.
 - Account details (TMDB, Premiumize, Xtream, M3U), the saved library and recent playback are
   encrypted with AES-GCM using a device-bound Android Keystore key (`Secrets`).
+  Once read, values are kept decrypted in the app's memory until it closes (not on disk), so
+  every request does not have to go through the Keystore.
 - IPTV stream addresses are stored encrypted in the channel database.
 - `android:allowBackup="false"`, so app data is not copied into Android backups.
 - Diagnostic logging (`Diagnostics`, logcat tag `MovieHub`) records only where a failure happened

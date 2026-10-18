@@ -269,6 +269,18 @@ public class MainActivity extends TvActivity {
     public void onCreate(Bundle state) {
         super.onCreate(state);
         tvFullscreen();
+        android.content.IntentFilter changes = new android.content.IntentFilter();
+        changes.addAction(Intent.ACTION_PACKAGE_ADDED);
+        changes.addAction(Intent.ACTION_PACKAGE_REMOVED);
+        changes.addAction(Intent.ACTION_PACKAGE_CHANGED);
+        changes.addDataScheme("package");
+        // System broadcasts arrive whatever the export flag; not exported keeps other apps out.
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(
+            packageChanges,
+            changes,
+            Context.RECEIVER_NOT_EXPORTED
+        );
+        else registerReceiver(packageChanges, changes);
         secrets = new Secrets(this);
         media = new MediaRepository(secrets);
         prefs = getSharedPreferences("ui", MODE_PRIVATE);
@@ -338,6 +350,11 @@ public class MainActivity extends TvActivity {
 
     @Override
     public void onDestroy() {
+        try {
+            unregisterReceiver(packageChanges);
+        } catch (IllegalArgumentException e) {
+            Diagnostics.recovered("Unregistering app changes", e);
+        }
         leaveCatalogue();
         closeFeeds();
         handler.removeCallbacksAndMessages(null);
@@ -395,6 +412,34 @@ public class MainActivity extends TvActivity {
         return ChannelQuery.key(url);
     }
 
+    /** Marks the installed-app list for reloading when apps are installed, updated or removed. */
+    private final android.content.BroadcastReceiver packageChanges = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context context, Intent intent) {
+            dock.appsStale = true;
+        }
+    };
+
+    private final Object historyLock = new Object();
+
+    /** Puts this title first in the playback history (50 entries, newest first). */
+    private void saveRecent(JSONObject record, String id) {
+        synchronized (historyLock) {
+            try {
+                String stored = secrets.get("recentPlayback");
+                JSONArray previous = new JSONArray(stored.isEmpty() ? "[]" : stored),
+                    recent = new JSONArray();
+                recent.put(record);
+                for (int i = 0; i < previous.length() && recent.length() < 50; i++) if (
+                    !id.equals(previous.getJSONObject(i).optString("id"))
+                ) recent.put(previous.getJSONObject(i));
+                secrets.put("recentPlayback", recent.toString());
+            } catch (Exception e) {
+                Diagnostics.recovered("Saving recent playback", e);
+            }
+        }
+    }
+
     void play(String title, String url, String id, boolean live) {
         play(title, url, id, live, null);
     }
@@ -408,9 +453,6 @@ public class MainActivity extends TvActivity {
             return;
         }
         if (!live) try {
-            String stored = secrets.get("recentPlayback");
-            JSONArray previous = new JSONArray(stored.isEmpty() ? "[]" : stored),
-                recent = new JSONArray();
             JSONObject record = new JSONObject().put("title", title).put("url", safe).put("id", id);
             if (metadata != null) {
                 record.put("tmdbId", metadata.optInt("tmdbId", metadata.optInt("id")));
@@ -425,11 +467,9 @@ public class MainActivity extends TvActivity {
                 })
                     if (metadata.has(key)) record.put(key, metadata.get(key));
             }
-            recent.put(record);
-            for (int i = 0; i < previous.length() && recent.length() < 50; i++) if (
-                !id.equals(previous.getJSONObject(i).optString("id"))
-            ) recent.put(previous.getJSONObject(i));
-            secrets.put("recentPlayback", recent.toString());
+            // Saving goes through the encrypted store, so it runs off the screen thread and never
+            // delays the player opening.
+            io.execute(() -> saveRecent(record, id));
         } catch (Exception e) {
             Diagnostics.recovered("Saving recent playback", e);
             /* History failure must never prevent playback. */

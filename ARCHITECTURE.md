@@ -98,7 +98,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `Playlist` | M3U/Xtream playlist parsing and URL validation (refuses `http://` unless the user allows it). |
 | `ChannelDatabase`, `ChannelStore`, `ChannelQuery` | On-device SQLite channel database, paging and search. |
 | `ChannelImporter`, `ChannelSync` | Background channel import (WorkManager), refreshed every 12 hours. |
-| `Secrets` | Account details encrypted with an Android Keystore key. |
+| `Secrets` | Account details encrypted with an Android Keystore key; the key and read values are cached in memory. |
 | `VideoFiles` | Chooses the right file in a multi-file release (episode matching). |
 | `AppUpdates`, `UpdateApkProvider` | Downloads and verifies update APKs; shares the verified APK with the system installer. |
 | `VlcPlaybackActivity` | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions (opened directly at the resume point), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`). |
