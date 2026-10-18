@@ -241,8 +241,10 @@ final class PlayerOverlay {
     }
 
     /**
-     * The input bitrate VLC reports for the current media, in megabits per second, or -1.
-     * VLC gives it in kilobytes per second (VLC for Android scales it by 8 × 1024 for bits).
+     * How fast the player is reading the stream, in megabits per second, or -1. LibVLC 3 reports
+     * the input rate in bytes per microsecond (VLC's desktop app shows it × 8000 as kb/s; VLC for
+     * Android × 8 × 1024 as kb/s), so × 8 gives megabits per second. Once the player's small
+     * buffer is full this follows the stream's bitrate rather than the connection's top speed.
      */
     static float downloadSpeed(org.videolan.libvlc.MediaPlayer player) {
         if (player == null) return -1;
@@ -250,7 +252,7 @@ final class PlayerOverlay {
         if (media == null) return -1;
         try {
             var stats = media.getStats();
-            return stats == null ? -1 : (stats.inputBitrate * 8f * 1024f) / 1_000_000f;
+            return stats == null ? -1 : stats.inputBitrate * 8f;
         } catch (RuntimeException e) {
             return -1;
         } finally {
