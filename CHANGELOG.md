@@ -10,6 +10,13 @@ update feed), so the next release after it used code 12, named 0.12.
 
 On `main` but not yet published to TVs:
 
+- The Movies/Series title area keeps the same height for every title, so the poster rows no
+  longer move when a synopsis is shorter or longer; the title sits higher to make room.
+- Home: the featured title's action is a slim "More info" pill (see-through, white when
+  selected) instead of a heavy dark button.
+
+## 0.13 (18 Oct 2026)
+
 - Settings: Appearance, Playback and System now use the same cards as Accounts (title, short
   description, current value on the right, one action button) instead of plain switches and
   full-width buttons. The redundant "Return home" button is gone; Back does the same.

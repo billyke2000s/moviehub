@@ -4,8 +4,8 @@ Last updated: 18 October 2026.
 
 ## Where things stand
 
-- **Latest published version:** 0.12 (version code 12), published 18 October 2026 from `main`
-  after PRs #25 and #26. Items under *Unreleased* in [CHANGELOG.md](CHANGELOG.md) are not on TVs yet.
+- **Latest published version:** 0.13 (version code 13), published 18 October 2026. Items under
+  *Unreleased* in [CHANGELOG.md](CHANGELOG.md) are not on TVs yet.
 - **Code structure:** restructured in PR #25. Sources are formatted, `MainActivity` is split into
   feature classes, and project documentation exists. See [ARCHITECTURE.md](ARCHITECTURE.md).
 - **CI on `main`:** build, lint, signing and device tests pass.
