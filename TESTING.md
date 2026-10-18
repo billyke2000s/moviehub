@@ -33,7 +33,9 @@ Instrumentation tests drive the real app with D-pad key events on an emulator. T
 encrypted channel database, imports and migrations, LibVLC playback, Home and dock navigation,
 catalogue paging and focus, the streaming menus and artwork loading, and Live TV: guide paging and
 number entry, programme information, the PIN lock, reminders, channel changing and browsing in the
-banner, pausing live TV and the guide's live picture (played from a local test stream). Provider responses are local
+banner, the satellite-box overlay (banner, information panel, pause bar), pausing live TV, the
+guide's live picture, and moving the live picture between the guide and the full screen without
+reopening the stream (all played from a local test stream). Provider responses are local
 fixtures, so these tests **do not** prove that a real TMDB, Premiumize or Xtream account works.
 
 ```sh

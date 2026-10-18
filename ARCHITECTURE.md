@@ -85,7 +85,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `CloudScreens` | Premiumize cloud folders and transfers. |
 | `LiveTvScreen` | Live TV as a classic TV guide grid: ten channels per page in satellite number order, time slots, colour-key paging, number entry, favourites, the live picture in the corner. |
 | `LiveTvPanels` | The guide's side panels: options, sections and groups, search, programme information with reminders, the parental lock, colour-key set-up. |
-| `GuidePicture` | The live picture in the guide's corner (the last channel watched), stopped whenever the guide closes. |
+| `GuidePicture` | The live picture in the guide's corner (the last channel watched); stops when the guide closes unless the full screen has taken the player over. |
+| `LivePlayer` | The one Live TV player (LibVLC engine and media player), shared by the full screen and the guide picture so going between them moves the picture without reconnecting. Films keep their own player. |
 | `SettingsScreens` | Settings tabs, account setup (TMDB, Premiumize, Xtream, M3U), languages, toggles. |
 | `ForYou` | The Home "For you" shelf: blends TMDB recommendations for up to six titles you played, saved or opened, ranked and cached on the box. |
 | `UpdatePrompt` | Checks the public release feed and offers a verified update. See [android-tv-launcher/UPDATES.md](android-tv-launcher/UPDATES.md). |
@@ -110,7 +111,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `AppUpdates`, `UpdateApkProvider` | Downloads and verifies update APKs; shares the verified APK with the system installer. |
 | `VlcPlaybackActivity` | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions (opened directly at the resume point), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`). |
 | `PlayerOverlay` | Builds the player's on-screen controls (title and download speed, timeline, flat icon controls, Back hint). |
-| `LiveZapper` | Live TV while watching: channel up/down, number entry, last channel, the now-and-next banner with progress and description, browsing other channels in the banner, the PIN lock, and backup copies with automatic switching. |
+| `LiveZapper` | Live TV while watching: the satellite remote's keys, channel up/down, number entry, last channel, browsing other channels in the banner, the PIN lock, and backup copies with automatic switching. |
+| `SkyOverlay` | The full-screen Live TV overlay in the classic satellite-box style: banner, programme information panel and pause bar. |
 | `PlayerMenus` | The player's side panels: audio, subtitles, video track, speed, picture size, subtitle timing, sleep timer. |
 
 ## Where data is stored

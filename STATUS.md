@@ -4,7 +4,7 @@ Last updated: 18 October 2026.
 
 ## Where things stand
 
-- **Latest published version:** 0.25 (version code 25), published 18 October 2026, with update
+- **Latest published version:** 0.26 (version code 26), published 18 October 2026, with update
   notes in the feed. Items under *Unreleased* in [CHANGELOG.md](CHANGELOG.md) are not on TVs yet.
 - **Code structure:** feature classes per area, see [ARCHITECTURE.md](ARCHITECTURE.md).
   `CatalogueScreens` was split (filter sheets in `CatalogueOptions`) and the Live TV guide's
@@ -33,7 +33,9 @@ Last updated: 18 October 2026.
    channels with none of these are filed as international. Pausing live TV relies on LibVLC: whether a real stream resumes where it paused or
    jumps to live depends on the stream, and rewinding works only on streams that allow seeking.
    Reminders show only while MovieHub is open. Automatic backup switching has not been seen on a
-   real failing stream.
+   real failing stream. Moving the live picture between the full screen and the guide (one shared
+   LibVLC player, views detached and attached) is tested on the emulator with a local stream,
+   not on the X905X5M box.
 
 ## Decisions
 
