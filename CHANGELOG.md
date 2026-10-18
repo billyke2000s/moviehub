@@ -10,6 +10,21 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.28 (18 Oct 2026)
+
+The Live TV guide is redone from photos of the real satellite-box guide:
+
+- A light-blue guide: "TV guide" and the clock across the top, then the selected programme's
+  time, title, tags and description with the live picture beside it.
+- Tabs across the guide: All Channels, Favourites, Entertainment, Movies, Sports, News, Docs and
+  Kids (▲ from the top row; ◀ ▶ change the list), and More… for the rest.
+- The selected programme and its channel name are both yellow; the other cells are dark blue.
+- Round colour keys: red Reminders, green Search A–Z, yellow +24 Hours, blue −24 Hours. CH+ and
+  CH− turn the pages.
+- BACK from the guide opens the guide menu: a numbered list (1 All Channels … 9 Music, 0 More…)
+  with the chosen row in yellow; number keys pick a row. Its colour keys: red Options, green
+  Reminders, yellow Search A–Z, blue Favourites.
+
 ## 0.27 (18 Oct 2026)
 
 - Staying safe: when MovieHub first opens it explains that it will never ask you, during or about

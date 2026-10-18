@@ -96,7 +96,7 @@ public class LiveGuideTest {
             "second page",
             () -> activity.liveTv.pageStart == 10 && focused().startsWith("111  Channel 10")
         );
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_CHANNEL_DOWN);
         await("page down", () -> activity.liveTv.pageStart == 20 && activity.liveTv.cells.size() == 5);
         await("on the first row of the last page", () -> focused().startsWith("121  Channel 20"));
         // Up from the top row turns back a page and lands on its last row.
@@ -148,14 +148,14 @@ public class LiveGuideTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_INFO);
         await("programme information", () -> SidePanel.current != null && SidePanel.current.isShowing());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
-        // Yellow: the same time tomorrow, then back to now.
+        // Yellow: the same time tomorrow; blue: back a day.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_YELLOW);
         await(
             "tomorrow",
             () -> activity.liveTv.windowOffset == LiveTvScreen.MAX_OFFSET && activity.liveTv.cells.size() == 5
         );
         UiEvidence.capture("live-guide-tomorrow");
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_YELLOW);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_BLUE);
         await("today", () -> activity.liveTv.windowOffset == 0 && activity.liveTv.cells.size() == 5);
         // A locked channel asks for the PIN instead of playing.
         ChannelDatabase.Row row = ChannelDatabase.get(activity)
@@ -168,5 +168,44 @@ public class LiveGuideTest {
         await("PIN asked", () -> SidePanel.current != null && SidePanel.current.isShowing());
         UiEvidence.capture("live-pin");
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
+    }
+
+    @Test
+    public void tabsAndTheGuideMenuWorkLikeTheSatelliteGuide() {
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await(
+            "first page",
+            () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
+        );
+        // Up from the top row: the tabs, on All Channels.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        await("on the tabs", () -> activity.liveTv.frame.tabs.get(0).hasFocus());
+        UiEvidence.capture("live-guide-tabs");
+        // Right: Favourites, shown straight away with the focus kept on the tabs.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        await(
+            "favourites tab",
+            () -> activity.liveTv.filter.equals("favourites") && activity.liveTv.frame.tabs.get(1).hasFocus()
+        );
+        // Left again and down: back in All Channels on the first row.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
+        await(
+            "all channels tab",
+            () -> activity.liveTv.filter.equals("all") && activity.liveTv.cells.size() == 10
+        );
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
+        await("first row", () -> focused().startsWith("101  Channel 00"));
+        // BACK: the guide menu; 1 opens All Channels again.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        await(
+            "guide menu",
+            () -> activity.liveTv.menu.rows.size() == 10 && activity.liveTv.menu.rows.get(0).hasFocus()
+        );
+        UiEvidence.capture("live-guide-menu");
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
+        await(
+            "all channels from the menu",
+            () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
+        );
     }
 }
