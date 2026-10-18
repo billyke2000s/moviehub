@@ -10,6 +10,11 @@ update feed), so the next release after it used code 12, named 0.12.
 
 On `main` but not yet published to TVs:
 
+- Movies/Series: Back jumps straight to the top bar from anywhere in the rows; Back again leaves,
+  as in the major streaming apps.
+- Redesigned search: one large rounded search box, results appear as you type (no "Search titles"
+  or "Search people" buttons) as Movies, Series and People rows on the search page itself, and
+  recent searches show as pills while the box is empty.
 - Redesigned title details page: full-screen artwork with the type and genres, a large title,
   facts, synopsis (shown once, not twice) and pill buttons on the left, the main action in white;
   then a "More like this" poster row, the collection and the cast as round photos.

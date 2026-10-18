@@ -213,7 +213,16 @@ public class CatalogueRowsTest {
         await("rows restored on row 2", () -> rows() != null && focusedRowIndex() == 2 && pinned(2));
         key(KeyEvent.KEYCODE_BACK);
         await(
-            "Back from rows goes Home",
+            "first Back jumps to the top bar and first row",
+            () ->
+                activity.catalogues.catalogue != null &&
+                activity.getCurrentFocus() != null &&
+                activity.getCurrentFocus().getParent() == activity.catalogues.catalogue.controls &&
+                rows().scroll.getScrollY() == 0
+        );
+        key(KeyEvent.KEYCODE_BACK);
+        await(
+            "second Back goes Home",
             () -> activity.catalogues.catalogue == null && activity.homeShelf != null
         );
     }

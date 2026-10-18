@@ -284,7 +284,11 @@ final class CatalogueScreens {
             path = null;
             selected = null;
             fromRows = false;
-            setBack(activity.homeScreen::home);
+            // Like streaming apps: the first Back jumps to the top bar, the next one leaves.
+            setBack(() -> {
+                if (rowsView != null && rowsView.jumpToTop()) return;
+                activity.homeScreen.home();
+            });
             activity.destination = () -> rows(kind);
             collection.setText("");
             collection.setVisibility(View.GONE);

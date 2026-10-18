@@ -251,69 +251,16 @@ final class TitleDetails {
         activity.page.addView(scroll);
         for (int i = 0; i < Math.min(15, cast.length()); i++) {
             JSONObject person = cast.getJSONObject(i);
-            LinearLayout card = activity.vertical();
-            card.setGravity(Gravity.CENTER_HORIZONTAL);
-            card.setFocusable(true);
-            card.setFocusableInTouchMode(true);
-            ImageView photo = new ImageView(activity);
-            photo.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            GradientDrawable ring = new GradientDrawable();
-            ring.setShape(GradientDrawable.OVAL);
-            ring.setColor(0xff1b2433);
-            photo.setBackground(ring);
-            photo.setClipToOutline(true);
-            photo.setOutlineProvider(
-                new android.view.ViewOutlineProvider() {
-                    @Override
-                    public void getOutline(View view, android.graphics.Outline outline) {
-                        outline.setOval(0, 0, view.getWidth(), view.getHeight());
-                    }
-                }
-            );
-            card.addView(photo, new LinearLayout.LayoutParams(activity.dp(92), activity.dp(92)));
-            String image = person.optString("profile_path");
-            if (image.startsWith("/")) activity.posters.loadImage(
-                photo,
-                "https://image.tmdb.org/t/p/w185" + image
-            );
-            TextView name = activity.compactText(person.optString("name"), 13);
-            name.setGravity(Gravity.CENTER);
-            name.setMaxLines(1);
-            name.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            card.addView(name, new LinearLayout.LayoutParams(-1, -2));
-            TextView character = activity.muted(person.optString("character"), 11);
-            character.setGravity(Gravity.CENTER);
-            character.setMaxLines(1);
-            character.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            card.addView(character, new LinearLayout.LayoutParams(-1, -2));
-            card.setContentDescription(person.optString("name"));
-            card.setOnFocusChangeListener((v, focused) -> {
-                GradientDrawable outline = new GradientDrawable();
-                outline.setShape(GradientDrawable.OVAL);
-                outline.setColor(0xff1b2433);
-                if (focused) outline.setStroke(activity.dp(3), 0xfff2f4f8);
-                photo.setBackground(outline);
-                photo.setPadding(
-                    focused ? activity.dp(3) : 0,
-                    focused ? activity.dp(3) : 0,
-                    focused ? activity.dp(3) : 0,
-                    focused ? activity.dp(3) : 0
-                );
-                v.setScaleX(focused ? 1.08f : 1f);
-                v.setScaleY(focused ? 1.08f : 1f);
-                name.setTypeface(Typeface.DEFAULT, focused ? Typeface.BOLD : Typeface.NORMAL);
-            });
-            card.setOnClickListener(v ->
-                activity.catalogues.browse(
-                    kind,
-                    person.optString("name"),
-                    "person/" + person.optInt("id") + "/" + type + "_credits",
-                    1
+            people.addView(
+                activity.catalogueSearch.personCard(person, () ->
+                    activity.catalogues.browse(
+                        kind,
+                        person.optString("name"),
+                        "person/" + person.optInt("id") + "/" + type + "_credits",
+                        1
+                    )
                 )
             );
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(activity.dp(116), -2);
-            lp.rightMargin = activity.dp(10);
-            people.addView(card, lp);
         }
     }
 }
