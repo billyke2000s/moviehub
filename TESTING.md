@@ -42,6 +42,9 @@ fixtures, so these tests **do not** prove that a real TMDB, Premiumize or Xtream
 bash android-tv-launcher/tests/run-device-tests.sh   # needs a running emulator or device
 ```
 
+The tests run through `MovieHubTestRunner`, which marks the first-start safety notice as read so
+it does not cover the screens under test; `SafetyNoticeTest` shows it on purpose.
+
 The script runs `connectedDebugAndroidTest` and then pulls the test screenshots off the device.
 CI runs it on an API 28 `tv_1080p` emulator. Note that the CI step is named "Verify real SQLite,
 encryption, migrations and pagination", but it runs **every** device test, so a failure in that

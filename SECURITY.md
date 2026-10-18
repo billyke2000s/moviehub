@@ -43,6 +43,15 @@ MovieHub stores provider accounts and installs its own updates, so these rules m
 | `REQUEST_INSTALL_PACKAGES` | Installing verified app updates |
 | `REQUEST_DELETE_PACKAGES` | Uninstalling apps from All Apps (Android asks the user) |
 
+## Scam messages in streams
+
+Free Live TV channels come from public lists the app does not control, so a stream could one day
+show a fake "your device has a virus, call this number" message. When MovieHub first opens it
+shows a "Staying safe" notice (also in Settings → System): MovieHub never asks, during or about a
+stream, to visit a website, scan a QR code, ring a number, install an app, allow remote access,
+or enter passwords or payment details. Device tests mark the notice as read through their test
+runner (`MovieHubTestRunner`); `SafetyNoticeTest` checks it shows.
+
 ## Reporting a problem
 
 Do not put credentials or private provider URLs in a public issue. Contact the repository owner
