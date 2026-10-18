@@ -440,12 +440,12 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         String groups = "SELECT MIN(number) AS n FROM channels WHERE " + where + " GROUP BY " + GROUP;
         args.add(String.valueOf(number));
         String[] values = args.toArray(new String[0]);
-        int before = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n<?", values),
-            exact = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n=?", values);
+        int before = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n<CAST(? AS INTEGER)", values),
+            exact = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n=CAST(? AS INTEGER)", values);
         if (exact > 0) return before;
         if (!nearest) return -1;
         values[values.length - 1] = String.valueOf(Integer.MAX_VALUE);
-        int total = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n<?", values);
+        int total = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n<CAST(? AS INTEGER)", values);
         return total == 0 ? -1 : Math.min(before, total - 1);
     }
 
