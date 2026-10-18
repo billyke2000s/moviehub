@@ -1,44 +1,41 @@
 # MovieHub for Android TV
 
-> ## ⚠️ MovieHub hosts no content
+> ## ⚠️ MovieHub doesn't host anything
 >
-> **MovieHub does not host, store, upload or distribute any video, channel or stream.** It is
-> software only. Everything it plays comes from third parties: **free channels are loaded from the
-> public [Free-TV](https://github.com/Free-TV/IPTV) and [iptv-org](https://github.com/iptv-org/iptv)
-> lists**, which are run by others and link to streams on other people's servers, and everything
-> else comes from accounts and services the user adds. **We do not control, check or endorse any
-> of it. You are responsible for what you watch.**
+> **MovieHub is just an app. It doesn't store or share any videos, channels or streams.** The free
+> channels come from two public lists run by other people,
+> [Free-TV](https://github.com/Free-TV/IPTV) and [iptv-org](https://github.com/iptv-org/iptv), and
+> they play from other people's servers. Anything else comes from accounts you add yourself. **We
+> don't control or check any of it. What you watch is up to you.**
 
-A native Android TV launcher for Android 9 or newer. It replaces the TV's home screen and brings
-together installed apps, movies and series, live TV and playback in one remote-friendly interface.
-Its icon is a simple house with a play button (vector drawables in `app/src/main/res/drawable`).
+MovieHub is a home screen for Android TV boxes (Android 9 or newer). It puts your apps, films,
+series and live TV in one place, and it's built to be used with a remote.
 
-## Features
+## What it does
 
-- **Home**: featured artwork, poster shelf, clock, and a dock of installed apps you can rearrange
-  with the remote. Android Settings and Apps are one click away.
-- **Apps**: every installed app as its TV banner, search, recently used apps, Android shortcuts
-  (Wi-Fi, Bluetooth, display, sound, storage, ...), and hiding apps you never use.
-- **Movies and Series**: TMDB browsing by category, genre and filters; search by title, person or
-  company; details pages with cast, collections, trailers and recommendations.
-- **Sources and playback**: finds streams through Torrentio, falling back to MediaFusion and then
-  Comet, with Premiumize cloud, cache and transfers. Plays with LibVLC, with subtitle and audio
-  language preferences, track choice, speed, picture ratio, subtitle timing and a sleep timer.
-- **My List and Continue Watching**: saved titles, resume positions and watched episodes.
-- **Live TV**: free public channels from [iptv-org](https://github.com/iptv-org/iptv) by country, or Xtream and M3U playlists imported in the background into an on-device database, with
-  no channel-count limit. Search by name or group, favourites, and automatic refresh every 12 hours.
-  A failed refresh keeps the previous list.
-- **Updates**: an Update button appears beside Settings only when a newer signed version is
-  published. Updates are verified before Android's installer opens.
+- **Home:** big artwork, a row of posters, a clock and your favourite apps. Move the apps around
+  with the remote. Android settings are one click away.
+- **Apps:** all your installed apps, with search and recently used apps. Hide the ones you never use.
+- **Films and series:** browse by category or genre, search by title or actor, and see cast,
+  trailers and similar titles.
+- **Playing things:** finds sources through Torrentio, MediaFusion or Comet, with Premiumize. Pick
+  subtitles, audio, speed and picture size, and set a sleep timer.
+- **My List and Continue Watching:** save titles and carry on where you left off.
+- **Live TV:** free channels, or your own Xtream or M3U playlist. A TV guide, favourites, search and
+  reminders. The channel list refreshes itself every 12 hours, and keeps the old list if that fails.
+- **Phones and tablets:** on first open it asks whether you're using a TV or a phone. The phone
+  layout covers Live TV for now.
+- **Updates:** an Update button shows up next to Settings when there's a new version. The app
+  checks the update is genuine before installing it.
 
-Account details are entered on the TV and stored encrypted with Android Keystore. Nothing secret is
+Your account details are typed in on the TV and stored encrypted on the device. None of them are
 in this repository.
 
 ## Install
 
-Download the signed [home.apk](https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/home.apk)
+Download [home.apk](https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/home.apk)
 from [Releases](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) and install
-it on the TV. Later versions arrive through the in-app Update button.
+it on your TV box. After that, new versions come through the Update button in the app.
 
 ## Build
 
@@ -66,30 +63,29 @@ Full setup, formatting and conventions are in [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## Limits
 
-Automated tests use local fixtures. They do not prove that a real TMDB, Premiumize or Xtream
-account works, or that the app installs and updates correctly on a specific TV box. Check those on
-the device before a release.
+The automated tests use made-up data. They don't prove that a real TMDB, Premiumize or Xtream
+account works, or that the app installs and updates properly on every TV box. Check those on a real
+box before a release.
 
 ## Content and copyright
 
-- **No content is hosted here.** No video, stream, channel or programme is stored in this
-  repository, its releases or any server run for this project.
-- **Built-in free channels are third-party links.** When no TV provider is added, Live TV loads
-  the public Free-TV and iptv-org lists from their own websites. Those projects collect links to
-  streams that broadcasters and others make freely available; the streams stay on their servers.
-  This project does not choose, check or control any of them. Report a problem stream to those
+- **Nothing is hosted here.** There are no videos, streams or channels in this repository, its
+  releases or on any server for this project.
+- **The free channels are other people's links.** If you haven't added a TV provider, Live TV loads
+  the public Free-TV and iptv-org lists from their own websites. The streams stay on other people's
+  servers. We don't pick, check or control them. If a stream has a problem, report it to those
   lists.
-- **Everything else comes from the user.** Xtream or M3U providers, Premiumize and the source
-  finders listed under Features are services run by others, used at the user's choice.
-- **You are responsible.** Only watch what you have the right to watch, and only use providers,
-  lists and services that are legal where you live.
-- **No affiliation.** Channel names, logos and listings belong to their owners and are shown only
-  to identify what is playing. The guide's look is inspired by classic UK satellite boxes; this
-  project is not affiliated with or endorsed by Sky or any broadcaster.
-- **Takedowns.** If you believe something here infringes your rights, contact the owner privately
-  through GitHub; it will be removed promptly.
+- **Everything else is added by you.** Xtream or M3U providers, Premiumize and the source finders
+  are services run by other people, and you choose whether to use them.
+- **It's your responsibility.** Only watch what you're allowed to, and only use services that are
+  legal where you live.
+- **We're not linked to any broadcaster.** Channel names and logos belong to their owners and are
+  only shown so you know what's on. The guide looks like an old UK satellite box, but this project
+  has nothing to do with Sky or any broadcaster.
+- **Takedowns.** If you think something here breaks your rights, contact the owner through GitHub
+  and it will be taken down quickly.
 
-This notice is for clarity and is not legal advice.
+This is here to be clear, not legal advice.
 
 ## License
 
