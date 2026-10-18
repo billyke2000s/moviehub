@@ -47,6 +47,12 @@ Last updated: 18 October 2026.
   They are read only on detail pages and menus and the history is capped at 50, so a database
   would add migration risk without a visible gain (reviewed 18 October 2026).
 
+- Big guide lists (all channels, sections, countries) read each channel's preferred copy
+  (`main=1`, database version 8) through an index instead of grouping every copy. Favourites,
+  provider groups and searches still group, because they can match a backup copy only (each copy
+  has its own key, group and name). Checked equal to the grouped queries in SQLite (19 October
+  2026).
+
 ## Open pull requests and branches
 
 - **Dependabot:** #3 (`actions/checkout`) is superseded by checkout@v5 in CI and can be closed.
@@ -65,9 +71,5 @@ Last updated: 18 October 2026.
    the player controls.
 2. Optional: a TMDB account sign-in so My List syncs to a TMDB watchlist and TMDB's personal
    recommendations can be mixed into For you.
-3. Live TV with large channel lists: every guide list query groups duplicate channels
-   (`GROUP BY dkey`) across the whole channel table, so it cannot use an index and costs more as
-   the list grows (the full iptv-org list is tens of thousands of channels). Marking each
-   channel's preferred copy when channels are numbered (a `main` column, filled in by
-   `ChannelNumbers.renumber`) would let pages and channel changes use an index. It needs a
-   database version 8 migration, so measure on the box first (Settings → System → Diagnostics).
+3. Check Live TV on the box with a large channel list (the full free list): guide pages, channel
+   up/down and typing numbers should feel quicker. Diagnostics has no guide timing yet.

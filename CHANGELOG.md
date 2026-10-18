@@ -15,7 +15,11 @@ update feed), so the next release after it used code 12, named 0.12.
 - Live TV: finding a channel by number counts the list once instead of up to three times.
 - Programme guide download: programmes on channels you don't have are skipped before their times
   are read, and times are read without building a date parser each time.
-- Removed three unused channel queries.
+- Live TV: all channels, sections and countries are read through an index of each channel's
+  preferred copy instead of sorting out duplicates across the whole list every time (channel
+  database version 8; the upgrade fills it in once).
+- Removed three unused channel queries; the channel database's tables and upgrades moved into
+  `ChannelSchema`.
 
 ## 0.35 (18 Oct 2026)
 
