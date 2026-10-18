@@ -205,6 +205,10 @@ public class StreamingMenusTest {
             );
             assertNotNull(find(root(), "Ready to play · 1"));
             assertNull(find(root(), "Available to transfer · 1"));
+            assertNotNull("Quality shown large", find(root(), "4K"));
+            assertNotNull("HDR badge", find(root(), "HDR"));
+            assertNotNull("Codec badge", find(root(), "HEVC"));
+            assertNotNull("Provider name", find(root(), "Provider"));
         });
         assertEquals(2, sources.size());
         UiEvidence.capture("sources-redesign");

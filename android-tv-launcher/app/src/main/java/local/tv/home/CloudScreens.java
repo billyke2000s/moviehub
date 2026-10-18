@@ -158,7 +158,11 @@ final class CloudScreens {
                     activity.libraryScreens.mediaRow(
                         activity.page,
                         transfer.optString("name", "Transfer"),
-                        status +
+                        (ready
+                            ? "Ready"
+                            : status.isEmpty()
+                              ? "Unknown"
+                              : status.substring(0, 1).toUpperCase(Locale.ROOT) + status.substring(1)) +
                             " · " +
                             Math.round(Math.max(0, Math.min(1, transfer.optDouble("progress", 0))) * 100) +
                             "%",
@@ -185,7 +189,8 @@ final class CloudScreens {
                                 );
                             } else if (!folder.isEmpty() && !folder.equals("null")) cloud(folder, kind);
                         },
-                        null
+                        null,
+                        ready ? -1 : (float) Math.max(0, Math.min(1, transfer.optDouble("progress", 0)))
                     );
                 }
             }

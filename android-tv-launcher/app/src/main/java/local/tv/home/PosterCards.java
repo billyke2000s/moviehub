@@ -167,6 +167,16 @@ final class PosterCards {
         });
     }
 
+    /** Darkened full-screen artwork of {@code item} behind the current list page, if it has any. */
+    void listBackdrop(JSONObject item) {
+        if (item == null) return;
+        String art = item.optString("backdrop_path");
+        if (!art.startsWith("/")) art = item.optString("poster_path");
+        if (!art.startsWith("/")) return;
+        BackdropView backdrop = activity.fullBleedBackdrop(true);
+        loadImage(backdrop, "https://image.tmdb.org/t/p/w1280" + art);
+    }
+
     void loadImage(ImageView view, String url) {
         activity.artworkLoader.load(view, url);
     }
