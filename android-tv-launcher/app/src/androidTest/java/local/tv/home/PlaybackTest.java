@@ -242,6 +242,54 @@ public class PlaybackTest {
     }
 
     @Test
+    public void liveTvChangesChannelWithChannelUpAndNumbers() throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        Context context = instrumentation.getTargetContext();
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        String base = "http://127.0.0.1:" + server.getLocalPort() + "/live.ts?channel=";
+        ChannelDatabase.Writer writer = db.writer("zap-test", () -> {}, n -> {});
+        try {
+            writer.accept(new Playlist.Channel("Alpha", base + "a", "General", "", ""));
+            writer.accept(new Playlist.Channel("Bravo", base + "b", "General", "", ""));
+            writer.commit();
+        } finally {
+            writer.abort();
+        }
+        LiveZapper.session = new LiveZapper.Session("all", "", java.util.Collections.emptySet(), 0);
+        try {
+            activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+                new Intent(context, VlcPlaybackActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra("url", base + "a")
+                    .putExtra("live", true)
+                    .putExtra("id", "zap-test")
+                    .putExtra("title", "Alpha")
+            );
+            await(() -> player() != null && player().isPlaying(), 30000);
+            await(activity::hasWindowFocus, 5000);
+            assertNotNull("Live TV from the guide gets channel changing", activity.zapper);
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_CHANNEL_UP);
+            await(
+                () -> activity.zapper.position() == 1 && "Bravo".contentEquals(activity.titleView.getText()),
+                10000
+            );
+            UiEvidence.capture("live-banner");
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_0);
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
+            await(
+                () -> activity.zapper.position() == 0 && "Alpha".contentEquals(activity.titleView.getText()),
+                10000
+            );
+        } finally {
+            LiveZapper.session = null;
+            db.clear();
+        }
+    }
+
+    @Test
     public void playsTransportStream() throws Exception {
         playLiveFixture("live.ts");
     }

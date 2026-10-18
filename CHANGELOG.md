@@ -10,6 +10,19 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.23 (18 Oct 2026)
+
+- More free channels: the Free-TV list (free-to-air and free ad-supported channels) is added to
+  iptv-org, with its UK channels first, so BBC One is channel 101.
+- Backups: a channel found in more than one list appears once in the guide; the other copies are
+  backups. If a stream fails, stops for 8 seconds or keeps buffering, the player switches to the
+  next copy by itself, and More → Source lets you pick one.
+- Watching Live TV works like a satellite box: Up/Down (when the controls are hidden), CH+/CH- and
+  PG+/PG- change channel, number keys tune straight to a channel, the Last Channel key goes back,
+  and a now-and-next banner shows the channel number, name and programmes on every change.
+- The guide looks more like the classic satellite-box guide: dark bands with a lighter blue sweep,
+  arrows on programmes that run past the slots shown, and SELECT on a yellow key.
+
 ## 0.22 (18 Oct 2026)
 
 - Live TV guide shows what is on: a free UK programme guide (epgshare01) is downloaded with the

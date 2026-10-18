@@ -93,14 +93,14 @@ final class ChannelImporter {
                         problems.add("Xtream: " + describe(e));
                     }
                 }
-                String free = FreeChannels.playlist(context, anySource);
-                if (!free.isEmpty()) {
+                // Free lists: each its own source, so a list that fails keeps its previous channels.
+                for (FreeChannels.Source free : FreeChannels.sources(context, anySource)) {
                     anySource = true;
-                    configured.add("free");
+                    configured.add(free.id);
                     try {
-                        total += importM3u(db, "free", free, http, cancel, total);
+                        total += importM3u(db, free.id, free.url, http, cancel, total, free.firstGroup);
                     } catch (Exception e) {
-                        problems.add("Free channels: " + describe(e));
+                        problems.add(free.name + ": " + describe(e));
                     }
                 }
                 cancel.check();
@@ -193,9 +193,36 @@ final class ChannelImporter {
         ChannelDatabase.Cancel cancel,
         int base
     ) throws Exception {
+        return importM3u(db, source, url, http, cancel, base, null);
+    }
+
+    /**
+     * Imports one playlist. With {@code firstGroup}, that group's channels come first (Free-TV's
+     * "UK" group, so BBC One is channel 101); the playlist is then read twice.
+     */
+    private static int importM3u(
+        ChannelDatabase db,
+        String source,
+        String url,
+        boolean http,
+        ChannelDatabase.Cancel cancel,
+        int base,
+        String firstGroup
+    ) throws Exception {
         ChannelDatabase.Writer writer = db.writer(source, cancel, n -> progress = base + n);
-        try (InputStream in = Network.open(url, null, Network.CATALOGUE_MAX, http)) {
-            Playlist.parse(new InputStreamReader(in, StandardCharsets.UTF_8), url, http, writer);
+        try {
+            if (firstGroup != null) try (
+                InputStream first = Network.open(url, null, Network.CATALOGUE_MAX, http)
+            ) {
+                Playlist.parse(new InputStreamReader(first, StandardCharsets.UTF_8), url, http, c -> {
+                    if (firstGroup.equals(c.group)) writer.accept(c);
+                });
+            }
+            try (InputStream in = Network.open(url, null, Network.CATALOGUE_MAX, http)) {
+                Playlist.parse(new InputStreamReader(in, StandardCharsets.UTF_8), url, http, c -> {
+                    if (firstGroup == null || !firstGroup.equals(c.group)) writer.accept(c);
+                });
+            }
             if (writer.count() == 0) throw new IOException("playlist has no playable channels");
             cancel.check();
             writer.commit();

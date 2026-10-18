@@ -55,7 +55,7 @@ public class LiveGuideTest {
 
     @After
     public void stop() {
-        remote.runOnMainSync(() -> activity.finish());
+        if (activity != null) remote.runOnMainSync(() -> activity.finish());
         SharedPreferences.Editor edit = prefs.edit().putBoolean("autoUpdates", updates);
         if (free == null) edit.remove(FreeChannels.PREF);
         else edit.putString(FreeChannels.PREF, free);

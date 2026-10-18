@@ -24,18 +24,25 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         final String name, group, logo, key;
         /** The playlist's programme-guide id (tvg-id), or "". */
         final String epg;
+        /** Duplicate key; see {@link ChannelDatabase#duplicateKey}. */
+        final String dkey;
 
         Row(long id, String name, String group, String logo, String key) {
             this(id, name, group, logo, key, "");
         }
 
         Row(long id, String name, String group, String logo, String key, String epg) {
+            this(id, name, group, logo, key, epg, "");
+        }
+
+        Row(long id, String name, String group, String logo, String key, String epg, String dkey) {
             this.id = id;
             this.name = name;
             this.group = group;
             this.logo = logo;
             this.key = key;
             this.epg = epg == null ? "" : epg;
+            this.dkey = dkey == null ? "" : dkey;
         }
     }
 
@@ -72,7 +79,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     private ChannelDatabase(Context context) {
-        super(context, "channels-v2.db", null, 3);
+        super(context, "channels-v2.db", null, 4);
         secrets = new Secrets(context);
         setWriteAheadLoggingEnabled(true);
     }
@@ -88,6 +95,27 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         db.execSQL("CREATE VIRTUAL TABLE channel_search USING fts4(name,grp)");
         db.execSQL("CREATE TABLE favourite_keys(key TEXT PRIMARY KEY)");
         createGuideTables(db);
+        addDuplicateKey(db);
+    }
+
+    /**
+     * The same channel from several lists (BBC One from Free-TV and from iptv-org) shares a
+     * duplicate key: its country and plain name. The guide shows it once; the others are backups.
+     */
+    private static void addDuplicateKey(SQLiteDatabase db) {
+        // Safe to run twice (a database whose version was rolled back already has the column).
+        boolean present = false;
+        try (Cursor columns = db.rawQuery("PRAGMA table_info(channels)", null)) {
+            while (columns.moveToNext()) if ("dkey".equals(columns.getString(1))) present = true;
+        }
+        if (!present) db.execSQL("ALTER TABLE channels ADD COLUMN dkey TEXT NOT NULL DEFAULT ''");
+        db.execSQL("CREATE INDEX IF NOT EXISTS channels_dkey ON channels(dkey)");
+    }
+
+    /** The duplicate key for a channel; "" when its name has nothing usable (never merged). */
+    static String duplicateKey(String epgId, String name) {
+        String plain = EpgMatch.key(name);
+        return plain.isEmpty() ? "" : EpgMatch.country(epgId) + ":" + plain;
     }
 
     /**
@@ -107,6 +135,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int from, int to) {
         if (from < 2) db.execSQL("CREATE TABLE IF NOT EXISTS favourite_keys(key TEXT PRIMARY KEY)");
         if (from < 3) createGuideTables(db);
+        if (from < 4) addDuplicateKey(db); // filled in by the next import
     }
 
     // ---- URL encryption -------------------------------------------------------------------
@@ -157,7 +186,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
                 );
                 db.delete("channels", "source=?", new String[] { source });
                 insert = db.compileStatement(
-                    "INSERT INTO channels(source,position,name,grp,logo,epg,key,url) VALUES(?,?,?,?,?,?,?,?)"
+                    "INSERT INTO channels(source,position,name,grp,logo,epg,key,url,dkey) VALUES(?,?,?,?,?,?,?,?,?)"
                 );
                 search = db.compileStatement("INSERT INTO channel_search(docid,name,grp) VALUES(?,?,?)");
             } catch (Exception e) {
@@ -176,7 +205,9 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             byte[] blob = new byte[iv.length + sealed.length];
             System.arraycopy(iv, 0, blob, 0, iv.length);
             System.arraycopy(sealed, 0, blob, iv.length, sealed.length);
-            String name = c.name == null || c.name.isEmpty() ? "Channel" : c.name,
+            // Circled letters some lists use as notes ("BBC One Ⓖ" for geo-blocked) are dropped.
+            String cleaned = c.name == null ? "" : c.name.replaceAll("[\\u24B6-\\u24E9]", "").trim();
+            String name = cleaned.isEmpty() ? "Channel" : cleaned,
                 group = c.group == null ? "" : c.group;
             insert.clearBindings();
             insert.bindString(1, source);
@@ -187,6 +218,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             insert.bindString(6, c.epgId == null ? "" : c.epgId);
             insert.bindString(7, ChannelQuery.key(c.url));
             insert.bindBlob(8, blob);
+            insert.bindString(9, duplicateKey(c.epgId, name));
             long id = insert.executeInsert();
             search.clearBindings();
             search.bindLong(1, id);
@@ -259,35 +291,68 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     // ---- Queries --------------------------------------------------------------------------
-    private static final String COLUMNS = "_id,name,grp,logo,key,epg";
+    private static final String COLUMNS = "_id,name,grp,logo,key,epg,dkey";
+    /** Providers first, then Free-TV, then everything else; in playlist order within each. */
+    private static final String ORDER =
+        "CASE source WHEN 'xtream' THEN 0 WHEN 'm3u' THEN 1 WHEN 'fta' THEN 2 ELSE 3 END";
+    /** One row per channel: duplicates (same non-empty dkey) collapse to the first in ORDER. */
+    private static final String GROUP = "CASE WHEN dkey='' THEN 'id'||_id ELSE dkey END";
 
     private List<Row> rows(String where, String[] args, int offset) {
         List<Row> out = new ArrayList<>();
+        // SQLite returns the other columns from the row holding MIN(rank), so each duplicate group
+        // is shown as its preferred source.
+        String rank = "MIN((" + ORDER + ")*1000000000+position)";
         try (
             Cursor c = getReadableDatabase().rawQuery(
                 "SELECT " +
                     COLUMNS +
-                    " FROM channels" +
+                    "," +
+                    rank +
+                    " AS rank FROM channels" +
                     (where == null ? "" : " WHERE " + where) +
-                    " ORDER BY source,position LIMIT " +
+                    " GROUP BY " +
+                    GROUP +
+                    " ORDER BY rank LIMIT " +
                     (PAGE + 1) +
                     " OFFSET " +
                     Math.max(0, offset),
                 args
             )
         ) {
-            while (c.moveToNext())
-                out.add(
-                    new Row(
-                        c.getLong(0),
-                        c.getString(1),
-                        c.getString(2),
-                        c.getString(3),
-                        c.getString(4),
-                        c.getString(5)
-                    )
-                );
+            while (c.moveToNext()) out.add(row(c));
         }
+        return out;
+    }
+
+    private static Row row(Cursor c) {
+        return new Row(
+            c.getLong(0),
+            c.getString(1),
+            c.getString(2),
+            c.getString(3),
+            c.getString(4),
+            c.getString(5),
+            c.getString(6)
+        );
+    }
+
+    /** Every copy of this channel, preferred source first: the channel and its backups. */
+    List<Row> copies(Row channel) {
+        List<Row> out = new ArrayList<>();
+        if (channel.dkey.isEmpty()) {
+            out.add(channel);
+            return out;
+        }
+        try (
+            Cursor c = getReadableDatabase().rawQuery(
+                "SELECT " + COLUMNS + " FROM channels WHERE dkey=? ORDER BY " + ORDER + ",position",
+                new String[] { channel.dkey }
+            )
+        ) {
+            while (c.moveToNext()) out.add(row(c));
+        }
+        if (out.isEmpty()) out.add(channel);
         return out;
     }
 

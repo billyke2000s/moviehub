@@ -99,13 +99,14 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `Playlist` | M3U/Xtream playlist parsing and URL validation (refuses `http://` unless the user allows it). |
 | `ChannelDatabase`, `ChannelStore`, `ChannelQuery` | On-device SQLite channel database, paging and search. |
 | `EpgImporter`, `EpgMatch` | The free UK XMLTV programme guide (epgshare01): streamed, matched to saved channels by a plain name key, the next day kept in the channel database. |
-| `FreeChannels` | Which public iptv-org playlist (by country, all, or off) Live TV imports; "automatic" (the full list) only without a provider, imported when Live TV is first opened. |
+| `FreeChannels` | Which free lists Live TV imports (Free-TV, then iptv-org by country, all, or off); "automatic" (the full list) only without a provider, imported when Live TV is first opened. |
 | `ChannelImporter`, `ChannelSync` | Background channel import (WorkManager), refreshed every 12 hours. |
 | `Secrets` | Account details encrypted with an Android Keystore key; the key and read values are cached in memory. |
 | `VideoFiles` | Chooses the right file in a multi-file release (episode matching). |
 | `AppUpdates`, `UpdateApkProvider` | Downloads and verifies update APKs; shares the verified APK with the system installer. |
 | `VlcPlaybackActivity` | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions (opened directly at the resume point), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`). |
 | `PlayerOverlay` | Builds the player's on-screen controls (title and download speed, timeline, flat icon controls, Back hint). |
+| `LiveZapper` | Live TV while watching: channel up/down, number entry, last channel, the now-and-next banner, and backup copies with automatic switching. |
 | `PlayerMenus` | The player's side panels: audio, subtitles, video track, speed, picture size, subtitle timing, sleep timer. |
 
 ## Where data is stored

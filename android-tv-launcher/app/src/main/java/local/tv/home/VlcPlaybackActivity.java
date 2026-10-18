@@ -20,6 +20,10 @@ public class VlcPlaybackActivity extends Activity {
 
     private LibVLC engine;
     MediaPlayer player;
+    /** Channel changing and backups while watching Live TV from the guide; null otherwise. */
+    LiveZapper zapper;
+    /** The title at the top of the controls (changes with the channel). */
+    TextView titleView;
     /** The side panels (tracks, speed, picture, sleep timer). */
     final PlayerMenus menus = new PlayerMenus(this);
     private VLCVideoLayout video;
@@ -51,6 +55,8 @@ public class VlcPlaybackActivity extends Activity {
     private long resumeCheck;
     /** Playback has started at least once, so later buffering is a pause while watching. */
     private boolean playedOnce;
+    /** A buffering pause is in progress (counted once, not for every progress update). */
+    private boolean buffering;
     TextView exitHint;
     final Handler overlayHandler = new Handler(Looper.getMainLooper());
     private final Runnable hideExitHint = () -> {
@@ -117,6 +123,60 @@ public class VlcPlaybackActivity extends Activity {
             );
     }
 
+    /** Satellite-box remote keys while watching Live TV from the guide. */
+    private boolean zapperKey(KeyEvent event) {
+        int key = event.getKeyCode();
+        boolean hidden = controls.getVisibility() != View.VISIBLE;
+        boolean up = key == KeyEvent.KEYCODE_CHANNEL_UP || key == KeyEvent.KEYCODE_PAGE_UP,
+            down = key == KeyEvent.KEYCODE_CHANNEL_DOWN || key == KeyEvent.KEYCODE_PAGE_DOWN;
+        if (hidden && key == KeyEvent.KEYCODE_DPAD_UP) up = true;
+        if (hidden && key == KeyEvent.KEYCODE_DPAD_DOWN) down = true;
+        boolean digit = key >= KeyEvent.KEYCODE_0 && key <= KeyEvent.KEYCODE_9;
+        boolean handled =
+            up ||
+            down ||
+            digit ||
+            key == KeyEvent.KEYCODE_LAST_CHANNEL ||
+            key == KeyEvent.KEYCODE_INFO ||
+            key == KeyEvent.KEYCODE_GUIDE;
+        if (!handled || event.getAction() != KeyEvent.ACTION_DOWN) return handled;
+        if (event.getRepeatCount() > 0 && !(up || down)) return true;
+        if (up) zapper.channel(1);
+        else if (down) zapper.channel(-1);
+        else if (digit) zapper.typeDigit(key - KeyEvent.KEYCODE_0);
+        else if (key == KeyEvent.KEYCODE_LAST_CHANNEL) zapper.lastChannel();
+        else if (key == KeyEvent.KEYCODE_GUIDE) finish();
+        // back to the guide
+        else zapper.showBanner();
+        return true;
+    }
+
+    /**
+     * Plays another stream in place: the next channel, or a backup copy of this one. Called by
+     * {@link LiveZapper}.
+     */
+    void switchTo(String title, String newUrl, String newId) {
+        try {
+            url = Playlist.networkUrl(
+                newUrl,
+                getSharedPreferences("ui", MODE_PRIVATE).getBoolean("http", false)
+            );
+        } catch (Exception e) {
+            if (zapper == null || !zapper.failover("This stream's address is not allowed")) showError(
+                "This channel's address is not allowed. Turn on Allow HTTP in Settings → System to play it."
+            );
+            return;
+        }
+        id = newId;
+        if (titleView != null) titleView.setText(title);
+        position = 0;
+        resumeCheck = 0;
+        playedOnce = false;
+        buffering = false;
+        triedAlternative = false;
+        startPlayer();
+    }
+
     @Override
     public void onWindowFocusChanged(boolean focused) {
         super.onWindowFocusChanged(focused);
@@ -131,6 +191,7 @@ public class VlcPlaybackActivity extends Activity {
             if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) onBackKey();
             return true;
         }
+        if (zapper != null && zapperKey(event)) return true;
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             int key = event.getKeyCode();
             if (key == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
@@ -206,6 +267,11 @@ public class VlcPlaybackActivity extends Activity {
         status.setText("Opening source…");
         root.addView(status, new FrameLayout.LayoutParams(-1, -1));
         PlayerOverlay.build(this, root);
+        LiveZapper.Session guide = LiveZapper.session;
+        if (live && guide != null) {
+            zapper = new LiveZapper(this, guide);
+            zapper.attach(root);
+        }
         root.setOnClickListener(v -> revealControls());
         setContentView(root);
         pause.requestFocus();
@@ -269,7 +335,8 @@ public class VlcPlaybackActivity extends Activity {
         status.setText("Opening source…");
         status.setVisibility(View.VISIBLE);
         overlayHandler.removeCallbacks(stalled);
-        overlayHandler.postDelayed(stalled, 45000);
+        // Live TV with backups moves on sooner than a film would.
+        overlayHandler.postDelayed(stalled, zapper != null ? 15000 : 45000);
         engine = new LibVLC(
             this,
             new ArrayList<>(
@@ -313,6 +380,8 @@ public class VlcPlaybackActivity extends Activity {
             } else if (event.type == MediaPlayer.Event.Buffering) {
                 if (event.getBuffering() < 100) {
                     if (playedOnce) Timings.markOnce("stall");
+                    if (playedOnce && zapper != null && !buffering) zapper.bufferingStarted();
+                    buffering = true;
                     status.setText(
                         "Buffering… " +
                             Math.round(event.getBuffering()) +
@@ -325,6 +394,8 @@ public class VlcPlaybackActivity extends Activity {
                 } else {
                     status.setVisibility(View.GONE);
                     Timings.finish("stall", "Buffering pause while watching");
+                    buffering = false;
+                    if (zapper != null) zapper.bufferingEnded();
                 }
             } else if (event.type == MediaPlayer.Event.EndReached) {
                 ended = true;
@@ -374,6 +445,7 @@ public class VlcPlaybackActivity extends Activity {
 
     private void showError(String message) {
         if (!foreground || isFinishing() || dialogOpen) return;
+        if (zapper != null && zapper.failover("This stream is not working")) return;
         overlayHandler.removeCallbacks(stalled);
         if (player != null) {
             long time = player.getTime();
@@ -490,6 +562,7 @@ public class VlcPlaybackActivity extends Activity {
 
     @Override
     public void onDestroy() {
+        if (zapper != null) zapper.close();
         overlayHandler.removeCallbacksAndMessages(null);
         release();
         super.onDestroy();

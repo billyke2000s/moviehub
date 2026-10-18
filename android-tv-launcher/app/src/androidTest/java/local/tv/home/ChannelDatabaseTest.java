@@ -116,4 +116,40 @@ public class ChannelDatabaseTest {
             db.browse("favourites", "", Collections.singleton(ChannelQuery.key(channel(2).url)), 0).size()
         );
     }
+
+    @Test
+    public void theSameChannelFromTwoListsIsShownOnceWithABackup() throws Exception {
+        for (String source : new String[] { "free", "fta" }) {
+            ChannelDatabase.Writer writer = db.writer(source, () -> {}, n -> {});
+            try {
+                writer.accept(
+                    new Playlist.Channel(
+                        source.equals("fta") ? "BBC One Ⓖ" : "BBC One (1080p)",
+                        "https://example.test/" + source + "/bbc1.m3u8",
+                        "General",
+                        "",
+                        source.equals("fta") ? "BBCOne.uk" : "BBCOne.uk@HD"
+                    )
+                );
+                writer.accept(
+                    new Playlist.Channel(
+                        "Only in " + source,
+                        "https://example.test/" + source + "/x.m3u8",
+                        "General",
+                        "",
+                        ""
+                    )
+                );
+                writer.commit();
+            } finally {
+                writer.abort();
+            }
+        }
+        List<ChannelDatabase.Row> rows = db.all(0);
+        assertEquals("BBC One once, plus one channel only in each list", 3, rows.size());
+        assertEquals("Free-TV comes first and its name is cleaned", "BBC One", rows.get(0).name);
+        List<ChannelDatabase.Row> copies = db.copies(rows.get(0));
+        assertEquals(2, copies.size());
+        assertTrue(db.url(copies.get(1).id, copies.get(1).key).contains("/free/"));
+    }
 }

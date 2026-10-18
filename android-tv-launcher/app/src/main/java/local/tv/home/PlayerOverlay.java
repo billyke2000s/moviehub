@@ -30,6 +30,7 @@ final class PlayerOverlay {
         top.setPadding(a.dp(48), a.dp(28), a.dp(48), a.dp(56));
         top.setBackground(shade(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM));
         TextView title = new TextView(a);
+        a.titleView = title;
         title.setText(a.getIntent().getStringExtra("title"));
         title.setTextColor(Color.WHITE);
         title.setTextSize(24);
