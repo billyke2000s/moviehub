@@ -23,6 +23,7 @@ final class AppDock {
         this.activity = activity;
     }
 
+    static final int MAX_RECENT = 10;
     final List<App> apps = new ArrayList<>();
     View movingApp;
     LinearLayout homeDock;
@@ -63,6 +64,56 @@ final class AppDock {
         apps.sort(Comparator.comparing(a -> a.label.toLowerCase(Locale.ROOT)));
     }
 
+    /** The installed app with this component (flattened), or null. Call queryApps() first. */
+    App find(String component) {
+        for (App app : apps) if (app.component.flattenToString().equals(component)) return app;
+        return null;
+    }
+
+    /** Opens an app and remembers it for "Recently used" on the Apps screen. */
+    void launch(App app) {
+        try {
+            activity.startActivity(new Intent(Intent.ACTION_MAIN).setComponent(app.component));
+        } catch (Exception e) {
+            activity.toast(app.label + " is unavailable");
+            return;
+        }
+        List<String> recent = recentApps();
+        String id = app.component.flattenToString();
+        recent.remove(id);
+        recent.add(0, id);
+        while (recent.size() > MAX_RECENT) recent.remove(recent.size() - 1);
+        activity.prefs.edit().putString("recentApps", new JSONArray(recent).toString()).apply();
+    }
+
+    /** Apps opened from MovieHub, newest first. */
+    List<String> recentApps() {
+        return stringList("recentApps");
+    }
+
+    boolean isHidden(App app) {
+        return stringList("hiddenApps").contains(app.component.flattenToString());
+    }
+
+    void setHidden(App app, boolean hidden) {
+        List<String> list = stringList("hiddenApps");
+        String id = app.component.flattenToString();
+        list.remove(id);
+        if (hidden) list.add(id);
+        activity.prefs.edit().putString("hiddenApps", new JSONArray(list).toString()).apply();
+    }
+
+    private List<String> stringList(String key) {
+        List<String> out = new ArrayList<>();
+        try {
+            JSONArray array = new JSONArray(activity.prefs.getString(key, "[]"));
+            for (int i = 0; i < array.length(); i++) out.add(array.getString(i));
+        } catch (JSONException e) {
+            Diagnostics.recovered("Reading " + key, e);
+        }
+        return out;
+    }
+
     /** The installed app with exactly this name, or null. Call queryApps() first. */
     App findApp(String label) {
         for (App app : apps) if (app.label.equals(label)) return app;
@@ -91,13 +142,7 @@ final class AppDock {
             v.setScaleX(focused ? 1.2f : 1f);
             v.setScaleY(focused ? 1.2f : 1f);
         });
-        icon.setOnClickListener(v -> {
-            try {
-                activity.startActivity(new Intent(Intent.ACTION_MAIN).setComponent(app.component));
-            } catch (Exception e) {
-                activity.toast(app.label + " is unavailable");
-            }
-        });
+        icon.setOnClickListener(v -> launch(app));
         return icon;
     }
 
@@ -114,23 +159,17 @@ final class AppDock {
         cell.addView(label);
         activity.focus(cell);
         cell.setBackground(activity.box(0xff202c43));
-        cell.setOnClickListener(v -> {
-            try {
-                activity.startActivity(new Intent(Intent.ACTION_MAIN).setComponent(app.component));
-            } catch (Exception e) {
-                activity.toast("App is unavailable");
-            }
-        });
+        cell.setOnClickListener(v -> launch(app));
         cell.setOnLongClickListener(v -> {
             if (dock) beginDockMove(v);
-            else appMenu(v, app);
+            else appMenu(v, app, null);
             return true;
         });
         cell.setOnKeyListener((v, key, event) -> {
             if (key == KeyEvent.KEYCODE_MENU) {
                 if (event.getAction() == KeyEvent.ACTION_UP) {
                     if (dock) beginDockMove(v);
-                    else appMenu(v, app);
+                    else appMenu(v, app, null);
                 }
                 return true;
             }
@@ -270,12 +309,15 @@ final class AppDock {
             .start();
     }
 
-    private void appMenu(View anchor, App app) {
+    /** Open, hotbar, hide, app info and uninstall. {@code changed} runs after hide or show. */
+    void appMenu(View anchor, App app, Runnable changed) {
         PopupMenu menu = new PopupMenu(activity, anchor);
         boolean pinned = dockOrder().contains(app.component.flattenToString());
         menu.getMenu().add(0, 1, 0, "Open");
         menu.getMenu().add(0, 2, 1, pinned ? "Remove from hotbar" : "Add to hotbar");
-        menu.getMenu().add(0, 3, 2, "App info");
+        boolean hidden = isHidden(app);
+        menu.getMenu().add(0, 5, 2, hidden ? "Show in Apps" : "Hide from Apps");
+        menu.getMenu().add(0, 3, 3, "App info");
         try {
             ApplicationInfo info = activity
                 .getPackageManager()
@@ -283,10 +325,20 @@ final class AppDock {
             if (
                 (info.flags & ApplicationInfo.FLAG_SYSTEM) == 0 ||
                 (info.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
-            ) menu.getMenu().add(0, 4, 3, "Uninstall");
+            ) menu.getMenu().add(0, 4, 4, "Uninstall");
         } catch (PackageManager.NameNotFoundException ignored) {}
         menu.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
+            if (id == 5) {
+                setHidden(app, !hidden);
+                activity.toast(
+                    hidden
+                        ? app.label + " is shown again"
+                        : app.label + " is hidden. Use Show hidden to find it."
+                );
+                if (changed != null) changed.run();
+                return true;
+            }
             if (id == 2) {
                 List<String> order = dockOrder();
                 String component = app.component.flattenToString();
@@ -296,9 +348,7 @@ final class AppDock {
                 return true;
             }
             try {
-                if (id == 1) activity.startActivity(
-                    new Intent(Intent.ACTION_MAIN).setComponent(app.component)
-                );
+                if (id == 1) launch(app);
                 else {
                     Intent intent = new Intent(
                         id == 4 ? Intent.ACTION_DELETE : Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
@@ -316,18 +366,8 @@ final class AppDock {
         menu.show();
     }
 
+    /** Opens the Apps screen; see {@link AllApps}. */
     void allApps() {
-        activity.screen("All Apps", activity.homeScreen::home);
-        activity.page.addView(activity.text("Hold Select or press Menu for app options", 14));
-        queryApps();
-        LinearLayout r = null;
-        for (int i = 0; i < apps.size(); i++) {
-            if (i % 6 == 0) {
-                r = activity.row();
-                activity.page.addView(r);
-            }
-            addApp(r, apps.get(i), false);
-        }
-        if (apps.isEmpty()) activity.page.addView(activity.text("No launchable apps found", 16));
+        activity.appsScreen.show();
     }
 }

@@ -2,12 +2,14 @@
 
 A native Android TV launcher for Android 9 or newer. It replaces the TV's home screen and brings
 together installed apps, movies and series, live TV and playback in one remote-friendly interface.
-It has no custom logo or wordmark.
+Its icon is a simple house with a play button (vector drawables in `app/src/main/res/drawable`).
 
 ## Features
 
 - **Home**: featured artwork, poster shelf, clock, and a dock of installed apps you can rearrange
-  with the remote. Android Settings and All Apps are one click away.
+  with the remote. Android Settings and Apps are one click away.
+- **Apps**: every installed app as its TV banner, search, recently used apps, Android shortcuts
+  (Wi-Fi, Bluetooth, display, sound, storage, ...), and hiding apps you never use.
 - **Movies and Series**: TMDB browsing by category, genre and filters; search by title, person or
   company; details pages with cast, collections, trailers and recommendations.
 - **Sources and playback**: finds streams through Torrentio, falling back to MediaFusion and then

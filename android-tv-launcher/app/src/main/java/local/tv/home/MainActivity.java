@@ -33,6 +33,7 @@ public class MainActivity extends TvActivity {
     final SettingsScreens settingsScreens = new SettingsScreens(this);
     final CloudScreens cloudScreens = new CloudScreens(this);
     final SeriesScreens seriesScreens = new SeriesScreens(this);
+    final AllApps appsScreen = new AllApps(this);
     final SourcesScreen sources = new SourcesScreen(this);
 
     final ExecutorService io = Executors.newFixedThreadPool(3);
@@ -282,7 +283,7 @@ public class MainActivity extends TvActivity {
         super.onResume();
         if (dock.refreshAppsOnResume) {
             dock.refreshAppsOnResume = false;
-            dock.allApps();
+            appsScreen.refresh();
         } else if (resumeRefresh != null) {
             Runnable refresh = resumeRefresh;
             resumeRefresh = null;

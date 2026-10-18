@@ -68,7 +68,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | File | Screens |
 | --- | --- |
 | `HomeScreen` | Home: top navigation, featured artwork, poster shelf (`HomeShelf`), clock, Update/Settings buttons, and a MemoryClean icon when that app is installed. |
-| `AppDock` | The installed-app dock on Home (long-press Select to lift, move, remove) and All Apps. |
+| `AppDock` | Installed apps: the dock on Home (long-press Select to lift, move, remove), launching (remembers recently used), hiding, and the app menu. |
+| `AllApps` | The Apps screen: search, Android settings shortcuts, recently used, and every app as a TV banner tile. |
 | `CatalogueRows` | The Movies/Series start page: a hero area for the focused title above Netflix-style rows (Trending, Popular, Top rated, release lists, then genres). The focused row is pinned at the top of the rows area, rows load as they come near, and position is restored after opening a title. |
 | `CatalogueScreens` | The Movies/Series screen (`CatalogueScreen`): header, hero and either the rows page or a single-category poster grid ("see all", Browse and filter results), plus the Browse and filter sheets. Back from a grid opened from the rows returns to the rows. See [docs/tmdb-categories.md](docs/tmdb-categories.md). |
 | `CatalogueSearch` | Live search: a large search box whose results appear as you type, as Movies, Series and People rows; recent searches as pills; person/company/keyword search inside the Browse sheets. Also builds the round person cards used for cast. |
@@ -102,7 +103,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 
 | Store | Contents |
 | --- | --- |
-| SharedPreferences `ui` | UI settings and lists: accent colour, clock, `http` toggle, auto-updates, dock order, pinned apps, My List, watched episodes, search history, For you interest (`interest`), catalogue region/genre cache. |
+| SharedPreferences `ui` | UI settings and lists: accent colour, clock, `http` toggle, auto-updates, dock order, pinned apps, hidden and recently used apps, My List, watched episodes, search history, For you interest (`interest`), catalogue region/genre cache. |
 | SharedPreferences `accounts` (via `Secrets`) | Encrypted: TMDB key, Premiumize key, Xtream and M3U details, saved library, recent playback. |
 | SharedPreferences `positions` | Playback resume positions. |
 | SQLite `channels-v2.db` | Imported IPTV channels (encrypted stream URLs), groups and favourites. |
