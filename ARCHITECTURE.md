@@ -54,7 +54,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | File | Responsibility |
 | --- | --- |
 | `MainActivity` | Activity lifecycle, Back handling, remote key routing, screen reset (`screen`, `fixedScreen`), background work (`async`), shared state (`page`, `prefs`, `secrets`, `media`, `generation`), starting playback (`play`). Holds one field per feature class. |
-| `TvActivity` | Base class of `MainActivity`. Colours, sizes (`dp`), focus styling and the standard widgets every screen uses, including form dialogs (`field`, `form`), streaming-style `pill` buttons and `fullBleedBackdrop()`. |
+| `TvActivity` | Base class of `MainActivity`. Colours, sizes (`dp`), focus styling and the standard widgets every screen uses, including form dialogs (`field`, `form`), list rows and `fullBleedBackdrop()`. Every button uses the one standard style (`button`, `styleFocus`); there are no pill-shaped buttons. |
 | `PosterCards` | Poster card views, binding TMDB items to cards, creating `PosterFeed`s, the long-press poster menu. |
 | `PosterFeed` | Recycled, append-only poster grid/shelf (RecyclerView) with paging, retry and focus preservation. See [docs/continuous-posters.md](docs/continuous-posters.md). |
 | `PosterTitle` | Two-line poster caption that scrolls when focused and too long. |
@@ -62,7 +62,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `Artwork` | Image download and caching for posters and backdrops: up to four downloads at once, decoded images in memory (an eighth of the app's memory, 12–64 MB). |
 | `ArtworkDiskCache` | Artwork bytes on disk (`cache/artwork`, 80 MB, least recently used removed first), so images seen before load without downloading again. |
 | `DpadRepeats` | Rate-limits held D-pad keys so a held direction cannot race through lists. |
-| `SidePanel` | The app's pop-up: a rounded panel on the right with a title, message, options or ticked choices and pill buttons. Used everywhere instead of AlertDialog/PopupMenu, also by the player. |
+| `SidePanel` | The app's pop-up: a rounded panel on the right with a title, message, options or ticked choices and standard buttons. Used everywhere instead of AlertDialog/PopupMenu, also by the player. |
 | `ErrorMessages` | Plain-language explanation and fix (Try again / Open Settings) for a failed load, from the exception type only. |
 | `Diagnostics` | Logs failures the app recovers from (`adb logcat -s MovieHub`), without account details. |
 
@@ -76,8 +76,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `CatalogueRows` | The Movies/Series start page: a hero area for the focused title above Netflix-style rows (Trending, Popular, Top rated, release lists, then genres). The focused row is pinned at the top of the rows area, rows load as they come near, and position is restored after opening a title. |
 | `CatalogueScreens` | The Movies/Series screen (`CatalogueScreen`): header, hero and either the rows page or a single-category poster grid ("see all", Browse and filter results), plus the Browse and filter overlay. Back from a grid opened from the rows returns to the rows. See [docs/tmdb-categories.md](docs/tmdb-categories.md). |
 | `CatalogueOptions` | The Browse and Filters sheets' contents: category and genre lists, region, years, languages, countries, streaming services and the "Refine results" form. |
-| `CatalogueSearch` | Live search: a large search box whose results appear as you type, as Movies, Series and People rows; recent searches as pills; person/company/keyword search inside the Browse sheets. Also builds the round person cards used for cast. |
-| `TitleDetails` | The details page for one movie or series: full-bleed artwork, title block and pill actions (resume, sources/episodes, My List, trailer), then "More like this" posters, collection and round cast photos. |
+| `CatalogueSearch` | Live search: a large search box whose results appear as you type, as Movies, Series and People rows; recent searches as buttons; person/company/keyword search inside the Browse sheets. Also builds the round person cards used for cast. |
+| `TitleDetails` | The details page for one movie or series: full-bleed artwork, title block and action buttons (resume, sources/episodes, My List, trailer), then "More like this" posters, collection and round cast photos. |
 | `SeriesScreens` | Seasons and episodes, watched-episode marks. |
 | `SourcesScreen` | Finds stream sources (Torrentio → MediaFusion → Comet fallback, Premiumize cache) and lists them. |
 | `LibraryScreens` | My List (watchlist), Continue Watching, saved Premiumize library. |
@@ -101,7 +101,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `Secrets` | Account details encrypted with an Android Keystore key. |
 | `VideoFiles` | Chooses the right file in a multi-file release (episode matching). |
 | `AppUpdates`, `UpdateApkProvider` | Downloads and verifies update APKs; shares the verified APK with the system installer. |
-| `VlcPlaybackActivity` | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions. |
+| `VlcPlaybackActivity` | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions (opened directly at the resume point), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`). |
 
 ## Where data is stored
 

@@ -40,12 +40,15 @@ public class PlaybackTest {
         assertTrue("Playback condition timed out", condition.getAsBoolean());
     }
 
-    private Button find(View view, String label) {
-        if (view instanceof Button && label.contentEquals(((Button) view).getText())) return (Button) view;
+    /** A player control by its description (the controls are icons, not text buttons). */
+    private View find(View view, String label) {
+        if (
+            view.isClickable() && label.contentEquals(String.valueOf(view.getContentDescription()))
+        ) return view;
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
             for (int i = 0; i < group.getChildCount(); i++) {
-                Button result = find(group.getChildAt(i), label);
+                View result = find(group.getChildAt(i), label);
                 if (result != null) return result;
             }
         }
@@ -54,7 +57,7 @@ public class PlaybackTest {
 
     private void click(String label) {
         instrumentation.runOnMainSync(() -> {
-            Button button = find(activity.getWindow().getDecorView(), label);
+            View button = find(activity.getWindow().getDecorView(), label);
             assertNotNull(label, button);
             button.performClick();
         });

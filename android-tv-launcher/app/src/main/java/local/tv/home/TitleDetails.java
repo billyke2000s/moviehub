@@ -29,7 +29,7 @@ final class TitleDetails {
 
     /**
      * Streaming-app style details page: full-screen artwork with the title, facts, synopsis and
-     * pill buttons on the left, then "More like this" posters, the collection and the cast below.
+     * buttons on the left, then "More like this" posters, the collection and the cast below.
      */
     void renderDetails(JSONObject item) throws Exception {
         activity.playbackTitle = item;
@@ -162,7 +162,7 @@ final class TitleDetails {
 
     private Button action(LinearLayout parent, String label, boolean primary, Runnable run) {
         Button button = activity.button(label, run);
-        activity.pill(button, primary);
+        if (primary) activity.primary(button);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, activity.dp(38));
         lp.rightMargin = activity.dp(12);
         parent.addView(button, lp);

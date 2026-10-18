@@ -282,7 +282,6 @@ abstract class TvActivity extends Activity {
         shell.addView(heading);
         shell.addView(content);
         Button close = button("Close", d::dismiss);
-        pill(close, false);
         LinearLayout.LayoutParams closeLayout = new LinearLayout.LayoutParams(-2, dp(44));
         closeLayout.topMargin = dp(14);
         shell.addView(close, closeLayout);
@@ -312,34 +311,6 @@ abstract class TvActivity extends Activity {
             android.view.ViewGroup group = (android.view.ViewGroup) view;
             for (int i = 0; i < group.getChildCount(); i++) settingsStyle(group.getChildAt(i));
         }
-    }
-
-    /**
-     * Streaming-app style pill button, sized to its label. A primary pill (the main action, like
-     * Play) is solid white; a secondary pill is see-through with a light outline and turns white
-     * when selected.
-     */
-    void pill(Button button, boolean primary) {
-        button.setAllCaps(false);
-        button.setTextSize(15);
-        button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        button.setPadding(dp(22), 0, dp(22), 0);
-        button.setOnFocusChangeListener((v, focused) -> stylePill((Button) v, primary, focused));
-        stylePill(button, primary, button.hasFocus());
-    }
-
-    private void stylePill(Button button, boolean primary, boolean focused) {
-        GradientDrawable shape = new GradientDrawable();
-        shape.setCornerRadius(dp(18));
-        boolean solid = primary || focused;
-        shape.setColor(solid ? 0xfff2f4f8 : 0x40ffffff);
-        if (focused) shape.setStroke(dp(3), accent());
-        else if (!primary) shape.setStroke(dp(1), 0x66ffffff);
-        button.setBackground(shape);
-        button.setTextColor(solid ? 0xff10141c : 0xfff8f8fc);
-        button.setScaleX(focused ? 1.06f : 1f);
-        button.setScaleY(focused ? 1.06f : 1f);
-        button.setTranslationZ(focused ? dp(4) : 0);
     }
 
     /** Tags on text inside a {@link #listRow()}: secondary text and small outlined badges. */

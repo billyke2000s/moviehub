@@ -238,17 +238,16 @@ final class CatalogueSearch {
             results.addView(scroll);
             for (int i = 0; i < history.length(); i++) {
                 String value = history.optString(i);
-                pill(pills, value, () -> query.setText(value));
+                recentButton(pills, value, () -> query.setText(value));
             }
-            pill(pills, "Clear", () -> {
+            recentButton(pills, "Clear", () -> {
                 activity.prefs.edit().remove("searchHistory").apply();
                 showRecent();
             });
         }
 
-        private void pill(LinearLayout parent, String label, Runnable run) {
+        private void recentButton(LinearLayout parent, String label, Runnable run) {
             Button button = activity.button(label, run);
-            activity.pill(button, false);
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, activity.dp(38));
             lp.rightMargin = activity.dp(10);
             parent.addView(button, lp);

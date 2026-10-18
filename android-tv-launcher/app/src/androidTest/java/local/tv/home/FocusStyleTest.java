@@ -183,10 +183,7 @@ public class FocusStyleTest {
             View primary = activity.getCurrentFocus();
             assertTrue("The main action is focused", primary instanceof Button);
             assertEquals("Find sources", ((Button) primary).getText().toString());
-            assertTrue(
-                "Actions are pills",
-                primary.getBackground() instanceof android.graphics.drawable.GradientDrawable
-            );
+            assertTrue("The main action uses the standard selected button style", primary.isSelected());
             assertEquals("Cast is listed", 1, countText(root, "Actor One"));
             assertEquals("Genres in the kicker", 1, countText(root, "MOVIE  ·  DRAMA"));
         });

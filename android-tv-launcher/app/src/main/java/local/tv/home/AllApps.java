@@ -64,7 +64,6 @@ final class AllApps {
             showHidden = !showHidden;
             show();
         });
-        activity.pill(hidden, false);
         LinearLayout.LayoutParams hiddenLayout = new LinearLayout.LayoutParams(-2, activity.dp(44));
         hiddenLayout.leftMargin = activity.dp(14);
         top.addView(hidden, hiddenLayout);
@@ -130,7 +129,7 @@ final class AllApps {
         return firstFocusable(source);
     }
 
-    /** The first shortcut pill or app tile (not the search box or a scroll container). */
+    /** The first shortcut button or app tile (not the search box or a scroll container). */
     private View firstFocusable(View view) {
         boolean control = view instanceof Button || view.getTag() instanceof String;
         if (control && view.isFocusable() && view.getVisibility() == View.VISIBLE) return view;
@@ -167,7 +166,6 @@ final class AllApps {
                     activity.toast(shortcut[0] + " settings are not available on this box");
                 }
             });
-            activity.pill(button, false);
             LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-2, activity.dp(40));
             layout.rightMargin = activity.dp(10);
             line.addView(button, layout);

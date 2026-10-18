@@ -99,7 +99,7 @@ public class StreamingMenusTest {
             );
             assertNull(find(root(), "Search people"));
             assertNotNull(find(root(), "Recent searches"));
-            assertNotNull("Recent searches are pills", find(root(), "Arrival"));
+            assertNotNull("Recent searches are buttons", find(root(), "Arrival"));
             assertTrue("The search box is focused", activity.getCurrentFocus() instanceof EditText);
         });
         JSONArray saved = new JSONArray(prefs.getString("searchHistory", "[]"));
