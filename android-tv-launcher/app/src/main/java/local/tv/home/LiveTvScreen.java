@@ -24,8 +24,9 @@ import java.util.Set;
  * channel numbers and names on the left, the half-hour time slots across the top, the selected
  * channel in yellow, and a colour-key footer. Backed by the on-device channel database.
  *
- * <p>Programme titles need a programme guide (EPG) from the provider; the free iptv-org lists have
- * none, so their rows say so.
+ * <p>Channels carry UK satellite numbers where known (see {@link SkyNumbers}). The last channel
+ * watched plays in the top corner. Programme titles come from the free UK programme guide (see
+ * {@link EpgImporter}); channels it does not cover say so.
  */
 final class LiveTvScreen {
 
@@ -41,15 +42,33 @@ final class LiveTvScreen {
         INK = 0xff0d1a5c;
 
     private final MainActivity activity;
-    /** What the guide shows now: "all", "favourites", "sports", "group:<name>", plus a search. */
+    /**
+     * What the guide shows now: "all", "favourites", "sports", "section:<name>", "group:<name>",
+     * plus a search.
+     */
     String filter = "all",
         search = "";
     int pageStart;
     /** The guide's channel cells on the current page (for tests and focus). */
     final List<View> cells = new ArrayList<>();
 
-    /** The guide's side panels: options, groups, search and colour-key set-up. */
+    /** The guide's side panels: options, sections, programme information, lock and reminders. */
     final LiveTvPanels panels;
+    /** The live picture in the corner of the guide. */
+    final GuidePicture picture = new GuidePicture();
+    /** Preference: the last channel watched (its stream key), shown in the guide's picture. */
+    static final String LAST_CHANNEL = "lastLiveKey";
+    /** Preference: whether the guide plays the last channel in its corner. */
+    static final String PICTURE = "guidePicture";
+
+    /** The guide frame (header, picture, footer) stays while paging; only the grid reloads. */
+    private int frameGeneration = -1;
+    private TextView when, listTitle, status, pictureLabel;
+    private final List<TextView> slotLabels = new ArrayList<>();
+    private LinearLayout grid;
+    private Button optionsButton;
+    private android.widget.FrameLayout pictureBox;
+    private int loadTicket;
 
     LiveTvScreen(MainActivity activity) {
         this.activity = activity;
@@ -60,7 +79,7 @@ final class LiveTvScreen {
         return ChannelDatabase.get(activity);
     }
 
-    private Set<String> favouriteKeys() {
+    Set<String> favouriteKeys() {
         return new HashSet<>(activity.prefs.getStringSet("favourites", Collections.emptySet()));
     }
 
@@ -78,6 +97,17 @@ final class LiveTvScreen {
     /** Shows the page starting at {@code start}, focusing row {@code focusRow} (-1 for the last). */
     void guide(int start, int focusRow) {
         pageStart = Math.max(0, start);
+        if (frameGeneration != activity.generation || grid == null) buildFrame();
+        when.setText(clock(new Date()));
+        listTitle.setText(listName().toUpperCase(Locale.ROOT));
+        for (int i = 0; i < slotLabels.size(); i++) slotLabels
+            .get(i)
+            .setText(clockTime(new Date(windowStart() + i * 30 * 60000L)));
+        loadPage(focusRow);
+    }
+
+    /** The guide's fixed parts: header with the live picture, time slots, grid area and keys. */
+    private void buildFrame() {
         activity.fixedScreen(null, activity.homeScreen::home);
         LinearLayout page = activity.page;
         page.setPadding(activity.dp(40), activity.dp(18), activity.dp(40), activity.dp(14));
@@ -95,20 +125,31 @@ final class LiveTvScreen {
             })
         );
 
-        // Header: the time and date, then the list name in large capitals.
+        // Header: the time and date and the list name on the left; on the right the Options
+        // button and the live picture, as the satellite guide kept the channel playing there.
         LinearLayout header = activity.row();
+        header.setGravity(Gravity.TOP);
         LinearLayout titles = activity.vertical();
-        TextView when = text(clock(new Date()), 20, false);
+        when = text("", 20, false);
         titles.addView(when);
-        TextView name = text(listName().toUpperCase(Locale.ROOT), 30, true);
-        titles.addView(name);
-        header.addView(titles, new LinearLayout.LayoutParams(0, -2, 1));
-        Button options = activity.button("Options", panels::options);
-        header.addView(options, new LinearLayout.LayoutParams(-2, activity.dp(40)));
-        page.addView(header);
-        TextView status = text("", 13, false);
+        listTitle = text("", 30, true);
+        titles.addView(listTitle);
+        status = text("", 13, false);
         status.setTextColor(0xffc9d3ff);
-        page.addView(status);
+        titles.addView(status);
+        header.addView(titles, new LinearLayout.LayoutParams(0, -2, 1));
+        optionsButton = activity.button("Options", panels::options);
+        LinearLayout.LayoutParams optionsLayout = new LinearLayout.LayoutParams(-2, activity.dp(40));
+        optionsLayout.rightMargin = activity.dp(16);
+        header.addView(optionsButton, optionsLayout);
+        pictureBox = new android.widget.FrameLayout(activity);
+        pictureBox.setBackground(box(0xff000000));
+        pictureLabel = text("", 13, true);
+        pictureLabel.setGravity(Gravity.CENTER);
+        pictureLabel.setShadowLayer(activity.dp(4), 0, activity.dp(1), 0xcc000000);
+        pictureBox.addView(pictureLabel, new android.widget.FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
+        header.addView(pictureBox, new LinearLayout.LayoutParams(activity.dp(160), activity.dp(90)));
+        activity.page.addView(header);
 
         // Time slots, like "Today 8.00pm 8.30pm 9.00pm".
         LinearLayout slots = activity.row();
@@ -116,23 +157,18 @@ final class LiveTvScreen {
         today.setGravity(Gravity.END);
         today.setPadding(0, 0, activity.dp(10), 0);
         slots.addView(today, new LinearLayout.LayoutParams(0, -2, 34));
-        Calendar slot = Calendar.getInstance();
-        slot.set(Calendar.MINUTE, slot.get(Calendar.MINUTE) < 30 ? 0 : 30);
-        slot.set(Calendar.SECOND, 0);
-        slot.set(Calendar.MILLISECOND, 0);
-        long windowStart = slot.getTimeInMillis();
         LinearLayout times = activity.row();
+        slotLabels.clear();
         for (int i = 0; i < 3; i++) {
-            times.addView(text(clockTime(slot.getTime()), 17, true), new LinearLayout.LayoutParams(0, -2, 1));
-            slot.add(Calendar.MINUTE, 30);
+            TextView label = text("", 17, true);
+            slotLabels.add(label);
+            times.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
         }
         slots.addView(times, new LinearLayout.LayoutParams(0, -2, 66));
         page.addView(slots);
 
-        LinearLayout grid = activity.vertical();
+        grid = activity.vertical();
         page.addView(grid, new LinearLayout.LayoutParams(-1, 0, 1));
-        TextView loading = text("Loading channels…", 18, false);
-        grid.addView(loading);
 
         // Colour keys, as on the remote.
         LinearLayout keys = activity.row();
@@ -140,11 +176,11 @@ final class LiveTvScreen {
         colourKey(keys, 0xffe53935, "Page up");
         colourKey(keys, 0xff43a047, "Page down");
         colourKey(keys, YELLOW, "Search");
-        colourKey(keys, 0xff1e63d6, "Groups");
+        colourKey(keys, 0xff1e63d6, "Sections");
         page.addView(keys);
         // "Press SELECT to view", with SELECT on a yellow key as the old guide printed it.
         android.text.SpannableString select = new android.text.SpannableString(
-            "Press  SELECT  to view  ·  Hold  SELECT  for favourites"
+            "Press  SELECT  to view  ·  ▶ for programme info  ·  Hold  SELECT  for favourites"
         );
         for (
             int at = select.toString().indexOf(" SELECT ");
@@ -158,15 +194,45 @@ final class LiveTvScreen {
         press.setText(select);
         page.addView(press);
 
+        frameGeneration = activity.generation;
+        activity.leaving = () -> {
+            picture.stop();
+            frameGeneration = -1;
+        };
+        startPicture();
+    }
+
+    /** The start of the half hour now: the guide's first time slot. */
+    private static long windowStart() {
+        Calendar slot = Calendar.getInstance();
+        slot.set(Calendar.MINUTE, slot.get(Calendar.MINUTE) < 30 ? 0 : 30);
+        slot.set(Calendar.SECOND, 0);
+        slot.set(Calendar.MILLISECOND, 0);
+        return slot.getTimeInMillis();
+    }
+
+    /** Plays the last channel watched in the guide's corner (unless turned off or locked). */
+    void startPicture() {
+        if (pictureBox != null) picture.show(activity, pictureBox, pictureLabel);
+    }
+
+    /** Loads the current page of channels and their programmes into the grid. */
+    private void loadPage(int focusRow) {
+        int ticket = ++loadTicket;
+        grid.removeAllViews();
+        cells.clear();
+        grid.addView(text("Loading channels…", 18, false));
         String listFilter = filter,
             listSearch = search;
+        int start = pageStart;
+        long windowStart = windowStart();
         activity.async(
             () -> {
                 List<ChannelDatabase.Row> rows = channelsDb().browse(
                     listFilter,
                     listSearch,
                     favouriteKeys(),
-                    pageStart
+                    start
                 );
                 // Programmes for the ten rows shown, across the three half-hour slots.
                 List<List<ChannelDatabase.Programme>> listings = new ArrayList<>();
@@ -181,6 +247,7 @@ final class LiveTvScreen {
                 return new Object[] { rows, listings };
             },
             result -> {
+                if (ticket != loadTicket) return; // a later page was asked for meanwhile
                 @SuppressWarnings("unchecked")
                 List<ChannelDatabase.Row> items = (List<ChannelDatabase.Row>) result[0];
                 @SuppressWarnings("unchecked")
@@ -192,9 +259,10 @@ final class LiveTvScreen {
                 cells.clear();
                 int count = Math.min(items.size(), ROWS);
                 boolean more = items.size() > ROWS;
-                Set<String> favourites = favouriteKeys();
+                Set<String> favourites = favouriteKeys(),
+                    reminders = new HashSet<>();
+                for (Reminders.Reminder item : Reminders.all(activity)) reminders.add(item.id());
                 for (int i = 0; i < count; i++) addRow(
-                    grid,
                     items.get(i),
                     listings.get(i),
                     windowStart,
@@ -202,7 +270,8 @@ final class LiveTvScreen {
                     i,
                     count,
                     more,
-                    favourites
+                    favourites,
+                    reminders
                 );
                 for (int i = count; i < ROWS; i++) grid.addView(
                     new View(activity),
@@ -219,7 +288,7 @@ final class LiveTvScreen {
                         "Options",
                         panels::options
                     );
-                    options.requestFocus();
+                    optionsButton.requestFocus();
                     return;
                 }
                 int focus = focusRow < 0 ? count - 1 : Math.min(focusRow, count - 1);
@@ -232,14 +301,25 @@ final class LiveTvScreen {
         if (!search.isEmpty()) return "Search: " + search;
         if (filter.equals("favourites")) return "Favourites";
         if (filter.equals("sports")) return "Sports";
+        if (filter.startsWith("section:")) return filter.substring(8);
         if (filter.startsWith("group:")) return filter.substring(6).isEmpty()
             ? "Ungrouped"
             : filter.substring(6);
         return "All channels";
     }
 
+    /** The guide label for a channel: its number, a lock, a star for favourites, its name. */
+    String label(ChannelDatabase.Row channel, boolean favourite) {
+        return (
+            channel.number +
+            "  " +
+            (ParentalLock.locked(activity, channel) ? "🔒 " : "") +
+            (favourite ? "★ " : "") +
+            channel.name
+        );
+    }
+
     private void addRow(
-        LinearLayout grid,
         ChannelDatabase.Row channel,
         List<ChannelDatabase.Programme> listing,
         long windowStart,
@@ -247,16 +327,12 @@ final class LiveTvScreen {
         int row,
         int count,
         boolean more,
-        Set<String> favourites
+        Set<String> favourites,
+        Set<String> reminders
     ) {
         LinearLayout line = activity.row();
         line.setClipChildren(false);
-        // Numbers start at 101, as on the classic guides.
-        TextView cell = text(
-            101 + position + "  " + (favourites.contains(channel.key) ? "★ " : "") + channel.name,
-            19,
-            true
-        );
+        TextView cell = text(label(channel, favourites.contains(channel.key)), 19, true);
         cell.setSingleLine(true);
         cell.setEllipsize(TextUtils.TruncateAt.END);
         cell.setGravity(Gravity.CENTER_VERTICAL);
@@ -264,7 +340,7 @@ final class LiveTvScreen {
         cell.setFocusable(true);
         cell.setFocusableInTouchMode(true);
         cell.setContentDescription(channel.name);
-        List<TextView> programmes = programmeCells(channel, listing, windowStart);
+        List<TextView> programmes = programmeCells(channel, listing, windowStart, reminders);
         LinearLayout programme = activity.row();
         for (TextView item : programmes) {
             LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(
@@ -285,27 +361,13 @@ final class LiveTvScreen {
         };
         cell.setOnFocusChangeListener(style);
         style.onFocusChange(cell, false);
-        cell.setOnClickListener(v ->
-            activity.async(
-                () -> channelsDb().url(channel.id, channel.key),
-                url -> {
-                    // Up/down and numbers in the player follow this list; coming back shows
-                    // the page of whatever channel was watched last.
-                    LiveZapper.session = new LiveZapper.Session(filter, search, favouriteKeys(), position);
-                    activity.resumeRefresh = () -> {
-                        int last = LiveZapper.session == null ? position : LiveZapper.session.position;
-                        guide(last - (last % ROWS), last % ROWS);
-                    };
-                    activity.play(channel.name, url, channel.key, true);
-                }
-            )
-        );
+        cell.setOnClickListener(v -> open(channel, position));
         cell.setOnLongClickListener(v -> {
             Set<String> keys = favouriteKeys();
             boolean added = keys.add(channel.key);
             if (!added) keys.remove(channel.key);
             activity.prefs.edit().putStringSet("favourites", keys).apply();
-            cell.setText(101 + position + "  " + (added ? "★ " : "") + channel.name);
+            cell.setText(label(channel, added));
             activity.toast(added ? "Added to favourites" : "Removed from favourites");
             return true;
         });
@@ -313,6 +375,10 @@ final class LiveTvScreen {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return isGuideKey(key);
             if (key >= KeyEvent.KEYCODE_0 && key <= KeyEvent.KEYCODE_9) {
                 typeDigit(key - KeyEvent.KEYCODE_0);
+                return true;
+            }
+            if (key == KeyEvent.KEYCODE_DPAD_RIGHT || key == KeyEvent.KEYCODE_INFO) {
+                panels.programmeInfo(channel, position);
                 return true;
             }
             if (key == KeyEvent.KEYCODE_DPAD_DOWN && row == count - 1 && more) {
@@ -336,7 +402,7 @@ final class LiveTvScreen {
                 return true;
             }
             if (colour(key) == 'b') {
-                panels.groups();
+                panels.sections();
                 return true;
             }
             if (key == KeyEvent.KEYCODE_MENU) {
@@ -355,6 +421,63 @@ final class LiveTvScreen {
         grid.addView(line, lineLayout);
     }
 
+    /**
+     * Opens a channel full screen, asking for the PIN first when it is locked. Up and down in the
+     * player follow the list the guide shows; coming back shows the page of the last channel.
+     */
+    void open(ChannelDatabase.Row channel, int position) {
+        if (ParentalLock.locked(activity, channel)) {
+            ParentalLock.check(activity, channel.name, () -> play(channel, position), null);
+            return;
+        }
+        play(channel, position);
+    }
+
+    private void play(ChannelDatabase.Row channel, int position) {
+        String listFilter = filter,
+            listSearch = search;
+        activity.async(
+            () -> channelsDb().url(channel.id, channel.key),
+            url -> {
+                LiveZapper.session = new LiveZapper.Session(
+                    listFilter,
+                    listSearch,
+                    favouriteKeys(),
+                    position
+                );
+                activity.prefs.edit().putString(LAST_CHANNEL, channel.key).apply();
+                picture.stop();
+                activity.resumeRefresh = () -> {
+                    int last = LiveZapper.session == null ? position : LiveZapper.session.position;
+                    guide(last - (last % ROWS), last % ROWS);
+                };
+                activity.play(channel.name, url, channel.key, true);
+            }
+        );
+    }
+
+    /** "Watch now" on a reminder: finds the channel in all channels and opens it. */
+    void watch(Reminders.Reminder reminder) {
+        activity.async(
+            () -> {
+                ChannelDatabase.Row row = channelsDb().byKey(reminder.key);
+                int position =
+                    row == null ? -1 : channelsDb().position("all", "", favouriteKeys(), row.number, true);
+                return new Object[] { row, position };
+            },
+            result -> {
+                ChannelDatabase.Row row = (ChannelDatabase.Row) result[0];
+                if (row == null) {
+                    activity.toast(reminder.channel + " is no longer in your channel lists");
+                    return;
+                }
+                filter = "all";
+                search = "";
+                open(row, Math.max(0, (Integer) result[1]));
+            }
+        );
+    }
+
     private boolean isPageUp(int key) {
         return colour(key) == 'r' || key == KeyEvent.KEYCODE_CHANNEL_UP || key == KeyEvent.KEYCODE_PAGE_UP;
     }
@@ -371,6 +494,7 @@ final class LiveTvScreen {
             isPageDown(key) ||
             colour(key) != 0 ||
             key == KeyEvent.KEYCODE_MENU ||
+            key == KeyEvent.KEYCODE_INFO ||
             (key >= KeyEvent.KEYCODE_0 && key <= KeyEvent.KEYCODE_9)
         );
     }
@@ -405,22 +529,43 @@ final class LiveTvScreen {
         activity.handler.postDelayed(jump, 1500);
     }
 
+    /**
+     * Goes to the typed channel number in this list; a number this list does not have opens it in
+     * all channels, and a number no channel has goes to the nearest one above it.
+     */
     private void jumpToTyped() {
         if (typed.length() == 0) return;
         int number = Integer.parseInt(typed.toString());
         typed.setLength(0);
-        int position = Math.max(0, number - 101);
-        guide(position - (position % ROWS), position % ROWS);
+        String listFilter = filter,
+            listSearch = search;
+        activity.async(
+            () -> {
+                Set<String> keys = favouriteKeys();
+                int here = channelsDb().position(listFilter, listSearch, keys, number, false);
+                if (here >= 0) return new int[] { here, 0 };
+                return new int[] { Math.max(0, channelsDb().position("all", "", keys, number, true)), 1 };
+            },
+            found -> {
+                if (found[1] == 1) {
+                    filter = "all";
+                    search = "";
+                }
+                guide(found[0] - (found[0] % ROWS), found[0] % ROWS);
+            }
+        );
     }
 
     /**
      * The programme cells across the 90-minute window, sized by how much of it each programme
      * fills, with "No information" in any gap; one cell when there is no guide for the channel.
+     * A programme with a reminder set is marked with a clock.
      */
     private List<TextView> programmeCells(
         ChannelDatabase.Row channel,
         List<ChannelDatabase.Programme> listing,
-        long windowStart
+        long windowStart,
+        Set<String> reminders
     ) {
         List<TextView> out = new ArrayList<>();
         long windowEnd = windowStart + WINDOW_MS;
@@ -442,7 +587,10 @@ final class LiveTvScreen {
             from = Math.max(from, at);
             // Arrows show a programme starting before or running past the slots shown.
             String title =
-                (item.start < windowStart ? "‹ " : "") + item.title + (item.stop > windowEnd ? "  ›" : "");
+                (reminders.contains(channel.key + "@" + item.start) ? "⏰ " : "") +
+                (item.start < windowStart ? "‹ " : "") +
+                item.title +
+                (item.stop > windowEnd ? "  ›" : "");
             out.add(programmeCell(title, (to - from) / 60000f));
             at = to;
             if (at >= windowEnd) break;

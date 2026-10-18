@@ -42,6 +42,10 @@ public class MainActivity extends TvActivity {
     final LinkedHashMap<String, PosterFeed.State> catalogueStates = new LinkedHashMap<>();
     JSONObject playbackTitle;
     Runnable resumeRefresh, myListRefresh;
+    /** Runs once when the current screen closes or the app goes to the background (the guide picture). */
+    Runnable leaving;
+    /** The reminder panel on screen, so a second one never stacks on it. */
+    private android.app.Dialog reminderPanel;
     Dialog catalogueDialog;
     LinearLayout overlayContent;
 
@@ -148,9 +152,22 @@ public class MainActivity extends TvActivity {
                     Locale.getDefault()
                 ).format(new Date())
             );
+            showDueReminder();
             handler.postDelayed(this, 30000);
         }
     };
+
+    /** A programme reminder that is due shows over whatever screen is open. */
+    void showDueReminder() {
+        if (reminderPanel != null && reminderPanel.isShowing()) return;
+        reminderPanel = Reminders.show(this, liveTv::watch);
+    }
+
+    private void runLeaving() {
+        Runnable run = leaving;
+        leaving = null;
+        if (run != null) run.run();
+    }
 
     interface Job<T> {
         T run() throws Exception;
@@ -332,7 +349,13 @@ public class MainActivity extends TvActivity {
     @Override
     public void onResume() {
         super.onResume();
-        if (dock.refreshAppsOnResume) {
+        Reminders.Reminder pending = Reminders.pending;
+        if (pending != null) {
+            // "Watch now" on a reminder shown in the player while it played something else.
+            Reminders.pending = null;
+            resumeRefresh = null;
+            liveTv.watch(pending);
+        } else if (dock.refreshAppsOnResume) {
             dock.refreshAppsOnResume = false;
             appsScreen.refresh();
         } else if (resumeRefresh != null) {
@@ -345,6 +368,7 @@ public class MainActivity extends TvActivity {
     @Override
     public void onStop() {
         handler.removeCallbacks(ticker);
+        runLeaving();
         super.onStop();
     }
 
@@ -383,6 +407,7 @@ public class MainActivity extends TvActivity {
 
     /** Home is a viewport, never a vertically scrolling page. The dock has reserved space. */
     void fixedScreen(String title, Runnable goBack) {
+        runLeaving();
         resumeRefresh = null;
         myListRefresh = null;
         dock.finishDockMove();

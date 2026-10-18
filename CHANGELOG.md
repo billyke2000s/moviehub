@@ -10,6 +10,29 @@ update feed), so the next release after it used code 12, named 0.12.
 
 Nothing yet.
 
+## 0.24 (18 Oct 2026)
+
+Live TV now has the rest of what the old satellite boxes did:
+
+- UK satellite channel numbers: 101 BBC One, 102 BBC Two, 103 ITV1, 104 Channel 4, 105 Channel 5
+  and so on, wherever the channel is in your lists. Other channels follow from 1001. The guide is
+  in number order, and typing a number goes to that channel even from Favourites or a section.
+- Guide sections on the blue key: Entertainment, Movies, Music, Sports, News, Documentaries, Kids,
+  Religion and Shopping (your lists' own groups are still there too).
+- The channel you last watched keeps playing in the top corner of the guide. Options → Picture in
+  the guide turns it off.
+- Programme information: press ▶ (or Info) on a channel in the guide for what is on now with a
+  description and the rest of the day. Choose a programme to read about it and set a reminder.
+- Reminders: when a programme you chose is about to start, a panel offers to switch to it
+  (while MovieHub is open). Options → Reminders lists them.
+- The banner shows a progress bar and a short description, and ◀ ▶ (with the controls hidden)
+  browse what is on other channels without leaving this one: ▲ ▼ move between channels, ◀ ▶
+  between programmes, SELECT watches the channel shown and BACK closes it.
+- Parental lock: choose a four-digit PIN (Options → Parental lock), then lock channels (from
+  their programme information) or whole sections. Locked channels ask for the PIN before playing.
+- Pause live TV, then carry on from where you paused, or choose More → Back to live. Rewind works
+  on channels whose stream allows it; others say so.
+
 ## 0.23 (18 Oct 2026)
 
 - More free channels: the Free-TV list (free-to-air and free ad-supported channels) is added to

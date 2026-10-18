@@ -4,10 +4,12 @@ Last updated: 18 October 2026.
 
 ## Where things stand
 
-- **Latest published version:** 0.15 (version code 15), published 18 October 2026, with update
+- **Latest published version:** 0.24 (version code 24), published 18 October 2026, with update
   notes in the feed. Items under *Unreleased* in [CHANGELOG.md](CHANGELOG.md) are not on TVs yet.
 - **Code structure:** feature classes per area, see [ARCHITECTURE.md](ARCHITECTURE.md).
-  `CatalogueScreens` was split (filter sheets in `CatalogueOptions`); no file is over 700 lines.
+  `CatalogueScreens` was split (filter sheets in `CatalogueOptions`) and the Live TV guide's
+  panels are in `LiveTvPanels`. `LiveTvScreen` is about 710 lines; split it further (for example
+  colour keys and number entry) before it grows.
 - **CI on `main`:** build, lint, signing and device tests pass.
 
 ## Known issues
@@ -22,6 +24,13 @@ Last updated: 18 October 2026.
    watch the first runs after that date.
 4. **Android Gradle plugin 9.4.1** (replacing Dependabot #12) builds with Gradle 9.6.0 and Build
    Tools 36. First published in 0.16.
+
+5. **Live TV satellite features are only tested on fixtures.** Channel numbers come from a fixed
+   table of UK satellite numbers (June 2026) matched by name, so some channels may get none or a
+   wrong one. Pausing live TV relies on LibVLC: whether a real stream resumes where it paused or
+   jumps to live depends on the stream, and rewinding works only on streams that allow seeking.
+   Reminders show only while MovieHub is open. Automatic backup switching has not been seen on a
+   real failing stream.
 
 ## Decisions
 

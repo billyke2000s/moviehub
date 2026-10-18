@@ -5,7 +5,7 @@ There are three layers of checks. CI runs all of them on every pull request that
 
 | Layer | Where | Needs | Runs in CI step |
 | --- | --- | --- | --- |
-| Core checks (45) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
+| Core checks (61) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
 | Build and lint | Gradle | Android SDK 35 | "Build APK and run Android lint" |
 | Device tests (instrumentation) | `android-tv-launcher/app/src/androidTest/` | Android emulator | `device-tests` job |
 | Signing compatibility | release build vs published APK | signing secrets (same-repo PRs only) | `signed-compatibility` job |
@@ -17,20 +17,23 @@ Pure-Java rules for playlists, URLs, channel search and episode matching. They d
 ```sh
 mkdir -p build/core-tests
 javac -d build/core-tests \
-  android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch}.java \
-  android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest}.java
-for t in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest EpgMatchTest; do
+  android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch,SkyNumbers}.java \
+  android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest,SkyNumbersTest}.java
+for t in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest EpgMatchTest SkyNumbersTest; do
   java -Xmx64m -cp build/core-tests local.tv.home.$t
 done
 ```
 
-Expected output: 17 playlist, 9 network, 10 episode/file 13 channel-query and 10 programme-guide matching checks passed.
+Expected output: 17 playlist, 9 network, 10 episode/file, 13 channel-query, 10 programme-guide
+matching and 16 satellite numbering checks passed.
 
 ## Device tests
 
 Instrumentation tests drive the real app with D-pad key events on an emulator. They cover the
 encrypted channel database, imports and migrations, LibVLC playback, Home and dock navigation,
-catalogue paging and focus, the streaming menus and artwork loading. Provider responses are local
+catalogue paging and focus, the streaming menus and artwork loading, and Live TV: guide paging and
+number entry, programme information, the PIN lock, reminders, channel changing and browsing in the
+banner, pausing live TV and the guide's live picture (played from a local test stream). Provider responses are local
 fixtures, so these tests **do not** prove that a real TMDB, Premiumize or Xtream account works.
 
 ```sh

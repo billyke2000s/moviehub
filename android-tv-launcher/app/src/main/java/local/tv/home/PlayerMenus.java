@@ -102,11 +102,13 @@ final class PlayerMenus {
             0,
             "Source · " + a.zapper.sourceLabel()
         );
+        if (a.live && a.behindLive) labels.add(0, "Back to live");
         a.dialogOpen = true;
         SidePanel panel = SidePanel.of(a, "Playback options").onDismiss(a::panelClosed);
         for (String label : labels)
             panel.option(label, () -> {
-                if (label.startsWith("Source")) chooseSource();
+                if (label.equals("Back to live")) a.backToLive();
+                else if (label.startsWith("Source")) chooseSource();
                 else if (label.startsWith("Playback speed")) chooseSpeed();
                 else if (label.equals("Picture size")) choosePicture();
                 else if (label.equals("Subtitle timing")) subtitleTiming();

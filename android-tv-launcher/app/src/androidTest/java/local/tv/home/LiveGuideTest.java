@@ -60,6 +60,7 @@ public class LiveGuideTest {
         if (free == null) edit.remove(FreeChannels.PREF);
         else edit.putString(FreeChannels.PREF, free);
         edit.commit();
+        ParentalLock.clear(remote.getTargetContext());
         ChannelDatabase.get(remote.getTargetContext()).clear();
     }
 
@@ -104,5 +105,34 @@ public class LiveGuideTest {
             "back up to the previous page, last row",
             () -> activity.liveTv.pageStart == 10 && focused().startsWith("120  Channel 19")
         );
+    }
+
+    @Test
+    public void typedNumbersProgrammeInfoAndTheParentalLock() {
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await(
+            "first page",
+            () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
+        );
+        // Typing a number goes straight to that channel, as on a satellite box.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_2);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_3);
+        await("typed 123", () -> activity.liveTv.pageStart == 20 && focused().startsWith("123  Channel 22"));
+        // Right shows what is on (the programme information panel).
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        await("programme information", () -> SidePanel.current != null && SidePanel.current.isShowing());
+        remote.runOnMainSync(() -> SidePanel.current.dismiss());
+        // A locked channel asks for the PIN instead of playing.
+        ChannelDatabase.Row row = ChannelDatabase.get(activity)
+            .browse("all", "", java.util.Collections.emptySet(), 22)
+            .get(0);
+        ParentalLock.setPin(activity, "1234");
+        ParentalLock.setChannel(activity, row, true);
+        await("guide still showing", () -> activity.liveTv.cells.size() == 5);
+        remote.runOnMainSync(() -> activity.liveTv.cells.get(2).performClick());
+        await("PIN asked", () -> SidePanel.current != null && SidePanel.current.isShowing());
+        UiEvidence.capture("live-pin");
+        remote.runOnMainSync(() -> SidePanel.current.dismiss());
     }
 }
