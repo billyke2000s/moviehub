@@ -227,6 +227,8 @@ public class PlaybackTest {
                 return false;
             }
         }, 30000);
+        // Keys can only be sent once the player window has input focus.
+        await(activity::hasWindowFocus, 5000);
         instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         instrumentation.waitForIdleSync();
         assertFalse("One Back press keeps playing", activity.isFinishing());

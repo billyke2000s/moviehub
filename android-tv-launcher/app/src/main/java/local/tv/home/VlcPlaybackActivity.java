@@ -109,21 +109,14 @@ public class VlcPlaybackActivity extends Activity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+            // Both the press and the release are handled here, so Android's own Back handling
+            // never finishes the player behind our back.
+            if (event.getAction() == KeyEvent.ACTION_DOWN) onBackKey(event);
+            return true;
+        }
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             int key = event.getKeyCode();
-            if (key == KeyEvent.KEYCODE_BACK) {
-                // Leaving takes two presses, so a stray press does not stop the film. Held-key
-                // repeats are ignored for the same reason.
-                if (event.getRepeatCount() > 0) return true;
-                long now = SystemClock.elapsedRealtime();
-                if (ended || player == null || now - backPressedAt < EXIT_WINDOW_MS) {
-                    finish();
-                    return true;
-                }
-                backPressedAt = now;
-                showExitHint();
-                return true;
-            }
             if (key == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
                 toggle();
                 return true;
@@ -524,6 +517,21 @@ public class VlcPlaybackActivity extends Activity {
     private void panelClosed() {
         dialogOpen = false;
         revealControls();
+    }
+
+    /**
+     * Leaving takes two presses, so a stray press does not stop the film. Held-key repeats are
+     * ignored for the same reason.
+     */
+    private void onBackKey(KeyEvent event) {
+        if (event.getRepeatCount() > 0) return;
+        long now = SystemClock.elapsedRealtime();
+        if (ended || player == null || now - backPressedAt < EXIT_WINDOW_MS) {
+            finish();
+            return;
+        }
+        backPressedAt = now;
+        showExitHint();
     }
 
     private void showExitHint() {
