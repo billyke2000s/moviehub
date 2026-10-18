@@ -59,7 +59,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `PosterFeed` | Recycled, append-only poster grid/shelf (RecyclerView) with paging, retry and focus preservation. See [docs/continuous-posters.md](docs/continuous-posters.md). |
 | `PosterTitle` | Two-line poster caption that scrolls when focused and too long. |
 | `BackdropView` | Full-bleed background artwork: covers the view pinned top-right, cross-fades between images, keeps the old image while the next loads. Placed behind a screen with `TvActivity.fullBleedBackdrop()`; used on Home and details. |
-| `Artwork` | Image download and caching for posters and backdrops. |
+| `Artwork` | Image download and caching for posters and backdrops: up to four downloads at once, decoded images in memory (an eighth of the app's memory, 12–64 MB). |
+| `ArtworkDiskCache` | Artwork bytes on disk (`cache/artwork`, 80 MB, least recently used removed first), so images seen before load without downloading again. |
 | `DpadRepeats` | Rate-limits held D-pad keys so a held direction cannot race through lists. |
 | `SidePanel` | The app's pop-up: a rounded panel on the right with a title, message, options or ticked choices and pill buttons. Used everywhere instead of AlertDialog/PopupMenu, also by the player. |
 | `ErrorMessages` | Plain-language explanation and fix (Try again / Open Settings) for a failed load, from the exception type only. |
@@ -73,7 +74,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `AppDock` | Installed apps: the dock on Home (long-press Select to lift, move, remove), launching (remembers recently used), hiding, and the app menu. |
 | `AllApps` | The Apps screen: search, Android settings shortcuts, recently used, and every app as a TV banner tile. |
 | `CatalogueRows` | The Movies/Series start page: a hero area for the focused title above Netflix-style rows (Trending, Popular, Top rated, release lists, then genres). The focused row is pinned at the top of the rows area, rows load as they come near, and position is restored after opening a title. |
-| `CatalogueScreens` | The Movies/Series screen (`CatalogueScreen`): header, hero and either the rows page or a single-category poster grid ("see all", Browse and filter results), plus the Browse and filter sheets. Back from a grid opened from the rows returns to the rows. See [docs/tmdb-categories.md](docs/tmdb-categories.md). |
+| `CatalogueScreens` | The Movies/Series screen (`CatalogueScreen`): header, hero and either the rows page or a single-category poster grid ("see all", Browse and filter results), plus the Browse and filter overlay. Back from a grid opened from the rows returns to the rows. See [docs/tmdb-categories.md](docs/tmdb-categories.md). |
+| `CatalogueOptions` | The Browse and Filters sheets' contents: category and genre lists, region, years, languages, countries, streaming services and the "Refine results" form. |
 | `CatalogueSearch` | Live search: a large search box whose results appear as you type, as Movies, Series and People rows; recent searches as pills; person/company/keyword search inside the Browse sheets. Also builds the round person cards used for cast. |
 | `TitleDetails` | The details page for one movie or series: full-bleed artwork, title block and pill actions (resume, sources/episodes, My List, trailer), then "More like this" posters, collection and round cast photos. |
 | `SeriesScreens` | Seasons and episodes, watched-episode marks. |
@@ -109,6 +111,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | SharedPreferences `accounts` (via `Secrets`) | Encrypted: TMDB key, Premiumize key, Xtream and M3U details, saved library, recent playback. |
 | SharedPreferences `positions` | Playback resume positions. |
 | SQLite `channels-v2.db` | Imported IPTV channels (encrypted stream URLs), groups and favourites. |
+| Cache `artwork/` | Downloaded public artwork (TMDB images, channel logos), at most 80 MB. No account data. |
 | Cache `updates/` | The downloaded update APK, before installation. |
 
 ## Design decisions

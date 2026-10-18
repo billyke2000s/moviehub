@@ -8,45 +8,35 @@ update feed), so the next release after it used code 12, named 0.12.
 
 ## Unreleased
 
-On `main` but not yet published to TVs:
+Nothing yet.
 
-- Redesigned Sources: the title's artwork behind the page, each source as a rounded row with the
-  quality in large type, badges for HDR/Dolby Vision, codec and size, and what Select does (Play,
-  Send to cloud). The file chooser uses the same rows and selects the suggested episode.
-- Series: seasons and episodes on one page, with season pills and the episodes below, opening on
-  the season you are watching. Back from an episode's sources returns to that season.
-- Continue watching, saved library, cloud files and transfers use the same rows (Select plays or
-  opens, hold Select for more), with progress bars for transfers.
-- Live TV channels as rounded tiles with the logo on a dark plate, and clearer empty states.
-- Player controls on a soft shade over the video with pill buttons and a larger title.
-- Every pop-up (menus, choices, confirmations, the update prompt, player options and errors) is now a
-  panel on the right in MovieHub's own style instead of Android's grey dialogs and menus. The current
-  choice is ticked and selected.
-- Clearer messages when something fails to load: no internet, a timeout, a rejected key, the service
-  being down, or TMDB not connected, each with Try again or Open Settings.
-- The update prompt shows what's new in the version being offered.
-- New Apps screen (from All Apps on Home), like the Google TV app drawer: a search box, Android
-  shortcuts (Settings, Wi-Fi, Bluetooth, Display, Sound, Storage, Manage apps, Date & time; only
-  those the box has), recently used apps, and every app as its TV banner (icon and name when it has
-  none). Hold Select or press Menu on an app to hide it; "Show hidden" brings hidden apps back.
-- MovieHub has its own icon and TV banner, and is called "MovieHub" instead of "Home" in Android's
-  app lists and the home-app chooser.
-- Home "For you" now blends recommendations for several titles you showed interest in (played,
-  My List, sources or episodes opened) instead of only the last title opened, so it no longer
-  changes completely with every title. Titles recommended by several of them come first; titles
-  you already played are left out. With no history yet it shows weekly trending.
-- Movies/Series: Back jumps straight to the top bar from anywhere in the rows; Back again leaves,
-  as in the major streaming apps.
-- Redesigned search: one large rounded search box, results appear as you type (no "Search titles"
-  or "Search people" buttons) as Movies, Series and People rows on the search page itself, and
-  recent searches show as pills while the box is empty.
+## 0.15 (18 Oct 2026)
+
+- For you on Home blends recommendations from what you played, saved and opened, instead of
+  changing with every title you look at.
+- New Apps screen: search, Android shortcuts (Wi-Fi, Bluetooth, display, sound, storage, ...),
+  recently used apps, TV banners, and hiding apps you never use (hold Select on an app).
+- MovieHub has its own icon and banner, and is named "MovieHub" instead of "Home".
+- Every pop-up is now a panel on the right in MovieHub's style instead of Android's grey dialogs.
+- Redesigned Sources (quality, HDR, codec and size at a glance), Series (season pills with the
+  episodes on the same page), Continue watching, Live TV, cloud and the player controls.
+- Search: one large box with results appearing as you type, in Movies, Series and People rows.
+- Movies/Series: Back jumps to the top bar from anywhere; Back again leaves.
+- Clearer messages when something fails to load, with Try again or Open Settings.
+- Updates show what's new before installing.
+- Faster artwork: images you have seen are kept on the box and load instantly.
+- Home: the featured title's button is back to the "View details" style, sized to its label.
+
+## 0.14 (18 Oct 2026)
+
+Published from `main` after PRs #32 and #33:
+
 - Redesigned title details page: full-screen artwork with the type and genres, a large title,
   facts, synopsis (shown once, not twice) and pill buttons on the left, the main action in white;
   then a "More like this" poster row, the collection and the cast as round photos.
 - The Movies/Series title area keeps the same height for every title, so the poster rows no
   longer move when a synopsis is shorter or longer; the title sits higher to make room.
-- Home: the featured title's "View details" button keeps its usual style but is sized to its
-  label instead of a long fixed width. (0.14 briefly showed it as a "More info" pill.)
+- Home: the featured title's action became a slim "More info" pill (changed back in 0.15).
 
 ## 0.13 (18 Oct 2026)
 

@@ -273,6 +273,10 @@ public class MainActivity extends TvActivity {
         secrets = new Secrets(this);
         media = new MediaRepository(secrets);
         prefs = getSharedPreferences("ui", MODE_PRIVATE);
+        if (Artwork.disk == null) Artwork.disk = new ArtworkDiskCache(
+            new java.io.File(getCacheDir(), "artwork"),
+            ArtworkDiskCache.MAX_BYTES
+        );
         forYou = new ForYou(prefs, secrets, path -> media.tmdb(path));
         try {
             ChannelSync.schedule(this);

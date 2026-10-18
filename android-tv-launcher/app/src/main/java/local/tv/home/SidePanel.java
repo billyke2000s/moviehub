@@ -107,19 +107,20 @@ final class SidePanel {
         heading.setEllipsize(TextUtils.TruncateAt.END);
         body.addView(heading);
 
+        LinearLayout list = new LinearLayout(activity);
+        list.setOrientation(LinearLayout.VERTICAL);
+        list.setPadding(0, dp(14), 0, dp(6));
         if (message != null) {
+            // Inside the scrolling area, so a long message (such as update notes) never pushes the
+            // buttons off the panel.
             TextView text = new TextView(activity);
             text.setText(message);
             text.setTextSize(16);
             text.setTextColor(0xffb4bfd2);
             text.setLineSpacing(0, 1.15f);
-            text.setPadding(0, dp(10), 0, 0);
-            body.addView(text);
+            text.setPadding(0, 0, 0, dp(8));
+            list.addView(text);
         }
-
-        LinearLayout list = new LinearLayout(activity);
-        list.setOrientation(LinearLayout.VERTICAL);
-        list.setPadding(0, dp(14), 0, dp(6));
         View focus = null;
         if (content != null) list.addView(content);
         for (Object[] option : options) {

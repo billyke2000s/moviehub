@@ -15,13 +15,20 @@ final class Artwork {
         Bitmap fetch(String url) throws Exception;
     }
 
-    private static final LruCache<String, Bitmap> CACHE = new LruCache<String, Bitmap>(12 * 1024 * 1024) {
+    /** Decoded images in memory: an eighth of the app's memory, between 12 and 64 MB. */
+    private static final LruCache<String, Bitmap> CACHE = new LruCache<String, Bitmap>(
+        (int) Math.max(12L << 20, Math.min(64L << 20, Runtime.getRuntime().maxMemory() / 8))
+    ) {
         @Override
         protected int sizeOf(String key, Bitmap image) {
             return image.getByteCount();
         }
     };
-    private final ExecutorService downloads = Executors.newFixedThreadPool(2);
+    /** Downloads at once; artwork comes from a CDN, so a few in parallel fill a row quickly. */
+    static final int PARALLEL = 4;
+    /** Artwork kept on disk between sessions; set once by the activity. */
+    static volatile ArtworkDiskCache disk;
+    private final ExecutorService downloads = Executors.newFixedThreadPool(PARALLEL);
     private final Handler main = new Handler(Looper.getMainLooper());
     private final WeakHashMap<ImageView, Binding> bindings = new WeakHashMap<>();
     private final LinkedHashSet<String> pending = new LinkedHashSet<>();
@@ -100,7 +107,7 @@ final class Artwork {
                 queued.remove();
                 continue;
             }
-            if (running.size() >= 2) continue;
+            if (running.size() >= PARALLEL) continue;
             queued.remove();
             running.add(url);
             downloads.execute(() -> {
@@ -145,7 +152,10 @@ final class Artwork {
     }
 
     private static Bitmap download(String url) throws Exception {
-        byte[] bytes = Network.bytes(url, null, 3 * 1024 * 1024, false);
+        ArtworkDiskCache store = disk;
+        byte[] bytes = store == null ? null : store.get(url);
+        boolean fresh = bytes == null;
+        if (fresh) bytes = Network.bytes(url, null, 3 * 1024 * 1024, false);
         BitmapFactory.Options size = new BitmapFactory.Options();
         size.inJustDecodeBounds = true;
         BitmapFactory.decodeByteArray(bytes, 0, bytes.length, size);
@@ -156,7 +166,10 @@ final class Artwork {
         decode.inSampleSize = 1;
         while (size.outWidth / decode.inSampleSize > 1280 || size.outHeight / decode.inSampleSize > 720)
             decode.inSampleSize *= 2;
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.length, decode);
+        Bitmap image = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, decode);
+        // Store only what decoded as an image, so a broken download is not kept.
+        if (image != null && fresh && store != null) store.put(url, bytes);
+        return image;
     }
 
     void close() {
