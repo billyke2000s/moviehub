@@ -99,9 +99,10 @@ final class HomeScreen {
         summary.setShadowLayer(activity.dp(4), 0, activity.dp(1), 0xcc000000);
         copy.addView(summary);
         Button open = activity.button("Connect TMDB", () -> activity.settingsScreens.accountScreen("TMDB"));
-        activity.pill(open, false);
-        LinearLayout.LayoutParams openLayout = new LinearLayout.LayoutParams(-2, activity.dp(34));
-        openLayout.topMargin = activity.dp(8);
+        // The standard button style, sized to its label rather than a long fixed width.
+        open.setPadding(activity.dp(20), activity.dp(5), activity.dp(20), activity.dp(5));
+        LinearLayout.LayoutParams openLayout = new LinearLayout.LayoutParams(-2, activity.dp(36));
+        openLayout.topMargin = activity.dp(6);
         copy.addView(open, openLayout);
         hero.addView(copy, new FrameLayout.LayoutParams(activity.dp(510), -1));
         LinearLayout.LayoutParams heroLayout = new LinearLayout.LayoutParams(-1, 0, 1);
@@ -264,7 +265,7 @@ final class HomeScreen {
             String name = item.optString("title", item.optString("name", "Title"));
             heading.setText(name);
             summary.setText(item.optString("overview", ""));
-            open.setText("More info");
+            open.setText("View details");
             open.setOnClickListener(v -> activity.posters.tmdbTitle(item));
             String art = item.optString("backdrop_path");
             if (pendingArt != null) activity.handler.removeCallbacks(pendingArt);
