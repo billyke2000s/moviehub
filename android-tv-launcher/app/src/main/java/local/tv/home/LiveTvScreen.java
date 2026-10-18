@@ -31,11 +31,20 @@ final class LiveTvScreen {
     /** The guide shows three half-hour slots. */
     static final long WINDOW_MS = 90L * 60 * 1000;
     /** Guide colours. */
+    /**
+     * Guide colours. The cell blues, yellows and the faded "no listings" blue are the satellite
+     * box's own, as recreated by the Sky+ web EPG simulator (davwheat); the background stays the
+     * owner's dark blue.
+     */
     static final int NAVY = 0xff10175a,
-        BLUE = 0xff1f3fa8,
-        BLUE_DARK = 0xff17318a,
-        YELLOW = 0xffffd83a,
-        INK = 0xff0d1a5c;
+        BLUE = 0xff002db6,
+        BLUE_DARK = 0xff00137d,
+        NUMBER_TEXT = 0xff758ae5,
+        FADED = 0xff2144c4,
+        FADED_TEXT = 0xff99aaee,
+        YELLOW = 0xfffcda15,
+        YELLOW_DARK = 0xfffec200,
+        INK = 0xff0000b3;
 
     private final MainActivity activity;
     /**
@@ -157,10 +166,37 @@ final class LiveTvScreen {
 
     /** Page up or Page down chosen in the bar: turns the page and keeps the focus on that key. */
     void pageFromBar(int direction, int key) {
-        int target = pageStart + direction * ROWS;
-        if (target < 0 || (direction > 0 && !hasMore)) return;
         barKey = key;
-        guide(target, 0);
+        turnPage(direction, 0);
+    }
+
+    /**
+     * The next or previous page, wrapping round as the satellite guide did: down from the last page
+     * goes to the first, up from the first to the last.
+     */
+    void turnPage(int direction, int row) {
+        if (direction > 0) {
+            if (hasMore) guide(pageStart + ROWS, row);
+            else if (pageStart > 0) guide(0, row);
+            else barKey = -1;
+            return;
+        }
+        if (pageStart > 0) {
+            guide(pageStart - ROWS, row);
+            return;
+        }
+        String listFilter = filter,
+            listSearch = search;
+        Set<String> keys = favouriteKeys();
+        int request = activity.generation;
+        activity.async(
+            () -> channelsDb().position(listFilter, listSearch, keys, Integer.MAX_VALUE - 1, true),
+            last -> {
+                if (request != activity.generation || !listFilter.equals(filter)) return;
+                if (last >= ROWS) guide(last - (last % ROWS), row);
+                else barKey = -1;
+            }
+        );
     }
 
     /** Down from the Options button: the first row of the grid. */
@@ -438,11 +474,11 @@ final class LiveTvScreen {
             return true;
         }
         if (isPageUp(key)) {
-            if (pageStart > 0) guide(pageStart - ROWS, row);
+            turnPage(-1, row);
             return true;
         }
         if (isPageDown(key)) {
-            if (more) guide(pageStart + ROWS, row);
+            turnPage(1, row);
             return true;
         }
         // Yellow searches and blue opens the sections (the guide menu), as on the satellite guide.

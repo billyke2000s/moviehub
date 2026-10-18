@@ -45,9 +45,10 @@ final class GuideFrame {
     /** The colour keys along the bottom, which can be chosen with the D-pad. */
     KeyBar bar;
     /** The colour keys' colours, as on the remote. */
-    static final int RED = 0xffe53935,
-        GREEN = 0xff43a047,
-        BLUE = 0xff1e63d6;
+    static final int RED = 0xffc20106,
+        GREEN = 0xff67d66d,
+        YELLOW = 0xfffecf5b,
+        BLUE = 0xff0025c9;
     private TextView when, listTitle, dayLabel;
     private final List<TextView> slotLabels = new ArrayList<>();
 
@@ -120,7 +121,7 @@ final class GuideFrame {
             .onUp(guide::focusLastRow)
             .add(RED, "Page up", () -> guide.pageFromBar(-1, 0))
             .add(GREEN, "Page down", () -> guide.pageFromBar(1, 1))
-            .add(LiveTvScreen.YELLOW, "Search", guide.panels::searchPanel)
+            .add(YELLOW, "Search", guide.panels::searchPanel)
             .add(BLUE, "Sections", guide.menu::show);
         bar.view.setPadding(0, activity.dp(4), 0, 0);
         page.addView(bar.view);

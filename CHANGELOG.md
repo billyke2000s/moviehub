@@ -6,6 +6,20 @@ version below was built from the listed `main` commit. Earlier history is in the
 Note: the release shown as 0.10 below was published with version code 11 (name "0.11" in the
 update feed), so the next release after it used code 12, named 0.12.
 
+## 0.34 (18 Oct 2026)
+
+Details from the old Sky+ box, checked against David Wheatley's Sky+ web EPG simulator
+(sky-epg.davwheat.dev), on the dark-blue guide:
+
+- The TV Guide menu is in the box's order: 1 All Channels, 2 Entertainment, 3 Movies, 4 Sports,
+  5 News, 6 Documentaries, 7 Kids, 8 Music, 9 Radio, 0 More…. Favourites is on the blue key and
+  the second page, with Religion, Shopping, International, your lists' groups and Options. BACK
+  on the second page goes back to the first.
+- Paging wraps round: Page down on the last page goes to the first, Page up on the first goes to
+  the last.
+- The box's exact blues and yellows for the rows, number boxes, highlight and colour keys.
+  Programme slots with no listings are drawn in the faded blue the box used.
+
 ## 0.33 (18 Oct 2026)
 
 - The channel guide is back to the dark-blue look from 0.26: the time and list name at the top
