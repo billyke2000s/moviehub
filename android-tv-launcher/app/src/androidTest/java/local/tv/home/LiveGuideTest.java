@@ -141,6 +141,7 @@ public class LiveGuideTest {
                 activity.liveTv.rows.programmes.size() == 5 &&
                 activity.liveTv.rows.programmes.get(2).get(0).hasFocus()
         );
+        remote.waitForIdleSync();
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
         await("on the channel name", () -> focused().startsWith("123  Channel 22"));
         // i shows the programme information.

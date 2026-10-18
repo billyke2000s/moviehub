@@ -441,6 +441,16 @@ final class LiveTvScreen {
         );
     }
 
+    /** The row that has the focus (its name or a programme), so a refresh keeps the place. */
+    int focusedRow() {
+        for (int i = 0; i < cells.size(); i++) {
+            if (cells.get(i).hasFocus()) return i;
+            if (i < rows.programmes.size()) for (View item : rows.programmes.get(i))
+                if (item.hasFocus()) return i;
+        }
+        return 0;
+    }
+
     /**
      * ▶ past the last slot: moves the times on until {@code target} is shown, keeping to
      * {@code row}.
@@ -617,7 +627,7 @@ final class LiveTvScreen {
                                 : "Waiting for the network to update channels"
                         );
                         activity.handler.postDelayed(this, 2000);
-                    } else guide(pageStart, 0); // the import finished: show the new channels
+                    } else guide(pageStart, focusedRow()); // the import finished: show the new channels
                 }
             },
             2000
