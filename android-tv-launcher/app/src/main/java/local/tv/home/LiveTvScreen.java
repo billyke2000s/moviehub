@@ -7,7 +7,6 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import java.text.SimpleDateFormat;
@@ -49,11 +48,15 @@ final class LiveTvScreen {
     /** The guide's channel cells on the current page (for tests and focus). */
     final List<View> cells = new ArrayList<>();
 
+    /** The guide's side panels: options, groups, search and colour-key set-up. */
+    final LiveTvPanels panels;
+
     LiveTvScreen(MainActivity activity) {
         this.activity = activity;
+        panels = new LiveTvPanels(activity, this);
     }
 
-    private ChannelDatabase channelsDb() {
+    ChannelDatabase channelsDb() {
         return ChannelDatabase.get(activity);
     }
 
@@ -100,7 +103,7 @@ final class LiveTvScreen {
         TextView name = text(listName().toUpperCase(Locale.ROOT), 30, true);
         titles.addView(name);
         header.addView(titles, new LinearLayout.LayoutParams(0, -2, 1));
-        Button options = activity.button("Options", this::options);
+        Button options = activity.button("Options", panels::options);
         header.addView(options, new LinearLayout.LayoutParams(-2, activity.dp(40)));
         page.addView(header);
         TextView status = text("", 13, false);
@@ -214,7 +217,7 @@ final class LiveTvScreen {
                             ? "Hold SELECT on a channel to add it to your favourites."
                             : "Channels are still loading, or none match. Free channels and TV providers are in Settings → Accounts.",
                         "Options",
-                        this::options
+                        panels::options
                     );
                     options.requestFocus();
                     return;
@@ -329,15 +332,15 @@ final class LiveTvScreen {
                 return true;
             }
             if (colour(key) == 'y') {
-                searchPanel();
+                panels.searchPanel();
                 return true;
             }
             if (colour(key) == 'b') {
-                groups();
+                panels.groups();
                 return true;
             }
             if (key == KeyEvent.KEYCODE_MENU) {
-                options();
+                panels.options();
                 return true;
             }
             return false;
@@ -388,40 +391,6 @@ final class LiveTvScreen {
         if (key == KeyEvent.KEYCODE_PROG_YELLOW || key == KeyEvent.KEYCODE_F3) return 'y';
         if (key == KeyEvent.KEYCODE_PROG_BLUE || key == KeyEvent.KEYCODE_F4) return 'b';
         return 0;
-    }
-
-    /** Teaches the guide this remote's colour keys: press red, green, yellow, then blue. */
-    void learnColourKeys(int step) {
-        if (step >= 4) {
-            activity.toast("Coloured buttons set up");
-            guide(pageStart, 0);
-            return;
-        }
-        String[] names = { "RED", "GREEN", "YELLOW", "BLUE" };
-        android.app.Dialog panel = SidePanel.of(activity, "Press the " + names[step] + " button")
-            .message(
-                "Press the " +
-                    names[step].toLowerCase(Locale.ROOT) +
-                    " button on your remote now. Back cancels."
-            )
-            .show();
-        panel.setOnKeyListener((d, key, event) -> {
-            if (key == KeyEvent.KEYCODE_BACK) return false;
-            boolean navigation =
-                key == KeyEvent.KEYCODE_DPAD_UP ||
-                key == KeyEvent.KEYCODE_DPAD_DOWN ||
-                key == KeyEvent.KEYCODE_DPAD_LEFT ||
-                key == KeyEvent.KEYCODE_DPAD_RIGHT ||
-                key == KeyEvent.KEYCODE_DPAD_CENTER ||
-                key == KeyEvent.KEYCODE_ENTER;
-            if (navigation) return true;
-            if (event.getAction() == KeyEvent.ACTION_UP) {
-                activity.prefs.edit().putInt(COLOUR_PREFS[step], key).apply();
-                panel.dismiss();
-                learnColourKeys(step + 1);
-            }
-            return true;
-        });
     }
 
     private final StringBuilder typed = new StringBuilder();
@@ -492,54 +461,10 @@ final class LiveTvScreen {
         return item;
     }
 
-    /** Everything the colour keys do, for remotes without colour keys. */
-    void options() {
-        SidePanel.of(activity, "Live TV")
-            .option("All channels", () -> show("all", ""))
-            .option("Favourites", () -> show("favourites", ""))
-            .option("Sports", () -> show("sports", ""))
-            .option("Groups", this::groups)
-            .option("Search", this::searchPanel)
-            .option("Set up coloured buttons", () -> learnColourKeys(0))
-            .option("Refresh channels", () -> {
-                ChannelSync.refreshNow(activity);
-                guide(0, 0);
-            })
-            .show();
-    }
-
-    private void show(String newFilter, String newSearch) {
+    void show(String newFilter, String newSearch) {
         filter = newFilter;
         search = newSearch;
         guide(0, 0);
-    }
-
-    private void groups() {
-        activity.async(
-            () -> channelsDb().groups(),
-            groups -> {
-                String[] names = new String[groups.size()];
-                for (int i = 0; i < names.length; i++) names[i] =
-                    (groups.get(i).name.isEmpty() ? "Ungrouped" : groups.get(i).name) +
-                    " · " +
-                    groups.get(i).count;
-                SidePanel.of(activity, "Channel groups")
-                    .choices(names, -1, which -> show("group:" + groups.get(which).name, ""))
-                    .show();
-            }
-        );
-    }
-
-    private void searchPanel() {
-        LinearLayout form = activity.vertical();
-        EditText query = activity.field(form, "Channel or group", false, search);
-        android.app.Dialog dialog = activity.form("Search live TV", form);
-        form.addView(
-            activity.button("Search", () -> {
-                dialog.dismiss();
-                show(filter.equals("favourites") ? "favourites" : "all", query.getText().toString().trim());
-            })
-        );
     }
 
     private void showStatus(TextView status) {
