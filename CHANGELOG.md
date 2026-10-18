@@ -10,6 +10,10 @@ update feed), so the next release after it used code 12, named 0.12.
 
 On `main` but not yet published to TVs:
 
+- Faster artwork: posters and backdrops are kept on disk (up to 80 MB) and a larger memory cache,
+  so images you have seen load instantly after scrolling back or restarting; four download at once
+  instead of two.
+- LibVLC (the video player engine) updated from 3.7.0 to 3.7.7.
 - Redesigned Sources: the title's artwork behind the page, each source as a rounded row with the
   quality in large type, badges for HDR/Dolby Vision, codec and size, and what Select does (Play,
   Send to cloud). The file chooser uses the same rows and selects the suggested episode.

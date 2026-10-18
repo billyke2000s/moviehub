@@ -59,7 +59,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `PosterFeed` | Recycled, append-only poster grid/shelf (RecyclerView) with paging, retry and focus preservation. See [docs/continuous-posters.md](docs/continuous-posters.md). |
 | `PosterTitle` | Two-line poster caption that scrolls when focused and too long. |
 | `BackdropView` | Full-bleed background artwork: covers the view pinned top-right, cross-fades between images, keeps the old image while the next loads. Placed behind a screen with `TvActivity.fullBleedBackdrop()`; used on Home and details. |
-| `Artwork` | Image download and caching for posters and backdrops. |
+| `Artwork` | Image download and caching for posters and backdrops: up to four downloads at once, decoded images in memory (an eighth of the app's memory, 12–64 MB). |
+| `ArtworkDiskCache` | Artwork bytes on disk (`cache/artwork`, 80 MB, least recently used removed first), so images seen before load without downloading again. |
 | `DpadRepeats` | Rate-limits held D-pad keys so a held direction cannot race through lists. |
 | `SidePanel` | The app's pop-up: a rounded panel on the right with a title, message, options or ticked choices and pill buttons. Used everywhere instead of AlertDialog/PopupMenu, also by the player. |
 | `ErrorMessages` | Plain-language explanation and fix (Try again / Open Settings) for a failed load, from the exception type only. |
@@ -110,6 +111,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | SharedPreferences `accounts` (via `Secrets`) | Encrypted: TMDB key, Premiumize key, Xtream and M3U details, saved library, recent playback. |
 | SharedPreferences `positions` | Playback resume positions. |
 | SQLite `channels-v2.db` | Imported IPTV channels (encrypted stream URLs), groups and favourites. |
+| Cache `artwork/` | Downloaded public artwork (TMDB images, channel logos), at most 80 MB. No account data. |
 | Cache `updates/` | The downloaded update APK, before installation. |
 
 ## Design decisions
