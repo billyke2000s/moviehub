@@ -30,7 +30,7 @@ final class HomeScreen {
         activity.destination = this::home;
         activity.fixedScreen(null, null);
         activity.page.setPadding(activity.dp(30), activity.dp(10), activity.dp(30), activity.dp(10));
-        BackdropView backdrop = fullBleedBackdrop();
+        BackdropView backdrop = activity.fullBleedBackdrop();
         LinearLayout top = activity.row();
         for (String kind : new String[] { "Live TV", "Movies", "Series", "My list", "Continue" })
             top.addView(
@@ -99,7 +99,7 @@ final class HomeScreen {
         summary.setShadowLayer(activity.dp(4), 0, activity.dp(1), 0xcc000000);
         copy.addView(summary);
         Button open = activity.button("Connect TMDB", () -> activity.settingsScreens.accountScreen("TMDB"));
-        pill(open);
+        activity.pill(open, false);
         LinearLayout.LayoutParams openLayout = new LinearLayout.LayoutParams(-2, activity.dp(34));
         openLayout.topMargin = activity.dp(8);
         copy.addView(open, openLayout);
@@ -198,74 +198,6 @@ final class HomeScreen {
             new LinearLayout.LayoutParams(activity.dp(104), activity.dp(62))
         );
         activity.page.post(() -> top.getChildAt(0).requestFocus());
-    }
-
-    /**
-     * Streaming-app style action button for the featured title: a slim rounded pill, see-through
-     * at rest and white with dark text when selected, sized to its label.
-     */
-    private void pill(Button button) {
-        button.setTextSize(15);
-        button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        button.setPadding(activity.dp(22), 0, activity.dp(22), 0);
-        button.setOnFocusChangeListener((v, focused) -> stylePill((Button) v, focused));
-        stylePill(button, button.hasFocus());
-    }
-
-    private void stylePill(Button button, boolean focused) {
-        GradientDrawable shape = new GradientDrawable();
-        shape.setCornerRadius(activity.dp(17));
-        shape.setColor(focused ? 0xfff2f4f8 : 0x40ffffff);
-        if (!focused) shape.setStroke(activity.dp(1), 0x66ffffff);
-        button.setBackground(shape);
-        button.setTextColor(focused ? 0xff10141c : 0xfff8f8fc);
-        button.setScaleX(focused ? 1.05f : 1f);
-        button.setScaleY(focused ? 1.05f : 1f);
-    }
-
-    /**
-     * Puts the page on top of full-screen artwork, shaded so text on the left and the posters and
-     * apps below stay readable. Returns the artwork view.
-     */
-    private BackdropView fullBleedBackdrop() {
-        android.view.ViewGroup parent = (android.view.ViewGroup) activity.page.getParent();
-        parent.removeView(activity.page);
-        FrameLayout root = new FrameLayout(activity);
-        root.setBackgroundColor(0xff090d14);
-        BackdropView backdrop = new BackdropView(activity);
-        root.addView(backdrop, new FrameLayout.LayoutParams(-1, -1));
-        root.addView(
-            shade(GradientDrawable.Orientation.LEFT_RIGHT, new int[] {
-                0xff090d14,
-                0xf0090d14,
-                0xb3090d14,
-                0x40090d14,
-                0x00090d14,
-                0x00090d14,
-            })
-        );
-        root.addView(
-            shade(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {
-                0xb3090d14,
-                0x00090d14,
-                0x00090d14,
-                0x99090d14,
-                0xf2090d14,
-                0xff090d14,
-                0xff090d14,
-            })
-        );
-        activity.page.setBackgroundColor(Color.TRANSPARENT);
-        root.addView(activity.page, new FrameLayout.LayoutParams(-1, -1));
-        activity.setContentView(root);
-        return backdrop;
-    }
-
-    private View shade(GradientDrawable.Orientation direction, int[] colours) {
-        View shade = new View(activity);
-        shade.setBackground(new GradientDrawable(direction, colours));
-        shade.setLayoutParams(new FrameLayout.LayoutParams(-1, -1));
-        return shade;
     }
 
     final class HomeShelf {

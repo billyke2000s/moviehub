@@ -175,7 +175,7 @@ final class PosterCards {
         String type = item.optString("media_type", item.has("title") ? "movie" : "tv");
         int tmdbId = item.optInt("id");
         Runnable returnTo = activity.destination == null ? activity.homeScreen::home : activity.destination;
-        activity.screen("Details", returnTo);
+        activity.screen("", returnTo);
         activity.playbackTitle = item;
         TextView loading = activity.text("Loading details…", 18);
         activity.page.addView(loading);
