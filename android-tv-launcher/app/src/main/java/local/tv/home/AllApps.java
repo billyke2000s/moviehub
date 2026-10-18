@@ -28,6 +28,8 @@ import java.util.Locale;
 final class AllApps {
 
     static final int COLUMNS = 5;
+    /** Rows of apps shown before the rest are added. */
+    static final int FIRST_ROWS = 3;
 
     /** An Android settings page offered as a shortcut, shown only when this box has it. */
     static final String[][] SHORTCUTS = {
@@ -97,8 +99,12 @@ final class AllApps {
         });
     }
 
+    /** Counts fills; rows still waiting from an older fill (an earlier search) are dropped. */
+    private int fillTicket;
+
     /** Fills the app grid with the apps whose name contains the search. */
     void fill(String query) {
+        fillTicket++;
         grid.removeAllViews();
         extras.setVisibility(query.isEmpty() ? View.VISIBLE : View.GONE);
         String needle = query.toLowerCase(Locale.ROOT);
@@ -113,8 +119,28 @@ final class AllApps {
             grid.addView(activity.muted(query.isEmpty() ? "No apps found" : "No app has that name", 16));
             return;
         }
+        // The first rows appear at once; the rest are added straight after the screen is first
+        // drawn (a posted task runs after the pending layout and draw), all in one go.
+        int ticket = fillTicket;
+        LinearLayout target = grid;
+        int first = Math.min(shown.size(), FIRST_ROWS * COLUMNS);
+        addRows(shown, 0, first);
+        if (first < shown.size()) target.post(() -> {
+            if (ticket == fillTicket && target == grid && target.isAttachedToWindow()) addRows(
+                shown,
+                first,
+                shown.size()
+            );
+        });
+    }
+
+    /**
+     * Adds the tiles from {@code from} to {@code to}, {@link #COLUMNS} to a row. {@code from} is
+     * always at the start of a row.
+     */
+    private void addRows(List<AppDock.App> shown, int from, int to) {
         LinearLayout line = null;
-        for (int i = 0; i < shown.size(); i++) {
+        for (int i = from; i < to; i++) {
             if (i % COLUMNS == 0) {
                 line = activity.row();
                 line.setClipChildren(false);

@@ -63,4 +63,66 @@ final class EpgMatch {
             y = b.equals("gb") ? "uk" : b;
         return x.equals(y);
     }
+
+    /**
+     * An XMLTV time ("20261018200000 +0100", or without the zone for UTC) in milliseconds, read
+     * with plain arithmetic: the guide has tens of thousands of these. Returns
+     * {@link Long#MIN_VALUE} for any other shape or an out-of-range field, so the caller can fall
+     * back to a full date parser.
+     */
+    static long time(String value) {
+        if (value == null) return Long.MIN_VALUE;
+        String text = value.trim();
+        int length = text.length();
+        if (length != 14 && length != 20) return Long.MIN_VALUE;
+        for (int i = 0; i < 14; i++) if (!Character.isDigit(text.charAt(i))) return Long.MIN_VALUE;
+        int offsetMinutes = 0;
+        if (length == 20) {
+            char sign = text.charAt(15);
+            if (text.charAt(14) != ' ' || (sign != '+' && sign != '-')) return Long.MIN_VALUE;
+            for (int i = 16; i < 20; i++) if (!Character.isDigit(text.charAt(i))) return Long.MIN_VALUE;
+            int hours = number(text, 16, 18),
+                minutes = number(text, 18, 20);
+            if (minutes > 59) return Long.MIN_VALUE;
+            offsetMinutes = (sign == '-' ? -1 : 1) * (hours * 60 + minutes);
+        }
+        int year = number(text, 0, 4),
+            month = number(text, 4, 6),
+            day = number(text, 6, 8),
+            hour = number(text, 8, 10),
+            minute = number(text, 10, 12),
+            second = number(text, 12, 14);
+        if (
+            month < 1 ||
+            month > 12 ||
+            day < 1 ||
+            day > daysInMonth(year, month) ||
+            hour > 23 ||
+            minute > 59 ||
+            second > 59
+        ) return Long.MIN_VALUE;
+        long seconds = ((epochDay(year, month, day) * 24 + hour) * 60 + minute) * 60 + second;
+        return (seconds - offsetMinutes * 60L) * 1000L;
+    }
+
+    private static int number(String text, int from, int to) {
+        int out = 0;
+        for (int i = from; i < to; i++) out = out * 10 + (text.charAt(i) - '0');
+        return out;
+    }
+
+    private static int daysInMonth(int year, int month) {
+        if (month == 2) return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) ? 29 : 28;
+        return month == 4 || month == 6 || month == 9 || month == 11 ? 30 : 31;
+    }
+
+    /** Days from 1970-01-01 to this date in the proleptic Gregorian calendar. */
+    private static long epochDay(int year, int month, int day) {
+        long y = month <= 2 ? year - 1 : year;
+        long era = Math.floorDiv(y, 400);
+        long yearOfEra = y - era * 400;
+        long dayOfYear = (153L * (month + (month > 2 ? -3 : 9)) + 2) / 5 + day - 1;
+        long dayOfEra = yearOfEra * 365 + yearOfEra / 4 - yearOfEra / 100 + dayOfYear;
+        return era * 146097 + dayOfEra - 719468;
+    }
 }

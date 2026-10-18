@@ -57,23 +57,58 @@ final class AppDock {
     void queryApps() {
         appsStale = false;
         apps.clear();
+        PackageManager manager = activity.getPackageManager();
         Set<ComponentName> seen = new HashSet<>();
+        // Many apps list one entry for TV launchers and another for phone launchers: the same
+        // package and name but a different activity. They are one app, shown once (the TV entry,
+        // found first). Different packages are different apps, even with the same name.
+        Map<String, App> sameApp = new HashMap<>();
+        Map<String, String> merged = new HashMap<>();
         for (String category : new String[] { Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER })
-            for (ResolveInfo r : activity
-                .getPackageManager()
-                .queryIntentActivities(new Intent(Intent.ACTION_MAIN).addCategory(category), 0)) {
+            for (ResolveInfo r : manager.queryIntentActivities(
+                new Intent(Intent.ACTION_MAIN).addCategory(category),
+                0
+            )) {
                 ActivityInfo a = r.activityInfo;
                 if (!a.enabled || !a.exported || a.packageName.equals(activity.getPackageName())) continue;
                 ComponentName component = new ComponentName(a.packageName, a.name);
-                if (seen.add(component)) apps.add(
-                    new App(
-                        r.loadLabel(activity.getPackageManager()).toString(),
-                        component,
-                        r.loadIcon(activity.getPackageManager())
-                    )
-                );
+                if (!seen.add(component)) continue;
+                String label = r.loadLabel(manager).toString();
+                String key = a.packageName + "\n" + label;
+                App kept = sameApp.get(key);
+                if (kept != null) {
+                    merged.put(component.flattenToString(), kept.component.flattenToString());
+                    continue;
+                }
+                App app = new App(label, component, r.loadIcon(manager));
+                sameApp.put(key, app);
+                apps.add(app);
             }
         apps.sort(Comparator.comparing(a -> a.label.toLowerCase(Locale.ROOT)));
+        if (!merged.isEmpty()) movePins(merged);
+    }
+
+    /**
+     * Hotbar pins and recently used apps saved on an entry that was merged into another now point
+     * at the one shown. Hidden apps are left alone: hiding the extra entry must not hide the app.
+     */
+    private void movePins(Map<String, String> merged) {
+        List<String> order = dockOrder(),
+            moved = remap(order, merged);
+        if (!moved.equals(order)) saveDockOrder(moved);
+        List<String> recent = recentApps(),
+            movedRecent = remap(recent, merged);
+        if (!movedRecent.equals(recent)) activity.prefs
+            .edit()
+            .putString("recentApps", new JSONArray(movedRecent).toString())
+            .apply();
+    }
+
+    /** {@code ids} with merged entries replaced by the kept one, each listed once, in order. */
+    static List<String> remap(List<String> ids, Map<String, String> merged) {
+        LinkedHashSet<String> out = new LinkedHashSet<>();
+        for (String id : ids) out.add(merged.containsKey(id) ? merged.get(id) : id);
+        return new ArrayList<>(out);
     }
 
     /** The installed app with this component (flattened), or null. Call queryApps() first. */

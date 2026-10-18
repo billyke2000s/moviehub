@@ -127,4 +127,41 @@ public class AllAppsTest {
             activity.appsScreen.showHidden = false;
         });
     }
+
+    @Test
+    public void everyAppIsListedOnceAndAllAreLoaded() {
+        remote.runOnMainSync(() -> activity.dock.queryApps());
+        Set<String> seen = new HashSet<>();
+        for (AppDock.App app : activity.dock.apps)
+            assertTrue(
+                "Listed once: " + app.label,
+                seen.add(app.component.getPackageName() + "\n" + app.label)
+            );
+        Map<String, String> merged = Collections.singletonMap("a/.Phone", "a/.Tv");
+        assertEquals(
+            "Pins on a merged entry move to the one shown, once",
+            Arrays.asList("a/.Tv", "b/.Other"),
+            AppDock.remap(Arrays.asList("a/.Tv", "a/.Phone", "b/.Other"), merged)
+        );
+        remote.runOnMainSync(() -> activity.dock.allApps());
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            List<String> shown = tiles(activity.appsScreen.grid);
+            assertEquals(
+                "Every app has one tile once loading finishes",
+                activity.dock.apps.size(),
+                shown.size()
+            );
+            assertEquals("No tile twice", shown.size(), new HashSet<>(shown).size());
+            // A search while the rest are loading drops the older rows instead of adding them.
+            activity.appsScreen.fill("");
+            activity.appsScreen.fill("");
+        });
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            List<String> shown = tiles(activity.appsScreen.grid);
+            assertEquals(activity.dock.apps.size(), shown.size());
+            assertEquals(shown.size(), new HashSet<>(shown).size());
+        });
+    }
 }

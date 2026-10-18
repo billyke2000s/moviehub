@@ -13,7 +13,7 @@ final class ChannelNumbers {
 
     /**
      * Gives every channel its number, guide section and country (see {@link GuideOrder}). Copies
-     * of one channel share them. Runs after every import, so numbers stay the same while the
+     * of one channel share them; the preferred copy is marked main=1. Runs after every import, so numbers stay the same while the
      * lists do.
      */
     static void renumber(SQLiteDatabase db) {
@@ -41,6 +41,7 @@ final class ChannelNumbers {
         GuideOrder.plan(entries);
         db.beginTransactionNonExclusive();
         try (
+            SQLiteStatement main = db.compileStatement("UPDATE channels SET main=1 WHERE _id=?");
             SQLiteStatement byKey = db.compileStatement(
                 "UPDATE channels SET number=?,section=?,country=? WHERE dkey=?"
             );
@@ -48,7 +49,11 @@ final class ChannelNumbers {
                 "UPDATE channels SET number=?,section=?,country=? WHERE _id=?"
             )
         ) {
+            // The row each group was read from is its preferred copy (the guide shows that one).
+            db.execSQL("UPDATE channels SET main=0 WHERE main<>0");
             for (int i = 0; i < entries.size(); i++) {
+                main.bindLong(1, ids.get(i));
+                main.executeUpdateDelete();
                 GuideOrder.Entry entry = entries.get(i);
                 boolean shared = !dkeys.get(i).isEmpty();
                 SQLiteStatement update = shared ? byKey : byId;
