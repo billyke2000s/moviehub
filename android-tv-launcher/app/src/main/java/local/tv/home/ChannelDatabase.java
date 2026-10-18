@@ -26,17 +26,24 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         final String epg;
         /** Duplicate key; see {@link ChannelDatabase#duplicateKey}. */
         final String dkey;
+        /** Channel number (101 BBC One …; see {@link SkyNumbers}) and guide section. */
+        final int number;
+        final String section;
 
-        Row(long id, String name, String group, String logo, String key) {
-            this(id, name, group, logo, key, "");
-        }
-
-        Row(long id, String name, String group, String logo, String key, String epg) {
-            this(id, name, group, logo, key, epg, "");
-        }
-
-        Row(long id, String name, String group, String logo, String key, String epg, String dkey) {
+        Row(
+            long id,
+            String name,
+            String group,
+            String logo,
+            String key,
+            String epg,
+            String dkey,
+            int number,
+            String section
+        ) {
             this.id = id;
+            this.number = number;
+            this.section = section == null ? "" : section;
             this.name = name;
             this.group = group;
             this.logo = logo;
@@ -50,12 +57,14 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     static final class Programme {
 
         final long start, stop;
-        final String title;
+        final String title, description, category;
 
-        Programme(long start, long stop, String title) {
+        Programme(long start, long stop, String title, String description, String category) {
             this.start = start;
             this.stop = stop;
             this.title = title;
+            this.description = description == null ? "" : description;
+            this.category = category == null ? "" : category;
         }
     }
 
@@ -79,7 +88,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     private ChannelDatabase(Context context) {
-        super(context, "channels-v2.db", null, 4);
+        super(context, "channels-v2.db", null, 5);
         secrets = new Secrets(context);
         setWriteAheadLoggingEnabled(true);
     }
@@ -96,6 +105,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE favourite_keys(key TEXT PRIMARY KEY)");
         createGuideTables(db);
         addDuplicateKey(db);
+        addNumbers(db);
     }
 
     /**
@@ -110,6 +120,23 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         }
         if (!present) db.execSQL("ALTER TABLE channels ADD COLUMN dkey TEXT NOT NULL DEFAULT ''");
         db.execSQL("CREATE INDEX IF NOT EXISTS channels_dkey ON channels(dkey)");
+    }
+
+    /** Adds a column if it is missing (a database whose version was rolled back may have it). */
+    private static void addColumn(SQLiteDatabase db, String table, String column, String type) {
+        try (Cursor columns = db.rawQuery("PRAGMA table_info(" + table + ")", null)) {
+            while (columns.moveToNext()) if (column.equals(columns.getString(1))) return;
+        }
+        db.execSQL("ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
+    }
+
+    /** Channel numbers and guide sections (version 5); filled in by {@link ChannelNumbers#renumber}. */
+    private static void addNumbers(SQLiteDatabase db) {
+        addColumn(db, "channels", "number", "INTEGER NOT NULL DEFAULT 0");
+        addColumn(db, "channels", "section", "TEXT NOT NULL DEFAULT ''");
+        db.execSQL("CREATE INDEX IF NOT EXISTS channels_number ON channels(number)");
+        addColumn(db, "programmes", "descr", "TEXT NOT NULL DEFAULT ''");
+        addColumn(db, "programmes", "category", "TEXT NOT NULL DEFAULT ''");
     }
 
     /** The duplicate key for a channel; "" when its name has nothing usable (never merged). */
@@ -136,6 +163,10 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         if (from < 2) db.execSQL("CREATE TABLE IF NOT EXISTS favourite_keys(key TEXT PRIMARY KEY)");
         if (from < 3) createGuideTables(db);
         if (from < 4) addDuplicateKey(db); // filled in by the next import
+        if (from < 5) {
+            addNumbers(db);
+            ChannelNumbers.renumber(db);
+        }
     }
 
     // ---- URL encryption -------------------------------------------------------------------
@@ -232,8 +263,9 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             return position;
         }
 
-        /** Commits the import. */
+        /** Commits the import, numbering the channels again. */
         void commit() {
+            ChannelNumbers.renumber(db);
             db.setTransactionSuccessful();
             close(true);
         }
@@ -284,6 +316,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
                 );
                 db.delete("channels", "source=?", new String[] { source });
             }
+            if (!stale.isEmpty()) ChannelNumbers.renumber(db);
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();
@@ -291,29 +324,30 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     // ---- Queries --------------------------------------------------------------------------
-    private static final String COLUMNS = "_id,name,grp,logo,key,epg,dkey";
+    private static final String COLUMNS = "_id,name,grp,logo,key,epg,dkey,number,section";
     /** Providers first, then Free-TV, then everything else; in playlist order within each. */
-    private static final String ORDER =
+    static final String ORDER =
         "CASE source WHEN 'xtream' THEN 0 WHEN 'm3u' THEN 1 WHEN 'fta' THEN 2 ELSE 3 END";
     /** One row per channel: duplicates (same non-empty dkey) collapse to the first in ORDER. */
-    private static final String GROUP = "CASE WHEN dkey='' THEN 'id'||_id ELSE dkey END";
+    static final String GROUP = "CASE WHEN dkey='' THEN 'id'||_id ELSE dkey END";
+    /** The preferred copy of a channel: SQLite takes the other columns from the MIN row. */
+    static final String RANK = "MIN((" + ORDER + ")*1000000000+position)";
 
     private List<Row> rows(String where, String[] args, int offset) {
         List<Row> out = new ArrayList<>();
         // SQLite returns the other columns from the row holding MIN(rank), so each duplicate group
-        // is shown as its preferred source.
-        String rank = "MIN((" + ORDER + ")*1000000000+position)";
+        // is shown as its preferred source. Channels are in number order, as on the guide.
         try (
             Cursor c = getReadableDatabase().rawQuery(
                 "SELECT " +
                     COLUMNS +
                     "," +
-                    rank +
+                    RANK +
                     " AS rank FROM channels" +
                     (where == null ? "" : " WHERE " + where) +
                     " GROUP BY " +
                     GROUP +
-                    " ORDER BY rank LIMIT " +
+                    " ORDER BY number,rank LIMIT " +
                     (PAGE + 1) +
                     " OFFSET " +
                     Math.max(0, offset),
@@ -333,7 +367,9 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             c.getString(3),
             c.getString(4),
             c.getString(5),
-            c.getString(6)
+            c.getString(6),
+            c.getInt(7),
+            c.getString(8)
         );
     }
 
@@ -386,6 +422,64 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     synchronized List<Row> browse(String filter, String text, Set<String> keys, int offset) {
+        List<String> args = new ArrayList<>();
+        String where = where(filter, text, keys, args);
+        if (where == null) return new ArrayList<>();
+        return rows(where, args.toArray(new String[0]), offset);
+    }
+
+    /**
+     * Where channel number {@code number} is in a guide list: its position, or -1 when that list
+     * does not have it. With {@code nearest}, the position of the first channel numbered at or
+     * above it instead (the last channel when none is).
+     */
+    synchronized int position(String filter, String text, Set<String> keys, int number, boolean nearest) {
+        List<String> args = new ArrayList<>();
+        String where = where(filter, text, keys, args);
+        if (where == null) return -1;
+        String groups = "SELECT MIN(number) AS n FROM channels WHERE " + where + " GROUP BY " + GROUP;
+        args.add(String.valueOf(number));
+        String[] values = args.toArray(new String[0]);
+        int before = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n<?", values),
+            exact = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n=?", values);
+        if (exact > 0) return before;
+        if (!nearest) return -1;
+        values[values.length - 1] = String.valueOf(Integer.MAX_VALUE);
+        int total = count("SELECT COUNT(*) FROM (" + groups + ") WHERE n<?", values);
+        return total == 0 ? -1 : Math.min(before, total - 1);
+    }
+
+    private int count(String sql, String[] args) {
+        try (Cursor c = getReadableDatabase().rawQuery(sql, args)) {
+            return c.moveToFirst() ? c.getInt(0) : 0;
+        }
+    }
+
+    /** The channel with this stream key (its preferred copy's number and section), or null. */
+    Row byKey(String key) {
+        try (
+            Cursor c = getReadableDatabase().rawQuery(
+                "SELECT " + COLUMNS + " FROM channels WHERE key=? LIMIT 1",
+                new String[] { key }
+            )
+        ) {
+            return c.moveToFirst() ? row(c) : null;
+        }
+    }
+
+    /** Sections that have channels, in the guide's order. */
+    List<String> sections() {
+        Set<String> present = new HashSet<>();
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT DISTINCT section FROM channels", null)) {
+            while (c.moveToNext()) present.add(c.getString(0));
+        }
+        List<String> out = new ArrayList<>();
+        for (String section : SkyNumbers.SECTIONS) if (present.contains(section)) out.add(section);
+        return out;
+    }
+
+    /** The SQL condition for a guide list, adding its arguments; null when nothing can match. */
+    private String where(String filter, String text, Set<String> keys, List<String> args) {
         SQLiteDatabase db = getWritableDatabase();
         if ("favourites".equals(filter)) {
             db.beginTransactionNonExclusive();
@@ -404,21 +498,24 @@ final class ChannelDatabase extends SQLiteOpenHelper {
                 db.endTransaction();
             }
         }
-        List<String> args = new ArrayList<>();
         String where = "1=1";
         if ("favourites".equals(filter)) where += " AND key IN (SELECT key FROM favourite_keys)";
         if (filter.startsWith("group:")) {
             where += " AND grp=?";
             args.add(filter.substring(6));
         }
-        if ("sports".equals(filter)) where += " AND (grp LIKE '%sport%' OR name LIKE '%sport%')";
+        if (filter.startsWith("section:")) {
+            where += " AND section=?";
+            args.add(filter.substring(8));
+        }
+        if ("sports".equals(filter)) where += " AND section='Sports'";
         if (text != null && !text.trim().isEmpty()) {
             String match = ChannelQuery.fts(text);
-            if (match.isEmpty()) return new ArrayList<>();
+            if (match.isEmpty()) return null;
             where += " AND _id IN (SELECT docid FROM channel_search WHERE channel_search MATCH ?)";
             args.add(match);
         }
-        return rows(where, args.toArray(new String[0]), offset);
+        return where;
     }
 
     List<Group> groups() {
@@ -481,7 +578,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             db.delete("epg_map", null, null);
             map = db.compileStatement("INSERT INTO epg_map(chkey,channel) VALUES(?,?)");
             programme = db.compileStatement(
-                "INSERT INTO programmes(channel,start,stop,title) VALUES(?,?,?,?)"
+                "INSERT INTO programmes(channel,start,stop,title,descr,category) VALUES(?,?,?,?,?,?)"
             );
         }
 
@@ -491,11 +588,20 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             map.executeInsert();
         }
 
-        void programme(String channel, long start, long stop, String title) {
+        void programme(
+            String channel,
+            long start,
+            long stop,
+            String title,
+            String description,
+            String category
+        ) {
             programme.bindString(1, channel);
             programme.bindLong(2, start);
             programme.bindLong(3, stop);
             programme.bindString(4, title);
+            programme.bindString(5, description == null ? "" : description);
+            programme.bindString(6, category == null ? "" : category);
             programme.executeInsert();
             programmes++;
         }
@@ -512,8 +618,12 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         }
     }
 
-    /** Programmes on this channel overlapping [from, to), in time order. */
+    /** Programmes on this channel overlapping [from, to), in time order (at most 12). */
     List<Programme> programmes(Row row, String country, long from, long to) {
+        return programmes(row, country, from, to, 12);
+    }
+
+    List<Programme> programmes(Row row, String country, long from, long to, int limit) {
         List<Programme> out = new ArrayList<>();
         List<String> keys = EpgMatch.keys(row.epg, row.name, country);
         if (keys.isEmpty()) return out;
@@ -524,13 +634,17 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         args.add(String.valueOf(from));
         try (
             Cursor c = getReadableDatabase().rawQuery(
-                "SELECT start,stop,title FROM programmes WHERE channel=(SELECT channel FROM epg_map WHERE chkey IN (" +
+                "SELECT start,stop,title,descr,category FROM programmes WHERE channel=(SELECT channel FROM epg_map WHERE chkey IN (" +
                     in +
-                    ") LIMIT 1) AND start<? AND stop>? ORDER BY start LIMIT 12",
+                    ") LIMIT 1) AND start<? AND stop>? ORDER BY start LIMIT " +
+                    limit,
                 args.toArray(new String[0])
             )
         ) {
-            while (c.moveToNext()) out.add(new Programme(c.getLong(0), c.getLong(1), c.getString(2)));
+            while (c.moveToNext())
+                out.add(
+                    new Programme(c.getLong(0), c.getLong(1), c.getString(2), c.getString(3), c.getString(4))
+                );
         }
         return out;
     }

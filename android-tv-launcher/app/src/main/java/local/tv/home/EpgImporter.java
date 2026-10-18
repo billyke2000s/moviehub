@@ -35,7 +35,14 @@ final class EpgImporter {
     interface Sink {
         void match(String key, String channel) throws Exception;
 
-        void programme(String channel, long start, long stop, String title) throws Exception;
+        void programme(
+            String channel,
+            long start,
+            long stop,
+            String title,
+            String description,
+            String category
+        ) throws Exception;
     }
 
     static final class Result {
@@ -72,10 +79,16 @@ final class EpgImporter {
                         matches.add(new String[] { key, channel });
                     }
 
-                    public void programme(String channel, long start, long stop, String title)
-                        throws Exception {
+                    public void programme(
+                        String channel,
+                        long start,
+                        long stop,
+                        String title,
+                        String description,
+                        String category
+                    ) throws Exception {
                         cancel.check();
-                        programmes.add(new Object[] { channel, start, stop, title });
+                        programmes.add(new Object[] { channel, start, stop, title, description, category });
                     }
                 }
             );
@@ -86,7 +99,14 @@ final class EpgImporter {
             try {
                 for (String[] match : matches) writer.match(match[0], match[1]);
                 for (Object[] item : programmes)
-                    writer.programme((String) item[0], (Long) item[1], (Long) item[2], (String) item[3]);
+                    writer.programme(
+                        (String) item[0],
+                        (Long) item[1],
+                        (Long) item[2],
+                        (String) item[3],
+                        (String) item[4],
+                        (String) item[5]
+                    );
                 writer.commit();
             } finally {
                 writer.finish();
@@ -96,9 +116,12 @@ final class EpgImporter {
         return result;
     }
 
+    /** Programme descriptions are cut to this many characters (two or three sentences). */
+    static final int DESCRIPTION_MAX = 400;
+
     /**
      * Reads XMLTV: {@code <channel id>} with {@code <display-name>}s, then {@code <programme start
-     * stop channel>} with {@code <title>}. Keeps channels whose id or a display name matches a key
+     * stop channel>} with {@code <title>}, {@code <desc>} and {@code <category>}. Keeps channels whose id or a display name matches a key
      * in {@code wanted}, and their programmes overlapping [from, to).
      */
     static Result parse(InputStream in, Set<String> wanted, long from, long to, Sink sink) throws Exception {
@@ -113,7 +136,9 @@ final class EpgImporter {
         List<String> names = new ArrayList<>();
         long start = 0,
             stop = 0;
-        String title = null;
+        String title = null,
+            description = null,
+            category = null;
         for (int event = parser.getEventType(); event != XmlPullParser.END_DOCUMENT; event = parser.next()) {
             if (event == XmlPullParser.START_TAG) {
                 element = parser.getName();
@@ -125,11 +150,19 @@ final class EpgImporter {
                     start = time(parser.getAttributeValue(null, "start"));
                     stop = time(parser.getAttributeValue(null, "stop"));
                     title = null;
+                    description = null;
+                    category = null;
                 }
             } else if (event == XmlPullParser.TEXT && element != null) {
                 if (channelId != null && "display-name".equals(element)) names.add(parser.getText());
                 else if (programmeChannel != null && "title".equals(element) && title == null) title =
                     parser.getText();
+                else if (
+                    programmeChannel != null && "desc".equals(element) && description == null
+                ) description = parser.getText();
+                else if (
+                    programmeChannel != null && "category".equals(element) && category == null
+                ) category = parser.getText();
             } else if (event == XmlPullParser.END_TAG) {
                 String name = parser.getName();
                 if ("channel".equals(name) && channelId != null) {
@@ -150,7 +183,14 @@ final class EpgImporter {
                         start < to &&
                         stop > start
                     ) {
-                        sink.programme(programmeChannel, start, stop, title.trim());
+                        sink.programme(
+                            programmeChannel,
+                            start,
+                            stop,
+                            title.trim(),
+                            shorten(description),
+                            category == null ? "" : category.trim()
+                        );
                         result.programmes++;
                     }
                     programmeChannel = null;
@@ -159,6 +199,14 @@ final class EpgImporter {
             }
         }
         return result;
+    }
+
+    private static String shorten(String text) {
+        if (text == null) return "";
+        String value = text.trim();
+        return value.length() <= DESCRIPTION_MAX
+            ? value
+            : value.substring(0, DESCRIPTION_MAX - 1).trim() + "…";
     }
 
     private static void addKey(List<String> keys, String key, Set<String> wanted) {

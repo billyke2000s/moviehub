@@ -152,4 +152,39 @@ public class ChannelDatabaseTest {
         assertEquals(2, copies.size());
         assertTrue(db.url(copies.get(1).id, copies.get(1).key).contains("/free/"));
     }
+
+    @Test
+    public void channelsGetSatelliteNumbersAndSections() throws Exception {
+        ChannelDatabase.Writer writer = db.writer("fta", () -> {}, n -> {});
+        try {
+            writer.accept(
+                new Playlist.Channel("Film4", "https://example.test/film4.m3u8", "UK", "", "Film4.uk")
+            );
+            writer.accept(
+                new Playlist.Channel("BBC One", "https://example.test/bbc1.m3u8", "UK", "", "BBCOne.uk")
+            );
+            writer.accept(
+                new Playlist.Channel("Local Now", "https://example.test/local.m3u8", "News", "", "")
+            );
+            writer.commit();
+        } finally {
+            writer.abort();
+        }
+        Set<String> none = Collections.emptySet();
+        List<ChannelDatabase.Row> all = db.all(0);
+        assertEquals("BBC One", all.get(0).name);
+        assertEquals(101, all.get(0).number);
+        assertEquals("Film4", all.get(1).name);
+        assertEquals(313, all.get(1).number);
+        assertEquals("Movies", all.get(1).section);
+        assertEquals("Unknown channels follow from 1001", 1001, all.get(2).number);
+        assertEquals("News", all.get(2).section);
+        assertEquals(1, db.position("all", "", none, 313, false));
+        assertEquals("No channel 200", -1, db.position("all", "", none, 200, false));
+        assertEquals("Nearest above 200 is 313", 1, db.position("all", "", none, 200, true));
+        assertEquals("Past the end: the last channel", 2, db.position("all", "", none, 5000, true));
+        assertEquals(1, db.browse("section:Movies", "", none, 0).size());
+        assertTrue(db.sections().containsAll(Arrays.asList("Entertainment", "Movies", "News")));
+        assertEquals("Film4", db.byKey(ChannelQuery.key("https://example.test/film4.m3u8")).name);
+    }
 }
