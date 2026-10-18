@@ -20,3 +20,13 @@ The HTML preview hides the button normally. Append `?updateDemo=1` to its URL to
 Offline compilation cannot establish successful installation, unknown-source settings availability, or update behavior on the Tanix box. Those require device testing.
 
 The release workflow now runs core checks and Android database/player tests before signing. It downloads the current updater baseline, verifies its checksum and refuses publication if the new certificate differs. Same-repository PRs also build a signed candidate and check package, increasing version code and signing continuity without publishing it. The package remains `local.tv.home`, and the existing `android-tv-latest/home.apk` and `update.json` paths and manifest fields are unchanged. Since 0.15, `update.json` may also carry an optional `notes` field: the CHANGELOG section headed with the published version name (for example `## 0.15 (date)`), shown as "What's new" in the update prompt. Older app versions ignore it.
+
+## Numbered releases on the repository page
+
+Publishing updates the `android-tv-latest` feed that TVs use; it does not change the "Latest"
+release shown on the repository page. To show the current version there, run the
+**Make a GitHub release of the published update** workflow (`release-android-launcher.yml`). It
+copies the signed `home.apk` and `update.json` from the feed (checking the APK's SHA-256 against
+the feed) into a release named `MovieHub <version>` (tag `moviehub-v<version>`), marks it as the
+latest release, and renames the feed release "MovieHub <version> — updater feed". It builds and
+signs nothing and does not change the feed paths.
