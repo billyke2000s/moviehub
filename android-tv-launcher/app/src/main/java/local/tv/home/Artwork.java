@@ -155,7 +155,11 @@ final class Artwork {
         ArtworkDiskCache store = disk;
         byte[] bytes = store == null ? null : store.get(url);
         boolean fresh = bytes == null;
-        if (fresh) bytes = Network.bytes(url, null, 3 * 1024 * 1024, false);
+        if (fresh) {
+            long started = Timings.start();
+            bytes = Network.bytes(url, null, 3 * 1024 * 1024, false);
+            Timings.record("Artwork download", started);
+        }
         BitmapFactory.Options size = new BitmapFactory.Options();
         size.inJustDecodeBounds = true;
         BitmapFactory.decodeByteArray(bytes, 0, bytes.length, size);

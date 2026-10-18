@@ -49,6 +49,8 @@ public class VlcPlaybackActivity extends Activity {
     private long backPressedAt;
     /** Resume point the media was opened at; checked once after playback starts. */
     private long resumeCheck;
+    /** Playback has started at least once, so later buffering is a pause while watching. */
+    private boolean playedOnce;
     TextView exitHint;
     final Handler overlayHandler = new Handler(Looper.getMainLooper());
     private final Runnable hideExitHint = () -> {
@@ -67,6 +69,7 @@ public class VlcPlaybackActivity extends Activity {
                     time = Math.max(0, player.getTime());
                 timeLeft.setText(live ? "LIVE" : length > 0 ? format(Math.max(0, length - time)) : "—");
                 downloadMbps = downloadSpeed();
+                if (downloadMbps >= 0) Timings.lastMbps = downloadMbps;
                 speed.setText(
                     downloadMbps < 0
                         ? ""
@@ -289,6 +292,9 @@ public class VlcPlaybackActivity extends Activity {
         player.setEventListener(event -> {
             if (!foreground || player == null) return;
             if (event.type == MediaPlayer.Event.Playing) {
+                Timings.finish("play", "Press play to picture");
+                Timings.finish("stall", "Buffering pause while watching");
+                playedOnce = true;
                 player.setRate(playbackRate);
                 if (aspect != null) player.setAspectRatio(aspect);
                 overlayHandler.removeCallbacks(stalled);
@@ -306,6 +312,7 @@ public class VlcPlaybackActivity extends Activity {
                 revealControls();
             } else if (event.type == MediaPlayer.Event.Buffering) {
                 if (event.getBuffering() < 100) {
+                    if (playedOnce) Timings.markOnce("stall");
                     status.setText(
                         "Buffering… " +
                             Math.round(event.getBuffering()) +
@@ -315,7 +322,10 @@ public class VlcPlaybackActivity extends Activity {
                                 : String.format(Locale.ROOT, "  ·  %.1f Mb/s", downloadMbps))
                     );
                     status.setVisibility(View.VISIBLE);
-                } else status.setVisibility(View.GONE);
+                } else {
+                    status.setVisibility(View.GONE);
+                    Timings.finish("stall", "Buffering pause while watching");
+                }
             } else if (event.type == MediaPlayer.Event.EndReached) {
                 ended = true;
                 getSharedPreferences("positions", MODE_PRIVATE).edit().remove(id).apply();

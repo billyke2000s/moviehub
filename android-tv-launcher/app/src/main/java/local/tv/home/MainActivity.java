@@ -470,6 +470,7 @@ public class MainActivity extends TvActivity {
             // Saving goes through the encrypted store, so it runs off the screen thread and never
             // delays the player opening.
             io.execute(() -> saveRecent(record, id));
+            Timings.mark("play");
         } catch (Exception e) {
             Diagnostics.recovered("Saving recent playback", e);
             /* History failure must never prevent playback. */
