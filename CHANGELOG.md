@@ -8,7 +8,13 @@ update feed), so the next release after it used code 12, named 0.12.
 
 ## Unreleased
 
-- Build: Android Gradle plugin 9.4.1 with Gradle 9.6.0 (no change in the app itself).
+Nothing yet.
+
+## 0.16 (18 Oct 2026)
+
+- Player: the title now sits at the top; at the bottom a full-width slim timeline with the time on
+  the right, play controls on the left and Video, Audio, Subtitles and More on the right.
+- Built with Android Gradle plugin 9.4.1 and Gradle 9.6.0 (no visible change).
 
 ## 0.15 (18 Oct 2026)
 

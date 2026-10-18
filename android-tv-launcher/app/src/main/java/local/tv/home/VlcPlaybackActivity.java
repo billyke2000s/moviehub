@@ -37,7 +37,7 @@ public class VlcPlaybackActivity extends Activity {
     private TextView elapsed, duration, status;
     private AudioManager audio;
     private AudioFocusRequest audioFocus;
-    private LinearLayout controls;
+    private android.view.View controls;
     private final Handler overlayHandler = new Handler(Looper.getMainLooper());
     private final Runnable hideOverlay = () -> {
         if (
@@ -175,44 +175,55 @@ public class VlcPlaybackActivity extends Activity {
         root.addView(video, new FrameLayout.LayoutParams(-1, -1));
         status = new TextView(this);
         status.setTextColor(Color.WHITE);
-        status.setTextSize(20);
+        status.setTextSize(18);
+        status.setShadowLayer(dp(6), 0, dp(1), 0xcc000000);
         status.setGravity(Gravity.CENTER);
         status.setText("Opening source…");
         root.addView(status, new FrameLayout.LayoutParams(-1, -1));
-        controls = new LinearLayout(this);
-        controls.setOrientation(LinearLayout.VERTICAL);
-        // Streaming-app style: the controls sit on a soft shade rising from the bottom of the video.
-        controls.setPadding(dp(40), dp(72), dp(40), dp(22));
-        controls.setBackground(
-            new android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.BOTTOM_TOP,
-                new int[] { 0xf2000000, 0xcc000000, 0x66000000, 0x00000000 }
-            )
-        );
+        // Streaming-app layout: the title on a shade at the top; at the bottom a full-width
+        // timeline with the time on the right, then play controls on the left and options on
+        // the right. The whole overlay hides together.
+        FrameLayout overlay = new FrameLayout(this);
+        controls = overlay;
+        LinearLayout top = new LinearLayout(this);
+        top.setOrientation(LinearLayout.VERTICAL);
+        top.setPadding(dp(48), dp(28), dp(48), dp(56));
+        top.setBackground(shade(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM));
         TextView title = new TextView(this);
         title.setText(getIntent().getStringExtra("title"));
         title.setTextColor(Color.WHITE);
-        title.setTextSize(26);
+        title.setTextSize(24);
         title.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
         title.setShadowLayer(dp(6), 0, dp(1), 0xcc000000);
         title.setMaxLines(1);
         title.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        controls.addView(title);
+        top.addView(title);
+        overlay.addView(top, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
+
+        LinearLayout bottom = new LinearLayout(this);
+        bottom.setOrientation(LinearLayout.VERTICAL);
+        bottom.setPadding(dp(48), dp(64), dp(48), dp(26));
+        bottom.setBackground(shade(android.graphics.drawable.GradientDrawable.Orientation.BOTTOM_TOP));
         LinearLayout progress = new LinearLayout(this);
         progress.setGravity(Gravity.CENTER_VERTICAL);
         elapsed = label();
         duration = label();
+        duration.setTextColor(0xffb4bfd2);
         timeline = new SeekBar(this);
         timeline.setMax(1000);
         int tint = getSharedPreferences("ui", MODE_PRIVATE).getInt("accent", 0xff8a9eff);
-        timeline.setProgressTintList(android.content.res.ColorStateList.valueOf(tint));
-        timeline.setThumbTintList(android.content.res.ColorStateList.valueOf(tint));
-        timeline.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(0x66ffffff));
+        styleTimeline(tint);
         timeline.setEnabled(false);
-        progress.addView(elapsed);
-        progress.addView(timeline, new LinearLayout.LayoutParams(0, dp(44), 1));
+        progress.addView(timeline, new LinearLayout.LayoutParams(0, dp(28), 1));
+        LinearLayout.LayoutParams timeLayout = new LinearLayout.LayoutParams(-2, -2);
+        timeLayout.leftMargin = dp(16);
+        progress.addView(elapsed, timeLayout);
+        TextView slash = label();
+        slash.setText("  /  ");
+        slash.setTextColor(0xffb4bfd2);
+        progress.addView(slash);
         progress.addView(duration);
-        controls.addView(progress);
+        bottom.addView(progress);
         timeline.setOnSeekBarChangeListener(
             new SeekBar.OnSeekBarChangeListener() {
                 public void onStartTrackingTouch(SeekBar bar) {
@@ -233,30 +244,78 @@ public class VlcPlaybackActivity extends Activity {
                 }
             }
         );
-        HorizontalScrollView scroll = new HorizontalScrollView(this);
-        scroll.setHorizontalScrollBarEnabled(false);
         LinearLayout buttons = new LinearLayout(this);
         buttons.setGravity(Gravity.CENTER_VERTICAL);
-        scroll.addView(buttons);
-        controls.addView(scroll);
+        buttons.setPadding(0, dp(10), 0, 0);
+        buttons.setClipChildren(false);
+        buttons.setClipToPadding(false);
+        bottom.setClipChildren(false);
         if (!live) add(buttons, "−10 s", () -> seek(-10000));
         pause = add(buttons, "Pause", this::toggle);
+        pause.setMinWidth(dp(110));
+        pause.setMinimumWidth(dp(110));
         if (!live) add(buttons, "+10 s", () -> seek(10000));
+        buttons.addView(new android.view.View(this), new LinearLayout.LayoutParams(0, 1, 1));
         add(buttons, "Video", this::resolution);
         add(buttons, "Audio", () -> tracks(false));
         add(buttons, "Subtitles", () -> tracks(true));
         add(buttons, "More", this::moreControls);
-        root.addView(controls, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
+        bottom.addView(buttons, new LinearLayout.LayoutParams(-1, -2));
+        overlay.addView(bottom, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
+        root.addView(overlay, new FrameLayout.LayoutParams(-1, -1));
         root.setOnClickListener(v -> revealControls());
         setContentView(root);
         pause.requestFocus();
         revealControls();
     }
 
+    private android.graphics.drawable.GradientDrawable shade(
+        android.graphics.drawable.GradientDrawable.Orientation direction
+    ) {
+        return new android.graphics.drawable.GradientDrawable(direction, new int[] {
+            0xe6000000,
+            0x99000000,
+            0x00000000,
+        });
+    }
+
+    /** A slim rounded timeline in the accent colour with a white dot, like streaming apps. */
+    private void styleTimeline(int accent) {
+        android.graphics.drawable.GradientDrawable track = new android.graphics.drawable.GradientDrawable();
+        track.setColor(0x4dffffff);
+        track.setCornerRadius(dp(3));
+        android.graphics.drawable.GradientDrawable played = new android.graphics.drawable.GradientDrawable();
+        played.setColor(accent);
+        played.setCornerRadius(dp(3));
+        android.graphics.drawable.LayerDrawable bar = new android.graphics.drawable.LayerDrawable(
+            new android.graphics.drawable.Drawable[] {
+                track,
+                new android.graphics.drawable.ClipDrawable(
+                    played,
+                    Gravity.START,
+                    android.graphics.drawable.ClipDrawable.HORIZONTAL
+                ),
+            }
+        );
+        bar.setId(0, android.R.id.background);
+        bar.setId(1, android.R.id.progress);
+        // Keep the bar thin inside the taller touch/focus area.
+        bar.setLayerInset(0, 0, dp(11), 0, dp(11));
+        bar.setLayerInset(1, 0, dp(11), 0, dp(11));
+        timeline.setProgressDrawable(bar);
+        android.graphics.drawable.GradientDrawable dot = new android.graphics.drawable.GradientDrawable();
+        dot.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        dot.setColor(Color.WHITE);
+        dot.setSize(dp(14), dp(14));
+        timeline.setThumb(dot);
+        timeline.setSplitTrack(false);
+        timeline.setPadding(dp(7), 0, dp(7), 0);
+    }
+
     private TextView label() {
         TextView t = new TextView(this);
         t.setTextColor(Color.WHITE);
-        t.setTextSize(15);
+        t.setTextSize(16);
         t.setText("—");
         return t;
     }
