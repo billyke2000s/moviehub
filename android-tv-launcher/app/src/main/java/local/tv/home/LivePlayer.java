@@ -99,12 +99,30 @@ final class LivePlayer {
     static void attach(Object who, VLCVideoLayout view, MediaPlayer.EventListener events) {
         if (player == null) return;
         if (layout != view) {
-            if (layout != null) player.detachViews();
+            boolean moving = layout != null;
+            if (moving) player.detachViews();
             player.attachViews(view, null, false, false);
             layout = view;
+            if (moving) redraw(view);
         }
         owner = who;
         listener = events;
+    }
+
+    /**
+     * After the picture moves to another view while playing, some TV boxes' hardware decoders keep
+     * drawing to the old, gone surface, so the new view stays black (the owner saw this going back
+     * from the full screen to the guide's corner). Choosing the same video track again restarts
+     * only the decoder on the new surface: the stream itself carries on, with no reconnecting.
+     */
+    private static void redraw(VLCVideoLayout view) {
+        view.postDelayed(() -> {
+            if (player == null || layout != view || !player.isPlaying()) return;
+            int track = player.getVideoTrack();
+            if (track < 0) return;
+            player.setVideoTrack(-1);
+            player.setVideoTrack(track);
+        }, 200);
     }
 
     static boolean owns(Object who) {
