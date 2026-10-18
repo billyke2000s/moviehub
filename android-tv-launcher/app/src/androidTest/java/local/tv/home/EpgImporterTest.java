@@ -56,7 +56,7 @@ public class EpgImporterTest {
             start +
             "\" stop=\"" +
             stop +
-            "\" channel=\"BBC.One.HD.uk\"><title>EastEnders</title><desc>Drama in Walford.</desc><category>Soap</category></programme>" +
+            "\" channel=\"BBC.One.HD.uk\"><title>EastEnders</title><desc>Drama in Walford.</desc><category>Soap</category><episode-num system=\"onscreen\">S1 Ep3</episode-num><video><quality>HDTV</quality></video><subtitles type=\"teletext\"/><rating system=\"UK\"><value>15</value></rating><new/></programme>" +
             "<programme start=\"" +
             start +
             "\" stop=\"" +
@@ -96,9 +96,10 @@ public class EpgImporterTest {
                     long b,
                     String title,
                     String desc,
-                    String category
+                    String category,
+                    String flags
                 ) {
-                    programmes.add(new Object[] { channel, a, b, title, desc, category });
+                    programmes.add(new Object[] { channel, a, b, title, desc, category, flags });
                 }
             }
         );
@@ -115,7 +116,8 @@ public class EpgImporterTest {
                     (Long) p[2],
                     (String) p[3],
                     (String) p[4],
-                    (String) p[5]
+                    (String) p[5],
+                    (String) p[6]
                 );
             writer.commit();
         } finally {
@@ -127,6 +129,8 @@ public class EpgImporterTest {
         assertEquals("EastEnders", on.get(0).title);
         assertEquals("Drama in Walford.", on.get(0).description);
         assertEquals("Soap", on.get(0).category);
+        assertEquals("S1 Ep3|15|S|HD|New", on.get(0).flags);
+        assertEquals("S1 Ep3  [15]  [S]  [HD]  [New]", on.get(0).tags());
         assertEquals("BBC One has its satellite number", 101, bbc.number);
     }
 }

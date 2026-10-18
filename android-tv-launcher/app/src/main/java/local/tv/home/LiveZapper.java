@@ -398,7 +398,9 @@ final class LiveZapper {
         overlay.banner(
             String.valueOf(row.number),
             row.name,
-            shown == null ? "No programme information" : shown.title,
+            shown == null
+                ? "No programme information"
+                : shown.title + (shown.tags().isEmpty() ? "" : "    " + shown.tags()),
             shown == null ? "" : (onNow ? "Now " : "") + LiveTvScreen.clockTime(new Date(shown.start)),
             next == null ? "" : next.title,
             next == null ? "" : "Next " + LiveTvScreen.clockTime(new Date(next.start)),
@@ -426,7 +428,8 @@ final class LiveZapper {
                   "   (" +
                   Math.max(1, (item.stop - item.start) / 60000) +
                   " mins)" +
-                  (item.category.isEmpty() ? "" : "   ·   " + item.category);
+                  (item.category.isEmpty() ? "" : "   ·   " + item.category) +
+                  (item.tags().isEmpty() ? "" : "   ·   " + item.tags());
         overlay.info(
             shownRow.number + "  " + shownRow.name,
             item == null ? "No programme information" : item.title,

@@ -3,7 +3,7 @@ android {
     namespace 'local.tv.home'
     compileSdk 35
     defaultConfig { applicationId 'local.tv.home'; minSdk 28; targetSdk 35; versionCode Integer.parseInt(System.getenv('APK_VERSION_CODE') ?: '2'); versionName System.getenv('APK_VERSION_NAME') ?: '0.2' }
-    defaultConfig { testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner' }
+    defaultConfig { testInstrumentationRunner 'local.tv.home.MovieHubTestRunner' }
     signingConfigs {
         release {
             if (System.getenv('APK_KEYSTORE')) {

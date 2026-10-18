@@ -2,7 +2,6 @@ package local.tv.home;
 
 import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -178,7 +177,16 @@ final class SkyOverlay {
         source.setText(sourceText);
         keys.setVisibility(browsing ? View.GONE : View.VISIBLE);
         hint.setVisibility(browsing ? View.VISIBLE : View.GONE);
-        banner.setVisibility(View.VISIBLE);
+        slideIn(banner);
+    }
+
+    /** The banner slides up into place when it appears, as the satellite box's did. */
+    private void slideIn(View panel) {
+        if (panel.getVisibility() == View.VISIBLE) return;
+        panel.setVisibility(View.VISIBLE);
+        panel.setAlpha(0f);
+        panel.setTranslationY(a.dp(48));
+        panel.animate().alpha(1f).translationY(0f).setDuration(180).start();
     }
 
     /** The channel number being typed, shown where the number goes. */
@@ -190,6 +198,7 @@ final class SkyOverlay {
     }
 
     void hideBanner() {
+        banner.animate().cancel();
         banner.setVisibility(View.GONE);
         nowTime.setVisibility(View.VISIBLE);
     }
@@ -312,7 +321,7 @@ final class SkyOverlay {
         text.setTextSize(size);
         text.setSingleLine(true);
         text.setEllipsize(TextUtils.TruncateAt.END);
-        if (bold) text.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        SkyFont.apply(text, bold);
         return text;
     }
 }

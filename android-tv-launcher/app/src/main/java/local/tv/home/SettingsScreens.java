@@ -556,6 +556,15 @@ final class SettingsScreens {
             );
             settingCard(
                 body,
+                SafetyNotice.TITLE,
+                "MovieHub never asks you to leave the app, ring a number or pay during a stream",
+                null,
+                false,
+                "Read",
+                () -> SafetyNotice.show(activity)
+            );
+            settingCard(
+                body,
                 "Diagnostics",
                 "How long loading, sources and playback take on this box",
                 null,

@@ -1,6 +1,5 @@
 package local.tv.home;
 
-import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -302,7 +301,7 @@ final class GuideRows {
     private TextView text(String value, int size) {
         TextView label = activity.compactText(value, size);
         label.setTextColor(0xffffffff);
-        label.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        SkyFont.apply(label, true);
         label.setSingleLine(true);
         label.setEllipsize(TextUtils.TruncateAt.END);
         label.setGravity(Gravity.CENTER_VERTICAL);

@@ -113,6 +113,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `VlcPlaybackActivity` | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions (opened directly at the resume point), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`). |
 | `PlayerOverlay` | Builds the player's on-screen controls (title and download speed, timeline, flat icon controls, Back hint). |
 | `LiveZapper` | Live TV while watching: the satellite remote's keys, channel up/down, number entry, last channel, browsing other channels in the banner, the PIN lock, and backup copies with automatic switching. |
+| `SkyFont` | The Live TV typeface (Hind, OFL, in `assets/fonts`), with the system font as a fallback. |
+| `SafetyNotice` | The first-start "Staying safe" notice (also in Settings → System) about scam messages in streams. |
 | `SkyOverlay` | The full-screen Live TV overlay in the classic satellite-box style: banner, programme information panel and pause bar. |
 | `PlayerMenus` | The player's side panels: audio, subtitles, video track, speed, picture size, subtitle timing, sleep timer. |
 
