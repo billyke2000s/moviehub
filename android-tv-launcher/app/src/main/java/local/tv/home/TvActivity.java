@@ -185,6 +185,33 @@ abstract class TvActivity extends Activity {
         return label;
     }
 
+    /** The large rounded search box used by Search and Apps. Adds it to {@code parent}. */
+    EditText searchBox(LinearLayout parent, String hint) {
+        LinearLayout holder = vertical();
+        EditText box = field(holder, hint, false, "");
+        holder.removeViewAt(0); // the field's own label; the box shows a hint instead
+        holder.removeView(box);
+        box.setHint(hint);
+        box.setTextSize(20);
+        box.setPadding(dp(24), dp(12), dp(24), dp(12));
+        styleSearchBox(box, false);
+        View.OnFocusChangeListener keyboardHandling = box.getOnFocusChangeListener();
+        box.setOnFocusChangeListener((v, focused) -> {
+            if (keyboardHandling != null) keyboardHandling.onFocusChange(v, focused);
+            styleSearchBox(box, focused);
+        });
+        parent.addView(box, new LinearLayout.LayoutParams(-1, -2));
+        return box;
+    }
+
+    private void styleSearchBox(EditText box, boolean focused) {
+        GradientDrawable shape = new GradientDrawable();
+        shape.setCornerRadius(dp(30));
+        shape.setColor(focused ? 0x33ffffff : 0x1fffffff);
+        shape.setStroke(dp(focused ? 3 : 1), focused ? accent() : 0x40ffffff);
+        box.setBackground(shape);
+    }
+
     EditText field(LinearLayout parent, String hint, boolean password, String value) {
         parent.addView(compactText(hint, 14));
         EditText edit = new EditText(this);

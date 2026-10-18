@@ -10,6 +10,12 @@ update feed), so the next release after it used code 12, named 0.12.
 
 On `main` but not yet published to TVs:
 
+- New Apps screen (from All Apps on Home), like the Google TV app drawer: a search box, Android
+  shortcuts (Settings, Wi-Fi, Bluetooth, Display, Sound, Storage, Manage apps, Date & time; only
+  those the box has), recently used apps, and every app as its TV banner (icon and name when it has
+  none). Hold Select or press Menu on an app to hide it; "Show hidden" brings hidden apps back.
+- MovieHub has its own icon and TV banner, and is called "MovieHub" instead of "Home" in Android's
+  app lists and the home-app chooser.
 - Home "For you" now blends recommendations for several titles you showed interest in (played,
   My List, sources or episodes opened) instead of only the last title opened, so it no longer
   changes completely with every title. Titles recommended by several of them come first; titles
