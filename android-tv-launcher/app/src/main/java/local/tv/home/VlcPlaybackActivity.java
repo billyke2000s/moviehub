@@ -110,9 +110,9 @@ public class VlcPlaybackActivity extends Activity {
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
-            // Both the press and the release are handled here, so Android's own Back handling
-            // never finishes the player behind our back.
-            if (event.getAction() == KeyEvent.ACTION_DOWN) onBackKey(event);
+            // Handled here, never by Android's default, and acted on when the key is released
+            // (as Android does), so a held key counts as one press.
+            if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) onBackKey();
             return true;
         }
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
@@ -520,11 +520,9 @@ public class VlcPlaybackActivity extends Activity {
     }
 
     /**
-     * Leaving takes two presses, so a stray press does not stop the film. Held-key repeats are
-     * ignored for the same reason.
+     * Leaving takes two presses, so a stray press does not stop the film.
      */
-    private void onBackKey(KeyEvent event) {
-        if (event.getRepeatCount() > 0) return;
+    private void onBackKey() {
         long now = SystemClock.elapsedRealtime();
         if (ended || player == null || now - backPressedAt < EXIT_WINDOW_MS) {
             finish();
