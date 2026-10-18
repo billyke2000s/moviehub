@@ -23,6 +23,9 @@ final class HomeScreen {
         this.activity = activity;
     }
 
+    /** Shown as an icon beside Settings when an app with exactly this name is installed. */
+    static final String MEMORY_CLEAN = "MemoryClean";
+
     void home() {
         activity.destination = this::home;
         activity.fixedScreen(null, null);
@@ -43,12 +46,24 @@ final class HomeScreen {
             );
         top.addView(new View(activity), new LinearLayout.LayoutParams(0, 1, 1));
         activity.clock = activity.compactText("", 16);
-        top.addView(activity.clock);
+        LinearLayout.LayoutParams clockLayout = new LinearLayout.LayoutParams(-2, -2);
+        clockLayout.rightMargin = activity.dp(14);
+        top.addView(activity.clock, clockLayout);
         activity.updateButton = activity.button("Update", activity.updates::offerUpdate);
         activity.updateButton.setVisibility(
             activity.updates.availableUpdate == null ? View.GONE : View.VISIBLE
         );
         top.addView(activity.updateButton);
+        activity.dock.queryApps();
+        AppDock.App memoryClean = activity.dock.findApp(MEMORY_CLEAN);
+        if (memoryClean != null) {
+            LinearLayout.LayoutParams iconLayout = new LinearLayout.LayoutParams(
+                activity.dp(38),
+                activity.dp(38)
+            );
+            iconLayout.rightMargin = activity.dp(8);
+            top.addView(activity.dock.iconShortcut(memoryClean), iconLayout);
+        }
         top.addView(
             activity.navigationButton("Settings", activity.settingsScreens::settings),
             new LinearLayout.LayoutParams(activity.dp(96), activity.dp(38))
@@ -166,7 +181,6 @@ final class HomeScreen {
         activity.dock.homeDock.setPadding(0, activity.dp(8), 0, 0);
         appScroll.addView(activity.dock.homeDock);
         activity.page.addView(appScroll, new LinearLayout.LayoutParams(-1, activity.dp(78)));
-        activity.dock.queryApps();
         for (String id : activity.dock.dockOrder())
             for (AppDock.App app : activity.dock.apps)
                 if (id.equals(app.component.flattenToString())) {

@@ -16,6 +16,10 @@ On `main` but not yet published to TVs:
   being browsed always sits fully in view, rows load as you reach them, and your place is kept when
   you open a title and come back. Browse, Filters, Search and Library work as before; a category
   chosen there opens as a full grid, and Back returns to the rows.
+- Home: a MemoryClean shortcut beside Settings, shown as the app's own icon with no box (only
+  when an app named exactly "MemoryClean" is installed). The clock moves left to make room.
+- Focused list rows (for example stream sources) no longer grow into the rows around them or past
+  the screen edge; small items still grow slightly, and focused items always draw on top.
 
 ## 0.12 (18 Oct 2026)
 

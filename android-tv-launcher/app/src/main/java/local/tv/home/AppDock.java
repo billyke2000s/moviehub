@@ -63,6 +63,44 @@ final class AppDock {
         apps.sort(Comparator.comparing(a -> a.label.toLowerCase(Locale.ROOT)));
     }
 
+    /** The installed app with exactly this name, or null. Call queryApps() first. */
+    App findApp(String label) {
+        for (App app : apps) if (app.label.equals(label)) return app;
+        return null;
+    }
+
+    /**
+     * Just the app's own icon, with no tile behind it, for the Home top bar. Focus enlarges it and
+     * adds a soft round glow instead of a box.
+     */
+    View iconShortcut(App app) {
+        ImageView icon = new ImageView(activity);
+        icon.setImageDrawable(app.icon);
+        icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        icon.setPadding(activity.dp(3), activity.dp(3), activity.dp(3), activity.dp(3));
+        icon.setContentDescription(app.label);
+        icon.setFocusable(true);
+        icon.setFocusableInTouchMode(true);
+        icon.setAlpha(.85f);
+        android.graphics.drawable.GradientDrawable glow = new android.graphics.drawable.GradientDrawable();
+        glow.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        glow.setColor(0x33ffffff);
+        icon.setOnFocusChangeListener((v, focused) -> {
+            v.setBackground(focused ? glow : null);
+            v.setAlpha(focused ? 1f : .85f);
+            v.setScaleX(focused ? 1.2f : 1f);
+            v.setScaleY(focused ? 1.2f : 1f);
+        });
+        icon.setOnClickListener(v -> {
+            try {
+                activity.startActivity(new Intent(Intent.ACTION_MAIN).setComponent(app.component));
+            } catch (Exception e) {
+                activity.toast(app.label + " is unavailable");
+            }
+        });
+        return icon;
+    }
+
     View addApp(LinearLayout into, App app, boolean dock) {
         LinearLayout cell = activity.vertical();
         cell.setTag(app.component.flattenToString());
