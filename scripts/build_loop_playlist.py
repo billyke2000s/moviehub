@@ -63,10 +63,10 @@ def build():
             print(f"{url}: {len(channels)} streams")
         except Exception as exc:
             errors.append(f"{url}: {type(exc).__name__}: {exc}")
-    if errors:
-        raise RuntimeError("Refusing partial publish: " + "; ".join(errors))
+    for error in errors:
+        print("WARNING: skipped feed: " + error)
     if not seen:
-        raise RuntimeError("No streams; keeping previous playlist")
+        raise RuntimeError("No usable streams from configured feeds; keeping previous playlist")
     tmp = OUTPUT.with_suffix(".m3u.tmp")
     tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
     os.replace(tmp, OUTPUT)
