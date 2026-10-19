@@ -1,11 +1,12 @@
 # Status
 
-Last updated: 18 October 2026.
+Last updated: 19 October 2026.
 
 ## Where things stand
 
-- **Latest published version:** 0.35 (version code 35), published 18 October 2026, with update
-  notes in the feed. Items under *Unreleased* in [CHANGELOG.md](CHANGELOG.md) are not on TVs yet.
+- **Latest in-app update:** 0.36 (version code 36), verified in `android-tv-latest/update.json`
+  on 19 October 2026. GitHub's latest numbered release and updater release title still say 0.35;
+  the updater manifest is authoritative. Items under *Unreleased* in [CHANGELOG.md](CHANGELOG.md) are not on TVs yet.
 - **Code structure:** feature classes per area, see [ARCHITECTURE.md](ARCHITECTURE.md).
   `CatalogueScreens` was split (filter sheets in `CatalogueOptions`) and the Live TV guide's
   panels are in `LiveTvPanels`. `LiveTvScreen` is about 710 lines; split it further (for example
@@ -42,6 +43,10 @@ Last updated: 18 October 2026.
    when a phone turns.
 
 ## Decisions
+
+- Version 7 → 8 channel upgrades must add `main` before renumbering the preferred copies.
+  The repair preserves the existing database and encryption key; clearing app data is unnecessary.
+  A device regression fixture now omits the column, unlike the older version-number-only test.
 
 - My List, watch history and watched episodes stay in SharedPreferences (history encrypted).
   They are read only on detail pages and menus and the history is capped at 50, so a database

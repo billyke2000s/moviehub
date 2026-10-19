@@ -8,6 +8,9 @@ update feed), so the next release after it used code 12, named 0.12.
 
 ## Unreleased
 
+- Fixed Live TV's upgrade from the 0.35 channel database: create the preferred-channel column
+  before rebuilding channel numbers, preserving saved channels, encrypted URLs and favourites.
+
 - Troubleshooting uses the Settings sidebar and cards, with matching typography, spacing and
   buttons. Back returns to the System tab instead of Accounts.
 

@@ -124,6 +124,71 @@ public class ChannelDatabaseTest {
     }
 
     @Test
+    public void versionSevenWithoutMainUpgradesAndKeepsChannelsAndFavourites() throws Exception {
+        importRows(3);
+        String favourite = ChannelQuery.key(channel(2).url);
+        Set<String> favourites = Collections.singleton(favourite);
+        db.browse("favourites", "", favourites, 0);
+        String key = new Secrets(ApplicationProvider.getApplicationContext()).get("channelKey");
+        db.close();
+        Context context = ApplicationProvider.getApplicationContext();
+        try (
+            SQLiteDatabase old = SQLiteDatabase.openDatabase(
+                context.getDatabasePath("channels-v2.db").getPath(),
+                null,
+                SQLiteDatabase.OPEN_READWRITE
+            )
+        ) {
+            // Rebuild the actual version-7 table: changing user_version alone leaves the new
+            // column in place and would hide the 0.35 -> 0.36 upgrade failure.
+            old.beginTransaction();
+            try {
+                old.execSQL(
+                    "CREATE TABLE channels_v7(_id INTEGER PRIMARY KEY,source TEXT NOT NULL," +
+                        "position INTEGER NOT NULL,name TEXT NOT NULL,grp TEXT NOT NULL," +
+                        "logo TEXT NOT NULL,epg TEXT NOT NULL,key TEXT NOT NULL,url BLOB NOT NULL," +
+                        "dkey TEXT NOT NULL DEFAULT '',number INTEGER NOT NULL DEFAULT 0," +
+                        "section TEXT NOT NULL DEFAULT '',country TEXT NOT NULL DEFAULT '')"
+                );
+                String columns = "_id,source,position,name,grp,logo,epg,key,url,dkey,number,section,country";
+                old.execSQL("INSERT INTO channels_v7(" + columns + ") SELECT " + columns + " FROM channels");
+                old.execSQL("DROP TABLE channels");
+                old.execSQL("ALTER TABLE channels_v7 RENAME TO channels");
+                old.execSQL("CREATE INDEX channels_order ON channels(source,position)");
+                old.execSQL("CREATE INDEX channels_group ON channels(grp,source,position)");
+                old.execSQL("CREATE INDEX channels_key ON channels(key)");
+                old.execSQL("CREATE INDEX channels_dkey ON channels(dkey)");
+                old.execSQL("CREATE INDEX channels_number ON channels(number)");
+                old.setVersion(7);
+                old.setTransactionSuccessful();
+            } finally {
+                old.endTransaction();
+            }
+            try (Cursor columns = old.rawQuery("PRAGMA table_info(channels)", null)) {
+                while (columns.moveToNext()) assertNotEquals("main", columns.getString(1));
+            }
+        }
+        assertEquals(3, db.count()); // opens the v7 database and runs the real upgrade
+        List<ChannelDatabase.Row> all = db.browse("all", "", Collections.emptySet(), 0);
+        assertEquals("The guide can load the existing channels", 3, all.size());
+        for (ChannelDatabase.Row row : all) assertTrue(db.url(row.id, row.key).contains("private-password"));
+        assertEquals(channel(0).url, db.url(all.get(0).id, ChannelQuery.key(channel(0).url)));
+        assertEquals(key, new Secrets(context).get("channelKey"));
+        assertEquals(1, db.browse("favourites", "", favourites, 0).size());
+        assertEquals(1, db.browse("all", "Channel 2", Collections.emptySet(), 0).size());
+        try (Cursor saved = db.getReadableDatabase().rawQuery("SELECT key FROM favourite_keys", null)) {
+            assertTrue(saved.moveToFirst());
+            assertEquals(favourite, saved.getString(0));
+        }
+        db.close();
+        assertEquals(
+            "Reopening the migrated database still works",
+            3,
+            db.browse("all", "", favourites, 0).size()
+        );
+    }
+
+    @Test
     public void theSameChannelFromTwoListsIsShownOnceWithABackup() throws Exception {
         for (String source : new String[] { "free", "fta" }) {
             ChannelDatabase.Writer writer = db.writer(source, () -> {}, n -> {});
