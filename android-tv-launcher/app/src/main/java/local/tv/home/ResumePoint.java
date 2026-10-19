@@ -14,6 +14,13 @@ final class ResumePoint {
 
     private ResumePoint() {}
 
+    /** Treat a video as finished when no more than four minutes remain. */
+    static final long COMPLETION_WINDOW_MS = 4 * 60 * 1000L;
+
+    static boolean completed(long position, long length) {
+        return length > 0 && position > 0 && position <= length && length - position <= COMPLETION_WINDOW_MS;
+    }
+
     private static SharedPreferences positions(Context context) {
         return context.getSharedPreferences("positions", Context.MODE_PRIVATE);
     }
@@ -48,14 +55,23 @@ final class ResumePoint {
         java.util.Map<String, ?> all = positions(context).getAll();
         Object saved = titleKey == null ? null : all.get(titleKey);
         if (!(saved instanceof Number)) saved = all.get(id);
-        return saved instanceof Number ? ((Number) saved).longValue() : 0;
+        long point = saved instanceof Number ? ((Number) saved).longValue() : 0;
+        Object duration = all.get(id + ":duration");
+        if (duration instanceof Number && completed(point, ((Number) duration).longValue())) {
+            clear(context, id, titleKey);
+            return 0;
+        }
+        return point;
     }
 
     /** Saves the length (when known) and, unless it ended or resuming is off, the position. */
     static void save(Context context, String id, String titleKey, long position, long length, boolean ended) {
         SharedPreferences.Editor edit = positions(context).edit();
         if (length > 0) edit.putLong(id + ":duration", length);
-        if (!ended && context.getSharedPreferences("ui", Context.MODE_PRIVATE).getBoolean("resume", true)) {
+        if (ended || completed(position, length)) {
+            edit.remove(id);
+            if (titleKey != null) edit.remove(titleKey);
+        } else if (context.getSharedPreferences("ui", Context.MODE_PRIVATE).getBoolean("resume", true)) {
             edit.putLong(id, position);
             if (titleKey != null) edit.putLong(titleKey, position);
         }
