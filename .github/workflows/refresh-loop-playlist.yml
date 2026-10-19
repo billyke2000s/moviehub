@@ -26,8 +26,14 @@ jobs:
           python-version: '3.12'
       - name: Run converter tests
         run: python3 -m unittest discover -s scripts -p 'test_build_loop_playlist.py' -v
-      - name: Build playlist
-        run: python3 scripts/build_loop_playlist.py
+      - name: Build playlist when feeds are configured
+        shell: bash
+        run: |
+          if grep -Eq '^[[:space:]]*https://' streams/loop-feeds.txt; then
+            python3 scripts/build_loop_playlist.py
+          else
+            echo 'No feeds configured; skipping playlist publication.'
+          fi
       - name: Publish only on successful conversion on main
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
