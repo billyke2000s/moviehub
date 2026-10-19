@@ -1,0 +1,31 @@
+name: Refresh hosted live TV playlist
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: loop-playlist
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build playlist
+        run: python3 scripts/build_loop_playlist.py
+      - name: Publish only on successful conversion
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add streams/loop.m3u
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: refresh hosted live TV playlist"
+            git push
+          fi
