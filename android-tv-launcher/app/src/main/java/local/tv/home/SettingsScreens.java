@@ -55,7 +55,12 @@ final class SettingsScreens {
     }
 
     void settings() {
-        activity.fixedScreen("Settings", activity.homeScreen::home);
+        settingsTab(settingsLayout("Settings", activity.homeScreen::home), "Accounts");
+    }
+
+    /** Shared sidebar, viewport and content spacing for Settings subpages. */
+    LinearLayout settingsLayout(String title, Runnable back) {
+        activity.fixedScreen(title, back);
         LinearLayout layout = activity.row();
         layout.setGravity(Gravity.TOP);
         activity.page.addView(layout, new LinearLayout.LayoutParams(-1, 0, 1));
@@ -85,8 +90,8 @@ final class SettingsScreens {
         }
         choices.get(0).setSelected(true);
         activity.styleFocus(choices.get(0), false);
-        settingsTab(body, "Accounts");
         choices.get(0).requestFocus();
+        return body;
     }
 
     private String versionName() {
@@ -128,7 +133,7 @@ final class SettingsScreens {
      * the left, the current value on the right (green when on or connected), then one action button.
      * Returns the value label so callers can update it. {@code status} and {@code action} may be null.
      */
-    private TextView settingCard(
+    TextView settingCard(
         LinearLayout body,
         String title,
         String description,
