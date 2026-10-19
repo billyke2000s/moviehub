@@ -766,13 +766,13 @@ public class PlaybackTest {
         ChannelDatabase db = ChannelDatabase.get(context);
         db.clear();
         String fixture = "http://127.0.0.1:" + server.getLocalPort() + "/live.ts";
-        for (String source : new String[] { "xtream", "m3u" }) {
+        for (String source : new String[] { "nativepluto", "free" }) {
             ChannelDatabase.Writer writer = db.writer(source, () -> {}, n -> {});
             try {
                 writer.accept(
                     new Playlist.Channel(
                         "Example",
-                        source.equals("xtream") ? locator : fixture,
+                        source.equals("nativepluto") ? locator : fixture,
                         "General",
                         "",
                         ""

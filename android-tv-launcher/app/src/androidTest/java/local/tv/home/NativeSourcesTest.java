@@ -160,4 +160,17 @@ public class NativeSourcesTest {
             db.clear();
         }
     }
+
+    @org.junit.After
+    public void clearNativeGuideFixture() {
+        ChannelDatabase db = ChannelDatabase.get(
+            InstrumentationRegistry.getInstrumentation().getTargetContext()
+        );
+        ChannelDatabase.GuideWriter cleanup = db.new GuideWriter(true);
+        try {
+            cleanup.commit();
+        } finally {
+            cleanup.finish();
+        }
+    }
 }

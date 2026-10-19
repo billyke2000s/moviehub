@@ -21,7 +21,8 @@ controls; the FreeLinks entry remains disabled and that repository is unchanged.
 - The shared LivePlayer resolves on a bounded two-thread executor. Channel changes disconnect
   and interrupt the previous request. A generation check drops late results. Moving the same
   locator between the guide and fullscreen retains the player and the resolution.
-- Existing duplicate detection and same-channel backup selection are reused. Failures move to
+- Existing duplicate detection and same-channel backup selection are reused. Native Pluto is
+  preferred over public-list copies; connected Xtream/M3U accounts retain priority. Failures move to
   the next copy; no unlimited retry loop is added. End-of-stream on Live TV also uses this path.
   A failed initial resolution waits for the initial backup lookup rather than losing fallback.
 - Catalogue refresh uses the existing twelve-hour WorkManager schedule and atomic source writes.

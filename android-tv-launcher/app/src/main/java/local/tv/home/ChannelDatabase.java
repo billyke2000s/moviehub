@@ -297,9 +297,9 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
     // ---- Queries --------------------------------------------------------------------------
     private static final String COLUMNS = "_id,name,grp,logo,key,epg,dkey,number,section";
-    /** Providers first, then Free-TV, then everything else; in playlist order within each. */
+    /** Accounts first, then native Pluto, Free-TV and other public lists; playlist order within each. */
     static final String ORDER =
-        "CASE source WHEN 'xtream' THEN 0 WHEN 'm3u' THEN 1 WHEN 'fta' THEN 2 ELSE 3 END";
+        "CASE source WHEN 'xtream' THEN 0 WHEN 'm3u' THEN 1 WHEN 'nativepluto' THEN 2 WHEN 'fta' THEN 3 ELSE 4 END";
     /** One row per channel: duplicates (same non-empty dkey) collapse to the first in ORDER. */
     static final String GROUP = "CASE WHEN dkey='' THEN 'id'||_id ELSE dkey END";
     /** The preferred copy of a channel: SQLite takes the other columns from the MIN row. */
