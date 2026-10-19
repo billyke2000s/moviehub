@@ -1,6 +1,6 @@
 # Masqueradarr integration — staged migration
 
-Status: **planning / validation**, not enabled in a published MovieHub APK.
+Status: **implemented on a development branch, untested and unpublished**.
 
 ## Existing functionality we can reuse
 
@@ -41,3 +41,13 @@ If the current M3U integration works, prefer a clearly named optional Masquerada
 ## Related experimental work
 
 The independent FreeLinks branch `feature/masqueradarr-bridge` contains an optional Python M3U importer. It is **not required** for the direct MovieHub-to-Masqueradarr approach and should not be merged just to enable this smoke test.
+
+## Implementation update (19 October 2026)
+
+- Accounts has a separate **Masqueradarr** connection, stored under encrypted key `masqueradarr`.
+- It accepts a user-entered M3U export URL, checks it using the existing channel probe, and refreshes its own database source `masqueradarr`.
+- Xtream and personal M3U remain separate and usable alongside Masqueradarr.
+- FreeLinks' `loophost` entry in `FreeChannels.EXTRA` is commented out, not deleted. The independent FreeLinks repository remains unchanged.
+- The existing Live TV player and movies/series providers were not changed.
+- No Masqueradarr server URL is bundled. Real connectivity and playback are **not verified**.
+- The app is **not released**. Run CI/build/lint and TV testing before merge or publishing.
