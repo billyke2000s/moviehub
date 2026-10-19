@@ -47,7 +47,6 @@ def build():
         line.strip() for line in MANIFEST.read_text(encoding="utf-8").splitlines()
         if line.strip() and not line.lstrip().startswith("#")
     ]
-    urls.insert(0, 'loop:pluto')
     if not urls:
         raise RuntimeError("No feeds configured; keeping previous playlist")
     lines = ["#EXTM3U"]
