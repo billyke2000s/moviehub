@@ -6,6 +6,7 @@ attempt to bypass session-based/DRM streams. Only direct HTTP(S) stream URLs
 are exported. A failed update never overwrites the last published playlist.
 """
 import os
+from loop_pluto import fetch_channels as fetch_pluto_channels
 from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
@@ -46,6 +47,7 @@ def build():
         line.strip() for line in MANIFEST.read_text(encoding="utf-8").splitlines()
         if line.strip() and not line.lstrip().startswith("#")
     ]
+    urls.insert(0, 'loop:pluto')
     if not urls:
         raise RuntimeError("No feeds configured; keeping previous playlist")
     lines = ["#EXTM3U"]
@@ -53,7 +55,7 @@ def build():
     errors = []
     for url in urls:
         try:
-            channels = list(extract(fetch(url)))
+            channels = fetch_pluto_channels() if url == 'loop:pluto' else list(extract(fetch(url)))
             if not channels:
                 raise ValueError("No direct playable URLs")
             for meta, stream in channels:
