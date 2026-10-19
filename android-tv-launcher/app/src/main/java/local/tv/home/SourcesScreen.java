@@ -31,7 +31,12 @@ final class SourcesScreen {
         static void next(MainActivity activity) {
             if (imdb == null || episode < 1) return;
             int nextEpisode = episode + 1;
-            JSONObject nextMetadata = metadata == null ? new JSONObject() : new JSONObject(metadata.toString());
+            JSONObject nextMetadata;
+            try {
+                nextMetadata = metadata == null ? new JSONObject() : new JSONObject(metadata.toString());
+            } catch (JSONException error) {
+                nextMetadata = new JSONObject();
+            }
             try {
                 nextMetadata.put("season", season).put("episode", nextEpisode);
                 String key = nextMetadata.optString("episodeKey", "");
