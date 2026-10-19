@@ -33,7 +33,7 @@ final class FreeChannels {
     private FreeChannels() {}
 
     static String choice(Context context) {
-        return prefs(context).getString(PREF, "auto");
+        return FreeServicesConsent.enabled(context) ? prefs(context).getString(PREF, "auto") : "off";
     }
 
     static String label(String value) {
