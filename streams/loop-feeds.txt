@@ -1,8 +1,4 @@
+# Actual The Loop 7.9 compatible source adapters.
+# The Pluto TV module is converted to M3U on GitHub Actions.
 loop:pluto
-# Public M3U feeds. A failed feed is skipped; working feeds are published.
-# These are already used by MovieHub, so this validates the hosted pipeline
-# but DOES NOT represent a successful conversion of The Loop Kodi resolvers.
-https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8
-https://iptv-org.github.io/iptv/countries/uk.m3u
-# Historical dead source retained as a disabled reference, never downloaded:
-# https://i.mjh.nz/SamsungTVPlus/gb.m3u8
+# Additional verified The Loop adapters may be added here.
