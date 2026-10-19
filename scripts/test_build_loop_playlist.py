@@ -7,9 +7,16 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build_loop_playlist as builder
+from loop_pluto import channels_from_guide
 
 
 class ConverterTests(unittest.TestCase):
+    def test_loop_pluto_guide_extracts_direct_stream(self):
+        payload = {'channels': [{'name': 'Sample', 'stitched': {'urls': [{'url': 'https://example.org/live.m3u8'}]}, 'images': []}, {'name': 'Broken', 'stitched': {'urls': []}}]}
+        items = list(channels_from_guide(payload))
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0][1], 'https://example.org/live.m3u8')
+
     def test_extract_direct_streams_only(self):
         feed = """#EXTM3U
 #EXTINF:-1 tvg-id="example",Example
