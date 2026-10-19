@@ -105,3 +105,9 @@ Draft PR #83 now adapts fifteen additional historical upstream providers through
 DaddyLive's multi-player resolver and Tubi's signing/bootstrap. Discovery has succeeded for several FAST
 platforms; DaddyLive discovery alone does not establish playback. Remaining unported dulo login
 and HDHomeRun transport are documented. Nothing is merged or released by this work.
+
+The standalone-engine code at `4ca05fdf89eebc659e7ba8f3e0c66cdd04b72abf` passed build/lint, signing
+compatibility, provider verification and the complete TV emulator suite. A debug APK is available in
+[CI artifacts](https://github.com/billyke2000s/moviehub/actions/runs/39341576650). Ten added providers
+have one decoded desktop media sample each; this does not prove physical TV playback or all channels.
+The PR remains draft, and automatic remote provider updates remain unconfigured.

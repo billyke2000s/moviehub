@@ -219,4 +219,12 @@ ZLive uses the bounded local relay for wrapped media segments and required heade
 refresh an actively playing stream before expiry; channel switches/stops cancel the renewal and a paused
 player is never auto-started. Upstream full ingest/remux/keyframe repair is still not ported. The audited
 `cast.zlive.st/channels.json` returned HTTP 404 in the live probe, so ZLive has fixture/Android integration
-coverage pending CI, but no live channel/playback evidence. No replacement domain was guessed.
+coverage, but no live channel/playback evidence. No replacement domain was guessed.
+
+## Final automated result
+
+Code revision `4ca05fdf89eebc659e7ba8f3e0c66cdd04b72abf` passed the Android APK/debug/release
+builds and lint, signing compatibility and full API-28 TV x86_64 emulator suite:
+https://github.com/billyke2000s/moviehub/actions/runs/39341576650 . Provider/compiler/JVM verification
+passed separately: https://github.com/billyke2000s/moviehub/actions/runs/39341576614 . The package
+publication job was intentionally skipped. Physical ARM64/live-provider-on-TV checks remain outstanding.
