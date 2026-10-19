@@ -39,7 +39,7 @@ Rust ingest/remux machinery still need separate Android implementations where re
   pending requests; the host fulfils them and resumes by replaying recorded responses without repeating
   completed network requests. A fresh seed per operation gives fresh signatures/macros; recorded completion
   times advance the clock reproducibly. DaddyLive player preference/failure hints are retained in a bounded 256-channel, five-minute host cache and restored through upstream player-memory functions; playback failures retire the current player. Cookies and anonymous tokens remain in operation-local JS/replay
-  state. They are not written to disk. Anonymous bootstrap may therefore repeat on the next channel.
+  state. Bridge IPC temporarily serializes these values into app-private cache files passed by descriptor and deletes them on completion; there is no durable token/session store. Anonymous bootstrap may therefore repeat on the next channel.
 - `ProviderBroker` limits network work to 64 GET/POST requests, 3 MiB per response and 4 MiB aggregate
   response data. Catalogue work has a 240-second deadline and playback resolution 45 seconds, with channel
   cancellation and bounded per-hop HTTP timeouts. Timers are bounded to three seconds per request.
@@ -159,3 +159,9 @@ Vizio's first URL also decoded after percent-encoding the literal braces left by
 Eight newly ported providers therefore have one decoded desktop sample each. The first Runtime-2 CI
 run passed provider verification, APK/lint, signing compatibility and the full emulator suite:
 https://github.com/billyke2000s/moviehub/actions/runs/39335954185 . Follow-up fixes need their own run.
+
+The final local checks passed: 223 existing core checks, 21 runtime/signature/URL/segment checks,
+25 multi-provider JVM fixtures and three compiler fixtures. Debug APK, lint and instrumentation
+compilation passed. All 28 vendored TypeScript files match the historical upstream bytes and the
+package provenance hashes. The APK contains ARM64 LibVLC libraries; the provider runtime is pure Java.
+This is ABI packaging evidence, not physical ARM64 execution.
