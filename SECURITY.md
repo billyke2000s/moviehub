@@ -63,3 +63,7 @@ runner (`MovieHubTestRunner`); `SafetyNoticeTest` checks it shows.
 
 Do not put credentials or private provider URLs in a public issue. Contact the repository owner
 privately through GitHub.
+
+## Native free-TV sessions
+
+Pluto uses an anonymous session from the actual network region, without embedded accounts or geographic overrides. Tokens and signed playback URLs remain in memory. SQLite stores stable encrypted locators. Provider API endpoints are restricted to HTTPS Pluto subdomains; redirects do not carry bearer tokens to another authority. API responses and retries are bounded, and channel switches disconnect stale requests. Ads, HLS key retrieval and provider access checks are preserved. No upstream private adapter code or licensing assumptions are imported.

@@ -4,9 +4,9 @@ Last updated: 19 October 2026.
 
 ## Where things stand
 
-- **Latest in-app update:** 0.36 (version code 36), verified in `android-tv-latest/update.json`
-  on 19 October 2026. GitHub's latest numbered release and updater release title still say 0.35;
-  the updater manifest is authoritative. Items under *Unreleased* in [CHANGELOG.md](CHANGELOG.md) are not on TVs yet.
+- **Latest in-app update:** the public [updater manifest](https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/update.json)
+  is authoritative for `versionName` and `versionCode`. Compare it with the numbered GitHub release;
+  merging code does not itself publish an update. The baseline verified before this work was 0.38.
 - **Code structure:** feature classes per area, see [ARCHITECTURE.md](ARCHITECTURE.md).
   `CatalogueScreens` was split (filter sheets in `CatalogueOptions`) and the Live TV guide's
   panels are in `LiveTvPanels`. `LiveTvScreen` is about 710 lines; split it further (for example
@@ -86,3 +86,7 @@ Last updated: 19 October 2026.
    recommendations can be mixed into For you.
 3. Check Live TV on the box with a large channel list (the full free list): guide pages, channel
    up/down and typing numbers should feel quicker. Diagnostics has no guide timing yet.
+
+## Native free-TV work (19 October 2026)
+
+PR #81 adds native regional Pluto discovery, resolve-on-play, source cancellation, guide data and Settings → Free channels controls on top of #80’s optional hosted connection. A real GB catalogue returned 187 channels; one sample decoded successfully on desktop. Other upstream providers are not advertised as native. Validation and release status are linked in the PR and GitHub release; physical TV checks remain outstanding. See [the full evidence record](docs/NATIVE_FREE_SOURCES.md).

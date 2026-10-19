@@ -160,6 +160,10 @@ public class ChannelImporterTest {
             ChannelDatabase.Row row = db.all(0).get(0);
             assertEquals(key, row.key);
             assertEquals(channel.url, db.url(row.id, key));
+            // The old database is already gone: another outage must still retain its migrated copy.
+            assertFalse(ChannelImporter.run(context, () -> {}));
+            assertEquals(1, db.count());
+            assertNotNull(db.byKey(key));
             assertTrue(
                 context
                     .getSharedPreferences("ui", 0)
@@ -170,6 +174,21 @@ public class ChannelImporterTest {
             context.getSharedPreferences("ui", 0).edit().putStringSet("favourites", previous).commit();
             context.deleteDatabase("channels.db");
         }
+    }
+
+    @Test
+    public void disabledFreeSourceIsRemovedEvenWhenAnotherProviderFails() throws Exception {
+        ChannelDatabase.Writer writer = db.writer("loophost", () -> {}, n -> {});
+        try {
+            writer.accept(new Playlist.Channel("Disabled", "https://example.org/live.m3u8", "", "", ""));
+            writer.commit();
+        } finally {
+            writer.abort();
+        }
+        secrets.put("m3u", root + "/broken.m3u");
+        broken = true;
+        assertFalse(ChannelImporter.run(context, () -> {}));
+        assertEquals("A failed replacement cannot reactivate the disabled FreeLinks source", 0, db.count());
     }
 
     @After

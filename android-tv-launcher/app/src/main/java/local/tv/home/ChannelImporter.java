@@ -103,8 +103,20 @@ final class ChannelImporter {
                         problems.add("Xtream: " + describe(e));
                     }
                 }
+                boolean providerConnected = anySource;
+                if (NativeSources.enabled(context, providerConnected)) {
+                    configured.add("nativepluto");
+                    anySource = true;
+                    try {
+                        total += NativeSources.refresh(context, db, cancel);
+                    } catch (Exception e) {
+                        cancel.check();
+                        Diagnostics.recovered("Refreshing native Pluto channels", e);
+                        problems.add("Pluto TV: regional service unavailable; cached channels kept.");
+                    }
+                }
                 // Free lists: each its own source, so a list that fails keeps its previous channels.
-                for (FreeChannels.Source free : FreeChannels.sources(context, anySource)) {
+                for (FreeChannels.Source free : FreeChannels.sources(context, providerConnected)) {
                     anySource = true;
                     configured.add(free.id);
                     try {
@@ -114,7 +126,12 @@ final class ChannelImporter {
                     }
                 }
                 cancel.check();
-                if (problems.isEmpty()) db.removeSourcesExcept(configured);
+                // Failed sources are still configured and keep their last good rows. Disabled
+                // sources must disappear even when a different provider is offline.
+                // A migrated legacy cache has no configured source identity yet: retain it
+                // through repeated outages until a real replacement imports successfully.
+                if (total == 0 && !problems.isEmpty()) configured.add("legacy");
+                db.removeSourcesExcept(configured);
                 // The free programme guide; a failure here never counts against the channels.
                 if (anySource && db.count() > 0) try {
                     EpgImporter.Result guide = EpgImporter.run(context, db, cancel);
@@ -129,6 +146,12 @@ final class ChannelImporter {
                 } catch (Exception e) {
                     Diagnostics.recovered("Programme guide", e);
                     guideNote = " · programme guide unavailable";
+                }
+                if (configured.contains("nativepluto")) try {
+                    NativeSources.guide(db, cancel);
+                } catch (Exception e) {
+                    cancel.check();
+                    Diagnostics.recovered("Pluto programme guide", e);
                 }
             } catch (Exception e) {
                 problems.add(describe(e));

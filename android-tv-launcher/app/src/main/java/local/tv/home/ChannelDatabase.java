@@ -297,9 +297,9 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
     // ---- Queries --------------------------------------------------------------------------
     private static final String COLUMNS = "_id,name,grp,logo,key,epg,dkey,number,section";
-    /** Providers first, then Free-TV, then everything else; in playlist order within each. */
+    /** Accounts first, then native Pluto, Free-TV and other public lists; playlist order within each. */
     static final String ORDER =
-        "CASE source WHEN 'xtream' THEN 0 WHEN 'm3u' THEN 1 WHEN 'fta' THEN 2 ELSE 3 END";
+        "CASE source WHEN 'xtream' THEN 0 WHEN 'm3u' THEN 1 WHEN 'nativepluto' THEN 2 WHEN 'fta' THEN 3 ELSE 4 END";
     /** One row per channel: duplicates (same non-empty dkey) collapse to the first in ORDER. */
     static final String GROUP = "CASE WHEN dkey='' THEN 'id'||_id ELSE dkey END";
     /** The preferred copy of a channel: SQLite takes the other columns from the MIN row. */
@@ -613,9 +613,15 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         int programmes;
 
         GuideWriter() {
+            this(false);
+        }
+
+        /** Native provider guides refresh independently; XMLTV refreshes retain those listings. */
+        GuideWriter(boolean nativePluto) {
             db.beginTransactionNonExclusive();
-            db.delete("programmes", null, null);
-            db.delete("epg_map", null, null);
+            String where = nativePluto ? "channel LIKE 'nativepluto:%'" : "channel NOT LIKE 'nativepluto:%'";
+            db.delete("programmes", where, null);
+            db.delete("epg_map", where, null);
             map = db.compileStatement("INSERT INTO epg_map(chkey,channel) VALUES(?,?)");
             programme = db.compileStatement(
                 "INSERT INTO programmes(channel,start,stop,title,descr,category,flags) VALUES(?,?,?,?,?,?,?)"
@@ -667,7 +673,11 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
     List<Programme> programmes(Row row, String country, long from, long to, int limit) {
         List<Programme> out = new ArrayList<>();
-        List<String> keys = EpgMatch.keys(row.epg, row.name, country);
+        // Native listings already belong to a provider/region identity. Do not apply the
+        // UK XMLTV country filter, or match a similarly named foreign channel's guide.
+        List<String> keys = row.epg.matches("pluto:[0-9a-f]{24}\\.[a-z]{2}")
+            ? Collections.singletonList(EpgMatch.key(row.epg))
+            : EpgMatch.keys(row.epg, row.name, country);
         if (keys.isEmpty()) return out;
         StringBuilder in = new StringBuilder();
         List<String> args = new ArrayList<>(keys);

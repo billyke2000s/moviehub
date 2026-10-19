@@ -6,6 +6,14 @@ version below was built from the listed `main` commit. Earlier history is in the
 Note: the release shown as 0.10 below was published with version code 11 (name "0.11" in the
 update feed), so the next release after it used code 12, named 0.12.
 
+## 0.39 (19 October 2026)
+
+- Discover regional Pluto TV channels directly without a separately hosted server; resolve streams when played and keep favourites stable across session refreshes.
+- Add native Pluto controls and catalogue counts to Free channels, while keeping Xtream, M3U and optional hosted Masqueradarr separate. FreeLinks remains disabled.
+- Cancel stale native channel requests, preserve guide/fullscreen playback handoff, and try same-channel backups after source failures or live stream endings.
+- Refresh provider guide data independently from XMLTV; retain cached channels and listings when a service fails.
+- Add provider fixtures and native playback cancellation, fallback and handoff regression tests. Actual desktop decoding succeeded for one UK Pluto channel; real TV verification remains required.
+
 ## Unreleased
 
 - Fixed Live TV's upgrade from the 0.35 channel database: create the preferred-channel column

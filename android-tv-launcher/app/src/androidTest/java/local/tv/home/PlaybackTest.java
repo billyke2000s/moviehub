@@ -393,6 +393,15 @@ public class PlaybackTest {
 
     @Test
     public void liveTvMovesBetweenTheGuideAndFullScreenWithoutReconnecting() throws Exception {
+        handover(false);
+    }
+
+    @Test
+    public void nativeResolvedLiveTvHandsOverWithoutResolvingAgain() throws Exception {
+        handover(true);
+    }
+
+    private void handover(boolean nativeSource) throws Exception {
         instrumentation.runOnMainSync(activity::finish);
         instrumentation.waitForIdleSync();
         activity = null;
@@ -403,7 +412,14 @@ public class PlaybackTest {
         boolean updates = prefs.getBoolean("autoUpdates", true);
         ChannelDatabase db = ChannelDatabase.get(context);
         db.clear();
-        String url = "http://127.0.0.1:" + server.getLocalPort() + "/live.ts?channel=a";
+        String fixture = "http://127.0.0.1:" + server.getLocalPort() + "/live.ts?channel=a";
+        java.util.concurrent.atomic.AtomicInteger resolutions =
+            new java.util.concurrent.atomic.AtomicInteger();
+        if (nativeSource) LivePlayer.testResolver = (locator, http) -> {
+            resolutions.incrementAndGet();
+            return fixture;
+        };
+        String url = nativeSource ? PlutoSource.ROOT + "5ad8d3a31b95267e225e4e09" : fixture;
         ChannelDatabase.Writer writer = db.writer("handover-test", () -> {}, n -> {});
         try {
             writer.accept(new Playlist.Channel("Alpha", url, "General", "", ""));
@@ -458,8 +474,10 @@ public class PlaybackTest {
                 15000
             );
             assertEquals("The guide carried on the full screen's stream", opened, LivePlayer.opened);
+            if (nativeSource) assertEquals("Handover never resolves again", 1, resolutions.get());
             UiEvidence.capture("live-back-in-guide");
         } finally {
+            LivePlayer.testResolver = null;
             instrumentation.removeMonitor(monitor);
             instrumentation.runOnMainSync(main::finish);
             await(() -> !main.liveTv.picture.playing, 10000);
@@ -698,6 +716,98 @@ public class PlaybackTest {
     }
 
     @Test
+    public void switchingNativeChannelsCancelsTheOldResolution() throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        String first = PlutoSource.ROOT + "5ad8d3a31b95267e225e4e09";
+        String second = PlutoSource.ROOT + "6304f8d5ffb61000071ab478";
+        java.util.concurrent.CountDownLatch started = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.atomic.AtomicBoolean cancelled = new java.util.concurrent.atomic.AtomicBoolean();
+        LivePlayer.testResolver = (locator, http) -> {
+            if (locator.equals(first)) {
+                started.countDown();
+                try {
+                    new java.util.concurrent.CountDownLatch(1).await(
+                        10,
+                        java.util.concurrent.TimeUnit.SECONDS
+                    );
+                } catch (InterruptedException expected) {
+                    cancelled.set(true);
+                }
+                http.check();
+            }
+            return "http://127.0.0.1:" + server.getLocalPort() + "/live.ts";
+        };
+        Context context = instrumentation.getTargetContext();
+        LiveZapper.session = null;
+        activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+            new Intent(context, VlcPlaybackActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra("url", first)
+                .putExtra("live", true)
+                .putExtra("id", "native-first")
+                .putExtra("title", "First")
+        );
+        assertTrue(started.await(5, java.util.concurrent.TimeUnit.SECONDS));
+        instrumentation.runOnMainSync(() -> activity.switchTo("Second", second, "native-second"));
+        await(
+            () -> cancelled.get() && player() != null && player().isPlaying() && player().getTime() > 500,
+            30000
+        );
+        assertEquals("Second", activity.titleView.getText().toString());
+    }
+
+    @Test
+    public void failedNativeResolutionFallsBackToTheSameChannelsBackup() throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        String locator = PlutoSource.ROOT + "5ad8d3a31b95267e225e4e09";
+        Context context = instrumentation.getTargetContext();
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        String fixture = "http://127.0.0.1:" + server.getLocalPort() + "/live.ts";
+        for (String source : new String[] { "nativepluto", "free" }) {
+            ChannelDatabase.Writer writer = db.writer(source, () -> {}, n -> {});
+            try {
+                writer.accept(
+                    new Playlist.Channel(
+                        "Example",
+                        source.equals("nativepluto") ? locator : fixture,
+                        "General",
+                        "",
+                        ""
+                    )
+                );
+                writer.commit();
+            } finally {
+                writer.abort();
+            }
+        }
+        java.util.concurrent.atomic.AtomicInteger attempts = new java.util.concurrent.atomic.AtomicInteger();
+        LivePlayer.testResolver = (url, http) -> {
+            attempts.incrementAndGet();
+            throw new IOException("Fixture provider offline");
+        };
+        LiveZapper.session = new LiveZapper.Session("all", "", java.util.Collections.emptySet(), 0);
+        try {
+            activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+                new Intent(context, VlcPlaybackActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra("url", locator)
+                    .putExtra("live", true)
+                    .putExtra("id", ChannelQuery.key(locator))
+                    .putExtra("title", "Example")
+            );
+            await(() -> player() != null && player().isPlaying() && player().getTime() > 500, 30000);
+            assertEquals("2 of 2", activity.zapper.sourceLabel());
+            assertEquals("No unbounded retry on the failed provider", 1, attempts.get());
+        } finally {
+            LiveZapper.session = null;
+            db.clear();
+        }
+    }
+
+    @Test
     public void playsHlsWithoutFallingBackToTs() throws Exception {
         playLiveFixture("playlist.m3u8");
     }
@@ -735,6 +845,7 @@ public class PlaybackTest {
         instrumentation.waitForIdleSync();
         // No live stream carries over into the next test.
         instrumentation.runOnMainSync(LivePlayer::stop);
+        LivePlayer.testResolver = null;
         closed = true;
         if (server != null) server.close();
         Context context = instrumentation.getTargetContext();
