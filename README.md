@@ -35,9 +35,9 @@ in this repository.
 
 > [!TIP]
 > ### 📺 Install with Downloader
-> **Downloader code: `3222996`**
+> **Downloader code: `1031512`**
 >
-> Open the **Downloader** app on your Android TV device, enter **3222996** in its address/code field, and follow the download prompts.
+> Open the **Downloader** app on your Android TV device, enter **1031512** in its address/code field, and follow the download prompts.
 >
 > **Direct APK:** [Download MovieHub (home.apk)](https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/home.apk)
 
