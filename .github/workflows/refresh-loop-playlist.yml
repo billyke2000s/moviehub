@@ -29,7 +29,7 @@ jobs:
       - name: Build playlist when feeds are configured
         shell: bash
         run: |
-          if grep -Eq '^[[:space:]]*https://' streams/loop-feeds.txt; then
+          if grep -Eq '^[[:space:]]*(https://|loop:)' streams/loop-feeds.txt; then
             python3 scripts/build_loop_playlist.py
           else
             echo 'No feeds configured; skipping playlist publication.'

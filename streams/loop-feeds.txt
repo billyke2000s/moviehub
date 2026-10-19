@@ -1,4 +1,4 @@
-# Add verified, publicly accessible HTTPS M3U feed URLs here, one per line.
-# No upstream feed is configured yet: the old i.mjh.nz SamsungTVPlus
-# playlists were removed and return HTTP 404.
-# The workflow will fail safely without a configured feed.
+# Actual The Loop 7.9 compatible source adapters.
+# The Pluto TV module is converted to M3U on GitHub Actions.
+loop:pluto
+# Additional verified The Loop adapters may be added here.
