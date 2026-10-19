@@ -517,7 +517,7 @@ final class SettingsScreens {
             freeChannelsCard(body);
             accountCard(body, "TMDB", "Movie and series discovery, details and artwork");
             accountCard(body, "Premiumize", "Playback sources and your cloud library");
-            accountCard(body, "Masqueradarr", "Separate self-hosted live TV and sports");
+
         } else if (tab.equals("Appearance")) {
             heading(body, "Look and feel");
             toggle(body, "Featured row", "Artwork and a poster shelf on Home", "featured", true);
@@ -658,6 +658,9 @@ final class SettingsScreens {
                     if (FreeChannels.CHOICES[i][0].equals(FreeChannels.choice(activity))) selected = i;
                 }
                 SidePanel.of(activity, "Free channels")
+                    .option(activity.secrets.has("masqueradarr")
+                        ? "Masqueradarr · Connected / manage"
+                        : "Masqueradarr · Configure", () -> accountScreen("Masqueradarr"))
                     .message(
                         "Channels come from the public iptv-org lists of freely available streams. Some streams may not work, and some need Allow HTTP in System."
                     )
