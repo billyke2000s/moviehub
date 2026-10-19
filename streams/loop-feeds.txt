@@ -1,3 +1,4 @@
+loop:pluto
 # Public M3U feeds. A failed feed is skipped; working feeds are published.
 # These are already used by MovieHub, so this validates the hosted pipeline
 # but DOES NOT represent a successful conversion of The Loop Kodi resolvers.
