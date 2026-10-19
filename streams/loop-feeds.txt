@@ -1,5 +1,4 @@
-# One publicly accessible HTTPS M3U feed per line.
-# The Loop's Samsung TV Plus/Plex/STIRR integrations reference i.mjh.nz.
-# These are candidates for standard M3U feeds, not The Loop sports resolvers.
-# Verify each feed in GitHub Actions before enabling it in the Android app.
-https://i.mjh.nz/SamsungTVPlus/gb.m3u8
+# Add verified, publicly accessible HTTPS M3U feed URLs here, one per line.
+# No upstream feed is configured yet: the old i.mjh.nz SamsungTVPlus
+# playlists were removed and return HTTP 404.
+# The workflow will fail safely without a configured feed.
