@@ -53,6 +53,47 @@ public class DiagnosticsTest {
         return false;
     }
 
+    private Button button(View view, String text) {
+        if (view instanceof Button && ((Button) view).getText().toString().equals(text)) return (Button) view;
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                Button found = button(group.getChildAt(i), text);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
+    @Test
+    public void troubleshootingKeepsTheSettingsSidebarAndReturnsToSystem() {
+        remote.runOnMainSync(() -> activity.troubleshooting.show());
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            View root = activity.getWindow().getDecorView();
+            for (String tab : new String[] { "Accounts", "Appearance", "Playback", "System" }) {
+                Button choice = button(root, tab);
+                assertNotNull("Settings navigation: " + tab, choice);
+                assertEquals(tab.equals("System"), choice.isSelected());
+            }
+            button(root, "Back").performClick();
+        });
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            View root = activity.getWindow().getDecorView();
+            assertTrue(button(root, "System").isSelected());
+            assertTrue(shows(root, "Automatic updates"));
+            button(root, "Appearance").performClick();
+            assertTrue(shows(activity.getWindow().getDecorView(), "Look and feel"));
+        });
+        remote.runOnMainSync(() -> activity.troubleshooting.show());
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            button(activity.getWindow().getDecorView(), "Playback").performClick();
+            assertTrue(shows(activity.getWindow().getDecorView(), "Playback preferences"));
+        });
+    }
+
     @Test
     public void recordsTimingsAndShowsThem() {
         Timings.clear(); // anything the app measured while starting

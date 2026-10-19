@@ -1,6 +1,6 @@
 package local.tv.home;
 
-import android.graphics.Typeface;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import java.util.ArrayList;
@@ -17,6 +17,7 @@ import org.json.JSONObject;
 final class Troubleshooting {
 
     private final MainActivity activity;
+    private LinearLayout body;
     /** The last results, kept while MovieHub is open so Refresh does not lose them. */
     private volatile String speedResult = "Not run yet";
     private volatile List<String[]> checkResults = new ArrayList<>();
@@ -28,8 +29,12 @@ final class Troubleshooting {
     }
 
     void show() {
-        activity.screen("Troubleshooting", activity.settingsScreens::settings);
-        activity.page.addView(
+        body = activity.settingsScreens.settingsLayout(
+            "Troubleshooting",
+            activity.settingsScreens::settings,
+            "System"
+        );
+        body.addView(
             activity.muted(
                 android.os.Build.MANUFACTURER +
                     " " +
@@ -57,7 +62,7 @@ final class Troubleshooting {
             testing ? "Testing… (up to " + SpeedTest.MAX_MS / 1000 + " seconds)" : speedResult
         );
         actions(new String[] { "Run speed test" }, new Runnable[] { this::runSpeedTest });
-        activity.page.addView(
+        body.addView(
             activity.muted(
                 "Downloads test data from Cloudflare's speed test for up to ten seconds. Pause playback first for a fair result.",
                 13
@@ -210,7 +215,7 @@ final class Troubleshooting {
     /** Timings measured since MovieHub started: names, durations and counts only. */
     private void playback() {
         heading("Playback");
-        activity.page.addView(
+        body.addView(
             activity.muted(
                 "Measured since MovieHub started. Browse, open a title and play something, then come back here.",
                 13
@@ -273,32 +278,27 @@ final class Troubleshooting {
     // ---- Layout -------------------------------------------------------------------------------
 
     private void heading(String title) {
-        TextView label = activity.compactText(title, 18);
-        label.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        TextView label = activity.compactText(title, 23);
         label.setPadding(0, activity.dp(18), 0, activity.dp(2));
-        activity.page.addView(label);
+        body.addView(label);
     }
 
-    /** A name and value row; returns the value, so it can be found or changed. */
+    /** Use the same card, typography, background and spacing as the parent Settings page. */
     private TextView row(String name, String value) {
-        LinearLayout row = activity.listRow();
-        LinearLayout copy = activity.vertical();
-        copy.addView(activity.rowText(name, 17, false, 1));
-        TextView detail = activity.rowText(value, 14, true, 2);
-        copy.addView(detail);
-        row.addView(copy, new LinearLayout.LayoutParams(-1, -2));
-        activity.styleListRow(row, false);
-        LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
-        layout.topMargin = activity.dp(8);
-        activity.page.addView(row, layout);
-        return detail;
+        return activity.settingsScreens.settingCard(body, name, value, null, false, null, null);
     }
 
     private void actions(String[] labels, Runnable[] actions) {
         LinearLayout line = activity.row();
         line.setPadding(0, activity.dp(10), 0, 0);
-        for (int i = 0; i < labels.length; i++) activity.chip(line, labels[i], actions[i]);
-        activity.page.addView(line);
+        for (int i = 0; i < labels.length; i++) {
+            Button button = activity.button(labels[i], actions[i]);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, activity.dp(38));
+            lp.rightMargin = activity.dp(12);
+            lp.bottomMargin = activity.dp(8);
+            line.addView(button, lp);
+        }
+        body.addView(line);
     }
 
     private static String seconds(long millis) {

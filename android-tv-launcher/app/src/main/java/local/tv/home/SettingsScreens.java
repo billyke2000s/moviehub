@@ -18,6 +18,7 @@ import org.json.*;
 final class SettingsScreens {
 
     private final MainActivity activity;
+    private String selectedTab = "Accounts";
 
     SettingsScreens(MainActivity activity) {
         this.activity = activity;
@@ -55,7 +56,13 @@ final class SettingsScreens {
     }
 
     void settings() {
-        activity.fixedScreen("Settings", activity.homeScreen::home);
+        settingsTab(settingsLayout("Settings", activity.homeScreen::home, selectedTab), selectedTab);
+    }
+
+    /** Shared sidebar, viewport and content spacing for Settings and its Troubleshooting page. */
+    LinearLayout settingsLayout(String title, Runnable back, String selected) {
+        selectedTab = selected;
+        activity.fixedScreen(title, back);
         LinearLayout layout = activity.row();
         layout.setGravity(Gravity.TOP);
         activity.page.addView(layout, new LinearLayout.LayoutParams(-1, 0, 1));
@@ -76,6 +83,11 @@ final class SettingsScreens {
             navParams.bottomMargin = activity.dp(4);
             navigation.addView(choice, navParams);
             choice.setOnClickListener(v -> {
+                selectedTab = tab;
+                if (!title.equals("Settings")) {
+                    settings();
+                    return;
+                }
                 for (Button other : choices) {
                     other.setSelected(other == v);
                     activity.styleFocus(other, other.hasFocus());
@@ -83,10 +95,13 @@ final class SettingsScreens {
                 settingsTab(body, tab);
             });
         }
-        choices.get(0).setSelected(true);
-        activity.styleFocus(choices.get(0), false);
-        settingsTab(body, "Accounts");
-        choices.get(0).requestFocus();
+        for (Button choice : choices) {
+            boolean active = choice.getText().toString().equals(selected);
+            choice.setSelected(active);
+            activity.styleFocus(choice, false);
+            if (active) choice.requestFocus();
+        }
+        return body;
     }
 
     private String versionName() {
@@ -128,7 +143,7 @@ final class SettingsScreens {
      * the left, the current value on the right (green when on or connected), then one action button.
      * Returns the value label so callers can update it. {@code status} and {@code action} may be null.
      */
-    private TextView settingCard(
+    TextView settingCard(
         LinearLayout body,
         String title,
         String description,
