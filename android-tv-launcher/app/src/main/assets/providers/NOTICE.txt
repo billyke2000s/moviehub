@@ -1,7 +1,7 @@
 Standalone provider engine third-party notices
 
 Historical provider modules (FreeLiveSports, STIRR, TCL, Xumo, LG, Whale, Distro, Vizio,
-Vidaa, Roku, Plex, DaddyLive, Tubi and Samsung) and the Java TS-prefix port:
+Vidaa, Roku, Plex, DaddyLive, Tubi, Samsung and Local Now) and the Java TS-prefix port:
 Masqueradarr, Copyright (c) 2025-2026 BinaryNinja, MIT.
 Complete notice: LICENSE.masqueradarr.txt (alongside this file).
 Historical source: https://github.com/TheBinaryNinja/masqueradarr/tree/3b860294ecb4a9ebca8819adfc061162fbbb7f99

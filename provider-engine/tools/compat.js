@@ -134,6 +134,8 @@ function __bytes(s) {
             if (enc === "latin1" || enc === "binary") return s;
             if (enc === "hex") return codec("hexencode", s);
             if (enc === "base64") return codec("base64encode", s);
+            if (enc === "base64url")
+                return codec("base64encode", s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
             return codec("utf8decode", s);
         },
     };
@@ -152,7 +154,11 @@ var Buffer = {
                     })
                     .join(""),
             );
-        return __bytes(enc === "base64" ? codec("base64decode", value) : codec("utf8encode", value));
+        return __bytes(
+            enc === "base64" || enc === "base64url"
+                ? codec("base64decode", value.replace(/-/g, "+").replace(/_/g, "/"))
+                : codec("utf8encode", value),
+        );
     },
 };
 function __binary(value) {

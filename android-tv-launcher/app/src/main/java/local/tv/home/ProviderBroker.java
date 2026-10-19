@@ -23,6 +23,7 @@ final class ProviderBroker {
         "dlhd",
         "tubi",
         "samsung",
+        "localnow",
     };
 
     private ProviderBroker() {}
@@ -42,6 +43,13 @@ final class ProviderBroker {
             String host = u.getHost();
             if (host == null) return false;
             switch (provider) {
+                case "localnow":
+                    return (
+                        host.equals("localnow.com") ||
+                        host.endsWith(".localnow.com") ||
+                        host.endsWith(".localnowapi.com") ||
+                        host.endsWith(".amdvids.com")
+                    );
                 case "samsung":
                     return (
                         host.equals("i.mjh.nz") ||

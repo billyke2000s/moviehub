@@ -403,7 +403,7 @@ continuity checks.
 
 ### Experimental provider runtime 2 (unreleased)
 
-- Execute thirteen additional historical Masqueradarr adapters locally, including HTTP/POST, async replay,
+- Execute fourteen additional historical Masqueradarr adapters locally, including HTTP/POST, async replay,
   cookies within operations, Tubi crypto, compressed catalogues and fresh stream resolution.
 - Add individual settings, stable SQLite locators, inline guide isolation and optional local HLS header transport.
 - Preserve direct playback and existing providers; document partial live evidence and remaining browser/source blockers.

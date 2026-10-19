@@ -218,6 +218,35 @@ function __run(operation,row){
  throw new Error('Unsupported operation');
 }
 `;
+const localSource = readFileSync(root + "upstream/modules/localnow/import.ts", "utf8");
+const localTree = ts.createSourceFile("local.ts", localSource, ts.ScriptTarget.Latest, true);
+const localCategory = localTree.statements
+    .filter(
+        (node) =>
+            (ts.isFunctionDeclaration(node) && node.name?.text === "categoryFor") ||
+            (ts.isVariableStatement(node) &&
+                node.declarationList.declarations.some((d) => d.name.getText(localTree) === "CALL_SIGN")),
+    )
+    .map((node) => node.getText(localTree))
+    .join("\n");
+if (!localCategory.includes("function categoryFor")) throw new Error("Local Now normalization changed");
+const localCategoryJs = ts.transpileModule(localCategory, {
+    compilerOptions: { target: ts.ScriptTarget.ES5, module: ts.ModuleKind.CommonJS, removeComments: true },
+}).outputText;
+pkg.modules.localnow =
+    compatibility +
+    `
+var __provider='localnow',exports,__category;
+function __load(){
+ exports=(function(exports){${compileLeaf("upstream/modules/localnow/api.ts")}\n;return exports;})({});
+ __category=(function(){${localCategoryJs}\n;return categoryFor;})();
+}
+function __run(operation,row){
+ if(operation==='catalogue')return exports.detectMarket().then(function(market){return exports.fetchMarket(market.dma,market.market).then(function(raw){return exports.selectChannels(raw).map(function(item){var ch=item.ch;return {channelId:market.dma+':'+item.id,name:ch.name||item.id,logo:ch.logo||null,category:__category(ch),programs:(ch.program||[]).filter(function(p){return Number.isFinite(Number(p.starts_at))&&Number.isFinite(Number(p.ends_at));}).map(function(p){return {title:p.program_title||'Unknown',start:new Date(Number(p.starts_at)*1000).toISOString(),end:new Date(Number(p.ends_at)*1000).toISOString(),desc:p.program_description||ch.description||''};})};});});});
+ if(operation==='resolve'){var id=row.channelId.indexOf(':')<0?row.channelId:row.channelId.slice(row.channelId.indexOf(':')+1);return exports.resolvePlayback(id,null).then(function(r){var h=exports.LOCAL_STREAM_HEADERS;return {url:r.masterUrl,headers:h,userAgent:h['User-Agent'],referer:h.Referer};});}
+ throw new Error('Unsupported operation');
+}
+`;
 pkg.sourceSha256 = createHash("sha256").update(JSON.stringify(pkg.modules)).digest("hex");
 pkg.sources = Object.fromEntries(
     readdirSync(root + "upstream/", { recursive: true })

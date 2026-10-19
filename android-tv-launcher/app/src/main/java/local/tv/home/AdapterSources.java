@@ -73,6 +73,7 @@ final class AdapterSources {
         "DaddyLive",
         "Tubi",
         "Samsung TV Plus (GB)",
+        "Local Now (US)",
     };
 
     private AdapterSources() {}
@@ -192,7 +193,7 @@ final class AdapterSources {
         http.check();
         // These upstream resolvers accept the provider's own channel id; no catalogue hop is needed.
         if (
-            Arrays.asList("stirr", "xumo", "roku", "plex", "dlhd", "tubi", "samsung").contains(id)
+            Arrays.asList("stirr", "xumo", "roku", "plex", "dlhd", "tubi", "samsung", "localnow").contains(id)
         ) return new JSONObject().put("channelId", wanted);
         if (id.equals("tcl") && !staleTclHints) try {
             String saved = new Secrets(c).get(TCL_HINTS);

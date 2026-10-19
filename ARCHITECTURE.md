@@ -168,6 +168,6 @@ Remote updates fail closed without a pinned key. See [scope and limitations](doc
 ## Runtime 2 provider compatibility
 
 `ProviderBroker` services bounded async HTTP continuations from isolated scripts. `ProviderCodec` supplies
-pure crypto/compression primitives; `AdapterSources` integrates the historical FAST, DaddyLive and Tubi
+pure crypto/compression primitives; `AdapterSources` integrates the historical FAST, DaddyLive, Tubi and Local Now
 modules with SQLite and settings. `ProviderRelay` adds session-scoped loopback HLS header transport and
 `ProviderSegments` ports upstream TS-prefix detection. See the updated [provider architecture and evidence](docs/STANDALONE_PROVIDER_ENGINE.md).

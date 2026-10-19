@@ -88,7 +88,16 @@ public final class ProviderAdaptersTest {
 
     @Test
     public void coldResolversAvoidCatalogueAndTclHintsAreEncryptedAndCompact() throws Exception {
-        for (String id : Arrays.asList("stirr", "xumo", "roku", "plex", "dlhd", "tubi", "samsung")) {
+        for (String id : Arrays.asList(
+            "stirr",
+            "xumo",
+            "roku",
+            "plex",
+            "dlhd",
+            "tubi",
+            "samsung",
+            "localnow"
+        )) {
             JSONObject row = AdapterSources.resolverRow(context, id, "42", new NativeHttp());
             assertEquals("42", row.getString("channelId"));
             assertEquals(1, row.length());

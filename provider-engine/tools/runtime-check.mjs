@@ -234,4 +234,45 @@ const samsungIdOnly = drive("samsung", "resolve", { channelId: "one" }, (req) =>
 });
 assert.equal(samsungIdOnly.url, "https://media.example/fresh.m3u8");
 checks++;
+const localBootstrap =
+    '<script id="__NEXT_DATA__" type="application/json">' +
+    JSON.stringify({
+        runtimeConfig: {
+            DSP_TOKEN: JSON.stringify({
+                token: "h." + Buffer.from(JSON.stringify({ exp: 1999999999 })).toString("base64url") + ".s",
+            }),
+            DSP_API_URL: "data-store-trans-cdn.api.cms.amdvids.com",
+        },
+        props: { pageProps: { serverCookies: { _ln_myMarket: { dma: "501", market: "nyNewYorkCity" } } } },
+    }) +
+    "</script>";
+const localRows = drive("localnow", "catalogue", null, (req, n) =>
+    n === 0
+        ? localBootstrap
+        : {
+              channels: [
+                  {
+                      video_id: "one",
+                      name: "Local One",
+                      genres: ["My City"],
+                      program: [{ program_title: "News", starts_at: 1792440000, ends_at: 1792443600 }],
+                  },
+                  { video_id: "locked", name: "Locked", subscription_access: { unlocked: false } },
+                  { video_id: "outside", name: "Outside", genres: ["More Cities"] },
+              ],
+          },
+);
+assert.equal(localRows.length, 1);
+assert.equal(localRows[0].channelId, "501:one");
+assert.equal(localRows[0].programs[0].title, "News");
+checks++;
+const localStream = drive("localnow", "resolve", { channelId: "501:one" }, (req, n) => {
+    if (n === 0) return localBootstrap;
+    assert.ok(req.url.includes("/video/play/one/"));
+    assert.ok(req.headers["x-access-token"]);
+    return { video_m3u8: "https://media.example/local.m3u8" };
+});
+assert.equal(localStream.url, "https://media.example/local.m3u8");
+assert.equal(localStream.headers.Origin, "https://localnow.com");
+checks++;
 console.log(checks + " multi-provider checks passed in actual JVM runtime");

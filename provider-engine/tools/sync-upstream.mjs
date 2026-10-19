@@ -52,6 +52,8 @@ try {
     for (const name of ["catalog", "client", "deviceToken", "endpoints", "resolveStream", "sign"])
         files.set(`modules/tubi/${name}.ts`, `tubi/api/${name}.ts`);
     files.set("modules/dlhd/ssrf.ts", "../core/ssrf.ts");
+    files.set("modules/localnow/api.ts", "local/api.ts");
+    files.set("modules/localnow/import.ts", "local/import.ts");
     const base = server?.type === "commit" ? "src/sources/adapters/" : "server/src/sources/adapters/";
     const retrieved = [];
     for (const [destination, relative] of files) {

@@ -50,7 +50,7 @@ Rust ingest/remux machinery still need separate Android implementations where re
 - `AdapterSources` writes encrypted stable locators into existing SQLite channel storage; category groups,
   favourites and source fallback remain in MovieHub. Base64url locator ids support compound upstream ids.
   Each provider refresh is atomic and a failure keeps its previous rows. Ten-minute per-provider caches
-  invalidate on refresh/package changes. LG and Tubi inline guides have independent source scopes retained
+  invalidate on refresh/package changes. LG and Tubi and Local Now inline guides have independent source scopes retained
   through XMLTV refresh. Separate remote guides for other adapters are not ported yet.
 - Direct resolved streams go to LibVLC. `ProviderRelay` is used only when additional headers are required,
   or for DaddyLive's transport. It binds loopback on an ephemeral port, uses random per-session grants,
@@ -85,7 +85,8 @@ are not assertions that every channel plays or that a real TV has passed playbac
 | DistroTV         | Upstream feed, geographic flow and macros                                        | Feed returned HTTP 503 from this environment                                                                                                                             |
 | Vidaa            | Upstream tenant/bootstrap, regional catalog and filters                          | Configuration endpoint returned HTTP 503 from this environment                                                                                                           |
 | dulo             | Not yet ported                                                                   | Device-bound authenticated Supabase sessions and the real browser login must be implemented on Android; no authorized account/device session is available to validate it |
-| Local Now        | Not yet ported                                                                   | No implementation exists in the accessible historical snapshot; current private source is unavailable                                                                    |
+| Local Now | Actual local/api.ts bootstrap, auto-market, entitlement/market filtering, fresh resolution and inline guide | 183 channels discovered; playback checks recorded below |
+| ZLive | Not yet ported | Requires conversion of node:net/IP checks, manual redirect handling and persistent token reuse/refusal/decoy state; these protections must be retained, not bypassed |
 | HDHomeRun        | Not yet ported                                                                   | LAN discovery and TS transport require separate Android work; historical upstream marks playback dormant                                                                 |
 | Direct imports   | Existing M3U/Xtream retained                                                     | Independent of the JS port                                                                                                                                               |
 
@@ -161,8 +162,8 @@ run passed provider verification, APK/lint, signing compatibility and the full e
 https://github.com/billyke2000s/moviehub/actions/runs/39335954185 . Follow-up fixes need their own run.
 
 The final local checks passed: 223 existing core checks, 21 runtime/signature/URL/segment checks,
-26 multi-provider JVM fixtures and three compiler fixtures. Debug APK, lint and instrumentation
-compilation passed. All 28 vendored TypeScript files match the historical upstream bytes and the
+29 multi-provider JVM fixtures and three compiler fixtures. Debug APK, lint and instrumentation
+compilation passed. All 30 vendored TypeScript files match the historical upstream bytes and the
 package provenance hashes. The APK contains ARM64 LibVLC libraries; the provider runtime is pure Java.
 This is ABI packaging evidence, not physical ARM64 execution.
 
@@ -177,3 +178,17 @@ ID-only rows, compact hint fields and encrypted disk storage.
 
 TCL also passed a real gateway POST, master/variant HTTP 200 and two-second FFmpeg sample decode
 (307,944 bytes). Nine newly ported providers now have one decoded desktop sample each.
+
+### Local Now audit correction
+
+The earlier audit incorrectly treated Local Now as absent. Its code is in `adapters/local/api.ts` and
+`adapters/local/import.ts`; both are now retained unchanged in the vendored source. The protocol module
+and selected category function execute locally. Automatic market discovery and the original unlocked/
+in-market filters are preserved, with its inline guide written through MovieHub's existing SQLite scope.
+The market picker/search UI is not yet exposed; the upstream auto-detected market/fallback is used.
+Live homepage bootstrap and market feed returned HTTP 200 and 183 channels. Fixtures verify anonymous
+bootstrap, JWT/base64url handling, locked/out-of-market exclusion, guide mapping and fresh stream headers.
+
+Local Now also resolved a fresh master. Master and variant returned HTTP 200, and a 2,064,052-byte
+media sample decoded two seconds with FFmpeg exit 0. Ten newly ported providers now have one decoded
+desktop sample each; this still does not prove real Android/LibVLC playback or every channel.
