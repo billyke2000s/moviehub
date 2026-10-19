@@ -67,3 +67,11 @@ privately through GitHub.
 ## Native free-TV sessions
 
 Pluto uses an anonymous session from the actual network region, without embedded accounts or geographic overrides. Tokens and signed playback URLs remain in memory. SQLite stores stable encrypted locators. Provider API endpoints are restricted to HTTPS Pluto subdomains; redirects do not carry bearer tokens to another authority. API responses and retries are bounded, and channel switches disconnect stale requests. Ads, HLS key retrieval and provider access checks are preserved. No upstream private adapter code or licensing assumptions are imported.
+
+## Experimental provider code
+
+Provider transforms run under an isolated Android UID without app accounts/files or network, with
+Java access denied, bounded input/output, stack/deadline limits and a process watchdog. Only compiled
+APK code or RSA-authenticated packages can be selected; no unsigned GitHub source is executed.
+The remote trust anchor is intentionally unconfigured. Rollback preserves a monotonic network
+version floor. See [security boundaries and setup](docs/STANDALONE_PROVIDER_ENGINE.md).

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — experimental standalone provider engine
+
+- Add isolated local JavaScript execution of the historical FreeLiveSports TypeScript leaf, stable SQLite channels, inline EPG and resolve-on-play.
+- Add opt-in provider settings, signed package validation, atomic rollback and gated upstream update CI.
+- Document private upstream access, missing signing setup and provider/runtime limitations; no production release.
+
+
 Versions are published to TVs through the in-app updater (`android-tv-latest` release). Each
 version below was built from the listed `main` commit. Earlier history is in the git log.
 

@@ -103,3 +103,10 @@ the SIL Open Font License 1.1: see `android-tv-launcher/app/src/main/assets/font
 ### Native free TV
 
 Live TV can discover regional Pluto TV channels directly, with no separate server. Settings → Free channels controls native Pluto and public lists; Xtream, personal M3U and optional hosted Masqueradarr remain separate. Streams resolve when played, with cached channel metadata and the shared guide/fullscreen player. See [provider support, test evidence and limitations](docs/NATIVE_FREE_SOURCES.md).
+
+### Experimental standalone provider engine
+
+Development adds opt-in FreeLiveSports using local compiled TypeScript/JavaScript and the existing
+Live TV guide/player, with no home server. This is incomplete: current upstream adapters are in
+an inaccessible private submodule, and signed remote updates require maintainer key setup.
+See [implementation, provider status and tests](docs/STANDALONE_PROVIDER_ENGINE.md).

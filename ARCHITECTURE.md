@@ -156,3 +156,11 @@ once, when the activity is constructed, and keep almost no state of their own.
 ## Native free TV
 
 `PlutoSource` implements regional anonymous discovery, in-memory session/catalogue caching and resolve-on-play. `NativeHttp` bounds and cancels HTTPS requests. `NativeSources` connects catalogue and programme refresh to the existing SQLite store and ChannelImporter. LivePlayer resolves stable native locators asynchronously and preserves them through view handoff. Native guides and XMLTV refresh independently. Native Pluto is preferred to public-list copies, after connected accounts. See [provider scope and evidence](docs/NATIVE_FREE_SOURCES.md).
+
+## Experimental standalone JavaScript providers
+
+`ProviderScript` executes compiled upstream leaf functions in the isolated `ProviderService`;
+`ProviderBridge` uses bounded file-descriptor IPC. `EngineSources` connects FreeLiveSports discovery,
+on-play resolution and inline EPG to SQLite and the shared LivePlayer. `ProviderPackages`,
+`ProviderSignature` and `ProviderUpdates` implement signed package checks, atomic slots and rollback.
+Remote updates fail closed without a pinned key. See [scope and limitations](docs/STANDALONE_PROVIDER_ENGINE.md).

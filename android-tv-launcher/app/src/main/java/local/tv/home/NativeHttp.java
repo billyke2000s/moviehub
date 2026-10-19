@@ -24,6 +24,12 @@ final class NativeHttp implements PlutoSource.Http {
     }
 
     public String get(String url, String bearer) throws Exception {
+        Map<String, String> headers = new HashMap<>();
+        if (bearer != null) headers.put("Authorization", "Bearer " + bearer);
+        return getHeaders(url, headers);
+    }
+
+    String getHeaders(String url, Map<String, String> headers) throws Exception {
         URI current = URI.create(Playlist.networkUrl(url, false));
         String authority = current.getAuthority();
         for (int redirects = 0; redirects < 4; redirects++) {
@@ -35,10 +41,14 @@ final class NativeHttp implements PlutoSource.Http {
             c.setInstanceFollowRedirects(false);
             c.setRequestProperty("Accept", "application/json");
             c.setRequestProperty("User-Agent", PlutoSource.USER_AGENT);
-            if (bearer != null && authority.equalsIgnoreCase(current.getAuthority())) c.setRequestProperty(
-                "Authorization",
-                "Bearer " + bearer
-            );
+            if (authority.equalsIgnoreCase(current.getAuthority())) {
+                for (Map.Entry<String, String> header : headers.entrySet()) {
+                    if (header.getValue().indexOf('\r') >= 0 || header.getValue().indexOf('\n') >= 0) {
+                        throw new IOException("Invalid provider header");
+                    }
+                    c.setRequestProperty(header.getKey(), header.getValue());
+                }
+            }
             try {
                 check();
                 int status = c.getResponseCode();

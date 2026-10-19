@@ -36,6 +36,9 @@ final class LivePlayer {
     private static NativeHttp request;
     private static int generation;
     private static boolean resolving;
+    private static boolean refreshed;
+    private static Context appContext;
+    private static List<String> lastOptions;
 
     /** Fixture transport for device tests; never assigned by app code. */
     interface Resolver {
@@ -75,12 +78,15 @@ final class LivePlayer {
             resume();
             return true;
         }
+        if (!streamUrl.equals(url) || !restart) refreshed = false;
+        appContext = context.getApplicationContext();
+        lastOptions = new ArrayList<>(options);
         cancelResolution();
         player.stop();
         url = streamUrl;
         alive = true;
         opened++;
-        if (PlutoSource.nativeUrl(streamUrl)) {
+        if (PlutoSource.nativeUrl(streamUrl) || EngineSources.locator(streamUrl)) {
             resolving = true;
             int ticket = generation;
             NativeHttp http = new NativeHttp();
@@ -88,14 +94,24 @@ final class LivePlayer {
             pending = resolver.submit(() -> {
                 try {
                     Resolver fixture = testResolver;
+                    EngineSources.Stream stream = EngineSources.locator(streamUrl)
+                        ? EngineSources.resolve(context.getApplicationContext(), streamUrl, http)
+                        : null;
                     String resolved =
-                        fixture == null
-                            ? PlutoSource.resolve(streamUrl, http)
-                            : fixture.resolve(streamUrl, http);
+                        stream != null
+                            ? stream.url
+                            : fixture == null
+                              ? PlutoSource.resolve(streamUrl, http)
+                              : fixture.resolve(streamUrl, http);
+                    http.check();
                     main.post(() -> {
                         if (ticket != generation || player == null) return;
                         resolving = false;
-                        open(resolved, PlutoSource.USER_AGENT);
+                        open(
+                            resolved,
+                            stream == null ? PlutoSource.USER_AGENT : stream.userAgent,
+                            stream == null ? null : stream.referer
+                        );
                     });
                 } catch (Exception e) {
                     main.post(() -> {
@@ -107,14 +123,15 @@ final class LivePlayer {
                     });
                 }
             });
-        } else open(streamUrl, null);
+        } else open(streamUrl, null, null);
         return false;
     }
 
-    private static void open(String stream, String userAgent) {
+    private static void open(String stream, String userAgent, String referer) {
         Media media = new Media(engine, Uri.parse(stream));
         media.setHWDecoderEnabled(true, false);
         if (userAgent != null) media.addOption(":http-user-agent=" + userAgent);
+        if (referer != null && !referer.isEmpty()) media.addOption(":http-referrer=" + referer);
         player.setMedia(media);
         media.release();
         player.play();
@@ -134,6 +151,18 @@ final class LivePlayer {
     }
 
     private static void event(MediaPlayer.Event event) {
+        if (
+            (event.type == MediaPlayer.Event.EncounteredError ||
+                event.type == MediaPlayer.Event.EndReached) &&
+            EngineSources.locator(url) &&
+            !refreshed &&
+            appContext != null
+        ) {
+            refreshed = true;
+            EngineSources.invalidate();
+            play(appContext, url, lastOptions, true);
+            return;
+        }
         // Not "Stopped": that comes late from our own stop() when opening a new stream, and would
         // mark the new stream as finished.
         if (
@@ -189,6 +218,9 @@ final class LivePlayer {
             engine.release();
             engine = null;
         }
+        appContext = null;
+        lastOptions = null;
+        refreshed = false;
         engineOptions = null;
         url = null;
         alive = false;

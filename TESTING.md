@@ -131,3 +131,13 @@ Those need a manual check on the device before a release.
 The native-source rollout exposed a legacy migration regression: disabled-source cleanup must retain `legacy` rows when every configured provider fails, including subsequent failed refreshes after the old database was deleted. `ChannelImporterTest` verifies that case and independently verifies that disabled FreeLinks rows are still removed during another provider's outage.
 
 Native guide lookup uses the provider's own channel identity, including outside the UK. A regression fixture gives a native US channel the same name as a different UK guide entry and verifies that it receives its own programme.
+
+## Standalone provider runtime
+
+Run `npm ci --ignore-scripts --prefix provider-engine`, `npm run build --prefix provider-engine` and
+`npm test --prefix provider-engine`. With Rhino 1.9.1 downloaded, run
+`RHINO_JAR=/absolute/path/rhino.jar bash provider-engine/tools/verify.sh` for 11 checks on the actual
+JVM interpreter/signature verifier. `ProviderEngineDeviceTest` covers isolated Binder calls and
+signed package installation, tampering, downgrade protection, rollback and corrupt-slot recovery.
+The normal Android workflow runs these device tests. Real provider and physical-TV evidence must
+remain separate; see [evidence and limitations](docs/STANDALONE_PROVIDER_ENGINE.md).

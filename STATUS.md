@@ -90,3 +90,11 @@ Last updated: 19 October 2026.
 ## Native free-TV work (19 October 2026)
 
 PR #81 adds native regional Pluto discovery, resolve-on-play, source cancellation, guide data and Settings → Free channels controls on top of #80’s optional hosted connection. A real GB catalogue returned 187 channels; one sample decoded successfully on desktop. Other upstream providers are not advertised as native. Validation and release status are linked in the PR and GitHub release; physical TV checks remain outstanding. See [the full evidence record](docs/NATIVE_FREE_SOURCES.md).
+
+## Standalone engine development
+
+Experimental local JS engine and FreeLiveSports wiring are implemented on a development branch.
+This is incomplete, opt-in and not a production release. The current Masqueradarr server submodule
+returns 404; current adapter parity and automatic inheritance are blocked by source access.
+Signing-key setup and physical ARM64 playback checks remain outstanding. Full implementation,
+provider matrix and evidence: [standalone provider engine](docs/STANDALONE_PROVIDER_ENGINE.md).

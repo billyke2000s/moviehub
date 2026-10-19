@@ -104,6 +104,22 @@ final class ChannelImporter {
                     }
                 }
                 boolean providerConnected = anySource;
+                try {
+                    ProviderUpdates.check(context, false);
+                } catch (Exception e) {
+                    Diagnostics.recovered("Provider package update", e);
+                }
+                if (EngineSources.enabled(context, providerConnected)) {
+                    configured.add(EngineSources.SOURCE);
+                    anySource = true;
+                    try {
+                        total += EngineSources.refresh(context, db, cancel);
+                    } catch (Exception e) {
+                        cancel.check();
+                        Diagnostics.recovered("FreeLiveSports refresh", e);
+                        problems.add("FreeLiveSports unavailable; cached channels kept.");
+                    }
+                }
                 if (NativeSources.enabled(context, providerConnected)) {
                     configured.add("nativepluto");
                     anySource = true;

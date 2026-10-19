@@ -618,8 +618,18 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
         /** Native provider guides refresh independently; XMLTV refreshes retain those listings. */
         GuideWriter(boolean nativePluto) {
+            this(nativePluto ? "nativepluto:" : null);
+        }
+
+        GuideWriter(String prefix) {
+            if (prefix != null && !prefix.equals("nativepluto:") && !prefix.equals("enginefls:")) {
+                throw new IllegalArgumentException("Unknown native guide");
+            }
             db.beginTransactionNonExclusive();
-            String where = nativePluto ? "channel LIKE 'nativepluto:%'" : "channel NOT LIKE 'nativepluto:%'";
+            String where =
+                prefix == null
+                    ? "channel NOT LIKE 'nativepluto:%' AND channel NOT LIKE 'enginefls:%'"
+                    : "channel LIKE '" + prefix + "%'";
             db.delete("programmes", where, null);
             db.delete("epg_map", where, null);
             map = db.compileStatement("INSERT INTO epg_map(chkey,channel) VALUES(?,?)");
@@ -675,9 +685,10 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         List<Programme> out = new ArrayList<>();
         // Native listings already belong to a provider/region identity. Do not apply the
         // UK XMLTV country filter, or match a similarly named foreign channel's guide.
-        List<String> keys = row.epg.matches("pluto:[0-9a-f]{24}\\.[a-z]{2}")
-            ? Collections.singletonList(EpgMatch.key(row.epg))
-            : EpgMatch.keys(row.epg, row.name, country);
+        List<String> keys =
+            row.epg.startsWith("enginefls:") || row.epg.matches("pluto:[0-9a-f]{24}\\.[a-z]{2}")
+                ? Collections.singletonList(EpgMatch.key(row.epg))
+                : EpgMatch.keys(row.epg, row.name, country);
         if (keys.isEmpty()) return out;
         StringBuilder in = new StringBuilder();
         List<String> args = new ArrayList<>(keys);

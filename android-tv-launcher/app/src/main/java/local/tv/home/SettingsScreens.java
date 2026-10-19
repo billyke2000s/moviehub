@@ -676,6 +676,7 @@ final class SettingsScreens {
                             ChannelSync.refreshNow(activity);
                         }
                     )
+                    .option("Local provider engine", () -> new ProviderSettings(activity).show())
                     .option("Refresh channels", () -> ChannelSync.refreshNow(activity))
                     .option(
                         activity.secrets.has("masqueradarr")
