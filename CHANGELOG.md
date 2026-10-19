@@ -16,8 +16,37 @@ update feed), so the next release after it used code 12, named 0.12.
 - The player's download speed is right: it read about 1000 times too low (often 0.0 Mb/s), and so
   did the last speed in Diagnostics. It shows how fast the player reads the stream, which follows
   the stream's bitrate once the buffer is full, not the connection's top speed.
+- Back on a film first hides the controls, then shows "Press Back again to leave playback", and
+  only leaves on another press within 3 seconds. Live TV keeps its own Back.
+- Films and Live TV now have separate player settings, so changing one can never change the other
+  (the values are the same as before).
+- Settings → System → Diagnostics is now Troubleshooting: an internet speed test, checks that each
+  service you use answers (internet, TMDB, Premiumize, stream sources, your TV provider, the
+  programme guide), playback timings, and the recent errors the app recovered from (place and
+  type only, never addresses or account details).
 - A closing player could crash the app if Live TV's shared player was released at that moment
   (seen in the device tests as "can't get VLCObject instance"); it now lets go of it instead.
+- Live TV: changing channel and browsing other channels in the banner fetch just the one channel
+  needed instead of a page of 151, and the guide fetches the eleven rows it uses.
+- Live TV: the favourites list no longer rewrites its table on every page or channel change, only
+  when favourites change.
+- Live TV: finding a channel by number counts the list once instead of up to three times.
+- Programme guide download: programmes on channels you don't have are skipped before their times
+  are read, and times are read without building a date parser each time.
+- Live TV: all channels, sections and countries are read through an index of each channel's
+  preferred copy instead of sorting out duplicates across the whole list every time (channel
+  database version 8; the upgrade fills it in once).
+- Removed three unused channel queries; the channel database's tables and upgrades moved into
+  `ChannelSchema`.
+- Series: the episode you chose is found in far more season packs (S01 E03, S01Ep03, "Season 1
+  Episode 3", E03 in a Season 1 folder, a plain file in an episode folder, and more). A file
+  that names exactly that episode still plays straight away; one that very probably is it
+  (a bare "03 - Title", a double episode) is marked "Suggested episode" for you to confirm and
+  has the focus. Names that could mean something else (720p, x264, years, another season) are
+  never marked. A show called "Extras" no longer loses its episodes.
+- Apps: an app with separate TV and phone launcher entries is listed once (apps from different
+  packages with the same name are still both shown). The Apps screen shows its first rows at once
+  and the rest straight after.
 - Two marked, empty lists for new sources, ready to fill in: `DefaultSourceProviders.EXTRA` for
   film and series providers and `FreeChannels.EXTRA` for TV channel lists (AGENTS.md, Adding
   sources). Empty, so nothing changes yet.

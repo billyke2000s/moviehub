@@ -17,6 +17,46 @@ public class EpgMatchTest {
         check(EpgMatch.keys("Gold.it", "Gold", "uk").isEmpty(), "other countries are not matched");
         check(EpgMatch.keys("Gold.uk", "Gold (720p)", "uk").contains("gold"), "same country matched");
         check(EpgMatch.keys("", "Dave", "uk").contains("dave"), "no id: matched by name");
-        System.out.println("10 programme-guide matching checks passed");
+        // XMLTV times match the full date parser the importer used before.
+        check(sameTime("20261018200000 +0100"), "time with a zone");
+        check(sameTime("20261018200000"), "time without a zone is UTC");
+        check(sameTime("20260329005959 -0530"), "negative zone");
+        check(sameTime("20240229235959 +0000"), "leap day");
+        check(sameTime(" 19991231230000 +1400 "), "spaces trimmed");
+        check(EpgMatch.time("20261018200000+0100") == Long.MIN_VALUE, "other shapes fall back");
+        check(EpgMatch.time("20260230120000 +0000") == Long.MIN_VALUE, "impossible date falls back");
+        java.util.Random random = new java.util.Random(7);
+        boolean all = true;
+        for (int i = 0; i < 2000; i++) {
+            long when = 946684800000L + (long) (random.nextDouble() * 2_000_000_000_000L);
+            int zone = (random.nextInt(29) - 14) * 60 + (random.nextBoolean() ? 30 : 0);
+            java.text.SimpleDateFormat out = new java.text.SimpleDateFormat(
+                "yyyyMMddHHmmss",
+                java.util.Locale.ROOT
+            );
+            out.setTimeZone(new java.util.SimpleTimeZone(zone * 60000, "x"));
+            String sign = zone < 0 ? "-" : "+";
+            int abs = Math.abs(zone);
+            String text =
+                out.format(new java.util.Date(when)) +
+                " " +
+                sign +
+                String.format(java.util.Locale.ROOT, "%02d%02d", abs / 60, abs % 60);
+            all &= sameTime(text);
+        }
+        check(all, "2000 random times");
+        System.out.println("18 programme-guide matching checks passed");
+    }
+
+    private static boolean sameTime(String text) {
+        try {
+            String full = text.trim().length() == 14 ? text.trim() + " +0000" : text.trim();
+            long expected = new java.text.SimpleDateFormat("yyyyMMddHHmmss Z", java.util.Locale.ROOT)
+                .parse(full)
+                .getTime();
+            return EpgMatch.time(text) == expected;
+        } catch (java.text.ParseException e) {
+            return false;
+        }
     }
 }

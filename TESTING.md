@@ -5,7 +5,7 @@ There are three layers of checks. CI runs all of them on every pull request that
 
 | Layer | Where | Needs | Runs in CI step |
 | --- | --- | --- | --- |
-| Core checks (88) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
+| Core checks (223) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
 | Build and lint | Gradle | Android SDK 35 | "Build APK and run Android lint" |
 | Device tests (instrumentation) | `android-tv-launcher/app/src/androidTest/` | Android emulator | `device-tests` job |
 | Signing compatibility | release build vs published APK | signing secrets (same-repo PRs only) | `signed-compatibility` job |
@@ -17,15 +17,15 @@ Pure-Java rules for playlists, URLs, channel search, episode matching and combin
 ```sh
 mkdir -p build/core-tests
 javac -d build/core-tests \
-  android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch,SkyNumbers,GuideOrder,SkipQueue}.java \
-  android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest,SkyNumbersTest,GuideOrderTest,SkipQueueTest}.java
-for t in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest EpgMatchTest SkyNumbersTest GuideOrderTest SkipQueueTest; do
+  android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch,SkyNumbers,GuideOrder,SkipQueue,ErrorLog,SpeedTest}.java \
+  android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest,SkyNumbersTest,GuideOrderTest,SkipQueueTest,TroubleshootingTest}.java
+for t in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest EpgMatchTest SkyNumbersTest GuideOrderTest SkipQueueTest TroubleshootingTest; do
   java -Xmx64m -cp build/core-tests local.tv.home.$t
 done
 ```
 
-Expected output: 17 playlist, 9 network, 10 episode/file, 13 channel-query, 10 programme-guide
-matching, 17 satellite numbering, 15 guide order and 11 film skip checks passed.
+Expected output: 17 playlist, 9 network, 110 episode/file, 13 channel-query, 18 programme-guide
+matching, 17 satellite numbering, 15 guide order, 11 film skip and 13 troubleshooting checks passed.
 
 ## Device tests
 

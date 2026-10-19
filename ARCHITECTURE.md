@@ -64,16 +64,17 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `DpadRepeats` | Rate-limits held D-pad keys so a held direction cannot race through lists. |
 | `SidePanel` | The app's pop-up: a rounded panel on the right with a title, message, options or ticked choices and standard buttons. Used everywhere instead of AlertDialog/PopupMenu, also by the player. |
 | `ErrorMessages` | Plain-language explanation and fix (Try again / Open Settings) for a failed load, from the exception type only. |
-| `Timings` | In-memory timings (TMDB, sources, Premiumize, artwork, press play to picture, buffering pauses) shown on Settings → System → Diagnostics. Names and durations only. |
-| `Diagnostics` | Logs failures the app recovers from (`adb logcat -s MovieHub`), without account details. |
+| `Timings` | In-memory timings (TMDB, sources, Premiumize, artwork, press play to picture, buffering pauses) shown on Settings → System → Troubleshooting. Names and durations only. |
+| `Diagnostics`, `ErrorLog` | Logs failures the app recovers from (`adb logcat -s MovieHub`) and keeps the last 50 in memory for Troubleshooting: place, type and time only, without messages or account details. |
+| `Troubleshooting`, `SpeedTest` | Settings → System → Troubleshooting: internet speed test (Cloudflare, on request), connection checks for each connected service, playback timings, recent errors. |
 
 ### Screens (feature classes)
 
 | File | Screens |
 | --- | --- |
 | `HomeScreen` | Home: top navigation, featured artwork, poster shelf (`HomeShelf`), clock, Update/Settings buttons, and a MemoryClean icon when that app is installed. |
-| `AppDock` | Installed apps: the dock on Home (long-press Select to lift, move, remove), launching (remembers recently used), hiding, and the app menu. |
-| `AllApps` | The Apps screen: search, Android settings shortcuts, recently used, and every app as a TV banner tile. |
+| `AppDock` | Installed apps (one entry per app: a package's TV and phone launcher entries with the same name are merged), the dock on Home (long-press Select to lift, move, remove), launching (remembers recently used), hiding, and the app menu. |
+| `AllApps` | The Apps screen: search, Android settings shortcuts, recently used, and every app as a TV banner tile (three rows first, the rest straight after the first draw). |
 | `CatalogueRows` | The Movies/Series start page: a hero area for the focused title above Netflix-style rows (Trending, Popular, Top rated, release lists, then genres). The focused row is pinned at the top of the rows area, rows load as they come near, and position is restored after opening a title. |
 | `CatalogueScreens` | The Movies/Series screen (`CatalogueScreen`): header, hero and either the rows page or a single-category poster grid ("see all", Browse and filter results), plus the Browse and filter overlay. Back from a grid opened from the rows returns to the rows. See [docs/tmdb-categories.md](docs/tmdb-categories.md). |
 | `CatalogueOptions` | The Browse and Filters sheets' contents: category and genre lists, region, years, languages, countries, streaming services and the "Refine results" form. |
@@ -93,6 +94,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `LiveTvPanels` | The guide's side panels: options, sections and groups, search, programme information with reminders, the parental lock, colour-key set-up. |
 | `GuidePicture` | The live picture in the guide's corner (the last channel watched); stops when the guide closes unless the full screen has taken the player over. |
 | `LivePlayer` | The one Live TV player (LibVLC engine and media player), shared by the full screen and the guide picture so going between them moves the picture without reconnecting. Films keep their own player. |
+| `PlayerOptions` | LibVLC engine options, one list for films and one for Live TV, so a change to one never reaches the other. |
 | `SettingsScreens` | Settings tabs, account setup (TMDB, Premiumize, Xtream, M3U), languages, toggles. |
 | `ForYou` | The Home "For you" shelf: blends TMDB recommendations for up to six titles you played, saved or opened, ranked and cached on the box. |
 | `UpdatePrompt` | Checks the public release feed and offers a verified update. See [android-tv-launcher/UPDATES.md](android-tv-launcher/UPDATES.md). |
@@ -106,14 +108,15 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `TmdbCategories` | TMDB discovery routes, genres and filters (no account state). |
 | `Network` | Bounded HTTP(S) streams with manual redirect handling; bearer tokens only sent over HTTPS to the same host. |
 | `Playlist` | M3U/Xtream playlist parsing and URL validation (refuses `http://` unless the user allows it). |
-| `ChannelDatabase`, `ChannelStore`, `ChannelQuery` | On-device SQLite channel database, paging and search. |
-| `EpgImporter`, `EpgMatch` | The free UK XMLTV programme guide (epgshare01): streamed, matched to saved channels by a plain name key, the next day kept in the channel database with titles, descriptions and categories. |
+| `ChannelDatabase`, `ChannelStore`, `ChannelQuery` | On-device SQLite channel database, paging and search. All channels, sections and countries are read from each channel's preferred copy (`main=1`, indexed); favourites, groups and searches group the copies. |
+| `ChannelSchema` | The channel database's tables, indexes and version upgrades (version 8 adds `main`). |
+| `EpgImporter`, `EpgMatch` | The free UK XMLTV programme guide (epgshare01): streamed, matched to saved channels by a plain name key (programmes on other channels skipped unread), the next day kept in the channel database with titles, descriptions and categories. `EpgMatch` also reads XMLTV times (plain Java). |
 | `SkyNumbers`, `GuideOrder`, `ChannelNumbers` | UK satellite channel numbers and sections (`SkyNumbers`, a fixed table matched by name); the whole guide's layout: UK blocks by section, regions in the 800s, radio in the 900s, other countries from 1001 (`GuideOrder`, plain Java); applied to the saved channels after every import (`ChannelNumbers`). |
 | `Reminders`, `ParentalLock` | Programme reminders (kept in preferences, shown while the app is open) and the Live TV PIN lock (a salted hash of the PIN, locked channels and sections). |
 | `FreeChannels` | Which free lists Live TV imports (Free-TV, then iptv-org by country, all, or off); "automatic" (the full list) only without a provider, imported when Live TV is first opened. New TV channel lists go in `FreeChannels.EXTRA` (see AGENTS.md, Adding sources). |
 | `ChannelImporter`, `ChannelSync` | Background channel import (WorkManager), refreshed every 12 hours. |
 | `Secrets` | Account details encrypted with an Android Keystore key; the key and read values are cached in memory. |
-| `VideoFiles` | Chooses the right file in a multi-file release (episode matching). |
+| `VideoFiles` | Chooses the right file in a multi-file release: the film beside extras, or the episode in a season pack (exact matches can play straight away; likely ones are only marked "Suggested episode"). Plain Java. |
 | `SkipQueue` | Combines quick film skips and seek-bar moves into one jump, 750 ms after the last (plain Java). |
 | `AppUpdates`, `UpdateApkProvider` | Downloads and verifies update APKs; shares the verified APK with the system installer. |
 | `VlcPlaybackActivity` | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions (opened directly at the resume point), skips combined into one jump (`SkipQueue`), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`). |
@@ -131,7 +134,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | SharedPreferences `ui` | UI settings and lists: accent colour, clock, `http` toggle, auto-updates, dock order, pinned apps, hidden and recently used apps, My List, watched episodes, search history, For you interest (`interest`), catalogue region/genre cache, Live TV reminders, the last channel watched (a hashed stream key), and the parental lock (a hash of the PIN, locked channels and sections). |
 | SharedPreferences `accounts` (via `Secrets`) | Encrypted: TMDB key, Premiumize key, Xtream and M3U details, saved library, recent playback. |
 | SharedPreferences `positions` | Playback resume positions. |
-| SQLite `channels-v2.db` | Imported IPTV channels (encrypted stream URLs), groups, channel numbers, sections and countries, favourites, and the programme guide. |
+| SQLite `channels-v2.db` | Imported IPTV channels (encrypted stream URLs), groups, channel numbers, sections and countries, which copy of each channel is preferred (`main`), favourites, and the programme guide. |
 | Cache `artwork/` | Downloaded public artwork (TMDB images, channel logos), at most 80 MB. No account data. |
 | Cache `updates/` | The downloaded update APK, before installation. |
 

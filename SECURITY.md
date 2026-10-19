@@ -14,7 +14,10 @@ MovieHub stores provider accounts and installs its own updates, so these rules m
 - `android:allowBackup="false"`, so app data is not copied into Android backups.
 - Diagnostic logging (`Diagnostics`, logcat tag `MovieHub`) records only where a failure happened
   and the exception type. Exception messages are never logged, because they can contain provider
-  URLs with usernames and passwords.
+  URLs with usernames and passwords. The same place and type (with the time) are kept in memory
+  for Troubleshooting's "Recent errors" (`ErrorLog`, last 50, cleared when the app closes).
+- Troubleshooting's connection checks show each service by name only (stream-source providers by
+  host name, since a provider's address can carry its settings), never addresses or keys.
 
 ## Network
 
@@ -24,6 +27,10 @@ MovieHub stores provider accounts and installs its own updates, so these rules m
 - Bearer tokens are only sent over HTTPS, and only to the host the request started on (`Network`).
   Redirects to another host or to HTTP drop the token.
 - Downloads are size-bounded.
+- The speed test in Troubleshooting downloads test data from `speed.cloudflare.com` (at most
+  50 MB or 10 seconds). It runs only when the viewer presses "Run speed test" and sends nothing
+  about the viewer or their accounts. The "Internet" connection check asks the same host for
+  nothing.
 
 ## App updates
 
