@@ -6,6 +6,12 @@ version below was built from the listed `main` commit. Earlier history is in the
 Note: the release shown as 0.10 below was published with version code 11 (name "0.11" in the
 update feed), so the next release after it used code 12, named 0.12.
 
+## Unreleased
+
+- Films and episodes carry on where you stopped whichever source you pick: progress is saved by
+  the TMDB film or episode, not only by the link you pressed. Files opened from the cloud (no
+  TMDB details) still carry on by file.
+
 ## 0.36 (19 Oct 2026)
 
 - Skipping in films is quicker. Pressing −10 s or +10 s several times in a row now makes one
