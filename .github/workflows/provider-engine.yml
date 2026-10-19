@@ -73,8 +73,8 @@ jobs:
               env:
                   GH_TOKEN: ${{ github.token }}
               run: |
-                  gh release create "provider-engine-${GITHUB_RUN_NUMBER}" provider-engine/dist/providers.json provider-engine/dist/providers.sig --title "Provider engine ${GITHUB_RUN_NUMBER}" --notes "Validated standalone provider transform package. No APK."
+                  gh release create "provider-engine-${GITHUB_RUN_NUMBER}" --latest=false provider-engine/dist/providers.json provider-engine/dist/providers.sig --title "Provider engine ${GITHUB_RUN_NUMBER}" --notes "Validated standalone provider transform package. No APK."
                   if ! gh release view provider-engine-latest >/dev/null 2>&1; then
-                    gh release create provider-engine-latest --title 'Latest provider engine package' --notes 'Signed runtime-compatible provider transforms. No APK.'
+                    gh release create provider-engine-latest --latest=false --title 'Latest provider engine package' --notes 'Signed runtime-compatible provider transforms. No APK.'
                   fi
                   gh release upload provider-engine-latest provider-engine/dist/providers.json provider-engine/dist/providers.sig --clobber
