@@ -110,6 +110,7 @@ final class PlayerMenus {
                       " min left"
                 : "Sleep timer"
         );
+        if (!a.live && a.hasVodSources()) labels.add(0, "Sources");
         if (a.zapper != null && a.zapper.copies().size() > 1) labels.add(
             0,
             "Source · " + a.zapper.sourceLabel()
@@ -129,6 +130,7 @@ final class PlayerMenus {
                 else if (label.equals("Audio & subtitles")) audioAndSubtitles();
                 else if (label.equals("Programme information")) a.zapper.information();
                 else if (label.equals("Back to live")) a.backToLive();
+                else if (label.equals("Sources")) chooseVodSource();
                 else if (label.startsWith("Source")) chooseSource();
                 else if (label.startsWith("Playback speed")) chooseSpeed();
                 else if (label.equals("Picture size")) choosePicture();
@@ -198,6 +200,15 @@ final class PlayerMenus {
                 if (a.sleepAt > 0) a.overlayHandler.postDelayed(a.sleep, minutes[which] * 60000L);
             }
         );
+    }
+
+    private void chooseVodSource() {
+        VodSourceFailover queue = a.vodSources();
+        if (queue == null) return;
+        java.util.List<VodSourceFailover.Source> sources = queue.sources();
+        String[] names = new String[sources.size()];
+        for (int i = 0; i < names.length; i++) names[i] = sources.get(i).label;
+        options("Sources", names, queue.currentIndex(), a::chooseVodSource);
     }
 
     /** The copies of this Live TV channel from the free lists; the current one is ticked. */
