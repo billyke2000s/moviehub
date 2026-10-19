@@ -117,11 +117,10 @@ public class VlcPlaybackActivity extends Activity {
                     getIntent().getStringExtra("episodeKey") != null &&
                     SourcesScreen.Binge.imdb != null) {
                     nextPromptShown = true;
-                    new AlertDialog.Builder(VlcPlaybackActivity.this)
-                        .setTitle("Next episode")
-                        .setMessage("Play the next episode?")
-                        .setPositiveButton("Play now", (d, w) -> launchNextEpisode())
-                        .setNegativeButton("Cancel", (d, w) -> nextCancelled = true)
+                    SidePanel.of(VlcPlaybackActivity.this, "Up next")
+                        .message("Ready for the next episode?")
+                        .action("Play next episode", () -> launchNextEpisode())
+                        .action("Keep watching", () -> nextCancelled = true)
                         .show();
                 }
                 // A programme reminder that is due shows over the picture (checked every 15 s).
