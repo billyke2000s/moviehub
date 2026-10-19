@@ -6,6 +6,11 @@ version below was built from the listed `main` commit. Earlier history is in the
 Note: the release shown as 0.10 below was published with version code 11 (name "0.11" in the
 update feed), so the next release after it used code 12, named 0.12.
 
+## Unreleased
+
+- Troubleshooting uses the Settings sidebar and cards, with matching typography, spacing and
+  buttons. Back returns to the System tab instead of Accounts.
+
 ## 0.37 (19 Oct 2026)
 
 - Films and episodes carry on where you stopped whichever source you pick: progress is saved by

@@ -66,7 +66,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `ErrorMessages` | Plain-language explanation and fix (Try again / Open Settings) for a failed load, from the exception type only. |
 | `Timings` | In-memory timings (TMDB, sources, Premiumize, artwork, press play to picture, buffering pauses) shown on Settings → System → Troubleshooting. Names and durations only. |
 | `Diagnostics`, `ErrorLog` | Logs failures the app recovers from (`adb logcat -s MovieHub`) and keeps the last 50 in memory for Troubleshooting: place, type and time only, without messages or account details. |
-| `Troubleshooting`, `SpeedTest` | Settings → System → Troubleshooting: internet speed test (Cloudflare, on request), connection checks for each connected service, playback timings, recent errors. |
+| `Troubleshooting`, `SpeedTest` | Shares SettingsScreens’ sidebar layout and setting cards. Settings → System → Troubleshooting: internet speed test (Cloudflare, on request), connection checks for each connected service, playback timings, recent errors. |
 
 ### Screens (feature classes)
 

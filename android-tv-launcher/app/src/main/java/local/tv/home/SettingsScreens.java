@@ -18,6 +18,7 @@ import org.json.*;
 final class SettingsScreens {
 
     private final MainActivity activity;
+    private String selectedTab = "Accounts";
 
     SettingsScreens(MainActivity activity) {
         this.activity = activity;
@@ -55,11 +56,12 @@ final class SettingsScreens {
     }
 
     void settings() {
-        settingsTab(settingsLayout("Settings", activity.homeScreen::home), "Accounts");
+        settingsTab(settingsLayout("Settings", activity.homeScreen::home, selectedTab), selectedTab);
     }
 
-    /** Shared sidebar, viewport and content spacing for Settings subpages. */
-    LinearLayout settingsLayout(String title, Runnable back) {
+    /** Shared sidebar, viewport and content spacing for Settings and its Troubleshooting page. */
+    LinearLayout settingsLayout(String title, Runnable back, String selected) {
+        selectedTab = selected;
         activity.fixedScreen(title, back);
         LinearLayout layout = activity.row();
         layout.setGravity(Gravity.TOP);
@@ -81,6 +83,11 @@ final class SettingsScreens {
             navParams.bottomMargin = activity.dp(4);
             navigation.addView(choice, navParams);
             choice.setOnClickListener(v -> {
+                selectedTab = tab;
+                if (!title.equals("Settings")) {
+                    settings();
+                    return;
+                }
                 for (Button other : choices) {
                     other.setSelected(other == v);
                     activity.styleFocus(other, other.hasFocus());
@@ -88,9 +95,12 @@ final class SettingsScreens {
                 settingsTab(body, tab);
             });
         }
-        choices.get(0).setSelected(true);
-        activity.styleFocus(choices.get(0), false);
-        choices.get(0).requestFocus();
+        for (Button choice : choices) {
+            boolean active = choice.getText().toString().equals(selected);
+            choice.setSelected(active);
+            activity.styleFocus(choice, false);
+            if (active) choice.requestFocus();
+        }
         return body;
     }
 
