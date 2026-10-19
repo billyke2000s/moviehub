@@ -18,7 +18,8 @@ final class ResumePoint {
     static final long COMPLETION_WINDOW_MS = 4 * 60 * 1000L;
 
     static boolean completed(long position, long length) {
-        return length > 0 && position > 0 && position <= length && length - position <= COMPLETION_WINDOW_MS;
+        return length > 0 && position > 0 && position <= length &&
+            length - position <= Math.min(COMPLETION_WINDOW_MS, length / 10);
     }
 
     private static SharedPreferences positions(Context context) {
