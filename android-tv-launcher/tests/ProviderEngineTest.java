@@ -105,6 +105,13 @@ public final class ProviderEngineTest {
         rejected(() -> ProviderUrls.playback("http://example.com/a.m3u8"));
         rejected(() -> ProviderUrls.playback("https://user:pass@example.com/a.m3u8"));
         rejected(() -> ProviderUrls.playback("https://example.com/a.m3u8?ua=bad\r\nheader"));
+        check(ProviderUrls.playback("https://example.com/a.m3u8?macro={GPP}").contains("%7BGPP%7D"));
+        byte[] segment = new byte[ProviderSegments.HEAD];
+        for (int packet = 0; packet < 10; packet++) segment[42 + packet * 188] = 0x47;
+        check(ProviderSegments.prefix(segment, segment.length) == 42);
+        segment[0] = 0x47;
+        check(ProviderSegments.prefix(segment, segment.length) == 0);
+        check(ProviderSegments.prefix(new byte[1024], 1024) == 0);
         System.out.println(checks + " provider engine checks passed");
     }
 }

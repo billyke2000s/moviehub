@@ -63,6 +63,97 @@ final class ProviderScript {
                         }
                     }
                 );
+                ScriptableObject.putProperty(
+                    scope,
+                    "codec",
+                    new BaseFunction() {
+                        @Override
+                        public Object call(Context c, Scriptable s, Scriptable self, Object[] args) {
+                            try {
+                                String op = Context.toString(args[0]);
+                                String input = Context.toString(args[1]);
+                                if (op.equals("hmac")) {
+                                    Object parsed = ScriptableObject.callMethod(
+                                        c,
+                                        (Scriptable) ScriptableObject.getProperty(scope, "JSON"),
+                                        "parse",
+                                        new Object[] { input }
+                                    );
+                                    Scriptable object = (Scriptable) parsed;
+                                    byte[] key = Context.toString(
+                                        ScriptableObject.getProperty(object, "key")
+                                    ).getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+                                    String message = Context.toString(
+                                        ScriptableObject.getProperty(object, "message")
+                                    );
+                                    javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+                                    mac.init(new javax.crypto.spec.SecretKeySpec(key, "HmacSHA256"));
+                                    return new String(
+                                        mac.doFinal(
+                                            message.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+                                        ),
+                                        java.nio.charset.StandardCharsets.ISO_8859_1
+                                    );
+                                }
+                                if (op.equals("url")) {
+                                    Object parsed = ScriptableObject.callMethod(
+                                        c,
+                                        (Scriptable) ScriptableObject.getProperty(scope, "JSON"),
+                                        "parse",
+                                        new Object[] { input }
+                                    );
+                                    Scriptable object = (Scriptable) parsed;
+                                    String value = Context.toString(
+                                        ScriptableObject.getProperty(object, "value")
+                                    );
+                                    String base = Context.toString(
+                                        ScriptableObject.getProperty(object, "base")
+                                    );
+                                    java.net.URI uri = base.isEmpty()
+                                        ? new java.net.URI(value.replace(" ", "%20"))
+                                        : new java.net.URI(base).resolve(value.replace(" ", "%20"));
+                                    if (
+                                        uri.getHost() == null || uri.getUserInfo() != null
+                                    ) throw new java.io.IOException("Invalid URL");
+                                    Scriptable result = c.newObject(scope);
+                                    String origin = uri.getScheme() + "://" + uri.getRawAuthority();
+                                    String[] keys = {
+                                        "protocol",
+                                        "hostname",
+                                        "host",
+                                        "origin",
+                                        "pathname",
+                                        "search",
+                                        "hash",
+                                    };
+                                    String[] values = {
+                                        uri.getScheme() + ":",
+                                        uri.getHost(),
+                                        uri.getRawAuthority(),
+                                        origin,
+                                        uri.getRawPath().isEmpty() ? "/" : uri.getRawPath(),
+                                        uri.getRawQuery() == null ? "" : uri.getRawQuery(),
+                                        uri.getRawFragment() == null ? "" : "#" + uri.getRawFragment(),
+                                    };
+                                    for (int i = 0; i < keys.length; i++) ScriptableObject.putProperty(
+                                        result,
+                                        keys[i],
+                                        values[i]
+                                    );
+                                    return ScriptableObject.callMethod(
+                                        c,
+                                        (Scriptable) ScriptableObject.getProperty(scope, "JSON"),
+                                        "stringify",
+                                        new Object[] { result }
+                                    );
+                                }
+                                return ProviderCodec.call(op, input);
+                            } catch (Exception e) {
+                                throw Context.throwAsScriptRuntimeEx(e);
+                            }
+                        }
+                    }
+                );
                 cx.evaluateString(scope, source, "provider", 1, null);
                 Object callable = ScriptableObject.getProperty(scope, "invoke");
                 if (!(callable instanceof Function)) throw new IllegalArgumentException(

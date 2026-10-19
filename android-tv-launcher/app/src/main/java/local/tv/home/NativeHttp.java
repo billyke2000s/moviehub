@@ -10,6 +10,7 @@ final class NativeHttp implements PlutoSource.Http {
 
     private volatile HttpURLConnection connection;
     private volatile boolean cancelled;
+    ChannelDatabase.Cancel externalCancel;
 
     void cancel() {
         cancelled = true;
@@ -18,6 +19,13 @@ final class NativeHttp implements PlutoSource.Http {
     }
 
     void check() throws InterruptedIOException {
+        if (externalCancel != null) try {
+            externalCancel.check();
+        } catch (Exception e) {
+            cancel();
+            throw new InterruptedIOException("Cancelled");
+        }
+
         if (cancelled || Thread.currentThread().isInterrupted()) throw new InterruptedIOException(
             "Cancelled"
         );
@@ -80,5 +88,113 @@ final class NativeHttp implements PlutoSource.Http {
             }
         }
         throw new IOException("Too many redirects");
+    }
+
+    org.json.JSONObject exchange(
+        String url,
+        String method,
+        Map<String, String> headers,
+        String body,
+        java.util.function.Predicate<String> allowed
+    ) throws Exception {
+        URI current = URI.create(ProviderUrls.playback(url));
+        String authority = current.getAuthority();
+        if (!method.equals("GET") && !method.equals("POST")) throw new IOException(
+            "Provider method rejected"
+        );
+        if (body.length() > 64 * 1024 || headers.size() > 40) throw new IOException("Provider request limit");
+        for (int redirects = 0; redirects < 5; redirects++) {
+            check();
+            if (!allowed.test(current.toString())) throw new IOException("Provider HTTP capability rejected");
+            // Validate each redirect as well as the initial target. No localhost/LAN destinations.
+            ProviderBroker.publicHost(current.getHost());
+            HttpURLConnection c = (HttpURLConnection) current.toURL().openConnection();
+            connection = c;
+            try {
+                c.setConnectTimeout(8000);
+                c.setReadTimeout(8000);
+                c.setInstanceFollowRedirects(false);
+                c.setRequestMethod(method);
+                c.setRequestProperty("Accept-Encoding", "gzip");
+                if (authority.equalsIgnoreCase(current.getAuthority())) for (Map.Entry<
+                    String,
+                    String
+                > h : headers.entrySet()) {
+                    if (
+                        !h.getKey().matches("[A-Za-z0-9-]{1,80}") ||
+                        h.getValue().length() > 8192 ||
+                        h.getValue().contains("\r") ||
+                        h.getValue().contains("\n")
+                    ) throw new IOException("Invalid provider header");
+                    if (
+                        java.util.Arrays.asList(
+                            "host",
+                            "connection",
+                            "content-length",
+                            "transfer-encoding"
+                        ).contains(h.getKey().toLowerCase(java.util.Locale.ROOT))
+                    ) throw new IOException("Restricted header");
+                    c.setRequestProperty(h.getKey(), h.getValue());
+                }
+                if (method.equals("POST")) {
+                    c.setDoOutput(true);
+                    try (OutputStream out = c.getOutputStream()) {
+                        out.write(body.getBytes(StandardCharsets.UTF_8));
+                    }
+                }
+                int status = c.getResponseCode();
+                if (status >= 300 && status < 400) {
+                    String location = c.getHeaderField("Location");
+                    if (location == null) throw new IOException("Missing redirect");
+                    current = current.resolve(location);
+                    if (status == 303 || ((status == 301 || status == 302) && method.equals("POST"))) {
+                        method = "GET";
+                        body = "";
+                    }
+                    continue;
+                }
+                org.json.JSONObject responseHeaders = new org.json.JSONObject();
+                org.json.JSONArray cookies = new org.json.JSONArray();
+                for (Map.Entry<String, java.util.List<String>> h : c.getHeaderFields().entrySet()) {
+                    if (h.getKey() == null) continue;
+                    String key = h.getKey().toLowerCase(java.util.Locale.ROOT);
+                    responseHeaders.put(key, String.join(", ", h.getValue()));
+                    if (key.equals("set-cookie")) for (String v : h.getValue()) cookies.put(v);
+                }
+                InputStream raw = status >= 400 ? c.getErrorStream() : c.getInputStream();
+                String text = "",
+                    binary = "";
+                if (raw != null) try (
+                    InputStream in = "gzip".equalsIgnoreCase(c.getContentEncoding())
+                        ? new java.util.zip.GZIPInputStream(raw)
+                        : raw;
+                    ByteArrayOutputStream out = new ByteArrayOutputStream()
+                ) {
+                    byte[] buf = new byte[8192];
+                    int n;
+                    while ((n = in.read(buf)) != -1) {
+                        check();
+                        if (out.size() + n > 3 * 1024 * 1024) throw new IOException(
+                            "Provider response limit"
+                        );
+                        out.write(buf, 0, n);
+                    }
+                    text = out.toString(StandardCharsets.UTF_8.name());
+                    if (current.getPath().endsWith(".gz")) binary =
+                        java.util.Base64.getEncoder().encodeToString(out.toByteArray());
+                }
+                return new org.json.JSONObject()
+                    .put("status", status)
+                    .put("url", current.toString())
+                    .put("headers", responseHeaders)
+                    .put("cookies", cookies)
+                    .put("text", text)
+                    .put("bytes", binary);
+            } finally {
+                c.disconnect();
+                connection = null;
+            }
+        }
+        throw new IOException("Too many provider redirects");
     }
 }

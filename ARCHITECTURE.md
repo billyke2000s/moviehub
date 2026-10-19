@@ -164,3 +164,10 @@ once, when the activity is constructed, and keep almost no state of their own.
 on-play resolution and inline EPG to SQLite and the shared LivePlayer. `ProviderPackages`,
 `ProviderSignature` and `ProviderUpdates` implement signed package checks, atomic slots and rollback.
 Remote updates fail closed without a pinned key. See [scope and limitations](docs/STANDALONE_PROVIDER_ENGINE.md).
+
+## Runtime 2 provider compatibility
+
+`ProviderBroker` services bounded async HTTP continuations from isolated scripts. `ProviderCodec` supplies
+pure crypto/compression primitives; `AdapterSources` integrates the historical FAST, DaddyLive and Tubi
+modules with SQLite and settings. `ProviderRelay` adds session-scoped loopback HLS header transport and
+`ProviderSegments` ports upstream TS-prefix detection. See the updated [provider architecture and evidence](docs/STANDALONE_PROVIDER_ENGINE.md).

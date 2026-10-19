@@ -43,22 +43,27 @@ final class ProviderPackages {
         if (bytes.length > ProviderSignature.MAX_PACKAGE) throw new IOException("Provider package too large");
         JSONObject pkg = new JSONObject(new String(bytes, StandardCharsets.UTF_8));
         if (
-            pkg.getInt("runtime") != 1 ||
+            (pkg.getInt("runtime") != 1 && pkg.getInt("runtime") != 2) ||
             pkg.getLong("version") < 1 ||
             !pkg.getString("upstream").matches("[a-f0-9]{40}")
         ) throw new IOException("Incompatible provider package");
         JSONObject modules = pkg.getJSONObject("modules");
-        // Runtime v1 supports the audited FreeLiveSports pure-transform interface only.
-        if (
-            modules.length() != 1 ||
-            !modules.has("freelivesports") ||
-            modules.getString("freelivesports").length() > 128 * 1024
-        ) throw new IOException("Unsupported provider capability");
+        if (!modules.has("freelivesports") || modules.length() > 16) throw new IOException(
+            "Missing provider baseline"
+        );
+        for (java.util.Iterator<String> keys = modules.keys(); keys.hasNext(); ) {
+            String id = keys.next();
+            if (
+                (!id.equals("freelivesports") &&
+                    (pkg.getInt("runtime") != 2 || !ProviderBroker.supported(id))) ||
+                modules.getString(id).length() > 128 * 1024
+            ) throw new IOException("Unsupported provider capability");
+        }
         return pkg;
     }
 
     private static JSONObject unpack(Context c, byte[] envelope) throws Exception {
-        if (envelope.length > 512 * 1024) throw new IOException("Provider envelope too large");
+        if (envelope.length > 2 * 1024 * 1024) throw new IOException("Provider envelope too large");
         JSONObject signed = new JSONObject(new String(envelope, StandardCharsets.UTF_8));
         byte[] payload = Base64.getDecoder().decode(signed.getString("payload"));
         byte[] sig = Base64.getDecoder().decode(signed.getString("signature"));
@@ -82,6 +87,15 @@ final class ProviderPackages {
 
     static String module(Context c) throws Exception {
         return current(c).getJSONObject("modules").getString("freelivesports");
+    }
+
+    static String module(Context c, String id) throws Exception {
+        JSONObject modules = current(c).getJSONObject("modules");
+        if (modules.has(id)) return modules.getString(id);
+        // Older signed runtime-1 packages cannot remove the newer APK's built-in capabilities.
+        return validate(asset(c, "builtin.json").getBytes(StandardCharsets.UTF_8))
+            .getJSONObject("modules")
+            .getString(id);
     }
 
     private static void write(AtomicFile file, byte[] bytes) throws IOException {
@@ -125,6 +139,16 @@ final class ProviderPackages {
             if (resolved.getString("url").contains("[CB]")) throw new IOException(
                 "Provider resolver health check rejected"
             );
+            JSONObject allModules = pkg.getJSONObject("modules");
+            for (String id : ProviderBroker.IDS)
+                if (allModules.has(id)) {
+                    JSONObject metadata = new JSONObject(
+                        ProviderBridge.call(c, allModules.getString(id), "metadata", "")
+                    );
+                    if (
+                        !id.equals(metadata.getString("provider")) || metadata.getInt("runtime") != 2
+                    ) throw new IOException("Provider metadata rejected");
+                }
             byte[] envelope = new JSONObject()
                 .put("payload", Base64.getEncoder().encodeToString(payload))
                 .put("signature", Base64.getEncoder().encodeToString(signature))

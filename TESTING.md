@@ -141,3 +141,11 @@ JVM interpreter/signature verifier. `ProviderEngineDeviceTest` covers isolated B
 signed package installation, tampering, downgrade protection, rollback and corrupt-slot recovery.
 The normal Android workflow runs these device tests. Real provider and physical-TV evidence must
 remain separate; see [evidence and limitations](docs/STANDALONE_PROVIDER_ENGINE.md).
+
+## Runtime 2 adapters and header transport
+
+The provider verifier now also runs `runtime-check.mjs`, which drives the compiled upstream modules through
+the real JVM interpreter with recorded HTTP fixtures. It checks POST resolution, compressed catalogues,
+long async walks, DaddyLive embed resolution, Tubi signatures and Samsung filtering. `ProviderAdaptersTest`
+exercises isolated Android calls, API capabilities, stable compound IDs and the loopback relay with fixture
+upstream connections. See [the evidence distinction](docs/STANDALONE_PROVIDER_ENGINE.md).

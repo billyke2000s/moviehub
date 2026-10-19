@@ -18,7 +18,7 @@ final class ProviderSettings {
             body,
             "Local provider engine",
             "Isolated JavaScript runtime · no separate server",
-            "Runtime 1",
+            "Runtime 2",
             true,
             "Check version",
             () -> {
@@ -58,6 +58,33 @@ final class ProviderSettings {
                 activity.toast("Provider refresh queued");
             }
         );
+        for (int i = 0; i < ProviderBroker.IDS.length; i++) {
+            String id = ProviderBroker.IDS[i],
+                label = AdapterSources.LABELS[i];
+            boolean enabled = activity.prefs.getBoolean(AdapterSources.pref(id), false);
+            long refreshed = status.getLong(id + "Refresh", 0);
+            String detail =
+                refreshed == 0
+                    ? "No successful refresh"
+                    : status.getInt(id + "Count", 0) +
+                      " channels · " +
+                      java.text.DateFormat.getDateTimeInstance().format(new java.util.Date(refreshed));
+            if (status.contains(id + "Error")) detail += " · Refresh failed; cached channels kept";
+            settings.settingCard(
+                body,
+                label,
+                "Experimental local upstream adapter · " + detail,
+                enabled ? "On" : "Off",
+                enabled,
+                enabled ? "Turn off" : "Turn on",
+                () -> {
+                    activity.prefs.edit().putBoolean(AdapterSources.pref(id), !enabled).apply();
+                    AdapterSources.invalidate();
+                    ChannelSync.refreshNow(activity);
+                    show();
+                }
+            );
+        }
         boolean trust = ProviderPackages.configured(activity);
         boolean auto = activity.prefs.getBoolean("providerAutoUpdates", true);
         settings.settingCard(
@@ -106,7 +133,7 @@ final class ProviderSettings {
                         )
                     )
                     .message(
-                        "Pluto TV keeps its native adapter. Other Masqueradarr providers require further compatibility work; current upstream adapters are private. A package rollback keeps channels and favourites."
+                        "Pluto TV keeps its native adapter. Runtime 2 executes additional historical upstream adapters locally. Availability depends on the provider and region; current upstream source remains inaccessible. A package rollback keeps channels and favourites."
                     )
                     .show()
         );

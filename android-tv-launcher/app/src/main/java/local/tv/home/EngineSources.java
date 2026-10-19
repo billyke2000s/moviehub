@@ -22,6 +22,7 @@ final class EngineSources {
 
     static void invalidate() {
         expires = 0;
+        AdapterSources.invalidate();
     }
 
     static boolean enabled(Context c, boolean connected) {
@@ -32,11 +33,15 @@ final class EngineSources {
     }
 
     static boolean locator(String url) {
-        return url != null && url.startsWith(ROOT);
+        return url != null && (url.startsWith(ROOT) || AdapterSources.locator(url));
     }
 
     static String id(String url) {
-        if (!locator(url) || !url.substring(ROOT.length()).matches("[A-Za-z0-9:_-]{1,160}")) {
+        if (
+            url == null ||
+            !url.startsWith(ROOT) ||
+            !url.substring(ROOT.length()).matches("[A-Za-z0-9:_-]{1,160}")
+        ) {
             throw new IllegalArgumentException("Invalid provider channel");
         }
         return url.substring(ROOT.length());
@@ -119,6 +124,7 @@ final class EngineSources {
     }
 
     static Stream resolve(Context c, String locator, NativeHttp http) throws Exception {
+        if (AdapterSources.locator(locator)) return AdapterSources.resolve(c, locator, http);
         String wanted = id(locator);
         JSONArray rows = catalogue(c, http);
         for (int i = 0; i < rows.length(); i++) {

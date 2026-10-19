@@ -606,6 +606,11 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     /** Replaces the whole programme guide in one transaction; a failed download keeps the old one. */
+    private static boolean knownEngineGuide(String prefix) {
+        for (String id : ProviderBroker.IDS) if (prefix.equals(AdapterSources.source(id) + ":")) return true;
+        return false;
+    }
+
     final class GuideWriter {
 
         private final SQLiteDatabase db = getWritableDatabase();
@@ -622,13 +627,18 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         }
 
         GuideWriter(String prefix) {
-            if (prefix != null && !prefix.equals("nativepluto:") && !prefix.equals("enginefls:")) {
+            if (
+                prefix != null &&
+                !prefix.equals("nativepluto:") &&
+                !prefix.equals("enginefls:") &&
+                !knownEngineGuide(prefix)
+            ) {
                 throw new IllegalArgumentException("Unknown native guide");
             }
             db.beginTransactionNonExclusive();
             String where =
                 prefix == null
-                    ? "channel NOT LIKE 'nativepluto:%' AND channel NOT LIKE 'enginefls:%'"
+                    ? "channel NOT LIKE 'nativepluto:%' AND channel NOT LIKE 'engine%:%'"
                     : "channel LIKE '" + prefix + "%'";
             db.delete("programmes", where, null);
             db.delete("epg_map", where, null);
@@ -686,7 +696,9 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         // Native listings already belong to a provider/region identity. Do not apply the
         // UK XMLTV country filter, or match a similarly named foreign channel's guide.
         List<String> keys =
-            row.epg.startsWith("enginefls:") || row.epg.matches("pluto:[0-9a-f]{24}\\.[a-z]{2}")
+            row.epg.startsWith("enginefls:") ||
+            knownEngineGuide(row.epg.substring(0, row.epg.indexOf(':') + 1)) ||
+            row.epg.matches("pluto:[0-9a-f]{24}\\.[a-z]{2}")
                 ? Collections.singletonList(EpgMatch.key(row.epg))
                 : EpgMatch.keys(row.epg, row.name, country);
         if (keys.isEmpty()) return out;

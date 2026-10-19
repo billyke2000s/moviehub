@@ -98,3 +98,10 @@ This is incomplete, opt-in and not a production release. The current Masqueradar
 returns 404; current adapter parity and automatic inheritance are blocked by source access.
 Signing-key setup and physical ARM64 playback checks remain outstanding. Full implementation,
 provider matrix and evidence: [standalone provider engine](docs/STANDALONE_PROVIDER_ENGINE.md).
+
+## Extended Android provider port
+
+Draft PR #83 now adapts thirteen additional historical upstream providers through Runtime 2, including
+DaddyLive's multi-player resolver and Tubi's signing/bootstrap. Discovery has succeeded for several FAST
+platforms; DaddyLive discovery alone does not establish playback. Remaining unported dulo login, Local Now
+source access and HDHomeRun transport are documented. Nothing is merged or released by this work.

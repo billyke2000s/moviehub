@@ -1,5 +1,6 @@
 import ts from "typescript";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { adapters } from "./adapters.mjs";
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
@@ -45,12 +46,190 @@ function invoke(operation, payload) {
 }
 `;
 const pkg = {
-    runtime: 1,
+    runtime: 2,
     version: Number(process.env.PROVIDER_VERSION || "1"),
     upstream: process.env.UPSTREAM_SHA || "3b860294ecb4a9ebca8819adfc061162fbbb7f99",
     modules: { freelivesports: prelude + compiled.outputText + wrapper },
     sourceSha256: createHash("sha256").update(source).digest("hex"),
 };
+const compatibility = readFileSync(root + "tools/compat.js", "utf8");
+const auditedImports = new Set([
+    "node:crypto",
+    "node:zlib",
+    "../../core/logger.js",
+    "./categorize.js",
+    "./config.js",
+    "./embedExtractors.js",
+    "./playerMemory.js",
+    "./resolveCache.js",
+    "./transport.js",
+    "../../core/ssrf.js",
+    "../../../logs/tier.js",
+    "../../../core/logger.js",
+    "./client.js",
+    "./deviceToken.js",
+    "./endpoints.js",
+    "./sign.js",
+]);
+function compileLeaf(path) {
+    const text = readFileSync(root + path, "utf8");
+    const tree = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true);
+    for (const node of tree.statements) {
+        if (
+            ts.isImportDeclaration(node) &&
+            !node.importClause?.isTypeOnly &&
+            !auditedImports.has(node.moduleSpecifier.text)
+        ) {
+            throw new Error("Unaudited dependency in " + path + ": " + node.moduleSpecifier.text);
+        }
+    }
+    return ts.transpileModule(text, {
+        compilerOptions: {
+            target: ts.ScriptTarget.ES5,
+            module: ts.ModuleKind.CommonJS,
+            downlevelIteration: true,
+            removeComments: true,
+        },
+    }).outputText;
+}
+for (const [id, adapter] of Object.entries(adapters)) {
+    const compiled = compileLeaf("upstream/modules/" + id + "/config.ts");
+    const categories = id === "roku" ? compileLeaf("upstream/modules/roku/categorize.ts") : "";
+    pkg.modules[id] =
+        compatibility +
+        `
+var __provider=${JSON.stringify(id)}, exports, __categories;
+function __load(){
+  __categories=(function(exports){${categories}\n;return exports;})({});
+  exports=(function(exports){${compiled}\n;return exports;})({});
+}
+function __run(operation,row){
+  if(operation==='catalogue')return ${adapter.catalogue};
+  if(operation==='resolve')return Promise.resolve(${adapter.resolve}).then(function(url){
+    var headers=${adapter.headers};
+    return {url:url,headers:headers,userAgent:headers['User-Agent']||'',referer:headers.Referer||''};
+  });
+  throw new Error('Unsupported provider operation');
+}
+`;
+}
+const dlhdFiles = [
+    "config",
+    "parseDirectory",
+    "embedExtractors",
+    "playerMemory",
+    "resolveCache",
+    "transport",
+    "resolveStream",
+    "ssrf",
+];
+const dlhdFactories = dlhdFiles
+    .map(
+        (name) =>
+            `${JSON.stringify("./" + name + ".js")}:function(exports,require){${compileLeaf("upstream/modules/dlhd/" + name + ".ts")}\n;return exports;}`,
+    )
+    .join(",");
+pkg.modules.dlhd =
+    compatibility +
+    `
+var __provider='dlhd',exports,__baseRequire=require,__dlhd;
+function __load(){
+  var factories={${dlhdFactories}},cache={};
+  require=function(id){
+    if(id==='../../core/ssrf.js')id='./ssrf.js';
+    if(id==='../../../logs/tier.js')return {logMilestone:function(){},logTrace:function(){}};
+    if(!factories[id])return __baseRequire(id);
+    if(!cache[id]){cache[id]={};cache[id]=factories[id](cache[id],require);}
+    return cache[id];
+  };
+  exports=require('./config.js'); __dlhd=require('./resolveStream.js');
+}
+function __run(operation,row){
+  if(operation==='catalogue')return fetch(exports.getBase()+'/24-7-channels.php',{headers:{Referer:exports.getReferer(),'User-Agent':exports.UA}}).then(function(r){if(!r.ok)throw new Error('Directory unavailable');return r.text();}).then(function(html){return require('./parseDirectory.js').parseChannels(html).map(function(r){return {channelId:String(r.id),name:r.name,category:r.group};});});
+  if(operation==='resolve')return __dlhd.resolveStreamUrl(row.channelId).then(function(r){return {url:r.masterUrl,headers:r.upstreamHeaders,userAgent:r.upstreamHeaders['User-Agent']||'',referer:r.upstreamHeaders.Referer||''};});
+  throw new Error('Unsupported operation');
+}
+`;
+const tubiFiles = ["catalog", "client", "deviceToken", "endpoints", "resolveStream", "sign"];
+const tubiFactories = tubiFiles
+    .map(
+        (name) =>
+            `${JSON.stringify("./" + name + ".js")}:function(exports,require){${compileLeaf("upstream/modules/tubi/" + name + ".ts")}\n;return exports;}`,
+    )
+    .join(",");
+pkg.modules.tubi =
+    compatibility +
+    `
+var __provider='tubi',exports,__baseRequire=require;
+function __load(){
+ var factories={${tubiFactories}},cache={};
+ require=function(id){if(!factories[id])return __baseRequire(id);if(!cache[id]){cache[id]={};cache[id]=factories[id](cache[id],require);}return cache[id];};
+ exports=require('./catalog.js');
+}
+function __run(operation,row){
+ if(operation==='catalogue')return exports.fetchApiCatalog().then(function(list){return list.raw.filter(function(r){return r.content_id!=null&&r.video_resources&&r.video_resources[0]&&r.video_resources[0].manifest;}).map(function(r){return {channelId:String(r.content_id),name:r.title||String(r.content_id),category:r.group||'Live TV',logo:r.images&&r.images[0]?r.images[0].url:null,programs:(r.programs||[]).map(function(p){return {title:p.title,start:p.start_time,end:p.end_time,desc:p.description};})};});});
+ if(operation==='resolve')return require('./resolveStream.js').resolveApiStream(row.channelId).then(function(r){var ua=require('./endpoints.js').BROWSER_UA;return {url:r.masterUrl,headers:{'User-Agent':ua},userAgent:ua,referer:''};});
+ throw new Error('Unsupported operation');
+}
+`;
+const samsungSource = readFileSync(root + "upstream/modules/samsung/adapter.ts", "utf8");
+const samsungTree = ts.createSourceFile("samsung.ts", samsungSource, ts.ScriptTarget.Latest, true);
+const samsungFunctions = samsungTree.statements
+    .filter(
+        (node) =>
+            ts.isFunctionDeclaration(node) &&
+            ["fetchGzJson", "listChannels", "normalize", "resolveStream"].includes(node.name?.text),
+    )
+    .map((node) => node.getText(samsungTree))
+    .join("\n");
+if (
+    samsungTree.statements.filter(
+        (node) =>
+            ts.isFunctionDeclaration(node) &&
+            ["fetchGzJson", "listChannels", "normalize", "resolveStream"].includes(node.name?.text),
+    ).length !== 4
+)
+    throw new Error("Samsung adapter interface changed");
+const samsungCompiled = ts.transpileModule(samsungFunctions, {
+    compilerOptions: {
+        target: ts.ScriptTarget.ES5,
+        module: ts.ModuleKind.CommonJS,
+        downlevelIteration: true,
+        removeComments: true,
+    },
+}).outputText;
+pkg.modules.samsung =
+    compatibility +
+    `
+var __provider='samsung',exports,__samsung;
+function __load(){
+ exports=(function(exports){${compileLeaf("upstream/modules/samsung/config.ts")}\n;return exports;})({});
+ __samsung=(function(){
+  var SOURCE_ID='samsung',SNAPSHOT='',CHANNELS_URL=exports.CHANNELS_URL,UA=exports.UA,STREAM_URL=exports.STREAM_URL,samsungRegions=function(){return ['gb'];};
+  var gunzipSync=require('node:zlib').gunzipSync,readFileSync=function(){throw new Error('Live catalogue unavailable');};
+  var allow={allow:function(){}};
+  ${samsungCompiled}
+  return {list:listChannels,normalize:normalize,resolve:resolveStream};
+ })();
+}
+function __run(operation,row){
+ if(operation==='catalogue')return __samsung.list().then(function(list){return list.raw.map(function(raw){return __samsung.normalize(raw,{ingestedAt:new Date().toISOString()});}).filter(function(r){return !!r;}).map(function(r){return {channelId:r.sourceChannelId,name:r.name,category:r.groupLabel,logo:r.logoUrl,streamUrl:r.streamEntryUrl};});});
+ if(operation==='resolve')return __samsung.resolve(row.streamUrl).then(function(r){return {url:r.masterUrl,headers:{'User-Agent':exports.UA},userAgent:exports.UA,referer:''};});
+ throw new Error('Unsupported operation');
+}
+`;
+pkg.sourceSha256 = createHash("sha256").update(JSON.stringify(pkg.modules)).digest("hex");
+pkg.sources = Object.fromEntries(
+    readdirSync(root + "upstream/", { recursive: true })
+        .filter((path) => path.endsWith(".ts"))
+        .sort()
+        .map((path) => [
+            path,
+            createHash("sha256")
+                .update(readFileSync(root + "upstream/" + path))
+                .digest("hex"),
+        ]),
+);
 if (!Number.isSafeInteger(pkg.version) || pkg.version < 1) throw new Error("Invalid version");
 const bytes = Buffer.from(JSON.stringify(pkg));
 mkdirSync(root + "dist", { recursive: true });

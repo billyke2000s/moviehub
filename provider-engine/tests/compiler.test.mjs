@@ -62,6 +62,6 @@ test("fresh macros and playback headers", () => {
 test("unknown operations and Node modules fail closed", () => {
     const invoke = runtime();
     assert.throws(() => invoke("shell", ""));
-    assert.equal(pkg.runtime, 1);
+    assert.equal(pkg.runtime, 2);
     assert.match(pkg.upstream, /^[a-f0-9]{40}$/);
 });

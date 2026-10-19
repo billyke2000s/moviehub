@@ -110,3 +110,7 @@ Development adds opt-in FreeLiveSports using local compiled TypeScript/JavaScrip
 Live TV guide/player, with no home server. This is incomplete: current upstream adapters are in
 an inaccessible private submodule, and signed remote updates require maintainer key setup.
 See [implementation, provider status and tests](docs/STANDALONE_PROVIDER_ENGINE.md).
+
+Experimental Runtime 2 in draft PR #83 adapts additional historical Masqueradarr provider code locally on
+Android, including DaddyLive's resolver and Tubi's signing flow. This is unfinished development, not a
+production release or a claim that every provider/channel plays. [Architecture, status and evidence](docs/STANDALONE_PROVIDER_ENGINE.md).

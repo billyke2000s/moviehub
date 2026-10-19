@@ -103,12 +103,26 @@ final class LivePlayer {
                             : fixture == null
                               ? PlutoSource.resolve(streamUrl, http)
                               : fixture.resolve(streamUrl, http);
-                    http.check();
+                    ProviderRelay nextRelay =
+                        stream != null &&
+                        (ProviderRelay.needed(stream) || streamUrl.contains("/engine/dlhd/"))
+                            ? new ProviderRelay(stream)
+                            : null;
+                    try {
+                        http.check();
+                    } catch (Exception e) {
+                        if (nextRelay != null) nextRelay.close();
+                        throw e;
+                    }
                     main.post(() -> {
-                        if (ticket != generation || player == null) return;
+                        if (ticket != generation || player == null) {
+                            if (nextRelay != null) nextRelay.close();
+                            return;
+                        }
+                        relay = nextRelay;
                         resolving = false;
                         open(
-                            resolved,
+                            nextRelay == null ? resolved : nextRelay.url,
                             stream == null ? PlutoSource.USER_AGENT : stream.userAgent,
                             stream == null ? null : stream.referer
                         );
@@ -127,6 +141,8 @@ final class LivePlayer {
         return false;
     }
 
+    private static ProviderRelay relay;
+
     private static void open(String stream, String userAgent, String referer) {
         Media media = new Media(engine, Uri.parse(stream));
         media.setHWDecoderEnabled(true, false);
@@ -139,6 +155,10 @@ final class LivePlayer {
 
     private static void cancelResolution() {
         resolving = false;
+        if (relay != null) {
+            relay.close();
+            relay = null;
+        }
         generation++;
         if (request != null) request.cancel();
         if (pending != null) pending.cancel(true);

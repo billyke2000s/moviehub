@@ -13,7 +13,7 @@ final class ProviderUrls {
             throw new IOException("Provider URL rejected");
         }
         try {
-            URI uri = URI.create(raw.replace(" ", "%20"));
+            URI uri = URI.create(raw.replace(" ", "%20").replace("{", "%7B").replace("}", "%7D"));
             if (
                 !"https".equalsIgnoreCase(uri.getScheme()) ||
                 uri.getHost() == null ||

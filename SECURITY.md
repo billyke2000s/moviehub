@@ -75,3 +75,13 @@ Java access denied, bounded input/output, stack/deadline limits and a process wa
 APK code or RSA-authenticated packages can be selected; no unsigned GitHub source is executed.
 The remote trust anchor is intentionally unconfigured. Rollback preserves a monotonic network
 version floor. See [security boundaries and setup](docs/STANDALONE_PROVIDER_ENGINE.md).
+
+## Runtime 2 provider capabilities
+
+Upstream async code executes without network privilege in the isolated service. The Android HTTP broker
+checks per-provider host capabilities, redirects, private DNS targets, methods, headers and request budgets.
+DaddyLive has an explicit bounded public-HTTPS-GET capability for rotating players; it receives no app
+credentials. HMAC/decompression are bounded pure-data callbacks. The optional HLS relay exposes only random
+session grants on loopback, with bounded workers/targets and stop-time cleanup. Credential headers stay on
+the initial master authority. DNS checks are not DNS pinning, and full JS/runtime security review remains
+outstanding. Signed update trust is still unconfigured. See the provider-engine document for exact limits.

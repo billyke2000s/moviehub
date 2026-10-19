@@ -400,3 +400,10 @@ Built from PR #16: TV home fits the viewport; catalogue and account navigation m
 
 Built from PR #15: MovieHub TV browsing, scalable IPTV and fullscreen playback, with signing
 continuity checks.
+
+### Experimental provider runtime 2 (unreleased)
+
+- Execute thirteen additional historical Masqueradarr adapters locally, including HTTP/POST, async replay,
+  cookies within operations, Tubi crypto, compressed catalogues and fresh stream resolution.
+- Add individual settings, stable SQLite locators, inline guide isolation and optional local HLS header transport.
+- Preserve direct playback and existing providers; document partial live evidence and remaining browser/source blockers.

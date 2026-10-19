@@ -117,7 +117,7 @@ public final class ProviderEngineDeviceTest {
     @Test
     public void incompatiblePackageAndInvalidLocatorAreRejected() throws Exception {
         JSONObject pkg = new JSONObject(ProviderPackages.asset(context, "builtin.json"));
-        pkg.put("runtime", 2);
+        pkg.put("runtime", 3);
         try {
             ProviderPackages.validate(pkg.toString().getBytes(StandardCharsets.UTF_8));
             fail("Runtime accepted");

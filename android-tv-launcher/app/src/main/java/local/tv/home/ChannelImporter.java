@@ -120,6 +120,23 @@ final class ChannelImporter {
                         problems.add("FreeLiveSports unavailable; cached channels kept.");
                     }
                 }
+                for (String id : ProviderBroker.IDS)
+                    if (AdapterSources.enabled(context, id, providerConnected)) {
+                        configured.add(AdapterSources.source(id));
+                        anySource = true;
+                        try {
+                            total += AdapterSources.refresh(context, id, db, cancel);
+                        } catch (Exception e) {
+                            cancel.check();
+                            Diagnostics.recovered("Provider refresh " + id, e);
+                            context
+                                .getSharedPreferences("providerEngine", 0)
+                                .edit()
+                                .putString(id + "Error", e.getClass().getSimpleName())
+                                .apply();
+                            problems.add(id + ": provider unavailable; cached channels kept.");
+                        }
+                    }
                 if (NativeSources.enabled(context, providerConnected)) {
                     configured.add("nativepluto");
                     anySource = true;

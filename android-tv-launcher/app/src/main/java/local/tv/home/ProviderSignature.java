@@ -8,7 +8,7 @@ import java.security.spec.X509EncodedKeySpec;
 /** Detached signature authenticates the exact package bytes before JSON parsing or evaluation. */
 final class ProviderSignature {
 
-    static final int MAX_PACKAGE = 256 * 1024;
+    static final int MAX_PACKAGE = 1024 * 1024;
 
     private ProviderSignature() {}
 
