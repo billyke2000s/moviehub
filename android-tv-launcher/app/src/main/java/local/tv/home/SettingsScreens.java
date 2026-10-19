@@ -514,10 +514,10 @@ final class SettingsScreens {
             heading(body, "Your connections");
             accountCard(body, "Xtream", "Live channels from your TV provider");
             accountCard(body, "M3U playlist", "Your own IPTV playlist");
-            accountCard(body, "Masqueradarr", "Separate self-hosted live TV and sports");
             freeChannelsCard(body);
             accountCard(body, "TMDB", "Movie and series discovery, details and artwork");
             accountCard(body, "Premiumize", "Playback sources and your cloud library");
+            accountCard(body, "Masqueradarr", "Separate self-hosted live TV and sports");
         } else if (tab.equals("Appearance")) {
             heading(body, "Look and feel");
             toggle(body, "Featured row", "Artwork and a poster shelf on Home", "featured", true);
