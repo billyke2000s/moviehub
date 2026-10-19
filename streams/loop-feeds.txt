@@ -1,4 +1,7 @@
-# Add verified, publicly accessible HTTPS M3U feed URLs here, one per line.
-# No upstream feed is configured yet: the old i.mjh.nz SamsungTVPlus
-# playlists were removed and return HTTP 404.
-# The workflow will fail safely without a configured feed.
+# Public M3U feeds. A failed feed is skipped; working feeds are published.
+# These are already used by MovieHub, so this validates the hosted pipeline
+# but DOES NOT represent a successful conversion of The Loop Kodi resolvers.
+https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8
+https://iptv-org.github.io/iptv/countries/uk.m3u
+# Historical dead source retained as a disabled reference, never downloaded:
+# https://i.mjh.nz/SamsungTVPlus/gb.m3u8
