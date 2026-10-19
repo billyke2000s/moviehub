@@ -52,7 +52,7 @@ final class ChannelSync {
      */
     static void refreshIfStale(Context context, boolean liveTvOpened) {
         Secrets secrets = new Secrets(context);
-        boolean provider = secrets.has("m3u") || secrets.has("xtream");
+        boolean provider = secrets.has("m3u") || secrets.has("xtream") || secrets.has("masqueradarr");
         if (!provider && (!liveTvOpened || FreeChannels.playlist(context, false).isEmpty())) return;
         ChannelImporter.Status status = ChannelImporter.status(context);
         long last = status.lastSuccess;
