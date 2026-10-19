@@ -22,6 +22,12 @@ public class VlcPlaybackActivity extends Activity {
     MediaPlayer player;
     /** Channel changing and backups while watching Live TV from the guide; null otherwise. */
     LiveZapper zapper;
+    private VodSourceFailover vodFailover;
+    private final Runnable vodStallCheck = () -> {
+        if (vodFailover != null && vodFailover.isStalled(android.os.SystemClock.elapsedRealtime()))
+            switchVodSource("Buffering exceeded 4 seconds");
+    };
+    private boolean vodSwitchPending;
     /** The title at the top of the controls (changes with the channel). */
     TextView titleView;
     /** The side panels (tracks, speed, picture, sleep timer). */
@@ -300,6 +306,24 @@ public class VlcPlaybackActivity extends Activity {
             finish();
             return;
         }
+        if (!live) {
+            java.util.ArrayList<String> links = getIntent().getStringArrayListExtra("vodSourceUrls");
+            java.util.ArrayList<String> labels = getIntent().getStringArrayListExtra("vodSourceLabels");
+            java.util.ArrayList<String> providers = getIntent().getStringArrayListExtra("vodSourceProviders");
+            vodFailover = new VodSourceFailover();
+            java.util.List<VodSourceFailover.Source> candidates = new java.util.ArrayList<>();
+            candidates.add(new VodSourceFailover.Source(url, "Current source", "default"));
+            if (links != null) for (int i = 0; i < links.size(); i++) {
+                try {
+                    String candidate = Playlist.networkUrl(links.get(i), getSharedPreferences("ui", MODE_PRIVATE).getBoolean("http", false));
+                    candidates.add(new VodSourceFailover.Source(candidate,
+                        labels != null && i < labels.size() ? labels.get(i) : "Source " + (i + 2),
+                        providers != null && i < providers.size() ? providers.get(i) : "free"));
+                } catch (Exception ignored) { /* Reject invalid source URLs. */ }
+            }
+            vodFailover.setSources(candidates);
+            if (getIntent().getBooleanExtra("vodPinProvider", false)) vodFailover.select(0, true);
+        }
         position =
             state == null ? (live ? 0 : ResumePoint.load(this, id, titleKey)) : state.getLong("position");
         FrameLayout root = new FrameLayout(this);
@@ -369,6 +393,8 @@ public class VlcPlaybackActivity extends Activity {
         liveFailed = false;
         status.setBackgroundColor(Color.TRANSPARENT);
         release();
+        overlayHandler.removeCallbacks(vodStallCheck);
+        vodSwitchPending = false;
         status.setText("Opening source…");
         status.setVisibility(View.VISIBLE);
         overlayHandler.removeCallbacks(stalled);
@@ -416,6 +442,11 @@ public class VlcPlaybackActivity extends Activity {
         if (carriedOn && player.isPlaying()) {
             // Already playing: no "Playing" event will come, so show it as playing now.
             playedOnce = true;
+            if (vodFailover != null) {
+                vodFailover.onPlaying();
+                vodFailover.onBufferingEnded();
+                overlayHandler.removeCallbacks(vodStallCheck);
+            }
             overlayHandler.removeCallbacks(stalled);
             status.setVisibility(View.GONE);
             showPlaying(true);
@@ -449,6 +480,14 @@ public class VlcPlaybackActivity extends Activity {
             if (event.getBuffering() < 100) {
                 if (playedOnce) Timings.markOnce("stall");
                 if (playedOnce && zapper != null && !buffering) zapper.bufferingStarted();
+                if (playedOnce && vodFailover != null && !buffering) {
+                    if (vodFailover.onBufferingStarted(android.os.SystemClock.elapsedRealtime())) {
+                        switchVodSource("Repeated buffering");
+                        return;
+                    }
+                    overlayHandler.removeCallbacks(vodStallCheck);
+                    overlayHandler.postDelayed(vodStallCheck, VodSourceFailover.STALL_MS);
+                }
                 buffering = true;
                 status.setText(
                     "Buffering… " +
@@ -462,6 +501,10 @@ public class VlcPlaybackActivity extends Activity {
                 Timings.finish("stall", "Buffering pause while watching");
                 buffering = false;
                 if (zapper != null) zapper.bufferingEnded();
+                if (vodFailover != null) {
+                    vodFailover.onBufferingEnded();
+                    overlayHandler.removeCallbacks(vodStallCheck);
+                }
             }
         } else if (event.type == MediaPlayer.Event.EndReached) {
             if (live) {
@@ -500,13 +543,48 @@ public class VlcPlaybackActivity extends Activity {
                     : path.substring(0, path.length() - 5) + ".ts";
                 url = original.buildUpon().encodedPath(path).build().toString();
                 video.post(this::startPlayer);
-            } else showError("This source could not be played. Try another source or retry the connection.");
+            } else if (!live && switchVodSource("Playback error")) return;
+            else showError("This source could not be played. Try another source or retry the connection.");
         }
+    }
+
+    boolean hasVodSources() { return vodFailover != null && vodFailover.sources().size() > 1; }
+
+    void chooseVodSource(int index) {
+        if (vodFailover == null || index == vodFailover.currentIndex()) return;
+        if (!vodFailover.select(index, false)) return;
+        playVodCandidate(vodFailover.current());
+    }
+
+    VodSourceFailover vodSources() { return vodFailover; }
+
+    private boolean switchVodSource(String reason) {
+        if (live || vodFailover == null || vodSwitchPending) return false;
+        VodSourceFailover.Source next = vodFailover.failover();
+        if (next == null) return false;
+        vodSwitchPending = true;
+        playVodCandidate(next);
+        return true;
+    }
+
+    private void playVodCandidate(VodSourceFailover.Source next) {
+        overlayHandler.removeCallbacks(vodStallCheck);
+        if (player != null) {
+            long time = player.getTime();
+            if (time > 0) position = time;
+            else if (resumeCheck > 0) position = resumeCheck;
+        }
+        url = next.url;
+        playedOnce = false;
+        buffering = false;
+        status.setText("Switching to " + next.label + "…");
+        startPlayer();
     }
 
     private void showError(String message) {
         if (!foreground || isFinishing() || dialogOpen) return;
         if (zapper != null && zapper.failover("This stream is not working")) return;
+        if (!live && switchVodSource(message)) return;
         overlayHandler.removeCallbacks(stalled);
         if (player != null) {
             long time = player.getTime();
@@ -711,6 +789,7 @@ public class VlcPlaybackActivity extends Activity {
                 }
             }
         }
+        overlayHandler.removeCallbacks(vodStallCheck);
         release();
         // Back to the guide: its picture has already taken the live player over, so it plays on.
         // Anywhere else, nothing took it over, so it stops.
