@@ -81,6 +81,7 @@ final class FreeChannels {
      */
     static final String[][] EXTRA = {
         // { "mylist", "My list", "https://example.org/playlist.m3u8" },
+        { "loophost", "Hosted Loop-compatible feeds", "https://raw.githubusercontent.com/billyke2000s/moviehub/main/streams/loop.m3u" },
     };
 
     /**
