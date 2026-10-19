@@ -12,6 +12,8 @@ final class AdapterSources {
     private static final Map<String, JSONArray> cache = new HashMap<>();
     private static final Map<String, Long> expiry = new HashMap<>();
     private static final Map<String, String> versions = new HashMap<>();
+    static final String TCL_HINTS = "engineTclResolverHints";
+    private static volatile boolean staleTclHints;
     private static final LinkedHashMap<String, PlayerMemo> players = new LinkedHashMap<>();
 
     private static final class PlayerMemo {
@@ -22,6 +24,7 @@ final class AdapterSources {
     }
 
     static synchronized void failed(String url) {
+        if (url.startsWith(ROOT + "tcl/")) staleTclHints = true;
         if (!url.startsWith(ROOT + "dlhd/")) return;
         PlayerMemo memo = players.get(url);
         if (memo != null && memo.good > 0) {
@@ -153,6 +156,11 @@ final class AdapterSources {
                 row.getString("name").trim().isEmpty()
             ) throw new IOException("Invalid provider row");
         }
+        if (id.equals("tcl")) try {
+            saveTclHints(c, module, rows);
+        } catch (Exception e) {
+            Diagnostics.recovered("Saving TCL resolver hints", e);
+        }
         synchronized (AdapterSources.class) {
             cache.put(id, rows);
             expiry.put(id, System.currentTimeMillis() + 600_000);
@@ -161,27 +169,73 @@ final class AdapterSources {
         return rows;
     }
 
+    static void saveTclHints(Context c, String module, JSONArray rows) throws Exception {
+        JSONObject hints = new JSONObject();
+        for (int i = 0; i < rows.length(); i++) {
+            JSONObject row = rows.getJSONObject(i),
+                hint = new JSONObject().put("channelId", row.getString("channelId"));
+            for (String field : Arrays.asList("source", "media"))
+                if (row.has(field)) hint.put(field, row.get(field));
+            hints.put(row.getString("channelId"), hint);
+        }
+        String saved = new JSONObject()
+            .put("module", ProviderCodec.call("sha256", module))
+            .put("at", System.currentTimeMillis())
+            .put("rows", hints)
+            .toString();
+        if (saved.length() > 2 * 1024 * 1024) throw new IOException("Resolver hint limit");
+        new Secrets(c).put(TCL_HINTS, saved);
+        staleTclHints = false;
+    }
+
+    static JSONObject resolverRow(Context c, String id, String wanted, NativeHttp http) throws Exception {
+        http.check();
+        // These upstream resolvers accept the provider's own channel id; no catalogue hop is needed.
+        if (
+            Arrays.asList("stirr", "xumo", "roku", "plex", "dlhd", "tubi", "samsung").contains(id)
+        ) return new JSONObject().put("channelId", wanted);
+        if (id.equals("tcl") && !staleTclHints) try {
+            String saved = new Secrets(c).get(TCL_HINTS);
+            if (!saved.isEmpty()) {
+                JSONObject envelope = new JSONObject(saved);
+                long age = System.currentTimeMillis() - envelope.getLong("at");
+                if (
+                    age >= 0 &&
+                    age < 14L * 86400_000 &&
+                    envelope
+                        .getString("module")
+                        .equals(ProviderCodec.call("sha256", ProviderPackages.module(c, id)))
+                ) {
+                    JSONObject hint = envelope.getJSONObject("rows").optJSONObject(wanted);
+                    if (hint != null) return hint;
+                }
+            }
+        } catch (Exception e) {
+            Diagnostics.recovered("Reading TCL resolver hints", e);
+        }
+        JSONArray rows = catalogue(c, id, http);
+        for (int i = 0; i < rows.length(); i++) {
+            http.check();
+            JSONObject row = rows.getJSONObject(i);
+            if (wanted.equals(row.getString("channelId"))) return row;
+        }
+        throw new IOException("Provider channel unavailable");
+    }
+
     static EngineSources.Stream resolve(Context c, String url, NativeHttp http) throws Exception {
         String id = provider(url),
             wanted = channel(url);
-        JSONArray rows = catalogue(c, id, http);
-        for (int i = 0; i < rows.length(); i++) {
-            JSONObject row = rows.getJSONObject(i);
-            http.check();
-            if (wanted.equals(row.getString("channelId"))) {
-                JSONObject resolved = (JSONObject) ProviderBroker.call(
-                    c,
-                    id,
-                    "resolve",
-                    id.equals("dlhd") ? playerRow(url, row) : row,
-                    http
-                );
-                EngineSources.Stream stream = new EngineSources.Stream(resolved);
-                if (id.equals("dlhd")) rememberPlayer(url, resolved.optInt("playerIndex", 0));
-                return stream;
-            }
-        }
-        throw new IOException("Provider channel unavailable");
+        JSONObject row = resolverRow(c, id, wanted, http);
+        JSONObject resolved = (JSONObject) ProviderBroker.call(
+            c,
+            id,
+            "resolve",
+            id.equals("dlhd") ? playerRow(url, row) : row,
+            http
+        );
+        EngineSources.Stream stream = new EngineSources.Stream(resolved);
+        if (id.equals("dlhd")) rememberPlayer(url, resolved.optInt("playerIndex", 0));
+        return stream;
     }
 
     static int refresh(Context c, String id, ChannelDatabase db, ChannelDatabase.Cancel cancel)

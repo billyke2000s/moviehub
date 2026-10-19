@@ -23,6 +23,7 @@ public final class ProviderAdaptersTest {
     public void cleanup() {
         ProviderRelay.testConnections = null;
         AdapterSources.invalidate();
+        new Secrets(context).remove(AdapterSources.TCL_HINTS);
     }
 
     @Test
@@ -83,6 +84,34 @@ public final class ProviderAdaptersTest {
         assertEquals(id, AdapterSources.channel(url));
         assertEquals(url, AdapterSources.locator("vidaa", id));
         assertFalse(AdapterSources.locator("https://native.moviehub.invalid/engine/untrusted/a"));
+    }
+
+    @Test
+    public void coldResolversAvoidCatalogueAndTclHintsAreEncryptedAndCompact() throws Exception {
+        for (String id : Arrays.asList("stirr", "xumo", "roku", "plex", "dlhd", "tubi", "samsung")) {
+            JSONObject row = AdapterSources.resolverRow(context, id, "42", new NativeHttp());
+            assertEquals("42", row.getString("channelId"));
+            assertEquals(1, row.length());
+        }
+        String media = "https://media.example/signed.m3u8?token=fixture";
+        AdapterSources.saveTclHints(
+            context,
+            ProviderPackages.module(context, "tcl"),
+            new JSONArray().put(
+                new JSONObject()
+                    .put("channelId", "42")
+                    .put("source", "fixture-source")
+                    .put("media", media)
+                    .put("programs", new JSONArray().put("not a resolver input"))
+            )
+        );
+        JSONObject hint = AdapterSources.resolverRow(context, "tcl", "42", new NativeHttp());
+        assertEquals(media, hint.getString("media"));
+        assertEquals("fixture-source", hint.getString("source"));
+        assertFalse(hint.has("programs"));
+        String disk = context.getSharedPreferences("accounts", 0).getString(AdapterSources.TCL_HINTS, "");
+        assertFalse(disk.contains("fixture-source"));
+        assertFalse(disk.contains("media.example"));
     }
 
     @Test

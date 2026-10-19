@@ -72,7 +72,7 @@ are not assertions that every channel plays or that a real TV has passed playbac
 | Pluto TV         | Existing native adapter preserved                                                | Earlier GB discovery: 187; desktop media sample decoded                                                                                                                  |
 | FreeLiveSports   | Runtime 1 compatible module retained; relay now supports Origin                  | Earlier 108 channels / 12,047 guide entries; one desktop sample decoded                                                                                                  |
 | STIRR            | Upstream catalog and POST resolver                                               | 123 channels; fresh stream resolved                                                                                                                                      |
-| TCL TV+          | Upstream category walk and POST resolver/fallback                                | 406 channels; live playback still unverified                                                                                                                             |
+| TCL TV+          | Upstream category walk and POST resolver/fallback                                | 406 channels; fresh stream and a desktop sample decoded                                                                                                                             |
 | Xumo Play        | Upstream catalog, broadcast/asset resolution and macros                          | 434 channels; fresh stream resolved                                                                                                                                      |
 | LG Channels      | Upstream compressed catalog, inline guide and macros                             | 188 channels; fresh stream resolved                                                                                                                                      |
 | Whale TV+        | Upstream anonymous token/catalog and macros                                      | 138 channels; fresh stream resolved                                                                                                                                      |
@@ -161,7 +161,19 @@ run passed provider verification, APK/lint, signing compatibility and the full e
 https://github.com/billyke2000s/moviehub/actions/runs/39335954185 . Follow-up fixes need their own run.
 
 The final local checks passed: 223 existing core checks, 21 runtime/signature/URL/segment checks,
-25 multi-provider JVM fixtures and three compiler fixtures. Debug APK, lint and instrumentation
+26 multi-provider JVM fixtures and three compiler fixtures. Debug APK, lint and instrumentation
 compilation passed. All 28 vendored TypeScript files match the historical upstream bytes and the
 package provenance hashes. The APK contains ARM64 LibVLC libraries; the provider runtime is pure Java.
 This is ABI packaging evidence, not physical ARM64 execution.
+
+### Cold playback startup
+
+STIRR, Xumo, Roku, Plex, DaddyLive, Tubi and Samsung now resolve directly from the stored provider
+channel identity without reloading their catalogues after app restart. TCL retains only its source/media
+resolver hints encrypted through the existing Keystore store, without guide data. Hints expire after
+14 days, are invalidated by module changes or a playback failure, and never replace the fresh gateway
+POST. Other direct-HLS adapters retain their on-demand catalogue refresh. Instrumentation verifies
+ID-only rows, compact hint fields and encrypted disk storage.
+
+TCL also passed a real gateway POST, master/variant HTTP 200 and two-second FFmpeg sample decode
+(307,944 bytes). Nine newly ported providers now have one decoded desktop sample each.

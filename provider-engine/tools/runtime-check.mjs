@@ -228,4 +228,10 @@ const samsung = drive("samsung", "catalogue", null, () => ({
 }));
 assert.equal(samsung.length, 1);
 checks++;
+const samsungIdOnly = drive("samsung", "resolve", { channelId: "one" }, (req) => {
+    assert.equal(req.url, "https://jmp2.uk/stvp-one");
+    return { transport: { text: "#EXTM3U\n#EXTINF:4,\na.ts\n", url: "https://media.example/fresh.m3u8" } };
+});
+assert.equal(samsungIdOnly.url, "https://media.example/fresh.m3u8");
+checks++;
 console.log(checks + " multi-provider checks passed in actual JVM runtime");

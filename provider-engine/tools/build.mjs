@@ -214,7 +214,7 @@ function __load(){
 }
 function __run(operation,row){
  if(operation==='catalogue')return __samsung.list().then(function(list){return list.raw.map(function(raw){return __samsung.normalize(raw,{ingestedAt:new Date().toISOString()});}).filter(function(r){return !!r;}).map(function(r){return {channelId:r.sourceChannelId,name:r.name,category:r.groupLabel,logo:r.logoUrl,streamUrl:r.streamEntryUrl};});});
- if(operation==='resolve')return __samsung.resolve(row.streamUrl).then(function(r){return {url:r.masterUrl,headers:{'User-Agent':exports.UA},userAgent:exports.UA,referer:''};});
+ if(operation==='resolve')return __samsung.resolve(row.streamUrl || exports.STREAM_URL.replace('{id}',row.channelId)).then(function(r){return {url:r.masterUrl,headers:{'User-Agent':exports.UA},userAgent:exports.UA,referer:''};});
  throw new Error('Unsupported operation');
 }
 `;
