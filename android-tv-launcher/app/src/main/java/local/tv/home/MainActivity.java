@@ -356,6 +356,11 @@ public class MainActivity extends TvActivity {
     @Override
     public void onResume() {
         super.onResume();
+        if (getIntent().getBooleanExtra("bingeNext", false)) {
+            getIntent().removeExtra("bingeNext");
+            handler.post(() -> SourcesScreen.Binge.next(this));
+            return;
+        }
         Reminders.Reminder pending = Reminders.pending;
         if (pending != null) {
             // "Watch now" on a reminder shown in the player while it played something else.
