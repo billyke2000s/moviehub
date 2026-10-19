@@ -120,6 +120,8 @@ final class SettingsScreens {
             ? "xtream"
             : service.equals("M3U playlist")
               ? "m3u"
+              : service.equals("Masqueradarr")
+                ? "masqueradarr"
               : service.equals("TMDB")
                 ? "tmdb"
                 : "premiumize";
@@ -203,7 +205,9 @@ final class SettingsScreens {
         explanation.addView(activity.text(connected ? "Manage connection" : "Connect " + service, 26));
         String description = service.equals("Xtream")
             ? "Live TV\nEnter the server address, username and password supplied by your TV provider."
-            : service.equals("M3U playlist")
+            : service.equals("Masqueradarr")
+              ? "Live TV\nConnect your own Masqueradarr M3U export. Your other IPTV accounts remain separate."
+              : service.equals("M3U playlist")
               ? "Live TV\nPaste the playlist link supplied by your TV provider. Channels refresh automatically."
               : service.equals("TMDB")
                 ? "Movies, series & artwork\nUse the API Key (v3 auth) from your TMDB account’s API settings."
@@ -241,27 +245,27 @@ final class SettingsScreens {
             inputs.add(activity.field(form, "Username", false, user));
             inputs.add(activity.field(form, "Password", true, ""));
         } else {
-            String label = service.equals("M3U playlist")
+            String label = (service.equals("M3U playlist") || service.equals("Masqueradarr"))
                 ? "Playlist URL"
                 : service.equals("TMDB")
                   ? "API Key (v3 auth)"
                   : "API key";
-            inputs.add(activity.field(form, label, !service.equals("M3U playlist"), ""));
+            inputs.add(activity.field(form, label, !(service.equals("M3U playlist") || service.equals("Masqueradarr")), ""));
             inputs
                 .get(0)
                 .setHint(
-                    service.equals("M3U playlist")
+                    (service.equals("M3U playlist") || service.equals("Masqueradarr"))
                         ? "https://provider.example/playlist.m3u"
                         : "Enter your key"
                 );
         }
-        if (service.equals("Xtream") || service.equals("M3U playlist")) formSwitch(
+        if (service.equals("Xtream") || service.equals("M3U playlist") || service.equals("Masqueradarr")) formSwitch(
             form,
             "Allow HTTP provider connections",
             "http",
             false
         );
-        if (!service.equals("M3U playlist")) {
+        if (!service.equals("M3U playlist") && !service.equals("Masqueradarr")) {
             CheckBox reveal = new CheckBox(activity);
             reveal.setText("Show " + (service.equals("Xtream") ? "password" : "key"));
             reveal.setTextColor(0xffaab4c4);
@@ -310,7 +314,7 @@ final class SettingsScreens {
                         values.get(2),
                         allowHttp
                     ).toString();
-                    else if (service.equals("M3U playlist")) {
+                    else if (service.equals("M3U playlist") || service.equals("Masqueradarr")) {
                         credential = Playlist.networkUrl(credential, allowHttp);
                         if (!activity.liveTv.hasChannel(credential)) throw new Exception();
                     } else if (service.equals("TMDB")) new JSONObject(
@@ -323,7 +327,7 @@ final class SettingsScreens {
                 } catch (Exception error) {
                     result = service.equals("Xtream")
                         ? "Could not connect. Check the server address, username, password and HTTP setting."
-                        : service.equals("M3U playlist")
+                        : (service.equals("M3U playlist") || service.equals("Masqueradarr"))
                           ? "Could not read this playlist. Check the URL, provider access and HTTP setting."
                           : "Could not verify this key. Check the key and your internet connection.";
                 }
@@ -339,12 +343,12 @@ final class SettingsScreens {
                     save.setText("Verify & save");
                     if (ok) {
                         if (
-                            service.equals("Xtream") || service.equals("M3U playlist")
+                            service.equals("Xtream") || service.equals("M3U playlist") || service.equals("Masqueradarr")
                         ) ChannelSync.refreshNow(activity);
                         accountScreen(service);
                         activity.toast(
                             "Connected" +
-                                (service.equals("Xtream") || service.equals("M3U playlist")
+                                (service.equals("Xtream") || service.equals("M3U playlist") || service.equals("Masqueradarr")
                                     ? " · importing channels"
                                     : "")
                         );
@@ -359,7 +363,7 @@ final class SettingsScreens {
                     .action("Disconnect", () -> {
                         activity.secrets.remove(key);
                         if (
-                            service.equals("Xtream") || service.equals("M3U playlist")
+                            service.equals("Xtream") || service.equals("M3U playlist") || service.equals("Masqueradarr")
                         ) ChannelSync.refreshNow(activity);
                         settings();
                     })
@@ -509,10 +513,11 @@ final class SettingsScreens {
         if (tab.equals("Accounts")) {
             heading(body, "Your connections");
             accountCard(body, "Xtream", "Live channels from your TV provider");
-            accountCard(body, "M3U playlist", "Live channels from a playlist link");
+            accountCard(body, "M3U playlist", "Your own IPTV playlist");
             freeChannelsCard(body);
             accountCard(body, "TMDB", "Movie and series discovery, details and artwork");
             accountCard(body, "Premiumize", "Playback sources and your cloud library");
+
         } else if (tab.equals("Appearance")) {
             heading(body, "Look and feel");
             toggle(body, "Featured row", "Artwork and a poster shelf on Home", "featured", true);
@@ -653,6 +658,9 @@ final class SettingsScreens {
                     if (FreeChannels.CHOICES[i][0].equals(FreeChannels.choice(activity))) selected = i;
                 }
                 SidePanel.of(activity, "Free channels")
+                    .option(activity.secrets.has("masqueradarr")
+                        ? "Masqueradarr · Connected / manage"
+                        : "Masqueradarr · Configure", () -> accountScreen("Masqueradarr"))
                     .message(
                         "Channels come from the public iptv-org lists of freely available streams. Some streams may not work, and some need Allow HTTP in System."
                     )
