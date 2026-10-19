@@ -68,7 +68,18 @@ final class FreeChannels {
         if (iptvOrg.isEmpty()) return out;
         out.add(new Source("fta", "Free-TV", FREE_TV, "UK"));
         out.add(new Source("free", "iptv-org", iptvOrg, null));
-        for (String[] list : EXTRA) out.add(new Source(list[0], list[1], list[2], null));
+        for (String[] list : EXTRA) {
+            if (list.length != 3 || !list[0].matches("[a-z][a-z0-9_-]{1,31}")) continue;
+            if (list[0].equals("fta") || list[0].equals("free") ||
+                list[0].equals("m3u") || list[0].equals("xtream") ||
+                list[0].equals("masqueradarr")) continue;
+            try {
+                String url = Playlist.networkUrl(list[2], false);
+                out.add(new Source(list[0], list[1], url, null));
+            } catch (IllegalArgumentException ignored) {
+                // A malformed or insecure optional source must not block Live TV startup.
+            }
+        }
         return out;
     }
 
