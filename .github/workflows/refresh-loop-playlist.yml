@@ -1,6 +1,14 @@
 name: Refresh hosted live TV playlist
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/build_loop_playlist.py'
+      - 'scripts/loop_pluto.py'
+      - 'scripts/test_build_loop_playlist.py'
+      - 'streams/loop-feeds.txt'
+      - '.github/workflows/refresh-loop-playlist.yml'
   pull_request:
     paths:
       - 'scripts/build_loop_playlist.py'
