@@ -85,6 +85,14 @@ public final class ProviderEngineTest {
         generator.initialize(2048);
         KeyPair weak = generator.generateKeyPair();
         rejected(() -> ProviderSignature.verify(payload, signature, weak.getPublic().getEncoded()));
+        check(
+            ProviderUrls.playback("https://example.com/a.m3u8?ua=Mozilla Linux").endsWith(
+                "ua=Mozilla%20Linux"
+            )
+        );
+        rejected(() -> ProviderUrls.playback("http://example.com/a.m3u8"));
+        rejected(() -> ProviderUrls.playback("https://user:pass@example.com/a.m3u8"));
+        rejected(() -> ProviderUrls.playback("https://example.com/a.m3u8?ua=bad\r\nheader"));
         System.out.println(checks + " provider engine checks passed");
     }
 }

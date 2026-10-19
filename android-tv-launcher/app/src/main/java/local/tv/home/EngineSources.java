@@ -90,7 +90,7 @@ final class EngineSources {
         final JSONObject headers;
 
         Stream(JSONObject value) throws Exception {
-            url = Playlist.networkUrl(value.getString("url"), false);
+            url = ProviderUrls.playback(value.getString("url"));
             headers = value.getJSONObject("headers");
             String host = java.net.URI.create(url).getHost();
             if (

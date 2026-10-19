@@ -131,9 +131,9 @@ blocker even after a signing key is configured.
 ## Evidence — 19 October 2026
 
 - All **223 existing core Java checks** pass locally.
-- **11 new JVM checks** pass using Rhino 1.9.1 with a 96 MiB heap: actual compiled catalogue and
+- **15 new JVM checks** pass using Rhino 1.9.1 with a 96 MiB heap: actual compiled catalogue and
   resolve functions, absent Java/network globals, denied Java execution, non-catchable deadline,
-  unsupported operation, valid RSA signature, tampered bytes/signature, oversize package and weak key.
+  unsupported operation, valid RSA signature, tampered bytes/signature, oversize package, weak key and safe macro URL encoding.
 - **3 Node compiler fixture tests** pass: ordering/deduplication/guide fields, macros/headers and
   rejected operation. These are fixtures, not provider playback.
 - Real FreeLiveSports HTTPS catalogue returned **108 channels / 12,047 programme entries**.

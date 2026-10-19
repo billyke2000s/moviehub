@@ -4,5 +4,5 @@ cd "$(dirname "$0")/../.."
 mkdir -p build/provider-tests
 rhino="${RHINO_JAR:?Set RHINO_JAR to the pinned Rhino 1.9.1 JAR}"
 node -e 'const fs=require("fs"); fs.writeFileSync("build/provider-tests/compiled.js", JSON.parse(fs.readFileSync("android-tv-launcher/app/src/main/assets/providers/builtin.json")).modules.freelivesports)'
-javac -cp "$rhino" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderSignature}.java android-tv-launcher/tests/ProviderEngineTest.java
+javac -cp "$rhino" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderSignature,ProviderUrls}.java android-tv-launcher/tests/ProviderEngineTest.java
 java -Xmx96m -cp "$rhino:build/provider-tests" local.tv.home.ProviderEngineTest build/provider-tests/compiled.js
