@@ -99,3 +99,7 @@ This is here to be clear, not legal advice.
 
 [MIT](LICENSE). The Live TV screens use the Hind typeface (Indian Type Foundry), bundled under
 the SIL Open Font License 1.1: see `android-tv-launcher/app/src/main/assets/fonts/Hind-OFL.txt`.
+
+### Native free TV
+
+Live TV can discover regional Pluto TV channels directly, with no separate server. Settings → Free channels controls native Pluto and public lists; Xtream, personal M3U and optional hosted Masqueradarr remain separate. Streams resolve when played, with cached channel metadata and the shared guide/fullscreen player. See [provider support, test evidence and limitations](docs/NATIVE_FREE_SOURCES.md).

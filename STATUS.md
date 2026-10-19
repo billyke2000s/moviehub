@@ -86,3 +86,7 @@ Last updated: 19 October 2026.
    recommendations can be mixed into For you.
 3. Check Live TV on the box with a large channel list (the full free list): guide pages, channel
    up/down and typing numbers should feel quicker. Diagnostics has no guide timing yet.
+
+## Native free-TV work (19 October 2026)
+
+PR #81 adds native regional Pluto discovery, resolve-on-play, source cancellation, guide data and Settings → Free channels controls on top of #80’s optional hosted connection. A real GB catalogue returned 187 channels; one sample decoded successfully on desktop. Other upstream providers are not advertised as native. CI/device verification and release status must be taken from the PR and GitHub release, not inferred from this implementation note. See [the full evidence record](docs/NATIVE_FREE_SOURCES.md).

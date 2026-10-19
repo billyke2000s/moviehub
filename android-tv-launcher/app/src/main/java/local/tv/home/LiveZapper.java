@@ -227,6 +227,8 @@ final class LiveZapper {
                             remember(row);
                         }
                         showBanner(row, on);
+                        // A native resolver can fail before this initial database read finishes.
+                        if (current && player.liveFailed) failover("This source is unavailable");
                     };
                     if (play && ParentalLock.locked(player, row)) {
                         player.dialogOpen = true;

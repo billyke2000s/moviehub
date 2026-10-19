@@ -2,8 +2,11 @@ package local.tv.home;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.*;
 import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.Media;
 import org.videolan.libvlc.MediaPlayer;
@@ -26,6 +29,20 @@ final class LivePlayer {
     private static Object owner;
     private static VLCVideoLayout layout;
     private static MediaPlayer.EventListener listener;
+    private static Runnable resolutionFailed;
+    private static final Handler main = new Handler(Looper.getMainLooper());
+    private static final ExecutorService resolver = Executors.newFixedThreadPool(2);
+    private static Future<?> pending;
+    private static NativeHttp request;
+    private static int generation;
+    private static boolean resolving;
+
+    /** Fixture transport for device tests; never assigned by app code. */
+    interface Resolver {
+        String resolve(String locator, NativeHttp http) throws Exception;
+    }
+
+    static Resolver testResolver;
     /** How many streams were opened, so tests can tell a handover from a restart. */
     static int opened;
 
@@ -55,19 +72,65 @@ final class LivePlayer {
             player.setEventListener(LivePlayer::event);
         }
         if (!restart && streamUrl.equals(url) && (alive || player.isPlaying())) {
-            if (!player.isPlaying()) player.play();
+            resume();
             return true;
         }
+        cancelResolution();
         player.stop();
-        Media media = new Media(engine, Uri.parse(streamUrl));
-        media.setHWDecoderEnabled(true, false);
-        player.setMedia(media);
-        media.release();
         url = streamUrl;
         alive = true;
         opened++;
-        player.play();
+        if (PlutoSource.nativeUrl(streamUrl)) {
+            resolving = true;
+            int ticket = generation;
+            NativeHttp http = new NativeHttp();
+            request = http;
+            pending = resolver.submit(() -> {
+                try {
+                    Resolver fixture = testResolver;
+                    String resolved =
+                        fixture == null
+                            ? PlutoSource.resolve(streamUrl, http)
+                            : fixture.resolve(streamUrl, http);
+                    main.post(() -> {
+                        if (ticket != generation || player == null) return;
+                        resolving = false;
+                        open(resolved, PlutoSource.USER_AGENT);
+                    });
+                } catch (Exception e) {
+                    main.post(() -> {
+                        if (ticket != generation || player == null) return;
+                        resolving = false;
+                        alive = false;
+                        Diagnostics.recovered("Resolving native live channel", e);
+                        if (resolutionFailed != null) resolutionFailed.run();
+                    });
+                }
+            });
+        } else open(streamUrl, null);
         return false;
+    }
+
+    private static void open(String stream, String userAgent) {
+        Media media = new Media(engine, Uri.parse(stream));
+        media.setHWDecoderEnabled(true, false);
+        if (userAgent != null) media.addOption(":http-user-agent=" + userAgent);
+        player.setMedia(media);
+        media.release();
+        player.play();
+    }
+
+    private static void cancelResolution() {
+        resolving = false;
+        generation++;
+        if (request != null) request.cancel();
+        if (pending != null) pending.cancel(true);
+        pending = null;
+        request = null;
+    }
+
+    static void resume() {
+        if (player != null && !resolving && !player.isPlaying()) player.play();
     }
 
     private static void event(MediaPlayer.Event event) {
@@ -84,6 +147,10 @@ final class LivePlayer {
      * now go to {@code events}.
      */
     static void attach(Object who, VLCVideoLayout view, MediaPlayer.EventListener events) {
+        attach(who, view, events, null);
+    }
+
+    static void attach(Object who, VLCVideoLayout view, MediaPlayer.EventListener events, Runnable failed) {
         if (player == null) return;
         if (layout != view) {
             boolean moving = layout != null;
@@ -96,6 +163,7 @@ final class LivePlayer {
         }
         owner = who;
         listener = events;
+        resolutionFailed = failed;
     }
 
     static boolean owns(Object who) {
@@ -109,6 +177,7 @@ final class LivePlayer {
 
     /** Stops and releases everything. */
     static void stop() {
+        cancelResolution();
         if (player != null) {
             player.setEventListener(null);
             player.stop();
@@ -126,5 +195,6 @@ final class LivePlayer {
         owner = null;
         layout = null;
         listener = null;
+        resolutionFailed = null;
     }
 }

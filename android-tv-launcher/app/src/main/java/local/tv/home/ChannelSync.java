@@ -56,6 +56,9 @@ final class ChannelSync {
         if (!provider && (!liveTvOpened || FreeChannels.playlist(context, false).isEmpty())) return;
         ChannelImporter.Status status = ChannelImporter.status(context);
         long last = status.lastSuccess;
+        // Failed regional services must not trigger a new full import on every guide visit.
+        long attempted = context.getSharedPreferences("channelImport", 0).getLong("lastAttempt", 0);
+        if (System.currentTimeMillis() - attempted < TimeUnit.MINUTES.toMillis(10)) return;
         if (
             !status.running &&
             !status.queued &&

@@ -613,9 +613,15 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         int programmes;
 
         GuideWriter() {
+            this(false);
+        }
+
+        /** Native provider guides refresh independently; XMLTV refreshes retain those listings. */
+        GuideWriter(boolean nativePluto) {
             db.beginTransactionNonExclusive();
-            db.delete("programmes", null, null);
-            db.delete("epg_map", null, null);
+            String where = nativePluto ? "channel LIKE 'nativepluto:%'" : "channel NOT LIKE 'nativepluto:%'";
+            db.delete("programmes", where, null);
+            db.delete("epg_map", where, null);
             map = db.compileStatement("INSERT INTO epg_map(chkey,channel) VALUES(?,?)");
             programme = db.compileStatement(
                 "INSERT INTO programmes(channel,start,stop,title,descr,category,flags) VALUES(?,?,?,?,?,?,?)"

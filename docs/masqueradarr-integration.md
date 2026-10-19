@@ -1,6 +1,6 @@
 # Masqueradarr integration — staged migration
 
-Status: **implemented on a development branch, untested and unpublished**.
+Status: optional hosted connection implemented; see [native implementation and verification](NATIVE_FREE_SOURCES.md) for the server-free path.
 
 ## Existing functionality we can reuse
 

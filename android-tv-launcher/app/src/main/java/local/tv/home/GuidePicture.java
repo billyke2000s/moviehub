@@ -42,8 +42,8 @@ final class GuidePicture {
         boolean carryOn = LivePlayer.active();
         if (carryOn) {
             attach(activity, holder);
-            if (!LivePlayer.player().isPlaying()) LivePlayer.player().play();
-            playing = true;
+            LivePlayer.resume();
+            playing = LivePlayer.player().isPlaying();
         } else removeVideo();
         String key = activity.prefs.getString(LiveTvScreen.LAST_CHANNEL, "");
         if (key.isEmpty()) {
@@ -101,7 +101,7 @@ final class GuidePicture {
             video = new VLCVideoLayout(context);
             holder.addView(video, 0, new FrameLayout.LayoutParams(-1, -1));
         }
-        LivePlayer.attach(this, video, this::event);
+        LivePlayer.attach(this, video, this::event, () -> playing = false);
     }
 
     private void event(MediaPlayer.Event event) {

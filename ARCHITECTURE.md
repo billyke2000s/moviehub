@@ -152,3 +152,7 @@ once, when the activity is constructed, and keep almost no state of their own.
   error (for example a failed artwork download), it calls `Diagnostics.recovered(...)`, which writes
   the location and exception type to logcat under the tag `MovieHub`. Exception messages are not
   logged because they can contain provider URLs with account details.
+
+## Native free TV
+
+`PlutoSource` implements regional anonymous discovery, in-memory session/catalogue caching and resolve-on-play. `NativeHttp` bounds and cancels HTTPS requests. `NativeSources` connects catalogue and programme refresh to the existing SQLite store and ChannelImporter. LivePlayer resolves stable native locators asynchronously and preserves them through view handoff. Native guides and XMLTV refresh independently. See [provider scope and evidence](docs/NATIVE_FREE_SOURCES.md).

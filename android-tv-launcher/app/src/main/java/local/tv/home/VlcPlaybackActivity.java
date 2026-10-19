@@ -86,14 +86,18 @@ public class VlcPlaybackActivity extends Activity {
         if (target >= 0 && player != null && player.isSeekable()) player.setTime(target);
     };
     private boolean nextPromptShown, nextCancelled;
+
     private void launchNextEpisode() {
         if (SourcesScreen.Binge.imdb == null || isFinishing()) return;
         android.content.Intent next = new android.content.Intent(this, MainActivity.class);
-        next.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        next.addFlags(
+            android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+        );
         next.putExtra("bingeNext", true);
         startActivity(next);
         finish();
     }
+
     private final Runnable tick = new Runnable() {
         public void run() {
             forgetReleasedLivePlayer();
@@ -112,10 +116,16 @@ public class VlcPlaybackActivity extends Activity {
                           ? PlayerOverlay.timeLeft(Math.max(0, length - time))
                           : "—"
                 );
-                if (!live && !nextPromptShown && length > 0 && time > 0 &&
-                    length - time <= 10000 && length - time > 0 &&
+                if (
+                    !live &&
+                    !nextPromptShown &&
+                    length > 0 &&
+                    time > 0 &&
+                    length - time <= 10000 &&
+                    length - time > 0 &&
                     getIntent().getStringExtra("episodeKey") != null &&
-                    SourcesScreen.Binge.imdb != null) {
+                    SourcesScreen.Binge.imdb != null
+                ) {
                     nextPromptShown = true;
                     SidePanel.of(VlcPlaybackActivity.this, "Up next")
                         .message("Ready for the next episode?")
@@ -397,7 +407,10 @@ public class VlcPlaybackActivity extends Activity {
         boolean carriedOn = LivePlayer.play(this, url, PlayerOptions.live(this), restartLive);
         restartLive = false;
         player = LivePlayer.player();
-        LivePlayer.attach(this, video, this::onPlayerEvent);
+        LivePlayer.attach(this, video, this::onPlayerEvent, () -> {
+            if (!foreground) return;
+            showError("This channel is unavailable. Check your connection or try another channel.");
+        });
         player.setRate(playbackRate);
         if (aspect != null) player.setAspectRatio(aspect);
         if (carriedOn && player.isPlaying()) {
@@ -451,6 +464,10 @@ public class VlcPlaybackActivity extends Activity {
                 if (zapper != null) zapper.bufferingEnded();
             }
         } else if (event.type == MediaPlayer.Event.EndReached) {
+            if (live) {
+                showError("This live stream ended. Try another source or channel.");
+                return;
+            }
             ended = true;
             ResumePoint.clear(this, id, titleKey);
             String episode = getIntent().getStringExtra("episodeKey");
@@ -462,8 +479,12 @@ public class VlcPlaybackActivity extends Activity {
                 watched.add(episode);
                 prefs.edit().putStringSet("watchedEpisodes", watched).apply();
             }
-            if (!live && !nextCancelled && SourcesScreen.Binge.imdb != null &&
-                getIntent().getStringExtra("episodeKey") != null) launchNextEpisode();
+            if (
+                !live &&
+                !nextCancelled &&
+                SourcesScreen.Binge.imdb != null &&
+                getIntent().getStringExtra("episodeKey") != null
+            ) launchNextEpisode();
             else finish();
         } else if (event.type == MediaPlayer.Event.EncounteredError) {
             if (
