@@ -64,8 +64,9 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `DpadRepeats` | Rate-limits held D-pad keys so a held direction cannot race through lists. |
 | `SidePanel` | The app's pop-up: a rounded panel on the right with a title, message, options or ticked choices and standard buttons. Used everywhere instead of AlertDialog/PopupMenu, also by the player. |
 | `ErrorMessages` | Plain-language explanation and fix (Try again / Open Settings) for a failed load, from the exception type only. |
-| `Timings` | In-memory timings (TMDB, sources, Premiumize, artwork, press play to picture, buffering pauses) shown on Settings → System → Diagnostics. Names and durations only. |
-| `Diagnostics` | Logs failures the app recovers from (`adb logcat -s MovieHub`), without account details. |
+| `Timings` | In-memory timings (TMDB, sources, Premiumize, artwork, press play to picture, buffering pauses) shown on Settings → System → Troubleshooting. Names and durations only. |
+| `Diagnostics`, `ErrorLog` | Logs failures the app recovers from (`adb logcat -s MovieHub`) and keeps the last 50 in memory for Troubleshooting: place, type and time only, without messages or account details. |
+| `Troubleshooting`, `SpeedTest` | Settings → System → Troubleshooting: internet speed test (Cloudflare, on request), connection checks for each connected service, playback timings, recent errors. |
 
 ### Screens (feature classes)
 
@@ -93,6 +94,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `LiveTvPanels` | The guide's side panels: options, sections and groups, search, programme information with reminders, the parental lock, colour-key set-up. |
 | `GuidePicture` | The live picture in the guide's corner (the last channel watched); stops when the guide closes unless the full screen has taken the player over. |
 | `LivePlayer` | The one Live TV player (LibVLC engine and media player), shared by the full screen and the guide picture so going between them moves the picture without reconnecting. Films keep their own player. |
+| `PlayerOptions` | LibVLC engine options, one list for films and one for Live TV, so a change to one never reaches the other. |
 | `SettingsScreens` | Settings tabs, account setup (TMDB, Premiumize, Xtream, M3U), languages, toggles. |
 | `ForYou` | The Home "For you" shelf: blends TMDB recommendations for up to six titles you played, saved or opened, ranked and cached on the box. |
 | `UpdatePrompt` | Checks the public release feed and offers a verified update. See [android-tv-launcher/UPDATES.md](android-tv-launcher/UPDATES.md). |

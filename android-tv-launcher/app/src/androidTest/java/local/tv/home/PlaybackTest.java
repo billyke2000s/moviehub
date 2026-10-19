@@ -233,7 +233,7 @@ public class PlaybackTest {
     }
 
     @Test
-    public void leavingThePlayerTakesTwoBackPresses() throws Exception {
+    public void backHidesTheControlsThenAsksThenLeaves() throws Exception {
         await(() -> {
             try {
                 return player() != null && player().isPlaying();
@@ -243,13 +243,22 @@ public class PlaybackTest {
         }, 30000);
         // Keys can only be sent once the player window has input focus.
         await(activity::hasWindowFocus, 5000);
+        instrumentation.runOnMainSync(activity::revealControls);
+        instrumentation.waitForIdleSync();
         instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         instrumentation.waitForIdleSync();
-        assertFalse("One Back press keeps playing", activity.isFinishing());
+        assertFalse("The first Back keeps playing", activity.isFinishing());
+        assertEquals("The first Back hides the controls", View.GONE, activity.controls.getVisibility());
+        assertEquals("No hint yet", View.GONE, activity.exitHint.getVisibility());
+        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        instrumentation.waitForIdleSync();
+        assertFalse("The second Back still keeps playing", activity.isFinishing());
+        assertEquals("The second Back asks", View.VISIBLE, activity.exitHint.getVisibility());
+        assertEquals("Asking does not bring the controls back", View.GONE, activity.controls.getVisibility());
         UiEvidence.capture("player-exit-hint");
         instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         instrumentation.waitForIdleSync();
-        assertTrue("A second Back press leaves", activity.isFinishing());
+        assertTrue("Back again leaves", activity.isFinishing());
     }
 
     @Test

@@ -98,7 +98,7 @@ public class VlcPlaybackActivity extends Activity {
                                 : "PAUSED"
                             : "LIVE"
                         : length > 0
-                          ? format(Math.max(0, length - time))
+                          ? PlayerOverlay.timeLeft(Math.max(0, length - time))
                           : "—"
                 );
                 // A programme reminder that is due shows over the picture (checked every 15 s).
@@ -121,13 +121,6 @@ public class VlcPlaybackActivity extends Activity {
 
     int dp(int n) {
         return (int) (n * getResources().getDisplayMetrics().density + .5f);
-    }
-
-    private static String format(long millis) {
-        long seconds = millis / 1000;
-        return seconds >= 3600
-            ? String.format(Locale.ROOT, "%d:%02d:%02d", seconds / 3600, (seconds / 60) % 60, seconds % 60)
-            : String.format(Locale.ROOT, "%d:%02d", seconds / 60, seconds % 60);
     }
 
     void revealControls() {
@@ -359,7 +352,7 @@ public class VlcPlaybackActivity extends Activity {
             startLive();
             return;
         }
-        engine = new LibVLC(this, new ArrayList<>(LivePlayer.options(this)));
+        engine = new LibVLC(this, new ArrayList<>(PlayerOptions.film(this)));
         player = new MediaPlayer(engine);
         player.setRate(playbackRate);
         if (aspect != null) player.setAspectRatio(aspect);
@@ -385,7 +378,7 @@ public class VlcPlaybackActivity extends Activity {
      * {@code restartLive} opens the stream again (Back to live, Try again).
      */
     private void startLive() {
-        boolean carriedOn = LivePlayer.play(this, url, LivePlayer.options(this), restartLive);
+        boolean carriedOn = LivePlayer.play(this, url, PlayerOptions.live(this), restartLive);
         restartLive = false;
         player = LivePlayer.player();
         LivePlayer.attach(this, video, this::onPlayerEvent);
@@ -520,7 +513,9 @@ public class VlcPlaybackActivity extends Activity {
     }
 
     /**
-     * Leaving takes two presses, so a stray press does not stop the film.
+     * Back on a film first puts the controls away, then asks "Press Back again", and only leaves
+     * on another press within {@link #EXIT_WINDOW_MS}, so a stray press does not stop the film.
+     * Live TV asks once and leaves on the second press, as before.
      */
     private void onBackKey() {
         long now = SystemClock.elapsedRealtime();
@@ -528,12 +523,17 @@ public class VlcPlaybackActivity extends Activity {
             finish();
             return;
         }
+        if (!live && controls != null && controls.getVisibility() == View.VISIBLE) {
+            overlayHandler.removeCallbacks(hideOverlay);
+            controls.setVisibility(View.GONE);
+            return;
+        }
         backPressedAt = now;
         showExitHint();
     }
 
     private void showExitHint() {
-        revealControls();
+        if (live) revealControls();
         exitHint.setVisibility(View.VISIBLE);
         overlayHandler.removeCallbacks(hideExitHint);
         overlayHandler.postDelayed(hideExitHint, EXIT_WINDOW_MS);
@@ -586,7 +586,7 @@ public class VlcPlaybackActivity extends Activity {
     void showSkipTarget(long target, long length) {
         if (length > 0) {
             timeline.setProgress((int) Math.min(1000, (target * 1000) / length));
-            timeLeft.setText(format(Math.max(0, length - target)));
+            timeLeft.setText(PlayerOverlay.timeLeft(Math.max(0, length - target)));
         }
         overlayHandler.removeCallbacks(applySkip);
         overlayHandler.postDelayed(applySkip, SkipQueue.DELAY_MS);

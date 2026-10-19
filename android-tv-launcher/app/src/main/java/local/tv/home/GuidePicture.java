@@ -87,7 +87,7 @@ final class GuidePicture {
     /** Plays {@code url} in {@code holder} on the shared live player. */
     void start(Context context, FrameLayout holder, String url) {
         try {
-            LivePlayer.play(context, url, LivePlayer.options(context), false);
+            LivePlayer.play(context, url, PlayerOptions.live(context), false);
             attach(context, holder);
         } catch (RuntimeException e) {
             Diagnostics.recovered("Starting the guide picture", e);

@@ -33,6 +33,7 @@ public class MainActivity extends TvActivity {
     /** Live TV in the phone layout (see {@link DeviceMode}). */
     final PhoneLive phoneLive = new PhoneLive(this);
     final SettingsScreens settingsScreens = new SettingsScreens(this);
+    final Troubleshooting troubleshooting = new Troubleshooting(this);
     final CloudScreens cloudScreens = new CloudScreens(this);
     final SeriesScreens seriesScreens = new SeriesScreens(this);
     final AllApps appsScreen = new AllApps(this);
