@@ -354,6 +354,12 @@ public class MainActivity extends TvActivity {
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
         if (getIntent().getBooleanExtra("bingeNext", false)) {
