@@ -68,8 +68,20 @@ final class FreeChannels {
         if (iptvOrg.isEmpty()) return out;
         out.add(new Source("fta", "Free-TV", FREE_TV, "UK"));
         out.add(new Source("free", "iptv-org", iptvOrg, null));
+        for (String[] list : EXTRA) out.add(new Source(list[0], list[1], list[2], null));
         return out;
     }
+
+    /**
+     * ADD NEW TV CHANNEL LISTS HERE: one M3U playlist per line, as { id, name, https URL }, for
+     * example { "mylist", "My list", "https://example.org/playlist.m3u8" }. The id is stored with
+     * each channel, so keep it short, lower case, unique and never change it; do not use "xtream",
+     * "m3u", "fta" or "free". Lists are imported after Free-TV and iptv-org (a channel already in
+     * those becomes a backup copy) whenever free channels are on. Empty means no extra lists.
+     */
+    static final String[][] EXTRA = {
+        // { "mylist", "My list", "https://example.org/playlist.m3u8" },
+    };
 
     /**
      * The iptv-org playlist, or "" when free channels are off. "auto" is the full list, used only

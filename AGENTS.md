@@ -37,6 +37,23 @@ that way: if a test needs a private member, make it package-private rather than 
   change the signing key, the package name `local.tv.home`, or the update feed paths.
 - Never commit credentials, keystores, provider URLs or account details.
 
+## Adding sources
+
+New source URLs go in two marked lists, each empty until filled in. Add a line there and change
+nothing else:
+
+- Films and series (Stremio-style stream providers): `DefaultSourceProviders.EXTRA` in
+  `android-tv-launcher/app/src/main/java/local/tv/home/DefaultSourceProviders.java`. One
+  `https://…/manifest.json` per line, separated by commas, with no comma after the last one.
+- TV channel lists (M3U playlists): `FreeChannels.EXTRA` in
+  `android-tv-launcher/app/src/main/java/local/tv/home/FreeChannels.java`. One
+  `{ "id", "Name", "https://…" },` per line. The id is stored with each channel: short, lower case,
+  unique, never changed, and not `xtream`, `m3u`, `fta` or `free`.
+
+Only add public URLs that carry no account details (AGENTS.md: never commit credentials or
+provider URLs with account details). Account-based providers (Premiumize, Xtream, a personal M3U)
+are entered in the app's Settings instead.
+
 ## Keep the docs current
 
 When behaviour, structure or test expectations change, update the matching document in the same

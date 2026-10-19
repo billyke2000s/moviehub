@@ -6,7 +6,7 @@ version below was built from the listed `main` commit. Earlier history is in the
 Note: the release shown as 0.10 below was published with version code 11 (name "0.11" in the
 update feed), so the next release after it used code 12, named 0.12.
 
-## Unreleased
+## 0.36 (19 Oct 2026)
 
 - Skipping in films is quicker. Pressing −10 s or +10 s several times in a row now makes one
   jump, 0.75 s after the last press (as Kodi does), instead of reconnecting and buffering at every
@@ -47,6 +47,9 @@ update feed), so the next release after it used code 12, named 0.12.
 - Apps: an app with separate TV and phone launcher entries is listed once (apps from different
   packages with the same name are still both shown). The Apps screen shows its first rows at once
   and the rest straight after.
+- Two marked, empty lists for new sources, ready to fill in: `DefaultSourceProviders.EXTRA` for
+  film and series providers and `FreeChannels.EXTRA` for TV channel lists (AGENTS.md, Adding
+  sources). Empty, so nothing changes yet.
 
 ## 0.35 (18 Oct 2026)
 
