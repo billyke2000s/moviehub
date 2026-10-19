@@ -85,7 +85,9 @@ final class ChannelSchema {
             addNumbers(db);
             ChannelNumbers.renumber(db);
         }
-        if (from < 7) addNumbers(db); // programme details (flags); filled in by the next guide download
+        // Version 7 already has programme details, but not the preferred-copy column (main).
+        // Add it before renumber() compiles UPDATE channels SET main=1.
+        if (from < 8) addNumbers(db);
         if (from >= 6 && from < 8) ChannelNumbers.renumber(db); // marks the preferred copies (main)
     }
 }

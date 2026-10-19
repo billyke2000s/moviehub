@@ -29,6 +29,11 @@ matching, 17 satellite numbering, 15 guide order, 11 film skip and 13 troublesho
 
 ## Device tests
 
+`ChannelDatabaseTest.versionSevenWithoutMainUpgradesAndKeepsChannelsAndFavourites` reconstructs
+an actual version-7 channels table without `main`, then opens it through the app's normal helper.
+It checks guide rows, encrypted URL/key preservation, favourites, search and reopening. Merely
+lowering `user_version` on a version-8 table cannot catch this regression.
+
 Instrumentation tests drive the real app with D-pad key events on an emulator. They cover the
 encrypted channel database, imports and migrations, LibVLC playback, Home and dock navigation,
 catalogue paging and focus, the streaming menus and artwork loading, and Live TV: guide paging and
