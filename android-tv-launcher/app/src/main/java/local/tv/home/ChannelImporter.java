@@ -83,6 +83,16 @@ final class ChannelImporter {
                         problems.add("M3U: " + describe(e));
                     }
                 }
+                String masqueradarr = secrets.get("masqueradarr");
+                if (!masqueradarr.isEmpty()) {
+                    anySource = true;
+                    configured.add("masqueradarr");
+                    try {
+                        total += importM3u(db, "masqueradarr", masqueradarr, http, cancel, total);
+                    } catch (Exception e) {
+                        problems.add("Masqueradarr: " + describe(e));
+                    }
+                }
                 String account = secrets.get("xtream");
                 if (!account.isEmpty()) {
                     anySource = true;
