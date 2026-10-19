@@ -488,6 +488,13 @@ public class MainActivity extends TvActivity {
     }
 
     void play(String title, String url, String id, boolean live, JSONObject metadata) {
+        playWithSources(title, url, id, live, metadata, null, null, null, false);
+    }
+
+    /** Additional resolved VOD URLs in priority order; live TV uses its existing path. */
+    void playWithSources(String title, String url, String id, boolean live, JSONObject metadata,
+                         java.util.ArrayList<String> links, java.util.ArrayList<String> labels,
+                         java.util.ArrayList<String> providers, boolean pinProvider) {
         final String safe;
         try {
             safe = Playlist.networkUrl(url, http());
@@ -527,6 +534,10 @@ public class MainActivity extends TvActivity {
                     .putExtra("live", live)
                     .putExtra("episodeKey", metadata == null ? null : metadata.optString("episodeKey", null))
                     .putExtra("titleKey", ResumePoint.titleKey(metadata))
+                    .putStringArrayListExtra("vodSourceUrls", live ? null : links)
+                    .putStringArrayListExtra("vodSourceLabels", live ? null : labels)
+                    .putStringArrayListExtra("vodSourceProviders", live ? null : providers)
+                    .putExtra("vodPinProvider", !live && pinProvider)
             );
         } catch (Exception e) {
             toast("Playback could not be started");
