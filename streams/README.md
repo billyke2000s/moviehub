@@ -7,11 +7,9 @@ supports **only public M3U feeds**: GitHub Actions fetches feeds from
 
 Run **Refresh hosted live TV playlist** once manually after merging, and
 verify that `streams/loop.m3u` contains real channels before enabling its
-URL in MovieHub. The initial Samsung TV Plus UK feed is a candidate based
-on The Loop's use of i.mjh.nz; its availability is not guaranteed.
+URL in MovieHub. The previously proposed Samsung TV Plus UK feed returned HTTP 404 and was\nremoved. Add verified public HTTPS M3U feeds before enabling the app source.
 
-Updates run every six hours. If a feed fails, the action fails and leaves
-the previous published playlist intact. No Kodi code runs on devices or
+Updates run every six hours. If an individual feed fails, the converter logs a warning and publishes the\nworking feeds. If every feed fails, the action fails and leaves the previous\npublished playlist intact. No Kodi code runs on devices or
 in Actions. Do not put passwords, private URLs, tokens, or copyrighted
 restricted streams in the public feed list.
 
