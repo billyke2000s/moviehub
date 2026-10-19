@@ -673,7 +673,11 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
     List<Programme> programmes(Row row, String country, long from, long to, int limit) {
         List<Programme> out = new ArrayList<>();
-        List<String> keys = EpgMatch.keys(row.epg, row.name, country);
+        // Native listings already belong to a provider/region identity. Do not apply the
+        // UK XMLTV country filter, or match a similarly named foreign channel's guide.
+        List<String> keys = row.epg.matches("pluto:[0-9a-f]{24}\\.[a-z]{2}")
+            ? Collections.singletonList(EpgMatch.key(row.epg))
+            : EpgMatch.keys(row.epg, row.name, country);
         if (keys.isEmpty()) return out;
         StringBuilder in = new StringBuilder();
         List<String> args = new ArrayList<>(keys);

@@ -128,6 +128,9 @@ final class ChannelImporter {
                 cancel.check();
                 // Failed sources are still configured and keep their last good rows. Disabled
                 // sources must disappear even when a different provider is offline.
+                // A migrated legacy cache has no configured source identity yet: retain it
+                // through repeated outages until a real replacement imports successfully.
+                if (total == 0 && !problems.isEmpty()) configured.add("legacy");
                 db.removeSourcesExcept(configured);
                 // The free programme guide; a failure here never counts against the channels.
                 if (anySource && db.count() > 0) try {

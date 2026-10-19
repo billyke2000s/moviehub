@@ -166,11 +166,54 @@ public class NativeSourcesTest {
         ChannelDatabase db = ChannelDatabase.get(
             InstrumentationRegistry.getInstrumentation().getTargetContext()
         );
-        ChannelDatabase.GuideWriter cleanup = db.new GuideWriter(true);
-        try {
-            cleanup.commit();
-        } finally {
-            cleanup.finish();
+        for (boolean nativeGuide : new boolean[] { false, true }) {
+            ChannelDatabase.GuideWriter cleanup = db.new GuideWriter(nativeGuide);
+            try {
+                cleanup.commit();
+            } finally {
+                cleanup.finish();
+            }
         }
+    }
+
+    @Test
+    public void nativeGuideUsesItsOwnRegionInsteadOfMatchingUkChannelNames() throws Exception {
+        ChannelDatabase db = ChannelDatabase.get(
+            InstrumentationRegistry.getInstrumentation().getTargetContext()
+        );
+        String epg = "pluto:" + ID + ".us";
+        for (boolean nativeGuide : new boolean[] { false, true }) {
+            ChannelDatabase.GuideWriter writer = db.new GuideWriter(nativeGuide);
+            try {
+                String channel = nativeGuide ? "nativepluto:" + ID : "xmltv";
+                writer.match(nativeGuide ? EpgMatch.key(epg) : "example", channel);
+                writer.programme(
+                    channel,
+                    1,
+                    100,
+                    nativeGuide ? "Native programme" : "Other region",
+                    "",
+                    "",
+                    ""
+                );
+                writer.commit();
+            } finally {
+                writer.finish();
+            }
+        }
+        ChannelDatabase.Row row = new ChannelDatabase.Row(
+            0,
+            "Example",
+            "Pluto TV",
+            "",
+            "",
+            epg,
+            "",
+            1001,
+            "International"
+        );
+        List<ChannelDatabase.Programme> found = db.programmes(row, "uk", 0, 200);
+        assertEquals(1, found.size());
+        assertEquals("Native programme", found.get(0).title);
     }
 }
