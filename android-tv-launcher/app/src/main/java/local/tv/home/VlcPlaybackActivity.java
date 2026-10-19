@@ -28,6 +28,8 @@ public class VlcPlaybackActivity extends Activity {
     final PlayerMenus menus = new PlayerMenus(this);
     private VLCVideoLayout video;
     private String url, id;
+    /** The film or episode this file is (see ResumePoint.titleKey), or null. */
+    private String titleKey;
     private long position;
     boolean live, ended, foreground, dragging, dialogOpen;
     boolean triedAlternative;
@@ -255,6 +257,7 @@ public class VlcPlaybackActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         immersive();
         id = getIntent().getStringExtra("id");
+        titleKey = getIntent().getStringExtra("titleKey");
         if (id == null) id = "media";
         live = getIntent().getBooleanExtra("live", false);
         try {
@@ -267,15 +270,8 @@ public class VlcPlaybackActivity extends Activity {
             finish();
             return;
         }
-        Object saved = getSharedPreferences("positions", MODE_PRIVATE).getAll().get(id);
         position =
-            state == null
-                ? !live &&
-                  getSharedPreferences("ui", MODE_PRIVATE).getBoolean("resume", true) &&
-                  saved instanceof Number
-                    ? ((Number) saved).longValue()
-                    : 0
-                : state.getLong("position");
+            state == null ? (live ? 0 : ResumePoint.load(this, id, titleKey)) : state.getLong("position");
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
         video = new VLCVideoLayout(this);
@@ -436,7 +432,7 @@ public class VlcPlaybackActivity extends Activity {
             }
         } else if (event.type == MediaPlayer.Event.EndReached) {
             ended = true;
-            getSharedPreferences("positions", MODE_PRIVATE).edit().remove(id).apply();
+            ResumePoint.clear(this, id, titleKey);
             String episode = getIntent().getStringExtra("episodeKey");
             if (episode != null && !episode.isEmpty()) {
                 android.content.SharedPreferences prefs = getSharedPreferences("ui", MODE_PRIVATE);
@@ -655,18 +651,7 @@ public class VlcPlaybackActivity extends Activity {
             // Before playback starts the time is 0; keep the resume point the media opened at.
             if (time > 0) position = time;
             else if (resumeCheck > 0) position = resumeCheck;
-            if (!live) {
-                long length = player.getLength();
-                android.content.SharedPreferences.Editor edit = getSharedPreferences(
-                    "positions",
-                    MODE_PRIVATE
-                ).edit();
-                if (length > 0) edit.putLong(id + ":duration", length);
-                if (
-                    !ended && getSharedPreferences("ui", MODE_PRIVATE).getBoolean("resume", true)
-                ) edit.putLong(id, position);
-                edit.apply();
-            }
+            if (!live) ResumePoint.save(this, id, titleKey, position, player.getLength(), ended);
         }
         release();
         // Back to the guide: its picture has already taken the live player over, so it plays on.

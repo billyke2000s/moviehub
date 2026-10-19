@@ -233,6 +233,54 @@ public class PlaybackTest {
     }
 
     @Test
+    public void anotherSourceOfTheSameFilmCarriesOnWhereItStopped() throws Exception {
+        assertEquals("title:movie:603", ResumePoint.titleKey(new org.json.JSONObject().put("id", 603)));
+        assertEquals(
+            "title:tv:1399:1:2",
+            ResumePoint.titleKey(new org.json.JSONObject().put("tmdbId", 1399).put("episodeKey", "1399:1:2"))
+        );
+        assertNull(
+            "A series page is not a film",
+            ResumePoint.titleKey(
+                new org.json.JSONObject().put("id", 1399).put("first_air_date", "2011-04-17")
+            )
+        );
+        assertNull(ResumePoint.titleKey(null));
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        Context context = instrumentation.getTargetContext();
+        android.content.SharedPreferences positions = context.getSharedPreferences("positions", 0);
+        // Watched to 0:12 from another source; this file has never been played.
+        positions.edit().putLong("title:movie:4242", 12000).commit();
+        try {
+            activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+                new Intent(context, VlcPlaybackActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra("url", "http://127.0.0.1:" + server.getLocalPort() + "/playback.mp4")
+                    .putExtra("id", "playback-other-source")
+                    .putExtra("titleKey", "title:movie:4242")
+                    .putExtra("title", "Generated playback test")
+            );
+            await(() -> {
+                try {
+                    return player() != null && player().isPlaying() && player().getTime() > 8000;
+                } catch (Exception e) {
+                    return false;
+                }
+            }, 30000);
+        } finally {
+            instrumentation.runOnMainSync(activity::finish);
+            instrumentation.waitForIdleSync();
+            positions
+                .edit()
+                .remove("title:movie:4242")
+                .remove("playback-other-source")
+                .remove("playback-other-source:duration")
+                .commit();
+        }
+    }
+
+    @Test
     public void backHidesTheControlsThenAsksThenLeaves() throws Exception {
         await(() -> {
             try {
