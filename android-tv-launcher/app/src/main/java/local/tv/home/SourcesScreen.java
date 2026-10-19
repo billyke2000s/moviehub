@@ -19,6 +19,55 @@ final class SourcesScreen {
 
     private final MainActivity activity;
 
+    static final class Binge {
+        static String imdb, title, kind;
+        static int season, episode;
+        static JSONObject metadata;
+        static JSONArray files;
+        static void remember(String imdbId, int s, int e, String label, String type, JSONObject info, JSONArray list) {
+            imdb = imdbId; season = s; episode = e; title = label; kind = type;
+            metadata = info; files = list;
+        }
+        static void next(MainActivity activity) {
+            if (imdb == null || episode < 1) return;
+            int nextEpisode = episode + 1;
+            JSONObject nextMetadata = metadata == null ? new JSONObject() : new JSONObject(metadata.toString());
+            try {
+                nextMetadata.put("season", season).put("episode", nextEpisode);
+                String key = nextMetadata.optString("episodeKey", "");
+                if (!key.isEmpty()) {
+                    int last = key.lastIndexOf(':');
+                    if (last > 0) nextMetadata.put("episodeKey", key.substring(0, last + 1) + nextEpisode);
+                }
+            } catch (Exception ignored) { }
+            if (files != null) {
+                List<String> paths = new ArrayList<>();
+                List<Long> sizes = new ArrayList<>();
+                for (int i = 0; i < files.length(); i++) {
+                    JSONObject file = files.optJSONObject(i);
+                    if (file == null) continue;
+                    paths.add(file.optString("path", file.optString("name", "")));
+                    sizes.add(file.optLong("size"));
+                }
+                int match = VideoFiles.autoPick(paths, sizes, season, nextEpisode);
+                if (match >= 0) {
+                    JSONObject file = files.optJSONObject(match);
+                    String link = file == null ? "" : file.optString("link");
+                    if (!link.isEmpty()) {
+                        remember(imdb, season, nextEpisode, title, kind, nextMetadata, files);
+                        activity.play(title + " · S" + season + " E" + nextEpisode, link,
+                            activity.id(link), false, nextMetadata);
+                        return;
+                    }
+                }
+            }
+            remember(imdb, season, nextEpisode, title, kind, nextMetadata, null);
+            activity.playbackTitle = nextMetadata;
+            activity.sources.torrentSources(imdb, season, nextEpisode,
+                title + " · S" + season + " E" + nextEpisode, kind);
+        }
+    }
+
     SourcesScreen(MainActivity activity) {
         this.activity = activity;
     }
@@ -262,6 +311,7 @@ final class SourcesScreen {
                                 paths.add(file.optString("path", file.optString("name", "")));
                                 sizes.add(file.optLong("size", 0));
                             }
+                            Binge.remember(imdb, season, episode, title, kind, metadata, files);
                             int pick = VideoFiles.autoPick(paths, sizes, season, episode);
                             String pickLink = pick < 0 ? "" : files.getJSONObject(pick).optString("link");
                             if (!pickLink.isEmpty()) {
