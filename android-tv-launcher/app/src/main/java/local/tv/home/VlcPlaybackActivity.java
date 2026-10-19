@@ -651,7 +651,22 @@ public class VlcPlaybackActivity extends Activity {
             // Before playback starts the time is 0; keep the resume point the media opened at.
             if (time > 0) position = time;
             else if (resumeCheck > 0) position = resumeCheck;
-            if (!live) ResumePoint.save(this, id, titleKey, position, player.getLength(), ended);
+            if (!live) {
+                long length = player.getLength();
+                boolean completed = ended || ResumePoint.completed(position, length);
+                ResumePoint.save(this, id, titleKey, position, length, completed);
+                if (completed) {
+                    String episode = getIntent().getStringExtra("episodeKey");
+                    if (episode != null && !episode.isEmpty()) {
+                        android.content.SharedPreferences prefs = getSharedPreferences("ui", MODE_PRIVATE);
+                        Set<String> watched = new HashSet<>(
+                            prefs.getStringSet("watchedEpisodes", Collections.emptySet())
+                        );
+                        watched.add(episode);
+                        prefs.edit().putStringSet("watchedEpisodes", watched).apply();
+                    }
+                }
+            }
         }
         release();
         // Back to the guide: its picture has already taken the live player over, so it plays on.
