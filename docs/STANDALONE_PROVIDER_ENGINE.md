@@ -85,7 +85,7 @@ key is generated, committed or silently trusted in this work. Maintainer setup r
    `assets/providers/trust.json`; retain the private key in GitHub Actions secret
    `PROVIDER_SIGNING_KEY_B64` (base64 PEM private key).
 2. Provide authorised source-read access as `MASQUERADARR_READ_TOKEN` if the private submodule's
-   owner grants it. The pipeline follows the exact gitlink, never a guessed public fork.
+   owner grants it. The pipeline follows the exact gitlink, never a guessed public fork, and requires its licence to match the audited MIT notice. A different or missing licence requires review before enabling redistribution.
 3. After review, set repository variable `PROVIDER_UPDATES_ENABLED=true` and merge the workflow.
    Schedules run only from the default branch. No setup is performed by this draft PR.
 
@@ -138,9 +138,9 @@ blocker even after a signing key is configured.
   rejected operation. These are fixtures, not provider playback.
 - Real FreeLiveSports HTTPS catalogue returned **108 channels / 12,047 programme entries**.
   The actual compiled JavaScript parsed it in Rhino with a 96 MiB JVM heap, producing ~3.24 MB
-  normalised JSON. That heap setting is not an Android RSS measurement.
+  normalised JSON. The transform took 0.79 seconds with ~183 MiB maximum desktop JVM RSS. These are not Android memory/performance measurements.
 - One real sample's master, variant and ~2.15 MB MPEG-TS segment returned successfully with
-  User-Agent/Referer and without an Origin header. FFmpeg decoded three seconds locally, exit 0.
+  User-Agent/Referer and without an Origin header. FFmpeg decoded three seconds locally, exit 0 (H.264 1280×720 and AAC).
   This validates one desktop sample, not all 108 channels or Android/LibVLC playback.
 - Instrumentation includes real Binder/isolated-runtime calls, failure recovery, signed install,
   tamper/downgrade rejection, explicit rollback, high-water preservation, corrupt-slot recovery

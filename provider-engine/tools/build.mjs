@@ -1,6 +1,6 @@
 import ts from "typescript";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { createHash, sign, createPrivateKey } from "node:crypto";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -58,11 +58,5 @@ writeFileSync(root + "dist/providers.json", bytes);
 const assets = root + "../android-tv-launcher/app/src/main/assets/providers/";
 mkdirSync(assets, { recursive: true });
 writeFileSync(assets + "builtin.json", bytes);
-if (process.env.PROVIDER_SIGNING_KEY_B64) {
-    const key = createPrivateKey(Buffer.from(process.env.PROVIDER_SIGNING_KEY_B64, "base64"));
-    if (key.asymmetricKeyType !== "rsa" || key.asymmetricKeyDetails.modulusLength < 3072) {
-        throw new Error("Signing key must be RSA >=3072 bits");
-    }
-    writeFileSync(root + "dist/providers.sig", sign("sha256", bytes, key));
-}
+writeFileSync(assets + "LICENSE.masqueradarr.txt", readFileSync(root + "upstream/LICENSE"));
 console.log(`Built runtime ${pkg.runtime}, package ${pkg.version}, ${bytes.length} bytes`);

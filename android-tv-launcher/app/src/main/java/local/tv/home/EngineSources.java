@@ -15,6 +15,9 @@ final class EngineSources {
     private static volatile long expires;
     private static volatile String cachedModule;
 
+    /** Device fixture only; never assigned by app code. */
+    static String testCatalogue;
+
     private EngineSources() {}
 
     static void invalidate() {
@@ -58,7 +61,7 @@ final class EngineSources {
         for (String key : Arrays.asList("User-Agent", "Accept", "Origin", "Referer")) {
             if (supplied.has(key)) headers.put(key, supplied.getString(key));
         }
-        String raw = http.getHeaders(address, headers);
+        String raw = testCatalogue == null ? http.getHeaders(address, headers) : testCatalogue;
         rows = new JSONArray(ProviderBridge.call(c, module, "catalogue", raw));
         if (rows.length() == 0 || rows.length() > 5000) throw new IOException("Invalid provider catalogue");
         Set<String> seen = new HashSet<>();

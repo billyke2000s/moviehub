@@ -24,6 +24,8 @@ public final class ProviderEngineDeviceTest {
     @After
     public void clean() {
         ProviderPackages.testTrust = null;
+        EngineSources.testCatalogue = null;
+        EngineSources.invalidate();
         if (context == null) return;
         for (String slot : new String[] { "active", "previous" }) {
             new android.util.AtomicFile(
@@ -46,6 +48,16 @@ public final class ProviderEngineDeviceTest {
             )
         );
         assertEquals("a", rows.getJSONObject(0).getString("channelId"));
+        String large =
+            "[{\"_id\":\"large\",\"name\":\"Sport\",\"url\":\"https://example.com/a.m3u8\",\"unused\":\"" +
+            new String(new char[1200000]).replace('\0', 'x') +
+            "\"}]";
+        assertEquals(
+            "large",
+            new JSONArray(ProviderBridge.call(context, source, "catalogue", large))
+                .getJSONObject(0)
+                .getString("channelId")
+        );
         JSONObject resolved = new JSONObject(
             ProviderBridge.call(context, source, "resolve", "https://example.com/a.m3u8?cb=[CB]")
         );
@@ -114,6 +126,48 @@ public final class ProviderEngineDeviceTest {
             EngineSources.id(EngineSources.ROOT + "../bad");
             fail("Locator accepted");
         } catch (IllegalArgumentException expected) {}
+    }
+
+    @Test
+    public void realBridgeRefreshPreservesStableChannelsFavouritesAndIndependentGuides() throws Exception {
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        EngineSources.testCatalogue =
+            "[{\"_id\":\"sport\",\"name\":\"Sport\",\"url\":\"https://example.com/a.m3u8?cb=[CB]\",\"epg\":{\"entries\":[{\"title\":\"Live Sport\",\"start\":\"2026-10-19T00:00:00Z\",\"stop\":\"2026-10-19T01:00:00Z\"}]}}]";
+        try {
+            assertEquals(1, EngineSources.refresh(context, db, () -> {}));
+            String key = ChannelQuery.key(EngineSources.ROOT + "sport");
+            ChannelDatabase.Row row = db.byKey(key);
+            assertNotNull(row);
+            assertEquals(EngineSources.ROOT + "sport", db.url(row.id, row.key));
+            assertEquals(1, db.browse("favourites", "", java.util.Collections.singleton(key), 0, 10).size());
+            // Separate XMLTV refresh must retain the JS provider's programme mapping.
+            ChannelDatabase.GuideWriter xml = db.new GuideWriter(false);
+            try {
+                xml.match("xmlfixture", "xmltv");
+                xml.programme("xmltv", 1, 100, "Other", "", "", "");
+                xml.commit();
+            } finally {
+                xml.finish();
+            }
+            assertEquals("Live Sport", db.programmes(row, "uk", 1792368000000L, 1792371600000L).get(0).title);
+            EngineSources.testCatalogue = "[]";
+            try {
+                EngineSources.refresh(context, db, () -> {});
+                fail("Empty catalogue accepted");
+            } catch (java.io.IOException expected) {}
+            assertNotNull(db.byKey(key));
+        } finally {
+            db.clear();
+            for (String prefix : new String[] { "enginefls:", null }) {
+                ChannelDatabase.GuideWriter guide = db.new GuideWriter(prefix);
+                try {
+                    guide.commit();
+                } finally {
+                    guide.finish();
+                }
+            }
+        }
     }
 
     private byte[] candidate(long version) throws Exception {

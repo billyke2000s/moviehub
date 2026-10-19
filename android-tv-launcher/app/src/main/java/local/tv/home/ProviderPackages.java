@@ -130,11 +130,15 @@ final class ProviderPackages {
                 .put("signature", Base64.getEncoder().encodeToString(signature))
                 .toString()
                 .getBytes(StandardCharsets.UTF_8);
+            byte[] old = null;
             try {
-                byte[] old = file(c, "active").readFully();
-                unpack(c, old);
-                write(file(c, "previous"), old);
-            } catch (FileNotFoundException ignored) {}
+                byte[] candidate = file(c, "active").readFully();
+                unpack(c, candidate);
+                old = candidate;
+            } catch (Exception ignored) {
+                // A corrupt active slot must not replace the verified previous slot or block repair.
+            }
+            if (old != null) write(file(c, "previous"), old);
             // Persist the network high-water before activation; local explicit rollback cannot lower it.
             if (
                 !c
