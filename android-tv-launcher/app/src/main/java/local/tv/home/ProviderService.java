@@ -35,7 +35,29 @@ public final class ProviderService extends Service {
                 out.write(result.getBytes(StandardCharsets.UTF_8));
                 reply.writeNoException();
             } catch (Exception e) {
-                reply.writeException(new IllegalStateException("Provider operation failed"));
+                StringBuilder diagnostic = new StringBuilder("Provider operation failed");
+                Throwable cause = e;
+                for (int depth = 0; cause != null && depth < 4; depth++, cause = cause.getCause()) {
+                    diagnostic.append(" / ").append(cause.getClass().getSimpleName());
+                    if (cause instanceof org.mozilla.javascript.RhinoException) {
+                        diagnostic
+                            .append(" script line ")
+                            .append(((org.mozilla.javascript.RhinoException) cause).lineNumber());
+                    }
+                    if (cause instanceof android.system.ErrnoException) {
+                        diagnostic.append(" errno ").append(((android.system.ErrnoException) cause).errno);
+                    }
+                    StackTraceElement[] frames = cause.getStackTrace();
+                    if (frames.length > 0) diagnostic
+                        .append(" at ")
+                        .append(frames[0].getClassName())
+                        .append('.')
+                        .append(frames[0].getMethodName())
+                        .append(':')
+                        .append(frames[0].getLineNumber());
+                }
+                // Types and code locations only: never messages, URLs, responses or tokens.
+                reply.writeException(new IllegalStateException(diagnostic.toString()));
             }
             return true;
         }

@@ -67,7 +67,7 @@ final class ProviderScript {
                 return out;
             });
         } catch (Deadline | RuntimeException e) {
-            throw new IOException("Provider transform failed");
+            throw new IOException("Provider transform failed", e);
         }
     }
 
