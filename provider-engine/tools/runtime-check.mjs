@@ -26,11 +26,15 @@ function call(id, operation, input) {
     if (p.status !== 0) throw new Error(id + ": " + p.stderr);
     return JSON.parse(p.stdout);
 }
-function drive(id, operation, row, respond) {
-    const input = { now: 1792440000000, seed: "fixture-seed-123", responses: [], row: row || {} };
+let lastInput;
+function drive(id, operation, row, respond, history = []) {
+    const input = { now: 1792440000000, seed: "fixture-seed-123", responses: [], row: row || {}, history };
     for (let n = 0; n < 64; n++) {
         const r = call(id, operation, input);
-        if (r.done) return r.value;
+        if (r.done) {
+            lastInput = input;
+            return r.value;
+        }
         assert.ok(r.requests.length > 0);
         for (const req of r.requests) {
             const answer = respond(req, input.responses.length);
@@ -274,5 +278,131 @@ const localStream = drive("localnow", "resolve", { channelId: "501:one" }, (req,
 });
 assert.equal(localStream.url, "https://media.example/local.m3u8");
 assert.equal(localStream.headers.Origin, "https://localnow.com");
+checks++;
+const zliveRows = drive("zlive", "catalogue", null, () => [
+    { id: "auto-evt-one", name: "One", sport: "Sport" },
+    { id: "one", name: "Duplicate" },
+    { id: "constructor", name: "Constructor" },
+]);
+assert.equal(zliveRows.length, 2);
+assert.equal(zliveRows[0].channelId, "one");
+checks++;
+const signedLocation = (file) =>
+    "https://cdn.example/main/secure/" + "a".repeat(64) + "/" + (1792440000 + 9000) + "/" + file + ".m3u8";
+function zTransport(file, status = 302) {
+    return (req) => {
+        if (req.url.startsWith("https://provider-dns.invalid/")) return [{ address: "8.8.8.8", family: 4 }];
+        assert.equal(req.redirect, "manual");
+        return {
+            transport: {
+                status,
+                headers: {
+                    location: signedLocation(file),
+                    date: new Date(1792440000000).toUTCString(),
+                    "retry-after": "120",
+                },
+                text: "",
+            },
+        };
+    };
+}
+function event(slug, input, fresh = false) {
+    return { slug, at: input.now, fresh, responses: input.responses };
+}
+const zlive = drive("zlive", "resolve", { channelId: "one" }, zTransport("one"));
+assert.equal(zlive.url, signedLocation("one"));
+assert.ok(zlive.expiresAtMs > 1792440000000);
+checks++;
+const firstEvent = event("one", lastInput);
+const reused = drive(
+    "zlive",
+    "resolve",
+    { channelId: "one" },
+    () => {
+        throw new Error("Cached token contacted upstream");
+    },
+    [firstEvent],
+);
+assert.equal(reused.url, zlive.url);
+checks++;
+const refused = drive("zlive", "resolve", { channelId: "refused" }, zTransport("refused", 403));
+assert.equal(refused.failure, "refusal-403");
+checks++;
+const refusalEvent = event("refused", lastInput);
+const cooldown = drive(
+    "zlive",
+    "resolve",
+    { channelId: "other" },
+    () => {
+        throw new Error("Cooldown contacted upstream");
+    },
+    [refusalEvent],
+);
+assert.equal(cooldown.failure, "refusal-403");
+checks++;
+const history = [];
+for (const slug of ["one", "two"]) {
+    const r = drive("zlive", "resolve", { channelId: slug }, zTransport("same-feed"), history);
+    assert.ok(r.url);
+    history.push(event(slug, lastInput));
+}
+const decoy = drive("zlive", "resolve", { channelId: "three" }, zTransport("same-feed"), history);
+assert.equal(decoy.failure, "decoy");
+history.push(event("three", lastInput));
+checks++;
+const latched = drive(
+    "zlive",
+    "resolve",
+    { channelId: "one" },
+    () => {
+        throw new Error("Decoy latch contacted upstream");
+    },
+    history,
+);
+assert.equal(latched.failure, "decoy");
+checks++;
+assert.throws(
+    () =>
+        drive(
+            "zlive",
+            "resolve",
+            { channelId: "one" },
+            () => {
+                throw new Error("Incomplete history contacted upstream");
+            },
+            [{ slug: "one", at: 1792440000000, responses: [] }],
+        ),
+    /Incompatible provider history/,
+);
+checks++;
+const cancelled = drive("zlive", "resolve", { channelId: "other" }, zTransport("other"), [
+    { slug: "aborted", at: 1792440000000, fresh: false, responses: [], cancelled: true },
+]);
+assert.ok(cancelled.url);
+checks++;
+const originalZlive = pkg.modules.zlive;
+pkg.modules.zlive +=
+    '\nvar originalRun=__run;__run=function(op,row){if(op==="address-test")return row.addresses.map(__zCode.isPublicAddress);return originalRun(op,row);};';
+const addresses = drive(
+    "zlive",
+    "address-test",
+    {
+        addresses: [
+            "8.8.8.8",
+            "2606:4700:4700::1111",
+            "127.0.0.1",
+            "100.64.0.1",
+            "::ffff:8.8.8.8",
+            "fe80::1",
+            "64:ff9b::808:808",
+            "not-an-ip",
+        ],
+    },
+    () => {
+        throw new Error("IP classification made a network request");
+    },
+);
+assert.deepEqual(addresses, [true, true, false, false, false, false, false, false]);
+pkg.modules.zlive = originalZlive;
 checks++;
 console.log(checks + " multi-provider checks passed in actual JVM runtime");

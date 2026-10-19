@@ -54,6 +54,11 @@ try {
     files.set("modules/dlhd/ssrf.ts", "../core/ssrf.ts");
     files.set("modules/localnow/api.ts", "local/api.ts");
     files.set("modules/localnow/import.ts", "local/import.ts");
+    files.set("modules/zlive/config.ts", "zlive/config.ts");
+    files.set("modules/zlive/resolver.ts", "zlive/resolver.ts");
+    files.set("modules/zlive/dynamicAllow.ts", "_fast/dynamicAllow.ts");
+    files.set("modules/zlive/domain.ts", "../core/domain.ts");
+    files.set("modules/zlive/ssrf.ts", "../core/ssrf.ts");
     const base = server?.type === "commit" ? "src/sources/adapters/" : "server/src/sources/adapters/";
     const retrieved = [];
     for (const [destination, relative] of files) {

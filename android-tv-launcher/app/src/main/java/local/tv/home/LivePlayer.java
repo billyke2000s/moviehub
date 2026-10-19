@@ -105,7 +105,9 @@ final class LivePlayer {
                               : fixture.resolve(streamUrl, http);
                     ProviderRelay nextRelay =
                         stream != null &&
-                        (ProviderRelay.needed(stream) || streamUrl.contains("/engine/dlhd/"))
+                        (ProviderRelay.needed(stream) ||
+                            streamUrl.contains("/engine/dlhd/") ||
+                            streamUrl.contains("/engine/zlive/"))
                             ? new ProviderRelay(stream)
                             : null;
                     try {
@@ -126,6 +128,27 @@ final class LivePlayer {
                             stream == null ? PlutoSource.USER_AGENT : stream.userAgent,
                             stream == null ? null : stream.referer
                         );
+                        if (stream != null && stream.expiresAt > 0) {
+                            long delay = Math.max(
+                                30_000,
+                                Math.min(
+                                    3 * 3600_000L,
+                                    stream.expiresAt - System.currentTimeMillis() - 60_000
+                                )
+                            );
+                            renewal = () -> {
+                                if (
+                                    ticket == generation &&
+                                    player != null &&
+                                    player.isPlaying() &&
+                                    streamUrl.equals(url)
+                                ) {
+                                    refreshed = false;
+                                    play(appContext, url, lastOptions, true);
+                                }
+                            };
+                            main.postDelayed(renewal, delay);
+                        }
                     });
                 } catch (Exception e) {
                     main.post(() -> {
@@ -142,6 +165,7 @@ final class LivePlayer {
     }
 
     private static ProviderRelay relay;
+    private static Runnable renewal;
 
     private static void open(String stream, String userAgent, String referer) {
         Media media = new Media(engine, Uri.parse(stream));
@@ -155,6 +179,10 @@ final class LivePlayer {
 
     private static void cancelResolution() {
         resolving = false;
+        if (renewal != null) {
+            main.removeCallbacks(renewal);
+            renewal = null;
+        }
         if (relay != null) {
             relay.close();
             relay = null;

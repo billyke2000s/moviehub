@@ -101,7 +101,7 @@ provider matrix and evidence: [standalone provider engine](docs/STANDALONE_PROVI
 
 ## Extended Android provider port
 
-Draft PR #83 now adapts fourteen additional historical upstream providers through Runtime 2, including
+Draft PR #83 now adapts fifteen additional historical upstream providers through Runtime 2, including
 DaddyLive's multi-player resolver and Tubi's signing/bootstrap. Discovery has succeeded for several FAST
-platforms; DaddyLive discovery alone does not establish playback. Remaining unported dulo login, ZLive runtime protections
+platforms; DaddyLive discovery alone does not establish playback. Remaining unported dulo login
 and HDHomeRun transport are documented. Nothing is merged or released by this work.

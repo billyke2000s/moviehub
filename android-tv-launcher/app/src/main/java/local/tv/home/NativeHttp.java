@@ -12,6 +12,13 @@ final class NativeHttp implements PlutoSource.Http {
     private volatile boolean cancelled;
     ChannelDatabase.Cancel externalCancel;
 
+    interface ExchangeConnections {
+        HttpURLConnection open(URI target) throws Exception;
+    }
+
+    /** Instrumentation fixture only; never assigned by app code. */
+    static ExchangeConnections testExchangeConnections;
+
     void cancel() {
         cancelled = true;
         HttpURLConnection current = connection;
@@ -97,6 +104,17 @@ final class NativeHttp implements PlutoSource.Http {
         String body,
         java.util.function.Predicate<String> allowed
     ) throws Exception {
+        return exchange(url, method, headers, body, allowed, false);
+    }
+
+    org.json.JSONObject exchange(
+        String url,
+        String method,
+        Map<String, String> headers,
+        String body,
+        java.util.function.Predicate<String> allowed,
+        boolean manualRedirect
+    ) throws Exception {
         URI current = URI.create(ProviderUrls.playback(url));
         String authority = current.getAuthority();
         if (!method.equals("GET") && !method.equals("POST")) throw new IOException(
@@ -108,7 +126,13 @@ final class NativeHttp implements PlutoSource.Http {
             if (!allowed.test(current.toString())) throw new IOException("Provider HTTP capability rejected");
             // Validate each redirect as well as the initial target. No localhost/LAN destinations.
             ProviderBroker.publicHost(current.getHost());
-            HttpURLConnection c = (HttpURLConnection) current.toURL().openConnection();
+            if (
+                method.equals("POST") && !authority.equalsIgnoreCase(current.getAuthority())
+            ) throw new IOException("Cross-authority provider POST rejected");
+            HttpURLConnection c =
+                testExchangeConnections == null
+                    ? (HttpURLConnection) current.toURL().openConnection()
+                    : testExchangeConnections.open(current);
             connection = c;
             try {
                 c.setConnectTimeout(8000);
@@ -116,10 +140,7 @@ final class NativeHttp implements PlutoSource.Http {
                 c.setInstanceFollowRedirects(false);
                 c.setRequestMethod(method);
                 c.setRequestProperty("Accept-Encoding", "gzip");
-                if (authority.equalsIgnoreCase(current.getAuthority())) for (Map.Entry<
-                    String,
-                    String
-                > h : headers.entrySet()) {
+                for (Map.Entry<String, String> h : headers.entrySet()) {
                     if (
                         !h.getKey().matches("[A-Za-z0-9-]{1,80}") ||
                         h.getValue().length() > 8192 ||
@@ -134,7 +155,17 @@ final class NativeHttp implements PlutoSource.Http {
                             "transfer-encoding"
                         ).contains(h.getKey().toLowerCase(java.util.Locale.ROOT))
                     ) throw new IOException("Restricted header");
-                    c.setRequestProperty(h.getKey(), h.getValue());
+                    // Preserve public playback context on approved CDN redirects; never forward tokens/cookies.
+                    if (
+                        authority.equalsIgnoreCase(current.getAuthority()) ||
+                        java.util.Arrays.asList(
+                            "user-agent",
+                            "accept",
+                            "accept-language",
+                            "origin",
+                            "referer"
+                        ).contains(h.getKey().toLowerCase(java.util.Locale.ROOT))
+                    ) c.setRequestProperty(h.getKey(), h.getValue());
                 }
                 if (method.equals("POST")) {
                     c.setDoOutput(true);
@@ -143,7 +174,7 @@ final class NativeHttp implements PlutoSource.Http {
                     }
                 }
                 int status = c.getResponseCode();
-                if (status >= 300 && status < 400) {
+                if (status >= 300 && status < 400 && !manualRedirect) {
                     String location = c.getHeaderField("Location");
                     if (location == null) throw new IOException("Missing redirect");
                     current = current.resolve(location);

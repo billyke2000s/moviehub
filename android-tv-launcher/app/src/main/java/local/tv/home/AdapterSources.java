@@ -24,6 +24,11 @@ final class AdapterSources {
     }
 
     static synchronized void failed(String url) {
+        if (url.startsWith(ROOT + "zlive/")) try {
+            ProviderSessions.failed(channel(url));
+        } catch (Exception e) {
+            Diagnostics.recovered("Provider failure identity", e);
+        }
         if (url.startsWith(ROOT + "tcl/")) staleTclHints = true;
         if (!url.startsWith(ROOT + "dlhd/")) return;
         PlayerMemo memo = players.get(url);
@@ -74,6 +79,7 @@ final class AdapterSources {
         "Tubi",
         "Samsung TV Plus (GB)",
         "Local Now (US)",
+        "ZLive",
     };
 
     private AdapterSources() {}
@@ -193,7 +199,17 @@ final class AdapterSources {
         http.check();
         // These upstream resolvers accept the provider's own channel id; no catalogue hop is needed.
         if (
-            Arrays.asList("stirr", "xumo", "roku", "plex", "dlhd", "tubi", "samsung", "localnow").contains(id)
+            Arrays.asList(
+                "stirr",
+                "xumo",
+                "roku",
+                "plex",
+                "dlhd",
+                "tubi",
+                "samsung",
+                "localnow",
+                "zlive"
+            ).contains(id)
         ) return new JSONObject().put("channelId", wanted);
         if (id.equals("tcl") && !staleTclHints) try {
             String saved = new Secrets(c).get(TCL_HINTS);
@@ -249,6 +265,10 @@ final class AdapterSources {
         cancel.check();
         JSONArray rows = catalogue(c, id, http);
         cancel.check();
+        int previous = c.getSharedPreferences("providerEngine", 0).getInt(id + "Count", 0);
+        if (id.equals("zlive") && previous >= 20 && rows.length() * 2 < previous) throw new IOException(
+            "Partial provider catalogue rejected"
+        );
         ChannelDatabase.Writer writer = db.writer(source(id), cancel, n -> {});
         try {
             for (int i = 0; i < rows.length(); i++) {

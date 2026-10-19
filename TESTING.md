@@ -137,7 +137,7 @@ Native guide lookup uses the provider's own channel identity, including outside 
 Run `npm ci --ignore-scripts --prefix provider-engine`, `npm run build --prefix provider-engine` and
 `npm test --prefix provider-engine`. With Rhino 1.9.1 downloaded, run
 `RHINO_JAR=/absolute/path/rhino.jar bash provider-engine/tools/verify.sh` for 21 checks on the actual
-JVM interpreter/signature verifier, codecs, URLs and segment handling, plus 29 multi-provider fixture checks. `ProviderEngineDeviceTest` covers isolated Binder calls and
+JVM interpreter/signature verifier, codecs, URLs and segment handling, plus 40 multi-provider fixture checks. `ProviderEngineDeviceTest` covers isolated Binder calls and
 signed package installation, tampering, downgrade protection, rollback and corrupt-slot recovery.
 The normal Android workflow runs these device tests. Real provider and physical-TV evidence must
 remain separate; see [evidence and limitations](docs/STANDALONE_PROVIDER_ENGINE.md).
@@ -149,3 +149,8 @@ the real JVM interpreter with recorded HTTP fixtures. It checks POST resolution,
 long async walks, DaddyLive embed resolution, Tubi signatures and Samsung filtering. `ProviderAdaptersTest`
 exercises isolated Android calls, API capabilities, stable compound IDs and the loopback relay with fixture
 upstream connections. See [the evidence distinction](docs/STANDALONE_PROVIDER_ENGINE.md).
+
+ZLive fixtures run the actual resolver and Node IP/subnet compatibility through token reuse, persisted
+403 cooldowns, decoy detection/latching, corrupt history refusal and cancellation recovery. Device tests
+exercise encrypted ledger reuse across actual isolated Binder calls, manual redirects and credential
+redaction. The relay fixture also fragments upstream reads into two-byte chunks.

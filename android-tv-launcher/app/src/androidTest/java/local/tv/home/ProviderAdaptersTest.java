@@ -22,8 +22,10 @@ public final class ProviderAdaptersTest {
     @After
     public void cleanup() {
         ProviderRelay.testConnections = null;
+        NativeHttp.testExchangeConnections = null;
         AdapterSources.invalidate();
         new Secrets(context).remove(AdapterSources.TCL_HINTS);
+        new Secrets(context).remove(ProviderSessions.KEY);
     }
 
     @Test
@@ -96,7 +98,8 @@ public final class ProviderAdaptersTest {
             "dlhd",
             "tubi",
             "samsung",
-            "localnow"
+            "localnow",
+            "zlive"
         )) {
             JSONObject row = AdapterSources.resolverRow(context, id, "42", new NativeHttp());
             assertEquals("42", row.getString("channelId"));
@@ -121,6 +124,187 @@ public final class ProviderAdaptersTest {
         String disk = context.getSharedPreferences("accounts", 0).getString(AdapterSources.TCL_HINTS, "");
         assertFalse(disk.contains("fixture-source"));
         assertFalse(disk.contains("media.example"));
+    }
+
+    @Test
+    public void apiRedirectsKeepPlaybackContextAndDropCredentialsAndPostBodies() throws Exception {
+        List<HttpURLConnection> connections = new ArrayList<>();
+        AtomicInteger redirectStatus = new AtomicInteger(302);
+        NativeHttp.testExchangeConnections = uri -> {
+            boolean first = connections.isEmpty();
+            HttpURLConnection connection = new HttpURLConnection(uri.toURL()) {
+                @Override
+                public void connect() {}
+
+                @Override
+                public void disconnect() {}
+
+                @Override
+                public boolean usingProxy() {
+                    return false;
+                }
+
+                @Override
+                public int getResponseCode() {
+                    return first ? redirectStatus.get() : 200;
+                }
+
+                @Override
+                public String getHeaderField(String key) {
+                    return first && key.equalsIgnoreCase("Location") ? "https://8.8.4.4/final" : null;
+                }
+
+                @Override
+                public Map<String, List<String>> getHeaderFields() {
+                    return first
+                        ? Collections.singletonMap(
+                              "Location",
+                              Collections.singletonList("https://8.8.4.4/final")
+                          )
+                        : Collections.emptyMap();
+                }
+
+                @Override
+                public InputStream getInputStream() {
+                    return new ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8));
+                }
+
+                @Override
+                public OutputStream getOutputStream() {
+                    return new ByteArrayOutputStream();
+                }
+            };
+            connections.add(connection);
+            return connection;
+        };
+        Map<String, String> headers = new HashMap<>();
+        headers.put("User-Agent", "fixture-player");
+        headers.put("Origin", "https://provider.example");
+        headers.put("Authorization", "Bearer fixture");
+        headers.put("Cookie", "session=fixture");
+        headers.put("x-access-token", "fixture");
+        new NativeHttp().exchange("https://8.8.8.8/start", "GET", headers, "", target -> true);
+        assertEquals(2, connections.size());
+        HttpURLConnection finalHop = connections.get(1);
+        assertEquals("fixture-player", finalHop.getRequestProperty("User-Agent"));
+        assertEquals("https://provider.example", finalHop.getRequestProperty("Origin"));
+        assertNull(finalHop.getRequestProperty("Authorization"));
+        assertNull(finalHop.getRequestProperty("Cookie"));
+        assertNull(finalHop.getRequestProperty("x-access-token"));
+        connections.clear();
+        JSONObject manual = new NativeHttp().exchange(
+            "https://8.8.8.8/start",
+            "GET",
+            headers,
+            "",
+            target -> true,
+            true
+        );
+        assertEquals(302, manual.getInt("status"));
+        assertEquals(1, connections.size());
+        assertEquals("https://8.8.4.4/final", manual.getJSONObject("headers").getString("location"));
+        connections.clear();
+        redirectStatus.set(307);
+        try {
+            new NativeHttp().exchange(
+                "https://8.8.8.8/start",
+                "POST",
+                headers,
+                "private-body",
+                target -> true
+            );
+            fail("Cross-authority POST body was forwarded");
+        } catch (IOException expected) {}
+        assertEquals(1, connections.size());
+    }
+
+    @Test
+    public void zliveOriginalResolverReusesEncryptedHistoryAcrossIsolatedCalls() throws Exception {
+        String module = ProviderPackages.module(context, "zlive");
+        AtomicInteger contacts = new AtomicInteger();
+        long expiry = System.currentTimeMillis() / 1000 + 9000;
+        String location =
+            "https://cdn.example/main/secure/" +
+            new String(new char[64]).replace('\0', 'a') +
+            "/" +
+            expiry +
+            "/fixture.m3u8";
+        ProviderBroker.Transport transport = request -> {
+            contacts.incrementAndGet();
+            String target = request.getString("url");
+            JSONObject response = new JSONObject().put("url", target).put("headers", new JSONObject());
+            if (target.startsWith("https://provider-dns.invalid/")) return response
+                .put("status", 200)
+                .put("text", "[{\"address\":\"8.8.8.8\",\"family\":4}]");
+            assertEquals("manual", request.getString("redirect"));
+            return response
+                .put("status", 302)
+                .put("text", "")
+                .put(
+                    "headers",
+                    new JSONObject()
+                        .put("location", location)
+                        .put(
+                            "date",
+                            java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.format(
+                                java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC)
+                            )
+                        )
+                );
+        };
+        ProviderBroker.Executor engine = (source, op, payload) ->
+            ProviderBridge.call(context, source, op, payload);
+        JSONObject row = new JSONObject().put("channelId", "fixture");
+        JSONObject first = ProviderSessions.resolve(
+            context,
+            module,
+            row,
+            engine,
+            transport,
+            new NativeHttp()
+        );
+        assertEquals(location, first.getString("url"));
+        assertEquals(2, contacts.get());
+        JSONObject second = ProviderSessions.resolve(
+            context,
+            module,
+            row,
+            engine,
+            transport,
+            new NativeHttp()
+        );
+        assertEquals(location, second.getString("url"));
+        assertEquals(2, contacts.get());
+        try {
+            ProviderSessions.resolve(
+                context,
+                module,
+                new JSONObject().put("channelId", "aborted"),
+                engine,
+                request -> {
+                    Thread.currentThread().interrupt();
+                    throw new InterruptedIOException("fixture cancel");
+                },
+                new NativeHttp()
+            );
+            fail("Cancelled resolve completed");
+        } catch (InterruptedIOException expected) {
+        } finally {
+            Thread.interrupted();
+        }
+        JSONObject next = ProviderSessions.resolve(
+            context,
+            module,
+            new JSONObject().put("channelId", "other"),
+            engine,
+            transport,
+            new NativeHttp()
+        );
+        assertEquals(location, next.getString("url"));
+        assertEquals(4, contacts.get());
+        String disk = context.getSharedPreferences("accounts", 0).getString(ProviderSessions.KEY, "");
+        assertFalse(disk.contains("cdn.example"));
+        assertFalse(disk.contains("fixture.m3u8"));
     }
 
     @Test

@@ -85,6 +85,64 @@ final class ProviderSettings {
                 }
             );
         }
+        String domain = activity.prefs.getString("engineZliveDomain", "");
+        settings.settingCard(
+            body,
+            "ZLive domain",
+            "Use the provider's official domain; leave empty to follow upstream. Existing cooldowns remain active.",
+            domain.isEmpty() ? "Upstream default" : domain,
+            true,
+            "Change",
+            () -> {
+                LinearLayout form = activity.vertical();
+                android.widget.EditText field = activity.field(
+                    form,
+                    "Official domain (optional)",
+                    false,
+                    domain
+                );
+                android.app.Dialog dialog = activity.form("ZLive domain", form);
+                form.addView(
+                    activity.button("Save", () -> {
+                        try {
+                            String value = field
+                                .getText()
+                                .toString()
+                                .trim()
+                                .toLowerCase(java.util.Locale.ROOT);
+                            if (!value.isEmpty()) {
+                                java.net.URI u = java.net.URI.create(
+                                    ProviderUrls.playback(value.contains("://") ? value : "https://" + value)
+                                );
+                                if (
+                                    u.getUserInfo() != null ||
+                                    u.getPort() != -1 ||
+                                    u.getQuery() != null ||
+                                    u.getFragment() != null ||
+                                    !(u.getPath().isEmpty() || u.getPath().equals("/"))
+                                ) throw new IllegalArgumentException();
+                                value = u.getHost();
+                                if (
+                                    !value.matches(
+                                        "(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z][a-z0-9-]+"
+                                    ) ||
+                                    value.endsWith(".local") ||
+                                    value.endsWith(".localhost")
+                                ) throw new IllegalArgumentException();
+                            }
+                            activity.prefs.edit().putString("engineZliveDomain", value).apply();
+                            AdapterSources.invalidate();
+                            ChannelSync.refreshNow(activity);
+                            dialog.dismiss();
+                            show();
+                        } catch (Exception e) {
+                            activity.toast("Enter an HTTPS provider domain without an account, port or path");
+                        }
+                    })
+                );
+                form.addView(activity.button("Cancel", dialog::dismiss));
+            }
+        );
         boolean trust = ProviderPackages.configured(activity);
         boolean auto = activity.prefs.getBoolean("providerAutoUpdates", true);
         settings.settingCard(

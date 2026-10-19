@@ -171,3 +171,8 @@ Remote updates fail closed without a pinned key. See [scope and limitations](doc
 pure crypto/compression primitives; `AdapterSources` integrates the historical FAST, DaddyLive, Tubi and Local Now
 modules with SQLite and settings. `ProviderRelay` adds session-scoped loopback HLS header transport and
 `ProviderSegments` ports upstream TS-prefix detection. See the updated [provider architecture and evidence](docs/STANDALONE_PROVIDER_ENGINE.md).
+
+`ProviderSessions` retains encrypted ZLive HTTP/DNS event history and replays it through the original
+resolver without repeating those requests, preserving token reuse, cooldowns and decoy latches across
+disposable processes. Native IP/subnet primitives supply the required Node `net` subset. Signed token
+expiry can renew an actively playing live stream; stopping, switching or pausing does not auto-start video.

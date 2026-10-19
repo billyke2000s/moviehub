@@ -86,7 +86,7 @@ are not assertions that every channel plays or that a real TV has passed playbac
 | Vidaa            | Upstream tenant/bootstrap, regional catalog and filters                          | Configuration endpoint returned HTTP 503 from this environment                                                                                                           |
 | dulo             | Not yet ported                                                                   | Device-bound authenticated Supabase sessions and the real browser login must be implemented on Android; no authorized account/device session is available to validate it |
 | Local Now | Actual local/api.ts bootstrap, auto-market, entitlement/market filtering, fresh resolution and inline guide | 183 channels discovered; playback checks recorded below |
-| ZLive | Not yet ported | Requires conversion of node:net/IP checks, manual redirect handling and persistent token reuse/refusal/decoy state; these protections must be retained, not bypassed |
+| ZLive | Original catalogue/parser/resolver, native IP/subnet checks, manual redirects, encrypted replay state, local segment transport and expiry renewal | Audited default catalogue returned HTTP 404; no live playback claimed |
 | HDHomeRun        | Not yet ported                                                                   | LAN discovery and TS transport require separate Android work; historical upstream marks playback dormant                                                                 |
 | Direct imports   | Existing M3U/Xtream retained                                                     | Independent of the JS port                                                                                                                                               |
 
@@ -162,8 +162,8 @@ run passed provider verification, APK/lint, signing compatibility and the full e
 https://github.com/billyke2000s/moviehub/actions/runs/39335954185 . Follow-up fixes need their own run.
 
 The final local checks passed: 223 existing core checks, 21 runtime/signature/URL/segment checks,
-29 multi-provider JVM fixtures and three compiler fixtures. Debug APK, lint and instrumentation
-compilation passed. All 30 vendored TypeScript files match the historical upstream bytes and the
+40 multi-provider JVM fixtures and three compiler fixtures. Debug APK, lint and instrumentation
+compilation passed. All 35 vendored TypeScript files match the historical upstream bytes and the
 package provenance hashes. The APK contains ARM64 LibVLC libraries; the provider runtime is pure Java.
 This is ABI packaging evidence, not physical ARM64 execution.
 
@@ -192,3 +192,31 @@ bootstrap, JWT/base64url handling, locked/out-of-market exclusion, guide mapping
 Local Now also resolved a fresh master. Master and variant returned HTTP 200, and a 2,064,052-byte
 media sample decoded two seconds with FFmpeg exit 0. Ten newly ported providers now have one decoded
 desktop sample each; this still does not prove real Android/LibVLC playback or every channel.
+
+API redirect transport retains only public playback-context headers (User-Agent, Accept/Language,
+Origin and Referer) across an approved authority change. Authorization, cookies and custom tokens are
+stripped; body-preserving cross-authority POST redirects are refused. Instrumentation exercises both
+GET header preservation/redaction and a rejected 307 POST using fixture connections.
+
+### ZLive stateful Android port
+
+The complete reusable ZLive config/resolver plus shared domain/SSRF modules are now vendored unchanged.
+The required Node `net` subset is a pure-data IP/subnet bridge; DNS is brokered and checked. The original
+resolver receives manual HTTP 302 responses, learns/vets signed targets, reuses tokens, backs off after
+refusal and detects/latches suspected decoys. No alternate identity, IP or automatic domain evasion is used.
+
+An encrypted module/domain-scoped contact ledger reconstructs the original in-memory state in each isolated
+VM. Historical requests are fulfilled only from recorded responses; incomplete history cannot contact the
+network. A cancelled contact is replayed as cancelled, preserving per-channel backoff without blocking a
+different channel. Ledger bounds are 128 contact events, two MiB and three hours; a full ledger refuses new
+contacts until room expires. A module/domain change with live history conservatively pauses contacts for
+up to three hours. Storage failures disable further contacts for that app process. Catalogue refresh never
+bulk-resolves channels, shrink responses are rejected, and the single Live TV player stays below the
+upstream's default two-channel concurrency cap. The domain form accepts only a bare HTTPS provider host;
+leaving it empty follows upstream's default. It does not clear cooldowns.
+
+ZLive uses the bounded local relay for wrapped media segments and required headers. Signed expiry can
+refresh an actively playing stream before expiry; channel switches/stops cancel the renewal and a paused
+player is never auto-started. Upstream full ingest/remux/keyframe repair is still not ported. The audited
+`cast.zlive.st/channels.json` returned HTTP 404 in the live probe, so ZLive has fixture/Android integration
+coverage pending CI, but no live channel/playback evidence. No replacement domain was guessed.

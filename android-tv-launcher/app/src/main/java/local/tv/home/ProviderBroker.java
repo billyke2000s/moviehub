@@ -24,6 +24,7 @@ final class ProviderBroker {
         "tubi",
         "samsung",
         "localnow",
+        "zlive",
     };
 
     private ProviderBroker() {}
@@ -69,6 +70,7 @@ final class ProviderBroker {
                         host.endsWith(".tubi.video") ||
                         host.equals("tubitv.com")
                     );
+                case "zlive":
                 case "dlhd":
                     return true; // Public HTTPS GET only; no app credentials, LAN or POST capability.
                 case "stirr":
@@ -147,12 +149,28 @@ final class ProviderBroker {
         Transport transport,
         NativeHttp http
     ) throws Exception {
+        return run(module, operation, row, engine, transport, http, null);
+    }
+
+    static Object run(
+        String module,
+        String operation,
+        JSONObject row,
+        Executor engine,
+        Transport transport,
+        NativeHttp http,
+        JSONObject journal
+    ) throws Exception {
         JSONArray responses = new JSONArray();
         JSONObject input = new JSONObject()
             .put("now", System.currentTimeMillis())
             .put("seed", seed())
             .put("row", row == null ? new JSONObject() : row)
             .put("responses", responses);
+        if (journal != null) {
+            input.put("history", journal.getJSONArray("history"));
+            journal.put("responses", responses).put("at", input.getLong("now"));
+        }
         long deadline =
             System.nanoTime() + (operation.equals("catalogue") ? 240_000_000_000L : 45_000_000_000L);
         int requests = 0,
@@ -161,7 +179,10 @@ final class ProviderBroker {
             http.check();
             if (System.nanoTime() > deadline) throw new IOException("Provider operation timeout");
             JSONObject step = new JSONObject(engine.call(module, operation, input.toString()));
-            if (step.optBoolean("done")) return step.get("value");
+            if (step.optBoolean("done")) {
+                if (journal != null) journal.put("complete", true);
+                return step.get("value");
+            }
             JSONArray pending = step.getJSONArray("requests");
             if (pending.length() == 0) throw new IOException("Provider stalled");
             for (int i = 0; i < pending.length(); i++) {
@@ -191,42 +212,70 @@ final class ProviderBroker {
         throws Exception {
         if (!supported(id)) throw new IOException("Unsupported provider");
         String module = ProviderPackages.module(c, id);
-        return run(
+        if (id.equals("zlive")) {
+            row = row == null ? new JSONObject() : new JSONObject(row.toString());
+            String domain = c.getSharedPreferences("ui", 0).getString("engineZliveDomain", "");
+            if (!domain.isEmpty()) row.put("domain", domain);
+        }
+        Executor engine = (script, op, payload) -> ProviderBridge.call(c, script, op, payload);
+        Transport transport = request -> {
+            String target = request.getString("url");
+            if (target.startsWith("https://provider-timer.invalid/")) {
+                int ms = Integer.parseInt(target.substring("https://provider-timer.invalid/".length()));
+                if (ms < 0 || ms > 3000) throw new IOException("Timer capability rejected");
+                Thread.sleep(ms);
+                http.check();
+                return new JSONObject()
+                    .put("status", 200)
+                    .put("url", target)
+                    .put("headers", new JSONObject())
+                    .put("text", "");
+            }
+            if (id.equals("zlive") && target.startsWith("https://provider-dns.invalid/")) {
+                String host = java.net.URLDecoder.decode(
+                    target.substring("https://provider-dns.invalid/".length()),
+                    "UTF-8"
+                );
+                publicHost(host);
+                JSONArray addresses = new JSONArray();
+                for (java.net.InetAddress ip : java.net.InetAddress.getAllByName(host))
+                    addresses.put(
+                        new JSONObject()
+                            .put("address", ip.getHostAddress())
+                            .put("family", ip.getAddress().length == 4 ? 4 : 6)
+                    );
+                return new JSONObject()
+                    .put("status", 200)
+                    .put("url", target)
+                    .put("headers", new JSONObject())
+                    .put("text", addresses.toString());
+            }
+            Map<String, String> headers = new LinkedHashMap<>();
+            JSONObject h = request.getJSONObject("headers");
+            for (Iterator<String> keys = h.keys(); keys.hasNext(); ) {
+                String key = keys.next();
+                headers.put(key, h.getString(key));
+            }
+            if (
+                (id.equals("dlhd") || id.equals("zlive")) && !request.getString("method").equals("GET")
+            ) throw new IOException("Read-only provider capability");
+            return http.exchange(
+                request.getString("url"),
+                request.getString("method"),
+                headers,
+                request.getString("body"),
+                url -> allowed(id, url),
+                request.optString("redirect").equals("manual")
+            );
+        };
+        if (id.equals("zlive") && operation.equals("resolve")) return ProviderSessions.resolve(
+            c,
             module,
-            operation,
             row,
-            (script, op, payload) -> ProviderBridge.call(c, script, op, payload),
-            request -> {
-                String target = request.getString("url");
-                if (target.startsWith("https://provider-timer.invalid/")) {
-                    int ms = Integer.parseInt(target.substring("https://provider-timer.invalid/".length()));
-                    if (ms < 0 || ms > 3000) throw new IOException("Timer capability rejected");
-                    Thread.sleep(ms);
-                    http.check();
-                    return new JSONObject()
-                        .put("status", 200)
-                        .put("url", target)
-                        .put("headers", new JSONObject())
-                        .put("text", "");
-                }
-                Map<String, String> headers = new LinkedHashMap<>();
-                JSONObject h = request.getJSONObject("headers");
-                for (Iterator<String> keys = h.keys(); keys.hasNext(); ) {
-                    String key = keys.next();
-                    headers.put(key, h.getString(key));
-                }
-                if (id.equals("dlhd") && !request.getString("method").equals("GET")) throw new IOException(
-                    "Read-only provider capability"
-                );
-                return http.exchange(
-                    request.getString("url"),
-                    request.getString("method"),
-                    headers,
-                    request.getString("body"),
-                    url -> allowed(id, url)
-                );
-            },
+            engine,
+            transport,
             http
         );
+        return run(module, operation, row, engine, transport, http);
     }
 }

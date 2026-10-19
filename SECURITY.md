@@ -85,3 +85,9 @@ credentials. HMAC/decompression are bounded pure-data callbacks. The optional HL
 session grants on loopback, with bounded workers/targets and stop-time cleanup. Credential headers stay on
 the initial master authority. DNS checks are not DNS pinning, and full JS/runtime security review remains
 outstanding. Signed update trust is still unconfigured. See the provider-engine document for exact limits.
+
+ZLive's original IP blocklists, refusal cooldowns and decoy detection execute unchanged. Its replay ledger
+is encrypted, module/domain scoped, bounded to 128 contact events/three hours and never reissues historical
+HTTP/DNS work. Missing/corrupt history fails closed. A full ledger prevents new contacts while still allowing
+cached targets; incompatible module/domain state pauses new contacts until old history expires. User channel
+cancellation records a per-channel cancelled contact rather than imposing a global refusal cooldown.

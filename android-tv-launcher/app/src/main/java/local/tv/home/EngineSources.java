@@ -94,9 +94,11 @@ final class EngineSources {
     static final class Stream {
 
         final String url, userAgent, referer;
+        final long expiresAt;
         final JSONObject headers;
 
         Stream(JSONObject value) throws Exception {
+            expiresAt = value.optLong("expiresAtMs", 0);
             url = ProviderUrls.playback(value.getString("url"));
             headers = value.getJSONObject("headers");
             String host = java.net.URI.create(url).getHost();

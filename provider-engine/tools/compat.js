@@ -1,6 +1,18 @@
 // Runtime 2: deterministic replay of async HTTP. No network or Java capability in the script.
-var __input, __pending, __ordinal, __random, __jobs, __clock;
+var __input,
+    __pending,
+    __ordinal,
+    __random,
+    __jobs,
+    __clock,
+    __restoring,
+    __historyInvalid,
+    __restoreCancelled;
 var process = { env: {} };
+if (!Object.hasOwn)
+    Object.hasOwn = function (object, key) {
+        return Object.prototype.hasOwnProperty.call(object, key);
+    };
 function Promise(executor) {
     var self = this;
     self.state = 0;
@@ -170,7 +182,26 @@ function __binary(value) {
               })
               .join("");
 }
+function __BlockList() {
+    this.rules = [];
+}
+__BlockList.prototype.addSubnet = function (address, prefix) {
+    if (this.rules.length >= 1000) throw new Error("Address rule limit");
+    this.rules.push([String(address), Number(prefix)]);
+};
+__BlockList.prototype.check = function (address) {
+    return this.rules.some(function (rule) {
+        return codec("ipMaskMatch", String(address) + "\n" + rule[0] + "\n" + rule[1]) === "true";
+    });
+};
 function require(id) {
+    if (id === "node:net")
+        return {
+            BlockList: __BlockList,
+            isIP: function (address) {
+                return Number(codec("ipFamily", String(address)));
+            },
+        };
     if (id === "node:crypto")
         return {
             createHash: function (algorithm) {
@@ -334,11 +365,18 @@ function fetch(url, init) {
             headers: init.headers || {},
             body: init.body || "",
         };
+    if (init.redirect === "manual") req.redirect = "manual";
     var response = __input.responses[index];
     if (!response) {
+        if (__restoring) {
+            if (__restoreCancelled) return Promise.reject(new Error("Cancelled"));
+            __historyInvalid = true;
+            throw new Error("Incomplete provider history");
+        }
         __pending.push(req);
         return new Promise(function () {});
     }
+    if (__restoring && JSON.stringify(req) !== JSON.stringify(response.request)) __historyInvalid = true;
     if (JSON.stringify(req) !== JSON.stringify(response.request))
         throw new Error("Non deterministic request");
     if (response.error) return Promise.reject(new Error("Provider transport failed"));
