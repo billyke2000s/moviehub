@@ -32,6 +32,22 @@ http://example.org/live.ts
                 builder.build()
             self.assertEqual(output.read_text().count("https://example.org/1.m3u8"), 1)
 
+    def test_one_broken_feed_does_not_block_good_feed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = root / "feeds.txt"
+            output = root / "output.m3u"
+            manifest.write_text("https://example.org/broken.m3u\nhttps://example.org/good.m3u\n", encoding="utf-8")
+
+            def fake_fetch(url):
+                if "broken" in url:
+                    raise OSError("404")
+                return "#EXTM3U\n#EXTINF:-1,Working\nhttps://example.org/live.m3u8\n"
+
+            with patch.object(builder, "MANIFEST", manifest), patch.object(builder, "OUTPUT", output), patch.object(builder, "fetch", side_effect=fake_fetch):
+                builder.build()
+            self.assertIn("Working", output.read_text())
+
     def test_failure_preserves_previous_playlist(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
