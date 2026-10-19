@@ -85,6 +85,15 @@ public class VlcPlaybackActivity extends Activity {
         long target = skips.take();
         if (target >= 0 && player != null && player.isSeekable()) player.setTime(target);
     };
+    private boolean nextPromptShown, nextCancelled;
+    private void launchNextEpisode() {
+        if (SourcesScreen.Binge.imdb == null || isFinishing()) return;
+        android.content.Intent next = new android.content.Intent(this, MainActivity.class);
+        next.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        next.putExtra("bingeNext", true);
+        startActivity(next);
+        finish();
+    }
     private final Runnable tick = new Runnable() {
         public void run() {
             forgetReleasedLivePlayer();
@@ -103,6 +112,18 @@ public class VlcPlaybackActivity extends Activity {
                           ? PlayerOverlay.timeLeft(Math.max(0, length - time))
                           : "—"
                 );
+                if (!live && !nextPromptShown && length > 0 && time > 0 &&
+                    length - time <= 10000 && length - time > 0 &&
+                    getIntent().getStringExtra("episodeKey") != null &&
+                    SourcesScreen.Binge.imdb != null) {
+                    nextPromptShown = true;
+                    new AlertDialog.Builder(VlcPlaybackActivity.this)
+                        .setTitle("Next episode")
+                        .setMessage("Play the next episode?")
+                        .setPositiveButton("Play now", (d, w) -> launchNextEpisode())
+                        .setNegativeButton("Cancel", (d, w) -> nextCancelled = true)
+                        .show();
+                }
                 // A programme reminder that is due shows over the picture (checked every 15 s).
                 if (++reminderTicks % 15 == 0 && !dialogOpen) showDueReminder();
                 downloadMbps = PlayerOverlay.downloadSpeed(player);
@@ -442,7 +463,9 @@ public class VlcPlaybackActivity extends Activity {
                 watched.add(episode);
                 prefs.edit().putStringSet("watchedEpisodes", watched).apply();
             }
-            finish();
+            if (!live && !nextCancelled && SourcesScreen.Binge.imdb != null &&
+                getIntent().getStringExtra("episodeKey") != null) launchNextEpisode();
+            else finish();
         } else if (event.type == MediaPlayer.Event.EncounteredError) {
             if (
                 live &&
