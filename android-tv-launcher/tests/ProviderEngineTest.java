@@ -28,6 +28,18 @@ public final class ProviderEngineTest {
 
     public static void main(String[] args) throws Exception {
         String source = Files.readString(Path.of(args[0]));
+        // This MUST be the first interpreter call in this fresh JVM: Rhino caches SPI discovery.
+        Thread thread = Thread.currentThread();
+        ClassLoader original = thread.getContextClassLoader();
+        ClassLoader binderLike = new ClassLoader(null) {};
+        try {
+            thread.setContextClassLoader(binderLike);
+            check(ProviderScript.evaluate(source, "metadata", "").contains("freelivesports"));
+            check(thread.getContextClassLoader() == binderLike);
+        } finally {
+            thread.setContextClassLoader(original);
+        }
+
         check(
             ProviderScript.evaluate(
                 source,

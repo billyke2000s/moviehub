@@ -12,6 +12,20 @@ final class ProviderScript {
     private ProviderScript() {}
 
     static String evaluate(String source, String operation, String payload) throws IOException {
+        // Binder threads may have a boot-only context loader. Rhino's ServiceLoader then misses
+        // its RegExp implementation, although it is packaged in the same APK.
+        Thread thread = Thread.currentThread();
+        ClassLoader previous = thread.getContextClassLoader();
+        try {
+            thread.setContextClassLoader(ProviderScript.class.getClassLoader());
+            return evaluateWithLoader(source, operation, payload);
+        } finally {
+            thread.setContextClassLoader(previous);
+        }
+    }
+
+    private static String evaluateWithLoader(String source, String operation, String payload)
+        throws IOException {
         if (source.length() > 256 * 1024 || payload.length() > MAX_BYTES) throw new IOException(
             "Provider limit"
         );
@@ -21,7 +35,7 @@ final class ProviderScript {
             protected Context makeContext() {
                 Context cx = super.makeContext();
                 cx.setLanguageVersion(Context.VERSION_ES6);
-                cx.setOptimizationLevel(-1);
+                cx.setInterpretedMode(true);
                 cx.setMaximumInterpreterStackDepth(128);
                 cx.setInstructionObserverThreshold(1000);
                 cx.setClassShutter(name -> false);
