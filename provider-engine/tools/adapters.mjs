@@ -23,7 +23,7 @@ export const adapters = {
     whale: {
         catalogue: "exports.fetchWhaleRows()",
         resolve: "exports.fillUrlMacros(row.streamUrl)",
-        headers: "{'User-Agent':exports.UA,Referer:'https://watch.whaletvplus.com/'}",
+        headers: "exports.WHALE_HEADERS",
     },
     distro: {
         catalogue: "exports.fetchDistroRows()",

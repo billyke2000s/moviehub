@@ -12,6 +12,50 @@ final class AdapterSources {
     private static final Map<String, JSONArray> cache = new HashMap<>();
     private static final Map<String, Long> expiry = new HashMap<>();
     private static final Map<String, String> versions = new HashMap<>();
+    private static final LinkedHashMap<String, PlayerMemo> players = new LinkedHashMap<>();
+
+    private static final class PlayerMemo {
+
+        int good;
+        long at;
+        final Set<Integer> burnt = new HashSet<>();
+    }
+
+    static synchronized void failed(String url) {
+        if (!url.startsWith(ROOT + "dlhd/")) return;
+        PlayerMemo memo = players.get(url);
+        if (memo != null && memo.good > 0) {
+            memo.burnt.add(memo.good);
+            memo.good = 0;
+            memo.at = System.currentTimeMillis();
+        }
+    }
+
+    private static synchronized JSONObject playerRow(String url, JSONObject row) throws Exception {
+        JSONObject copy = new JSONObject(row.toString());
+        PlayerMemo memo = players.get(url);
+        if (memo == null) return copy;
+        if (System.currentTimeMillis() - memo.at > 300_000) {
+            players.remove(url);
+            return copy;
+        }
+        copy.put("preferredPlayer", memo.good).put("burntPlayers", new JSONArray(memo.burnt));
+        return copy;
+    }
+
+    private static synchronized void rememberPlayer(String url, int player) {
+        if (player < 1 || player > 6) return;
+        PlayerMemo memo = players.get(url);
+        if (memo == null) {
+            memo = new PlayerMemo();
+            if (players.size() >= 256) players.remove(players.keySet().iterator().next());
+            players.put(url, memo);
+        }
+        memo.good = player;
+        memo.burnt.remove(player);
+        memo.at = System.currentTimeMillis();
+    }
+
     static final String[] LABELS = {
         "STIRR",
         "TCL TV+",
@@ -47,6 +91,8 @@ final class AdapterSources {
 
     static synchronized void invalidate() {
         expiry.clear();
+        cache.clear();
+        versions.clear();
     }
 
     static boolean locator(String url) {
@@ -122,9 +168,18 @@ final class AdapterSources {
         for (int i = 0; i < rows.length(); i++) {
             JSONObject row = rows.getJSONObject(i);
             http.check();
-            if (wanted.equals(row.getString("channelId"))) return new EngineSources.Stream(
-                (JSONObject) ProviderBroker.call(c, id, "resolve", row, http)
-            );
+            if (wanted.equals(row.getString("channelId"))) {
+                JSONObject resolved = (JSONObject) ProviderBroker.call(
+                    c,
+                    id,
+                    "resolve",
+                    id.equals("dlhd") ? playerRow(url, row) : row,
+                    http
+                );
+                EngineSources.Stream stream = new EngineSources.Stream(resolved);
+                if (id.equals("dlhd")) rememberPlayer(url, resolved.optInt("playerIndex", 0));
+                return stream;
+            }
         }
         throw new IOException("Provider channel unavailable");
     }

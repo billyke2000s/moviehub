@@ -33,12 +33,12 @@ Rust ingest/remux machinery still need separate Android implementations where re
   zlib operations. URL and URLSearchParams supply the subset used by these adapters.
 - `ProviderScript` runs in interpreter mode in `ProviderService`, an unexported Android isolated UID
   with no app files/accounts or INTERNET permission. Java classes are denied. Each evaluation has a
-  three-second instruction deadline, 128-frame limit and ten-second process watchdog. Process teardown
+  three-second instruction deadline (eight seconds for stream resolution), 128-frame limit and ten-second process watchdog (15 seconds for resolution). Process teardown
   discards the heap. This is not a complete engine security audit or physical ARM64 performance result.
 - Async/await executes through a microtask queue and deterministic HTTP replay. An operation yields
   pending requests; the host fulfils them and resumes by replaying recorded responses without repeating
   completed network requests. A fresh seed per operation gives fresh signatures/macros; recorded completion
-  times advance the clock reproducibly. Cookies and anonymous tokens remain in operation-local JS/replay
+  times advance the clock reproducibly. DaddyLive player preference/failure hints are retained in a bounded 256-channel, five-minute host cache and restored through upstream player-memory functions; playback failures retire the current player. Cookies and anonymous tokens remain in operation-local JS/replay
   state. They are not written to disk. Anonymous bootstrap may therefore repeat on the next channel.
 - `ProviderBroker` limits network work to 64 GET/POST requests, 3 MiB per response and 4 MiB aggregate
   response data. Catalogue work has a 240-second deadline and playback resolution 45 seconds, with channel
@@ -77,10 +77,10 @@ are not assertions that every channel plays or that a real TV has passed playbac
 | LG Channels      | Upstream compressed catalog, inline guide and macros                             | 188 channels; fresh stream resolved                                                                                                                                      |
 | Whale TV+        | Upstream anonymous token/catalog and macros                                      | 138 channels; fresh stream resolved                                                                                                                                      |
 | Vizio WatchFree+ | Upstream catalog, entitlement/DRM filtering and macros                           | 465 surfaced channels; fresh stream resolved                                                                                                                             |
-| Plex             | Upstream anonymous bootstrap/catalog/tokenized resolution                        | 691 channels; playback still unverified                                                                                                                                  |
-| DaddyLive        | Upstream directory, decoder chain and multi-player resolver                      | 899 channels; sampled live resolution hit downstream 403/unavailable sources; **not verified playable**                                                                  |
-| Tubi             | Upstream signed bootstrap, catalog, per-play resolution and inline guide mapping | 36 channels from live signed bootstrap/catalog; playback still unverified                                                                   |
-| Samsung TV Plus  | Upstream functions, gzip catalog and per-play redirect; GB catalog               | 252 GB channels from live compressed catalog; playback still unverified                                                                                    |
+| Plex             | Upstream anonymous bootstrap/catalog/tokenized resolution                        | 691 channels; fresh stream resolved but sampled media returned HTTP 404                                                                                                                                  |
+| DaddyLive        | Upstream directory, decoder chain and multi-player resolver                      | 899 channels; fresh stream and a desktop sample decoded after downstream failures; Android playback unverified                                                                  |
+| Tubi             | Upstream signed bootstrap, catalog, per-play resolution and inline guide mapping | 36 channels; fresh stream resolved and a desktop media sample decoded                                                                   |
+| Samsung TV Plus  | Upstream functions, gzip catalog and per-play redirect; GB catalog               | 252 GB channels; fresh stream resolved and a desktop media sample decoded                                                                                    |
 | Roku Channel     | Upstream cookie/CSRF session, catalog, playId and POST playback                  | Live bootstrap returned HTML without usable session; **not verified playable**                                                                                           |
 | DistroTV         | Upstream feed, geographic flow and macros                                        | Feed returned HTTP 503 from this environment                                                                                                                             |
 | Vidaa            | Upstream tenant/bootstrap, regional catalog and filters                          | Configuration endpoint returned HTTP 503 from this environment                                                                                                           |
@@ -134,3 +134,28 @@ Fresh STIRR, Xumo, LG and Whale masters and variants returned HTTP 200. One medi
 each decoded two seconds successfully with FFmpeg (exit 0). Sample sizes were 439,356; 3,286,616;
 363,780; and 355,132 bytes respectively. Vizio's first sample returned HTTP 400. These desktop
 checks do not establish Android/LibVLC playback or availability of every discovered channel.
+
+Tubi and Samsung GB also returned valid masters, variants and media samples; FFmpeg decoded two seconds
+from 2,063,300 and 573,024 bytes respectively. Plex resolved a URL whose manifest returned HTTP 404.
+Live redirects revealed Samsung's catalog redirect to its specific public GitHub mirror and Tubi's
+Adrise CDN redirect; host capabilities now allow those observed paths rather than failing after discovery.
+
+The initial DaddyLive live walk also hit the interpreter's three-second CPU deadline on a large embed.
+The stream-resolution budget is now eight seconds per evaluation (with a 15-second process watchdog),
+while other operations retain the shorter limit. Cached replay completed in 2.07 seconds after the codec
+improvements; this does not establish a playable DaddyLive stream.
+
+After extending the bounded decoder budget, the DaddyLive live walk resolved a fresh stream through a later
+player. Its original default-player failures are retained as evidence rather than treated as proof that the
+provider cannot run locally. Real media and Android playback remain separate checks.
+
+DaddyLive's resolved media playlist returned HTTP 200 and a 793,924-byte TS sample decoded two seconds
+with FFmpeg exit 0 (it logged an initial H.264 buffering/SPS warning). This is one desktop sample, not
+proof of all 899 channels or Android playback. The regression fixtures also verify restored preferred
+player selection while a failed player is excluded.
+
+Vizio's first URL also decoded after percent-encoding the literal braces left by upstream macros, as
+`ProviderUrls` now does: master and variant HTTP 200, 111,672-byte media sample, FFmpeg exit 0.
+Eight newly ported providers therefore have one decoded desktop sample each. The first Runtime-2 CI
+run passed provider verification, APK/lint, signing compatibility and the full emulator suite:
+https://github.com/billyke2000s/moviehub/actions/runs/39335954185 . Follow-up fixes need their own run.

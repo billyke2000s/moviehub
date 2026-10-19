@@ -29,7 +29,7 @@ final class ProviderScript {
         if (source.length() > 256 * 1024 || payload.length() > MAX_BYTES) throw new IOException(
             "Provider limit"
         );
-        long deadline = System.nanoTime() + 3_000_000_000L;
+        long deadline = System.nanoTime() + (operation.equals("resolve") ? 8_000_000_000L : 3_000_000_000L);
         ContextFactory factory = new ContextFactory() {
             @Override
             protected Context makeContext() {

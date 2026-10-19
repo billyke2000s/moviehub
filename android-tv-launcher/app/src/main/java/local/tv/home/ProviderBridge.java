@@ -69,7 +69,11 @@ final class ProviderBridge {
                     throw new IOException("Provider service unavailable");
                 }
                 bound.set(true);
-                timeout = watchdog.schedule(disconnect, 10, TimeUnit.SECONDS);
+                timeout = watchdog.schedule(
+                    disconnect,
+                    operation.equals("resolve") ? 15 : 10,
+                    TimeUnit.SECONDS
+                );
                 if (!ready.await(5, TimeUnit.SECONDS) || remote[0] == null) throw new IOException(
                     "Provider startup failed"
                 );

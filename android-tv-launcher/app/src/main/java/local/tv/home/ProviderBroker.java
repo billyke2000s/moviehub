@@ -45,13 +45,22 @@ final class ProviderBroker {
                 case "samsung":
                     return (
                         host.equals("i.mjh.nz") ||
+                        (host.equals("raw.githubusercontent.com") &&
+                            u.getPath().startsWith("/matthuisman/i.mjh.nz/") &&
+                            u.getPath().endsWith("/SamsungTVPlus/.channels.json.gz")) ||
                         host.equals("jmp2.uk") ||
                         host.endsWith(".samsungtvplus.com") ||
                         host.endsWith(".cloudfront.net") ||
                         host.endsWith(".samsung.com")
                     );
                 case "tubi":
-                    return host.equals("tubi.io") || host.endsWith(".tubi.io");
+                    return (
+                        host.equals("tubi.io") ||
+                        host.endsWith(".tubi.io") ||
+                        host.endsWith(".adrise.io") ||
+                        host.endsWith(".tubi.video") ||
+                        host.equals("tubitv.com")
+                    );
                 case "dlhd":
                     return true; // Public HTTPS GET only; no app credentials, LAN or POST capability.
                 case "stirr":
@@ -108,6 +117,12 @@ final class ProviderBroker {
         }
     }
 
+    private static String seed() {
+        byte[] bytes = new byte[32];
+        new java.security.SecureRandom().nextBytes(bytes);
+        return java.util.Base64.getEncoder().encodeToString(bytes);
+    }
+
     interface Executor {
         String call(String module, String operation, String payload) throws Exception;
     }
@@ -127,7 +142,7 @@ final class ProviderBroker {
         JSONArray responses = new JSONArray();
         JSONObject input = new JSONObject()
             .put("now", System.currentTimeMillis())
-            .put("seed", UUID.randomUUID().toString())
+            .put("seed", seed())
             .put("row", row == null ? new JSONObject() : row)
             .put("responses", responses);
         long deadline =

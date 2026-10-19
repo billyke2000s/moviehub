@@ -22,6 +22,8 @@ final class EngineSources {
 
     static void invalidate() {
         expires = 0;
+        cached = null;
+        cachedModule = null;
         AdapterSources.invalidate();
     }
 

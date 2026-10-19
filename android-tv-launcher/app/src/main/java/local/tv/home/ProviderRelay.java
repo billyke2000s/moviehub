@@ -13,6 +13,7 @@ final class ProviderRelay implements AutoCloseable {
     private final ServerSocket server;
     private final String secret = UUID.randomUUID().toString();
     private final Map<String, String> targets = new LinkedHashMap<>();
+    private final Set<String> playlists = new HashSet<>();
     private final Map<String, String> headers;
     private final String credentialAuthority;
     private final Set<HttpURLConnection> active = ConcurrentHashMap.newKeySet();
@@ -96,10 +97,20 @@ final class ProviderRelay implements AutoCloseable {
             }
         if (token == null) {
             // Live playlists rotate indefinitely; evict old grants rather than grow with programme length.
-            if (targets.size() >= 2048) targets.remove(targets.keySet().iterator().next());
+            if (targets.size() >= 2048) {
+                String oldest = null;
+                for (String key : targets.keySet())
+                    if (!playlists.contains(key)) {
+                        oldest = key;
+                        break;
+                    }
+                if (oldest == null) throw new IOException("Playlist grant limit");
+                targets.remove(oldest);
+            }
             token = UUID.randomUUID().toString() + (playlist ? ".m3u8" : ".bin");
             targets.put(token, safe);
         }
+        if (playlist) playlists.add(token);
         return "http://127.0.0.1:" + server.getLocalPort() + "/" + secret + "/" + token;
     }
 
@@ -194,6 +205,9 @@ final class ProviderRelay implements AutoCloseable {
                             held += count;
                         }
                         skip = ProviderSegments.prefix(head, held);
+                    }
+                    if (playlist) synchronized (this) {
+                        playlists.add(token);
                     }
                     String type = playlist
                         ? "application/vnd.apple.mpegurl"
@@ -298,6 +312,7 @@ final class ProviderRelay implements AutoCloseable {
         workers.shutdownNow();
         synchronized (this) {
             targets.clear();
+            playlists.clear();
         }
     }
 }

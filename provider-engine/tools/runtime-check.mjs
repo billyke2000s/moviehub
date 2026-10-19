@@ -156,6 +156,23 @@ const daddy = drive("dlhd", "resolve", dlhd[0], (req) => {
 });
 assert.equal(daddy.url, "https://media.example/live.m3u8");
 checks++;
+const alternate = drive(
+    "dlhd",
+    "resolve",
+    { channelId: "42", preferredPlayer: 2, burntPlayers: [1] },
+    (req) => {
+        if (req.url.includes("watch.php"))
+            return '<button data-url="https://dlive.sx/stream/stream-42.php"></button><button data-url="https://dlive.sx/cast/stream-42.php"></button>';
+        if (req.url.includes("stream-42.php")) {
+            assert.ok(req.url.includes("/cast/"));
+            return '<iframe src="https://player.example/embed/42"></iframe>';
+        }
+        if (req.url.includes("player.example")) return 'source:"https://media.example/alternate.m3u8"';
+        return "#EXTM3U\n#EXTINF:4,\nhttps://media.example/a.ts\n";
+    },
+);
+assert.equal(alternate.playerIndex, 2);
+checks++;
 const tubi = drive("tubi", "resolve", { channelId: "42" }, (req, n) => {
     if (req.url.includes("signing_key"))
         return { id: "sign-id", key: Buffer.from("server-signing-key").toString("base64") };

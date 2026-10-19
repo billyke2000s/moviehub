@@ -179,6 +179,7 @@ final class LivePlayer {
             appContext != null
         ) {
             refreshed = true;
+            AdapterSources.failed(url);
             EngineSources.invalidate();
             play(appContext, url, lastOptions, true);
             return;

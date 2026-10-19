@@ -146,7 +146,7 @@ function __load(){
 }
 function __run(operation,row){
   if(operation==='catalogue')return fetch(exports.getBase()+'/24-7-channels.php',{headers:{Referer:exports.getReferer(),'User-Agent':exports.UA}}).then(function(r){if(!r.ok)throw new Error('Directory unavailable');return r.text();}).then(function(html){return require('./parseDirectory.js').parseChannels(html).map(function(r){return {channelId:String(r.id),name:r.name,category:r.group};});});
-  if(operation==='resolve')return __dlhd.resolveStreamUrl(row.channelId).then(function(r){return {url:r.masterUrl,headers:r.upstreamHeaders,userAgent:r.upstreamHeaders['User-Agent']||'',referer:r.upstreamHeaders.Referer||''};});
+  if(operation==='resolve'){var memo=require('./playerMemory.js');if(row.preferredPlayer)memo.noteGood(row.channelId,row.preferredPlayer);(row.burntPlayers||[]).forEach(function(p){memo.noteBad(row.channelId,p);});return __dlhd.resolveStreamUrl(row.channelId,{deep:true}).then(function(r){return {url:r.masterUrl,headers:r.upstreamHeaders,userAgent:r.upstreamHeaders['User-Agent']||'',referer:r.upstreamHeaders.Referer||'',playerIndex:r.playerIndex};});}
   throw new Error('Unsupported operation');
 }
 `;

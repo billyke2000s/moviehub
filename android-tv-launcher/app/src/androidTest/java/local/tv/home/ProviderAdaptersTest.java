@@ -58,6 +58,20 @@ public final class ProviderAdaptersTest {
         assertFalse(ProviderBroker.allowed("stirr", "http://stirr.com/api/videos/list/"));
         assertFalse(ProviderBroker.allowed("stirr", "https://127.0.0.1/api/videos/list/"));
         assertFalse(ProviderBroker.allowed("stirr", "https://stirr.com:1234/api/videos/list/"));
+        assertTrue(
+            ProviderBroker.allowed(
+                "samsung",
+                "https://raw.githubusercontent.com/matthuisman/i.mjh.nz/refs/heads/master/SamsungTVPlus/.channels.json.gz"
+            )
+        );
+        assertFalse(
+            ProviderBroker.allowed(
+                "samsung",
+                "https://raw.githubusercontent.com/other/repository/master/.channels.json.gz"
+            )
+        );
+        assertTrue(ProviderBroker.allowed("tubi", "https://c.tubi1.apollo.adrise.io/live/master.m3u8"));
+        assertFalse(ProviderBroker.allowed("tubi", "https://adrise.io.evil.example/live/master.m3u8"));
     }
 
     @Test
