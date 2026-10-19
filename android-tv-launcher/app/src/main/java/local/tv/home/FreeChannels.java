@@ -81,7 +81,8 @@ final class FreeChannels {
      */
     static final String[][] EXTRA = {
         // { "mylist", "My list", "https://example.org/playlist.m3u8" },
-        { "loophost", "The Loop (Pluto TV)", "https://raw.githubusercontent.com/billyke2000s/Moviehub-freelinks/main/output/theloop.m3u" },
+        // Retained for later use; disabled while testing Masqueradarr.
+        // { "loophost", "The Loop (Pluto TV)", "https://raw.githubusercontent.com/billyke2000s/Moviehub-freelinks/main/output/theloop.m3u" },
     };
 
     /**
