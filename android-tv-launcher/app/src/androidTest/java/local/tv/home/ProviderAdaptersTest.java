@@ -146,7 +146,12 @@ public final class ProviderAdaptersTest {
                     String data = uri.getPath().endsWith("m3u8")
                         ? "#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI=\"key.bin\"\n#EXTINF:4,\nsegment.ts\n"
                         : "fixture-media";
-                    return new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
+                    return new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8)) {
+                        @Override
+                        public synchronized int read(byte[] buffer, int offset, int length) {
+                            return super.read(buffer, offset, Math.min(2, length));
+                        }
+                    };
                 }
             };
         EngineSources.Stream stream = new EngineSources.Stream(

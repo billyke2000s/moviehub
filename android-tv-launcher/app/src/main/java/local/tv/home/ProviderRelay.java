@@ -190,11 +190,15 @@ final class ProviderRelay implements AutoCloseable {
                 if (status != 200 && status != 206) throw new IOException("Upstream stream unavailable");
                 OutputStream out = socket.getOutputStream();
                 try (PushbackInputStream in = new PushbackInputStream(upstream.getInputStream(), 1024)) {
-                    byte[] prefix = new byte[1024];
-                    int n = in.read(prefix);
+                    byte[] prefix = new byte[10];
+                    int n = 0,
+                        sniffCount;
+                    while (n < prefix.length && (sniffCount = in.read(prefix, n, prefix.length - n)) != -1)
+                        n += sniffCount;
                     if (n > 0) in.unread(prefix, 0, n);
+                    String signature = new String(prefix, 0, n, StandardCharsets.UTF_8);
                     boolean playlist =
-                        n >= 7 && new String(prefix, 0, 7, StandardCharsets.US_ASCII).equals("#EXTM3U");
+                        signature.startsWith("#EXTM3U") || signature.startsWith("\uFEFF#EXTM3U");
                     byte[] head = new byte[ProviderSegments.HEAD];
                     int held = 0,
                         skip = 0;
