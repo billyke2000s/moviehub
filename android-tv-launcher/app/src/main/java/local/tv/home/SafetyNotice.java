@@ -20,7 +20,7 @@ final class SafetyNotice {
         "or pay, it isn't from us. Ignore it and watch something else.\n\n" +
         "Free channels and optional video sources are provided by independent third parties. " +
         "MovieHub does not host, operate, supply or endorse their content, and cannot guarantee " +
-        "its availability, safety or legality. Only watch content you are authorised to access.\\n\\n" +
+        "its availability, safety or legality. Only watch content you are authorised to access.\n\n" +
         "You can read this again in Settings → System.";
 
     private SafetyNotice() {}
