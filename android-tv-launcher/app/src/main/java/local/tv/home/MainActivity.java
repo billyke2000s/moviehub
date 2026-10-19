@@ -318,7 +318,7 @@ public class MainActivity extends TvActivity {
         if (DeviceMode.chosen(this).isEmpty()) LayoutChooser.show(this);
         else LayoutChooser.open(this);
         // After the first frame, so the notice sits over Home.
-        handler.post(() -> SafetyNotice.showOnce(this));
+        handler.post(() -> FreeServicesConsent.showOnce(this));
     }
 
     private void tvFullscreen() {
