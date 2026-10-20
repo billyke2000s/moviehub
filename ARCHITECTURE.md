@@ -196,3 +196,17 @@ LivePlayer exposes its pending-resolution phase and notifies the currently attac
 `LiveProgress` is the pure progress rule for native/provider Live TV. `LivePlayer` samples the live clock and LibVLC displayed-picture counter once per second after playback starts, only while the video view is visible and playing. It reuses LiveZapper’s eight-second stall limit, attempts the existing bounded provider retry once, then reports failure through the current owner’s backup/error callback. Changing channels, handing off views, stopping and pausing reset the baseline. The sampler uses the generation ticket so recovery cannot schedule duplicate polling loops.
 
 PNG transport skips byte-wise unfiltering for filter-0 rows, copies RGB payload in bulk, and uses larger bounded inflate/gzip input buffers. Explicit Inflater instances are ended in finally; container validation and allocation limits are unchanged.
+
+## Retained live video output
+
+`LiveVideoOutput` owns a session-long SurfaceTexture and Surface, bound once through
+LibVLC's low-level IVLCVout API. GuidePicture and VlcPlaybackActivity supply FrameLayout
+presentation hosts. The old TextureView is removed before the retained texture is assigned to
+the new view; returning false from onSurfaceTextureDestroyed keeps the BufferQueue alive.
+LibVLC uses its GLES compositor for aspect ratio and subtitles. Only final session stop detaches
+native vout and releases the Surface/texture. Films retain their existing VLCVideoLayout.
+A temporary bitmap of the last frame covers the transfer and is cleared on a fresh texture update.
+No Activity context is retained after the view moves or playback stops.
+
+References: [Android TextureView](https://developer.android.com/reference/android/view/TextureView#setSurfaceTexture(android.graphics.SurfaceTexture))
+and [SurfaceTextureListener](https://developer.android.com/reference/android/view/TextureView.SurfaceTextureListener#onSurfaceTextureDestroyed(android.graphics.SurfaceTexture)).

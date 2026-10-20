@@ -113,3 +113,9 @@ exception type chains can identify a processing deadline; arbitrary transport er
 Separating link resolution from video startup does not extend interpreter, broker, HTTP or request-count limits. It removes the competing video-startup timer only while the bounded native lookup is pending. Cancellation/generation checks still discard results after a channel switch or stop; the callback belongs to the attached view owner.
 
 Silent-stall recovery applies to native/provider playback after actual playback starts, while the view is visible and the player is playing. It uses aggregate clock/frame counters only; no addresses or session values are logged. It reuses the existing one-provider-retry bound and cancellation/generation checks. PNG decoding keeps checksum/layout/inflation/TS bounds and explicitly releases its native inflater after every segment.
+
+## Live video presentation
+
+The retained live output and handoff bitmap stay in process memory and are released at session
+stop or when the next frame arrives. Handoffs do not save pictures or provider URLs to disk and
+do not add permissions, network endpoints or changes to stream authorization.

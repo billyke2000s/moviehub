@@ -26,7 +26,8 @@ public class VlcPlaybackActivity extends Activity {
     TextView titleView;
     /** The side panels (tracks, speed, picture, sleep timer). */
     final PlayerMenus menus = new PlayerMenus(this);
-    private VLCVideoLayout video;
+    private FrameLayout video;
+    private VLCVideoLayout filmVideo;
     private String url, id;
     /** The film or episode this file is (see ResumePoint.titleKey), or null. */
     private String titleKey;
@@ -307,7 +308,11 @@ public class VlcPlaybackActivity extends Activity {
             state == null ? (live ? 0 : ResumePoint.load(this, id, titleKey)) : state.getLong("position");
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
-        video = new VLCVideoLayout(this);
+        video = new FrameLayout(this);
+        if (!live) {
+            filmVideo = new VLCVideoLayout(this);
+            video.addView(filmVideo, new FrameLayout.LayoutParams(-1, -1));
+        }
         root.addView(video, new FrameLayout.LayoutParams(-1, -1));
         status = new TextView(this);
         status.setTextColor(Color.WHITE);
@@ -384,7 +389,7 @@ public class VlcPlaybackActivity extends Activity {
         player = new MediaPlayer(engine);
         player.setRate(playbackRate);
         if (aspect != null) player.setAspectRatio(aspect);
-        player.attachViews(video, null, false, false);
+        player.attachViews(filmVideo, null, false, false);
         player.setEventListener(this::onPlayerEvent);
         Media media = new Media(engine, Uri.parse(url));
         media.setHWDecoderEnabled(true, false);

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — retained live picture
+
+- Keep the decoder Surface and SurfaceTexture through guide/full-screen handoffs instead of detaching native video output. Cover the transfer with the last rendered frame until a fresh frame arrives.
+- Check repeated round trips using rendered frames, nonblank pixels and output identity, alongside existing stream and resolver counters. Physical-TV timing still needs verification.
+
 ## Unreleased — sustained provider playback
 
 - Detect stopped native/provider video progress, with clock fallback when video counters are unavailable even without buffering/error events, using the existing eight-second stall threshold and bounded provider retry/backup handling. Ignore paused and hidden playback.

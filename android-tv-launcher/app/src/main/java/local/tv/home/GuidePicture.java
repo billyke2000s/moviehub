@@ -6,7 +6,6 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import org.videolan.libvlc.MediaPlayer;
-import org.videolan.libvlc.util.VLCVideoLayout;
 
 /**
  * The live picture in the corner of the TV guide, as on a satellite box: the channel you were
@@ -16,7 +15,7 @@ import org.videolan.libvlc.util.VLCVideoLayout;
  */
 final class GuidePicture {
 
-    private VLCVideoLayout video;
+    private FrameLayout video;
     /** Playing, for tests. */
     volatile boolean playing;
 
@@ -98,7 +97,7 @@ final class GuidePicture {
     private void attach(Context context, FrameLayout holder) {
         if (video == null || video.getParent() != holder) {
             removeVideo();
-            video = new VLCVideoLayout(context);
+            video = new FrameLayout(context);
             holder.addView(video, 0, new FrameLayout.LayoutParams(-1, -1));
         }
         LivePlayer.attach(this, video, this::event, () -> playing = false);

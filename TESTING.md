@@ -195,3 +195,15 @@ and verifies that channel and programme font metrics fit the rows. CI screenshot
 `LiveProgressTest` adds 17 core checks for a stopped clock, stopped video while audio time advances, four minutes of healthy progress, pause/resume, missing video counters and reset timestamps. PlaybackTest drives the real shared player and its attached failure callback with a silent-video-freeze observation, verifies paused observations do not trigger recovery, and checks the error appears without sending buffering/error events. The full existing suite also checks provider retries, source backup, cancellation and view handoff.
 
 A same-JVM desktop benchmark compared old/new PNG decoding on the same 6.8 MB Main Event container: every run produced identical 6,885,312-byte TS output, and every new run was faster (roughly 2x in later runs; timings vary). All 17 existing PNG format/filter/error checks remain applicable. This is not an ARM64 benchmark or proof of the cause of a particular TV freeze.
+
+## Live picture handoff evidence
+
+PlaybackTest repeats guide → full screen → guide twice for both direct and resolved fixture
+streams. LiveHandoffEvidence checks that the exact decoder output, valid Surface and
+SurfaceTexture survive; native vout is never detached; fresh texture timestamps arrive;
+the destination is nonblank; and the temporary retained frame has cleared. The measured
+handoff-to-fresh-frame budget is 1.5 seconds on the emulator, logged as MovieHubHandoff.
+This is a regression ceiling, not a claim of imperceptible timing on a physical TV. Existing
+stream-open and resolver counters still assert no restart or re-resolution.
+The assistant's local execution environment was unavailable for this change: core checks,
+formatting, builds, lint and emulator validation run in CI instead.

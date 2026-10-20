@@ -183,3 +183,12 @@ The same fresh Main Event result returned HTTP 200 media HLS and a 6,803,517-byt
 The user confirmed Main Event starts on the physical TV, then reported repeated freezes and a frame stuck for several minutes without a buffering spinner. This verifies startup only, not sustained playback or token renewal. The exact TV-side cause remains unknown. Confirmed code gaps: only VLC buffering/error events could initiate recovery, and PNG processing unnecessarily walked every byte of filter-0 rows. The latest sample used filter 0 on 3,815 of 4,477 rows.
 
 The fix adds native/provider progress monitoring (clock plus displayed-picture counter) with the existing eight-second threshold, one provider retry then normal backup/error handling; paused/hidden playback is excluded. PNG bulk copying and larger inflate buffers improve desktop decoding with identical output. This does not prove that provider-side frozen content, timestamp discontinuities, hardware decoding or network delivery is fixed on the box. Token renewal already has bounded fixture coverage; this report alone does not identify a renewal failure.
+
+## Live guide/full-screen handoff repair
+
+The previous shared-player handoff still detached LibVLC's native video output. LiveVideoOutput
+now retains its SurfaceTexture/Surface across both presentations, with a temporary last-frame
+cover until fresh video arrives. Stronger emulator checks verify rendered output and repeated
+round trips, rather than only the playback clock. Validation is pending for this revision;
+physical-TV frame pacing and seamlessness are not yet verified. Local execution was unavailable,
+so checks for this revision run in CI.

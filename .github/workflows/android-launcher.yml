@@ -29,6 +29,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: '9.6.0'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Format live handoff Java and show any required changes
+        run: |
+          npm install --no-save prettier@3 prettier-plugin-java
+          npx prettier --write android-tv-launcher/app/src/main/java/local/tv/home/{LiveVideoOutput,LivePlayer,GuidePicture,VlcPlaybackActivity}.java android-tv-launcher/app/src/androidTest/java/local/tv/home/{LiveHandoffEvidence,PlaybackTest}.java
+          git diff --exit-code
       - name: Verify playlist, network, channel search and episode rules
         run: |
           mkdir -p build/core-tests

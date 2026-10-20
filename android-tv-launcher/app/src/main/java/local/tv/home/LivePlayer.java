@@ -10,7 +10,7 @@ import java.util.concurrent.*;
 import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.Media;
 import org.videolan.libvlc.MediaPlayer;
-import org.videolan.libvlc.util.VLCVideoLayout;
+import android.widget.FrameLayout;
 
 /**
  * The one Live TV player, shared by the full-screen player and the picture in the guide's corner,
@@ -27,7 +27,7 @@ final class LivePlayer {
     private static boolean alive;
     /** Who shows the picture now (the full-screen player or the guide picture), and where. */
     private static Object owner;
-    private static VLCVideoLayout layout;
+    private static LiveVideoOutput output;
     private static MediaPlayer.EventListener listener;
     private static Runnable resolutionFailed;
     private static Runnable resolutionReady;
@@ -53,8 +53,8 @@ final class LivePlayer {
                 !resolving &&
                 alive &&
                 player.isPlaying() &&
-                layout != null &&
-                layout.isShown();
+                output != null &&
+                output.isShown();
             long frames = -1;
             if (watching) {
                 var media = player.getMedia();
@@ -95,6 +95,10 @@ final class LivePlayer {
 
     private LivePlayer() {}
 
+    static LiveVideoOutput output() {
+        return output;
+    }
+
     static MediaPlayer player() {
         return player;
     }
@@ -120,6 +124,7 @@ final class LivePlayer {
             engine = new LibVLC(context.getApplicationContext(), new ArrayList<>(options));
             engineOptions = optionKey;
             player = new MediaPlayer(engine);
+            output = new LiveVideoOutput(player);
             player.setEventListener(LivePlayer::event);
         }
         if (!restart && streamUrl.equals(url) && (alive || player.isPlaying())) {
@@ -281,32 +286,23 @@ final class LivePlayer {
      * Shows the picture in {@code view} for {@code who}, moving it from wherever it was. Events
      * now go to {@code events}.
      */
-    static void attach(Object who, VLCVideoLayout view, MediaPlayer.EventListener events) {
+    static void attach(Object who, FrameLayout view, MediaPlayer.EventListener events) {
         attach(who, view, events, null);
     }
 
-    static void attach(Object who, VLCVideoLayout view, MediaPlayer.EventListener events, Runnable failed) {
+    static void attach(Object who, FrameLayout view, MediaPlayer.EventListener events, Runnable failed) {
         attach(who, view, events, failed, null);
     }
 
     static void attach(
         Object who,
-        VLCVideoLayout view,
+        FrameLayout view,
         MediaPlayer.EventListener events,
         Runnable failed,
         Runnable ready
     ) {
         if (player == null) return;
-        if (layout != view) {
-            progress.reset();
-            boolean moving = layout != null;
-            if (moving) player.detachViews();
-            player.attachViews(view, null, false, false);
-            layout = view;
-            // Do not restart the video decoder during a view handover. LibVLC
-            // binds its existing decoder to the new video output when the
-            // destination surface becomes available.
-        }
+        output.show(view);
         owner = who;
         listener = events;
         resolutionFailed = failed;
@@ -331,7 +327,7 @@ final class LivePlayer {
         if (player != null) {
             player.setEventListener(null);
             player.stop();
-            if (layout != null) player.detachViews();
+            if (output != null) output.close();
             player.release();
             player = null;
         }
@@ -346,7 +342,7 @@ final class LivePlayer {
         url = null;
         alive = false;
         owner = null;
-        layout = null;
+        output = null;
         listener = null;
         resolutionFailed = null;
         resolutionReady = null;
