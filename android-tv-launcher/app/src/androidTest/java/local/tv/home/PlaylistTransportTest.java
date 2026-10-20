@@ -34,7 +34,8 @@ public final class PlaylistTransportTest {
     public void expiredTokenRenewsWithoutLeakingIntoSegmentsOrOtherOrigins() throws Exception {
         PlaylistSession session = new PlaylistSession(ROOT + "index.m3u8", session(0));
         AtomicInteger calls = new AtomicInteger();
-        PlaylistSession.Fetch fetch = uri -> {
+        PlaylistSession.Fetch fetch = (uri, body) -> {
+            assertNull("DaddyLive renewal remains a body-free GET", body);
             calls.incrementAndGet();
             return new JSONObject().put("token", "fresh-token").put("ttl", 120);
         };
