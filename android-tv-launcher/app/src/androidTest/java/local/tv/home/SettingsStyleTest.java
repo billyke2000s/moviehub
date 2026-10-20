@@ -90,6 +90,50 @@ public class SettingsStyleTest {
     }
 
     @Test
+    public void providerFailureCardWrapsAndKeepsEveryDescriptionLineInsideTheCard() {
+        String description =
+            "Last refresh failed: Provider processing timed out. Saved channels kept.\nNo successful refresh";
+        final TextView[] detail = new TextView[1];
+        final LinearLayout[] card = new LinearLayout[1];
+        remote.runOnMainSync(() -> {
+            LinearLayout body = activity.settingsScreens.settingsLayout(
+                "Provider diagnostics",
+                activity.homeScreen::home,
+                "Accounts"
+            );
+            activity.settingsScreens.settingCard(
+                body,
+                "DaddyLive",
+                description,
+                "On",
+                true,
+                "Turn off",
+                () -> {}
+            );
+            card[0] = (LinearLayout) body.getChildAt(0);
+            detail[0] = (TextView) ((LinearLayout) card[0].getChildAt(0)).getChildAt(1);
+        });
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            assertEquals(description, detail[0].getText().toString());
+            assertEquals(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, card[0].getLayoutParams().height);
+            android.text.Layout lines = detail[0].getLayout();
+            assertNotNull(lines);
+            for (int i = 0; i < lines.getLineCount(); i++) assertEquals(
+                "Failure details hidden",
+                0,
+                lines.getEllipsisCount(i)
+            );
+            View copy = (View) detail[0].getParent();
+            assertTrue(
+                "Description below card",
+                copy.getTop() + detail[0].getBottom() <= card[0].getHeight() - card[0].getPaddingBottom()
+            );
+        });
+        UiEvidence.capture("provider-error-card");
+    }
+
+    @Test
     public void toggleCardFlipsTheSettingAndItsLabels() {
         prefs.edit().putBoolean("clock24", true).commit();
         remote.runOnMainSync(() -> activity.settingsScreens.settings());

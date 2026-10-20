@@ -163,7 +163,7 @@ final class SettingsScreens {
         copy.addView(name);
         TextView detail = activity.compactText(description, 13);
         detail.setTextColor(0xffaab4c4);
-        detail.setMaxLines(2);
+        detail.setMaxLines(4);
         detail.setEllipsize(android.text.TextUtils.TruncateAt.END);
         copy.addView(detail);
         card.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
@@ -176,7 +176,8 @@ final class SettingsScreens {
             lp.leftMargin = activity.dp(18);
             card.addView(button, lp);
         }
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, activity.dp(78));
+        card.setMinimumHeight(activity.dp(78));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.bottomMargin = activity.dp(8);
         body.addView(card, lp);
         return value;

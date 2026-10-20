@@ -105,3 +105,7 @@ PNG segment decoding checks chunk bounds and CRCs, 8-bit RGB/RGBA layout and row
 a recognized payload. Encoded data is capped at 16 MiB, dimensions at 8192 per axis and inflated/decoded
 data at 24 MiB; a valid five-packet TS sync is required. No Android bitmap allocation, downloaded code,
 DRM processing or browser is involved. Physical-box memory/CPU and long-running playback remain untested.
+
+Provider refresh diagnostics persist only fixed error categories or HTTP status numbers. Exception
+messages, URLs, response bodies and tokens are not rendered in Settings. Sanitized isolated-service
+exception type chains can identify a processing deadline; arbitrary transport error strings are rejected.

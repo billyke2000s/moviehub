@@ -81,6 +81,43 @@ public class LiveGuideTest {
     }
 
     @Test
+    public void labelsFitShortGuideRowsInsteadOfBeingCutInHalf() {
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await("ten guide rows", () -> activity.liveTv.cells.size() == 10);
+        remote.runOnMainSync(() -> {
+            LinearLayout grid = activity.liveTv.frame.grid;
+            LinearLayout.LayoutParams layout = (LinearLayout.LayoutParams) grid.getLayoutParams();
+            layout.height = activity.dp(200);
+            layout.weight = 0;
+            grid.setLayoutParams(layout);
+        });
+        await("text fits short rows", () -> {
+            for (View view : activity.liveTv.cells) {
+                TextView label = (TextView) view;
+                android.graphics.Paint.FontMetrics fm = label.getPaint().getFontMetrics();
+                if (
+                    label.getHeight() == 0 ||
+                    fm.descent - fm.ascent >
+                        label.getHeight() - label.getPaddingTop() - label.getPaddingBottom() + 1
+                ) return false;
+            }
+            return true;
+        });
+        remote.runOnMainSync(() -> {
+            for (java.util.List<TextView> cells : activity.liveTv.rows.programmes)
+                for (TextView label : cells) {
+                    android.graphics.Paint.FontMetrics fm = label.getPaint().getFontMetrics();
+                    assertTrue(
+                        "Programme clipped",
+                        fm.descent - fm.ascent <=
+                            label.getHeight() - label.getPaddingTop() - label.getPaddingBottom() + 1
+                    );
+                }
+        });
+        UiEvidence.capture("live-guide-short-rows");
+    }
+
+    @Test
     public void tenChannelsPerPageNumberedFrom101AndPagedWithTheRemote() {
         remote.runOnMainSync(() -> activity.liveTv.live());
         await(

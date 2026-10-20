@@ -121,3 +121,6 @@ The provider-engine development fix supports the current player's anonymous play
 in-memory renewal and PNG-wrapped MPEG-TS segments through MovieHub's existing local relay. The web
 player and its page advertising are not loaded. Desktop samples decoded for Main Event, Football,
 Action, F1 and ABC USA on 20 October 2026; this does not establish every channel or physical-TV playback.
+
+Provider refresh failures now show a safe reason at the start of each provider's status. Settings cards
+expand to fit their descriptions, and guide labels fit shorter rows instead of clipping vertically.

@@ -54,6 +54,46 @@ public final class ProviderAdaptersTest {
     }
 
     @Test
+    public void failedCatalogueReportsHttpAndNetworkCausesWithoutPrivateAddresses() throws Exception {
+        String module = ProviderPackages.module(context, "dlhd");
+        ProviderBroker.Executor engine = (source, op, payload) ->
+            ProviderBridge.call(context, source, op, payload);
+        try {
+            ProviderBroker.run(
+                module,
+                "catalogue",
+                null,
+                engine,
+                request ->
+                    new JSONObject()
+                        .put("status", 403)
+                        .put("url", request.getString("url"))
+                        .put("headers", new JSONObject())
+                        .put("text", "private response"),
+                new NativeHttp()
+            );
+            fail("Rejected directory accepted");
+        } catch (ProviderFailure error) {
+            assertEquals("Provider returned HTTP 403", error.summary);
+        }
+        try {
+            ProviderBroker.run(
+                module,
+                "catalogue",
+                null,
+                engine,
+                request -> {
+                    throw new UnknownHostException("private provider address");
+                },
+                new NativeHttp()
+            );
+            fail("Unreachable directory accepted");
+        } catch (ProviderFailure error) {
+            assertEquals("DNS lookup failed", error.summary);
+        }
+    }
+
+    @Test
     public void capabilitiesRejectForeignHostsAndCredentials() {
         assertTrue(ProviderBroker.allowed("stirr", "https://stirr.com/api/videos/list/"));
         assertFalse(ProviderBroker.allowed("stirr", "https://stirr.com.evil.example/api/videos/list/"));

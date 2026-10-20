@@ -182,7 +182,12 @@ final class ProviderBroker {
         for (int round = 0; round < 64; round++) {
             http.check();
             if (System.nanoTime() > deadline) throw new IOException("Provider operation timeout");
-            JSONObject step = new JSONObject(engine.call(module, operation, input.toString()));
+            JSONObject step;
+            try {
+                step = new JSONObject(engine.call(module, operation, input.toString()));
+            } catch (Exception e) {
+                throw failure(e, responses);
+            }
             if (step.optBoolean("done")) {
                 if (journal != null) journal.put("complete", true);
                 return step.get("value");
@@ -201,7 +206,7 @@ final class ProviderBroker {
                     throw e;
                 } catch (Exception e) {
                     http.check();
-                    record.put("error", true);
+                    record.put("error", true).put("failure", ProviderFailure.describe(e));
                 }
                 if (record.has("response")) bytes += record.getJSONObject("response").toString().length();
                 // Below ProviderScript.MAX_BYTES (16 MB), which bounds the script's whole input.
@@ -211,6 +216,26 @@ final class ProviderBroker {
             }
         }
         throw new IOException("Provider continuation limit");
+    }
+
+    private static ProviderFailure failure(Exception error, JSONArray responses) {
+        if (!ProviderFailure.describe(error).startsWith("Provider error (")) return ProviderFailure.from(
+            error
+        );
+        for (int i = responses.length() - 1; i >= 0; i--) {
+            JSONObject record = responses.optJSONObject(i);
+            if (record == null) continue;
+            JSONObject response = record.optJSONObject("response");
+            if (response != null && response.optInt("status") >= 400) return ProviderFailure.http(
+                response.optInt("status"),
+                error
+            );
+            if (record.optBoolean("error")) return ProviderFailure.transport(
+                record.optString("failure"),
+                error
+            );
+        }
+        return ProviderFailure.from(error);
     }
 
     static Object call(Context c, String id, String operation, JSONObject row, NativeHttp http)

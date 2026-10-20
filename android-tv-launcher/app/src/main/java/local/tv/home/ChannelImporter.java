@@ -136,7 +136,7 @@ final class ChannelImporter {
                             context
                                 .getSharedPreferences("providerEngine", 0)
                                 .edit()
-                                .putString(id + "Error", e.getClass().getSimpleName())
+                                .putString(id + "Error", ProviderFailure.describe(e))
                                 .apply();
                             unavailable.add(AdapterSources.sourceName(AdapterSources.source(id)));
                         }

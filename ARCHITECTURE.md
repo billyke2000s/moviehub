@@ -184,3 +184,9 @@ HTML and returns session metadata after validating a tokenized manifest. `Playli
 inside the existing `ProviderRelay`, scoped to one HTTPS authority and channel directory. The relay uses
 `ProviderPngSegments` for bounded PNG-to-MPEG-TS unpacking only for this session type. Direct sources and
 other providers retain their existing paths; fullscreen/mini-player share the same relay session.
+
+`ProviderFailure` classifies fixed diagnostic summaries and HTTP status codes without copying exception
+messages. `ProviderBroker` retains safe transport failure categories across replay and wraps failed script
+steps with the observed HTTP/network cause. `ChannelImporter` stores the summary; `ProviderSettings`
+puts it first in the description. Settings cards use minimum height plus wrap-content. Guide label sizing
+fits row height while retaining horizontal ellipsis.

@@ -5,7 +5,7 @@ There are three layers of checks. CI runs all of them on every pull request that
 
 | Layer | Where | Needs | Runs in CI step |
 | --- | --- | --- | --- |
-| Core checks (259) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
+| Core checks (276) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
 | Build and lint | Gradle | Android SDK 35 | "Build APK and run Android lint" |
 | Device tests (instrumentation) | `android-tv-launcher/app/src/androidTest/` | Android emulator | `device-tests` job |
 | Signing compatibility | release build vs published APK | signing secrets (same-repo PRs only) | `signed-compatibility` job |
@@ -17,9 +17,9 @@ Pure-Java rules for playlists, URLs, channel search, episode matching and combin
 ```sh
 mkdir -p build/core-tests
 javac -d build/core-tests \
-  android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch,SkyNumbers,GuideOrder,SkipQueue,ErrorLog,SpeedTest,ChannelIdentity,ChannelCategory}.java \
-  android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest,SkyNumbersTest,GuideOrderTest,SkipQueueTest,TroubleshootingTest,ChannelIdentityTest}.java
-for t in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest EpgMatchTest SkyNumbersTest GuideOrderTest SkipQueueTest TroubleshootingTest ChannelIdentityTest; do
+  android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch,SkyNumbers,GuideOrder,SkipQueue,ErrorLog,SpeedTest,ChannelIdentity,ChannelCategory,ProviderFailure}.java \
+  android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest,SkyNumbersTest,GuideOrderTest,SkipQueueTest,TroubleshootingTest,ChannelIdentityTest,ProviderFailureTest}.java
+for t in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest EpgMatchTest SkyNumbersTest GuideOrderTest SkipQueueTest TroubleshootingTest ChannelIdentityTest ProviderFailureTest; do
   java -Xmx64m -cp build/core-tests local.tv.home.$t
 done
 ```
@@ -180,3 +180,12 @@ host-JVM run uses Android-shell stubs; the Android workflow runs the real instru
 Live desktop evidence (20 October 2026): Main Event plus Football (35), Action (37), F1 (60) and ABC USA
 (51) returned tokenized HLS and unpacked media with FFmpeg exit 0. No real stream URLs, tokens or captured
 media are committed. Four-second samples do not prove every channel, sustained playback or the TV box.
+
+## Readable provider failures and compact displays
+
+`ProviderFailureTest` adds 17 core checks for DNS/TLS/connection errors, isolated-runtime deadlines,
+response limits, fixed HTTP summaries and redaction of sensitive exception messages. ProviderAdaptersTest
+exercises HTTP 403 and DNS failures through the real isolated service. SettingsStyleTest checks that a
+multi-line provider failure is not ellipsized or clipped by its card. LiveGuideTest shrinks the guide grid
+and verifies that channel and programme font metrics fit the rows. CI screenshots include
+`provider-error-card` and `live-guide-short-rows`. These fixtures do not identify a particular box's failure.

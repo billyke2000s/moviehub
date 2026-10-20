@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — readable provider refresh failures
+
+- Expand Settings cards to fit descriptions, put provider failures first, and retain safe network/HTTP/
+  runtime diagnostics. The TV's DaddyLive import failure still needs a fresh diagnostic result.
+- Fit guide labels to row height so constrained displays do not cut text in half.
+
 ## Unreleased — DaddyLive playlist sessions and PNG media
 
 - Add the current anonymous playlist-token bootstrap, memory-only renewal and a single refresh after a

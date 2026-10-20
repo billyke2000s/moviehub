@@ -160,3 +160,12 @@ The development fix adds the current token protocol, scoped in-memory renewal an
 to the existing native player/relay. Local core checks, new PNG fixtures and relay/session fixtures have
 passed; live checks and Android CI are recorded with the change. Physical TV, long sessions and all-channel
 availability remain unverified. No release or in-app update has been published by this fix.
+
+## Box report: hidden provider failure (20 October 2026)
+
+The user's TV reports no successful DaddyLive refresh, before the playback resolver is reached. Its
+failure description is clipped because Settings cards had a fixed 78dp height; the guide also clips
+large text in short rows. This follow-up fixes card sizing, places failures before catalogue metadata,
+and retains safe HTTP/network/runtime failure categories rather than only the outer exception class.
+Guide labels now fit row height. This is a readability and diagnosis fix: the actual cause of the
+reported box's DaddyLive catalogue failure is still unknown until another refresh records its category.
