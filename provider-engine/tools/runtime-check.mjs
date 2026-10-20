@@ -430,9 +430,9 @@ assert.equal(freeRows[0].name, "Sky Sports Main Event UK");
 checks++;
 const freeStream = drive("freeshot", "resolve", freeRows[0], (req, n) => {
     assert.equal(req.method, "GET");
-    if (n === 0) return '<iframe src="https://freeshot.live/embed/MainEvent.php"></iframe>';
+    if (n === 0) return '<iframe src="  /embed/MainEvent.php  "></iframe>';
     if (n === 1)
-        return '<iframe src="https://freeshot.live/ads/advert.php"></iframe><iframe src="https://wideiptv.top/player/skysportsmainevent"></iframe>';
+        return '<iframe src="https://freeshot.live/ads/advert.php"></iframe><iframe src="//wideiptv.top/player/skysportsmainevent"></iframe>';
     assert.equal(req.url, "https://wideiptv.top/player/skysportsmainevent");
     return 'const config = {streamUrl: "https://ds1.bluetier.top/skysportsmainevent/index.m3u8?token=YWJjZA==.signature", channelSlug:"skysportsmainevent", tokenExpiresIn:300};';
 });

@@ -182,6 +182,26 @@ async function exchange(provider, request, stats) {
                     ")",
             );
         if (res.status >= 400) stats.httpErrors.push(res.status + " " + new URL(current).hostname);
+        if (provider === "freeshot") {
+            stats.iframeTrace ||= [];
+            stats.iframeTrace.push({
+                page: new URL(current).pathname,
+                frames: [...buffer.toString("utf8").matchAll(/<iframe\b[^>]*\bsrc=["']([^"']+)["']/gi)]
+                    .slice(0, 8)
+                    .map((match) => {
+                        try {
+                            const u = new URL(match[1], current);
+                            return {
+                                host: u.hostname,
+                                path: u.pathname,
+                                whitespace: match[1] !== match[1].trim(),
+                            };
+                        } catch {
+                            return { invalid: true };
+                        }
+                    }),
+            });
+        }
         const responseHeaders = {};
         const cookies = [];
         res.headers.forEach((v, k) => {

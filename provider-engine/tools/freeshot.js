@@ -9,10 +9,15 @@ function __freeShotPage(url) {
         return response.text();
     });
 }
-function __freeShotIframe(html, expression) {
+function __freeShotIframe(html, expression, base) {
     var frames = /<iframe\b[^>]*\bsrc=["']([^"']+)["']/gi,
         match;
-    while ((match = frames.exec(html))) if (expression.test(match[1])) return match[1];
+    while ((match = frames.exec(html))) {
+        try {
+            var address = new URL(match[1].trim(), base).href;
+            if (expression.test(address)) return address;
+        } catch (error) {}
+    }
     throw new Error("FreeShot player unavailable");
 }
 function __run(operation, row) {
@@ -54,15 +59,19 @@ function __run(operation, row) {
     }
     if (operation !== "resolve" || !/^[a-z0-9-]+-uk\/\d+$/.test(row.channelId))
         throw new Error("Invalid FreeShot operation or channel");
-    var playerSlug;
-    return __freeShotPage("https://www.freeshot.live/live-tv/" + row.channelId)
+    var playerSlug, embed;
+    var channelPage = "https://www.freeshot.live/live-tv/" + row.channelId;
+    return __freeShotPage(channelPage)
         .then(function (html) {
-            return __freeShotPage(
-                __freeShotIframe(html, /^https:\/\/(?:www\.)?freeshot\.live\/embed\/[A-Za-z0-9_-]+\.php$/),
+            embed = __freeShotIframe(
+                html,
+                /^https:\/\/(?:www\.)?freeshot\.live\/embed\/[A-Za-z0-9_-]+\.php$/,
+                channelPage,
             );
+            return __freeShotPage(embed);
         })
         .then(function (html) {
-            var player = __freeShotIframe(html, /^https:\/\/wideiptv\.top\/player\/[A-Za-z0-9_-]+$/);
+            var player = __freeShotIframe(html, /^https:\/\/wideiptv\.top\/player\/[A-Za-z0-9_-]+$/, embed);
             playerSlug = player.substring(player.lastIndexOf("/") + 1);
             return __freeShotPage(player);
         })

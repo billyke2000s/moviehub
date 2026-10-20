@@ -27,8 +27,9 @@ async function inspect(provider, row, forceRenew = false) {
         forcedRenewal: forceRenew,
     };
     let relay;
+    const resolutionStats = stats();
     try {
-        const stream = await run(provider, "resolve", row, stats());
+        const stream = await run(provider, "resolve", row, resolutionStats);
         relay = spawn(
             "java",
             [
@@ -145,7 +146,10 @@ async function inspect(provider, row, forceRenew = false) {
             "host not on the app's allow-list",
         ];
         result.reason = safe.find((value) => String(error.message).includes(value)) || "Unclassified";
-        if (provider === "freeshot") result.channelPath = row.channelId;
+        if (provider === "freeshot") {
+            result.channelPath = row.channelId;
+            result.trace = resolutionStats.iframeTrace || [];
+        }
     } finally {
         if (relay) {
             relay.stdin.end("\n");
