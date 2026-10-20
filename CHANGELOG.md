@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — sustained provider playback
+
+- Detect stopped native/provider video progress, with clock fallback when video counters are unavailable even without buffering/error events, using the existing eight-second stall threshold and bounded provider retry/backup handling. Ignore paused and hidden playback.
+- Speed up PNG segment decoding with filter-0 and RGB bulk-copy paths and larger inflate buffers, preserving validation limits and releasing the inflater on failure. Physical-TV cause and sustained playback remain unverified.
+
 ## Unreleased — provider playback startup
 
 - Give bounded link resolution its own phase, then start the video-opening timer when the URL/relay is ready. Previously a working provider taking over 15 seconds could be discarded before LibVLC received a stream.

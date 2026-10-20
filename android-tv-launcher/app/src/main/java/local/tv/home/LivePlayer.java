@@ -40,6 +40,49 @@ final class LivePlayer {
     private static boolean refreshed;
     private static Context appContext;
     private static List<String> lastOptions;
+    private static final LiveProgress progress = new LiveProgress();
+    private static boolean played;
+    private static final Runnable watchProgress = new Runnable() {
+        @Override
+        public void run() {
+            if (player == null) return;
+            int ticket = generation;
+            boolean watching =
+                (EngineSources.locator(url) || PlutoSource.nativeUrl(url)) &&
+                played &&
+                !resolving &&
+                alive &&
+                player.isPlaying() &&
+                layout != null &&
+                layout.isShown();
+            long frames = -1;
+            if (watching) {
+                var media = player.getMedia();
+                if (media != null) try {
+                    var stats = media.getStats();
+                    if (stats != null) frames = stats.displayedPictures;
+                } catch (RuntimeException e) {
+                    Diagnostics.recovered("Reading live playback progress", e);
+                    watching = false;
+                } finally {
+                    media.release();
+                }
+            }
+            observeProgress(android.os.SystemClock.elapsedRealtime(), player.getTime(), frames, watching);
+            if (player != null && ticket == generation) main.postDelayed(this, 1000);
+        }
+    };
+
+    static void observeProgress(long now, long time, long frames, boolean watching) {
+        if (!(EngineSources.locator(url) || PlutoSource.nativeUrl(url))) return;
+        if (!progress.stalled(now, time, frames, watching, LiveZapper.STALL_MS)) return;
+        progress.reset();
+        Timings.record("Live video stopped advancing", Timings.start());
+        if (retryProvider()) return;
+        alive = false;
+        player.pause();
+        if (resolutionFailed != null) resolutionFailed.run();
+    }
 
     /** Fixture transport for device tests; never assigned by app code. */
     interface Resolver {
@@ -91,6 +134,10 @@ final class LivePlayer {
         url = streamUrl;
         alive = true;
         opened++;
+        played = false;
+        progress.reset();
+        main.removeCallbacks(watchProgress);
+        main.postDelayed(watchProgress, 1000);
         if (PlutoSource.nativeUrl(streamUrl) || EngineSources.locator(streamUrl)) {
             resolving = true;
             int ticket = generation;
@@ -205,17 +252,12 @@ final class LivePlayer {
     }
 
     private static void event(MediaPlayer.Event event) {
+        if (event.type == MediaPlayer.Event.Playing) played = true;
         if (
             (event.type == MediaPlayer.Event.EncounteredError ||
                 event.type == MediaPlayer.Event.EndReached) &&
-            EngineSources.locator(url) &&
-            !refreshed &&
-            appContext != null
+            retryProvider()
         ) {
-            refreshed = true;
-            AdapterSources.failed(url);
-            EngineSources.invalidate();
-            play(appContext, url, lastOptions, true);
             return;
         }
         // Not "Stopped": that comes late from our own stop() when opening a new stream, and would
@@ -224,6 +266,15 @@ final class LivePlayer {
             event.type == MediaPlayer.Event.EncounteredError || event.type == MediaPlayer.Event.EndReached
         ) alive = false;
         if (listener != null) listener.onEvent(event);
+    }
+
+    private static boolean retryProvider() {
+        if (!EngineSources.locator(url) || refreshed || appContext == null) return false;
+        refreshed = true;
+        AdapterSources.failed(url);
+        EngineSources.invalidate();
+        play(appContext, url, lastOptions, true);
+        return true;
     }
 
     /**
@@ -247,6 +298,7 @@ final class LivePlayer {
     ) {
         if (player == null) return;
         if (layout != view) {
+            progress.reset();
             boolean moving = layout != null;
             if (moving) player.detachViews();
             player.attachViews(view, null, false, false);
@@ -272,6 +324,9 @@ final class LivePlayer {
 
     /** Stops and releases everything. */
     static void stop() {
+        main.removeCallbacks(watchProgress);
+        progress.reset();
+        played = false;
         cancelResolution();
         if (player != null) {
             player.setEventListener(null);

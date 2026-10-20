@@ -78,7 +78,7 @@ final class ProviderPngSegments {
             height,
             channels
         );
-        try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(gzip))) {
+        try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(gzip), 32768)) {
             writeTs(in, target);
         }
     }
@@ -88,16 +88,19 @@ final class ProviderPngSegments {
         int stride = width * channels;
         byte[] previous = new byte[stride],
             row = new byte[stride],
+            rgb = channels == 3 ? null : new byte[width * 3],
             header = new byte[12],
             gzip = null;
         int found = 0,
             written = 0;
-        try (DataInputStream in = new DataInputStream(new InflaterInputStream(compressed))) {
+        Inflater inflater = new Inflater();
+        try (DataInputStream in = new DataInputStream(new InflaterInputStream(compressed, inflater, 32768))) {
             for (int y = 0; y < height; y++) {
                 int filter = in.read();
                 if (filter < 0 || filter > 4) throw new IOException("Invalid PNG filter");
                 in.readFully(row);
-                for (int i = 0; i < stride; i++) {
+                // Filter 0 is already the final row. Do not walk every byte to add zero.
+                for (int i = 0; filter != 0 && i < stride; i++) {
                     int a = i < channels ? 0 : row[i - channels] & 255;
                     int b = previous[i] & 255;
                     int c = i < channels ? 0 : previous[i - channels] & 255;
@@ -112,28 +115,43 @@ final class ProviderPngSegments {
                                   ? paeth(a, b, c)
                                   : 0;
                     row[i] = (byte) ((row[i] & 255) + add);
-                    if (i % channels == 3) continue;
-                    if (found < header.length) {
-                        header[found++] = row[i];
-                        if (found == header.length) {
-                            if (
-                                !new String(header, 0, 8, java.nio.charset.StandardCharsets.US_ASCII).equals(
-                                    "TIKTIKPX"
-                                )
-                            ) throw new IOException("Unknown PNG payload");
-                            long n = unsigned(header, 8);
-                            if (
-                                n < 2 || n > MAX_ENCODED || n + 12 > (long) width * height * 3
-                            ) throw new IOException("Invalid PNG payload length");
-                            gzip = new byte[(int) n];
-                        }
-                    } else if (written < gzip.length) gzip[written++] = row[i];
+                }
+                byte[] payload = row;
+                if (channels == 4) {
+                    for (int x = 0; x < width; x++) System.arraycopy(row, x * 4, rgb, x * 3, 3);
+                    payload = rgb;
+                }
+                int offset = 0;
+                if (found < header.length) {
+                    int count = Math.min(header.length - found, width * 3);
+                    System.arraycopy(payload, 0, header, found, count);
+                    found += count;
+                    offset = count;
+                    if (found == header.length) {
+                        if (
+                            !new String(header, 0, 8, java.nio.charset.StandardCharsets.US_ASCII).equals(
+                                "TIKTIKPX"
+                            )
+                        ) throw new IOException("Unknown PNG payload");
+                        long n = unsigned(header, 8);
+                        if (
+                            n < 2 || n > MAX_ENCODED || n + 12 > (long) width * height * 3
+                        ) throw new IOException("Invalid PNG payload length");
+                        gzip = new byte[(int) n];
+                    }
+                }
+                if (gzip != null && written < gzip.length) {
+                    int count = Math.min(gzip.length - written, width * 3 - offset);
+                    System.arraycopy(payload, offset, gzip, written, count);
+                    written += count;
                 }
                 byte[] swap = previous;
                 previous = row;
                 row = swap;
             }
             if (in.read() != -1) throw new IOException("Excess PNG pixel data");
+        } finally {
+            inflater.end();
         }
         if (
             gzip == null || written != gzip.length || (gzip[0] & 255) != 31 || (gzip[1] & 255) != 139

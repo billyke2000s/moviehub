@@ -259,3 +259,13 @@ The TV now reports a successful 899-channel DaddyLive refresh. A fresh bundled-m
 Documentation checked: https://github.com/TheBinaryNinja/masqueradarr/blob/main/README.md (resolve-on-demand and DaddyLive player walk).
 
 The same fresh Main Event result returned HTTP 200 media HLS and a 6,803,517-byte PNG segment. Production ProviderPngSegments unpacked it on Java 17; FFmpeg decoded four seconds of video with exit 0. This verifies a desktop sample and the native unpacker, not physical TV playback or a complete native-network relay session.
+
+## Sustained playback and silent freezes (20 October 2026)
+
+Main Event startup was confirmed by the user on the TV. The later report is repeated freezing and then a fixed frame for minutes without a buffering spinner. Do not mark sustained playback or renewal verified from startup success.
+
+The native relay must fully validate/unpack each PNG media container before delivering its TS payload. The sampled 6.8 MB, ten-second container has 4,477 rows, 3,815 using filter 0. The optimized decoder skips needless per-byte work on those rows, copies RGB bytes in bulk and increases inflate buffers while preserving all limits/checks; the explicit inflater is released even on error. A desktop before/after benchmark produced identical bytes in eight paired runs, all faster after the change (later runs roughly 2x). ARM64 throughput remains unmeasured.
+
+LivePlayer previously recovered only from VLC buffering/error signals. It now also monitors elapsed playback time and displayed-picture count for visible, playing native/provider streams, at the existing eight-second stall threshold. A stopped video counter can trigger even while the audio clock advances. A provider receives one re-resolution/alternate-player attempt; further failure follows the owner’s ordinary backup/error handling. Pausing, hidden views, channel changes and handoffs reset the observation; no background pause is auto-resumed. Identical frozen pictures still encoded as new video frames cannot be distinguished from valid content by counters. Actual provider network/decoder/timestamp causes and sustained renewal on the TV remain unconfirmed.
+
+Advancing displayed-picture counters take precedence over the clock: some live demuxers expose a static clock during healthy video. Missing/zero video counters fall back to clock progress.

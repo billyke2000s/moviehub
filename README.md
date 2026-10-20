@@ -126,3 +126,5 @@ Provider refresh failures now show a safe reason at the start of each provider's
 expand to fit their descriptions, and guide labels fit shorter rows instead of clipping vertically.
 
 Provider playback resolves a fresh stream when you select a channel. The screen shows “Finding a working stream…” during that bounded lookup, then starts the video-opening timeout after a URL is ready. Refreshing channels updates the directory; it does not pre-resolve expiring video links.
+
+Native/provider Live TV also watches playback progress: a stopped video counter (falling back to the clock when video counters are unavailable) can recover even when VLC emits no buffering event. Paused or hidden playback is excluded.

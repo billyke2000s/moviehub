@@ -111,3 +111,5 @@ messages, URLs, response bodies and tokens are not rendered in Settings. Sanitiz
 exception type chains can identify a processing deadline; arbitrary transport error strings are rejected.
 
 Separating link resolution from video startup does not extend interpreter, broker, HTTP or request-count limits. It removes the competing video-startup timer only while the bounded native lookup is pending. Cancellation/generation checks still discard results after a channel switch or stop; the callback belongs to the attached view owner.
+
+Silent-stall recovery applies to native/provider playback after actual playback starts, while the view is visible and the player is playing. It uses aggregate clock/frame counters only; no addresses or session values are logged. It reuses the existing one-provider-retry bound and cancellation/generation checks. PNG decoding keeps checksum/layout/inflation/TS bounds and explicitly releases its native inflater after every segment.
