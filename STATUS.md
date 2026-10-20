@@ -204,33 +204,44 @@ The earlier repeated-trip test reused an ActivityMonitor after waitForMonitorWit
 removed it. Both first trips passed with fresh frames; the second trips could not detect their
 Activity. The test now registers a new monitor per trip, and the final full suite passed.
 
-## Early video/audio freeze follow-up (20 October 2026)
+## Live playback, controls and FreeShot (20 October 2026)
 
-The user confirmed instant guide/full-screen movement on the physical TV. Sky video then froze
-within about five seconds while audio continued; a reload restored video but lost audio, while
-moving back to the mini-player restored playback. This strongly implicates the presentation or
-reload path but does not establish a particular device/decoder cause.
+The user confirmed instant mini-player/full-screen movement on the physical TV, then reported
+video freezing within about five seconds while audio continued, audio missing after a reload,
+and playback recovering on a move back to the mini-player. Physical-TV sustained playback and
+the precise cause of its audio symptom remain unverified.
 
-Confirmed code gaps: timestamp equality discarded valid TextureView callbacks and could retain
-a still cover; the freeze monitor used LibVLC picture stats/clock instead of the actual consumer
-counter. The candidate removes timestamp gating, monitors rendered buffers, and tries one
-consumer-only refresh before existing bounded source recovery, preserving audio and network
-sessions. New regression tests exercise constant EGL timestamps, actual consumer notification
-loss, and wrapped-HLS reload audio/video progress. Validation is pending.
+The candidate counts actual TextureView updates even when presentation timestamps repeat and
+tries one consumer-only refresh for stopped rendered video while the clock advances. It keeps
+the decoder, network session and audio output. Persistent stalls use bounded source recovery.
+The relay also accepts `Range: bytes=0-` for wrapped segments by fetching/decoding the complete
+entity instead of applying decoded offsets to its PNG container.
 
-The first host-JVM sustained diagnostic resolved Main Event and Football but decoded zero
-frames because the relay reported IOException. That is an unsuccessful playback probe, not
-provider-failure proof; safe error classification is being added. Physical-TV sustained playback
-and the reload-audio symptom remain unverified.
+First Back reveals the live controls and Sources; the next returns to the retained mini-player.
+Sources defaults to Automatic. A manual choice pins that source; restoring Automatic tries
+unvisited copies once, including earlier copies, then stops. The menu reads saved database rows;
+only a selected source or needed failover is resolved.
 
-## Live controls and source discovery (20 October 2026)
+FreeShot (UK sports) is available as an opt-in source in Settings → Provider engine. It imports
+the public related-channel directory in one request, follows only the chosen channel's literal
+embed/player links, normalizes relative/whitespace-containing iframe addresses, and uses the
+native player. Fetched page scripts and adverts never execute. Anonymous tokens renew at the
+fixed WideIPTV endpoint within one discovered BlueTier origin and channel prefix. Other website
+countries/categories are not imported.
 
-Candidate changes reveal controls on the first Back and return to the guide on the second, expose Sources for every live channel, default to Automatic and pin manual selections. Backups remain local metadata until selected or needed for failover. New instrumentation covers a pending resolver so source menus cannot accidentally start background probing. CI validation is pending.
+Verified live host evidence: FreeShot Main Event decoded video (149.92 seconds, 3,748 unique
+frames) and audio (150 seconds, 7,032 unique frames) through the actual resolver and production
+relay, including forced token renewal, with no timestamp gaps. DaddyLive Football decoded both
+tracks for 150 seconds without timestamp gaps after the wrapped-range fix. DaddyLive Main Event
+showed a roughly 10-second timestamp gap in the host check; this is not proof of the TV's cause.
+The desktop diagnostic explicitly preserves Origin to match Android; otherwise Java silently
+omits that header.
 
-FreeShot homepage and the supplied channel page return a small Site Unavailable page from this environment, including the cloud browser. Search retrieval exposed the public channel catalogue and an embedded player, but playback could not be verified. No untested FreeShot provider has been added; this does not establish whether the site works on the user’s network.
+Local validation: 540 core checks, compiler tests, 21 engine checks, 45 actual-Rhino multi-provider
+checks, 17 PNG checks and four real-TCP wrapped-range checks passed. The FreeShot relative-URL and
+channel-identity fixtures also passed after normalization. Android emulator validation is pending;
+build/lint and permanent-signing compatibility passed for the current candidate.
 
-## Verified FreeShot structure and relay range correction
-
-GitHub-hosted checks reached FreeShot’s catalogue, its embed and WideIPTV player. With the player’s normal User-Agent/Origin/Referer, Sky Sports Action decoded 30 seconds of video (750 frames) and audio (1,406 frames) outside its web player. The new opt-in UK sports adapter imports directory metadata and follows only the selected channel’s links; its renewal and production-relay sustained check are pending.
-
-The first sustained DaddyLive diagnostic was invalid because desktop HttpURLConnection silently dropped Origin; a local loopback experiment confirmed it, and the diagnostic JVM now sends the same header Android does. The corrected probe found production relay rejection of zero-to-end byte ranges on wrapped segments. The relay now fetches/decodes that complete entity and a real-TCP regression passes locally. This is an identified app defect; it is not yet proof of the physical TV’s freeze/audio cause.
+[Signed test build](https://github.com/billyke2000s/moviehub/actions/runs/39510829183/artifacts/12305832489)
+(source `63b092ca47ba4b3d549cb4656be55e6333b3a187`). Extract and install `moviehub-test.apk`.
+No production update has been merged or published.

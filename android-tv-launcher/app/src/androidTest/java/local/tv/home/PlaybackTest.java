@@ -413,6 +413,15 @@ public class PlaybackTest {
     }
 
     private void handover(boolean nativeSource) throws Exception {
+        handover(nativeSource, false);
+    }
+
+    @Test
+    public void aManualBackupSurvivesGuideAndFullScreenWithoutReopening() throws Exception {
+        handover(false, true);
+    }
+
+    private void handover(boolean nativeSource, boolean manualBackup) throws Exception {
         instrumentation.runOnMainSync(activity::finish);
         instrumentation.waitForIdleSync();
         activity = null;
@@ -431,12 +440,24 @@ public class PlaybackTest {
             return fixture;
         };
         String url = nativeSource ? PlutoSource.ROOT + "5ad8d3a31b95267e225e4e09" : fixture;
-        ChannelDatabase.Writer writer = db.writer("handover-test", () -> {}, n -> {});
+        String backup = "http://127.0.0.1:" + server.getLocalPort() + "/live.ts?channel=backup";
+        String channelName = manualBackup ? "Sky Sports Main Event UK" : "Alpha";
+        String epg = manualBackup ? "SkySportsMainEvent.uk" : "";
+        ChannelDatabase.Writer writer = db.writer(manualBackup ? "m3u" : "handover-test", () -> {}, n -> {});
         try {
-            writer.accept(new Playlist.Channel("Alpha", url, "General", "", ""));
+            writer.accept(new Playlist.Channel(channelName, url, "General", "", epg));
             writer.commit();
         } finally {
             writer.abort();
+        }
+        if (manualBackup) {
+            ChannelDatabase.Writer alternative = db.writer("free", () -> {}, n -> {});
+            try {
+                alternative.accept(new Playlist.Channel(channelName, backup, "General", "", epg));
+                alternative.commit();
+            } finally {
+                alternative.abort();
+            }
         }
         prefs
             .edit()
@@ -458,6 +479,7 @@ public class PlaybackTest {
             LiveHandoffEvidence rendered = new LiveHandoffEvidence(instrumentation);
             rendered.awaitPicture(false);
             int opened = LivePlayer.opened;
+            MediaPlayer retainedPlayer = LivePlayer.player();
             for (int trip = 0; trip < 2; trip++) {
                 // waitForMonitorWithTimeout removes the monitor after the first hit.
                 if (trip > 0) monitor = instrumentation.addMonitor(
@@ -481,7 +503,20 @@ public class PlaybackTest {
                     15000
                 );
                 assertEquals("The full screen carried on the guide's stream", opened, LivePlayer.opened);
+                assertSame("The same live player survived", retainedPlayer, LivePlayer.player());
                 rendered.awaitPicture(true);
+                if (manualBackup) {
+                    await(() -> full.zapper != null && full.zapper.copies().size() == 2, 5000);
+                    if (trip == 0) {
+                        instrumentation.runOnMainSync(() -> full.zapper.useCopy(1, false));
+                        await(
+                            () -> backup.equals(LivePlayer.currentUrl()) && LivePlayer.player().isPlaying(),
+                            15000
+                        );
+                        opened = LivePlayer.opened;
+                    }
+                    await(() -> full.zapper.selectedCopy() == 1 && !full.zapper.automaticSources(), 5000);
+                }
                 UiEvidence.capture("live-full-screen");
                 // BACK (after closing the banner) returns to the guide, whose picture carries on.
                 for (int i = 0; i < 3 && !full.isFinishing(); i++) {

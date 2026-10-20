@@ -192,7 +192,7 @@ and verifies that channel and programme font metrics fit the rows. CI screenshot
 
 `PlaybackTest.slowLinkResolutionDoesNotSpendTheVideoStartupTimeout` holds an asynchronous native resolver past the real 15-second video-startup deadline while a backup exists, verifies the original source is still resolving, then releases it and checks actual LibVLC playback without switching sources. Existing cancellation, immediate-failure backup and full-screen/guide handoff tests remain in the full suite.
 
-`LiveProgressTest` adds 17 core checks for a stopped clock, stopped video while audio time advances, four minutes of healthy progress, pause/resume, missing video counters and reset timestamps. PlaybackTest drives the real shared player and its attached failure callback with a silent-video-freeze observation, verifies paused observations do not trigger recovery, and checks the error appears without sending buffering/error events. The full existing suite also checks provider retries, source backup, cancellation and view handoff.
+`LiveProgressTest` now has 264 core assertions for a stopped clock, stopped video while audio time advances, four minutes of healthy progress, pause/resume, missing video counters and reset timestamps. PlaybackTest drives the real shared player and its attached failure callback with a silent-video-freeze observation, verifies paused observations do not trigger recovery, and checks the error appears without sending buffering/error events. The full existing suite also checks provider retries, source backup, cancellation and view handoff.
 
 A same-JVM desktop benchmark compared old/new PNG decoding on the same 6.8 MB Main Event container: every run produced identical 6,885,312-byte TS output, and every new run was faster (roughly 2x in later runs; timings vary). All 17 existing PNG format/filter/error checks remain applicable. This is not an ARM64 benchmark or proof of the cause of a particular TV freeze.
 
@@ -205,8 +205,8 @@ the destination is nonblank; and the temporary retained frame has cleared. The m
 handoff-to-fresh-frame budget is 1.5 seconds on the emulator, logged as MovieHubHandoff.
 This is a regression ceiling, not a claim of imperceptible timing on a physical TV. Existing
 stream-open and resolver counters still assert no restart or re-resolution.
-The assistant's local execution environment was unavailable for this change: core checks,
-formatting, builds, lint and emulator validation run in CI instead.
+The earlier handoff revision used CI because local execution was unavailable at that time.
+The current follow-up runs core/provider checks locally and Android validation in CI.
 
 Validation on 20 October 2026: source revision `89f90e285b7944b1be93f40b9cde40dfef7df873` passed the
 [full API 28 emulator suite](https://github.com/billyke2000s/moviehub/actions/runs/39492778810).
@@ -234,3 +234,12 @@ Android validation remains pending in CI; local core/provider checks are availab
 LiveControlsTest holds the selected native resolver pending while opening controls and Sources, asserts no backup resolution, checks first Back reveals controls and second Back leaves, and checks manual pinning plus restoring bounded Automatic failover. Local execution became available again: core and provider checks are run locally; Android build/lint and real EGL/LibVLC regressions require CI.
 
 FreeShot adds actual-Rhino fixtures for catalogue deduplication/sports filtering, a three-request selected-channel resolver, headers/token lifetime and rejecting invalid identities before HTTP. PlaylistSessionTest verifies fixed-destination renewal, token reuse for media segments and rejecting other CDN/channel scopes. ProviderRelayTransportTest sends a real TCP `Range: bytes=0-` request through the production relay and checks exact decoded TS bytes, 200 status, no container Content-Range and no upstream decoded-offset Range. The sustained diagnostic also forces FreeShot renewal before decoding Main Event for 150 seconds.
+
+Live verification on 20 October 2026: FreeShot Main Event passed the 150-second production-relay
+check with a forced initial anonymous token renewal: 3,748 unique video frames over 149.92 seconds
+and 7,032 unique audio frames over 150 seconds, with no timestamp gaps or relay errors. DaddyLive
+Football also passed both tracks for 150 seconds after accepting whole-entity wrapped ranges.
+The Main Event DaddyLive run contained a timestamp gap; these host checks do not establish the
+physical TV's decoder/audio behavior. The signed test APK comes from Android run 39510829183.
+
+PlaybackTest.aManualBackupSurvivesGuideAndFullScreenWithoutReopening plays a second copy, pins it manually, makes two full-screen/guide trips and checks the retained player, current copy/mode, fresh output and unchanged stream-open count after the intentional source change.

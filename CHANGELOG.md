@@ -463,3 +463,5 @@ continuity checks.
 
 - Add opt-in FreeShot UK sports with lazy channel resolution, native playback headers and scoped anonymous token renewal.
 - Accept whole-entity byte-zero requests for wrapped DaddyLive segments and return decoded video bytes instead of rejecting playback.
+
+- Retain a manual or automatic backup and its finite retry history through mini-player/full-screen handoffs, instead of reverting to the primary source on reopening the same channel.

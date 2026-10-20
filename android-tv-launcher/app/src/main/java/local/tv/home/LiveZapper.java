@@ -137,12 +137,20 @@ final class LiveZapper {
             attemptedCopies.add(copy);
         }
         automaticSources = enabled;
+        rememberSources();
         if (enabled && player.liveFailed && !copies.isEmpty()) useCopy(0, true);
         else showBanner();
     }
 
     List<ChannelDatabase.Row> copies() {
         return copies;
+    }
+
+    private void rememberSources() {
+        LivePlayer.automaticSources = automaticSources;
+        LivePlayer.attemptedSources.clear();
+        for (int index : attemptedCopies)
+            if (index >= 0 && index < copies.size()) LivePlayer.attemptedSources.add(copies.get(index).key);
     }
 
     // ---- Changing channel -----------------------------------------------------------------
@@ -230,12 +238,27 @@ final class LiveZapper {
     private void load(int position, boolean play, boolean current) {
         int ticket = ++request;
         Session s = own;
+        String activeUrl = current ? LivePlayer.currentUrl() : null;
+        boolean activeAutomatic = LivePlayer.automaticSources;
+        Set<String> activeAttempts = new HashSet<>(LivePlayer.attemptedSources);
         worker.execute(() -> {
             try {
                 List<ChannelDatabase.Row> rows = db.browse(s.filter, s.search, s.favourites, position, 1);
                 if (rows.isEmpty()) return;
                 ChannelDatabase.Row row = rows.get(0);
                 List<ChannelDatabase.Row> found = db.copies(row);
+                int selected = 0;
+                boolean carried = false;
+                if (activeUrl != null) for (int i = 0; i < found.size(); i++) {
+                    ChannelDatabase.Row candidate = found.get(i);
+                    if (activeUrl.equals(db.url(candidate.id, candidate.key))) {
+                        selected = i;
+                        carried = true;
+                        break;
+                    }
+                }
+                final int playingCopy = selected;
+                final boolean automatic = !carried || activeAutomatic;
                 String url = play ? db.url(found.get(0).id, found.get(0).key) : null;
                 List<ChannelDatabase.Programme> on = listing(row);
                 player.runOnUiThread(() -> {
@@ -244,9 +267,13 @@ final class LiveZapper {
                         if (!current) previousPosition = s.position;
                         s.position = position;
                         copies = found;
-                        copy = 0;
+                        copy = playingCopy;
+                        automaticSources = automatic;
                         attemptedCopies.clear();
-                        attemptedCopies.add(0);
+                        attemptedCopies.add(copy);
+                        if (activeUrl != null) for (int i = 0; i < found.size(); i++) {
+                            if (activeAttempts.contains(found.get(i).key)) attemptedCopies.add(i);
+                        }
                         switching = false;
                         stalls.clear();
                         // A stall timer from the channel before must not move this one on.
@@ -257,6 +284,7 @@ final class LiveZapper {
                             player.switchTo(row.name, url, found.get(0).key);
                             remember(row);
                         }
+                        rememberSources();
                         showBanner(row, on);
                         // A native resolver can fail before this initial database read finishes.
                         if (current && player.liveFailed) failover("This source is unavailable");
@@ -363,6 +391,7 @@ final class LiveZapper {
             attemptedCopies.clear();
         }
         attemptedCopies.add(index);
+        rememberSources();
         ChannelDatabase.Row row = copies.get(index);
         List<ChannelDatabase.Row> list = copies;
         int ticket = ++request;
@@ -375,6 +404,7 @@ final class LiveZapper {
                     switching = false;
                     stalls.clear();
                     player.switchTo(row.name, url, row.key);
+                    rememberSources();
                     if (automatic) Toast.makeText(
                         player,
                         "Trying another source (" + (index + 1) + " of " + copies.size() + ")",

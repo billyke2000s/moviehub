@@ -6,7 +6,9 @@ import android.os.Handler;
 import android.os.Looper;
 import android.widget.FrameLayout;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
 import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.Media;
@@ -23,6 +25,9 @@ final class LivePlayer {
     private static String engineOptions;
     private static MediaPlayer player;
     private static String url;
+    /** Selection mode follows the active stream through guide/full-screen view changes. */
+    static boolean automaticSources = true;
+    static final Set<String> attemptedSources = new HashSet<>();
     /** A stream has been started and has not failed, ended or been stopped. */
     private static boolean alive;
     /** Who shows the picture now (the full-screen player or the guide picture), and where. */
@@ -123,6 +128,10 @@ final class LivePlayer {
         return resolving;
     }
 
+    static String currentUrl() {
+        return active() ? url : null;
+    }
+
     /**
      * Plays {@code streamUrl}. When that stream is already playing (and {@code restart} is false)
      * it carries on untouched and this returns true. Otherwise the player opens it (keeping the
@@ -141,6 +150,10 @@ final class LivePlayer {
         if (!restart && streamUrl.equals(url) && (alive || player.isPlaying())) {
             resume();
             return true;
+        }
+        if (!streamUrl.equals(url)) {
+            automaticSources = true;
+            attemptedSources.clear();
         }
         if (!streamUrl.equals(url) || !restart) {
             refreshed = false;
@@ -358,6 +371,8 @@ final class LivePlayer {
         url = null;
         alive = false;
         owner = null;
+        automaticSources = true;
+        attemptedSources.clear();
         output = null;
         listener = null;
         resolutionFailed = null;

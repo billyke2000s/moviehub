@@ -277,3 +277,7 @@ MovieHub’s own FreeShot adapter (not a historical upstream port) reads the sel
 The fixed anonymous renewal endpoint posts the channel and current token; the media grant is restricted to the discovered BlueTier origin and channel prefix. Renewal and playback run on demand. Turn on **FreeShot (UK sports)** in Settings → Provider engine to import it. This integration covers UK sports, not every country or category on the website.
 
 A live host check decoded Sky Sports Action video/audio for 30 seconds with the player’s ordinary headers. That is separate from Android fixture validation and does not establish sustained playback or geography on a physical TV.
+
+The current built-in package contains the 16 historical modules plus the MovieHub FreeShot
+adapter. FreeShot Main Event subsequently passed 150 seconds of both tracks through production
+relay/session code with forced renewal (run 39510770299). Only numerical results were uploaded.
