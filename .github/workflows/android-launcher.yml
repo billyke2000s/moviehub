@@ -32,7 +32,7 @@ jobs:
       - name: Verify playlist, network, channel search and episode rules
         run: |
           mkdir -p build/core-tests
-          javac -d build/core-tests android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch,SkyNumbers,GuideOrder,SkipQueue,ErrorLog,SpeedTest}.java android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest,SkyNumbersTest,GuideOrderTest,SkipQueueTest,TroubleshootingTest}.java
+          javac -d build/core-tests android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch,SkyNumbers,GuideOrder,SkipQueue,ErrorLog,SpeedTest,ChannelIdentity,ChannelCategory}.java android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest,SkyNumbersTest,GuideOrderTest,SkipQueueTest,TroubleshootingTest,ChannelIdentityTest}.java
           java -cp build/core-tests local.tv.home.PlaylistTest
           java -cp build/core-tests local.tv.home.NetworkTest
           java -cp build/core-tests local.tv.home.VideoFilesTest
@@ -42,6 +42,7 @@ jobs:
           java -cp build/core-tests local.tv.home.GuideOrderTest
           java -cp build/core-tests local.tv.home.SkipQueueTest
           java -cp build/core-tests local.tv.home.TroubleshootingTest
+          java -cp build/core-tests local.tv.home.ChannelIdentityTest
       - name: Build APK and run Android lint
         run: gradle -p android-tv-launcher --no-daemon assembleDebug assembleRelease lintDebug lintRelease testDebugUnitTest assembleDebugAndroidTest
       - name: Verify APK signature and checksum

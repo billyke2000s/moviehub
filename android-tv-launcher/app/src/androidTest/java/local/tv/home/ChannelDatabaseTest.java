@@ -188,6 +188,99 @@ public class ChannelDatabaseTest {
         );
     }
 
+    /** One source's channels: name, guide id and group for each, with fixture addresses. */
+    private void importSource(String source, String[]... channels) throws Exception {
+        ChannelDatabase.Writer writer = db.writer(source, () -> {}, n -> {});
+        try {
+            for (String[] c : channels)
+                writer.accept(
+                    new Playlist.Channel(
+                        c[0],
+                        "https://example.test/" + source + "/" + c[0].hashCode() + ".m3u8",
+                        c[2],
+                        "",
+                        c[1]
+                    )
+                );
+            writer.commit();
+        } finally {
+            writer.abort();
+        }
+    }
+
+    @Test
+    public void providerCopiesJoinTheSameChannelAndSharedSections() throws Exception {
+        importSource("free", new String[] { "Sky Sports F1 (720p)", "SkySportsF1.uk@SD", "Sports" });
+        importSource(
+            "enginedlhd",
+            new String[] { "Sky Sports F1 UK", "enginedlhd:60", ChannelCategory.of("", "Sky Sports F1 UK") },
+            new String[] { "Sky Sports F1 DE", "enginedlhd:61", ChannelCategory.of("", "Sky Sports F1 DE") },
+            new String[] { "TF1", "enginedlhd:62", ChannelCategory.of("", "TF1") }
+        );
+        List<ChannelDatabase.Row> all = db.browse("all", "", Collections.emptySet(), 0);
+        assertEquals("F1 copies shown once; the German feed and TF1 are their own", 3, all.size());
+        ChannelDatabase.Row f1 = null;
+        for (ChannelDatabase.Row row : all) if (row.number == 407) f1 = row;
+        assertNotNull("Sky Sports F1 keeps its satellite number", f1);
+        List<ChannelDatabase.Row> copies = db.copies(f1);
+        assertEquals("The provider copy is a backup of the free-list copy", 2, copies.size());
+        Set<String> sources = new HashSet<>();
+        for (ChannelDatabase.Row copy : copies) sources.add(copy.source);
+        assertEquals(new HashSet<>(Arrays.asList("free", "enginedlhd")), sources);
+        List<ChannelDatabase.Row> sports = db.browse("section:Sports", "", Collections.emptySet(), 0);
+        assertEquals("Both F1 channels are in Sports; TF1 is not", 2, sports.size());
+        for (ChannelDatabase.Row row : sports) assertNotEquals("TF1", row.name);
+        assertTrue(
+            "No provider-specific group",
+            db.browse("group:DaddyLive", "", Collections.emptySet(), 0).isEmpty()
+        );
+    }
+
+    @Test
+    public void versionEightKeysAreRecomputedKeepingFavouritesAndLocks() throws Exception {
+        importSource("free", new String[] { "Sky Sports F1 (720p)", "SkySportsF1.uk@SD", "Sports" });
+        importSource("enginedlhd", new String[] { "Sky Sports F1 UK", "enginedlhd:60", "Sports" });
+        Context context = ApplicationProvider.getApplicationContext();
+        String favourite;
+        try (
+            Cursor c = db
+                .getReadableDatabase()
+                .rawQuery("SELECT key FROM channels WHERE source='enginedlhd'", null)
+        ) {
+            assertTrue(c.moveToFirst());
+            favourite = c.getString(0);
+        }
+        db.close();
+        try (
+            SQLiteDatabase old = SQLiteDatabase.openDatabase(
+                context.getDatabasePath("channels-v2.db").getPath(),
+                null,
+                SQLiteDatabase.OPEN_READWRITE
+            )
+        ) {
+            // The keys version 8 wrote: these two copies did not match.
+            old.execSQL("UPDATE channels SET dkey='uk:skysportsf1' WHERE source='free'");
+            old.execSQL("UPDATE channels SET dkey=':skysportsf1uk' WHERE source='enginedlhd'");
+            old.setVersion(8);
+        }
+        android.content.SharedPreferences prefs = ParentalLock.prefs(context);
+        Set<String> oldLocks = prefs.getStringSet(ParentalLock.CHANNELS, null);
+        prefs.edit().putStringSet(ParentalLock.CHANNELS, Collections.singleton(":skysportsf1uk")).commit();
+        try {
+            List<ChannelDatabase.Row> all = db.browse("all", "", Collections.emptySet(), 0); // upgrades
+            assertEquals("The upgrade joins the two copies", 1, all.size());
+            assertEquals(2, db.copies(all.get(0)).size());
+            assertEquals(1, db.browse("favourites", "", Collections.singleton(favourite), 0).size());
+            assertTrue(
+                "A locked channel stays locked under its new key",
+                prefs.getStringSet(ParentalLock.CHANNELS, Collections.emptySet()).contains(all.get(0).dkey)
+            );
+        } finally {
+            if (oldLocks == null) prefs.edit().remove(ParentalLock.CHANNELS).commit();
+            else prefs.edit().putStringSet(ParentalLock.CHANNELS, oldLocks).commit();
+        }
+    }
+
     @Test
     public void theSameChannelFromTwoListsIsShownOnceWithABackup() throws Exception {
         for (String source : new String[] { "free", "fta" }) {

@@ -27,11 +27,9 @@ final class EngineSources {
         AdapterSources.invalidate();
     }
 
+    /** On when turned on in Settings → Provider engine, whatever the free-list choice; see AdapterSources. */
     static boolean enabled(Context c, boolean connected) {
-        return (
-            c.getSharedPreferences("ui", 0).getBoolean(PREF, false) &&
-            !FreeChannels.playlist(c, connected).isEmpty()
-        );
+        return c.getSharedPreferences("ui", 0).getBoolean(PREF, false);
     }
 
     static boolean locator(String url) {
@@ -163,7 +161,8 @@ final class EngineSources {
                     new Playlist.Channel(
                         row.getString("name"),
                         ROOT + row.getString("channelId"),
-                        "FreeLiveSports",
+                        // FreeLiveSports is a sports service (upstream files every channel as Sports).
+                        ChannelCategory.of("Sports", row.getString("name")),
                         logo(row.optString("logo")),
                         SOURCE + ":" + row.getString("channelId")
                     )

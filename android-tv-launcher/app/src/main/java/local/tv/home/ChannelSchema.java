@@ -76,8 +76,12 @@ final class ChannelSchema {
         db.execSQL("CREATE INDEX IF NOT EXISTS epg_map_match ON epg_map(chkey)");
     }
 
-    /** Brings a database from version {@code from} up to date; see the version notes below. */
-    static void upgrade(SQLiteDatabase db, int from) {
+    /**
+     * Brings a database from version {@code from} up to date; see the version notes below. Returns
+     * the duplicate keys that changed (old to new), so locks kept by duplicate key can follow.
+     */
+    static java.util.Map<String, String> upgrade(SQLiteDatabase db, int from) {
+        java.util.Map<String, String> moved = new java.util.HashMap<>();
         if (from < 2) db.execSQL("CREATE TABLE IF NOT EXISTS favourite_keys(key TEXT PRIMARY KEY)");
         if (from < 3) createGuideTables(db);
         if (from < 4) addDuplicateKey(db); // filled in by the next import
@@ -89,5 +93,46 @@ final class ChannelSchema {
         // Add it before renumber() compiles UPDATE channels SET main=1.
         if (from < 8) addNumbers(db);
         if (from >= 6 && from < 8) ChannelNumbers.renumber(db); // marks the preferred copies (main)
+        // Version 9: duplicate keys recognise the same channel across lists and providers
+        // ("Sky Sports F1 (720p)" and "Sky Sports F1 UK"); see ChannelIdentity. Recomputed from
+        // the saved name, guide id, group and source; stream keys, favourites and URLs are untouched.
+        if (from < 9) {
+            moved.putAll(rekey(db));
+            ChannelNumbers.renumber(db);
+        }
+        return moved;
+    }
+
+    /** Recomputes every channel's duplicate key; returns the keys that changed (old to new). */
+    static java.util.Map<String, String> rekey(SQLiteDatabase db) {
+        java.util.Map<String, String> moved = new java.util.HashMap<>();
+        db.beginTransactionNonExclusive();
+        try (
+            Cursor c = db.rawQuery("SELECT _id,epg,name,grp,source,dkey,key FROM channels", null);
+            android.database.sqlite.SQLiteStatement update = db.compileStatement(
+                "UPDATE channels SET dkey=? WHERE _id=?"
+            )
+        ) {
+            while (c.moveToNext()) {
+                String now = ChannelDatabase.duplicateKey(
+                    c.getString(1),
+                    c.getString(2),
+                    c.getString(3),
+                    c.getString(4)
+                );
+                String before = c.getString(5);
+                if (now.equals(before)) continue;
+                // A channel without a duplicate key was locked by its stream key ("key:…").
+                String stream = "key:" + c.getString(6);
+                moved.put(before.isEmpty() ? stream : before, now.isEmpty() ? stream : now);
+                update.bindString(1, now);
+                update.bindLong(2, c.getLong(0));
+                update.executeUpdateDelete();
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+        return moved;
     }
 }

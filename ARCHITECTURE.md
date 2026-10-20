@@ -109,7 +109,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `Network` | Bounded HTTP(S) streams with manual redirect handling; bearer tokens only sent over HTTPS to the same host. |
 | `Playlist` | M3U/Xtream playlist parsing and URL validation (refuses `http://` unless the user allows it). |
 | `ChannelDatabase`, `ChannelStore`, `ChannelQuery` | On-device SQLite channel database, paging and search. All channels, sections and countries are read from each channel's preferred copy (`main=1`, indexed); favourites, groups and searches group the copies. |
-| `ChannelSchema` | The channel database's tables, indexes and version upgrades (version 8 adds `main`). |
+| `ChannelSchema` | The channel database's tables, indexes and version upgrades (version 8 adds `main`; version 9 recomputes duplicate keys). |
+| `ChannelIdentity`, `ChannelCategory` | Which copies are the same channel across lists and providers (country + plain name, quality and country tags dropped, +1/regions/UHD kept apart), and the guide section for a provider channel (plain Java). |
 | `EpgImporter`, `EpgMatch` | The free UK XMLTV programme guide (epgshare01): streamed, matched to saved channels by a plain name key (programmes on other channels skipped unread), the next day kept in the channel database with titles, descriptions and categories. `EpgMatch` also reads XMLTV times (plain Java). |
 | `SkyNumbers`, `GuideOrder`, `ChannelNumbers` | UK satellite channel numbers and sections (`SkyNumbers`, a fixed table matched by name); the whole guide's layout: UK blocks by section, regions in the 800s, radio in the 900s, other countries from 1001 (`GuideOrder`, plain Java); applied to the saved channels after every import (`ChannelNumbers`). |
 | `Reminders`, `ParentalLock` | Programme reminders (kept in preferences, shown while the app is open) and the Live TV PIN lock (a salted hash of the PIN, locked channels and sections). |

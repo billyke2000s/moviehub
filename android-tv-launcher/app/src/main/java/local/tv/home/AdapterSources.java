@@ -82,18 +82,39 @@ final class AdapterSources {
         "ZLive",
     };
 
-    /** Map upstream labels into the shared TV-guide categories, not provider-specific groups. */
+    /** Map upstream labels into the shared TV-guide sections; see {@link ChannelCategory}. */
     static String guideCategory(String category, String name) {
-        String raw = (category == null ? "" : category).trim();
-        String combined = (raw + " " + (name == null ? "" : name)).toLowerCase(Locale.ROOT);
-        if (combined.matches(".*(sport|football|soccer|cricket|rugby|tennis|racing|nba|nfl|nhl|f1|espn|sky sports).*")) return "Sports";
-        if (combined.matches(".*(news|weather|politic|business|finance|bloomberg).*")) return "News";
-        if (combined.matches(".*(movie|film|cinema).*")) return "Movies";
-        if (combined.matches(".*(documentar|nature|wildlife|history|science).*")) return "Documentaries";
-        if (combined.matches(".*(kids|children|cartoon|animation|family).*")) return "Kids";
-        if (combined.matches(".*(music|radio|concert).*")) return "Music";
-        if (combined.matches(".*(comedy|sitcom).*")) return "Comedy";
-        return "Entertainment";
+        return ChannelCategory.of(category, name);
+    }
+
+    /** The provider's name for a channel source, shown with each copy in the Source list. */
+    static String sourceName(String source) {
+        if (source == null) return "";
+        switch (source) {
+            case "xtream":
+                return "Xtream";
+            case "m3u":
+                return "M3U";
+            case "masqueradarr":
+                return "Masqueradarr";
+            case "fta":
+                return "Free-TV";
+            case "free":
+                return "iptv-org";
+            case "nativepluto":
+                return "Pluto TV";
+            case "legacy":
+                return "Saved list";
+            case EngineSources.SOURCE:
+                return "FreeLiveSports";
+            default:
+                for (int i = 0; i < ProviderBroker.IDS.length; i++) if (
+                    source.equals(source(ProviderBroker.IDS[i]))
+                ) return LABELS[i];
+                for (String[] list : FreeChannels.EXTRA)
+                    if (list.length == 3 && list[0].equals(source)) return list[1];
+                return source;
+        }
     }
 
     private AdapterSources() {}
@@ -106,11 +127,13 @@ final class AdapterSources {
         return "engineProvider_" + id;
     }
 
+    /**
+     * A provider imports when it is turned on in Settings → Provider engine. That switch is its
+     * own: the free-list choice (Settings → Free channels) only decides the public M3U lists, so an
+     * account or "only without a TV provider" no longer hides a provider the viewer turned on.
+     */
     static boolean enabled(Context c, String id, boolean connected) {
-        return (
-            c.getSharedPreferences("ui", 0).getBoolean(pref(id), false) &&
-            !FreeChannels.playlist(c, connected).isEmpty()
-        );
+        return c.getSharedPreferences("ui", 0).getBoolean(pref(id), false);
     }
 
     static synchronized void invalidate() {

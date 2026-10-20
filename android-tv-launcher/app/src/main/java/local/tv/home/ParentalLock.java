@@ -72,6 +72,21 @@ final class ParentalLock {
         prefs(activity).edit().putStringSet(pref, values).apply();
     }
 
+    /**
+     * Keeps locked channels locked when their duplicate keys change (database version 9). A lock
+     * is never removed by this: the old key stays too, in case a list brings it back.
+     */
+    static void rekey(Context context, java.util.Map<String, String> moved) {
+        Set<String> locked = prefs(context).getStringSet(CHANNELS, Collections.emptySet());
+        if (locked.isEmpty()) return;
+        Set<String> values = new HashSet<>(locked);
+        for (String key : locked) {
+            String now = moved.get(key);
+            if (now != null && !now.isEmpty()) values.add(now);
+        }
+        if (!values.equals(locked)) prefs(context).edit().putStringSet(CHANNELS, values).commit();
+    }
+
     static void setPin(Context activity, String pin) {
         prefs(activity).edit().putString(PIN, hash(pin)).apply();
     }
