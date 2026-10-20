@@ -203,3 +203,22 @@ checks ran in CI.
 The earlier repeated-trip test reused an ActivityMonitor after waitForMonitorWithTimeout
 removed it. Both first trips passed with fresh frames; the second trips could not detect their
 Activity. The test now registers a new monitor per trip, and the final full suite passed.
+
+## Early video/audio freeze follow-up (20 October 2026)
+
+The user confirmed instant guide/full-screen movement on the physical TV. Sky video then froze
+within about five seconds while audio continued; a reload restored video but lost audio, while
+moving back to the mini-player restored playback. This strongly implicates the presentation or
+reload path but does not establish a particular device/decoder cause.
+
+Confirmed code gaps: timestamp equality discarded valid TextureView callbacks and could retain
+a still cover; the freeze monitor used LibVLC picture stats/clock instead of the actual consumer
+counter. The candidate removes timestamp gating, monitors rendered buffers, and tries one
+consumer-only refresh before existing bounded source recovery, preserving audio and network
+sessions. New regression tests exercise constant EGL timestamps, actual consumer notification
+loss, and wrapped-HLS reload audio/video progress. Validation is pending.
+
+The first host-JVM sustained diagnostic resolved Main Event and Football but decoded zero
+frames because the relay reported IOException. That is an unsuccessful playback probe, not
+provider-failure proof; safe error classification is being added. Physical-TV sustained playback
+and the reload-audio symptom remain unverified.

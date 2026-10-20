@@ -213,3 +213,20 @@ Validation on 20 October 2026: source revision `89f90e285b7944b1be93f40b9cde40df
 The eight logged handoff-to-fresh-frame times were 104, 87, 61, 56, 100, 64, 88 and 47 ms.
 Surface identity, no native vout destruction, nonblank destination pixels, cover removal and
 unchanged stream/resolution counts passed. This verifies fixtures on the emulator, not the TV.
+
+## Early video freeze and reload investigation
+
+LiveVideoOutputTest uses a real EGL producer sending different pictures with the same zero
+presentation timestamp, then refreshes the consumer and checks the new green image is visible
+without a retained red cover or native Surface detachment. PlaybackTest removes the real
+TextureView frame listener while media/audio continue, waits for the actual watchdog to repair
+the consumer, and checks unchanged player/output, stream-open and resolver counts plus advancing
+audio output. A wrapped-PNG HLS fixture exercises the production relay and LibVLC through three
+reloads, requiring rendered video and audio output counters to advance.
+
+The opt-in dlhd-playback workflow resolves through the actual bundled interpreter and decodes
+both tracks through production Java relay/session/PNG classes for 150 seconds per selected
+channel. It replaces only Android-dependent DTO/logging/DNS seams on the JVM and uses FFmpeg,
+so it does not prove Android hardware decoding. Only numerical results are uploaded; no fetched
+media, URLs or tokens. A green diagnostic workflow does not imply bothDecoded=true.
+Local execution remains unavailable; checks run in CI.

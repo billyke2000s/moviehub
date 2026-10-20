@@ -22,6 +22,7 @@ public class PlaybackTest {
 
     private final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
     private byte[] transportStream;
+    private byte[] wrappedTransportStream;
     private VlcPlaybackActivity activity;
     private ServerSocket server;
     private volatile boolean closed;
@@ -90,6 +91,7 @@ public class PlaybackTest {
             while ((n = input.read(buffer)) != -1) output.write(buffer, 0, n);
             transportStream = output.toByteArray();
         }
+        wrappedTransportStream = pngSegment(transportStream);
         server = new ServerSocket(0, 8, InetAddress.getByName("127.0.0.1"));
         new Thread(() -> {
             while (!closed) {
@@ -140,11 +142,16 @@ public class PlaybackTest {
             String mime = "video/mp4";
             if (request != null && request.contains(".m3u8")) {
                 data = (
-                    "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:31\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:30.0,\nhttp://127.0.0.1:" +
-                    server.getLocalPort() +
-                    "/segment.ts\n#EXT-X-ENDLIST\n"
+                    "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:31\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:30.0,\n" +
+                    (request.contains("wrapped.m3u8")
+                        ? "https://8.8.8.8/channel/segment.png"
+                        : "http://127.0.0.1:" + server.getLocalPort() + "/segment.ts") +
+                    "\n#EXT-X-ENDLIST\n"
                 ).getBytes(java.nio.charset.StandardCharsets.UTF_8);
                 mime = "application/vnd.apple.mpegurl";
+            } else if (request != null && request.contains(".png")) {
+                data = wrappedTransportStream;
+                mime = "image/png";
             } else if (request != null && request.contains(".ts")) {
                 data = transportStream;
                 mime = "video/mp2t";
@@ -813,13 +820,149 @@ public class PlaybackTest {
                 // Audio/clock progresses, video frames do not; no buffering/error event is sent.
                 LivePlayer.observeProgress(21000, 9000, 20, true);
                 assertEquals("Unexpected inherited backup", "1 of 1", activity.zapper.sourceLabel());
-                assertTrue("Silent freeze did not reach the attached failure callback", activity.liveFailed);
+                assertFalse("The first clock-moving freeze should refresh only the view", activity.liveFailed);
+                LivePlayer.observeProgress(22000, 10000, 20, true);
+                LivePlayer.observeProgress(30000, 18000, 20, true);
+                assertTrue("A persistent freeze must reach the attached failure callback", activity.liveFailed);
             });
             assertTrue(status().contains("unavailable"));
         } finally {
             LiveZapper.session = null;
             db.clear();
         }
+    }
+
+    @Test
+    public void aStoppedTextureConsumerRecoversWithoutReopeningTheStreamOrAudio() throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        Context context = instrumentation.getTargetContext();
+        String locator = PlutoSource.ROOT + "5ad8d3a31b95267e225e4e09";
+        java.util.concurrent.atomic.AtomicInteger resolutions = new java.util.concurrent.atomic.AtomicInteger();
+        LivePlayer.testResolver = (url, http) -> {
+            resolutions.incrementAndGet();
+            return "http://127.0.0.1:" + server.getLocalPort() + "/live.ts";
+        };
+        activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+            new Intent(context, VlcPlaybackActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra("url", locator)
+                .putExtra("live", true)
+                .putExtra("id", "consumer-freeze")
+                .putExtra("title", "Consumer freeze")
+        );
+        await(() -> player() != null && player().isPlaying() && LivePlayer.output().frames > 5, 30000);
+        org.videolan.libvlc.MediaPlayer samePlayer = player();
+        LiveVideoOutput output = LivePlayer.output();
+        int opened = LivePlayer.opened;
+        int moves = output.handoffs;
+        int audioTrack = samePlayer.getAudioTrack();
+        long[] baseline = new long[2];
+        instrumentation.runOnMainSync(() -> {
+            // Real consumer stall: remove TextureView's frame-notification listener while its
+            // producer Surface and the actual media/audio continue. No synthetic buffering event.
+            output.texture.setOnFrameAvailableListener(null);
+        });
+        SystemClock.sleep(150); // Drain a frame already queued before notifications were removed.
+        instrumentation.runOnMainSync(() -> {
+            baseline[0] = output.frames;
+            baseline[1] = samePlayer.getTime();
+        });
+        await(() -> samePlayer.getTime() > baseline[1] + 1000, 5000);
+        assertEquals("Video consumer should actually be frozen", baseline[0], output.frames);
+        await(() -> output.handoffs > moves && output.frames > baseline[0] + 3, 16000);
+        assertSame(samePlayer, LivePlayer.player());
+        assertSame(output, LivePlayer.output());
+        assertEquals("No source reconnection", opened, LivePlayer.opened);
+        assertEquals("No new provider walk", 1, resolutions.get());
+        assertEquals("Audio selection survived the view repair", audioTrack, samePlayer.getAudioTrack());
+        assertTrue("Audio was selected", audioTrack >= 0);
+        assertEquals("Native producer was never detached", 0, output.surfaceDestructions);
+        long audioBefore = audioBuffers(samePlayer);
+        SystemClock.sleep(1500);
+        assertTrue("Audio output stopped during video repair", audioBuffers(samePlayer) > audioBefore);
+        assertFalse(activity.liveFailed);
+        UiEvidence.capture("live-consumer-recovered-with-audio");
+    }
+
+    private long audioBuffers(MediaPlayer mediaPlayer) {
+        org.videolan.libvlc.Media media = mediaPlayer.getMedia();
+        if (media == null) return -1;
+        try {
+            return media.getStats().playedAbuffers;
+        } finally {
+            media.release();
+        }
+    }
+
+    @Test
+    public void reloadingWrappedHlsKeepsRenderedVideoAndAudioOutputAdvancing() throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        ProviderRelay.testConnections = uri ->
+            (HttpURLConnection) new URL("http://127.0.0.1:" + server.getLocalPort() + uri.getRawPath()).openConnection();
+        org.json.JSONObject session = new org.json.JSONObject()
+            .put("endpoint", "https://8.8.8.8/api/playlist-token?slug=channel")
+            .put("slug", "channel")
+            .put("token", "fixture-token")
+            .put("expiresAtMs", System.currentTimeMillis() + 90000);
+        EngineSources.Stream stream = new EngineSources.Stream(new org.json.JSONObject()
+            .put("url", "https://8.8.8.8/channel/wrapped.m3u8")
+            .put("headers", new org.json.JSONObject())
+            .put("playlistSession", session));
+        try (ProviderRelay relay = new ProviderRelay(stream)) {
+            Context context = instrumentation.getTargetContext();
+            activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+                new Intent(context, VlcPlaybackActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra("url", relay.url)
+                    .putExtra("live", true)
+                    .putExtra("id", "wrapped-reload")
+                    .putExtra("title", "Wrapped HLS reload")
+            );
+        for (int reload = 0; reload < 3; reload++) {
+            await(() -> player() != null && player().isPlaying() && LivePlayer.output().frames > 5, 30000);
+            long before = audioBuffers(player());
+            long frames = LivePlayer.output().frames;
+            SystemClock.sleep(1500);
+            assertTrue("Video stopped after reload " + reload, LivePlayer.output().frames > frames + 5);
+            assertTrue("Audio stopped after reload " + reload, audioBuffers(player()) > before);
+            if (reload < 2) instrumentation.runOnMainSync(activity::backToLive);
+        }
+        } finally {
+            ProviderRelay.testConnections = null;
+        }
+    }
+
+    private static byte[] pngSegment(byte[] video) throws IOException {
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
+        result.write(new byte[] { (byte) 137, 80, 78, 71, 13, 10, 26, 10 });
+        ByteArrayOutputStream header = new ByteArrayOutputStream();
+        DataOutputStream values = new DataOutputStream(header);
+        values.writeInt(1);
+        values.writeInt(1);
+        values.write(new byte[] { 8, 2, 0, 0, 0 });
+        pngChunk(result, "IHDR", header.toByteArray());
+        ByteArrayOutputStream pixels = new ByteArrayOutputStream();
+        try (java.util.zip.DeflaterOutputStream compressed = new java.util.zip.DeflaterOutputStream(pixels)) {
+            compressed.write(new byte[] { 0, 0, 0, 0 });
+        }
+        pngChunk(result, "IDAT", pixels.toByteArray());
+        pngChunk(result, "IEND", new byte[0]);
+        result.write(video);
+        return result.toByteArray();
+    }
+
+    private static void pngChunk(OutputStream output, String name, byte[] data) throws IOException {
+        DataOutputStream bytes = new DataOutputStream(output);
+        byte[] type = name.getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        bytes.writeInt(data.length);
+        bytes.write(type);
+        bytes.write(data);
+        java.util.zip.CRC32 crc = new java.util.zip.CRC32();
+        crc.update(type);
+        crc.update(data);
+        bytes.writeInt((int) crc.getValue());
     }
 
     @Test

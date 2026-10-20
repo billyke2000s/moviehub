@@ -120,3 +120,8 @@ The retained live output and handoff bitmap stay in process memory. The incoming
 removed on the next fresh frame; the outgoing cover is discarded with its old presentation host.
 Session stop releases the active output and cover. Handoffs do not save pictures or provider URLs to disk and
 do not add permissions, network endpoints or changes to stream authorization.
+
+The video-only consumer refresh keeps the existing in-memory relay session and does not make a
+new provider request itself. Troubleshooting stores fixed labels and counts only. The sustained
+diagnostic uploads numerical audio/video results, never provider URLs, tokens, pages or media.
+Its host-JVM adapter stubs are test-only and are not packaged in the APK.

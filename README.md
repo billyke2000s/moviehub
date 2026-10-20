@@ -134,3 +134,7 @@ Native/provider Live TV also watches playback progress: a stopped video counter 
 The guide preview and full screen retain one decoder Surface for the live session. A retained
 last frame covers the view transfer until fresh video arrives. Device tests check fresh rendered
 frames in both directions; continuity on individual TV hardware still needs testing.
+
+Live video progress now follows TextureView buffer updates rather than assuming advancing audio
+means video is healthy. A stopped visible video consumer gets one view-only refresh before the
+existing bounded source recovery. Troubleshooting retains the last safe recovery description.

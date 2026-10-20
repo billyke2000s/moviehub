@@ -37,6 +37,18 @@ public final class LiveProgressTest {
         p.reset();
         p.stalled(0, 0, 10, true, 8000);
         check(!p.stalled(9000, 0, 300, true, 8000));
+        p.reset();
+        check(!p.stalled(0, 0, 0, true, 8000));
+        check(p.stalled(8000, 8000, 0, true, 8000));
+        check(p.clockMoving(8000, 8000));
+        p.reset();
+        check(!p.stalled(0, 0, 100, true, 8000));
+        check(p.stalled(8000, 0, 100, true, 8000));
+        check(!p.clockMoving(8000, 8000));
+        p.reset();
+        for (int now = 0; now <= 240000; now += 1000) {
+            check(!p.stalled(now, now, now / 40, true, 8000));
+        }
         System.out.println(checks + " live progress checks passed");
     }
 }

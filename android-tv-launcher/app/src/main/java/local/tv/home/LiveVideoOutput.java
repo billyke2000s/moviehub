@@ -28,8 +28,6 @@ final class LiveVideoOutput {
     private Bitmap still;
     private boolean closed;
     private long transferStarted;
-    private long transferTimestamp;
-    private long timestamp;
     /** Actual texture updates, rather than player-clock or Playing events. */
     volatile long frames;
     volatile long lastHandoffGapMs;
@@ -69,7 +67,6 @@ final class LiveVideoOutput {
             // Keep its last frame too, so removing the GL consumer cannot expose black.
             if (nextStill != null && preview == null) cover(holder, nextStill);
             transferStarted = SystemClock.elapsedRealtime();
-            transferTimestamp = timestamp;
             handoffs++;
             // Removal synchronously detaches the old TextureView's GL consumer. Its callback
             // returns false: Android must not release the retained producer's BufferQueue.
@@ -108,11 +105,10 @@ final class LiveVideoOutput {
                 @Override
                 public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
                     if (closed || view != current) return;
-                    long updated = surfaceTexture.getTimestamp();
-                    if (updated == timestamp) return;
-                    timestamp = updated;
+                    // A rendered-buffer callback is authoritative. EGL presentation timestamps
+                    // are source-defined and may repeat or reset across live discontinuities.
                     frames++;
-                    if (transferStarted != 0 && updated != transferTimestamp) {
+                    if (transferStarted != 0) {
                         lastHandoffGapMs = SystemClock.elapsedRealtime() - transferStarted;
                         transferStarted = 0;
                     }
@@ -146,6 +142,16 @@ final class LiveVideoOutput {
     private void resize(TextureView current, int width, int height) {
         if (closed || view != current || width <= 0 || height <= 0) return;
         vout.setWindowSize(width, height);
+    }
+
+    /** Recreate only the GL consumer, as a guide/full-screen move does. The producer Surface,
+     * decoder, media, network requests and audio output remain untouched. */
+    boolean refreshView() {
+        if (closed || holder == null || !isShown()) return false;
+        FrameLayout destination = holder;
+        holder = null;
+        show(destination);
+        return true;
     }
 
     boolean isShown() {

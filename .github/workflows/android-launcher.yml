@@ -35,7 +35,7 @@ jobs:
       - name: Format live handoff Java and show any required changes
         run: |
           npm install --no-save prettier@3 prettier-plugin-java
-          npx prettier --write android-tv-launcher/app/src/main/java/local/tv/home/{LiveVideoOutput,LivePlayer,GuidePicture,VlcPlaybackActivity,MainActivity}.java android-tv-launcher/app/src/androidTest/java/local/tv/home/{LiveHandoffEvidence,PlaybackTest}.java
+          npx prettier --write android-tv-launcher/app/src/main/java/local/tv/home/{LiveVideoOutput,LivePlayer,LiveProgress,Troubleshooting,GuidePicture,VlcPlaybackActivity,MainActivity}.java android-tv-launcher/app/src/androidTest/java/local/tv/home/{LiveHandoffEvidence,LiveVideoOutputTest,PlaybackTest}.java android-tv-launcher/tests/LiveProgressTest.java
           git diff --exit-code
       - name: Verify playlist, network, channel search and episode rules
         run: |

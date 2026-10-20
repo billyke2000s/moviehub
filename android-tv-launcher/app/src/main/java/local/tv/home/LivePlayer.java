@@ -42,6 +42,10 @@ final class LivePlayer {
     private static List<String> lastOptions;
     private static final LiveProgress progress = new LiveProgress();
     private static boolean played;
+    private static boolean viewRepaired;
+    private static int viewRepairs;
+    private static String lastVideoRecovery = "None";
+
     private static final Runnable watchProgress = new Runnable() {
         @Override
         public void run() {
@@ -50,25 +54,18 @@ final class LivePlayer {
             boolean watching =
                 (EngineSources.locator(url) || PlutoSource.nativeUrl(url)) &&
                 played &&
+                player.getVideoTracksCount() > 0 &&
                 !resolving &&
                 alive &&
                 player.isPlaying() &&
                 output != null &&
                 output.isShown();
-            long frames = -1;
-            if (watching) {
-                var media = player.getMedia();
-                if (media != null) try {
-                    var stats = media.getStats();
-                    if (stats != null) frames = stats.displayedPictures;
-                } catch (RuntimeException e) {
-                    Diagnostics.recovered("Reading live playback progress", e);
-                    watching = false;
-                } finally {
-                    media.release();
-                }
-            }
-            observeProgress(android.os.SystemClock.elapsedRealtime(), player.getTime(), frames, watching);
+            observeProgress(
+                android.os.SystemClock.elapsedRealtime(),
+                player.getTime(),
+                output == null ? -1 : output.frames,
+                watching
+            );
             if (player != null && ticket == generation) main.postDelayed(this, 1000);
         }
     };
@@ -76,8 +73,18 @@ final class LivePlayer {
     static void observeProgress(long now, long time, long frames, boolean watching) {
         if (!(EngineSources.locator(url) || PlutoSource.nativeUrl(url))) return;
         if (!progress.stalled(now, time, frames, watching, LiveZapper.STALL_MS)) return;
+        boolean clockMoving = progress.clockMoving(now, LiveZapper.STALL_MS);
         progress.reset();
         Timings.record("Live video stopped advancing", Timings.start());
+        if (clockMoving && !viewRepaired && output != null && output.refreshView()) {
+            viewRepaired = true;
+            viewRepairs++;
+            lastVideoRecovery = "Video view refreshed while the playback clock advanced";
+            return;
+        }
+        lastVideoRecovery = clockMoving
+            ? "Rendered video stopped after a view refresh; trying the source backup"
+            : "Playback clock and rendered video stopped; trying the source backup";
         if (retryProvider()) return;
         alive = false;
         player.pause();
@@ -94,6 +101,10 @@ final class LivePlayer {
     static int opened;
 
     private LivePlayer() {}
+
+    static String videoRecovery() {
+        return lastVideoRecovery + " · " + viewRepairs + " view refreshes";
+    }
 
     static LiveVideoOutput output() {
         return output;
@@ -131,7 +142,10 @@ final class LivePlayer {
             resume();
             return true;
         }
-        if (!streamUrl.equals(url) || !restart) refreshed = false;
+        if (!streamUrl.equals(url) || !restart) {
+            refreshed = false;
+            viewRepaired = false;
+        }
         appContext = context.getApplicationContext();
         lastOptions = new ArrayList<>(options);
         cancelResolution();
@@ -339,6 +353,7 @@ final class LivePlayer {
         appContext = null;
         lastOptions = null;
         refreshed = false;
+        viewRepaired = false;
         engineOptions = null;
         url = null;
         alive = false;

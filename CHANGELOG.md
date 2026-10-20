@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — early live video freeze investigation
+
+- Count rendered texture-buffer updates even when presentation timestamps repeat or reset; clear handoff covers from buffer callbacks.
+- Detect a stopped visible video consumer independently of advancing audio; try one consumer refresh without reopening media or audio before bounded source recovery.
+- Add constant-timestamp EGL, actual consumer-stall recovery and wrapped-HLS audio/video reload checks, plus a sustained numerical live diagnostic.
+
 ## Unreleased — retained live picture
 
 - Remove system Activity fades for Live TV entry/return, including Android 14+ transition overrides.

@@ -70,7 +70,9 @@ final class Diagnostics {
             "Invalid segment container",
             "Invalid PNG checksum",
             "Truncated TS packet"
-        ).contains(message) ? message.replace(' ', '_') : error.getClass().getSimpleName();
+        ).contains(message)
+            ? message.replace(' ', '_')
+            : error.getClass().getSimpleName();
         System.err.println(where + ": " + kind);
     }
 }

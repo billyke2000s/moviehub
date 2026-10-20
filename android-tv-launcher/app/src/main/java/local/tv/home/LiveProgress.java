@@ -18,7 +18,11 @@ final class LiveProgress {
         position = time;
         pictures = frames;
         // Some live demuxers do not expose a useful clock. Actual advancing video wins.
-        return frames > 0 ? now - videoAt >= limit : now - clockAt >= limit;
+        return frames >= 0 ? now - videoAt >= limit : now - clockAt >= limit;
+    }
+
+    boolean clockMoving(long now, long limit) {
+        return position >= 0 && now - clockAt < limit;
     }
 
     void reset() {

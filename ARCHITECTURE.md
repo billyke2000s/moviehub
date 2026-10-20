@@ -221,3 +221,15 @@ window change; the UI does not add a system fade around it.
 
 Google's [Grafika double-decode sample](https://github.com/google/grafika/blob/master/app/src/main/java/com/android/grafika/DoubleDecodeActivity.java)
 also retains SurfaceTextures to preserve decoders across Activity recreation.
+
+## Video consumer freeze recovery
+
+LiveVideoOutput counts onSurfaceTextureUpdated callbacks independently of source-defined EGL
+presentation timestamps. A new buffer may carry a repeated or reset timestamp; that must not
+leave the handoff cover visible. LivePlayer samples this consumer counter and the playback clock.
+After the existing eight-second live stall threshold, a clock-moving/video-stopped session gets
+one refresh of the TextureView consumer while preserving its SurfaceTexture, Surface, decoder,
+media, relay and audio. An absent clock or a persistent second freeze uses the existing bounded
+source retry/failure path. Paused and hidden playback are excluded; audio-only tracks are excluded
+from video monitoring. No new decoder flags or changes to sports buffering thresholds are applied.
+Troubleshooting shows fixed recovery descriptions and counts, with no URLs or tokens.
