@@ -190,3 +190,5 @@ messages. `ProviderBroker` retains safe transport failure categories across repl
 steps with the observed HTTP/network cause. `ChannelImporter` stores the summary; `ProviderSettings`
 puts it first in the description. Settings cards use minimum height plus wrap-content. Guide label sizing
 fits row height while retaining horizontal ellipsis.
+
+LivePlayer exposes its pending-resolution phase and notifies the currently attached owner when a resolved stream/relay is ready. VlcPlaybackActivity arms its normal video-startup timer at that transition, rather than spending the 15-second backup timeout on the provider walk. Guide/fullscreen handoffs replace the callback with the owner; switching cancels stale resolutions as before.

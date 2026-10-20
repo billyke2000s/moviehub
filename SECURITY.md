@@ -109,3 +109,5 @@ DRM processing or browser is involved. Physical-box memory/CPU and long-running 
 Provider refresh diagnostics persist only fixed error categories or HTTP status numbers. Exception
 messages, URLs, response bodies and tokens are not rendered in Settings. Sanitized isolated-service
 exception type chains can identify a processing deadline; arbitrary transport error strings are rejected.
+
+Separating link resolution from video startup does not extend interpreter, broker, HTTP or request-count limits. It removes the competing video-startup timer only while the bounded native lookup is pending. Cancellation/generation checks still discard results after a channel switch or stop; the callback belongs to the attached view owner.

@@ -375,12 +375,11 @@ public class VlcPlaybackActivity extends Activity {
         status.setText("Opening source…");
         status.setVisibility(View.VISIBLE);
         overlayHandler.removeCallbacks(stalled);
-        // Live TV with backups moves on sooner than a film would.
-        overlayHandler.postDelayed(stalled, zapper != null ? 15000 : 45000);
         if (live) {
             startLive();
             return;
         }
+        armStartupTimeout();
         engine = new LibVLC(this, new ArrayList<>(PlayerOptions.film(this)));
         player = new MediaPlayer(engine);
         player.setRate(playbackRate);
@@ -410,10 +409,21 @@ public class VlcPlaybackActivity extends Activity {
         boolean carriedOn = LivePlayer.play(this, url, PlayerOptions.live(this), restartLive);
         restartLive = false;
         player = LivePlayer.player();
-        LivePlayer.attach(this, video, this::onPlayerEvent, () -> {
-            if (!foreground) return;
-            showError("This channel is unavailable. Check your connection or try another channel.");
-        });
+        LivePlayer.attach(
+            this,
+            video,
+            this::onPlayerEvent,
+            () -> {
+                if (!foreground) return;
+                showError("This channel is unavailable. Check your connection or try another channel.");
+            },
+            this::armStartupTimeout
+        );
+        // Resolution has its own bounded broker deadline. Starting the video timer before it
+        // finishes can discard a working provider before LibVLC has even received its URL.
+        if (LivePlayer.isResolving()) {
+            status.setText("Finding a working stream…");
+        } else armStartupTimeout();
         player.setRate(playbackRate);
         if (aspect != null) player.setAspectRatio(aspect);
         if (carriedOn && player.isPlaying()) {
@@ -424,6 +434,14 @@ public class VlcPlaybackActivity extends Activity {
             showPlaying(true);
             revealControls();
         }
+    }
+
+    private void armStartupTimeout() {
+        overlayHandler.removeCallbacks(stalled);
+        if (!foreground) return;
+        status.setText("Opening source…");
+        // Live TV with backups moves on sooner than a film would, after link resolution.
+        overlayHandler.postDelayed(stalled, zapper != null ? 15000 : 45000);
     }
 
     /** The player's events: playing, buffering, the end, and errors (which try the other format). */

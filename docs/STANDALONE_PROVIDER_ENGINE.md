@@ -249,3 +249,13 @@ Java PNG unpacker then produced MPEG-TS from a real Football segment and FFmpeg 
 over four seconds, exit 0. A full live host-JVM relay attempt was blocked by this workspace's DNS/network
 transport; relay renewal/scoping and fragmented media are covered by fixtures, pending Android CI and
 physical-TV verification. No host stub is included in the Android app.
+
+## Channel selection and startup timing audit (20 October 2026)
+
+The upstream README documents resolve-on-demand and a bounded walk across player providers, rather than storing finished stream links during catalogue refresh. MovieHub follows that design: AdapterSources stores a stable channel locator (Main Event is DaddyLive id 38), LivePlayer calls the adapter on selection, the bundled resolver walks the current player/embed pages, and the transient result/session goes to ProviderRelay and LibVLC. Guide duplicates are channel copies; the selected copy may therefore be another source before DaddyLive is tried.
+
+The TV now reports a successful 899-channel DaddyLive refresh. A fresh bundled-module Main Event walk in Node VM with curl transport resolved Player 1 and its anonymous playlist session in about 28 seconds. This is an exploratory desktop observation; an attempted actual-JVM step hit the local processing deadline, and physical-TV execution remains unverified. A mismatched video watchdog was confirmed in code: it started a 15-second timeout before the resolver finished, while the broker has a separate longer bound. The player now says “Finding a working stream…” and starts its normal video timeout only after resolution/relay setup. Existing HTTP, interpreter, broker and cancellation bounds remain.
+
+Documentation checked: https://github.com/TheBinaryNinja/masqueradarr/blob/main/README.md (resolve-on-demand and DaddyLive player walk).
+
+The same fresh Main Event result returned HTTP 200 media HLS and a 6,803,517-byte PNG segment. Production ProviderPngSegments unpacked it on Java 17; FFmpeg decoded four seconds of video with exit 0. This verifies a desktop sample and the native unpacker, not physical TV playback or a complete native-network relay session.

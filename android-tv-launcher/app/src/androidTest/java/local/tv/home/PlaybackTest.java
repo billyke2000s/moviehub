@@ -762,6 +762,70 @@ public class PlaybackTest {
     }
 
     @Test
+    public void slowLinkResolutionDoesNotSpendTheVideoStartupTimeout() throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        Context context = instrumentation.getTargetContext();
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        String locator = PlutoSource.ROOT + "5ad8d3a31b95267e225e4e09";
+        String fixture = "http://127.0.0.1:" + server.getLocalPort() + "/live.ts";
+        for (String source : new String[] { "nativepluto", "free" }) {
+            ChannelDatabase.Writer writer = db.writer(source, () -> {}, n -> {});
+            try {
+                writer.accept(
+                    new Playlist.Channel(
+                        "Slow resolver",
+                        source.equals("nativepluto") ? locator : fixture,
+                        "General",
+                        "",
+                        ""
+                    )
+                );
+                writer.commit();
+            } finally {
+                writer.abort();
+            }
+        }
+        java.util.concurrent.CountDownLatch started = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch finish = new java.util.concurrent.CountDownLatch(1);
+        LivePlayer.testResolver = (url, http) -> {
+            started.countDown();
+            if (!finish.await(25, java.util.concurrent.TimeUnit.SECONDS)) throw new IOException(
+                "Fixture resolution timeout"
+            );
+            http.check();
+            return fixture;
+        };
+        LiveZapper.session = new LiveZapper.Session("all", "", java.util.Collections.emptySet(), 0);
+        try {
+            activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+                new Intent(context, VlcPlaybackActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra("url", locator)
+                    .putExtra("live", true)
+                    .putExtra("id", ChannelQuery.key(locator))
+                    .putExtra("title", "Slow resolver")
+            );
+            assertTrue(started.await(5, java.util.concurrent.TimeUnit.SECONDS));
+            // Cross the real 15-second startup deadline while the resolver is still pending.
+            SystemClock.sleep(16_000);
+            instrumentation.runOnMainSync(() -> {
+                assertTrue("Resolver abandoned before it returned", LivePlayer.isResolving());
+                assertFalse(activity.liveFailed);
+                assertEquals("1 of 2", activity.zapper.sourceLabel());
+            });
+            finish.countDown();
+            await(() -> player() != null && player().isPlaying() && player().getTime() > 500, 30000);
+            assertEquals("1 of 2", activity.zapper.sourceLabel());
+        } finally {
+            finish.countDown();
+            LiveZapper.session = null;
+            db.clear();
+        }
+    }
+
+    @Test
     public void failedNativeResolutionFallsBackToTheSameChannelsBackup() throws Exception {
         instrumentation.runOnMainSync(activity::finish);
         instrumentation.waitForIdleSync();

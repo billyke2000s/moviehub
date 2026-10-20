@@ -169,3 +169,11 @@ large text in short rows. This follow-up fixes card sizing, places failures befo
 and retains safe HTTP/network/runtime failure categories rather than only the outer exception class.
 Guide labels now fit row height. This is a readability and diagnosis fix: the actual cause of the
 reported box's DaddyLive catalogue failure is still unknown until another refresh records its category.
+
+## Main Event playback report (20 October 2026)
+
+The latest TV screenshot shows DaddyLive discovery succeeding (899 channels), so the previous catalogue-failure report is no longer current. Playback is a separate path: selecting its stored channel identity runs the player-chain resolver and hands a transient session to the native relay. A fresh Main Event (38) walk returned valid HLS/session metadata through Player 1 in about 28 seconds in this workspace, using the bundled module in Node VM and curl transport. The actual JVM step hit its processing deadline in this slower environment; this Node observation is not Android interpreter evidence.
+
+A confirmed app mismatch started the 15-second video-startup timeout before provider resolution, even though the broker allows a longer bounded lookup. The fix starts that timer when LivePlayer has the URL/relay, retaining immediate resolution-error failover and cancellation. Physical TV playback remains to be tested; a successful directory refresh alone never proves playback.
+
+The same fresh Main Event result returned HTTP 200 media HLS and a 6,803,517-byte PNG segment. Production ProviderPngSegments unpacked it on Java 17; FFmpeg decoded four seconds of video with exit 0. This verifies a desktop sample and the native unpacker, not physical TV playback or a complete native-network relay session.

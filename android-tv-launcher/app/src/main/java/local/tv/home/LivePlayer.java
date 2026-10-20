@@ -30,6 +30,7 @@ final class LivePlayer {
     private static VLCVideoLayout layout;
     private static MediaPlayer.EventListener listener;
     private static Runnable resolutionFailed;
+    private static Runnable resolutionReady;
     private static final Handler main = new Handler(Looper.getMainLooper());
     private static final ExecutorService resolver = Executors.newFixedThreadPool(2);
     private static Future<?> pending;
@@ -58,6 +59,10 @@ final class LivePlayer {
     /** A stream is playing or opening, so a new view can take it over without reconnecting. */
     static boolean active() {
         return player != null && (alive || player.isPlaying());
+    }
+
+    static boolean isResolving() {
+        return resolving;
     }
 
     /**
@@ -123,6 +128,7 @@ final class LivePlayer {
                         }
                         relay = nextRelay;
                         resolving = false;
+                        if (resolutionReady != null) resolutionReady.run();
                         open(
                             nextRelay == null ? resolved : nextRelay.url,
                             stream == null ? PlutoSource.USER_AGENT : stream.userAgent,
@@ -229,6 +235,16 @@ final class LivePlayer {
     }
 
     static void attach(Object who, VLCVideoLayout view, MediaPlayer.EventListener events, Runnable failed) {
+        attach(who, view, events, failed, null);
+    }
+
+    static void attach(
+        Object who,
+        VLCVideoLayout view,
+        MediaPlayer.EventListener events,
+        Runnable failed,
+        Runnable ready
+    ) {
         if (player == null) return;
         if (layout != view) {
             boolean moving = layout != null;
@@ -242,6 +258,7 @@ final class LivePlayer {
         owner = who;
         listener = events;
         resolutionFailed = failed;
+        resolutionReady = ready;
     }
 
     static boolean owns(Object who) {
@@ -277,5 +294,6 @@ final class LivePlayer {
         layout = null;
         listener = null;
         resolutionFailed = null;
+        resolutionReady = null;
     }
 }

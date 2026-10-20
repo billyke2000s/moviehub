@@ -189,3 +189,5 @@ exercises HTTP 403 and DNS failures through the real isolated service. SettingsS
 multi-line provider failure is not ellipsized or clipped by its card. LiveGuideTest shrinks the guide grid
 and verifies that channel and programme font metrics fit the rows. CI screenshots include
 `provider-error-card` and `live-guide-short-rows`. These fixtures do not identify a particular box's failure.
+
+`PlaybackTest.slowLinkResolutionDoesNotSpendTheVideoStartupTimeout` holds an asynchronous native resolver past the real 15-second video-startup deadline while a backup exists, verifies the original source is still resolving, then releases it and checks actual LibVLC playback without switching sources. Existing cancellation, immediate-failure backup and full-screen/guide handoff tests remain in the full suite.

@@ -124,3 +124,5 @@ Action, F1 and ABC USA on 20 October 2026; this does not establish every channel
 
 Provider refresh failures now show a safe reason at the start of each provider's status. Settings cards
 expand to fit their descriptions, and guide labels fit shorter rows instead of clipping vertically.
+
+Provider playback resolves a fresh stream when you select a channel. The screen shows “Finding a working stream…” during that bounded lookup, then starts the video-opening timeout after a URL is ready. Refreshing channels updates the directory; it does not pre-resolve expiring video links.

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — provider playback startup
+
+- Give bounded link resolution its own phase, then start the video-opening timer when the URL/relay is ready. Previously a working provider taking over 15 seconds could be discarded before LibVLC received a stream.
+- Show “Finding a working stream…” during resolution; preserve source backup, cancellation and view handoff behaviour.
+
 ## Unreleased — readable provider refresh failures
 
 - Expand Settings cards to fit descriptions, put provider failures first, and retain safe network/HTTP/
