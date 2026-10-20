@@ -127,3 +127,22 @@ Flaky device tests seen 20 October 2026: run 39357280476 (attempt 1) failed
 130 s off) and `LiveGuideTest.pagesWrapRoundLikeTheSatelliteGuide` (timed out on "first page again").
 The commit changed neither area, both passed on the two previous commits, and attempt 2 passed
 unchanged. Cause not found; watch for a repeat.
+
+## Live provider probe (20 October 2026, GitHub runner, United States)
+
+`provider-engine/tools/live-probe.mjs` (workflow "Live provider probe") runs each provider with the
+app's own interpreter, allow-lists and limits, then decodes samples with ffmpeg. Run 39361949935,
+after raising the limits:
+
+| Provider | Catalogue | Sample playback | Fault |
+| --- | --- | --- | --- |
+| STIRR, TCL, Xumo, LG, Whale, Vizio, Roku, Tubi, FreeLiveSports, Local Now | works | plays | — |
+| Samsung TV Plus (GB) | 252 channels | some play; some GB streams fail from a US runner | probably region |
+| Plex | 692 channels | stream 404 | provider |
+| DaddyLive | 899 channels (45 Sky Sports) | none: stream hosts answer 403 (referrer/signature gate) | provider |
+| DistroTV, Vidaa | host does not resolve (ENOTFOUND) | — | provider |
+| ZLive | catalogue 404 | — | provider |
+
+Before the fixes, Samsung (GitHub redirect not allowed), Tubi and Plex (over the 3/4 MB limits)
+failed inside MovieHub. Not checked on the TV box: catalogue steps there are slower (Plex's slowest
+step took 2.9 s on the runner; the box limit is now 10 s), and UK region results may differ.
