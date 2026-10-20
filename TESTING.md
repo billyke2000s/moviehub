@@ -207,3 +207,9 @@ This is a regression ceiling, not a claim of imperceptible timing on a physical 
 stream-open and resolver counters still assert no restart or re-resolution.
 The assistant's local execution environment was unavailable for this change: core checks,
 formatting, builds, lint and emulator validation run in CI instead.
+
+Validation on 20 October 2026: source revision `89f90e285b7944b1be93f40b9cde40dfef7df873` passed the
+[full API 28 emulator suite](https://github.com/billyke2000s/moviehub/actions/runs/39492778810).
+The eight logged handoff-to-fresh-frame times were 104, 87, 61, 56, 100, 64, 88 and 47 ms.
+Surface identity, no native vout destruction, nonblank destination pixels, cover removal and
+unchanged stream/resolution counts passed. This verifies fixtures on the emulator, not the TV.

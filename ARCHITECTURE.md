@@ -94,6 +94,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `LiveTvPanels` | The guide's side panels: options, sections and groups, search, programme information with reminders, the parental lock, colour-key set-up. |
 | `GuidePicture` | The live picture in the guide's corner (the last channel watched); stops when the guide closes unless the full screen has taken the player over. |
 | `LivePlayer` | The one Live TV player (LibVLC engine and media player), shared by the full screen and the guide picture so going between them moves the picture without reconnecting. Films keep their own player. |
+| `LiveVideoOutput` | Session-long native Surface/SurfaceTexture and per-screen TextureViews, with retained-frame covers during guide/full-screen transfers. |
 | `PlayerOptions` | LibVLC engine options, one list for films and one for Live TV, so a change to one never reaches the other. |
 | `SettingsScreens` | Settings tabs, account setup (TMDB, Premiumize, Xtream, M3U), languages, toggles. |
 | `ForYou` | The Home "For you" shelf: blends TMDB recommendations for up to six titles you played, saved or opened, ranked and cached on the box. |

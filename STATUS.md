@@ -189,6 +189,17 @@ The fix adds native/provider progress monitoring (clock plus displayed-picture c
 The previous shared-player handoff still detached LibVLC's native video output. LiveVideoOutput
 now retains its SurfaceTexture/Surface across both presentations, with a temporary last-frame
 cover until fresh video arrives. Stronger emulator checks verify rendered output and repeated
-round trips, rather than only the playback clock. Validation is pending for this revision;
-physical-TV frame pacing and seamlessness are not yet verified. Local execution was unavailable,
-so checks for this revision run in CI.
+round trips, rather than only the playback clock. Revision `89f90e285b7944b1be93f40b9cde40dfef7df873` passed
+formatting, all 293 core checks, APK/debug/release builds and lint, signing compatibility,
+provider checks and the complete API 28 TV emulator suite. Eight measured handoffs produced
+fresh destination frames in 47–104 ms, preserving the output and avoiding stream restarts.
+Physical-TV frame pacing and seamlessness are not yet verified. Local execution was unavailable;
+checks ran in CI.
+
+- [Android validation](https://github.com/billyke2000s/moviehub/actions/runs/39492778810)
+- [Provider validation](https://github.com/billyke2000s/moviehub/actions/runs/39492778815)
+- [Test APK ZIP](https://github.com/billyke2000s/moviehub/actions/runs/39492778810/artifacts/12296945928)
+
+The earlier repeated-trip test reused an ActivityMonitor after waitForMonitorWithTimeout
+removed it. Both first trips passed with fresh frames; the second trips could not detect their
+Activity. The test now registers a new monitor per trip, and the final full suite passed.
