@@ -205,7 +205,8 @@ final class NativeHttp implements PlutoSource.Http {
                     int n;
                     while ((n = in.read(buf)) != -1) {
                         check();
-                        if (out.size() + n > 3 * 1024 * 1024) throw new IOException(
+                        // Tubi's guide (3.7 MB) and Plex's catalogue (3.1 MB) were over 3 MB.
+                        if (out.size() + n > 6 * 1024 * 1024) throw new IOException(
                             "Provider response limit"
                         );
                         out.write(buf, 0, n);

@@ -17,8 +17,8 @@ const dir = "build/provider-tests";
 mkdirSync(dir, { recursive: true });
 
 // --- Mirrors of the app's rules (keep in step with ProviderBroker.allowed and NativeHttp) ---------
-const RESPONSE_LIMIT = 3 * 1024 * 1024; // NativeHttp.exchange
-const AGGREGATE_LIMIT = 4 * 1024 * 1024; // ProviderBroker.run
+const RESPONSE_LIMIT = 6 * 1024 * 1024; // NativeHttp.exchange
+const AGGREGATE_LIMIT = 7 * 1024 * 1024; // ProviderBroker.run
 const REQUEST_LIMIT = 64; // ProviderBroker.run
 const ROUND_LIMIT = 64; // ProviderBroker.run
 
@@ -43,6 +43,7 @@ function allowed(provider, url) {
         case "samsung":
             return (
                 host === "i.mjh.nz" ||
+                (host === "github.com" && path.startsWith("/matthuisman/i.mjh.nz/")) ||
                 (host === "raw.githubusercontent.com" &&
                     path.startsWith("/matthuisman/i.mjh.nz/") &&
                     path.endsWith("/SamsungTVPlus/.channels.json.gz")) ||
@@ -110,7 +111,7 @@ function step(id, operation, input) {
     const elapsed = Number((/ELAPSED (\d+)/.exec(p.stderr || "") || [0, -1])[1]);
     if (p.status !== 0) {
         const message = (/ERROR (.*)/.exec(p.stderr || "") || [0, "interpreter exited " + p.status])[1];
-        throw new Ours("interpreter: " + message.slice(0, 160));
+        throw new Ours("interpreter: " + message.slice(0, 400));
     }
     return { value: JSON.parse(p.stdout), elapsed };
 }
@@ -165,7 +166,7 @@ async function exchange(provider, request, stats) {
         stats.maxResponse = Math.max(stats.maxResponse, buffer.length);
         if (buffer.length > RESPONSE_LIMIT)
             throw new Ours(
-                "response " + (buffer.length / 1048576).toFixed(1) + " MB over the app's 3 MB limit (" +
+                "response " + (buffer.length / 1048576).toFixed(1) + " MB over the app's 6 MB limit (" +
                     new URL(current).hostname + ")",
             );
         if (res.status >= 400) stats.httpErrors.push(res.status + " " + new URL(current).hostname);
@@ -242,7 +243,7 @@ async function run(id, operation, row, stats) {
             stats.aggregate = aggregate;
             if (aggregate > AGGREGATE_LIMIT)
                 throw new Ours(
-                    "responses total " + (aggregate / 1048576).toFixed(1) + " MB, over the app's 4 MB limit",
+                    "responses total " + (aggregate / 1048576).toFixed(1) + " MB, over the app's 7 MB limit",
                 );
             record.completedAt = Date.now();
             responses.push(record);
@@ -312,7 +313,7 @@ for (const id of Object.keys(pkg.modules)) {
         result.sky = rows.filter((r) => SKY.test(r.name || "")).length;
     } catch (e) {
         result.catalogue = (e instanceof Ours ? "OURS: " : "PROVIDER: ") + e.message;
-        if (!(e instanceof Ours) && stats.httpErrors.length)
+        if (stats.httpErrors.length)
             result.catalogue += " (HTTP " + stats.httpErrors.slice(-3).join(", ") + ")";
     }
     result.catalogueStats = {
@@ -337,7 +338,7 @@ for (const id of Object.keys(pkg.modules)) {
             sample.play = played.ok ? "ok" : "PROVIDER?: " + played.error;
         } catch (e) {
             sample.resolve = (e instanceof Ours ? "OURS: " : "PROVIDER: ") + e.message;
-            if (!(e instanceof Ours) && rstats.httpErrors.length)
+            if (rstats.httpErrors.length)
                 sample.resolve += " (HTTP " + rstats.httpErrors.slice(-3).join(", ") + ")";
         }
         console.log("   " + sample.name + " | " + sample.resolve + " | " + sample.play);

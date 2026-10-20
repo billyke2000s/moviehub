@@ -54,6 +54,8 @@ final class ProviderBroker {
                 case "samsung":
                     return (
                         host.equals("i.mjh.nz") ||
+                        // i.mjh.nz now redirects its Samsung list through GitHub.
+                        (host.equals("github.com") && u.getPath().startsWith("/matthuisman/i.mjh.nz/")) ||
                         (host.equals("raw.githubusercontent.com") &&
                             u.getPath().startsWith("/matthuisman/i.mjh.nz/") &&
                             u.getPath().endsWith("/SamsungTVPlus/.channels.json.gz")) ||
@@ -200,7 +202,8 @@ final class ProviderBroker {
                     record.put("error", true);
                 }
                 if (record.has("response")) bytes += record.getJSONObject("response").toString().length();
-                if (bytes > 4 * 1024 * 1024) throw new IOException("Provider aggregate limit");
+                // Below ProviderScript.MAX_BYTES (8 MB), which bounds the script's whole input.
+                if (bytes > 7 * 1024 * 1024) throw new IOException("Provider aggregate limit");
                 record.put("completedAt", System.currentTimeMillis());
                 responses.put(record);
             }

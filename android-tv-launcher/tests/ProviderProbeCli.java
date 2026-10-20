@@ -18,7 +18,12 @@ public final class ProviderProbeCli {
                 Files.readString(Path.of(args[2]))
             );
         } catch (Throwable e) {
-            System.err.println("ERROR " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            StringBuilder why = new StringBuilder(e.getClass().getSimpleName() + ": " + e.getMessage());
+            for (Throwable c = e.getCause(); c != null; c = c.getCause()) why.append(" <- ")
+                .append(c.getClass().getSimpleName())
+                .append(": ")
+                .append(String.valueOf(c.getMessage()).replaceAll("https?://\\S+", "<url>"));
+            System.err.println("ERROR " + why.toString().replace('\n', ' '));
             System.err.println("ELAPSED " + (System.nanoTime() - start) / 1_000_000);
             System.exit(2);
             return;
