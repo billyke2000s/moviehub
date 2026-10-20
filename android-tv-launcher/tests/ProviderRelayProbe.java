@@ -11,7 +11,11 @@ public final class ProviderRelayProbe {
 
     public static void main(String[] args) throws Exception {
         BufferedReader input = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
-        try (ProviderRelay relay = new ProviderRelay(new EngineSources.Stream(new JSONObject(input.readLine())))) {
+        try (
+            ProviderRelay relay = new ProviderRelay(
+                new EngineSources.Stream(new JSONObject(input.readLine()))
+            )
+        ) {
             System.out.println(new JSONObject().put("relay", relay.url));
             System.out.flush();
             input.readLine();
@@ -31,7 +35,8 @@ final class EngineSources {
 
         Stream(JSONObject value) {
             url = value.getString("url");
-            headers = value.optJSONObject("headers") == null ? new JSONObject() : value.getJSONObject("headers");
+            headers =
+                value.optJSONObject("headers") == null ? new JSONObject() : value.getJSONObject("headers");
             playlistSession = value.optJSONObject("playlistSession");
         }
     }
@@ -41,8 +46,13 @@ final class ProviderBroker {
 
     static void publicHost(String host) throws Exception {
         for (InetAddress address : InetAddress.getAllByName(host)) {
-            if (address.isAnyLocalAddress() || address.isLoopbackAddress() || address.isLinkLocalAddress()
-                || address.isSiteLocalAddress() || address.isMulticastAddress()) {
+            if (
+                address.isAnyLocalAddress() ||
+                address.isLoopbackAddress() ||
+                address.isLinkLocalAddress() ||
+                address.isSiteLocalAddress() ||
+                address.isMulticastAddress()
+            ) {
                 throw new java.io.IOException("Private upstream rejected");
             }
         }

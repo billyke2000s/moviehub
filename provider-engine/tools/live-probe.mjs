@@ -151,7 +151,9 @@ async function exchange(provider, request, stats) {
                 signal: AbortSignal.timeout(16000),
             });
         } catch (e) {
-            throw new Theirs("network error on " + new URL(current).hostname + ": " + (e.cause?.code || e.name));
+            throw new Theirs(
+                "network error on " + new URL(current).hostname + ": " + (e.cause?.code || e.name),
+            );
         }
         if (res.status >= 300 && res.status < 400 && request.redirect !== "manual") {
             const location = res.headers.get("location");
@@ -167,8 +169,11 @@ async function exchange(provider, request, stats) {
         stats.maxResponse = Math.max(stats.maxResponse, buffer.length);
         if (buffer.length > RESPONSE_LIMIT)
             throw new Ours(
-                "response " + (buffer.length / 1048576).toFixed(1) + " MB over the app's 6 MB limit (" +
-                    new URL(current).hostname + ")",
+                "response " +
+                    (buffer.length / 1048576).toFixed(1) +
+                    " MB over the app's 6 MB limit (" +
+                    new URL(current).hostname +
+                    ")",
             );
         if (res.status >= 400) stats.httpErrors.push(res.status + " " + new URL(current).hostname);
         const responseHeaders = {};
@@ -285,91 +290,117 @@ function decode(stream) {
         .map((l) => l.replace(/https?:\/\/[^\s'"]+/g, "<url>").trim())
         .filter(Boolean)
         .slice(-1)[0];
-    return { ok: p.status === 0, error: p.status === 0 ? "" : (error || "ffmpeg exit " + p.status).slice(0, 140) };
+    return {
+        ok: p.status === 0,
+        error: p.status === 0 ? "" : (error || "ffmpeg exit " + p.status).slice(0, 140),
+    };
 }
 
 export { run };
 
 if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
-const SKY = /sky\s*sports?/i;
-const results = [];
-const wanted = process.argv.slice(2);
-for (const id of Object.keys(pkg.modules)) {
-    if (wanted.length && !wanted.includes(id)) continue;
-    const stats = {
-        hosts: new Set(),
-        requests: 0,
-        steps: 0,
-        slowestStep: 0,
-        maxResponse: 0,
-        aggregate: 0,
-        httpErrors: [],
-        networkErrors: [],
-    };
-    const result = { id, catalogue: "", channels: 0, sky: 0, samples: [] };
-    console.log("== " + id);
-    let rows = [];
-    try {
-        rows = id === "freelivesports" ? await freeLiveSports(stats) : await run(id, "catalogue", null, stats);
-        if (!Array.isArray(rows) || rows.length === 0) throw new Theirs("empty catalogue");
-        result.catalogue = "ok";
-        result.channels = rows.length;
-        result.sky = rows.filter((r) => SKY.test(r.name || "")).length;
-    } catch (e) {
-        result.catalogue = (e instanceof Ours ? "OURS: " : "PROVIDER: ") + e.message;
-        if (stats.httpErrors.length)
-            result.catalogue += " (HTTP " + stats.httpErrors.slice(-3).join(", ") + ")";
-        if (stats.networkErrors.length) result.catalogue += " (" + stats.networkErrors.slice(-2).join("; ") + ")";
-    }
-    result.catalogueStats = {
-        requests: stats.requests,
-        steps: stats.steps,
-        slowestStepMs: stats.slowestStep,
-        maxResponseKB: Math.round(stats.maxResponse / 1024),
-        totalKB: Math.round(stats.aggregate / 1024),
-        hosts: [...stats.hosts],
-    };
-    const samples = [...rows.filter((r) => SKY.test(r.name || "")).slice(0, 4), ...rows.filter((r) => !SKY.test(r.name || "")).slice(0, 3)];
-    for (const row of id === "zlive" ? [] : samples) {
-        const sample = { name: String(row.name).slice(0, 60), resolve: "", play: "" };
-        const rstats = { ...stats, hosts: new Set(), httpErrors: [], networkErrors: [], requests: 0, aggregate: 0 };
+    const SKY = /sky\s*sports?/i;
+    const results = [];
+    const wanted = process.argv.slice(2);
+    for (const id of Object.keys(pkg.modules)) {
+        if (wanted.length && !wanted.includes(id)) continue;
+        const stats = {
+            hosts: new Set(),
+            requests: 0,
+            steps: 0,
+            slowestStep: 0,
+            maxResponse: 0,
+            aggregate: 0,
+            httpErrors: [],
+            networkErrors: [],
+        };
+        const result = { id, catalogue: "", channels: 0, sky: 0, samples: [] };
+        console.log("== " + id);
+        let rows = [];
         try {
-            const value =
+            rows =
                 id === "freelivesports"
-                    ? step("freelivesports", "resolve", row.streamUrl).value
-                    : await run(id, "resolve", row, rstats);
-            sample.resolve = "ok (" + new URL(value.url).hostname + ")";
-            const played = decode(value);
-            sample.play = played.ok ? "ok" : "PROVIDER?: " + played.error;
+                    ? await freeLiveSports(stats)
+                    : await run(id, "catalogue", null, stats);
+            if (!Array.isArray(rows) || rows.length === 0) throw new Theirs("empty catalogue");
+            result.catalogue = "ok";
+            result.channels = rows.length;
+            result.sky = rows.filter((r) => SKY.test(r.name || "")).length;
         } catch (e) {
-            sample.resolve = (e instanceof Ours ? "OURS: " : "PROVIDER: ") + e.message;
-            if (rstats.httpErrors.length)
-                sample.resolve += " (HTTP " + rstats.httpErrors.slice(-3).join(", ") + ")";
+            result.catalogue = (e instanceof Ours ? "OURS: " : "PROVIDER: ") + e.message;
+            if (stats.httpErrors.length)
+                result.catalogue += " (HTTP " + stats.httpErrors.slice(-3).join(", ") + ")";
+            if (stats.networkErrors.length)
+                result.catalogue += " (" + stats.networkErrors.slice(-2).join("; ") + ")";
         }
-        console.log("   " + sample.name + " | " + sample.resolve + " | " + sample.play);
-        result.samples.push(sample);
+        result.catalogueStats = {
+            requests: stats.requests,
+            steps: stats.steps,
+            slowestStepMs: stats.slowestStep,
+            maxResponseKB: Math.round(stats.maxResponse / 1024),
+            totalKB: Math.round(stats.aggregate / 1024),
+            hosts: [...stats.hosts],
+        };
+        const samples = [
+            ...rows.filter((r) => SKY.test(r.name || "")).slice(0, 4),
+            ...rows.filter((r) => !SKY.test(r.name || "")).slice(0, 3),
+        ];
+        for (const row of id === "zlive" ? [] : samples) {
+            const sample = { name: String(row.name).slice(0, 60), resolve: "", play: "" };
+            const rstats = {
+                ...stats,
+                hosts: new Set(),
+                httpErrors: [],
+                networkErrors: [],
+                requests: 0,
+                aggregate: 0,
+            };
+            try {
+                const value =
+                    id === "freelivesports"
+                        ? step("freelivesports", "resolve", row.streamUrl).value
+                        : await run(id, "resolve", row, rstats);
+                sample.resolve = "ok (" + new URL(value.url).hostname + ")";
+                const played = decode(value);
+                sample.play = played.ok ? "ok" : "PROVIDER?: " + played.error;
+            } catch (e) {
+                sample.resolve = (e instanceof Ours ? "OURS: " : "PROVIDER: ") + e.message;
+                if (rstats.httpErrors.length)
+                    sample.resolve += " (HTTP " + rstats.httpErrors.slice(-3).join(", ") + ")";
+            }
+            console.log("   " + sample.name + " | " + sample.resolve + " | " + sample.play);
+            result.samples.push(sample);
+        }
+        console.log(
+            "   catalogue: " +
+                result.catalogue +
+                " · " +
+                result.channels +
+                " channels · " +
+                result.sky +
+                " Sky Sports",
+        );
+        results.push(result);
     }
-    console.log("   catalogue: " + result.catalogue + " · " + result.channels + " channels · " + result.sky + " Sky Sports");
-    results.push(result);
-}
 
-writeFileSync(dir + "/live-probe.json", JSON.stringify(results, null, 2));
-let md = "## Live provider probe\n\nRunner country affects results (GitHub runners are usually in the US).\n\n";
-md += "| Provider | Catalogue | Channels | Sky Sports | Resolved | Played | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n";
-for (const r of results) {
-    const resolved = r.samples.filter((s) => s.resolve.startsWith("ok")).length;
-    const played = r.samples.filter((s) => s.play === "ok").length;
-    const s = r.catalogueStats;
+    writeFileSync(dir + "/live-probe.json", JSON.stringify(results, null, 2));
+    let md =
+        "## Live provider probe\n\nRunner country affects results (GitHub runners are usually in the US).\n\n";
     md +=
-        `| ${r.id} | ${r.catalogue.replace(/\|/g, "/")} | ${r.channels} | ${r.sky} | ${resolved}/${r.samples.length} | ${played}/${r.samples.length} | ` +
-        `${s.requests} req, max ${s.maxResponseKB} KB, total ${s.totalKB} KB, slowest step ${s.slowestStepMs} ms |\n`;
-}
-md += "\n### Samples\n\n| Provider | Channel | Resolve | Play |\n| --- | --- | --- | --- |\n";
-for (const r of results)
-    for (const s of r.samples)
-        md += `| ${r.id} | ${s.name.replace(/\|/g, "/")} | ${s.resolve.replace(/\|/g, "/")} | ${s.play.replace(/\|/g, "/")} |\n`;
-writeFileSync(dir + "/live-probe.md", md);
-if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
-console.log(md);
-
+        "| Provider | Catalogue | Channels | Sky Sports | Resolved | Played | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n";
+    for (const r of results) {
+        const resolved = r.samples.filter((s) => s.resolve.startsWith("ok")).length;
+        const played = r.samples.filter((s) => s.play === "ok").length;
+        const s = r.catalogueStats;
+        md +=
+            `| ${r.id} | ${r.catalogue.replace(/\|/g, "/")} | ${r.channels} | ${r.sky} | ${resolved}/${r.samples.length} | ${played}/${r.samples.length} | ` +
+            `${s.requests} req, max ${s.maxResponseKB} KB, total ${s.totalKB} KB, slowest step ${s.slowestStepMs} ms |\n`;
+    }
+    md += "\n### Samples\n\n| Provider | Channel | Resolve | Play |\n| --- | --- | --- | --- |\n";
+    for (const r of results)
+        for (const s of r.samples)
+            md += `| ${r.id} | ${s.name.replace(/\|/g, "/")} | ${s.resolve.replace(/\|/g, "/")} | ${s.play.replace(/\|/g, "/")} |\n`;
+    writeFileSync(dir + "/live-probe.md", md);
+    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
+    console.log(md);
 }
