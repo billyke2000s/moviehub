@@ -131,6 +131,10 @@ final class LiveZapper {
     }
 
     void automaticSources(boolean enabled) {
+        if (enabled && !automaticSources) {
+            attemptedCopies.clear();
+            attemptedCopies.add(copy);
+        }
         automaticSources = enabled;
         if (enabled && player.liveFailed && !copies.isEmpty()) useCopy(0, true);
         else showBanner();
@@ -240,6 +244,8 @@ final class LiveZapper {
                         s.position = position;
                         copies = found;
                         copy = 0;
+                        attemptedCopies.clear();
+                        attemptedCopies.add(0);
                         switching = false;
                         stalls.clear();
                         // A stall timer from the channel before must not move this one on.
@@ -351,7 +357,11 @@ final class LiveZapper {
      */
     void useCopy(int index, boolean automatic) {
         if (index < 0 || index >= copies.size()) return;
-        if (!automatic) automaticSources = false;
+        if (!automatic) {
+            automaticSources = false;
+            attemptedCopies.clear();
+        }
+        attemptedCopies.add(index);
         ChannelDatabase.Row row = copies.get(index);
         List<ChannelDatabase.Row> list = copies;
         int ticket = ++request;
@@ -394,11 +404,15 @@ final class LiveZapper {
         player.overlayHandler.removeCallbacks(stalledTooLong);
         if (!automaticSources) return false;
         if (switching) return true; // the next copy is already on its way
-        if (copy + 1 >= copies.size()) return false;
-        switching = true;
-        Timings.record("Live TV backup used", Timings.start());
-        useCopy(copy + 1, true);
-        return true;
+        for (int offset = 1; offset < copies.size(); offset++) {
+            int next = (copy + offset) % copies.size();
+            if (attemptedCopies.contains(next)) continue;
+            switching = true;
+            Timings.record("Live TV backup used", Timings.start());
+            useCopy(next, true);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -408,6 +422,7 @@ final class LiveZapper {
     boolean retryFromFirst() {
         if (!automaticSources || copies.size() <= 1) return false;
         switching = true;
+        attemptedCopies.clear();
         useCopy(0, true);
         return true;
     }

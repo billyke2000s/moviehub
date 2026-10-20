@@ -143,4 +143,21 @@ public final class LiveControlsTest {
             )
         );
     }
+
+    @Test
+    public void automaticRestoredOnTheLastManualSourceTriesEarlierCopiesOnlyOnce() {
+        remote.runOnMainSync(() -> activity.zapper.useCopy(1, false));
+        await(() -> activity.zapper.selectedCopy() == 1 && resolutions.get() == 2);
+        remote.runOnMainSync(() -> {
+            activity.zapper.automaticSources(true);
+            assertTrue(activity.zapper.failover("fixture failure"));
+        });
+        await(() -> activity.zapper.selectedCopy() == 0 && resolutions.get() == 3);
+        remote.runOnMainSync(() ->
+            assertFalse(
+                "No automatic loop back to a tried source",
+                activity.zapper.failover("fixture failure")
+            )
+        );
+    }
 }
