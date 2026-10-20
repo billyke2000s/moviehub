@@ -766,6 +766,8 @@ public class PlaybackTest {
         instrumentation.runOnMainSync(activity::finish);
         instrumentation.waitForIdleSync();
         Context context = instrumentation.getTargetContext();
+        // This test opens an unlisted locator. Do not inherit another test's guide backups.
+        ChannelDatabase.get(context).clear();
         String locator = PlutoSource.ROOT + "5ad8d3a31b95267e225e4e09";
         LivePlayer.testResolver = (url, http) -> "http://127.0.0.1:" + server.getLocalPort() + "/live.ts";
         LiveZapper.session = null;
@@ -786,8 +788,9 @@ public class PlaybackTest {
             LivePlayer.observeProgress(13000, 1000, 20, true);
             // Audio/clock progresses, video frames do not; no buffering/error event is sent.
             LivePlayer.observeProgress(21000, 9000, 20, true);
+            assertEquals("Unexpected inherited backup", "1 of 1", activity.zapper.sourceLabel());
+            assertTrue("Silent freeze did not reach the attached failure callback", activity.liveFailed);
         });
-        await(() -> activity.liveFailed, 5000);
         assertTrue(status().contains("unavailable"));
     }
 
