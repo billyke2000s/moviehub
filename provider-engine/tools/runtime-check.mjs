@@ -423,7 +423,7 @@ pkg.modules.zlive = originalZlive;
 checks++;
 const freeRows = drive("freeshot", "catalogue", null, (req) => {
     assert.equal(req.url, "https://www.freeshot.live/live-tv/sky-sports-action-uk/21");
-    return '<a href="/live-tv/sky-sports-main-event-uk/20">Main Event</a><a href="/live-tv/sky-sports-main-event-uk/20">Duplicate</a><a href="/live-tv/adult-uk/90">Excluded</a>';
+    return '<a href="/live-tv/sky-sports-main-event-live-uk/20">Main Event</a><a href="/live-tv/sky-sports-main-event-live-uk/20">Duplicate</a><a href="/live-tv/adult-uk/90">Excluded</a>';
 });
 assert.equal(freeRows.length, 1);
 assert.equal(freeRows[0].name, "Sky Sports Main Event UK");

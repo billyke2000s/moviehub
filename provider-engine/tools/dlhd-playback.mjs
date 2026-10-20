@@ -134,6 +134,18 @@ async function inspect(provider, row, forceRenew = false) {
             code === 0 && result.tracks.every((track) => track.duration >= 145 && track.frames > 10);
     } catch (error) {
         result.failure = error.constructor.name;
+        const safe = [
+            "FreeShot page unavailable",
+            "FreeShot player unavailable",
+            "Invalid FreeShot player configuration",
+            "FreeShot stream scope rejected",
+            "Invalid FreeShot token",
+            "Invalid FreeShot operation or channel",
+            "operation over the app's time limit",
+            "host not on the app's allow-list",
+        ];
+        result.reason = safe.find((value) => String(error.message).includes(value)) || "Unclassified";
+        if (provider === "freeshot") result.channelPath = row.channelId;
     } finally {
         if (relay) {
             relay.stdin.end("\n");
@@ -143,21 +155,22 @@ async function inspect(provider, row, forceRenew = false) {
     return result;
 }
 
-try {
-    const rows = await run("dlhd", "catalogue", null, stats());
-    const selected = [
-        rows.find((row) => /sky.*sports.*main.*event/i.test(row.name || "")),
-        rows.find((row) => /sky.*sports.*football/i.test(row.name || "")),
-    ].filter(Boolean);
-    for (const row of selected) {
-        const result = await inspect("dlhd", row);
-        report.push(result);
-        console.log(JSON.stringify(result));
+if (process.env.SPORTS_PROBE_ONLY !== "freeshot")
+    try {
+        const rows = await run("dlhd", "catalogue", null, stats());
+        const selected = [
+            rows.find((row) => /sky.*sports.*main.*event/i.test(row.name || "")),
+            rows.find((row) => /sky.*sports.*football/i.test(row.name || "")),
+        ].filter(Boolean);
+        for (const row of selected) {
+            const result = await inspect("dlhd", row);
+            report.push(result);
+            console.log(JSON.stringify(result));
+        }
+        if (!selected.length) report.push({ failure: "No matching catalogue rows" });
+    } catch (error) {
+        report.push({ failure: error.constructor.name });
     }
-    if (!selected.length) report.push({ failure: "No matching catalogue rows" });
-} catch (error) {
-    report.push({ failure: error.constructor.name });
-}
 try {
     const rows = await run("freeshot", "catalogue", null, stats());
     const row = rows.find((value) => /sky.*sports.*main.*event/i.test(value.name || ""));

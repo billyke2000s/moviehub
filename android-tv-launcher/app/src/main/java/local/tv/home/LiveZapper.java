@@ -65,6 +65,7 @@ final class LiveZapper {
     private boolean switching;
     private boolean automaticSources = true,
         backControls;
+    private final Set<Integer> attemptedCopies = new HashSet<>();
     private final List<Long> stalls = new ArrayList<>();
     /** The banner, programme information and pause bar (package-private for tests). */
     SkyOverlay overlay;

@@ -36,7 +36,7 @@ jobs:
           mkdir -p build/provider-tests
           javac -cp "$RUNNER_TEMP/rhino.jar:$RUNNER_TEMP/json.jar" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderCodec,ProviderSignature,ProviderUrls,ProviderSegments,ProviderRelay,PlaylistSession,ProviderPngSegments}.java android-tv-launcher/tests/{ProviderProbeCli,ProviderRelayProbe}.java
       - name: Resolve and decode both tracks for 150 seconds per channel
-        run: RHINO_JAR="$RUNNER_TEMP/rhino.jar" JSON_JAR="$RUNNER_TEMP/json.jar" node provider-engine/tools/dlhd-playback.mjs
+        run: SPORTS_PROBE_ONLY=freeshot RHINO_JAR="$RUNNER_TEMP/rhino.jar" JSON_JAR="$RUNNER_TEMP/json.jar" node provider-engine/tools/dlhd-playback.mjs
       - name: Upload numerical results only
         if: always()
         uses: actions/upload-artifact@v6

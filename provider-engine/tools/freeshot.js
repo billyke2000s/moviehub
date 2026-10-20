@@ -38,6 +38,7 @@ function __run(operation, row) {
                         continue;
                     seen[id] = true;
                     var name = slug
+                        .replace(/-live(?=-uk$)/, "")
                         .split("-")
                         .map(function (word) {
                             return word === "uk" ? "UK" : word.charAt(0).toUpperCase() + word.slice(1);
