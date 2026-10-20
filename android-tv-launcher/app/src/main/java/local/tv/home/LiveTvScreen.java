@@ -349,11 +349,12 @@ final class LiveTvScreen {
         String listFilter = filter,
             listSearch = search;
         String activeUrl = LivePlayer.currentUrl();
+        String activeKey = activeUrl == null ? null : ChannelQuery.key(activeUrl);
         activity.async(
             () -> {
                 ChannelDatabase db = channelsDb();
                 if (activeUrl != null) for (ChannelDatabase.Row candidate : db.copies(channel)) {
-                    if (activeUrl.equals(db.url(candidate.id, candidate.key))) return activeUrl;
+                    if (candidate.key.equals(activeKey)) return activeUrl;
                 }
                 return db.url(channel.id, channel.key);
             },

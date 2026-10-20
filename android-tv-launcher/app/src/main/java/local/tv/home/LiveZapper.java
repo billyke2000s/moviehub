@@ -239,6 +239,7 @@ final class LiveZapper {
         int ticket = ++request;
         Session s = own;
         String activeUrl = current ? LivePlayer.currentUrl() : null;
+        String activeKey = activeUrl == null ? null : ChannelQuery.key(activeUrl);
         boolean activeAutomatic = LivePlayer.automaticSources;
         Set<String> activeAttempts = new HashSet<>(LivePlayer.attemptedSources);
         worker.execute(() -> {
@@ -251,7 +252,7 @@ final class LiveZapper {
                 boolean carried = false;
                 if (activeUrl != null) for (int i = 0; i < found.size(); i++) {
                     ChannelDatabase.Row candidate = found.get(i);
-                    if (activeUrl.equals(db.url(candidate.id, candidate.key))) {
+                    if (candidate.key.equals(activeKey)) {
                         selected = i;
                         carried = true;
                         break;
