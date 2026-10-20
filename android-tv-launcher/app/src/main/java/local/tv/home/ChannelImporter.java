@@ -120,12 +120,16 @@ final class ChannelImporter {
                         problems.add("FreeLiveSports unavailable; cached channels kept.");
                     }
                 }
+                // Providers that failed this time, named once in one line: a list of one line per
+                // provider pushed the guide's channel rows off the screen.
+                List<String> unavailable = new ArrayList<>();
                 for (String id : ProviderBroker.IDS)
                     if (AdapterSources.enabled(context, id, providerConnected)) {
                         configured.add(AdapterSources.source(id));
                         anySource = true;
                         try {
                             total += AdapterSources.refresh(context, id, db, cancel);
+                            progress = total;
                         } catch (Exception e) {
                             cancel.check();
                             Diagnostics.recovered("Provider refresh " + id, e);
@@ -134,9 +138,12 @@ final class ChannelImporter {
                                 .edit()
                                 .putString(id + "Error", e.getClass().getSimpleName())
                                 .apply();
-                            problems.add(id + ": provider unavailable; cached channels kept.");
+                            unavailable.add(AdapterSources.sourceName(AdapterSources.source(id)));
                         }
                     }
+                if (!unavailable.isEmpty()) problems.add(
+                    "Unavailable now: " + String.join(", ", unavailable) + " (saved channels kept)"
+                );
                 if (NativeSources.enabled(context, providerConnected)) {
                     configured.add("nativepluto");
                     anySource = true;

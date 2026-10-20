@@ -73,6 +73,9 @@ final class GuideFrame {
         titles.addView(listTitle);
         status = text("", 13, false);
         status.setTextColor(0xffc9d3ff);
+        // At most two lines, so a long refresh report never squeezes the channel rows.
+        status.setMaxLines(2);
+        status.setEllipsize(android.text.TextUtils.TruncateAt.END);
         titles.addView(status);
         header.addView(titles, new LinearLayout.LayoutParams(0, -2, 1));
         optionsButton = activity.button("Options", guide.panels::options);

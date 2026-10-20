@@ -112,7 +112,8 @@ final class ProviderSettings {
                     : status.getInt(id + "Count", 0) +
                       " channels · " +
                       java.text.DateFormat.getDateTimeInstance().format(new java.util.Date(refreshed));
-            if (status.contains(id + "Error")) detail += " · Refresh failed; cached channels kept";
+            if (status.contains(id + "Error")) detail +=
+                " · Last refresh failed (" + status.getString(id + "Error", "") + "); saved channels kept";
             settings.settingCard(
                 body,
                 label,

@@ -2,6 +2,7 @@
 
 ## Unreleased — experimental standalone provider engine
 
+- Failed providers are named in one line in the guide ("Unavailable now: …"), and the guide status is at most two lines; one line per provider had squeezed the channel rows to nothing. Settings → Provider engine shows the type of each provider's last refresh error, and the import count rises as providers load.
 - On start, MovieHub asks once whether to turn on the free TV providers ("Turn them all on" or "Not now"), then shows the safety notice. Existing installs are asked too; Back leaves the question for next time. Providers were previously all off with no prompt.
 - Provider channels now back up the same channel from the free lists and accounts: "Sky Sports F1 (720p)", "Sky Sports F1 UK", "… HD" and "Sky Sports Formula 1" are one channel with several sources (channel database version 9 re-keys saved channels; favourites and locks kept). Other countries, +1, regional and UHD channels stay separate.
 - When a source fails, Live TV tries each other copy once ("Trying another source") before saying the channel is not working; SELECT then tries all copies again from the first. A slow error and a timeout from the same source no longer skip a backup.
