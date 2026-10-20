@@ -766,32 +766,45 @@ public class PlaybackTest {
         instrumentation.runOnMainSync(activity::finish);
         instrumentation.waitForIdleSync();
         Context context = instrumentation.getTargetContext();
-        // This test opens an unlisted locator. Do not inherit another test's guide backups.
-        ChannelDatabase.get(context).clear();
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
         String locator = PlutoSource.ROOT + "5ad8d3a31b95267e225e4e09";
+        ChannelDatabase.Writer writer = db.writer("nativepluto", () -> {}, n -> {});
+        try {
+            writer.accept(new Playlist.Channel("Silent freeze", locator, "General", "", ""));
+            writer.commit();
+        } finally {
+            writer.abort();
+        }
         LivePlayer.testResolver = (url, http) -> "http://127.0.0.1:" + server.getLocalPort() + "/live.ts";
-        LiveZapper.session = null;
-        activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
-            new Intent(context, VlcPlaybackActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                .putExtra("url", locator)
-                .putExtra("live", true)
-                .putExtra("id", "silent-freeze")
-                .putExtra("title", "Silent freeze")
-        );
-        await(() -> player() != null && player().isPlaying() && player().getTime() > 500, 30000);
-        instrumentation.runOnMainSync(() -> {
-            LivePlayer.observeProgress(0, 1000, 20, false);
-            LivePlayer.observeProgress(1000, 1000, 20, true);
-            LivePlayer.observeProgress(12000, 1000, 20, false);
-            assertFalse("Pause triggered recovery", activity.liveFailed);
-            LivePlayer.observeProgress(13000, 1000, 20, true);
-            // Audio/clock progresses, video frames do not; no buffering/error event is sent.
-            LivePlayer.observeProgress(21000, 9000, 20, true);
-            assertEquals("Unexpected inherited backup", "1 of 1", activity.zapper.sourceLabel());
-            assertTrue("Silent freeze did not reach the attached failure callback", activity.liveFailed);
-        });
-        assertTrue(status().contains("unavailable"));
+        LiveZapper.session = new LiveZapper.Session("all", "", java.util.Collections.emptySet(), 0);
+        try {
+            activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+                new Intent(context, VlcPlaybackActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra("url", locator)
+                    .putExtra("live", true)
+                    .putExtra("id", ChannelQuery.key(locator))
+                    .putExtra("title", "Silent freeze")
+            );
+            await(() -> player() != null && player().isPlaying() && player().getTime() > 500, 30000);
+            instrumentation.runOnMainSync(() -> {
+                assertNotNull("Guide session was not attached", activity.zapper);
+                LivePlayer.observeProgress(0, 1000, 20, false);
+                LivePlayer.observeProgress(1000, 1000, 20, true);
+                LivePlayer.observeProgress(12000, 1000, 20, false);
+                assertFalse("Pause triggered recovery", activity.liveFailed);
+                LivePlayer.observeProgress(13000, 1000, 20, true);
+                // Audio/clock progresses, video frames do not; no buffering/error event is sent.
+                LivePlayer.observeProgress(21000, 9000, 20, true);
+                assertEquals("Unexpected inherited backup", "1 of 1", activity.zapper.sourceLabel());
+                assertTrue("Silent freeze did not reach the attached failure callback", activity.liveFailed);
+            });
+            assertTrue(status().contains("unavailable"));
+        } finally {
+            LiveZapper.session = null;
+            db.clear();
+        }
     }
 
     @Test
