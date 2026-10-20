@@ -7,7 +7,8 @@ import org.mozilla.javascript.*;
 /** Pure JS transforms only. No Java objects, filesystem, network, dynamic imports or Node globals. */
 final class ProviderScript {
 
-    static final int MAX_BYTES = 8 * 1024 * 1024;
+    /** The whole script input (provider responses included). Plex's catalogue is about 9 MB. */
+    static final int MAX_BYTES = 16 * 1024 * 1024;
 
     private ProviderScript() {}
 
@@ -29,7 +30,15 @@ final class ProviderScript {
         if (source.length() > 256 * 1024 || payload.length() > MAX_BYTES) throw new IOException(
             "Provider limit"
         );
-        long deadline = System.nanoTime() + (operation.equals("resolve") ? 8_000_000_000L : 3_000_000_000L);
+        // A catalogue step parses a whole channel list; on a TV box's CPU a large one takes
+        // several seconds in the interpreter, so it gets longer than other steps.
+        long deadline =
+            System.nanoTime() +
+            (operation.equals("resolve")
+                ? 8_000_000_000L
+                : operation.equals("catalogue")
+                  ? 10_000_000_000L
+                  : 3_000_000_000L);
         ContextFactory factory = new ContextFactory() {
             @Override
             protected Context makeContext() {

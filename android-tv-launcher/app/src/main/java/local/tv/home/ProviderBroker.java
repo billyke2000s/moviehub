@@ -62,6 +62,8 @@ final class ProviderBroker {
                         host.equals("jmp2.uk") ||
                         host.endsWith(".samsungtvplus.com") ||
                         host.endsWith(".cloudfront.net") ||
+                        // jmp2.uk also redirects some channels to Amagi's CDN.
+                        host.endsWith(".amagi.tv") ||
                         host.endsWith(".samsung.com")
                     );
                 case "tubi":
@@ -202,8 +204,8 @@ final class ProviderBroker {
                     record.put("error", true);
                 }
                 if (record.has("response")) bytes += record.getJSONObject("response").toString().length();
-                // Below ProviderScript.MAX_BYTES (8 MB), which bounds the script's whole input.
-                if (bytes > 7 * 1024 * 1024) throw new IOException("Provider aggregate limit");
+                // Below ProviderScript.MAX_BYTES (16 MB), which bounds the script's whole input.
+                if (bytes > 15 * 1024 * 1024) throw new IOException("Provider aggregate limit");
                 record.put("completedAt", System.currentTimeMillis());
                 responses.put(record);
             }

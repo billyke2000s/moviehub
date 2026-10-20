@@ -18,7 +18,7 @@ mkdirSync(dir, { recursive: true });
 
 // --- Mirrors of the app's rules (keep in step with ProviderBroker.allowed and NativeHttp) ---------
 const RESPONSE_LIMIT = 6 * 1024 * 1024; // NativeHttp.exchange
-const AGGREGATE_LIMIT = 7 * 1024 * 1024; // ProviderBroker.run
+const AGGREGATE_LIMIT = 15 * 1024 * 1024; // ProviderBroker.run
 const REQUEST_LIMIT = 64; // ProviderBroker.run
 const ROUND_LIMIT = 64; // ProviderBroker.run
 
@@ -50,6 +50,7 @@ function allowed(provider, url) {
                 host === "jmp2.uk" ||
                 host.endsWith(".samsungtvplus.com") ||
                 host.endsWith(".cloudfront.net") ||
+                host.endsWith(".amagi.tv") ||
                 host.endsWith(".samsung.com")
             );
         case "tubi":
@@ -243,7 +244,7 @@ async function run(id, operation, row, stats) {
             stats.aggregate = aggregate;
             if (aggregate > AGGREGATE_LIMIT)
                 throw new Ours(
-                    "responses total " + (aggregate / 1048576).toFixed(1) + " MB, over the app's 7 MB limit",
+                    "responses total " + (aggregate / 1048576).toFixed(1) + " MB, over the app's 15 MB limit",
                 );
             record.completedAt = Date.now();
             responses.push(record);
@@ -315,6 +316,7 @@ for (const id of Object.keys(pkg.modules)) {
         result.catalogue = (e instanceof Ours ? "OURS: " : "PROVIDER: ") + e.message;
         if (stats.httpErrors.length)
             result.catalogue += " (HTTP " + stats.httpErrors.slice(-3).join(", ") + ")";
+        if (stats.networkErrors.length) result.catalogue += " (" + stats.networkErrors.slice(-2).join("; ") + ")";
     }
     result.catalogueStats = {
         requests: stats.requests,
