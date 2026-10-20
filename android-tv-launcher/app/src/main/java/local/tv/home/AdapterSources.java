@@ -82,6 +82,20 @@ final class AdapterSources {
         "ZLive",
     };
 
+    /** Map upstream labels into the shared TV-guide categories, not provider-specific groups. */
+    static String guideCategory(String category, String name) {
+        String raw = (category == null ? "" : category).trim();
+        String combined = (raw + " " + (name == null ? "" : name)).toLowerCase(Locale.ROOT);
+        if (combined.matches(".*(sport|football|soccer|cricket|rugby|tennis|racing|nba|nfl|nhl|f1|espn|sky sports).*")) return "Sports";
+        if (combined.matches(".*(news|weather|politic|business|finance|bloomberg).*")) return "News";
+        if (combined.matches(".*(movie|film|cinema).*")) return "Movies";
+        if (combined.matches(".*(documentar|nature|wildlife|history|science).*")) return "Documentaries";
+        if (combined.matches(".*(kids|children|cartoon|animation|family).*")) return "Kids";
+        if (combined.matches(".*(music|radio|concert).*")) return "Music";
+        if (combined.matches(".*(comedy|sitcom).*")) return "Comedy";
+        return "Entertainment";
+    }
+
     private AdapterSources() {}
 
     static String source(String id) {
@@ -282,9 +296,7 @@ final class AdapterSources {
                     new Playlist.Channel(
                         row.getString("name"),
                         locator(id, channel),
-                        LABELS[Arrays.asList(ProviderBroker.IDS).indexOf(id)] +
-                            " · " +
-                            row.optString("category", "Live TV"),
+                        guideCategory(row.optString("category", ""), row.getString("name")),
                         logo,
                         source(id) + ":" + channel
                     )
