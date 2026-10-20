@@ -109,7 +109,11 @@ final class LiveVideoOutput {
                         lastHandoffGapMs = SystemClock.elapsedRealtime() - transferStarted;
                         transferStarted = 0;
                     }
-                    clearPreview();
+                    // Texture updates are delivered during drawing. Remove the sibling cover
+                    // after this traversal, rather than changing the child list mid-draw.
+                    if (preview != null) current.post(() -> {
+                        if (!closed && view == current) clearPreview();
+                    });
                 }
             }
         );
