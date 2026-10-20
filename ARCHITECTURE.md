@@ -205,7 +205,10 @@ presentation hosts. The old TextureView is removed before the retained texture i
 the new view; returning false from onSurfaceTextureDestroyed keeps the BufferQueue alive.
 LibVLC uses its GLES compositor for aspect ratio and subtitles. Only final session stop detaches
 native vout and releases the Surface/texture. Films retain their existing VLCVideoLayout.
-A temporary bitmap of the last frame covers the transfer and is cleared on a fresh texture update.
+A temporary bitmap of the last frame covers both outgoing and incoming hosts. The incoming
+cover clears on a fresh texture update; the outgoing host is discarded by its Activity's lifecycle.
+If another handoff happens before a fresh frame, the existing cover is reused. Presentation hosts
+are dedicated to LiveVideoOutput; revisiting a host clears its previous cover.
 No Activity context is retained after the view moves or playback stops.
 
 References: [Android TextureView](https://developer.android.com/reference/android/view/TextureView#setSurfaceTexture(android.graphics.SurfaceTexture))
@@ -214,3 +217,6 @@ and [SurfaceTextureListener](https://developer.android.com/reference/android/vie
 Live Activity transitions use zero-animation launch options and matching close overrides (the
 API 34 transition override or the legacy finish override). The stream Surface survives the
 window change; the UI does not add a system fade around it.
+
+Google's [Grafika double-decode sample](https://github.com/google/grafika/blob/master/app/src/main/java/com/android/grafika/DoubleDecodeActivity.java)
+also retains SurfaceTextures to preserve decoders across Activity recreation.

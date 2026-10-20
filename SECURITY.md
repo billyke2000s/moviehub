@@ -116,6 +116,7 @@ Silent-stall recovery applies to native/provider playback after actual playback 
 
 ## Live video presentation
 
-The retained live output and handoff bitmap stay in process memory and are released at session
-stop or when the next frame arrives. Handoffs do not save pictures or provider URLs to disk and
+The retained live output and handoff bitmap stay in process memory. The incoming cover is
+removed on the next fresh frame; the outgoing cover is discarded with its old presentation host.
+Session stop releases the active output and cover. Handoffs do not save pictures or provider URLs to disk and
 do not add permissions, network endpoints or changes to stream authorization.

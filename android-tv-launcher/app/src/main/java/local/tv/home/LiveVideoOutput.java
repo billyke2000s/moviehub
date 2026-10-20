@@ -58,13 +58,16 @@ final class LiveVideoOutput {
 
     void show(FrameLayout destination) {
         if (closed || holder == destination) return;
-        Bitmap nextStill = null;
-        if (view != null && view.isAvailable() && frames > 0) {
+        Bitmap nextStill = still;
+        if (nextStill == null && view != null && view.isAvailable() && frames > 0) {
             int width = Math.min(960, Math.max(1, view.getWidth()));
             int height = Math.max(1, (width * view.getHeight()) / Math.max(1, view.getWidth()));
             nextStill = view.getBitmap(width, height);
         }
         if (view != null) {
+            // The outgoing window can remain visible until the destination's first draw.
+            // Keep its last frame too, so removing the GL consumer cannot expose black.
+            if (nextStill != null && preview == null) cover(holder, nextStill);
             transferStarted = SystemClock.elapsedRealtime();
             transferTimestamp = timestamp;
             handoffs++;
@@ -72,8 +75,12 @@ final class LiveVideoOutput {
             // returns false: Android must not release the retained producer's BufferQueue.
             ((ViewGroup) view.getParent()).removeView(view);
         }
-        clearPreview();
+        // The outgoing cover belongs to its old host until that host is discarded. Do not
+        // retain that Activity or recycle the bitmap shared with the incoming cover.
+        preview = null;
+        still = null;
         holder = destination;
+        destination.removeAllViews();
         view = new TextureView(destination.getContext());
         TextureView current = view;
         current.setSurfaceTexture(texture);
@@ -121,14 +128,19 @@ final class LiveVideoOutput {
         if (nextStill != null) {
             coveredHandoffs++;
             still = nextStill;
-            preview = new ImageView(destination.getContext());
-            preview.setScaleType(ImageView.ScaleType.FIT_XY);
-            preview.setImageBitmap(still);
-            destination.addView(preview, 1, new FrameLayout.LayoutParams(-1, -1));
+            preview = cover(destination, still);
         }
         // setSurfaceTexture does not send onSurfaceTextureAvailable. Explicitly resize after
         // layout, including when reusing the same surface in a newly created Activity.
         current.post(() -> resize(current, current.getWidth(), current.getHeight()));
+    }
+
+    private static ImageView cover(FrameLayout host, Bitmap image) {
+        ImageView cover = new ImageView(host.getContext());
+        cover.setScaleType(ImageView.ScaleType.FIT_XY);
+        cover.setImageBitmap(image);
+        host.addView(cover, new FrameLayout.LayoutParams(-1, -1));
+        return cover;
     }
 
     private void resize(TextureView current, int width, int height) {
