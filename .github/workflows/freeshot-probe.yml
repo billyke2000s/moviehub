@@ -27,6 +27,7 @@ jobs:
             'https://www.freeshot.live/',
             'https://www.freeshot.live/live-tv/united-kingdom',
             'https://www.freeshot.live/live-tv/sky-sports-action-uk/21',
+            'https://www.freeshot.live/live-tv/sky-sports-main-event-live-uk/15',
             'https://freeshot.live/embed/SkySportAction.php',
             'https://wideiptv.top/player/skysportsaction'
           ];
@@ -44,10 +45,19 @@ jobs:
                 chunks.push(Buffer.from(value));
               }
               const html = Buffer.concat(chunks).toString('utf8');
+              for (const frame of html.matchAll(/<iframe[^>]+src=["']([^"']+)["']/gi)) {
+                try {
+                  const next = new URL(frame[1], page);
+                  if (next.protocol === 'https:' &&
+                      (((next.hostname === 'freeshot.live' || next.hostname === 'www.freeshot.live') && /^\/embed\/[A-Za-z0-9_-]+\.php$/.test(next.pathname)) ||
+                       (next.hostname === 'wideiptv.top' && /^\/player\/[A-Za-z0-9_-]+$/.test(next.pathname))) &&
+                      !pages.includes(next.href) && pages.length < 10) pages.push(next.href);
+                } catch {}
+              }
               const refs = (pattern) => [...html.matchAll(pattern)].slice(0, 20).map(m => {
                 try {
                   const url = new URL(m[1], page);
-                  return {host: url.hostname, path: url.pathname};
+                  return {host: url.hostname, path: url.pathname, query: !!url.search, protocol: url.protocol};
                 } catch { return {invalid: true}; }
               });
               if (new URL(page).hostname === 'wideiptv.top') {
