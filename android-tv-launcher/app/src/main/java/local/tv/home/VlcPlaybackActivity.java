@@ -586,17 +586,17 @@ public class VlcPlaybackActivity extends Activity {
         revealControls();
     }
 
-    /**
-     * Back on a film first puts the controls away, then asks "Press Back again", and only leaves
-     * on another press within {@link #EXIT_WINDOW_MS}, so a stray press does not stop the film.
-     * Live TV asks once and leaves on the second press, as before.
-     */
     @Override
     public void finish() {
         super.finish();
         if (live && Build.VERSION.SDK_INT < 34) overridePendingTransition(0, 0);
     }
 
+    /**
+     * Back on a film first puts the controls away, then asks "Press Back again", and only leaves
+     * on another press within {@link #EXIT_WINDOW_MS}, so a stray press does not stop the film.
+     * Live TV asks once and leaves on the second press, as before.
+     */
     private void onBackKey() {
         long now = SystemClock.elapsedRealtime();
         if (ended || player == null || now - backPressedAt < EXIT_WINDOW_MS) {

@@ -60,7 +60,11 @@ final class LiveHandoffEvidence {
                 picture.recycle();
             }
             if (handoff) {
-                assertEquals("Every handoff retained a visible frame", output.handoffs, output.coveredHandoffs);
+                assertEquals(
+                    "Every handoff retained a visible frame",
+                    output.handoffs,
+                    output.coveredHandoffs
+                );
                 assertTrue(
                     "Handoff frame gap exceeded 1.5 seconds: " + output.lastHandoffGapMs,
                     output.lastHandoffGapMs <= 1500
