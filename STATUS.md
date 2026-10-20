@@ -121,3 +121,9 @@ key (`ChannelIdentity`, database version 9), provider channels go into the share
 longer depend on the free-list setting. Checked with core checks, the real Free-TV/iptv-org lists
 on a computer, and fixture device tests in CI. **Not yet seen on the TV box or on a real failing
 provider stream**; whether a given provider's Sky Sports copy actually plays depends on that provider.
+
+Flaky device tests seen 20 October 2026: run 39357280476 (attempt 1) failed
+`EpgImporterTest.matchesChannelsAcrossNamingStylesAndKeepsOnlyCurrentProgrammes` (a parsed XMLTV time
+130 s off) and `LiveGuideTest.pagesWrapRoundLikeTheSatelliteGuide` (timed out on "first page again").
+The commit changed neither area, both passed on the two previous commits, and attempt 2 passed
+unchanged. Cause not found; watch for a repeat.
