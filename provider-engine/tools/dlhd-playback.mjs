@@ -28,6 +28,8 @@ async function inspect(row) {
             "java",
             [
                 "-Xmx192m",
+                // Desktop HttpURLConnection otherwise silently drops Origin; Android sends it.
+                "-Dsun.net.http.allowRestrictedHeaders=true",
                 "-cp",
                 process.env.JSON_JAR + ":build/provider-tests",
                 "local.tv.home.ProviderRelayProbe",

@@ -22,6 +22,7 @@ jobs:
           node --input-type=module <<'JS'
           import {spawnSync} from 'node:child_process';
           // Fixed public pages only. Never log media URLs, query strings, cookies or inline code.
+          const ua = 'Mozilla/5.0 (Linux; Android 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
           const pages = [
             'https://www.freeshot.live/',
             'https://www.freeshot.live/live-tv/united-kingdom',
@@ -31,7 +32,7 @@ jobs:
           ];
           for (const page of pages) {
             try {
-              const response = await fetch(page, {signal: AbortSignal.timeout(20000)});
+              const response = await fetch(page, {signal: AbortSignal.timeout(20000), headers: {'User-Agent':ua}});
               const reader = response.body.getReader();
               const chunks = [];
               let size = 0;
@@ -53,10 +54,10 @@ jobs:
                 const match = /streamUrl:\s*("(?:\\.|[^"\\])*")/.exec(html);
                 if (match) {
                   const stream = JSON.parse(match[1]);
-                  const media = await fetch(stream, {signal: AbortSignal.timeout(20000), headers: {Origin: 'https://wideiptv.top', Referer: page}});
+                  const media = await fetch(stream, {signal: AbortSignal.timeout(20000), headers: {Origin: 'https://wideiptv.top', Referer: 'https://wideiptv.top/', 'User-Agent':ua}});
                   const manifest = await media.text();
-                  console.log(JSON.stringify({stage: 'manifest', status: media.status, hls: manifest.startsWith('#EXTM3U'), master: manifest.includes('#EXT-X-STREAM-INF'), segments: (manifest.match(/#EXTINF/g) || []).length}));
-                  const decode = spawnSync('ffmpeg', ['-v', 'error', '-rw_timeout', '20000000', '-headers', 'Origin: https://wideiptv.top\r\nReferer: '+page+'\r\n', '-i', stream, '-t', '30', '-map', '0:v:0', '-map', '0:a:0', '-f', 'framemd5', 'pipe:1'], {encoding:'utf8', timeout:90000, maxBuffer:8*1024*1024});
+                  console.log(JSON.stringify({stage: 'manifest', status: media.status, hls: manifest.startsWith('#EXTM3U'), master: manifest.includes('#EXT-X-STREAM-INF'), segments: (manifest.match(/#EXTINF/g) || []).length, challenge: media.headers.get('cf-mitigated') === 'challenge', errorTerms: [...new Set((manifest.match(/expired|invalid|token|forbidden|denied|country|region|referer|cloudflare|access|signature/gi)||[]).map(x=>x.toLowerCase()))].slice(0,12)}));
+                  const decode = spawnSync('ffmpeg', ['-v', 'error', '-rw_timeout', '20000000', '-user_agent', ua, '-headers', 'Origin: https://wideiptv.top\r\nReferer: https://wideiptv.top/\r\n', '-i', stream, '-t', '30', '-map', '0:v:0', '-map', '0:a:0', '-f', 'framemd5', 'pipe:1'], {encoding:'utf8', timeout:90000, maxBuffer:8*1024*1024});
                   const counts = [0,0];
                   for (const line of (decode.stdout || '').split('\n')) {
                     const frame = /^([01]),/.exec(line);
