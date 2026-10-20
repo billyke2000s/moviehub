@@ -62,6 +62,15 @@ final class ProviderBroker {
 final class Diagnostics {
 
     static void recovered(String where, Exception error) {
-        System.err.println(where + ": " + error.getClass().getSimpleName());
+        String message = error.getMessage();
+        String kind = java.util.Arrays.asList(
+            "Wrapped segment ranges unsupported",
+            "Upstream stream unavailable",
+            "Invalid TS payload",
+            "Invalid segment container",
+            "Invalid PNG checksum",
+            "Truncated TS packet"
+        ).contains(message) ? message.replace(' ', '_') : error.getClass().getSimpleName();
+        System.err.println(where + ": " + kind);
     }
 }

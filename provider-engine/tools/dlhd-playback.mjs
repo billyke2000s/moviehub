@@ -53,7 +53,7 @@ async function inspect(row) {
         const relayErrors = {};
         relay.stderr.on("data", (bytes) => {
             for (const line of bytes.toString().split("\n")) {
-                const kind = /: ([A-Za-z]+Exception)$/.exec(line.trim());
+                const kind = /: ([A-Za-z0-9_]+)$/.exec(line.trim());
                 if (kind) relayErrors[kind[1]] = (relayErrors[kind[1]] || 0) + 1;
             }
         });
