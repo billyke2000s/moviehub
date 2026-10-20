@@ -37,7 +37,11 @@ final class LiveHandoffEvidence {
         }
         assertTrue("Destination did not render fresh frames within 1.5 seconds", ready[0]);
         instrumentation.runOnMainSync(() -> {
-            assertSame("View uses the retained SurfaceTexture", output.texture, output.view().getSurfaceTexture());
+            assertSame(
+                "View uses the retained SurfaceTexture",
+                output.texture,
+                output.view().getSurfaceTexture()
+            );
             Bitmap picture = output.view().getBitmap(96, 54);
             assertNotNull("Rendered picture can be read", picture);
             try {
@@ -56,9 +60,15 @@ final class LiveHandoffEvidence {
                 picture.recycle();
             }
             if (handoff) {
-                assertTrue("Handoff frame gap exceeded 1.5 seconds: " + output.lastHandoffGapMs,
-                    output.lastHandoffGapMs <= 1500);
-                android.util.Log.i("MovieHubHandoff", "Fresh destination frame after " + output.lastHandoffGapMs + " ms");
+                assertEquals("Every handoff retained a visible frame", output.handoffs, output.coveredHandoffs);
+                assertTrue(
+                    "Handoff frame gap exceeded 1.5 seconds: " + output.lastHandoffGapMs,
+                    output.lastHandoffGapMs <= 1500
+                );
+                android.util.Log.i(
+                    "MovieHubHandoff",
+                    "Fresh destination frame after " + output.lastHandoffGapMs + " ms"
+                );
             }
             frames = output.frames;
         });

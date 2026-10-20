@@ -4,13 +4,13 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.widget.FrameLayout;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.Media;
 import org.videolan.libvlc.MediaPlayer;
-import android.widget.FrameLayout;
 
 /**
  * The one Live TV player, shared by the full-screen player and the picture in the guide's corner,
@@ -302,6 +302,7 @@ final class LivePlayer {
         Runnable ready
     ) {
         if (player == null) return;
+        progress.reset();
         output.show(view);
         owner = who;
         listener = events;

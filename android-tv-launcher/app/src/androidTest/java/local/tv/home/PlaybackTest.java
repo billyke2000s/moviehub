@@ -452,39 +452,42 @@ public class PlaybackTest {
             rendered.awaitPicture(false);
             int opened = LivePlayer.opened;
             for (int trip = 0; trip < 2; trip++) {
-            // SELECT on the channel playing in the corner: the full screen carries it on.
-            instrumentation.runOnMainSync(() -> main.liveTv.cells.get(0).performClick());
-            VlcPlaybackActivity full = (VlcPlaybackActivity) instrumentation.waitForMonitorWithTimeout(
-                monitor,
-                15000
-            );
-            assertNotNull("The full screen opened", full);
-            activity = full;
-            await(
-                () -> LivePlayer.owns(full) && LivePlayer.player() != null && LivePlayer.player().isPlaying(),
-                15000
-            );
-            assertEquals("The full screen carried on the guide's stream", opened, LivePlayer.opened);
-            rendered.awaitPicture(true);
-            UiEvidence.capture("live-full-screen");
-            // BACK (after closing the banner) returns to the guide, whose picture carries on.
-            for (int i = 0; i < 3 && !full.isFinishing(); i++) {
-                instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-                instrumentation.waitForIdleSync();
-            }
-            await(() -> full.isFinishing() || full.isDestroyed(), 5000);
-            await(
-                () ->
-                    main.liveTv.picture.playing &&
-                    !LivePlayer.owns(full) &&
-                    LivePlayer.player() != null &&
-                    LivePlayer.player().isPlaying(),
-                15000
-            );
-            assertEquals("The guide carried on the full screen's stream", opened, LivePlayer.opened);
-            if (nativeSource) assertEquals("Handover never resolves again", 1, resolutions.get());
-            rendered.awaitPicture(true);
-            UiEvidence.capture("live-back-in-guide");
+                // SELECT on the channel playing in the corner: the full screen carries it on.
+                instrumentation.runOnMainSync(() -> main.liveTv.cells.get(0).performClick());
+                VlcPlaybackActivity full = (VlcPlaybackActivity) instrumentation.waitForMonitorWithTimeout(
+                    monitor,
+                    15000
+                );
+                assertNotNull("The full screen opened", full);
+                activity = full;
+                await(
+                    () ->
+                        LivePlayer.owns(full) &&
+                        LivePlayer.player() != null &&
+                        LivePlayer.player().isPlaying(),
+                    15000
+                );
+                assertEquals("The full screen carried on the guide's stream", opened, LivePlayer.opened);
+                rendered.awaitPicture(true);
+                UiEvidence.capture("live-full-screen");
+                // BACK (after closing the banner) returns to the guide, whose picture carries on.
+                for (int i = 0; i < 3 && !full.isFinishing(); i++) {
+                    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+                    instrumentation.waitForIdleSync();
+                }
+                await(() -> full.isFinishing() || full.isDestroyed(), 5000);
+                await(
+                    () ->
+                        main.liveTv.picture.playing &&
+                        !LivePlayer.owns(full) &&
+                        LivePlayer.player() != null &&
+                        LivePlayer.player().isPlaying(),
+                    15000
+                );
+                assertEquals("The guide carried on the full screen's stream", opened, LivePlayer.opened);
+                if (nativeSource) assertEquals("Handover never resolves again", 1, resolutions.get());
+                rendered.awaitPicture(true);
+                UiEvidence.capture("live-back-in-guide");
             }
         } finally {
             LivePlayer.testResolver = null;

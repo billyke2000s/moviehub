@@ -34,19 +34,22 @@ final class LiveVideoOutput {
     volatile long frames;
     volatile long lastHandoffGapMs;
     volatile int handoffs;
+    volatile int coveredHandoffs;
     volatile int surfaceDestructions;
 
     LiveVideoOutput(MediaPlayer player) {
         vout = player.getVLCVout();
-        vout.addCallback(new IVLCVout.Callback() {
-            @Override
-            public void onSurfacesCreated(IVLCVout output) {}
+        vout.addCallback(
+            new IVLCVout.Callback() {
+                @Override
+                public void onSurfacesCreated(IVLCVout output) {}
 
-            @Override
-            public void onSurfacesDestroyed(IVLCVout output) {
-                surfaceDestructions++;
+                @Override
+                public void onSurfacesDestroyed(IVLCVout output) {
+                    surfaceDestructions++;
+                }
             }
-        });
+        );
         vout.setVideoSurface(surface, null);
         // With no layout listener LibVLC composites video, aspect ratio and subtitles through
         // its GLES output. No Activity-owned SurfaceView or subtitle surface can disappear.
@@ -58,7 +61,7 @@ final class LiveVideoOutput {
         Bitmap nextStill = null;
         if (view != null && view.isAvailable() && frames > 0) {
             int width = Math.min(960, Math.max(1, view.getWidth()));
-            int height = Math.max(1, width * view.getHeight() / Math.max(1, view.getWidth()));
+            int height = Math.max(1, (width * view.getHeight()) / Math.max(1, view.getWidth()));
             nextStill = view.getBitmap(width, height);
         }
         if (view != null) {
@@ -74,38 +77,45 @@ final class LiveVideoOutput {
         view = new TextureView(destination.getContext());
         TextureView current = view;
         current.setSurfaceTexture(texture);
-        current.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-            @Override
-            public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height) {
-                resize(current, width, height);
-            }
-
-            @Override
-            public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
-                resize(current, width, height);
-            }
-
-            @Override
-            public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-                return false;
-            }
-
-            @Override
-            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-                if (closed || view != current) return;
-                long updated = surfaceTexture.getTimestamp();
-                if (updated == timestamp) return;
-                timestamp = updated;
-                frames++;
-                if (transferStarted != 0 && updated != transferTimestamp) {
-                    lastHandoffGapMs = SystemClock.elapsedRealtime() - transferStarted;
-                    transferStarted = 0;
+        current.setSurfaceTextureListener(
+            new TextureView.SurfaceTextureListener() {
+                @Override
+                public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height) {
+                    resize(current, width, height);
                 }
-                clearPreview();
+
+                @Override
+                public void onSurfaceTextureSizeChanged(
+                    SurfaceTexture surfaceTexture,
+                    int width,
+                    int height
+                ) {
+                    resize(current, width, height);
+                }
+
+                @Override
+                public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+                    return false;
+                }
+
+                @Override
+                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+                    if (closed || view != current) return;
+                    long updated = surfaceTexture.getTimestamp();
+                    if (updated == timestamp) return;
+                    timestamp = updated;
+                    frames++;
+                    if (transferStarted != 0 && updated != transferTimestamp) {
+                        lastHandoffGapMs = SystemClock.elapsedRealtime() - transferStarted;
+                        transferStarted = 0;
+                    }
+                    clearPreview();
+                }
             }
-        });
+        );
         destination.addView(current, 0, new FrameLayout.LayoutParams(-1, -1));
         if (nextStill != null) {
+            coveredHandoffs++;
             still = nextStill;
             preview = new ImageView(destination.getContext());
             preview.setScaleType(ImageView.ScaleType.FIT_XY);
@@ -142,10 +152,9 @@ final class LiveVideoOutput {
             }
             preview = null;
         }
-        if (still != null) {
-            still.recycle();
-            still = null;
-        }
+        // The renderer may still hold the previous display list for this frame. Drop our
+        // reference instead of recycling a bitmap that could still be drawn by RenderThread.
+        still = null;
     }
 
     void close() {
