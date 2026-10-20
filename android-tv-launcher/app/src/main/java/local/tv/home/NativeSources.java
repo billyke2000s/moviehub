@@ -12,11 +12,15 @@ final class NativeSources {
 
     private NativeSources() {}
 
+    /**
+     * Pluto is on by default together with the free lists. Turned on explicitly (the first-start
+     * "Turn them all on", or Settings), it imports whatever the free-list choice is, as the other
+     * providers do.
+     */
     static boolean enabled(Context context, boolean providerConnected) {
-        return (
-            context.getSharedPreferences("ui", 0).getBoolean(PLUTO, true) &&
-            !FreeChannels.playlist(context, providerConnected).isEmpty()
-        );
+        android.content.SharedPreferences prefs = context.getSharedPreferences("ui", 0);
+        if (!prefs.getBoolean(PLUTO, true)) return false;
+        return prefs.contains(PLUTO) || !FreeChannels.playlist(context, providerConnected).isEmpty();
     }
 
     static int refresh(Context context, ChannelDatabase db, ChannelDatabase.Cancel cancel) throws Exception {

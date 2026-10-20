@@ -58,4 +58,39 @@ public class SafetyNoticeTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         await("read", () -> SafetyNotice.seen(context));
     }
+
+    /**
+     * The first start asks about free providers before the safety notice. Back leaves the question
+     * unanswered (asked again next time) and turns nothing on; the notice follows.
+     */
+    @Test
+    public void asksAboutFreeProvidersBeforeTheNotice() {
+        boolean fls = prefs.getBoolean(EngineSources.PREF, false);
+        prefs.edit().putBoolean(ProviderSettings.ASKED, false).commit();
+        try {
+            activity = (MainActivity) remote.startActivitySync(
+                new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            );
+            await(
+                "provider question shown",
+                () -> SidePanel.current != null && SidePanel.current.isShowing()
+            );
+            UiEvidence.capture("free-provider-question");
+            android.app.Dialog question = SidePanel.current;
+            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+            await(
+                "notice after the question",
+                () ->
+                    SidePanel.current != question &&
+                    SidePanel.current != null &&
+                    SidePanel.current.isShowing()
+            );
+            assertFalse("Back does not answer the question", prefs.getBoolean(ProviderSettings.ASKED, false));
+            assertEquals("Back turns nothing on", fls, prefs.getBoolean(EngineSources.PREF, false));
+            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+            await("read", () -> SafetyNotice.seen(context));
+        } finally {
+            prefs.edit().putBoolean(ProviderSettings.ASKED, true).commit();
+        }
+    }
 }
