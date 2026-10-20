@@ -1,0 +1,61 @@
+name: FreeShot source investigation
+on:
+  push:
+    branches: [feature/standalone-provider-engine]
+    paths: ['.github/workflows/freeshot-probe.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Inspect public catalogue and player structure without uploading pages or session links
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          // Fixed public pages only. Never log media URLs, query strings, cookies or inline code.
+          const pages = [
+            'https://www.freeshot.live/',
+            'https://www.freeshot.live/live-tv/united-kingdom',
+            'https://www.freeshot.live/live-tv/sky-sports-action-uk/21',
+            'https://freeshot.live/embed/SkySportAction.php'
+          ];
+          for (const page of pages) {
+            try {
+              const response = await fetch(page, {signal: AbortSignal.timeout(20000)});
+              const reader = response.body.getReader();
+              const chunks = [];
+              let size = 0;
+              while (true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+                size += value.length;
+                if (size > 1048576) { await reader.cancel(); throw new Error('PageLimit'); }
+                chunks.push(Buffer.from(value));
+              }
+              const html = Buffer.concat(chunks).toString('utf8');
+              const refs = (pattern) => [...html.matchAll(pattern)].slice(0, 20).map(m => {
+                try {
+                  const url = new URL(m[1], page);
+                  return {host: url.hostname, path: url.pathname};
+                } catch { return {invalid: true}; }
+              });
+              console.log(JSON.stringify({
+                page: new URL(page).pathname, status: response.status, bytes: size,
+                unavailable: /Site Unavailable|Unable to access this site/i.test(html),
+                channelLinks: [...html.matchAll(/href=["'][^"']*\/live-tv\/[^"']+\/\d+["']/gi)].length,
+                iframes: refs(/<iframe[^>]+src=["']([^"']+)["']/gi),
+                scripts: refs(/<script[^>]+src=["']([^"']+)["']/gi),
+                players: ['jwplayer','Hls','videojs','Clappr','Shaka'].filter(name => html.includes(name)),
+                mediaReferences: (html.match(/\.m3u8|\.mpd/gi) || []).length
+              }));
+            } catch (error) {
+              console.log(JSON.stringify({page: new URL(page).pathname, error: error.name}));
+            }
+          }
+          JS
