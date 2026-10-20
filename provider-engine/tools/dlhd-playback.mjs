@@ -45,7 +45,7 @@ async function inspect(row) {
             "-f", "framemd5", "pipe:1"], { stdio: ["ignore", "pipe", "pipe"] });
         const lines = createInterface({ input: decoder.stdout });
         lines.on("line", line => {
-            const base = /^#tb (\\d+): (\\d+)\\/(\\d+)/.exec(line);
+            const base = /^#tb (\d+): (\d+)\/(\d+)/.exec(line);
             if (base) bases[Number(base[1])] = Number(base[2]) / Number(base[3]);
             if (line.startsWith("#")) return;
             const values = line.split(",").map(value => value.trim());
