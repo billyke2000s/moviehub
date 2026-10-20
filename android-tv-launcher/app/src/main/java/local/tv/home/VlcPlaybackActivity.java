@@ -228,8 +228,11 @@ public class VlcPlaybackActivity extends Activity {
                 event.getKeyCode() == KeyEvent.KEYCODE_ENTER)
         ) {
             if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
-                restartLive = true;
-                startPlayer();
+                // Every copy failed: start again from the first copy so each gets another try.
+                if (!zapper.retryFromFirst()) {
+                    restartLive = true;
+                    startPlayer();
+                }
             }
             return true;
         }
@@ -502,6 +505,11 @@ public class VlcPlaybackActivity extends Activity {
                 video.post(this::startPlayer);
             } else showError("This source could not be played. Try another source or retry the connection.");
         }
+    }
+
+    /** Live TV: the current copy could not be opened; moves on to a backup or says so. */
+    void liveSourceFailed() {
+        showError("This source could not be played. Try another source or retry the connection.");
     }
 
     private void showError(String message) {

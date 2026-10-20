@@ -5,7 +5,7 @@ There are three layers of checks. CI runs all of them on every pull request that
 
 | Layer | Where | Needs | Runs in CI step |
 | --- | --- | --- | --- |
-| Core checks (223) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
+| Core checks (259) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
 | Build and lint | Gradle | Android SDK 35 | "Build APK and run Android lint" |
 | Device tests (instrumentation) | `android-tv-launcher/app/src/androidTest/` | Android emulator | `device-tests` job |
 | Signing compatibility | release build vs published APK | signing secrets (same-repo PRs only) | `signed-compatibility` job |
@@ -17,15 +17,15 @@ Pure-Java rules for playlists, URLs, channel search, episode matching and combin
 ```sh
 mkdir -p build/core-tests
 javac -d build/core-tests \
-  android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch,SkyNumbers,GuideOrder,SkipQueue,ErrorLog,SpeedTest}.java \
-  android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest,SkyNumbersTest,GuideOrderTest,SkipQueueTest,TroubleshootingTest}.java
-for t in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest EpgMatchTest SkyNumbersTest GuideOrderTest SkipQueueTest TroubleshootingTest; do
+  android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch,SkyNumbers,GuideOrder,SkipQueue,ErrorLog,SpeedTest,ChannelIdentity,ChannelCategory}.java \
+  android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest,SkyNumbersTest,GuideOrderTest,SkipQueueTest,TroubleshootingTest,ChannelIdentityTest}.java
+for t in PlaylistTest NetworkTest VideoFilesTest ChannelQueryTest EpgMatchTest SkyNumbersTest GuideOrderTest SkipQueueTest TroubleshootingTest ChannelIdentityTest; do
   java -Xmx64m -cp build/core-tests local.tv.home.$t
 done
 ```
 
 Expected output: 17 playlist, 9 network, 110 episode/file, 13 channel-query, 18 programme-guide
-matching, 17 satellite numbering, 15 guide order, 11 film skip and 13 troubleshooting checks passed.
+matching, 17 satellite numbering, 15 guide order, 11 film skip, 13 troubleshooting and 36 channel matching/category checks passed.
 
 ## Device tests
 
@@ -114,6 +114,19 @@ members directly, for example `activity.libraryScreens.toggleWatchlist(title)`. 
 checks every one of these calls, so renaming or moving a member breaks the test build immediately
 instead of failing at run time. Do not use reflection to reach app members in tests; make the
 member package-private instead.
+
+### Channel copies and automatic backups (October 2026)
+
+| Test | Covers |
+| --- | --- |
+| `ChannelIdentityTest` (core) | Same channel across lists and providers ("Sky Sports F1 (720p)", "… UK", "… HD", "Sky Sports Formula 1"); kept apart: other countries, +1, regions, UHD, similar networks; provider categories into the guide sections (whole words, so "TF1" is not sport). Also run over the real Free-TV and iptv-org UK/US/IE lists (20 October 2026): five new merges, all the same channel. |
+| `ChannelDatabaseTest.providerCopiesJoinTheSameChannelAndSharedSections` | A provider copy becomes a backup of the free-list copy, keeps number 407, appears in Sports, no provider group. |
+| `ChannelDatabaseTest.versionEightKeysAreRecomputedKeepingFavouritesAndLocks` | Version 8 → 9 upgrade re-keys saved channels; favourites and channel locks kept. |
+| `PlaybackTest.skySportsF1FailsOverToAnotherProvidersCopy` | **The reported problem**: the free-list copy fails (404), the provider copy plays; "isn't working" is not shown. |
+| `PlaybackTest.failoverTriesEachCopyInTurnUntilOnePlays` | Two failing copies, the third plays. |
+| `PlaybackTest.whenEveryCopyFailsTheChannelSaysSoWithoutRetryingForever` | Every copy tried once, then the message; no further requests. |
+
+These use local fixture streams. They do not show that a real provider's stream plays on the TV.
 
 ## What no automated test covers
 

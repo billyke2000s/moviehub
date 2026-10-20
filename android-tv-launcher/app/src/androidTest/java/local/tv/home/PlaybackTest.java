@@ -25,6 +25,9 @@ public class PlaybackTest {
     private VlcPlaybackActivity activity;
     private ServerSocket server;
     private volatile boolean closed;
+    /** Requests for broken fixture streams, so tests can see that no source is retried in a loop. */
+    private final java.util.concurrent.atomic.AtomicInteger missingRequests =
+        new java.util.concurrent.atomic.AtomicInteger();
     private boolean oldHttp;
 
     private MediaPlayer player() {
@@ -123,6 +126,7 @@ public class PlaybackTest {
                     }
                 }
             if (request != null && request.contains("/missing")) {
+                missingRequests.incrementAndGet();
                 // A broken channel: nothing there.
                 connection
                     .getOutputStream()
@@ -804,6 +808,114 @@ public class PlaybackTest {
         } finally {
             LiveZapper.session = null;
             db.clear();
+        }
+    }
+
+    /**
+     * Imports one copy of a channel per source (name, guide id, fixture path each), opens the
+     * first copy from the guide's list and returns the first copy's address.
+     */
+    private String openChannelCopies(String[]... copies) throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        Context context = instrumentation.getTargetContext();
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        String base = "http://127.0.0.1:" + server.getLocalPort() + "/";
+        for (String[] copy : copies) {
+            ChannelDatabase.Writer writer = db.writer(copy[0], () -> {}, n -> {});
+            try {
+                writer.accept(new Playlist.Channel(copy[1], base + copy[3], "Sports", "", copy[2]));
+                writer.commit();
+            } finally {
+                writer.abort();
+            }
+        }
+        java.util.List<ChannelDatabase.Row> all = db.browse("all", "", java.util.Collections.emptySet(), 0);
+        assertEquals("Every copy is one channel in the guide", 1, all.size());
+        assertEquals(copies.length, db.copies(all.get(0)).size());
+        ChannelDatabase.Row first = db.copies(all.get(0)).get(0);
+        String url = db.url(first.id, first.key);
+        LiveZapper.session = new LiveZapper.Session("all", "", java.util.Collections.emptySet(), 0);
+        activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+            new Intent(context, VlcPlaybackActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra("url", url)
+                .putExtra("live", true)
+                .putExtra("id", first.key)
+                .putExtra("title", first.name)
+        );
+        return url;
+    }
+
+    private String status() {
+        String[] text = new String[1];
+        instrumentation.runOnMainSync(
+            () ->
+                text[0] =
+                    activity.status.getVisibility() == View.VISIBLE
+                        ? activity.status.getText().toString()
+                        : ""
+        );
+        return text[0];
+    }
+
+    /**
+     * The reported problem: Sky Sports F1 (720p) from the free list does not play while a provider
+     * has the same channel as "Sky Sports F1 UK". The player must move to the provider's copy
+     * instead of saying "This channel isn't working right now."
+     */
+    @Test
+    public void skySportsF1FailsOverToAnotherProvidersCopy() throws Exception {
+        try {
+            String first = openChannelCopies(
+                new String[] { "free", "Sky Sports F1 (720p)", "SkySportsF1.uk@SD", "missing-f1.ts" },
+                new String[] { "enginedlhd", "Sky Sports F1 UK", "enginedlhd:60", "live.ts" }
+            );
+            assertTrue("The failing free-list copy is tried first", first.endsWith("missing-f1.ts"));
+            await(() -> player() != null && player().isPlaying() && player().getTime() > 500, 30000);
+            assertEquals("2 of 2", activity.zapper.sourceLabel());
+            assertFalse(activity.liveFailed);
+            assertFalse(status().contains("isn't working"));
+        } finally {
+            LiveZapper.session = null;
+            ChannelDatabase.get(instrumentation.getTargetContext()).clear();
+        }
+    }
+
+    @Test
+    public void failoverTriesEachCopyInTurnUntilOnePlays() throws Exception {
+        try {
+            openChannelCopies(
+                new String[] { "fta", "Sky Sports F1", "", "missing-a.ts" },
+                new String[] { "free", "Sky Sports F1 (720p)", "SkySportsF1.uk@SD", "missing-b.ts" },
+                new String[] { "enginedlhd", "Sky Sports Formula 1 UK", "enginedlhd:60", "live.ts" }
+            );
+            await(() -> player() != null && player().isPlaying() && player().getTime() > 500, 45000);
+            assertEquals("3 of 3", activity.zapper.sourceLabel());
+            assertFalse(activity.liveFailed);
+        } finally {
+            LiveZapper.session = null;
+            ChannelDatabase.get(instrumentation.getTargetContext()).clear();
+        }
+    }
+
+    @Test
+    public void whenEveryCopyFailsTheChannelSaysSoWithoutRetryingForever() throws Exception {
+        try {
+            openChannelCopies(
+                new String[] { "free", "Sky Sports F1 (720p)", "SkySportsF1.uk@SD", "missing-a.ts" },
+                new String[] { "enginedlhd", "Sky Sports F1 UK", "enginedlhd:60", "missing-b.ts" }
+            );
+            await(() -> activity.liveFailed, 45000);
+            assertEquals("Both copies were tried", "2 of 2", activity.zapper.sourceLabel());
+            assertTrue(status().contains("isn't working"));
+            int requests = missingRequests.get();
+            SystemClock.sleep(5000);
+            assertEquals("No dead source is retried in a loop", requests, missingRequests.get());
+        } finally {
+            LiveZapper.session = null;
+            ChannelDatabase.get(instrumentation.getTargetContext()).clear();
         }
     }
 

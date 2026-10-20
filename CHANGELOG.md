@@ -2,6 +2,10 @@
 
 ## Unreleased — experimental standalone provider engine
 
+- Provider channels now back up the same channel from the free lists and accounts: "Sky Sports F1 (720p)", "Sky Sports F1 UK", "… HD" and "Sky Sports Formula 1" are one channel with several sources (channel database version 9 re-keys saved channels; favourites and locks kept). Other countries, +1, regional and UHD channels stay separate.
+- When a source fails, Live TV tries each other copy once ("Trying another source") before saying the channel is not working; SELECT then tries all copies again from the first. A slow error and a timeout from the same source no longer skip a backup.
+- Provider channels are filed in the guide's existing sections by whole words (the earlier mapping put "TF1" in Sports). The Source list names each copy's provider.
+- A provider turned on in Settings → Provider engine now imports whatever the free-list choice is; before, an account or "only without a TV provider" silently hid it.
 - Add isolated local JavaScript execution of the historical FreeLiveSports TypeScript leaf, stable SQLite channels, inline EPG and resolve-on-play.
 - Add opt-in provider settings, signed package validation, atomic rollback and gated upstream update CI.
 - Document private upstream access, missing signing setup and provider/runtime limitations; no production release.

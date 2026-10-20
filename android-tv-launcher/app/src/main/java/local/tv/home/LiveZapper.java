@@ -57,6 +57,12 @@ final class LiveZapper {
     private int copy,
         previousPosition = -1,
         request;
+    /**
+     * A move to the next backup is on its way. Errors reported meanwhile (a stream can report an
+     * error and then time out) belong to the copy that already failed, so they must not skip the
+     * next copy before it has been tried.
+     */
+    private boolean switching;
     private final List<Long> stalls = new ArrayList<>();
     /** The banner, programme information and pause bar (package-private for tests). */
     SkyOverlay overlay;
@@ -221,7 +227,10 @@ final class LiveZapper {
                         s.position = position;
                         copies = found;
                         copy = 0;
+                        switching = false;
                         stalls.clear();
+                        // A stall timer from the channel before must not move this one on.
+                        player.overlayHandler.removeCallbacks(stalledTooLong);
                         if (play) {
                             player.switchTo(row.name, url, found.get(0).key);
                             remember(row);
@@ -321,38 +330,68 @@ final class LiveZapper {
 
     // ---- Backups ----------------------------------------------------------------------------
 
-    /** Plays backup copy {@code index} (0 is the main one). */
-    void useCopy(int index, String reason) {
+    /**
+     * Plays copy {@code index} (0 is the main one). {@code automatic} is true when a failed copy
+     * moved on by itself; false when the viewer chose it in the Source list.
+     */
+    void useCopy(int index, boolean automatic) {
         if (index < 0 || index >= copies.size()) return;
         ChannelDatabase.Row row = copies.get(index);
+        List<ChannelDatabase.Row> list = copies;
         int ticket = ++request;
         worker.execute(() -> {
             try {
                 String url = db.url(row.id, row.key);
                 player.runOnUiThread(() -> {
-                    if (ticket != request || player.isFinishing()) return;
+                    if (ticket != request || player.isFinishing() || list != copies) return;
                     copy = index;
+                    switching = false;
                     stalls.clear();
                     player.switchTo(row.name, url, row.key);
-                    if (reason != null) Toast.makeText(
+                    if (automatic) Toast.makeText(
                         player,
-                        reason + ": trying source " + (index + 1) + " of " + copies.size(),
-                        Toast.LENGTH_LONG
+                        "Trying another source (" + (index + 1) + " of " + copies.size() + ")",
+                        Toast.LENGTH_SHORT
                     ).show();
                     showBanner();
                 });
             } catch (Exception e) {
                 Diagnostics.recovered("Switching to a backup", e);
+                // This copy cannot be opened (its row changed under a refresh): count it as
+                // failed and go on to the next, or say the channel is not working.
+                player.runOnUiThread(() -> {
+                    if (ticket != request || player.isFinishing() || list != copies) return;
+                    copy = index;
+                    switching = false;
+                    player.liveSourceFailed();
+                });
             }
         });
     }
 
-    /** Moves to the next backup. Returns false when there is none left to try. */
+    /**
+     * Moves to the next copy of this channel after the current one failed. Each copy is tried at
+     * most once per channel change, so a dead source is never retried in a loop. Returns false when
+     * none is left, and the player then says the channel is not working.
+     */
     boolean failover(String reason) {
         player.overlayHandler.removeCallbacks(stalledTooLong);
+        if (switching) return true; // the next copy is already on its way
         if (copy + 1 >= copies.size()) return false;
+        switching = true;
         Timings.record("Live TV backup used", Timings.start());
-        useCopy(copy + 1, reason);
+        useCopy(copy + 1, true);
+        return true;
+    }
+
+    /**
+     * Try again after every copy failed (SELECT): starts from the first copy again, so all of them
+     * get another chance in order. Returns false when the channel has one copy only.
+     */
+    boolean retryFromFirst() {
+        if (copies.size() <= 1) return false;
+        switching = true;
+        useCopy(0, false);
         return true;
     }
 

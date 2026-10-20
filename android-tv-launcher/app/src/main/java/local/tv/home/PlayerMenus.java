@@ -206,9 +206,15 @@ final class PlayerMenus {
         String[] names = new String[copies.size()];
         int current = 0;
         for (int i = 0; i < names.length; i++) {
-            names[i] = "Source " + (i + 1) + "  ·  " + copies.get(i).name;
+            String provider = AdapterSources.sourceName(copies.get(i).source);
+            names[i] =
+                "Source " +
+                (i + 1) +
+                "  ·  " +
+                (provider.isEmpty() ? "" : provider + "  ·  ") +
+                copies.get(i).name;
             if (a.zapper.sourceLabel().startsWith(i + 1 + " ")) current = i;
         }
-        options("Source", names, current, which -> a.zapper.useCopy(which, null));
+        options("Source", names, current, which -> a.zapper.useCopy(which, false));
     }
 }

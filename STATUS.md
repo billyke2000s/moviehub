@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 19 October 2026.
+Last updated: 20 October 2026.
 
 ## Where things stand
 
@@ -111,3 +111,13 @@ compatibility, provider verification and the complete TV emulator suite. A debug
 [CI artifacts](https://github.com/billyke2000s/moviehub/actions/runs/39341576650). Ten added providers
 have one decoded desktop media sample each; this does not prove physical TV playback or all channels.
 The PR remains draft, and automatic remote provider updates remain unconfigured.
+
+## Provider channels as backups (20 October 2026)
+
+Provider-engine channels now join the existing Live TV guide and backup switching instead of
+standing alone: copies of one channel across free lists, accounts and providers share a duplicate
+key (`ChannelIdentity`, database version 9), provider channels go into the shared sections
+(`ChannelCategory`), and a failed source moves to the next copy once each. Enabled providers no
+longer depend on the free-list setting. Checked with core checks, the real Free-TV/iptv-org lists
+on a computer, and fixture device tests in CI. **Not yet seen on the TV box or on a real failing
+provider stream**; whether a given provider's Sky Sports copy actually plays depends on that provider.
