@@ -210,3 +210,7 @@ No Activity context is retained after the view moves or playback stops.
 
 References: [Android TextureView](https://developer.android.com/reference/android/view/TextureView#setSurfaceTexture(android.graphics.SurfaceTexture))
 and [SurfaceTextureListener](https://developer.android.com/reference/android/view/TextureView.SurfaceTextureListener#onSurfaceTextureDestroyed(android.graphics.SurfaceTexture)).
+
+Live Activity transitions use zero-animation launch options and matching close overrides (the
+API 34 transition override or the legacy finish override). The stream Surface survives the
+window change; the UI does not add a system fade around it.

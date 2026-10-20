@@ -294,6 +294,10 @@ public class VlcPlaybackActivity extends Activity {
         titleKey = getIntent().getStringExtra("titleKey");
         if (id == null) id = "media";
         live = getIntent().getBooleanExtra("live", false);
+        if (live && Build.VERSION.SDK_INT >= 34) {
+            overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, 0, 0);
+            overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, 0, 0);
+        }
         try {
             url = Playlist.networkUrl(
                 getIntent().getStringExtra("url"),
@@ -587,6 +591,12 @@ public class VlcPlaybackActivity extends Activity {
      * on another press within {@link #EXIT_WINDOW_MS}, so a stray press does not stop the film.
      * Live TV asks once and leaves on the second press, as before.
      */
+    @Override
+    public void finish() {
+        super.finish();
+        if (live && Build.VERSION.SDK_INT < 34) overridePendingTransition(0, 0);
+    }
+
     private void onBackKey() {
         long now = SystemClock.elapsedRealtime();
         if (ended || player == null || now - backPressedAt < EXIT_WINDOW_MS) {

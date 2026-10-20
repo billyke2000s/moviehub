@@ -527,7 +527,8 @@ public class MainActivity extends TvActivity {
                     .putExtra("id", id)
                     .putExtra("live", live)
                     .putExtra("episodeKey", metadata == null ? null : metadata.optString("episodeKey", null))
-                    .putExtra("titleKey", ResumePoint.titleKey(metadata))
+                    .putExtra("titleKey", ResumePoint.titleKey(metadata)),
+                live ? ActivityOptions.makeCustomAnimation(this, 0, 0).toBundle() : null
             );
         } catch (Exception e) {
             toast("Playback could not be started");
