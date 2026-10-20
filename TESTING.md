@@ -167,3 +167,16 @@ ZLive fixtures run the actual resolver and Node IP/subnet compatibility through 
 403 cooldowns, decoy detection/latching, corrupt history refusal and cancellation recovery. Device tests
 exercise encrypted ledger reuse across actual isolated Binder calls, manual redirects and credential
 redaction. The relay fixture also fragments upstream reads into two-byte chunks.
+
+## DaddyLive playlist and segment regression checks
+
+The provider JVM fixture verifies player HTML -> anonymous token -> tokenized HLS, and preserves the
+historical no-token path. `ProviderPngSegmentsTest` adds 17 pure-Java checks for RGB/RGBA, every PNG row
+filter, split IDAT chunks, appended TS, checksums, truncation, bad sync and oversized dimensions. It runs
+through `provider-engine/tools/verify.sh`. `PlaylistTransportTest` checks renewal, one 403 refresh, channel/
+authority scoping, token-free segment requests and PNG transport with two-byte fragmented reads. Its
+host-JVM run uses Android-shell stubs; the Android workflow runs the real instrumentation tests.
+
+Live desktop evidence (20 October 2026): Main Event plus Football (35), Action (37), F1 (60) and ABC USA
+(51) returned tokenized HLS and unpacked media with FFmpeg exit 0. No real stream URLs, tokens or captured
+media are committed. Four-second samples do not prove every channel, sustained playback or the TV box.

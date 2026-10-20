@@ -16,6 +16,7 @@ final class ProviderRelay implements AutoCloseable {
     private final Set<String> playlists = new HashSet<>();
     private final Map<String, String> headers;
     private final String credentialAuthority;
+    private final PlaylistSession playlistSession;
     private final Set<HttpURLConnection> active = ConcurrentHashMap.newKeySet();
     private final Set<Socket> clients = ConcurrentHashMap.newKeySet();
     private final ThreadPoolExecutor workers = new ThreadPoolExecutor(
@@ -37,6 +38,8 @@ final class ProviderRelay implements AutoCloseable {
 
     ProviderRelay(EngineSources.Stream stream) throws Exception {
         credentialAuthority = URI.create(stream.url).getAuthority();
+        playlistSession =
+            stream.playlistSession == null ? null : new PlaylistSession(stream.url, stream.playlistSession);
         headers = new LinkedHashMap<>();
         for (Iterator<String> keys = stream.headers.keys(); keys.hasNext(); ) {
             String key = keys.next(),
@@ -76,6 +79,7 @@ final class ProviderRelay implements AutoCloseable {
     }
 
     static boolean needed(EngineSources.Stream stream) {
+        if (stream.playlistSession != null) return true;
         for (Iterator<String> keys = stream.headers.keys(); keys.hasNext(); ) {
             String key = keys.next();
             if (
@@ -155,33 +159,39 @@ final class ProviderRelay implements AutoCloseable {
                 }
             }
             URI current = URI.create(target);
-            String authority = current.getAuthority();
+            boolean playlistRequest;
+            synchronized (this) {
+                playlistRequest = playlists.contains(token);
+            }
+            boolean renewed = false;
             for (int hop = 0; hop < 5; hop++) {
                 if (closed) throw new IOException("Closed relay");
-                ProviderBroker.publicHost(current.getHost());
-                upstream =
-                    testConnections == null
-                        ? (HttpURLConnection) current.toURL().openConnection()
-                        : testConnections.open(current);
-                active.add(upstream);
-                upstream.setConnectTimeout(8000);
-                upstream.setReadTimeout(8000);
-                upstream.setInstanceFollowRedirects(false);
-                for (Map.Entry<String, String> header : headers.entrySet()) {
-                    boolean sensitive =
-                        header.getKey().equalsIgnoreCase("Authorization") ||
-                        header.getKey().equalsIgnoreCase("Cookie");
-                    if (
-                        !sensitive || credentialAuthority.equalsIgnoreCase(current.getAuthority())
-                    ) upstream.setRequestProperty(header.getKey(), header.getValue());
-                }
+                URI requestUri =
+                    playlistSession == null
+                        ? current
+                        : playlistSession.authorize(current, playlistRequest, false, this::playlistToken);
+                upstream = open(requestUri);
                 if (range != null) upstream.setRequestProperty("Range", range);
                 int status = upstream.getResponseCode();
+                if (
+                    status == 403 &&
+                    !renewed &&
+                    playlistSession != null &&
+                    playlistSession.applies(current, playlistRequest)
+                ) {
+                    active.remove(upstream);
+                    upstream.disconnect();
+                    upstream = null;
+                    playlistSession.authorize(current, true, true, this::playlistToken);
+                    renewed = true;
+                    continue;
+                }
                 if (status >= 300 && status < 400) {
                     String next = upstream.getHeaderField("Location");
                     if (next == null) throw new IOException("Missing stream redirect");
                     URI resolved = current.resolve(next);
                     current = URI.create(ProviderUrls.playback(resolved.toString()));
+                    if (playlistSession != null) current = PlaylistSession.withoutToken(current);
                     active.remove(upstream);
                     upstream.disconnect();
                     upstream = null;
@@ -199,10 +209,14 @@ final class ProviderRelay implements AutoCloseable {
                     String signature = new String(prefix, 0, n, StandardCharsets.UTF_8);
                     boolean playlist =
                         signature.startsWith("#EXTM3U") || signature.startsWith("\uFEFF#EXTM3U");
+                    boolean wrappedPng = playlistSession != null && ProviderPngSegments.matches(prefix, n);
+                    if (wrappedPng && range != null) throw new IOException(
+                        "Wrapped segment ranges unsupported"
+                    );
                     byte[] head = new byte[ProviderSegments.HEAD];
                     int held = 0,
                         skip = 0;
-                    if (!playlist && range == null) {
+                    if (!playlist && !wrappedPng && range == null) {
                         while (held < head.length) {
                             int count = in.read(head, held, head.length - held);
                             if (count < 0) break;
@@ -215,7 +229,7 @@ final class ProviderRelay implements AutoCloseable {
                     }
                     String type = playlist
                         ? "application/vnd.apple.mpegurl"
-                        : skip > 0 || (held > 0 && head[0] == 0x47)
+                        : wrappedPng || skip > 0 || (held > 0 && head[0] == 0x47)
                           ? "video/mp2t"
                           : upstream.getContentType();
                     if (type == null || type.contains("\r") || type.contains("\n")) type =
@@ -249,6 +263,8 @@ final class ProviderRelay implements AutoCloseable {
                                 StandardCharsets.UTF_8
                             )
                         );
+                    } else if (wrappedPng) {
+                        ProviderPngSegments.write(in, out);
                     } else {
                         if (held > skip) out.write(head, skip, held - skip);
                         byte[] buf = new byte[32768];
@@ -271,13 +287,68 @@ final class ProviderRelay implements AutoCloseable {
         }
     }
 
+    private HttpURLConnection open(URI target) throws Exception {
+        if (closed) throw new IOException("Closed relay");
+        ProviderBroker.publicHost(target.getHost());
+        HttpURLConnection connection =
+            testConnections == null
+                ? (HttpURLConnection) target.toURL().openConnection()
+                : testConnections.open(target);
+        active.add(connection);
+        try {
+            connection.setConnectTimeout(8000);
+            connection.setReadTimeout(8000);
+            connection.setInstanceFollowRedirects(false);
+            for (Map.Entry<String, String> header : headers.entrySet()) {
+                boolean sensitive =
+                    header.getKey().equalsIgnoreCase("Authorization") ||
+                    header.getKey().equalsIgnoreCase("Cookie");
+                if (
+                    !sensitive || credentialAuthority.equalsIgnoreCase(target.getAuthority())
+                ) connection.setRequestProperty(header.getKey(), header.getValue());
+            }
+            if (closed) throw new IOException("Closed relay");
+            return connection;
+        } catch (Exception e) {
+            active.remove(connection);
+            connection.disconnect();
+            throw e;
+        }
+    }
+
+    private org.json.JSONObject playlistToken(URI endpoint) throws Exception {
+        HttpURLConnection connection = open(endpoint);
+        try {
+            if (connection.getResponseCode() != 200) throw new IOException("Playlist session unavailable");
+            try (
+                InputStream in = connection.getInputStream();
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream()
+            ) {
+                byte[] buffer = new byte[2048];
+                int count;
+                while ((count = in.read(buffer)) != -1) {
+                    if (closed) throw new IOException("Closed relay");
+                    if (bytes.size() + count > 16 * 1024) throw new IOException(
+                        "Playlist token response limit"
+                    );
+                    bytes.write(buffer, 0, count);
+                }
+                return new org.json.JSONObject(bytes.toString("UTF-8"));
+            }
+        } finally {
+            active.remove(connection);
+            connection.disconnect();
+        }
+    }
+
     String rewrite(String playlist, URI base) throws IOException {
         StringBuilder result = new StringBuilder();
         Pattern attributes = Pattern.compile("URI=\"([^\"]+)\"");
+        boolean variant = false;
         for (String line : playlist.split("\\r?\\n")) {
             if (!line.startsWith("#") && !line.trim().isEmpty()) line = register(
                 base.resolve(line.trim()).toString(),
-                line.contains(".m3u8")
+                variant || line.contains(".m3u8")
             );
             else {
                 Matcher m = attributes.matcher(line);
@@ -287,13 +358,20 @@ final class ProviderRelay implements AutoCloseable {
                         rewritten,
                         Matcher.quoteReplacement(
                             "URI=\"" +
-                                register(base.resolve(m.group(1)).toString(), m.group(1).contains(".m3u8")) +
+                                register(
+                                    base.resolve(m.group(1)).toString(),
+                                    line.startsWith("#EXT-X-MEDIA:") ||
+                                        line.startsWith("#EXT-X-I-FRAME-STREAM-INF:") ||
+                                        line.startsWith("#EXT-X-RENDITION-REPORT:") ||
+                                        m.group(1).contains(".m3u8")
+                                ) +
                                 "\""
                         )
                     );
                 m.appendTail(rewritten);
                 line = rewritten.toString();
             }
+            variant = line.startsWith("#EXT-X-STREAM-INF:");
             result.append(line).append('\n');
         }
         return result.toString();

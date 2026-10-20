@@ -139,10 +139,24 @@ after raising the limits:
 | STIRR, TCL, Xumo, LG, Whale, Vizio, Roku, Tubi, FreeLiveSports, Local Now | works | plays | — |
 | Samsung TV Plus (GB) | 252 channels | some play; some GB streams fail from a US runner | probably region |
 | Plex | 692 channels | stream 404 | provider |
-| DaddyLive | 899 channels (45 Sky Sports) | none: stream hosts answer 403 (referrer/signature gate) | provider |
+| DaddyLive | 899 channels (45 Sky Sports) | original probe: 403; missing token step identified below | incomplete integration |
 | DistroTV, Vidaa | host does not resolve (ENOTFOUND) | — | provider |
 | ZLive | catalogue 404 | — | provider |
 
 Before the fixes, Samsung (GitHub redirect not allowed), Tubi and Plex (over the 3/4 MB limits)
 failed inside MovieHub. Not checked on the TV box: catalogue steps there are slower (Plex's slowest
 step took 2.9 s on the runner; the box limit is now 10 s), and UK region results may differ.
+
+## DaddyLive investigation correction (20 October 2026)
+
+The original "outside players refused" conclusion was too broad. The actual CDN response was `token
+required`: the current player bootstraps an anonymous 120-second playlist token, which the historical
+resolver omitted. Adding that ordinary request returned HTTP 200 HLS. Media then needed PNG container
+unpacking; direct FFmpeg initially failed. After unpacking, Main Event, Football, Action, F1 and ABC USA
+samples each decoded successfully (FFmpeg exit 0). The original walk also exhausted its 20-second budget
+before later players, so it was not evidence about every player.
+
+The development fix adds the current token protocol, scoped in-memory renewal and bounded PNG transport
+to the existing native player/relay. Local core checks, new PNG fixtures and relay/session fixtures have
+passed; live checks and Android CI are recorded with the change. Physical TV, long sessions and all-channel
+availability remain unverified. No release or in-app update has been published by this fix.

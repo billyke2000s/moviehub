@@ -114,3 +114,10 @@ See [implementation, provider status and tests](docs/STANDALONE_PROVIDER_ENGINE.
 Experimental Runtime 2 in draft PR #83 adapts additional historical Masqueradarr provider code locally on
 Android, including DaddyLive's resolver and Tubi's signing flow. This is unfinished development, not a
 production release or a claim that every provider/channel plays. [Architecture, status and evidence](docs/STANDALONE_PROVIDER_ENGINE.md).
+
+### DaddyLive playback compatibility (experimental)
+
+The provider-engine development fix supports the current player's anonymous playlist-token bootstrap,
+in-memory renewal and PNG-wrapped MPEG-TS segments through MovieHub's existing local relay. The web
+player and its page advertising are not loaded. Desktop samples decoded for Main Event, Football,
+Action, F1 and ABC USA on 20 October 2026; this does not establish every channel or physical-TV playback.

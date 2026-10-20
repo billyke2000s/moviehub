@@ -91,3 +91,17 @@ is encrypted, module/domain scoped, bounded to 128 contact events/three hours an
 HTTP/DNS work. Missing/corrupt history fails closed. A full ledger prevents new contacts while still allowing
 cached targets; incompatible module/domain state pauses new contacts until old history expires. User channel
 cancellation records a per-channel cancelled contact rather than imposing a global refusal cooldown.
+
+## Anonymous playlist sessions
+
+DaddyLive tokens are obtained from the player-advertised anonymous HTTPS endpoint; page JavaScript is
+never executed. Session data lives only in the operation/player's memory. Renewal endpoints must match
+the stream authority, exact `/api/playlist-token` path and the channel slug; tokens apply only to that
+channel's playlists, never segments or another host. Renewal bodies are capped at 16 KiB, lifetime at
+10 minutes, and a rejected token gets at most one renewal retry per relay request. Existing public-DNS,
+redirect, header and cancellation checks apply. Tokens are not persisted or published.
+
+PNG segment decoding checks chunk bounds and CRCs, 8-bit RGB/RGBA layout and row filters before extracting
+a recognized payload. Encoded data is capped at 16 MiB, dimensions at 8192 per axis and inflated/decoded
+data at 24 MiB; a valid five-packet TS sync is required. No Android bitmap allocation, downloaded code,
+DRM processing or browser is involved. Physical-box memory/CPU and long-running playback remain untested.

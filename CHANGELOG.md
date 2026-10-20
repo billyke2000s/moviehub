@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — DaddyLive playlist sessions and PNG media
+
+- Add the current anonymous playlist-token bootstrap, memory-only renewal and a single refresh after a
+  rejected token. Keep tokens scoped to the discovered CDN/channel and preserve the existing player.
+- Unpack supported PNG-contained MPEG-TS segments with strict format, size and decompression bounds.
+- Add provider, renewal/scoping and segment regression checks. Desktop samples decoded for five channels;
+  physical TV and sustained playback are not yet verified.
+
+
 ## Unreleased — experimental standalone provider engine
 
 - Live probe on real services (20 October 2026) found MovieHub itself blocking providers: Samsung TV Plus now redirects through github.com (not allowed), and Tubi's guide (3.7 MB) and Plex's catalogue (3.1 MB) were over the 3 MB response limit. Allowed that redirect and raised the limits to 6 MB per response and 15 MB per operation, with a 16 MB script input cap (Tubi totals 7.5 MB, Plex 8.7 MB). A catalogue step may now take 10 s in the interpreter (3 s before) for slower TV boxes. Samsung redirects to Amagi's CDN are allowed. DaddyLive's stream servers answer 403 (referrer/signature gate) and ZLive's catalogue 404: provider-side, not changed.

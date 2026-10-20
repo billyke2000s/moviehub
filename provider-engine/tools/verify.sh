@@ -8,3 +8,6 @@ javac -cp "$rhino" -d build/provider-tests android-tv-launcher/app/src/main/java
 java -Xmx96m -cp "$rhino:build/provider-tests" local.tv.home.ProviderEngineTest build/provider-tests/compiled.js
 javac -cp "$rhino:build/provider-tests" -d build/provider-tests android-tv-launcher/tests/ProviderRuntimeCli.java
 RHINO_JAR="$rhino" node provider-engine/tools/runtime-check.mjs
+
+javac -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/ProviderPngSegments.java android-tv-launcher/tests/ProviderPngSegmentsTest.java
+java -Xmx96m -cp build/provider-tests local.tv.home.ProviderPngSegmentsTest

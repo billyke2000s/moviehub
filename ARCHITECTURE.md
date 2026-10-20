@@ -177,3 +177,10 @@ modules with SQLite and settings. `ProviderRelay` adds session-scoped loopback H
 resolver without repeating those requests, preserving token reuse, cooldowns and decoy latches across
 disposable processes. Native IP/subnet primitives supply the required Node `net` subset. Signed token
 expiry can renew an actively playing live stream; stopping, switching or pausing does not auto-start video.
+
+DaddyLive's current anonymous playlist protocol is adapted by `provider-engine/tools/dlhd-session.js`
+without modifying the historical upstream files. It learns literal CDN/channel declarations from player
+HTML and returns session metadata after validating a tokenized manifest. `PlaylistSession` renews tokens
+inside the existing `ProviderRelay`, scoped to one HTTPS authority and channel directory. The relay uses
+`ProviderPngSegments` for bounded PNG-to-MPEG-TS unpacking only for this session type. Direct sources and
+other providers retain their existing paths; fullscreen/mini-player share the same relay session.

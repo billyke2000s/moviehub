@@ -177,6 +177,22 @@ const alternate = drive(
 );
 assert.equal(alternate.playerIndex, 2);
 checks++;
+// The current player requires an anonymous token before the first manifest request.
+const tokenCalls = [];
+const tokenStream = drive("dlhd", "resolve", { channelId: "42" }, (req) => {
+    tokenCalls.push(req.url);
+    if (req.url.includes("stream-42.php")) return '<iframe src="https://player.example/embed/42"></iframe>';
+    if (req.url.includes("player.example"))
+        return 'const EDGE = "https://media.example"; const CHANNEL = "premium42"; fetch(EDGE + "/api/playlist-token?slug=" + CHANNEL); source:"https://media.example/premium42/index.m3u8"';
+    if (req.url.includes("/api/playlist-token")) return { token: "fixture-token", ttl: 120 };
+    assert.equal(new URL(req.url).searchParams.get("t"), "fixture-token");
+    return "#EXTM3U\n#EXTINF:4,\nsegment.png\n";
+});
+assert.equal(tokenStream.url, "https://media.example/premium42/index.m3u8");
+assert.equal(tokenStream.playlistSession.token, "fixture-token");
+assert.equal(tokenStream.playlistSession.slug, "premium42");
+assert.equal(tokenCalls.filter((u) => u.includes("/api/playlist-token")).length, 1);
+checks++;
 const tubi = drive("tubi", "resolve", { channelId: "42" }, (req, n) => {
     if (req.url.includes("signing_key"))
         return { id: "sign-id", key: Buffer.from("server-signing-key").toString("base64") };

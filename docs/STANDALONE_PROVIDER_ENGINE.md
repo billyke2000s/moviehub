@@ -228,3 +228,24 @@ builds and lint, signing compatibility and full API-28 TV x86_64 emulator suite:
 https://github.com/billyke2000s/moviehub/actions/runs/39341576650 . Provider/compiler/JVM verification
 passed separately: https://github.com/billyke2000s/moviehub/actions/runs/39341576614 . The package
 publication job was intentionally skipped. Physical ARM64/live-provider-on-TV checks remain outstanding.
+
+## Current DaddyLive player protocol (20 October 2026)
+
+The historical resolver remained byte-for-byte upstream, but the live player acquired an anonymous
+`playlist-token` request and PNG media containers. `tools/dlhd-session.js` supplies this current protocol
+around the upstream resolver without executing site JavaScript. Session metadata is transient and handed
+to the existing native relay; see `PlaylistSession` and `ProviderPngSegments` for expiry, request scoping,
+format and allocation bounds. This is normal anonymous session handling, not a server-hosted converter.
+
+Actual rejection text `token required` distinguished the missing step from a blanket external-player ban.
+The anonymous endpoint returned a token and 120-second TTL; the same playlist then returned HTTP 200.
+Direct FFmpeg failed on wrapped segments, whereas unpacked samples for Sky Sports Main Event, Football,
+Action, F1 and ABC USA decoded successfully. The older all-provider probe does not yet model the new
+native session/PNG transport and must not be used to declare this path broken from direct FFmpeg alone.
+Physical Android playback and sustained renewal need independent validation.
+
+The new compiled resolver independently resolved Football through the actual JVM interpreter. The native
+Java PNG unpacker then produced MPEG-TS from a real Football segment and FFmpeg decoded 100 video frames
+over four seconds, exit 0. A full live host-JVM relay attempt was blocked by this workspace's DNS/network
+transport; relay renewal/scoping and fragmented media are covered by fixtures, pending Android CI and
+physical-TV verification. No host stub is included in the Android app.

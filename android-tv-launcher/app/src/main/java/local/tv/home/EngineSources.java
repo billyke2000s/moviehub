@@ -94,8 +94,10 @@ final class EngineSources {
         final String url, userAgent, referer;
         final long expiresAt;
         final JSONObject headers;
+        final JSONObject playlistSession;
 
         Stream(JSONObject value) throws Exception {
+            playlistSession = value.optJSONObject("playlistSession");
             expiresAt = value.optLong("expiresAtMs", 0);
             url = ProviderUrls.playback(value.getString("url"));
             headers = value.getJSONObject("headers");
