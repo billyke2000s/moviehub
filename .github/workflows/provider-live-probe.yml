@@ -5,7 +5,7 @@ name: Live provider probe
 on:
     push:
         branches: [feature/standalone-provider-engine]
-        paths: ['provider-engine/tools/live-probe.mjs', '.github/workflows/provider-live-probe.yml']
+        paths: ['provider-engine/tools/live-probe*.mjs', '.github/workflows/provider-live-probe.yml']
     workflow_dispatch:
 permissions:
     contents: read
@@ -34,6 +34,12 @@ jobs:
                   javac -cp "$RUNNER_TEMP/rhino.jar" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderCodec,ProviderSignature,ProviderUrls,ProviderSegments}.java android-tv-launcher/tests/ProviderProbeCli.java
             - name: Probe providers
               run: RHINO_JAR="$RUNNER_TEMP/rhino.jar" node provider-engine/tools/live-probe.mjs
+            - name: Report providers 1-8
+              if: always()
+              run: node provider-engine/tools/live-probe-report.mjs 0 8
+            - name: Report providers 9-16
+              if: always()
+              run: node provider-engine/tools/live-probe-report.mjs 8 16
             - name: Upload results
               if: always()
               uses: actions/upload-artifact@v6
