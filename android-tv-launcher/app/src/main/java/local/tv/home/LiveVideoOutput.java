@@ -55,7 +55,11 @@ final class LiveVideoOutput {
     }
 
     void show(FrameLayout destination) {
-        if (closed || holder == destination) return;
+        show(destination, false);
+    }
+
+    private void show(FrameLayout destination, boolean refresh) {
+        if (closed || (holder == destination && !refresh)) return;
         Bitmap nextStill = still;
         if (nextStill == null && view != null && view.isAvailable() && frames > 0) {
             int width = Math.min(960, Math.max(1, view.getWidth()));
@@ -149,8 +153,7 @@ final class LiveVideoOutput {
     boolean refreshView() {
         if (closed || holder == null || !isShown()) return false;
         FrameLayout destination = holder;
-        holder = null;
-        show(destination);
+        show(destination, true);
         return true;
     }
 
