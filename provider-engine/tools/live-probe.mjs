@@ -288,6 +288,9 @@ function decode(stream) {
     return { ok: p.status === 0, error: p.status === 0 ? "" : (error || "ffmpeg exit " + p.status).slice(0, 140) };
 }
 
+export { run };
+
+if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
 const SKY = /sky\s*sports?/i;
 const results = [];
 const wanted = process.argv.slice(2);
@@ -368,3 +371,5 @@ for (const r of results)
 writeFileSync(dir + "/live-probe.md", md);
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
 console.log(md);
+
+}
