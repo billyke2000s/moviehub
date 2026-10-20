@@ -6,6 +6,8 @@ mkdir -p "$build"
 # install or emulator problem) can still be reported by report-test-failures.py.
 gradle -p android-tv-launcher --no-daemon testDebugUnitTest connectedDebugAndroidTest 2>&1 | tee "$build/device-tests.log"
 result=${PIPESTATUS[0]}
+# Print fixture-only handoff timing evidence; never dump provider playback logs.
+adb logcat -d -s MovieHubHandoff:I '*:S' || true
 if [ "$result" -ne 0 ]; then
   adb logcat -d -b crash > "$build/device-crash.log" 2>/dev/null || true
 fi
