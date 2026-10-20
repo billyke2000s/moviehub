@@ -452,6 +452,12 @@ public class PlaybackTest {
             rendered.awaitPicture(false);
             int opened = LivePlayer.opened;
             for (int trip = 0; trip < 2; trip++) {
+                // waitForMonitorWithTimeout removes the monitor after the first hit.
+                if (trip > 0) monitor = instrumentation.addMonitor(
+                    VlcPlaybackActivity.class.getName(),
+                    null,
+                    false
+                );
                 // SELECT on the channel playing in the corner: the full screen carries it on.
                 instrumentation.runOnMainSync(() -> main.liveTv.cells.get(0).performClick());
                 VlcPlaybackActivity full = (VlcPlaybackActivity) instrumentation.waitForMonitorWithTimeout(
