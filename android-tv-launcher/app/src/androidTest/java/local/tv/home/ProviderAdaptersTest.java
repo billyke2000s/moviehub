@@ -94,6 +94,27 @@ public final class ProviderAdaptersTest {
     }
 
     @Test
+    public void cancelledInterpreterStepIsNotConvertedIntoAProviderFailure() throws Exception {
+        try {
+            ProviderBroker.run(
+                "fixture",
+                "catalogue",
+                null,
+                (source, operation, input) -> {
+                    throw new InterruptedIOException("Cancelled");
+                },
+                request -> {
+                    throw new AssertionError("Cancelled step reached transport");
+                },
+                new NativeHttp()
+            );
+            fail("Cancelled operation completed");
+        } catch (InterruptedIOException expected) {
+            assertEquals("Cancelled", expected.getMessage());
+        }
+    }
+
+    @Test
     public void capabilitiesRejectForeignHostsAndCredentials() {
         assertTrue(ProviderBroker.allowed("stirr", "https://stirr.com/api/videos/list/"));
         assertFalse(ProviderBroker.allowed("stirr", "https://stirr.com.evil.example/api/videos/list/"));

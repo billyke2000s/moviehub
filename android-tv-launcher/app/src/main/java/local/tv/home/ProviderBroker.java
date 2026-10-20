@@ -185,6 +185,8 @@ final class ProviderBroker {
             JSONObject step;
             try {
                 step = new JSONObject(engine.call(module, operation, input.toString()));
+            } catch (InterruptedIOException | InterruptedException e) {
+                throw e;
             } catch (Exception e) {
                 throw failure(e, responses);
             }
