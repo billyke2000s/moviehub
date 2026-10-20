@@ -233,3 +233,5 @@ media, relay and audio. An absent clock or a persistent second freeze uses the e
 source retry/failure path. Paused and hidden playback are excluded; audio-only tracks are excluded
 from video monitoring. No new decoder flags or changes to sports buffering thresholds are applied.
 Troubleshooting shows fixed recovery descriptions and counts, with no URLs or tokens.
+
+LiveZapper owns the per-channel Automatic/manual source policy and two-step Back interaction. PlayerMenus lists Automatic followed by saved copies; SkyOverlay exposes a focusable Sources action. Listing copies is a local database operation; only the selected copy goes through LivePlayer resolution. Automatic failover visits the remaining saved copies once and stops.

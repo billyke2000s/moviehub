@@ -63,6 +63,8 @@ final class LiveZapper {
      * next copy before it has been tried.
      */
     private boolean switching;
+    private boolean automaticSources = true,
+        backControls;
     private final List<Long> stalls = new ArrayList<>();
     /** The banner, programme information and pause bar (package-private for tests). */
     SkyOverlay overlay;
@@ -103,10 +105,7 @@ final class LiveZapper {
                     if (overlay.infoShowing()) hideInfo();
                     else showInfo();
                 },
-                () -> {
-                    if (copies.size() > 1) player.menus.chooseSource();
-                    else Toast.makeText(player, "This channel has one source", Toast.LENGTH_SHORT).show();
-                },
+                player.menus::chooseSource,
                 player.menus::audioAndSubtitles,
                 player::toggle,
                 player::finish,
@@ -121,6 +120,20 @@ final class LiveZapper {
 
     String sourceLabel() {
         return copies.size() <= 1 ? "1 of 1" : copy + 1 + " of " + copies.size();
+    }
+
+    boolean automaticSources() {
+        return automaticSources;
+    }
+
+    int selectedCopy() {
+        return copy;
+    }
+
+    void automaticSources(boolean enabled) {
+        automaticSources = enabled;
+        if (enabled && player.liveFailed && !copies.isEmpty()) useCopy(0, true);
+        else showBanner();
     }
 
     List<ChannelDatabase.Row> copies() {
@@ -232,6 +245,8 @@ final class LiveZapper {
                         // A stall timer from the channel before must not move this one on.
                         player.overlayHandler.removeCallbacks(stalledTooLong);
                         if (play) {
+                            automaticSources = true;
+                            backControls = false;
                             player.switchTo(row.name, url, found.get(0).key);
                             remember(row);
                         }
@@ -336,6 +351,7 @@ final class LiveZapper {
      */
     void useCopy(int index, boolean automatic) {
         if (index < 0 || index >= copies.size()) return;
+        if (!automatic) automaticSources = false;
         ChannelDatabase.Row row = copies.get(index);
         List<ChannelDatabase.Row> list = copies;
         int ticket = ++request;
@@ -376,6 +392,7 @@ final class LiveZapper {
      */
     boolean failover(String reason) {
         player.overlayHandler.removeCallbacks(stalledTooLong);
+        if (!automaticSources) return false;
         if (switching) return true; // the next copy is already on its way
         if (copy + 1 >= copies.size()) return false;
         switching = true;
@@ -389,9 +406,9 @@ final class LiveZapper {
      * get another chance in order. Returns false when the channel has one copy only.
      */
     boolean retryFromFirst() {
-        if (copies.size() <= 1) return false;
+        if (!automaticSources || copies.size() <= 1) return false;
         switching = true;
-        useCopy(0, false);
+        useCopy(0, true);
         return true;
     }
 
@@ -469,12 +486,12 @@ final class LiveZapper {
             next == null ? "" : "Next " + LiveTvScreen.clockTime(new Date(next.start)),
             shown == null ? "" : shown.description,
             progress,
-            copies.size() > 1 && !browse ? "Source " + sourceLabel() : "",
+            !browse ? "Sources · " + (automaticSources ? "Auto · " : "Manual · ") + sourceLabel() : "",
             browse
         );
         if (overlay.infoShowing()) showInfo();
         player.overlayHandler.removeCallbacks(hideBanner);
-        player.overlayHandler.postDelayed(hideBanner, browse ? BROWSE_MS : BANNER_MS);
+        if (!backControls) player.overlayHandler.postDelayed(hideBanner, browse ? BROWSE_MS : BANNER_MS);
     }
 
     /** The "i" panel: the programme the banner shows, in full. Shown until closed. */
@@ -567,7 +584,8 @@ final class LiveZapper {
         boolean handled = true;
         if (select) {
             if (first) {
-                if (overlay.bannerShowing()) player.menus.liveOptions();
+                if (backControls) player.menus.chooseSource();
+                else if (overlay.bannerShowing()) player.menus.liveOptions();
                 else showBanner();
             }
         } else if (key == KeyEvent.KEYCODE_INFO || colour == 'y') {
@@ -581,10 +599,7 @@ final class LiveZapper {
         } else if (colour == 'r') {
             if (first) player.menus.audioAndSubtitles();
         } else if (colour == 'g') {
-            if (first) {
-                if (copies.size() > 1) player.menus.chooseSource();
-                else Toast.makeText(player, "This channel has one source", Toast.LENGTH_SHORT).show();
-            }
+            if (first) player.menus.chooseSource();
         } else if (colour == 'b' || key == KeyEvent.KEYCODE_MENU) {
             if (first) player.menus.liveOptions();
         } else if (key == KeyEvent.KEYCODE_LAST_CHANNEL) {
@@ -609,11 +624,15 @@ final class LiveZapper {
         } else showBanner();
     }
 
-    /** BACK closes the information panel, then browsing, then the banner, then goes to the guide. */
+    /** BACK reveals the controls first; the next press returns to the guide's same live picture. */
     private void back() {
         if (overlay.infoShowing()) hideInfo();
         else if (browsing) endBrowse();
-        else if (overlay.bannerShowing()) hideBanner.run();
-        else player.finish();
+        else if (backControls) player.finish();
+        else {
+            backControls = true;
+            showBanner();
+            overlay.focusSources();
+        }
     }
 }

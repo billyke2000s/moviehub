@@ -452,3 +452,9 @@ continuity checks.
   cookies within operations, Tubi crypto, compressed catalogues and fresh stream resolution.
 - Add individual settings, stable SQLite locators, inline guide isolation and optional local HLS header transport.
 - Preserve direct playback and existing providers; document partial live evidence and remaining browser/source blockers.
+
+## Unreleased — live controls and source choice
+
+- First Back shows live controls; next Back returns to the guide’s retained mini-player.
+- Add a selectable Sources action, Automatic by default, with manual source pinning.
+- Keep backup discovery local and resolve only a selected source or the next bounded failover.

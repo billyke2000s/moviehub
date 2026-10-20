@@ -125,3 +125,5 @@ The video-only consumer refresh keeps the existing in-memory relay session and d
 new provider request itself. Troubleshooting stores fixed labels and counts only. The sustained
 diagnostic uploads numerical audio/video results, never provider URLs, tokens, pages or media.
 Its host-JVM adapter stubs are test-only and are not packaged in the APK.
+
+The Sources menu uses already imported channel rows and does not crawl provider pages or probe backups. Manual mode suppresses cross-source failover; Automatic retains the existing finite retry order. The FreeShot candidate could not be verified from the current environment and has not been enabled as a provider.

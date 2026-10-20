@@ -820,10 +820,16 @@ public class PlaybackTest {
                 // Audio/clock progresses, video frames do not; no buffering/error event is sent.
                 LivePlayer.observeProgress(21000, 9000, 20, true);
                 assertEquals("Unexpected inherited backup", "1 of 1", activity.zapper.sourceLabel());
-                assertFalse("The first clock-moving freeze should refresh only the view", activity.liveFailed);
+                assertFalse(
+                    "The first clock-moving freeze should refresh only the view",
+                    activity.liveFailed
+                );
                 LivePlayer.observeProgress(22000, 10000, 20, true);
                 LivePlayer.observeProgress(30000, 18000, 20, true);
-                assertTrue("A persistent freeze must reach the attached failure callback", activity.liveFailed);
+                assertTrue(
+                    "A persistent freeze must reach the attached failure callback",
+                    activity.liveFailed
+                );
             });
             assertTrue(status().contains("unavailable"));
         } finally {
@@ -838,7 +844,8 @@ public class PlaybackTest {
         instrumentation.waitForIdleSync();
         Context context = instrumentation.getTargetContext();
         String locator = PlutoSource.ROOT + "5ad8d3a31b95267e225e4e09";
-        java.util.concurrent.atomic.AtomicInteger resolutions = new java.util.concurrent.atomic.AtomicInteger();
+        java.util.concurrent.atomic.AtomicInteger resolutions =
+            new java.util.concurrent.atomic.AtomicInteger();
         LivePlayer.testResolver = (url, http) -> {
             resolutions.incrementAndGet();
             return "http://127.0.0.1:" + server.getLocalPort() + "/live.ts";
@@ -886,7 +893,7 @@ public class PlaybackTest {
     }
 
     private long audioBuffers(MediaPlayer mediaPlayer) {
-        org.videolan.libvlc.Media media = mediaPlayer.getMedia();
+        var media = mediaPlayer.getMedia();
         if (media == null) return -1;
         try {
             return media.getStats().playedAbuffers;
@@ -900,16 +907,20 @@ public class PlaybackTest {
         instrumentation.runOnMainSync(activity::finish);
         instrumentation.waitForIdleSync();
         ProviderRelay.testConnections = uri ->
-            (HttpURLConnection) new URL("http://127.0.0.1:" + server.getLocalPort() + uri.getRawPath()).openConnection();
+            (HttpURLConnection) new URL(
+                "http://127.0.0.1:" + server.getLocalPort() + uri.getRawPath()
+            ).openConnection();
         org.json.JSONObject session = new org.json.JSONObject()
             .put("endpoint", "https://8.8.8.8/api/playlist-token?slug=channel")
             .put("slug", "channel")
             .put("token", "fixture-token")
             .put("expiresAtMs", System.currentTimeMillis() + 90000);
-        EngineSources.Stream stream = new EngineSources.Stream(new org.json.JSONObject()
-            .put("url", "https://8.8.8.8/channel/wrapped.m3u8")
-            .put("headers", new org.json.JSONObject())
-            .put("playlistSession", session));
+        EngineSources.Stream stream = new EngineSources.Stream(
+            new org.json.JSONObject()
+                .put("url", "https://8.8.8.8/channel/wrapped.m3u8")
+                .put("headers", new org.json.JSONObject())
+                .put("playlistSession", session)
+        );
         try (ProviderRelay relay = new ProviderRelay(stream)) {
             Context context = instrumentation.getTargetContext();
             activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
@@ -920,15 +931,18 @@ public class PlaybackTest {
                     .putExtra("id", "wrapped-reload")
                     .putExtra("title", "Wrapped HLS reload")
             );
-        for (int reload = 0; reload < 3; reload++) {
-            await(() -> player() != null && player().isPlaying() && LivePlayer.output().frames > 5, 30000);
-            long before = audioBuffers(player());
-            long frames = LivePlayer.output().frames;
-            SystemClock.sleep(1500);
-            assertTrue("Video stopped after reload " + reload, LivePlayer.output().frames > frames + 5);
-            assertTrue("Audio stopped after reload " + reload, audioBuffers(player()) > before);
-            if (reload < 2) instrumentation.runOnMainSync(activity::backToLive);
-        }
+            for (int reload = 0; reload < 3; reload++) {
+                await(
+                    () -> player() != null && player().isPlaying() && LivePlayer.output().frames > 5,
+                    30000
+                );
+                long before = audioBuffers(player());
+                long frames = LivePlayer.output().frames;
+                SystemClock.sleep(1500);
+                assertTrue("Video stopped after reload " + reload, LivePlayer.output().frames > frames + 5);
+                assertTrue("Audio stopped after reload " + reload, audioBuffers(player()) > before);
+                if (reload < 2) instrumentation.runOnMainSync(activity::backToLive);
+            }
         } finally {
             ProviderRelay.testConnections = null;
         }

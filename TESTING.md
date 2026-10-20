@@ -5,7 +5,7 @@ There are three layers of checks. CI runs all of them on every pull request that
 
 | Layer | Where | Needs | Runs in CI step |
 | --- | --- | --- | --- |
-| Core checks (293) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
+| Core checks (540) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
 | Build and lint | Gradle | Android SDK 35 | "Build APK and run Android lint" |
 | Device tests (instrumentation) | `android-tv-launcher/app/src/androidTest/` | Android emulator | `device-tests` job |
 | Signing compatibility | release build vs published APK | signing secrets (same-repo PRs only) | `signed-compatibility` job |
@@ -229,4 +229,6 @@ both tracks through production Java relay/session/PNG classes for 150 seconds pe
 channel. It replaces only Android-dependent DTO/logging/DNS seams on the JVM and uses FFmpeg,
 so it does not prove Android hardware decoding. Only numerical results are uploaded; no fetched
 media, URLs or tokens. A green diagnostic workflow does not imply bothDecoded=true.
-Local execution remains unavailable; checks run in CI.
+Android validation remains pending in CI; local core/provider checks are available again.
+
+LiveControlsTest holds the selected native resolver pending while opening controls and Sources, asserts no backup resolution, checks first Back reveals controls and second Back leaves, and checks manual pinning plus restoring bounded Automatic failover. Local execution became available again: core and provider checks are run locally; Android build/lint and real EGL/LibVLC regressions require CI.

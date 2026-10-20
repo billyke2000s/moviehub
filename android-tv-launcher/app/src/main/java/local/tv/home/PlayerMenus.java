@@ -110,9 +110,9 @@ final class PlayerMenus {
                       " min left"
                 : "Sleep timer"
         );
-        if (a.zapper != null && a.zapper.copies().size() > 1) labels.add(
+        if (a.zapper != null) labels.add(
             0,
-            "Source · " + a.zapper.sourceLabel()
+            "Sources · " + (a.zapper.automaticSources() ? "Auto · " : "Manual · ") + a.zapper.sourceLabel()
         );
         if (a.live && a.behindLive) labels.add(0, "Back to live");
         if (liveTv) {
@@ -200,21 +200,24 @@ final class PlayerMenus {
         );
     }
 
-    /** The copies of this Live TV channel from the free lists; the current one is ticked. */
+    /** Automatic is the default; a manual choice stays selected until Auto or another channel. */
     void chooseSource() {
         java.util.List<ChannelDatabase.Row> copies = a.zapper.copies();
-        String[] names = new String[copies.size()];
-        int current = 0;
-        for (int i = 0; i < names.length; i++) {
+        String[] names = new String[copies.size() + 1];
+        names[0] = "Automatic · switch if a source fails";
+        for (int i = 0; i < copies.size(); i++) {
             String provider = AdapterSources.sourceName(copies.get(i).source);
-            names[i] =
+            names[i + 1] =
                 "Source " +
                 (i + 1) +
                 "  ·  " +
                 (provider.isEmpty() ? "" : provider + "  ·  ") +
                 copies.get(i).name;
-            if (a.zapper.sourceLabel().startsWith(i + 1 + " ")) current = i;
         }
-        options("Source", names, current, which -> a.zapper.useCopy(which, false));
+        int current = a.zapper.automaticSources() ? 0 : a.zapper.selectedCopy() + 1;
+        options("Sources", names, current, which -> {
+            if (which == 0) a.zapper.automaticSources(true);
+            else a.zapper.useCopy(which - 1, false);
+        });
     }
 }

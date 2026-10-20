@@ -92,7 +92,14 @@ final class SkyOverlay {
         name = label(24, true, Color.WHITE);
         title.addView(name, new LinearLayout.LayoutParams(0, -2, 1));
         source = label(15, false, Color.WHITE);
-        source.setPadding(a.dp(12), 0, a.dp(16), 0);
+        source.setPadding(a.dp(12), a.dp(12), a.dp(16), a.dp(12));
+        source.setMinHeight(a.dp(48));
+        source.setFocusable(true);
+        source.setContentDescription("Sources");
+        source.setOnClickListener(v -> a.menus.chooseSource());
+        source.setOnFocusChangeListener((v, focused) ->
+            source.setTextColor(focused ? LiveTvScreen.YELLOW : Color.WHITE)
+        );
         title.addView(source);
         clock = label(20, true, Color.WHITE);
         title.addView(clock);
@@ -206,6 +213,10 @@ final class SkyOverlay {
         banner.animate().cancel();
         banner.setVisibility(View.GONE);
         nowTime.setVisibility(View.VISIBLE);
+    }
+
+    void focusSources() {
+        source.requestFocus();
     }
 
     boolean bannerShowing() {

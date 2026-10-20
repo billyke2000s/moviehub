@@ -222,3 +222,9 @@ The first host-JVM sustained diagnostic resolved Main Event and Football but dec
 frames because the relay reported IOException. That is an unsuccessful playback probe, not
 provider-failure proof; safe error classification is being added. Physical-TV sustained playback
 and the reload-audio symptom remain unverified.
+
+## Live controls and source discovery (20 October 2026)
+
+Candidate changes reveal controls on the first Back and return to the guide on the second, expose Sources for every live channel, default to Automatic and pin manual selections. Backups remain local metadata until selected or needed for failover. New instrumentation covers a pending resolver so source menus cannot accidentally start background probing. CI validation is pending.
+
+FreeShot homepage and the supplied channel page return a small Site Unavailable page from this environment, including the cloud browser. Search retrieval exposed the public channel catalogue and an embedded player, but playback could not be verified. No untested FreeShot provider has been added; this does not establish whether the site works on the user’s network.

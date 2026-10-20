@@ -37,8 +37,9 @@ public final class LiveVideoOutputTest {
     @Test
     public void repeatedEglTimestampsDoNotLeaveAStillFrameOverTheVideo() throws Exception {
         MainActivity activity = (MainActivity) instrumentation.startActivitySync(
-            new Intent(instrumentation.getTargetContext(), MainActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            new Intent(instrumentation.getTargetContext(), MainActivity.class).addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK
+            )
         );
         LibVLC[] engine = new LibVLC[1];
         MediaPlayer[] player = new MediaPlayer[1];
@@ -59,18 +60,36 @@ public final class LiveVideoOutputTest {
             int[] versions = new int[2];
             assertTrue(EGL14.eglInitialize(display, versions, 0, versions, 1));
             int[] attributes = {
-                EGL14.EGL_RED_SIZE, 8, EGL14.EGL_GREEN_SIZE, 8, EGL14.EGL_BLUE_SIZE, 8,
-                EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT,
-                EGL14.EGL_SURFACE_TYPE, EGL14.EGL_WINDOW_BIT, EGL14.EGL_NONE
+                EGL14.EGL_RED_SIZE,
+                8,
+                EGL14.EGL_GREEN_SIZE,
+                8,
+                EGL14.EGL_BLUE_SIZE,
+                8,
+                EGL14.EGL_RENDERABLE_TYPE,
+                EGL14.EGL_OPENGL_ES2_BIT,
+                EGL14.EGL_SURFACE_TYPE,
+                EGL14.EGL_WINDOW_BIT,
+                EGL14.EGL_NONE,
             };
             EGLConfig[] configs = new EGLConfig[1];
             int[] count = new int[1];
             assertTrue(EGL14.eglChooseConfig(display, attributes, 0, configs, 0, 1, count, 0));
             assertTrue(count[0] > 0);
-            context = EGL14.eglCreateContext(display, configs[0], EGL14.EGL_NO_CONTEXT,
-                new int[] { EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE }, 0);
-            producer = EGL14.eglCreateWindowSurface(display, configs[0], output.surface,
-                new int[] { EGL14.EGL_NONE }, 0);
+            context = EGL14.eglCreateContext(
+                display,
+                configs[0],
+                EGL14.EGL_NO_CONTEXT,
+                new int[] { EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE },
+                0
+            );
+            producer = EGL14.eglCreateWindowSurface(
+                display,
+                configs[0],
+                output.surface,
+                new int[] { EGL14.EGL_NONE },
+                0
+            );
             assertTrue(EGL14.eglMakeCurrent(display, producer, producer, context));
             for (int picture = 0; picture < 3; picture++) {
                 long frames = output.frames;
