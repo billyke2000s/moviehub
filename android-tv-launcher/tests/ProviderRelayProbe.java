@@ -73,6 +73,12 @@ final class Diagnostics {
         ).contains(message)
             ? message.replace(' ', '_')
             : error.getClass().getSimpleName();
+        StackTraceElement origin = error.getStackTrace().length == 0 ? null : error.getStackTrace()[0];
+        if (origin != null) {
+            String owner = origin.getClassName();
+            owner = owner.substring(owner.lastIndexOf('.') + 1).replaceAll("[^A-Za-z0-9_]", "_");
+            kind += "_" + owner + "_" + Math.max(0, origin.getLineNumber());
+        }
         System.err.println(where + ": " + kind);
     }
 }
