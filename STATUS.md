@@ -228,3 +228,9 @@ and the reload-audio symptom remain unverified.
 Candidate changes reveal controls on the first Back and return to the guide on the second, expose Sources for every live channel, default to Automatic and pin manual selections. Backups remain local metadata until selected or needed for failover. New instrumentation covers a pending resolver so source menus cannot accidentally start background probing. CI validation is pending.
 
 FreeShot homepage and the supplied channel page return a small Site Unavailable page from this environment, including the cloud browser. Search retrieval exposed the public channel catalogue and an embedded player, but playback could not be verified. No untested FreeShot provider has been added; this does not establish whether the site works on the user’s network.
+
+## Verified FreeShot structure and relay range correction
+
+GitHub-hosted checks reached FreeShot’s catalogue, its embed and WideIPTV player. With the player’s normal User-Agent/Origin/Referer, Sky Sports Action decoded 30 seconds of video (750 frames) and audio (1,406 frames) outside its web player. The new opt-in UK sports adapter imports directory metadata and follows only the selected channel’s links; its renewal and production-relay sustained check are pending.
+
+The first sustained DaddyLive diagnostic was invalid because desktop HttpURLConnection silently dropped Origin; a local loopback experiment confirmed it, and the diagnostic JVM now sends the same header Android does. The corrected probe found production relay rejection of zero-to-end byte ranges on wrapped segments. The relay now fetches/decodes that complete entity and a real-TCP regression passes locally. This is an identified app defect; it is not yet proof of the physical TV’s freeze/audio cause.

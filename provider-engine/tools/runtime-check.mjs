@@ -421,4 +421,33 @@ const addresses = drive(
 assert.deepEqual(addresses, [true, true, false, false, false, false, false, false]);
 pkg.modules.zlive = originalZlive;
 checks++;
+const freeRows = drive("freeshot", "catalogue", null, (req) => {
+    assert.equal(req.url, "https://www.freeshot.live/live-tv/sky-sports-action-uk/21");
+    return '<a href="/live-tv/sky-sports-main-event-uk/20">Main Event</a><a href="/live-tv/sky-sports-main-event-uk/20">Duplicate</a><a href="/live-tv/adult-uk/90">Excluded</a>';
+});
+assert.equal(freeRows.length, 1);
+assert.equal(freeRows[0].name, "Sky Sports Main Event UK");
+checks++;
+const freeStream = drive("freeshot", "resolve", freeRows[0], (req, n) => {
+    assert.equal(req.method, "GET");
+    if (n === 0) return '<iframe src="https://freeshot.live/embed/MainEvent.php"></iframe>';
+    if (n === 1)
+        return '<iframe src="https://freeshot.live/ads/advert.php"></iframe><iframe src="https://wideiptv.top/player/skysportsmainevent"></iframe>';
+    assert.equal(req.url, "https://wideiptv.top/player/skysportsmainevent");
+    return 'const config = {streamUrl: "https://ds1.bluetier.top/skysportsmainevent/index.m3u8?token=YWJjZA==.signature", channelSlug:"skysportsmainevent", tokenExpiresIn:300};';
+});
+assert.equal(freeStream.headers.Origin, "https://wideiptv.top");
+assert.equal(freeStream.playlistSession.type, "freeshot");
+assert.equal(freeStream.playlistSession.token, "YWJjZA==.signature");
+assert.equal(freeStream.playlistSession.expiresAtMs, 1792440300000);
+assert.equal(lastInput.responses.length, 3);
+checks++;
+assert.throws(
+    () =>
+        drive("freeshot", "resolve", { channelId: "../../outside" }, () => {
+            throw new Error("Unexpected request");
+        }),
+    /Invalid FreeShot/,
+);
+checks++;
 console.log(checks + " multi-provider checks passed in actual JVM runtime");

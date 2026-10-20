@@ -294,6 +294,7 @@ function __run(operation,row){
  throw new Error('Unsupported operation');
 }
 `;
+pkg.modules.freeshot = compatibility + readFileSync(root + "tools/freeshot.js", "utf8");
 pkg.sourceSha256 = createHash("sha256").update(JSON.stringify(pkg.modules)).digest("hex");
 pkg.sources = Object.fromEntries(
     readdirSync(root + "upstream/", { recursive: true })

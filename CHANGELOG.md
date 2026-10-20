@@ -458,3 +458,8 @@ continuity checks.
 - First Back shows live controls; next Back returns to the guide’s retained mini-player.
 - Add a selectable Sources action, Automatic by default, with manual source pinning.
 - Keep backup discovery local and resolve only a selected source or the next bounded failover.
+
+## Unreleased — additional sports source and segment requests
+
+- Add opt-in FreeShot UK sports with lazy channel resolution, native playback headers and scoped anonymous token renewal.
+- Accept whole-entity byte-zero requests for wrapped DaddyLive segments and return decoded video bytes instead of rejecting playback.

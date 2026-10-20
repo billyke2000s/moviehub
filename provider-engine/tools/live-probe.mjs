@@ -61,6 +61,12 @@ function allowed(provider, url) {
                 host.endsWith(".tubi.video") ||
                 host === "tubitv.com"
             );
+        case "freeshot":
+            return (
+                ((host === "www.freeshot.live" || host === "freeshot.live") &&
+                    (path.startsWith("/live-tv/") || /^\/embed\/[A-Za-z0-9_-]+\.php$/.test(path))) ||
+                (host === "wideiptv.top" && /^\/player\/[A-Za-z0-9_-]+$/.test(path))
+            );
         case "zlive":
         case "dlhd":
             return true;

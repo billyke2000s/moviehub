@@ -1,8 +1,8 @@
-name: DaddyLive sustained playback diagnostic
+name: Sports providers sustained playback diagnostic
 on:
   push:
     branches: [feature/standalone-provider-engine]
-    paths: ['provider-engine/tools/dlhd-playback.mjs', 'android-tv-launcher/tests/ProviderRelayProbe.java', '.github/workflows/dlhd-playback.yml']
+    paths: ['provider-engine/tools/dlhd-playback.mjs', 'android-tv-launcher/tests/ProviderRelayProbe.java', 'android-tv-launcher/app/src/main/java/local/tv/home/ProviderRelay.java', 'android-tv-launcher/app/src/main/java/local/tv/home/PlaylistSession.java', 'provider-engine/tools/freeshot.js', '.github/workflows/dlhd-playback.yml']
   workflow_dispatch:
 permissions:
   contents: read

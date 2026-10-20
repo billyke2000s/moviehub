@@ -80,6 +80,7 @@ final class AdapterSources {
         "Samsung TV Plus (GB)",
         "Local Now (US)",
         "ZLive",
+        "FreeShot (UK sports)",
     };
 
     /** Map upstream labels into the shared TV-guide sections; see {@link ChannelCategory}. */
@@ -245,7 +246,8 @@ final class AdapterSources {
                 "tubi",
                 "samsung",
                 "localnow",
-                "zlive"
+                "zlive",
+                "freeshot"
             ).contains(id)
         ) return new JSONObject().put("channelId", wanted);
         if (id.equals("tcl") && !staleTclHints) try {

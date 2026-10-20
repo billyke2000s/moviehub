@@ -140,3 +140,5 @@ means video is healthy. A stopped visible video consumer gets one view-only refr
 existing bounded source recovery. Troubleshooting retains the last safe recovery description.
 
 Live TV Back now reveals the channel controls and a selectable Sources link before returning to the mini-player on the next Back. Sources defaults to Automatic; selecting a particular saved copy pins it until Automatic or another channel is selected. Source menus read saved channel metadata; stream resolution remains on demand.
+
+FreeShot (UK sports) is an additional opt-in source in Settings → Provider engine. Its directory is imported without opening streams; a selected channel follows its literal player links on demand and uses MovieHub’s existing player. Anonymous playlist tokens renew in memory.

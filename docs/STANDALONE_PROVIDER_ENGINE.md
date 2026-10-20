@@ -269,3 +269,11 @@ The native relay must fully validate/unpack each PNG media container before deli
 LivePlayer previously recovered only from VLC buffering/error signals. It now also monitors elapsed playback time and displayed-picture count for visible, playing native/provider streams, at the existing eight-second stall threshold. A stopped video counter can trigger even while the audio clock advances. A provider receives one re-resolution/alternate-player attempt; further failure follows the owner’s ordinary backup/error handling. Pausing, hidden views, channel changes and handoffs reset the observation; no background pause is auto-resumed. Identical frozen pictures still encoded as new video frames cannot be distinguished from valid content by counters. Actual provider network/decoder/timestamp causes and sustained renewal on the TV remain unconfirmed.
 
 Advancing displayed-picture counters take precedence over the clock: some live demuxers expose a static clock during healthy video. Missing/zero video counters fall back to clock progress.
+
+## FreeShot UK sports
+
+MovieHub’s own FreeShot adapter (not a historical upstream port) reads the selected public channel page’s related UK sports directory in one request. Channel IDs are stable public page slugs/IDs; no player page is fetched during directory import. Selecting a channel follows only its FreeShot embed and WideIPTV player, parses literal HLS configuration and hands media to the native player through the existing relay. It does not render the website, ads or execute fetched scripts.
+
+The fixed anonymous renewal endpoint posts the channel and current token; the media grant is restricted to the discovered BlueTier origin and channel prefix. Renewal and playback run on demand. Turn on **FreeShot (UK sports)** in Settings → Provider engine to import it. This integration covers UK sports, not every country or category on the website.
+
+A live host check decoded Sky Sports Action video/audio for 30 seconds with the player’s ordinary headers. That is separate from Android fixture validation and does not establish sustained playback or geography on a physical TV.

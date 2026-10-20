@@ -19,11 +19,16 @@ const stats = () => ({
     networkErrors: [],
 });
 
-async function inspect(row) {
-    const result = { channel: String(row.name).slice(0, 80), seconds: 150 };
+async function inspect(provider, row, forceRenew = false) {
+    const result = {
+        provider,
+        channel: String(row.name).slice(0, 80),
+        seconds: 150,
+        forcedRenewal: forceRenew,
+    };
     let relay;
     try {
-        const stream = await run("dlhd", "resolve", row, stats());
+        const stream = await run(provider, "resolve", row, stats());
         relay = spawn(
             "java",
             [
@@ -59,6 +64,7 @@ async function inspect(row) {
                 if (kind) relayErrors[kind[1]] = (relayErrors[kind[1]] || 0) + 1;
             }
         });
+        if (forceRenew && stream.playlistSession) stream.playlistSession.expiresAtMs = 0;
         relay.stdin.write(JSON.stringify(stream) + "\n");
         const url = await ready;
         const tracks = [0, 1].map(() => ({ frames: 0, unique: 0, start: null, end: null, maxGap: 0 }));
@@ -144,13 +150,21 @@ try {
         rows.find((row) => /sky.*sports.*football/i.test(row.name || "")),
     ].filter(Boolean);
     for (const row of selected) {
-        const result = await inspect(row);
+        const result = await inspect("dlhd", row);
         report.push(result);
         console.log(JSON.stringify(result));
     }
     if (!selected.length) report.push({ failure: "No matching catalogue rows" });
 } catch (error) {
     report.push({ failure: error.constructor.name });
+}
+try {
+    const rows = await run("freeshot", "catalogue", null, stats());
+    const row = rows.find((value) => /sky.*sports.*main.*event/i.test(value.name || ""));
+    if (!row) report.push({ provider: "freeshot", failure: "No Main Event catalogue row" });
+    else report.push(await inspect("freeshot", row, true));
+} catch (error) {
+    report.push({ provider: "freeshot", failure: error.constructor.name });
 }
 writeFileSync("build/provider-tests/dlhd-playback.json", JSON.stringify(report, null, 2));
 console.log("DLHD_PLAYBACK_RESULT " + JSON.stringify(report));

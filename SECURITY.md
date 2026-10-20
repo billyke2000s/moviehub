@@ -126,4 +126,6 @@ new provider request itself. Troubleshooting stores fixed labels and counts only
 diagnostic uploads numerical audio/video results, never provider URLs, tokens, pages or media.
 Its host-JVM adapter stubs are test-only and are not packaged in the APK.
 
-The Sources menu uses already imported channel rows and does not crawl provider pages or probe backups. Manual mode suppresses cross-source failover; Automatic retains the existing finite retry order. The FreeShot candidate could not be verified from the current environment and has not been enabled as a provider.
+The Sources menu uses already imported channel rows and does not crawl provider pages or probe backups. Manual mode suppresses cross-source failover; Automatic retains the existing finite retry order. FreeShot is opt-in; validation evidence and its restricted renewal capability are described below.
+
+FreeShot executes no fetched scripts or adverts. Its catalogue and resolver have narrow audited HTTPS GET paths; media must be on a discovered BlueTier subdomain and the selected channel prefix. Only PlaylistSession may POST an anonymous current-token/channel body to exactly `https://wideiptv.top/api/refresh_token.php`, with no query or fragment. Tokens stay in memory; other origins and channel prefixes never receive them. No generic broker POST capability was added. PNG nonzero/partial ranges remain rejected; whole-entity ranges are decoded as complete entities without forwarding container offsets.

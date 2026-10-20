@@ -171,7 +171,10 @@ final class ProviderRelay implements AutoCloseable {
                         ? current
                         : playlistSession.authorize(current, playlistRequest, false, this::playlistToken);
                 upstream = open(requestUri);
-                if (range != null) upstream.setRequestProperty("Range", range);
+                // A zero-to-end request asks for the whole decoded entity. Never apply that
+                // range to the PNG container, whose offsets differ from the transport stream.
+                boolean wholeEntity = playlistSession != null && "bytes=0-".equals(range);
+                if (range != null && !wholeEntity) upstream.setRequestProperty("Range", range);
                 int status = upstream.getResponseCode();
                 if (
                     status == 403 &&
@@ -210,7 +213,7 @@ final class ProviderRelay implements AutoCloseable {
                     boolean playlist =
                         signature.startsWith("#EXTM3U") || signature.startsWith("\uFEFF#EXTM3U");
                     boolean wrappedPng = playlistSession != null && ProviderPngSegments.matches(prefix, n);
-                    if (wrappedPng && range != null) throw new IOException(
+                    if (wrappedPng && range != null && !wholeEntity) throw new IOException(
                         "Wrapped segment ranges unsupported"
                     );
                     byte[] head = new byte[ProviderSegments.HEAD];
@@ -316,9 +319,19 @@ final class ProviderRelay implements AutoCloseable {
         }
     }
 
-    private org.json.JSONObject playlistToken(URI endpoint) throws Exception {
+    private org.json.JSONObject playlistToken(URI endpoint, org.json.JSONObject body) throws Exception {
         HttpURLConnection connection = open(endpoint);
         try {
+            if (body != null) {
+                byte[] payload = body.toString().getBytes(StandardCharsets.UTF_8);
+                connection.setRequestMethod("POST");
+                connection.setDoOutput(true);
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setFixedLengthStreamingMode(payload.length);
+                try (OutputStream out = connection.getOutputStream()) {
+                    out.write(payload);
+                }
+            }
             if (connection.getResponseCode() != 200) throw new IOException("Playlist session unavailable");
             try (
                 InputStream in = connection.getInputStream();

@@ -48,7 +48,7 @@ final class ProviderPackages {
             !pkg.getString("upstream").matches("[a-f0-9]{40}")
         ) throw new IOException("Incompatible provider package");
         JSONObject modules = pkg.getJSONObject("modules");
-        if (!modules.has("freelivesports") || modules.length() > 16) throw new IOException(
+        if (!modules.has("freelivesports") || modules.length() > 17) throw new IOException(
             "Missing provider baseline"
         );
         for (java.util.Iterator<String> keys = modules.keys(); keys.hasNext(); ) {

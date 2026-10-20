@@ -25,6 +25,7 @@ final class ProviderBroker {
         "samsung",
         "localnow",
         "zlive",
+        "freeshot",
     };
 
     private ProviderBroker() {}
@@ -73,6 +74,13 @@ final class ProviderBroker {
                         host.endsWith(".adrise.io") ||
                         host.endsWith(".tubi.video") ||
                         host.equals("tubitv.com")
+                    );
+                case "freeshot":
+                    return (
+                        ((host.equals("www.freeshot.live") || host.equals("freeshot.live")) &&
+                            (u.getPath().startsWith("/live-tv/") ||
+                                u.getPath().matches("/embed/[A-Za-z0-9_-]+\\.php"))) ||
+                        (host.equals("wideiptv.top") && u.getPath().matches("/player/[A-Za-z0-9_-]+"))
                     );
                 case "zlive":
                 case "dlhd":

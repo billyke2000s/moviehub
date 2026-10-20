@@ -11,3 +11,10 @@ RHINO_JAR="$rhino" node provider-engine/tools/runtime-check.mjs
 
 javac -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/ProviderPngSegments.java android-tv-launcher/tests/ProviderPngSegmentsTest.java
 java -Xmx96m -cp build/provider-tests local.tv.home.ProviderPngSegmentsTest
+
+json="${JSON_JAR:-build/provider-tests/json.jar}"
+if [ ! -f "$json" ]; then
+  curl --fail --location --output "$json" https://repo.maven.apache.org/maven2/org/json/json/20250517/json-20250517.jar
+fi
+javac -cp "$json" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderUrls,ProviderSegments,ProviderRelay,PlaylistSession,ProviderPngSegments}.java android-tv-launcher/tests/{ProviderRelayProbe,ProviderRelayTransportTest}.java
+java -Xmx96m -cp "$json:build/provider-tests" local.tv.home.ProviderRelayTransportTest

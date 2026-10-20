@@ -37,7 +37,7 @@ public final class LiveControlsTest {
     @Before
     public void open() throws Exception {
         Context context = remote.getTargetContext();
-        LivePlayer.stop();
+        remote.runOnMainSync(LivePlayer::stop);
         db = ChannelDatabase.get(context);
         db.clear();
         String[] ids = { "5ad8d3a31b95267e225e4e09", "6304f8d5ffb61000071ab478" };

@@ -235,3 +235,5 @@ from video monitoring. No new decoder flags or changes to sports buffering thres
 Troubleshooting shows fixed recovery descriptions and counts, with no URLs or tokens.
 
 LiveZapper owns the per-channel Automatic/manual source policy and two-step Back interaction. PlayerMenus lists Automatic followed by saved copies; SkyOverlay exposes a focusable Sources action. Listing copies is a local database operation; only the selected copy goes through LivePlayer resolution. Automatic failover visits the remaining saved copies once and stops.
+
+`provider-engine/tools/freeshot.js` parses the FreeShot related-channel directory and follows only the selected UK sports channel’s two literal iframe links. ProviderBroker permits only FreeShot directory/embed and WideIPTV player paths. PlaylistSession supports the fixed WideIPTV anonymous JSON renewal endpoint, scoped to one discovered BlueTier origin/channel path; ProviderRelay posts renewal bodies and rewrites tokens without exposing them to VLC. Zero-to-end range requests fetch and decode the complete wrapped segment rather than applying decoded offsets to its PNG container.
