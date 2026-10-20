@@ -229,7 +229,7 @@ both tracks through production Java relay/session/PNG classes for 150 seconds pe
 channel. It replaces only Android-dependent DTO/logging/DNS seams on the JVM and uses FFmpeg,
 so it does not prove Android hardware decoding. Only numerical results are uploaded; no fetched
 media, URLs or tokens. A green diagnostic workflow does not imply bothDecoded=true.
-Android validation remains pending in CI; local core/provider checks are available again.
+Android validation passed in run 39513033996; local core/provider checks are also available.
 
 LiveControlsTest holds the selected native resolver pending while opening controls and Sources, asserts no backup resolution, checks first Back reveals controls and second Back leaves, and checks manual pinning plus restoring bounded Automatic failover. Local execution became available again: core and provider checks are run locally; Android build/lint and real EGL/LibVLC regressions require CI.
 
@@ -240,6 +240,17 @@ check with a forced initial anonymous token renewal: 3,748 unique video frames o
 and 7,032 unique audio frames over 150 seconds, with no timestamp gaps or relay errors. DaddyLive
 Football also passed both tracks for 150 seconds after accepting whole-entity wrapped ranges.
 The Main Event DaddyLive run contained a timestamp gap; these host checks do not establish the
-physical TV's decoder/audio behavior. The signed test APK comes from Android run 39510829183.
+physical TV's decoder/audio behavior. The signed test APK comes from Android run 39513033996.
 
 PlaybackTest.aManualBackupSurvivesGuideAndFullScreenWithoutReopening plays a second copy, pins it manually, makes two full-screen/guide trips and checks the retained player, current copy/mode, fresh output and unchanged stream-open count after the intentional source change.
+
+Final application revision `4ae9dce6e6adeb8d95b319ff46f0eb90897a3b22` passed all 122 API 28 TV
+emulator tests with zero failures/skips in Android run 39513033996. The manual-backup round-trip
+regression passed, alongside constant EGL timestamps, actual stopped-consumer recovery with
+advancing audio and three wrapped-HLS reloads with advancing video/audio. Twelve fresh-frame
+handoffs were 137, 82, 88, 63, 116, 53, 112, 63, 119, 44, 117 and 122 ms; no handoff reopened
+the stream. Build/lint, signing compatibility and provider run 39513033968 also passed.
+
+[Signed test APK ZIP](https://github.com/billyke2000s/moviehub/actions/runs/39513033996/artifacts/12307505129) ·
+[Emulator reports/screenshots](https://github.com/billyke2000s/moviehub/actions/runs/39513033996/artifacts/12306229486).
+Only documentation follows this tested application revision.

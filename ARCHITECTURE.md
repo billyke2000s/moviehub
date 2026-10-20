@@ -238,4 +238,6 @@ LiveZapper owns the per-channel Automatic/manual source policy and two-step Back
 
 `provider-engine/tools/freeshot.js` parses the FreeShot related-channel directory and follows only the selected UK sports channel’s two literal iframe links. ProviderBroker permits only FreeShot directory/embed and WideIPTV player paths. PlaylistSession supports the fixed WideIPTV anonymous JSON renewal endpoint, scoped to one discovered BlueTier origin/channel path; ProviderRelay posts renewal bodies and rewrites tokens without exposing them to VLC. Zero-to-end range requests fetch and decode the complete wrapped segment rather than applying decoded offsets to its PNG container.
 
-LivePlayer retains the current source mode and attempted source keys with the active stream. LiveTvScreen matches the active stable URL against the selected channel’s saved copies before opening full screen. LiveZapper restores the matching copy/mode/attempt history, and resets them on a new channel. These comparisons read local metadata only.
+LivePlayer retains the current source mode and attempted source keys with the active stream. LiveTvScreen matches the active stable URL’s saved SHA-256 key against the selected channel’s copies before opening full screen. LiveZapper restores the matching copy/mode/attempt history, and resets them on a new channel. These comparisons read local metadata only.
+
+Restoring a retained source compares saved hashes rather than decrypting every backup URL; it performs no additional stream lookup.

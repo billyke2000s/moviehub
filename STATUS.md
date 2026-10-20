@@ -239,9 +239,14 @@ omits that header.
 
 Local validation: 540 core checks, compiler tests, 21 engine checks, 45 actual-Rhino multi-provider
 checks, 17 PNG checks and four real-TCP wrapped-range checks passed. The FreeShot relative-URL and
-channel-identity fixtures also passed after normalization. Android emulator validation is pending;
-build/lint and permanent-signing compatibility passed for the current candidate.
+channel-identity fixtures also passed after normalization. Android run 39513033996 passed all 122
+TV emulator tests (zero failures/skips), debug/release builds and lint, instrumentation compilation,
+and permanent-signing compatibility. This includes a stopped real texture consumer with continuing
+audio, three wrapped-HLS reloads with both tracks advancing, constant EGL timestamps, Back/Sources,
+and two guide/full-screen round trips after manually selecting a backup. Player/output identity,
+current copy/mode, source-open counts and fresh nonblank video remained correct. Twelve fresh-frame
+handoffs measured 44–137 ms on this emulator; this is not a hardware latency guarantee.
 
-[Signed test build](https://github.com/billyke2000s/moviehub/actions/runs/39510829183/artifacts/12305832489)
-(source `63b092ca47ba4b3d549cb4656be55e6333b3a187`). Extract and install `moviehub-test.apk`.
+[Signed test build](https://github.com/billyke2000s/moviehub/actions/runs/39513033996/artifacts/12307505129)
+(source `4ae9dce6e6adeb8d95b319ff46f0eb90897a3b22`). Extract and install `moviehub-test.apk`.
 No production update has been merged or published.
