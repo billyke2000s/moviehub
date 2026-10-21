@@ -200,7 +200,7 @@ A same-JVM desktop benchmark compared old/new PNG decoding on the same 6.8 MB Ma
 
 PlaybackTest repeats guide → full screen → guide twice for both direct and resolved fixture
 streams. LiveHandoffEvidence checks that the same `LiveVideoOutput` and player survive, that
-VLC's displayed-picture count rises again in the destination, that the picture returns within
+VLC's decoded-video count rises again in the destination, that the picture returns within
 2 seconds of the move (`HANDOFF_LIMIT_MS`, logged as MovieHubHandoff), and that the SurfaceView's
 actual pixels (sampled from a screenshot where the video surface is; PixelCopy cannot read a hardware decoder's surface) are not blank. Stream-open and resolver counters assert no
 restart or re-resolution. This verifies fixtures on the API 28 emulator, not the TV.
@@ -217,7 +217,7 @@ times (47–104 ms on the emulator, 20 October 2026) are not comparable with the
 ## Early video freeze and reload investigation
 
 PlaybackTest `aPictureRefreshKeepsTheSameStreamAndSound` calls the watchdog's repair
-(`refreshView`) during playback and checks unchanged player/output, stream-open and resolver
+(`refreshView`, a video-track restart) during playback and checks unchanged player/output, stream-open and resolver
 counts, displayed pictures advancing again and audio output advancing. A wrapped-PNG HLS fixture
 exercises the production relay and LibVLC through three reloads, requiring displayed pictures and
 audio output counters to advance. The EGL/SurfaceTexture test (LiveVideoOutputTest) was removed

@@ -225,11 +225,13 @@ also retains SurfaceTextures to preserve decoders across Activity recreation.
 
 ## Video freeze recovery
 
-`LiveVideoOutput.pictures()` reads VLC's displayed-picture count (`IMedia.Stats.displayedPictures`;
--1 until the first picture, so the check then falls back to the playback clock). LivePlayer samples
+`LiveVideoOutput.pictures()` reads VLC's decoded-video count (`IMedia.Stats.decodedVideo`, kept
+rising across source switches; the displayed-picture count barely moves with hardware decoding;
+-1 until the first frame, so the check then falls back to the playback clock). LivePlayer samples
 it and the playback clock once a second. After the existing eight-second live stall threshold, a
-clock-moving/picture-stopped session gets one `refreshView()` (a fresh layout in the same place,
-with the same player, media, relay and audio). An absent clock or a persistent second freeze uses
+clock-moving/picture-stopped session gets one `refreshView()`: the video track is turned off and
+on again, restarting only the video decoder and output (same surface, player, media, relay and
+audio). Swapping the surface in place raced the old surface's teardown on the emulator. An absent clock or a persistent second freeze uses
 the existing bounded source retry/failure path. Paused and hidden playback are excluded.
 Troubleshooting shows fixed recovery descriptions and counts, with no URLs or tokens.
 

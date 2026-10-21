@@ -28,12 +28,12 @@ final class LiveVideoOutput {
     private VLCVideoLayout layout;
     private FrameLayout holder;
     private boolean closed;
-    /** Moves between layouts (guide and full screen, or a refresh), for tests and diagnostics. */
+    /** Moves between layouts (guide and full screen), for tests and diagnostics. */
     volatile int handoffs;
+    /** Video restarts by the freeze watchdog (refreshView), for tests and diagnostics. */
+    volatile int repairs;
     /** How long the last move took to show a new picture, or -1 while waiting. */
     volatile long lastHandoffGapMs = -1;
-    /** Counts attaches, so a deferred attach does not run after a newer move. */
-    private int attachments;
     private long transferStarted;
     private long transferPictures;
     /** VLC's count restarts with each stream (a source switch); these keep ours rising. */
@@ -45,11 +45,7 @@ final class LiveVideoOutput {
     }
 
     void show(FrameLayout destination) {
-        show(destination, false);
-    }
-
-    private void show(FrameLayout destination, boolean refresh) {
-        if (closed || (holder == destination && !refresh)) return;
+        if (closed || holder == destination) return;
         if (layout != null) {
             // Only the picture's surface is released; media, network and audio are untouched.
             player.detachViews();
@@ -64,18 +60,6 @@ final class LiveVideoOutput {
         }
         holder = destination;
         destination.removeAllViews();
-        int ticket = ++attachments;
-        if (refresh) {
-            // In the same place, attach once the old surface has gone (next main-loop turn);
-            // attaching straight away let the old surface's teardown race the new one (CI).
-            layout = null;
-            destination.post(() -> {
-                if (!closed && ticket == attachments && holder == destination) attach(destination);
-            });
-        } else attach(destination);
-    }
-
-    private void attach(FrameLayout destination) {
         layout = new VLCVideoLayout(destination.getContext());
         destination.addView(layout, 0, new FrameLayout.LayoutParams(-1, -1));
         // As VlcPlaybackActivity attaches films: no subtitle surface, no TextureView.
@@ -111,10 +95,19 @@ final class LiveVideoOutput {
         }
     }
 
-    /** Attach the picture to a fresh surface in the same place, as a guide/full-screen move does. */
+    /** The freeze watchdog's repair: restart the picture without touching the stream or sound. */
     boolean refreshView() {
         if (closed || holder == null || !isShown()) return false;
-        show(holder, true);
+        int track = player.getVideoTrack();
+        if (track < 0) return false;
+        // Restart only the video decoder and output, keeping the surface, the media, the
+        // network and the sound. Swapping the surface in place raced the old surface's teardown
+        // and often left no picture (CI, 21 October 2026).
+        repairs++;
+        player.setVideoTrack(-1);
+        holder.post(() -> {
+            if (!closed) player.setVideoTrack(track);
+        });
         return true;
     }
 

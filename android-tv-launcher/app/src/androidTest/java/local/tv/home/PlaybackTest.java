@@ -898,7 +898,7 @@ public class PlaybackTest {
         org.videolan.libvlc.MediaPlayer samePlayer = player();
         LiveVideoOutput output = LivePlayer.output();
         int opened = LivePlayer.opened;
-        int moves = output.handoffs;
+        int repairs = output.repairs;
         int audioTrack = samePlayer.getAudioTrack();
         long audioBefore = audioBuffers(samePlayer);
         // The freeze watchdog's repair: give the picture a fresh surface in the same place.
@@ -907,7 +907,7 @@ public class PlaybackTest {
         assertTrue("The picture was refreshed", refreshed[0]);
         long[] after = { 0 };
         instrumentation.runOnMainSync(() -> after[0] = output.pictures());
-        await(() -> output.handoffs > moves && output.pictures() > after[0] + 3, 6000);
+        await(() -> output.repairs > repairs && output.pictures() > after[0] + 3, 6000);
         assertSame(samePlayer, LivePlayer.player());
         assertSame(output, LivePlayer.output());
         assertEquals("No source reconnection", opened, LivePlayer.opened);
