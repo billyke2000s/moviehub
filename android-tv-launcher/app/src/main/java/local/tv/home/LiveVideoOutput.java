@@ -50,9 +50,13 @@ final class LiveVideoOutput {
     private FrameLayout pendingDestination;
     /** The video track switched off for a move or repair, or NO_TRACK when none is. */
     private int pendingTrack = NO_TRACK;
+    /** The video track waiting for a new surface to be ready, or NO_TRACK. */
+    private int waitingTrack = NO_TRACK;
     private static final int NO_TRACK = -2;
     /** If VLC does not report its video output closed, carry on after this long. */
     private static final long CLOSE_WAIT_MS = 600;
+    /** If the new surface does not report a size, switch the picture on after this long. */
+    private static final long SURFACE_WAIT_MS = 3000;
     private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
     private final Runnable closeTimeout = this::finishMove;
 
@@ -81,7 +85,11 @@ final class LiveVideoOutput {
      * SIGSEGV) or left decoding stopped in CI (21 October 2026). Media, network and sound carry on.
      */
     private void closeVideoThen() {
-        if (pendingTrack == NO_TRACK) pendingTrack = player.getVideoTrack();
+        if (pendingTrack == NO_TRACK) {
+            // A track still waiting for the last move's surface is the one to restore.
+            pendingTrack = waitingTrack != NO_TRACK ? waitingTrack : player.getVideoTrack();
+            waitingTrack = NO_TRACK;
+        }
         main.removeCallbacks(closeTimeout);
         if (pendingTrack >= 0 && vouts > 0) {
             player.setVideoTrack(-1);
@@ -94,6 +102,7 @@ final class LiveVideoOutput {
      * switching the old stream's video track back on: VLC picks the new stream's own tracks.
      */
     void streamChanging() {
+        waitingTrack = NO_TRACK;
         if (pendingTrack == NO_TRACK) return;
         pendingTrack = -1;
         finishMove();
@@ -125,7 +134,59 @@ final class LiveVideoOutput {
         }
         int track = pendingTrack;
         pendingTrack = NO_TRACK;
-        if (track >= 0) player.setVideoTrack(track);
+        if (track >= 0) whenSurfaceReady(track);
+    }
+
+    /**
+     * Switches the video track back on once the layout's surface exists and has a size. Right
+     * after a move into a window that is still opening it does not yet; switching on then let VLC
+     * decode one frame and stall (CI, 21 October 2026). Falls back after SURFACE_WAIT_MS.
+     */
+    private void whenSurfaceReady(int track) {
+        VLCVideoLayout target = layout;
+        SurfaceView surface = surfaceView();
+        boolean[] done = { false };
+        waitingTrack = track;
+        Runnable enable = () -> {
+            if (done[0] || closed || layout != target || waitingTrack != track) return;
+            done[0] = true;
+            waitingTrack = NO_TRACK;
+            player.setVideoTrack(track);
+        };
+        if (surface == null) {
+            enable.run();
+            return;
+        }
+        android.view.SurfaceHolder holder = surface.getHolder();
+        android.graphics.Rect frame = holder.getSurfaceFrame();
+        if (holder.getSurface().isValid() && frame.width() > 0 && frame.height() > 0) {
+            enable.run();
+            return;
+        }
+        android.view.SurfaceHolder.Callback ready = new android.view.SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(android.view.SurfaceHolder created) {}
+
+            @Override
+            public void surfaceChanged(
+                android.view.SurfaceHolder changed,
+                int format,
+                int width,
+                int height
+            ) {
+                if (width <= 0 || height <= 0) return;
+                changed.removeCallback(this);
+                main.post(enable);
+            }
+
+            @Override
+            public void surfaceDestroyed(android.view.SurfaceHolder destroyed) {}
+        };
+        holder.addCallback(ready);
+        main.postDelayed(() -> {
+            holder.removeCallback(ready);
+            enable.run();
+        }, SURFACE_WAIT_MS);
     }
 
     private void attach(FrameLayout destination) {
@@ -167,7 +228,9 @@ final class LiveVideoOutput {
 
     /** The freeze watchdog's repair: restart the picture without touching the stream or sound. */
     boolean refreshView() {
-        if (closed || holder == null || !isShown() || pendingTrack != NO_TRACK) return false;
+        if (
+            closed || holder == null || !isShown() || pendingTrack != NO_TRACK || waitingTrack != NO_TRACK
+        ) return false;
         if (player.getVideoTrack() < 0) return false;
         // Restart only the video decoder and output on the same surface (no destination), the
         // same off-wait-on sequence as a move. Media, network and sound are untouched.
