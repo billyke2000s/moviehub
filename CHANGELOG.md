@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.41
+
+- Live TV plays through Android's standard video surface: smoother full-screen video, and the picture no longer stops while the sound carries on. Moving between the guide's mini picture and full screen keeps the stream playing (a brief blink is normal).
+- Sports streams from FreeShot, DaddyLive and ZLive buffer further ahead, and a slow provider gets one retry, so fewer short pauses.
+- On first start, Pluto TV and the free channel lists load before the optional providers, so most channels appear much sooner.
+- The live banner's Audio & subtitles, Source, Information and Options are buttons: tap them, or press BACK and use ◀ ▶ and SELECT on remotes without coloured buttons. Auto mode names the provider playing.
+
 ## Unreleased — free channels before providers
 
 - Import native Pluto and the free lists before FreeLiveSports and the optional providers. With every provider switched on, the free lists (most channels) previously waited until all sixteen providers had finished, each allowed up to four minutes. Numbering and preferred copies are unchanged because they follow `ChannelDatabase.ORDER`, not import order. Not measured on the TV box.
