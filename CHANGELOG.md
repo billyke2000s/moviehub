@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — smoother relayed sports streams
+
+- Relayed provider streams (FreeShot, DaddyLive, ZLive) buffer 4 s ahead instead of the shared 1.5 s Live TV buffer; other channels keep the faster start.
+- The provider relay keeps upstream connections open for reuse after a complete response, runs four workers instead of two, and retries a provider that does not answer in time once before the player sees an error.
+- Prompted by the owner's phone diagnostics (six short buffering pauses and relay timeouts in one session). Not yet measured on a device after the change.
+
 ## Unreleased — early live video freeze investigation
 
 - Count rendered texture-buffer updates even when presentation timestamps repeat or reset; clear handoff covers from buffer callbacks.
