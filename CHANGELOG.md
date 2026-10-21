@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased — still picture over the move
+
+- Moving between the guide's mini picture and full screen holds the last picture and fades it out when live video returns, instead of showing black for a second or two while the decoder waits for the next keyframe (owner, 21 October 2026, on 0.41). Best effort: where Android cannot copy the video surface (as on the CI emulator), the move still shows black. Not yet checked on a device.
+
 ## Unreleased — live TV on VLC's standard SurfaceView
 
 - Live TV now draws through VLC's `VLCVideoLayout` (SurfaceView), as the film player already did, instead of a shared SurfaceTexture/TextureView. Pictures go from the hardware decoder to the screen without waiting for the app's main thread, which the owner's full-screen lag and still-picture-with-sound reports pointed at (21 October 2026).

@@ -1,10 +1,13 @@
 package local.tv.home;
 
+import android.graphics.Bitmap;
 import android.os.SystemClock;
+import android.view.PixelCopy;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import org.videolan.libvlc.MediaPlayer;
 import org.videolan.libvlc.interfaces.IMedia;
 import org.videolan.libvlc.util.VLCVideoLayout;
@@ -75,7 +78,7 @@ final class LiveVideoOutput {
         lastHandoffGapMs = -1;
         transferStarted = SystemClock.elapsedRealtime();
         pendingDestination = destination;
-        closeVideoThen();
+        captureThen(this::closeVideoThen);
     }
 
     /**
@@ -103,6 +106,9 @@ final class LiveVideoOutput {
      */
     void streamChanging() {
         waitingTrack = NO_TRACK;
+        // A different stream: the held picture belongs to the old one.
+        main.removeCallbacks(coverCheck);
+        removeCover(false);
         if (pendingTrack == NO_TRACK) return;
         pendingTrack = -1;
         finishMove();
@@ -132,9 +138,11 @@ final class LiveVideoOutput {
             }
             attach(destination);
         }
+        showCover(holder);
         int track = pendingTrack;
         pendingTrack = NO_TRACK;
         if (track >= 0) whenSurfaceReady(track);
+        else removeCover(true);
     }
 
     /**
@@ -152,6 +160,7 @@ final class LiveVideoOutput {
             done[0] = true;
             waitingTrack = NO_TRACK;
             player.setVideoTrack(track);
+            watchForPicture();
         };
         if (surface == null) {
             enable.run();
@@ -197,6 +206,137 @@ final class LiveVideoOutput {
         player.attachViews(layout, null, false, false);
     }
 
+    // ---- Still picture over the move ------------------------------------------------------------
+    // After a move the decoder waits for the stream's next keyframe, so the new surface is black
+    // for a second or two. Hold the last picture there instead and fade it out when live video
+    // returns. PixelCopy cannot read some hardware decoder surfaces (it reports no data on the CI
+    // emulator); then there is no still and the move shows black as before.
+
+    private Bitmap still;
+    private ImageView cover;
+    private long coverShown, coverDecoded, coverDisplayed;
+    private static final long CAPTURE_WAIT_MS = 250,
+        COVER_MAX_MS = 5000,
+        DECODED_GRACE_MS = 1500;
+    private final Runnable coverCheck = this::checkCover;
+
+    /** Copies the picture on screen (best effort, at most CAPTURE_WAIT_MS), then runs next. */
+    private void captureThen(Runnable next) {
+        SurfaceView surface = surfaceView();
+        boolean[] ran = { false };
+        Runnable once = () -> {
+            if (ran[0]) return;
+            ran[0] = true;
+            next.run();
+        };
+        if (still != null || surface == null || !surface.getHolder().getSurface().isValid()) {
+            once.run();
+            return;
+        }
+        int width = Math.min(960, Math.max(1, surface.getWidth()));
+        int height = Math.max(
+            1,
+            (width * Math.max(1, surface.getHeight())) / Math.max(1, surface.getWidth())
+        );
+        Bitmap copy = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        try {
+            PixelCopy.request(
+                surface,
+                copy,
+                result -> {
+                    if (result == PixelCopy.SUCCESS && !closed && !ran[0]) {
+                        still = copy;
+                        // Cover the old place too while VLC closes its video output.
+                        if (layout != null && layout.getParent() instanceof FrameLayout) showCover(
+                            (FrameLayout) layout.getParent()
+                        );
+                    } else if (still != copy) copy.recycle();
+                    once.run();
+                },
+                main
+            );
+        } catch (RuntimeException e) {
+            copy.recycle();
+            once.run();
+            return;
+        }
+        main.postDelayed(once, CAPTURE_WAIT_MS);
+    }
+
+    private void showCover(FrameLayout host) {
+        if (still == null || host == null || closed) return;
+        if (cover != null && cover.getParent() instanceof ViewGroup) (
+            (ViewGroup) cover.getParent()
+        ).removeView(cover);
+        cover = new ImageView(host.getContext());
+        // Letterboxed like the video itself, not stretched to the box.
+        cover.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        cover.setImageBitmap(still);
+        host.addView(cover, new FrameLayout.LayoutParams(-1, -1));
+        coverShown = SystemClock.elapsedRealtime();
+    }
+
+    /** The track is back on: remove the still once a new picture is shown (or after a while). */
+    private void watchForPicture() {
+        if (still == null) return;
+        long[] counts = counts();
+        coverDecoded = counts[0];
+        coverDisplayed = counts[1];
+        coverShown = SystemClock.elapsedRealtime();
+        main.removeCallbacks(coverCheck);
+        main.postDelayed(coverCheck, 100);
+    }
+
+    private void checkCover() {
+        if (still == null || closed) return;
+        long[] counts = counts();
+        long waited = SystemClock.elapsedRealtime() - coverShown;
+        boolean displayed = counts[1] > coverDisplayed;
+        // Decoded pictures are shown slightly later than they are decoded; allow for that when
+        // VLC's displayed count does not move (hardware decoding).
+        boolean decodedLongEnough = counts[0] > coverDecoded && waited >= DECODED_GRACE_MS;
+        if (displayed || decodedLongEnough || waited >= COVER_MAX_MS) removeCover(true);
+        else main.postDelayed(coverCheck, 100);
+    }
+
+    private void removeCover(boolean fade) {
+        ImageView gone = cover;
+        Bitmap image = still;
+        cover = null;
+        still = null;
+        if (gone == null) {
+            if (image != null) image.recycle();
+            return;
+        }
+        Runnable drop = () -> {
+            if (gone.getParent() instanceof ViewGroup) ((ViewGroup) gone.getParent()).removeView(gone);
+            gone.setImageDrawable(null);
+        };
+        if (fade) gone.animate().alpha(0f).setDuration(200).withEndAction(drop).start();
+        else drop.run();
+    }
+
+    /** VLC's raw decoded and displayed counts for the current stream ({-1, -1} if unknown). */
+    private long[] counts() {
+        IMedia media = player.getMedia();
+        if (media == null) return new long[] { -1, -1 };
+        try {
+            IMedia.Stats stats = media.getStats();
+            return stats == null
+                ? new long[] { -1, -1 }
+                : new long[] { stats.decodedVideo, stats.displayedPictures };
+        } catch (RuntimeException e) {
+            return new long[] { -1, -1 };
+        } finally {
+            media.release();
+        }
+    }
+
+    /** A still picture is covering a move, for tests. */
+    boolean showingCover() {
+        return cover != null;
+    }
+
     /**
      * Video frames decoded in this session, across source switches, or -1 while the current
      * stream has decoded none yet. A stopped picture over playing sound shows as no change.
@@ -235,7 +375,7 @@ final class LiveVideoOutput {
         // Restart only the video decoder and output on the same surface (no destination), the
         // same off-wait-on sequence as a move. Media, network and sound are untouched.
         repairs++;
-        closeVideoThen();
+        captureThen(this::closeVideoThen);
         return true;
     }
 
@@ -263,8 +403,10 @@ final class LiveVideoOutput {
         if (closed) return;
         closed = true;
         main.removeCallbacks(closeTimeout);
+        main.removeCallbacks(coverCheck);
         pendingDestination = null;
         pendingTrack = NO_TRACK;
+        removeCover(false);
         if (layout != null) player.detachViews();
         if (layout != null && layout.getParent() instanceof ViewGroup) {
             ((ViewGroup) layout.getParent()).removeView(layout);
