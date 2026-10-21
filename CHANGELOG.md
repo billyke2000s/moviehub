@@ -19,6 +19,10 @@
 - When the live picture stops while the sound plays on, refresh the video view after 2.5 s (once per freeze), the same move as going to the guide's mini picture and back, which the owner found fixed it at once. Previously this waited 8 s and happened once per channel. A freeze the refresh does not clear still reaches the existing 8 s path (refresh, then a backup source).
 - Troubleshooting → Playback counts these as "Still picture refreshed". The underlying cause of the freeze is not yet known.
 
+## Unreleased — live picture rate meter
+
+- Troubleshooting → Playback shows, for the full-screen player and the guide's mini picture separately, frames drawn on screen per second, frames VLC showed per second, frames VLC dropped, screen frames slower than 50 ms, and the picture size. Added to find why full-screen live video lagged while the mini picture of the same stream did not (owner, 21 October 2026). Diagnostic only; no playback change.
+
 ## Unreleased — early live video freeze investigation
 
 - Count rendered texture-buffer updates even when presentation timestamps repeat or reset; clear handoff covers from buffer callbacks.

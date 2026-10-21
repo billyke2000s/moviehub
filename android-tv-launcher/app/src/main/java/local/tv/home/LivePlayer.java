@@ -59,10 +59,92 @@ final class LivePlayer {
     private static int viewRepairs;
     private static String lastVideoRecovery = "None";
 
+    // ---- Picture rate meter ---------------------------------------------------------------------
+    // The owner saw full-screen live video lag while the same stream played smoothly in the
+    // guide's mini picture (21 October 2026). These figures, taken once a second, show where
+    // pictures go missing: frames VLC shows versus frames the screen actually draws.
+
+    /** The latest figures for the full-screen player and for the guide's mini picture. */
+    static volatile String fullScreenRate = "Not measured yet",
+        guideRate = "Not measured yet";
+    private static Object sampleOwner;
+    private static long sampleAt = -1,
+        sampleFrames,
+        sampleShown,
+        sampleLost,
+        slowFrames,
+        lastFrameNanos;
+    private static boolean frameWatch;
+    /** Counts screen frames that took over 50 ms on the main thread (visible stutter). */
+    private static final android.view.Choreographer.FrameCallback frameTimer =
+        new android.view.Choreographer.FrameCallback() {
+            @Override
+            public void doFrame(long nanos) {
+                if (lastFrameNanos > 0 && nanos - lastFrameNanos > 50_000_000L) slowFrames++;
+                lastFrameNanos = nanos;
+                if (player == null || !player.isPlaying()) frameWatch = false;
+                if (frameWatch) android.view.Choreographer.getInstance().postFrameCallback(this);
+            }
+        };
+
+    private static void samplePicture(long now) {
+        if (player == null || output == null || !player.isPlaying() || owner == null) {
+            sampleAt = -1;
+            frameWatch = false;
+            return;
+        }
+        if (!frameWatch) {
+            frameWatch = true;
+            lastFrameNanos = 0;
+            android.view.Choreographer.getInstance().postFrameCallback(frameTimer);
+        }
+        org.videolan.libvlc.interfaces.IMedia media = player.getMedia();
+        if (media == null) return;
+        org.videolan.libvlc.interfaces.IMedia.Stats stats;
+        try {
+            stats = media.getStats();
+        } catch (RuntimeException e) {
+            stats = null;
+        } finally {
+            media.release();
+        }
+        if (stats == null) return;
+        if (sampleAt < 0 || sampleOwner != owner || now - sampleAt > 5000) {
+            sampleOwner = owner;
+            sampleAt = now;
+            sampleFrames = output.frames;
+            sampleShown = stats.displayedPictures;
+            sampleLost = stats.lostPictures;
+            slowFrames = 0;
+            return;
+        }
+        double seconds = (now - sampleAt) / 1000.0;
+        if (seconds < 0.9) return;
+        android.view.TextureView view = output.view();
+        String text = String.format(
+            java.util.Locale.ROOT,
+            "%.0f fps drawn on screen · %.0f fps from VLC · %d dropped by VLC · %d slow screen frames · %dx%d",
+            (output.frames - sampleFrames) / seconds,
+            (stats.displayedPictures - sampleShown) / seconds,
+            Math.max(0, stats.lostPictures - sampleLost),
+            slowFrames,
+            view == null ? 0 : view.getWidth(),
+            view == null ? 0 : view.getHeight()
+        );
+        if (owner instanceof GuidePicture) guideRate = text;
+        else fullScreenRate = text;
+        sampleAt = now;
+        sampleFrames = output.frames;
+        sampleShown = stats.displayedPictures;
+        sampleLost = stats.lostPictures;
+        slowFrames = 0;
+    }
+
     private static final Runnable watchProgress = new Runnable() {
         @Override
         public void run() {
             if (player == null) return;
+            samplePicture(android.os.SystemClock.elapsedRealtime());
             int ticket = generation;
             boolean watching =
                 (EngineSources.locator(url) || PlutoSource.nativeUrl(url)) &&
