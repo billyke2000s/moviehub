@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased — free channels before providers
+
+- Import native Pluto and the free lists before FreeLiveSports and the optional providers. With every provider switched on, the free lists (most channels) previously waited until all sixteen providers had finished, each allowed up to four minutes. Numbering and preferred copies are unchanged because they follow `ChannelDatabase.ORDER`, not import order. Not measured on the TV box.
+
 ## Unreleased — early live video freeze investigation
 
 - Count rendered texture-buffer updates even when presentation timestamps repeat or reset; clear handoff covers from buffer callbacks.
