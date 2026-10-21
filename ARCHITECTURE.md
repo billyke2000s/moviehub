@@ -214,6 +214,12 @@ the player, its media, the network connection (and relay) and the audio carry on
 is never reopened or re-resolved. The picture may blink while the new surface takes over; the
 owner accepted that on 21 October 2026.
 
+After a move the decoder waits for the stream's next keyframe, so the new surface would be black
+for a second or two. LiveVideoOutput first copies the picture on screen (PixelCopy, at most
+250 ms), holds it over the old and new places as a letterboxed still, and fades it out once VLC
+shows a new picture (or 1.5 s after decoding resumes, at most 5 s). PixelCopy cannot read every
+hardware decoder surface (it reports no data on the CI emulator); then the move shows black.
+
 This replaced (21 October 2026) a session-long SurfaceTexture shown through TextureViews with
 last-frame covers. That gave blink-free moves, but every frame waited for the main thread to
 redraw: the owner saw full-screen live video lag, and stop while the sound played on, while the

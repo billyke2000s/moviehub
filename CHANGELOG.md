@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased — still picture over the move
+
+- Moving between the guide's mini picture and full screen holds the last picture and fades it out when live video returns, instead of showing black for a second or two while the decoder waits for the next keyframe (owner, 21 October 2026, on 0.41). Best effort: where Android cannot copy the video surface (as on the CI emulator), the move still shows black. Not yet checked on a device.
+
 ## 0.41
 
 - Live TV plays through Android's standard video surface: aimed at smoother full-screen video and at the picture stopping while the sound carried on. Moving between the guide's mini picture and full screen keeps the stream playing (a brief blink is normal).
