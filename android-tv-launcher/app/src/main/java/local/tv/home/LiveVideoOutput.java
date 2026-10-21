@@ -34,6 +34,9 @@ final class LiveVideoOutput {
     volatile long lastHandoffGapMs = -1;
     private long transferStarted;
     private long transferPictures;
+    /** VLC's count restarts with each stream (a source switch); these keep ours rising. */
+    private long countedBefore;
+    private long lastCount;
 
     LiveVideoOutput(MediaPlayer player) {
         this.player = player;
@@ -66,8 +69,8 @@ final class LiveVideoOutput {
     }
 
     /**
-     * Pictures VLC has put on screen since this stream opened, or -1 when it cannot say. Rises
-     * while the picture moves, so a still picture over playing sound shows as no change here.
+     * Pictures VLC has put on screen in this session, across source switches, or -1 while the
+     * current stream has shown none yet. A still picture over playing sound shows as no change.
      */
     long pictures() {
         IMedia media = player.getMedia();
@@ -76,7 +79,11 @@ final class LiveVideoOutput {
             IMedia.Stats stats = media.getStats();
             // Zero until the first picture; treat that as unknown so the stall check falls back
             // to the playback clock instead of reading "no pictures" as a frozen picture.
-            long shown = stats == null || stats.displayedPictures <= 0 ? -1 : stats.displayedPictures;
+            long count = stats == null || stats.displayedPictures <= 0 ? -1 : stats.displayedPictures;
+            if (count < 0) return -1;
+            if (count < lastCount) countedBefore += lastCount;
+            lastCount = count;
+            long shown = countedBefore + count;
             if (shown >= 0 && transferStarted != 0 && shown > transferPictures) {
                 lastHandoffGapMs = SystemClock.elapsedRealtime() - transferStarted;
                 transferStarted = 0;
