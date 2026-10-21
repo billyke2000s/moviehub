@@ -62,8 +62,12 @@ final class LiveHandoffEvidence {
             box[3] = surface.getHeight();
         });
         assertTrue("The video surface has a size", box[2] > 0 && box[3] > 0);
-        Bitmap screen = instrumentation.getUiAutomation().takeScreenshot();
-        assertNotNull("Screenshot taken", screen);
+        Bitmap shot = instrumentation.getUiAutomation().takeScreenshot();
+        assertNotNull("Screenshot taken", shot);
+        // Some Android versions return a hardware bitmap, whose pixels cannot be read directly.
+        Bitmap screen =
+            shot.getConfig() == Bitmap.Config.HARDWARE ? shot.copy(Bitmap.Config.ARGB_8888, false) : shot;
+        if (screen != shot) shot.recycle();
         try {
             int brightest = 0;
             int darkest = 255;
