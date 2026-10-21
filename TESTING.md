@@ -202,7 +202,7 @@ PlaybackTest repeats guide → full screen → guide twice for both direct and r
 streams. LiveHandoffEvidence checks that the same `LiveVideoOutput` and player survive, that
 VLC's displayed-picture count rises again in the destination, that the picture returns within
 2 seconds of the move (`HANDOFF_LIMIT_MS`, logged as MovieHubHandoff), and that the SurfaceView's
-actual pixels (read with PixelCopy) are not blank. Stream-open and resolver counters assert no
+actual pixels (sampled from a screenshot where the video surface is; PixelCopy cannot read a hardware decoder's surface) are not blank. Stream-open and resolver counters assert no
 restart or re-resolution. This verifies fixtures on the API 28 emulator, not the TV.
 
 After a move, VLC's hardware decoder shows nothing until the stream's next keyframe, so the
