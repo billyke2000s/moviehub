@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — live TV on VLC's standard SurfaceView
+
+- Live TV now draws through VLC's `VLCVideoLayout` (SurfaceView), as the film player already did, instead of a shared SurfaceTexture/TextureView. Pictures go from the hardware decoder to the screen without waiting for the app's main thread, which the owner's full-screen lag and still-picture-with-sound reports pointed at (21 October 2026).
+- Moving between the guide's mini picture and the full screen still keeps one player, stream, relay and sound (no reconnect or re-resolve); the picture may blink while the new surface takes over.
+- Freeze detection counts VLC's displayed pictures. Tests rewritten accordingly; the EGL/SurfaceTexture test was removed with that design. Not yet checked on a phone or the TV box.
+
 ## Unreleased — early live video freeze investigation
 
 - Count rendered texture-buffer updates even when presentation timestamps repeat or reset; clear handoff covers from buffer callbacks.

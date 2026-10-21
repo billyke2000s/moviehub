@@ -68,7 +68,7 @@ final class LivePlayer {
             observeProgress(
                 android.os.SystemClock.elapsedRealtime(),
                 player.getTime(),
-                output == null ? -1 : output.frames,
+                output == null ? -1 : output.pictures(),
                 watching
             );
             if (player != null && ticket == generation) main.postDelayed(this, 1000);

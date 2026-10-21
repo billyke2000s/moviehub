@@ -1,57 +1,42 @@
 package local.tv.home;
 
-import android.graphics.Bitmap;
-import android.graphics.SurfaceTexture;
 import android.os.SystemClock;
-import android.view.Surface;
-import android.view.TextureView;
+import android.view.SurfaceView;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import org.videolan.libvlc.MediaPlayer;
-import org.videolan.libvlc.interfaces.IVLCVout;
+import org.videolan.libvlc.interfaces.IMedia;
+import org.videolan.libvlc.util.VLCVideoLayout;
 
 /**
- * One decoder output for the whole live session. Activities own only its presentation.
- * Retain the SurfaceTexture when a TextureView leaves its window, then give it to the
- * destination view. LibVLC never loses its Surface during a guide/full-screen handoff.
- * Main thread only.
+ * Where the one live player draws its picture: VLC's standard video layout (a SurfaceView), the
+ * same way the film player and most Android video apps draw. The hardware decoder hands pictures
+ * to the screen directly, so the picture no longer depends on the app's main thread redrawing.
+ *
+ * <p>Moving between the guide's mini picture and the full screen detaches the picture from one
+ * layout and attaches it to the next. Only the screen surface changes: the player, its media,
+ * the network connection and the sound carry on, so the link is never reopened. The picture may
+ * blink while the new surface takes over (accepted by the owner, 21 October 2026).
+ *
+ * <p>This replaced a shared TextureView/SurfaceTexture, whose picture could stutter or stop while
+ * the sound played on, because each frame waited for the main thread to redraw. Main thread only.
  */
 final class LiveVideoOutput {
 
-    final SurfaceTexture texture = new SurfaceTexture(false);
-    final Surface surface = new Surface(texture);
-    private final IVLCVout vout;
-    private TextureView view;
+    private final MediaPlayer player;
+    private VLCVideoLayout layout;
     private FrameLayout holder;
-    private ImageView preview;
-    private Bitmap still;
     private boolean closed;
-    private long transferStarted;
-    /** Actual texture updates, rather than player-clock or Playing events. */
-    volatile long frames;
-    volatile long lastHandoffGapMs;
+    /** Moves between layouts (guide and full screen, or a refresh), for tests and diagnostics. */
     volatile int handoffs;
-    volatile int coveredHandoffs;
-    volatile int surfaceDestructions;
+    /** How long the last move took to show a new picture, or -1 while waiting. */
+    volatile long lastHandoffGapMs = -1;
+    private long transferStarted;
+    private long transferPictures;
 
     LiveVideoOutput(MediaPlayer player) {
-        vout = player.getVLCVout();
-        vout.addCallback(
-            new IVLCVout.Callback() {
-                @Override
-                public void onSurfacesCreated(IVLCVout output) {}
-
-                @Override
-                public void onSurfacesDestroyed(IVLCVout output) {
-                    surfaceDestructions++;
-                }
-            }
-        );
-        vout.setVideoSurface(surface, null);
-        // With no layout listener LibVLC composites video, aspect ratio and subtitles through
-        // its GLES output. No Activity-owned SurfaceView or subtitle surface can disappear.
-        vout.attachViews();
+        this.player = player;
     }
 
     void show(FrameLayout destination) {
@@ -60,138 +45,82 @@ final class LiveVideoOutput {
 
     private void show(FrameLayout destination, boolean refresh) {
         if (closed || (holder == destination && !refresh)) return;
-        Bitmap nextStill = still;
-        if (nextStill == null && view != null && view.isAvailable() && frames > 0) {
-            int width = Math.min(960, Math.max(1, view.getWidth()));
-            int height = Math.max(1, (width * view.getHeight()) / Math.max(1, view.getWidth()));
-            nextStill = view.getBitmap(width, height);
-        }
-        if (view != null) {
-            // The outgoing window can remain visible until the destination's first draw.
-            // Keep its last frame too, so removing the GL consumer cannot expose black.
-            if (nextStill != null && preview == null) cover(holder, nextStill);
-            transferStarted = SystemClock.elapsedRealtime();
+        if (layout != null) {
+            // Only the picture's surface is released; media, network and audio are untouched.
+            player.detachViews();
+            if (layout.getParent() instanceof ViewGroup) ((ViewGroup) layout.getParent()).removeView(layout);
             handoffs++;
-            // Removal synchronously detaches the old TextureView's GL consumer. Its callback
-            // returns false: Android must not release the retained producer's BufferQueue.
-            ((ViewGroup) view.getParent()).removeView(view);
+            transferStarted = SystemClock.elapsedRealtime();
+            transferPictures = pictures();
+            lastHandoffGapMs = -1;
         }
-        // The outgoing cover belongs to its old host until that host is discarded. Do not
-        // retain that Activity or recycle the bitmap shared with the incoming cover.
-        preview = null;
-        still = null;
         holder = destination;
         destination.removeAllViews();
-        view = new TextureView(destination.getContext());
-        TextureView current = view;
-        current.setSurfaceTexture(texture);
-        current.setSurfaceTextureListener(
-            new TextureView.SurfaceTextureListener() {
-                @Override
-                public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height) {
-                    resize(current, width, height);
-                }
+        layout = new VLCVideoLayout(destination.getContext());
+        destination.addView(layout, 0, new FrameLayout.LayoutParams(-1, -1));
+        // As VlcPlaybackActivity attaches films: no subtitle surface, no TextureView.
+        player.attachViews(layout, null, false, false);
+    }
 
-                @Override
-                public void onSurfaceTextureSizeChanged(
-                    SurfaceTexture surfaceTexture,
-                    int width,
-                    int height
-                ) {
-                    resize(current, width, height);
-                }
-
-                @Override
-                public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
-                }
-
-                @Override
-                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-                    if (closed || view != current) return;
-                    // A rendered-buffer callback is authoritative. EGL presentation timestamps
-                    // are source-defined and may repeat or reset across live discontinuities.
-                    frames++;
-                    if (transferStarted != 0) {
-                        lastHandoffGapMs = SystemClock.elapsedRealtime() - transferStarted;
-                        transferStarted = 0;
-                    }
-                    // Texture updates are delivered during drawing. Remove the sibling cover
-                    // after this traversal, rather than changing the child list mid-draw.
-                    if (preview != null) current.post(() -> {
-                        if (!closed && view == current) clearPreview();
-                    });
-                }
+    /**
+     * Pictures VLC has put on screen since this stream opened, or -1 when it cannot say. Rises
+     * while the picture moves, so a still picture over playing sound shows as no change here.
+     */
+    long pictures() {
+        IMedia media = player.getMedia();
+        if (media == null) return -1;
+        try {
+            IMedia.Stats stats = media.getStats();
+            // Zero until the first picture; treat that as unknown so the stall check falls back
+            // to the playback clock instead of reading "no pictures" as a frozen picture.
+            long shown = stats == null || stats.displayedPictures <= 0 ? -1 : stats.displayedPictures;
+            if (shown >= 0 && transferStarted != 0 && shown > transferPictures) {
+                lastHandoffGapMs = SystemClock.elapsedRealtime() - transferStarted;
+                transferStarted = 0;
             }
-        );
-        destination.addView(current, 0, new FrameLayout.LayoutParams(-1, -1));
-        if (nextStill != null) {
-            coveredHandoffs++;
-            still = nextStill;
-            preview = cover(destination, still);
+            return shown;
+        } catch (RuntimeException e) {
+            return -1;
+        } finally {
+            media.release();
         }
-        // setSurfaceTexture does not send onSurfaceTextureAvailable. Explicitly resize after
-        // layout, including when reusing the same surface in a newly created Activity.
-        current.post(() -> resize(current, current.getWidth(), current.getHeight()));
     }
 
-    private static ImageView cover(FrameLayout host, Bitmap image) {
-        ImageView cover = new ImageView(host.getContext());
-        cover.setScaleType(ImageView.ScaleType.FIT_XY);
-        cover.setImageBitmap(image);
-        host.addView(cover, new FrameLayout.LayoutParams(-1, -1));
-        return cover;
-    }
-
-    private void resize(TextureView current, int width, int height) {
-        if (closed || view != current || width <= 0 || height <= 0) return;
-        vout.setWindowSize(width, height);
-    }
-
-    /** Recreate only the GL consumer, as a guide/full-screen move does. The producer Surface,
-     * decoder, media, network requests and audio output remain untouched. */
+    /** Attach the picture to a fresh surface in the same place, as a guide/full-screen move does. */
     boolean refreshView() {
         if (closed || holder == null || !isShown()) return false;
-        FrameLayout destination = holder;
-        show(destination, true);
+        show(holder, true);
         return true;
     }
 
     boolean isShown() {
-        return view != null && view.isShown();
+        return layout != null && layout.isShown();
     }
 
-    TextureView view() {
-        return view;
+    /** The layout's video surface (for tests that read its picture), or null. */
+    SurfaceView surfaceView() {
+        return layout == null ? null : findSurface(layout);
     }
 
-    boolean showingPreview() {
-        return preview != null;
-    }
-
-    private void clearPreview() {
-        if (preview != null) {
-            preview.setImageDrawable(null);
-            if (preview.getParent() instanceof ViewGroup) {
-                ((ViewGroup) preview.getParent()).removeView(preview);
-            }
-            preview = null;
+    private static SurfaceView findSurface(View view) {
+        if (view instanceof SurfaceView) return (SurfaceView) view;
+        if (!(view instanceof ViewGroup)) return null;
+        ViewGroup group = (ViewGroup) view;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            SurfaceView found = findSurface(group.getChildAt(i));
+            if (found != null) return found;
         }
-        // The renderer may still hold the previous display list for this frame. Drop our
-        // reference instead of recycling a bitmap that could still be drawn by RenderThread.
-        still = null;
+        return null;
     }
 
     void close() {
+        if (closed) return;
         closed = true;
-        vout.detachViews();
-        if (view != null && view.getParent() instanceof ViewGroup) {
-            ((ViewGroup) view.getParent()).removeView(view);
+        player.detachViews();
+        if (layout != null && layout.getParent() instanceof ViewGroup) {
+            ((ViewGroup) layout.getParent()).removeView(layout);
         }
-        clearPreview();
-        view = null;
+        layout = null;
         holder = null;
-        surface.release();
-        texture.release();
     }
 }

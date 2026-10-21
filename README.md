@@ -131,13 +131,14 @@ Native/provider Live TV also watches playback progress: a stopped video counter 
 
 ### Live TV picture handoff
 
-The guide preview and full screen retain one decoder Surface for the live session. A retained
-last frame covers the view transfer until fresh video arrives. Device tests check fresh rendered
-frames in both directions; continuity on individual TV hardware still needs testing.
+Live TV draws through VLC's standard video layout (a SurfaceView). The guide preview and full
+screen share one player: moving between them changes only the screen surface, so the stream and
+sound carry on and the link is not reopened (the picture may blink briefly). Device tests check
+fresh, non-blank pictures in both directions; TV hardware still needs testing.
 
-Live video progress now follows TextureView buffer updates rather than assuming advancing audio
-means video is healthy. A stopped visible video consumer gets one view-only refresh before the
-existing bounded source recovery. Troubleshooting retains the last safe recovery description.
+Live video progress follows VLC's displayed-picture count rather than assuming advancing audio
+means video is healthy. A stopped picture gets one surface refresh before the existing bounded
+source recovery. Troubleshooting retains the last safe recovery description.
 
 Live TV Back now reveals the channel controls and a selectable Sources link before returning to the mini-player on the next Back. Sources defaults to Automatic; selecting a particular saved copy pins it until Automatic or another channel is selected. Source menus read saved channel metadata; stream resolution remains on demand.
 

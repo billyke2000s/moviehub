@@ -874,7 +874,7 @@ public class PlaybackTest {
     }
 
     @Test
-    public void aStoppedTextureConsumerRecoversWithoutReopeningTheStreamOrAudio() throws Exception {
+    public void aPictureRefreshKeepsTheSameStreamAndSound() throws Exception {
         instrumentation.runOnMainSync(activity::finish);
         instrumentation.waitForIdleSync();
         Context context = instrumentation.getTargetContext();
@@ -893,38 +893,30 @@ public class PlaybackTest {
                 .putExtra("id", "consumer-freeze")
                 .putExtra("title", "Consumer freeze")
         );
-        await(() -> player() != null && player().isPlaying() && LivePlayer.output().frames > 5, 30000);
+        await(() -> player() != null && player().isPlaying() && LivePlayer.output().pictures() > 5, 30000);
         org.videolan.libvlc.MediaPlayer samePlayer = player();
         LiveVideoOutput output = LivePlayer.output();
         int opened = LivePlayer.opened;
         int moves = output.handoffs;
         int audioTrack = samePlayer.getAudioTrack();
-        long[] baseline = new long[2];
-        instrumentation.runOnMainSync(() -> {
-            // Real consumer stall: remove TextureView's frame-notification listener while its
-            // producer Surface and the actual media/audio continue. No synthetic buffering event.
-            output.texture.setOnFrameAvailableListener(null);
-        });
-        SystemClock.sleep(150); // Drain a frame already queued before notifications were removed.
-        instrumentation.runOnMainSync(() -> {
-            baseline[0] = output.frames;
-            baseline[1] = samePlayer.getTime();
-        });
-        await(() -> samePlayer.getTime() > baseline[1] + 1000, 5000);
-        assertEquals("Video consumer should actually be frozen", baseline[0], output.frames);
-        await(() -> output.handoffs > moves && output.frames > baseline[0] + 3, 16000);
+        long audioBefore = audioBuffers(samePlayer);
+        // The freeze watchdog's repair: give the picture a fresh surface in the same place.
+        boolean[] refreshed = { false };
+        instrumentation.runOnMainSync(() -> refreshed[0] = output.refreshView());
+        assertTrue("The picture was refreshed", refreshed[0]);
+        long[] after = { 0 };
+        instrumentation.runOnMainSync(() -> after[0] = output.pictures());
+        await(() -> output.handoffs > moves && output.pictures() > after[0] + 3, 6000);
         assertSame(samePlayer, LivePlayer.player());
         assertSame(output, LivePlayer.output());
         assertEquals("No source reconnection", opened, LivePlayer.opened);
         assertEquals("No new provider walk", 1, resolutions.get());
         assertEquals("Audio selection survived the view repair", audioTrack, samePlayer.getAudioTrack());
         assertTrue("Audio was selected", audioTrack >= 0);
-        assertEquals("Native producer was never detached", 0, output.surfaceDestructions);
-        long audioBefore = audioBuffers(samePlayer);
         SystemClock.sleep(1500);
         assertTrue("Audio output stopped during video repair", audioBuffers(samePlayer) > audioBefore);
         assertFalse(activity.liveFailed);
-        UiEvidence.capture("live-consumer-recovered-with-audio");
+        UiEvidence.capture("live-picture-refreshed-with-audio");
     }
 
     private long audioBuffers(MediaPlayer mediaPlayer) {
@@ -968,13 +960,16 @@ public class PlaybackTest {
             );
             for (int reload = 0; reload < 3; reload++) {
                 await(
-                    () -> player() != null && player().isPlaying() && LivePlayer.output().frames > 5,
+                    () -> player() != null && player().isPlaying() && LivePlayer.output().pictures() > 5,
                     30000
                 );
                 long before = audioBuffers(player());
-                long frames = LivePlayer.output().frames;
+                long frames = LivePlayer.output().pictures();
                 SystemClock.sleep(1500);
-                assertTrue("Video stopped after reload " + reload, LivePlayer.output().frames > frames + 5);
+                assertTrue(
+                    "Video stopped after reload " + reload,
+                    LivePlayer.output().pictures() > frames + 5
+                );
                 assertTrue("Audio stopped after reload " + reload, audioBuffers(player()) > before);
                 if (reload < 2) instrumentation.runOnMainSync(activity::backToLive);
             }
