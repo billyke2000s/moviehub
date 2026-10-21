@@ -19,9 +19,10 @@ final class ProviderRelay implements AutoCloseable {
     private final PlaylistSession playlistSession;
     private final Set<HttpURLConnection> active = ConcurrentHashMap.newKeySet();
     private final Set<Socket> clients = ConcurrentHashMap.newKeySet();
+    // Four, so a slow segment download never holds up the playlist refresh behind it.
     private final ThreadPoolExecutor workers = new ThreadPoolExecutor(
-        2,
-        2,
+        4,
+        4,
         0,
         TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(4)
@@ -130,6 +131,11 @@ final class ProviderRelay implements AutoCloseable {
 
     private void serve(Socket client) {
         HttpURLConnection upstream = null;
+        // True once a response body was read to the end: the upstream connection is then left
+        // for Android to reuse instead of being closed, saving a TLS handshake per segment.
+        boolean reusable = false;
+        // A provider server that does not answer in time gets one more try before VLC is told.
+        boolean retried = false;
         try (Socket socket = client) {
             socket.setSoTimeout(10000);
             BufferedReader request = new BufferedReader(
@@ -175,7 +181,18 @@ final class ProviderRelay implements AutoCloseable {
                 // range to the PNG container, whose offsets differ from the transport stream.
                 boolean wholeEntity = playlistSession != null && "bytes=0-".equals(range);
                 if (range != null && !wholeEntity) upstream.setRequestProperty("Range", range);
-                int status = upstream.getResponseCode();
+                int status;
+                try {
+                    status = upstream.getResponseCode();
+                } catch (SocketTimeoutException e) {
+                    active.remove(upstream);
+                    upstream.disconnect();
+                    upstream = null;
+                    if (retried || closed) throw e;
+                    retried = true;
+                    hop--;
+                    continue;
+                }
                 if (
                     status == 403 &&
                     !renewed &&
@@ -276,6 +293,7 @@ final class ProviderRelay implements AutoCloseable {
                     }
                     out.flush();
                 }
+                reusable = !closed;
                 return;
             }
             throw new IOException("Stream redirect limit");
@@ -285,7 +303,7 @@ final class ProviderRelay implements AutoCloseable {
             clients.remove(client);
             if (upstream != null) {
                 active.remove(upstream);
-                upstream.disconnect();
+                if (!reusable) upstream.disconnect();
             }
         }
     }
