@@ -266,6 +266,7 @@ final class LivePlayer {
     static final int RELAYED_CACHING_MS = 4000;
 
     private static void open(String stream, String userAgent, String referer, boolean relayed) {
+        if (output != null) output.streamChanging();
         Media media = new Media(engine, Uri.parse(stream));
         media.setHWDecoderEnabled(true, false);
         if (relayed) media.addOption(":network-caching=" + RELAYED_CACHING_MS);
@@ -299,6 +300,7 @@ final class LivePlayer {
 
     private static void event(MediaPlayer.Event event) {
         if (event.type == MediaPlayer.Event.Playing) played = true;
+        if (event.type == MediaPlayer.Event.Vout && output != null) output.videoOutputs(event.getVoutCount());
         if (
             (event.type == MediaPlayer.Event.EncounteredError ||
                 event.type == MediaPlayer.Event.EndReached) &&

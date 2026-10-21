@@ -205,8 +205,11 @@ PNG transport skips byte-wise unfiltering for filter-0 rows, copies RGB payload 
 false)` exactly as the film player does. The hardware decoder hands pictures to Android's
 compositor directly, so the picture does not depend on the app's main thread redrawing.
 
-GuidePicture and VlcPlaybackActivity supply FrameLayout hosts. Moving between them calls
-`detachViews()` and attaches a new layout in the destination. Only the screen surface changes:
+GuidePicture and VlcPlaybackActivity supply FrameLayout hosts. Moving between them follows
+VLC's own Android app: the video track is switched off, LiveVideoOutput waits for VLC's Vout event
+to report no video output (at most 600 ms), then calls `detachViews()`, attaches a new layout in
+the destination and switches the track back on. Changing the surface under a running video
+output crashed VLC's window thread (AWindowHandler, SIGSEGV) or stopped decoding in CI. Only the screen surface changes:
 the player, its media, the network connection (and relay) and the audio carry on, so the stream
 is never reopened or re-resolved. The picture may blink while the new surface takes over; the
 owner accepted that on 21 October 2026.
@@ -229,8 +232,8 @@ also retains SurfaceTextures to preserve decoders across Activity recreation.
 rising across source switches; the displayed-picture count barely moves with hardware decoding;
 -1 until the first frame, so the check then falls back to the playback clock). LivePlayer samples
 it and the playback clock once a second. After the existing eight-second live stall threshold, a
-clock-moving/picture-stopped session gets one `refreshView()`: the video track is turned off and
-on again, restarting only the video decoder and output (same surface, player, media, relay and
+clock-moving/picture-stopped session gets one `refreshView()`: the same off-wait-on sequence on
+the same surface, restarting only the video decoder and output (same player, media, relay and
 audio). Swapping the surface in place raced the old surface's teardown on the emulator. An absent clock or a persistent second freeze uses
 the existing bounded source retry/failure path. Paused and hidden playback are excluded.
 Troubleshooting shows fixed recovery descriptions and counts, with no URLs or tokens.

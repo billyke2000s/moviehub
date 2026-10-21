@@ -10,8 +10,11 @@ import android.view.SurfaceView;
 /** Checks the picture on screen after a real Activity handoff, not just LibVLC's clock. */
 final class LiveHandoffEvidence {
 
-    /** The accepted blink while the picture moves to its new surface. */
-    static final long HANDOFF_LIMIT_MS = 2000;
+    /**
+     * The accepted blink while the picture moves: VLC closes its video output, the surface
+     * changes, and decoding restarts at the next keyframe (1 s apart in the fixture).
+     */
+    static final long HANDOFF_LIMIT_MS = 3000;
     private final Instrumentation instrumentation;
     private final LiveVideoOutput output;
     private long pictures;
