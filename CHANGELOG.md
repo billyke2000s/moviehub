@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased — live picture rate meter
+
+- Troubleshooting → Playback shows, for the full-screen player and the guide's mini picture separately, frames drawn on screen per second, frames VLC showed per second, frames VLC dropped, screen frames slower than 50 ms, and the picture size. Added to find why full-screen live video lagged while the mini picture of the same stream did not (owner, 21 October 2026). Diagnostic only; no playback change.
+
 ## Unreleased — early live video freeze investigation
 
 - Count rendered texture-buffer updates even when presentation timestamps repeat or reset; clear handoff covers from buffer callbacks.
