@@ -114,6 +114,44 @@ public final class LiveControlsTest {
     }
 
     @Test
+    public void bannerButtonsWorkWithoutColourKeysAndAutoNamesTheProvider() {
+        remote.runOnMainSync(() ->
+            assertEquals(
+                "Auto mode names the provider playing now",
+                "Sources · Auto · Pluto TV · 1 of 2",
+                activity.zapper.sourceText()
+            )
+        );
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        remote.waitForIdleSync();
+        assertEquals("BACK focuses Sources", 0, activity.zapper.overlay.focusedControl());
+        for (int i = 0; i < 3; i++) remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        remote.waitForIdleSync();
+        assertEquals("▶ moves along to Information", 3, activity.zapper.overlay.focusedControl());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        remote.waitForIdleSync();
+        assertTrue("SELECT presses Information", activity.zapper.overlay.infoShowing());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        remote.waitForIdleSync();
+        assertEquals("▶ stops at Options, the last button", 4, activity.zapper.overlay.focusedControl());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        remote.waitForIdleSync();
+        assertNotNull(SidePanel.current);
+        assertTrue("SELECT presses Options", SidePanel.current.isShowing());
+        assertEquals("The buttons must not resolve backups", 1, resolutions.get());
+        // Leave as the other tests do: close the panels, then BACK out of the player, so no
+        // window from this test is left over the next test's video.
+        remote.runOnMainSync(() -> {
+            SidePanel.current.dismiss();
+            activity.zapper.hideInfo();
+        });
+        remote.waitForIdleSync();
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        await(activity::isFinishing);
+    }
+
+    @Test
     public void manualChoicePinsOneSourceAndAutomaticCanBeRestoredWithoutEagerProbing() {
         assertTrue(activity.zapper.automaticSources());
         assertEquals("Loading the channel did not probe its backup", 1, resolutions.get());

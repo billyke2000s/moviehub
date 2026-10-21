@@ -110,10 +110,7 @@ final class PlayerMenus {
                       " min left"
                 : "Sleep timer"
         );
-        if (a.zapper != null) labels.add(
-            0,
-            "Sources · " + (a.zapper.automaticSources() ? "Auto · " : "Manual · ") + a.zapper.sourceLabel()
-        );
+        if (a.zapper != null) labels.add(0, a.zapper.sourceText());
         if (a.live && a.behindLive) labels.add(0, "Back to live");
         if (liveTv) {
             // Everything the coloured buttons do is here too, for remotes without them.
@@ -204,10 +201,15 @@ final class PlayerMenus {
     void chooseSource() {
         java.util.List<ChannelDatabase.Row> copies = a.zapper.copies();
         String[] names = new String[copies.size() + 1];
-        names[0] = "Automatic · switch if a source fails";
+        String playing = a.zapper.sourceProvider();
+        names[0] =
+            "Automatic · " +
+            (a.zapper.automaticSources() && !playing.isEmpty() ? "now " + playing + " · " : "") +
+            "switch if a source fails";
         for (int i = 0; i < copies.size(); i++) {
             String provider = AdapterSources.sourceName(copies.get(i).source);
             names[i + 1] =
+                (i == a.zapper.selectedCopy() ? "▶ " : "") +
                 "Source " +
                 (i + 1) +
                 "  ·  " +
