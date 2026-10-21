@@ -4,6 +4,9 @@
 
 - The banner's Audio & subtitles, Source, Information and Options keys are now buttons: tap them, or press BACK and move with ◀ ▶ and SELECT, so remotes without coloured buttons can use them. The banner hint says so.
 - Auto mode names the provider playing now ("Sources · Auto · FreeShot · 1 of 2"), and the Sources list marks the playing copy with ▶ and shows it on the Automatic row.
+## Unreleased — free channels before providers
+
+- Import native Pluto and the free lists before FreeLiveSports and the optional providers. With every provider switched on, the free lists (most channels) previously waited until all sixteen providers had finished, each allowed up to four minutes. Numbering and preferred copies are unchanged because they follow `ChannelDatabase.ORDER`, not import order. Not measured on the TV box.
 
 ## Unreleased — early live video freeze investigation
 

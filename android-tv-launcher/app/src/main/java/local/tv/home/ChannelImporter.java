@@ -104,6 +104,31 @@ final class ChannelImporter {
                     }
                 }
                 boolean providerConnected = anySource;
+                // Pluto and the free lists first: they hold most channels and are plain downloads,
+                // while each optional provider below may take minutes (ProviderBroker allows a
+                // catalogue four minutes). Channels appear in the guide as each source commits.
+                // Import order does not change numbering or the preferred copy (ChannelDatabase.ORDER).
+                if (NativeSources.enabled(context, providerConnected)) {
+                    configured.add("nativepluto");
+                    anySource = true;
+                    try {
+                        total += NativeSources.refresh(context, db, cancel);
+                    } catch (Exception e) {
+                        cancel.check();
+                        Diagnostics.recovered("Refreshing native Pluto channels", e);
+                        problems.add("Pluto TV: regional service unavailable; cached channels kept.");
+                    }
+                }
+                // Free lists: each its own source, so a list that fails keeps its previous channels.
+                for (FreeChannels.Source free : FreeChannels.sources(context, providerConnected)) {
+                    anySource = true;
+                    configured.add(free.id);
+                    try {
+                        total += importM3u(db, free.id, free.url, http, cancel, total, free.firstGroup);
+                    } catch (Exception e) {
+                        problems.add(free.name + ": " + describe(e));
+                    }
+                }
                 try {
                     ProviderUpdates.check(context, false);
                 } catch (Exception e) {
@@ -144,27 +169,6 @@ final class ChannelImporter {
                 if (!unavailable.isEmpty()) problems.add(
                     "Unavailable now: " + String.join(", ", unavailable) + " (saved channels kept)"
                 );
-                if (NativeSources.enabled(context, providerConnected)) {
-                    configured.add("nativepluto");
-                    anySource = true;
-                    try {
-                        total += NativeSources.refresh(context, db, cancel);
-                    } catch (Exception e) {
-                        cancel.check();
-                        Diagnostics.recovered("Refreshing native Pluto channels", e);
-                        problems.add("Pluto TV: regional service unavailable; cached channels kept.");
-                    }
-                }
-                // Free lists: each its own source, so a list that fails keeps its previous channels.
-                for (FreeChannels.Source free : FreeChannels.sources(context, providerConnected)) {
-                    anySource = true;
-                    configured.add(free.id);
-                    try {
-                        total += importM3u(db, free.id, free.url, http, cancel, total, free.firstGroup);
-                    } catch (Exception e) {
-                        problems.add(free.name + ": " + describe(e));
-                    }
-                }
                 cancel.check();
                 // Failed sources are still configured and keep their last good rows. Disabled
                 // sources must disappear even when a different provider is offline.

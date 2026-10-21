@@ -38,7 +38,12 @@ Last updated: 20 October 2026.
    LibVLC player, views detached and attached) is tested on the emulator with a local stream,
    not on the X905X5M box.
 
-6. **Phone layout covers Live TV only.** Films, series, My List and settings still open in the TV
+6. **Provider channels still arrive slowly.** Pluto and the free lists now import before the
+   optional providers, but the providers still run one after another (their script steps share one
+   lock with playback, so running them in parallel would delay starting a channel), and the
+   programme guide is fetched only after all of them. Not measured on the X905X5M box.
+
+7. **Phone layout covers Live TV only.** Films, series, My List and settings still open in the TV
    layout. MainActivity now handles rotation itself (configChanges), so screens are not rebuilt
    when a phone turns.
 
