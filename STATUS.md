@@ -1,5 +1,10 @@
 # Status
 
+## Movie file picker
+
+Movie sources show a recommended video first with file sizes and video labels; non-video files are retained as disabled rows. Recommendations are based on manifest metadata. Real-provider and physical-TV validation remain outstanding.
+
+
 Last updated: 19 October 2026.
 
 ## Where things stand

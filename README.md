@@ -1,5 +1,8 @@
 # MovieHub for Android TV
 
+Movie torrent file lists label recognised video files, show sizes and put the **Recommended movie** first. Recommendations use the requested title and file sizes, excluding samples and extras. Video filename recognition covers common and legacy containers; actual decoding depends on LibVLC and the device.
+
+
 > ## ⚠️ MovieHub doesn't host anything
 >
 > **MovieHub is just an app. It doesn't store or share any videos, channels or streams.** The free

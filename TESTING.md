@@ -1,5 +1,10 @@
 # Testing
 
+## Movie file recommendations
+
+`VideoFilesTest` covers expanded video extensions, subtitle/archive/audio rejection, title matching, larger extras, missing sizes, Windows paths and deterministic ranking. Recommendations use manifest metadata only; these checks do not establish playback of every recognised container or codec.
+
+
 There are three layers of checks. CI runs all of them on every pull request that touches
 `android-tv-launcher/` (workflow: `.github/workflows/android-launcher.yml`).
 
