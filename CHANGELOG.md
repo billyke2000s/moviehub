@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — movie file recommendations
+
+- Movie sources open a file list with **Recommended movie** first and focused, video labels and file sizes. Other files remain listed but cannot be played. Exact episode auto-selection is preserved.
+- Recognise common and legacy video extensions, including M2TS, MTS, VOB, MPEG, MOV, AVI, WebM, FLV, WMV, 3GP and elementary video streams. Filename recognition is separate from decoder support.
+- Rank movies locally by title and size, excluding samples, trailers and bonus material, without downloading files to inspect them.
+
+
 Versions are published to TVs through the in-app updater (`android-tv-latest` release). Each
 version below was built from the listed `main` commit. Earlier history is in the git log.
 

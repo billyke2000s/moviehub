@@ -20,9 +20,15 @@ final class VideoFiles {
         LIKELY = 1,
         UNKNOWN = 0;
 
-    static final Pattern VIDEO = Pattern.compile("(?i).*\\.(mkv|mp4|avi|m4v|mov|ts|webm|wmv|mpg|mpeg)$");
+    static final Pattern VIDEO = Pattern.compile(
+        "(?i).*\\.(mkv|mk3d|mp4|m4v|mov|qt|avi|divx|xvid|webm|wmv|asf|mpg|mpeg|mpe|m1v|m2v|mpv|m2p|vob|vro|mod|tod|ts|mts|m2ts|m2t|mxf|flv|f4v|f4p|ogv|ogm|rm|rmvb|3gp|3g2|3gpp|3gpp2|amv|nsv|nut|wtv|dvr-ms|bik|bink|dv|mjpeg|mjpg|h264|264|h265|265|hevc|av1)$"
+    );
     static final Pattern JUNK = Pattern.compile("(?i)\\bsample\\b|\\btrailer\\b|\\bextras?\\b|featurette");
     private static final Pattern SAMPLE = Pattern.compile("(?i)\\bsample\\b");
+
+    private static final Pattern MOVIE_EXTRA = Pattern.compile(
+        "(?:^| )(?:samples?|trailers?|extras?|deleted scenes|behind the scenes|making of|bonus|interviews?|featurettes?)(?: |$)"
+    );
 
     /** Digits that are a resolution ("720p", "1080i") rather than an episode. */
     private static final String NOT_RESOLUTION = "(?!\\d)(?![pi](?![a-z]))";
@@ -68,7 +74,7 @@ final class VideoFiles {
      * extras. A file named {@code hint} scores 3.
      */
     static int score(String path, String hint, int season, int episode) {
-        if (!VIDEO.matcher(path).matches()) return -1;
+        if (!isVideo(path)) return -1;
         boolean wantEpisode = season >= 0 && episode > 0;
         boolean junk = JUNK.matcher(path).find();
         if (!wantEpisode && junk) return -1;
@@ -120,6 +126,47 @@ final class VideoFiles {
             if (season > 0 && episode < 100 && found == season * 100 + episode) return LIKELY;
         }
         return UNKNOWN;
+    }
+
+    /** Common video containers and elementary streams; recognition does not guarantee decoding. */
+    static boolean isVideo(String path) {
+        return path != null && VIDEO.matcher(path).matches();
+    }
+
+    /** Rank locally from the returned manifest, without probing or downloading any file. */
+    static int recommendMovie(List<String> paths, List<Long> sizes, String title) {
+        int best = -1;
+        boolean bestTitle = false;
+        long bestSize = -1;
+        String wanted = words(title == null ? "" : title);
+        for (int i = 0; i < paths.size(); i++) {
+            String path = paths.get(i);
+            if (!isVideo(path) || score(path, "", -1, -1) < 0 || movieExtra(path)) continue;
+            String file = path.replace('\\', '/');
+            file = file.substring(file.lastIndexOf('/') + 1);
+            String name = words(file.substring(0, file.lastIndexOf('.')));
+            boolean titleMatch = !wanted.isEmpty() && (" " + name + " ").contains(" " + wanted + " ");
+            long size = i < sizes.size() && sizes.get(i) != null ? Math.max(0, sizes.get(i)) : 0;
+            if (best < 0 || (titleMatch && !bestTitle) || (titleMatch == bestTitle && size > bestSize)) {
+                best = i;
+                bestTitle = titleMatch;
+                bestSize = size;
+            }
+        }
+        return best;
+    }
+
+    private static String words(String text) {
+        return java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
+            .replaceAll("\\p{M}+", "")
+            .toLowerCase(Locale.ROOT)
+            .replaceAll("[^\\p{L}\\p{N}]+", " ")
+            .trim();
+    }
+
+    private static boolean movieExtra(String path) {
+        String normal = words(path);
+        return MOVIE_EXTRA.matcher(normal).find();
     }
 
     /** Whether to mark this file as the suggested episode in the list. */

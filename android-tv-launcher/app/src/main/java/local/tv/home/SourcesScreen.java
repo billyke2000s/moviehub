@@ -20,14 +20,30 @@ final class SourcesScreen {
     private final MainActivity activity;
 
     static final class Binge {
+
         static String imdb, title, kind;
         static int season, episode;
         static JSONObject metadata;
         static JSONArray files;
-        static void remember(String imdbId, int s, int e, String label, String type, JSONObject info, JSONArray list) {
-            imdb = imdbId; season = s; episode = e; title = label; kind = type;
-            metadata = info; files = list;
+
+        static void remember(
+            String imdbId,
+            int s,
+            int e,
+            String label,
+            String type,
+            JSONObject info,
+            JSONArray list
+        ) {
+            imdb = imdbId;
+            season = s;
+            episode = e;
+            title = label;
+            kind = type;
+            metadata = info;
+            files = list;
         }
+
         static void next(MainActivity activity) {
             if (imdb == null || episode < 1) return;
             int nextEpisode = episode + 1;
@@ -44,7 +60,7 @@ final class SourcesScreen {
                     int last = key.lastIndexOf(':');
                     if (last > 0) nextMetadata.put("episodeKey", key.substring(0, last + 1) + nextEpisode);
                 }
-            } catch (Exception ignored) { }
+            } catch (Exception ignored) {}
             if (files != null) {
                 List<String> paths = new ArrayList<>();
                 List<Long> sizes = new ArrayList<>();
@@ -60,16 +76,26 @@ final class SourcesScreen {
                     String link = file == null ? "" : file.optString("link");
                     if (!link.isEmpty()) {
                         remember(imdb, season, nextEpisode, title, kind, nextMetadata, files);
-                        activity.play(title + " · S" + season + " E" + nextEpisode, link,
-                            activity.id(link), false, nextMetadata);
+                        activity.play(
+                            title + " · S" + season + " E" + nextEpisode,
+                            link,
+                            activity.id(link),
+                            false,
+                            nextMetadata
+                        );
                         return;
                     }
                 }
             }
             remember(imdb, season, nextEpisode, title, kind, nextMetadata, null);
             activity.playbackTitle = nextMetadata;
-            activity.sources.torrentSources(imdb, season, nextEpisode,
-                title + " · S" + season + " E" + nextEpisode, kind);
+            activity.sources.torrentSources(
+                imdb,
+                season,
+                nextEpisode,
+                title + " · S" + season + " E" + nextEpisode,
+                kind
+            );
         }
     }
 
@@ -307,8 +333,7 @@ final class SourcesScreen {
                             }
                         },
                         files -> {
-                            // Play straight away when the right file is obvious (the film, or
-                            // the episode inside a season pack), as streaming apps do.
+                            // Movies show their recommendation in the file list; exact episodes can play directly.
                             List<String> paths = new ArrayList<>();
                             List<Long> sizes = new ArrayList<>();
                             for (int i = 0; i < files.length(); i++) {
@@ -317,7 +342,18 @@ final class SourcesScreen {
                                 sizes.add(file.optLong("size", 0));
                             }
                             Binge.remember(imdb, season, episode, title, kind, metadata, files);
-                            int pick = VideoFiles.autoPick(paths, sizes, season, episode);
+                            boolean movie = season < 0 || episode <= 0;
+                            List<String> playablePaths = new ArrayList<>(paths);
+                            for (int i = 0; i < files.length(); i++) {
+                                if (files.getJSONObject(i).optString("link").isEmpty()) playablePaths.set(
+                                    i,
+                                    ""
+                                );
+                            }
+                            int recommended = movie
+                                ? VideoFiles.recommendMovie(playablePaths, sizes, title)
+                                : -1;
+                            int pick = movie ? -1 : VideoFiles.autoPick(paths, sizes, season, episode);
                             String pickLink = pick < 0 ? "" : files.getJSONObject(pick).optString("link");
                             if (!pickLink.isEmpty()) {
                                 activity.play(
@@ -354,36 +390,70 @@ final class SourcesScreen {
                                     torrentSources(imdb, season, episode, title, kind);
                                 }
                             );
-                            // Focus starts on the suggested episode: an exact match before a likely one.
+                            // Recommended movie first, then videos, then the remaining torrent files.
+                            List<Integer> order = new ArrayList<>();
+                            for (int i = 0; i < files.length(); i++) order.add(i);
+                            order.sort(
+                                Comparator.comparingInt(i ->
+                                    i == recommended ? 0 : VideoFiles.isVideo(paths.get(i)) ? 1 : 2
+                                )
+                            );
+                            // Focus starts on the recommendation or the best matching episode.
                             View first = null;
                             int firstRank = -1;
-                            for (int i = 0; i < files.length(); i++) {
+                            for (int i : order) {
                                 JSONObject file = files.getJSONObject(i);
-                                String link = file.getString("link"),
-                                    name = file.optString("path", "File");
+                                String link = file.optString("link"),
+                                    name = paths.get(i);
+                                boolean video = VideoFiles.isVideo(name);
                                 boolean suggest = VideoFiles.suggested(name, season, episode);
-                                int rank = !suggest
-                                    ? 0
-                                    : VideoFiles.score(name, "", season, episode) == VideoFiles.EXACT
-                                      ? 2
-                                      : 1;
+                                int rank =
+                                    i == recommended
+                                        ? 3
+                                        : !suggest
+                                          ? 0
+                                          : VideoFiles.score(name, "", season, episode) == VideoFiles.EXACT
+                                            ? 2
+                                            : 1;
                                 LinearLayout row = activity.listRow();
                                 LinearLayout fileCopy = activity.vertical();
-                                String shortName = name.substring(name.lastIndexOf('/') + 1);
+                                String normalName = name.replace('\\', '/');
+                                String shortName = normalName.substring(normalName.lastIndexOf('/') + 1);
                                 fileCopy.addView(activity.rowText(shortName, 17, false, 2));
                                 if (!shortName.equals(name)) fileCopy.addView(
                                     activity.rowText(name, 12, true, 1)
                                 );
                                 row.addView(fileCopy, new LinearLayout.LayoutParams(0, -2, 1));
-                                if (suggest) {
+                                if (suggest || i == recommended) {
                                     LinearLayout.LayoutParams badgeLayout = new LinearLayout.LayoutParams(
                                         -2,
                                         -2
                                     );
                                     badgeLayout.leftMargin = activity.dp(12);
-                                    row.addView(activity.badge("Suggested episode"), badgeLayout);
+                                    row.addView(
+                                        activity.badge(
+                                            i == recommended ? "Recommended movie" : "Suggested episode"
+                                        ),
+                                        badgeLayout
+                                    );
                                 }
+                                fileCopy.addView(
+                                    activity.rowText(
+                                        (video ? "Video file" : "Other file") +
+                                            (file.optLong("size") > 0
+                                                ? " · " +
+                                                  android.text.format.Formatter.formatFileSize(
+                                                      activity,
+                                                      file.optLong("size")
+                                                  )
+                                                : ""),
+                                        12,
+                                        true,
+                                        1
+                                    )
+                                );
                                 activity.styleListRow(row, false);
+                                row.setEnabled(video && !link.isEmpty());
                                 row.setOnClickListener(clicked ->
                                     activity.play(
                                         title,
@@ -396,7 +466,7 @@ final class SourcesScreen {
                                 LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
                                 lp.topMargin = activity.dp(8);
                                 activity.page.addView(row, lp);
-                                if (rank > firstRank) {
+                                if (video && !link.isEmpty() && rank > firstRank) {
                                     first = row;
                                     firstRank = rank;
                                 }

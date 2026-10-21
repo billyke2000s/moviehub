@@ -1,5 +1,10 @@
 # Architecture
 
+## Torrent file recommendation
+
+`VideoFiles.recommendMovie` ranks manifest entries locally by filename title match and size, excluding samples and extras. `SourcesScreen` shows the recommended movie first, then recognised videos and non-video entries; non-video entries cannot launch playback. Exact episode auto-selection is unchanged.
+
+
 MovieHub is a single native Android app (Java, no WebView, no Kotlin) in `android-tv-launcher/`.
 All source lives in one package, `local.tv.home`, under
 `android-tv-launcher/app/src/main/java/local/tv/home/`.
