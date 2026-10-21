@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — faster repair of a still picture over playing sound
+
+- When the live picture stops while the sound plays on, refresh the video view after 2.5 s (once per freeze), the same move as going to the guide's mini picture and back, which the owner found fixed it at once. Previously this waited 8 s and happened once per channel. A freeze the refresh does not clear still reaches the existing 8 s path (refresh, then a backup source).
+- Troubleshooting → Playback counts these as "Still picture refreshed". The underlying cause of the freeze is not yet known.
+
 ## Unreleased — early live video freeze investigation
 
 - Count rendered texture-buffer updates even when presentation timestamps repeat or reset; clear handoff covers from buffer callbacks.

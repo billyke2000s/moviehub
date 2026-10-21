@@ -48,6 +48,14 @@ final class LivePlayer {
     private static final LiveProgress progress = new LiveProgress();
     private static boolean played;
     private static boolean viewRepaired;
+    /**
+     * How long a still picture over playing sound is left before its view is refreshed, as a move
+     * to the mini guide picture and back does. The full-stall path below still waits
+     * LiveZapper.STALL_MS before trying a backup source.
+     */
+    static final long PICTURE_REPAIR_MS = 2500;
+    /** The freeze (by its start) already given its early refresh, so each freeze gets one. */
+    private static long pictureRepairedFor = -1;
     private static int viewRepairs;
     private static String lastVideoRecovery = "None";
 
@@ -77,7 +85,25 @@ final class LivePlayer {
 
     static void observeProgress(long now, long time, long frames, boolean watching) {
         if (!(EngineSources.locator(url) || PlutoSource.nativeUrl(url))) return;
-        if (!progress.stalled(now, time, frames, watching, LiveZapper.STALL_MS)) return;
+        if (!progress.stalled(now, time, frames, watching, LiveZapper.STALL_MS)) {
+            // The owner saw the picture stop while the sound played on (21 October 2026), and
+            // moving to the mini picture fixed it at once. Do that here after a short wait,
+            // once for each freeze; a freeze it does not clear still reaches the path below.
+            if (
+                watching &&
+                progress.pictureFrozen(now, PICTURE_REPAIR_MS) &&
+                progress.pictureSince() != pictureRepairedFor &&
+                output != null
+            ) {
+                pictureRepairedFor = progress.pictureSince();
+                if (output.refreshView()) {
+                    viewRepairs++;
+                    lastVideoRecovery = "Picture stopped while the sound played; view refreshed";
+                    Timings.record("Still picture refreshed", Timings.start());
+                }
+            }
+            return;
+        }
         boolean clockMoving = progress.clockMoving(now, LiveZapper.STALL_MS);
         progress.reset();
         Timings.record("Live video stopped advancing", Timings.start());
