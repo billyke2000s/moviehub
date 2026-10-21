@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.42
+
+- Movie torrent file lists now put **Recommended movie** first, with video labels and file sizes. Other files remain visible but cannot launch playback. Exact episode selection is unchanged.
+- Expanded video filename recognition and local title/size ranking exclude samples, trailers and extras. No file downloads or extra provider calls are needed for ranking.
+
+
 ## 0.41
 
 - Live TV plays through Android's standard video surface: aimed at smoother full-screen video and at the picture stopping while the sound carried on. Moving between the guide's mini picture and full screen keeps the stream playing (a brief blink is normal).

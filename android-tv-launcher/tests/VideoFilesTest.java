@@ -116,6 +116,92 @@ public class VideoFilesTest {
         check(VideoFiles.autoPick(bare, same, 1, 2) == -1, "a likely file is only suggested");
         check(VideoFiles.suggested("Pack/02.mkv", 1, 2), "and it is marked");
         check(!VideoFiles.suggested("Show.S01E02.mkv", -1, -1), "films are never marked");
+        // Movie manifest recognition and recommendation never fetch media bytes.
+        String formats =
+            "mkv mk3d mp4 m4v mov qt avi divx xvid webm wmv asf mpg mpeg mpe m1v m2v mpv m2p vob vro mod tod ts mts m2ts m2t mxf flv f4v f4p ogv ogm rm rmvb 3gp 3g2 3gpp 3gpp2 amv nsv nut wtv dvr-ms bik bink dv mjpeg mjpg h264 264 h265 265 hevc av1";
+        for (String format : formats.split(" "))
+            check(VideoFiles.isVideo("Folder/Film." + format.toUpperCase()), "video format " + format);
+        for (String other : new String[] {
+            "srt",
+            "ass",
+            "nfo",
+            "jpg",
+            "txt",
+            "exe",
+            "zip",
+            "rar",
+            "iso",
+            "mp3",
+            "flac",
+            "ogg",
+            "mkv.exe",
+        })
+            check(!VideoFiles.isVideo("Film." + other), "not a video: " + other);
+        check(!VideoFiles.isVideo(null), "null name");
+        check(
+            VideoFiles.recommendMovie(
+                java.util.Arrays.asList("Film.srt", "Film_sample.mp4", "Film.M2TS", "Bonus/interview.mov"),
+                java.util.Arrays.asList(1L, 100L, 900L, 1000L),
+                "Film"
+            ) == 2,
+            "movie beside subtitles and larger extras"
+        );
+        check(
+            VideoFiles.recommendMovie(
+                java.util.Arrays.asList("Other.Movie.mkv", "The.Film.2024.avi"),
+                java.util.Arrays.asList(9000L, 800L),
+                "The Film"
+            ) == 1,
+            "requested title outranks unrelated larger video"
+        );
+        check(
+            VideoFiles.recommendMovie(
+                java.util.Arrays.asList("a.mkv", "b.mp4"),
+                java.util.Arrays.asList(800L, 900L),
+                "Film"
+            ) == 1,
+            "largest video when names give no title"
+        );
+        check(
+            VideoFiles.recommendMovie(
+                java.util.Arrays.asList("Film_sample.mkv", "Extras\\bonus.mp4", "readme.txt"),
+                java.util.Collections.emptyList(),
+                "Film"
+            ) == -1,
+            "no recommendation for only extras or documents"
+        );
+        check(
+            VideoFiles.recommendMovie(
+                java.util.Arrays.asList("a.mkv", "b.mp4"),
+                java.util.Arrays.asList(800L, 800L),
+                ""
+            ) == 0,
+            "stable choice for equal files"
+        );
+        check(
+            VideoFiles.recommendMovie(
+                java.util.Arrays.asList("Folder\\Le.Film.MOV", "other.mp4"),
+                java.util.Arrays.asList(null, -1L),
+                "Le Film"
+            ) == 0,
+            "Windows paths and missing sizes"
+        );
+        check(
+            VideoFiles.recommendMovie(
+                java.util.Arrays.asList("Film.mkv", "big.mp4"),
+                java.util.Collections.emptyList(),
+                "Film"
+            ) == 0,
+            "title works without sizes"
+        );
+        check(
+            VideoFiles.recommendMovie(
+                java.util.Collections.emptyList(),
+                java.util.Collections.emptyList(),
+                "Film"
+            ) == -1,
+            "empty manifest"
+        );
         System.out.println(checks + " episode/file checks passed");
     }
 }
