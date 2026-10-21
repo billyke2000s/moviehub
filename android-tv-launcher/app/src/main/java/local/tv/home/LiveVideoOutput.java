@@ -32,6 +32,8 @@ final class LiveVideoOutput {
     volatile int handoffs;
     /** How long the last move took to show a new picture, or -1 while waiting. */
     volatile long lastHandoffGapMs = -1;
+    /** Counts attaches, so a deferred attach does not run after a newer move. */
+    private int attachments;
     private long transferStarted;
     private long transferPictures;
     /** VLC's count restarts with each stream (a source switch); these keep ours rising. */
@@ -62,6 +64,18 @@ final class LiveVideoOutput {
         }
         holder = destination;
         destination.removeAllViews();
+        int ticket = ++attachments;
+        if (refresh) {
+            // In the same place, attach once the old surface has gone (next main-loop turn);
+            // attaching straight away let the old surface's teardown race the new one (CI).
+            layout = null;
+            destination.post(() -> {
+                if (!closed && ticket == attachments && holder == destination) attach(destination);
+            });
+        } else attach(destination);
+    }
+
+    private void attach(FrameLayout destination) {
         layout = new VLCVideoLayout(destination.getContext());
         destination.addView(layout, 0, new FrameLayout.LayoutParams(-1, -1));
         // As VlcPlaybackActivity attaches films: no subtitle surface, no TextureView.
@@ -127,7 +141,7 @@ final class LiveVideoOutput {
     void close() {
         if (closed) return;
         closed = true;
-        player.detachViews();
+        if (layout != null) player.detachViews();
         if (layout != null && layout.getParent() instanceof ViewGroup) {
             ((ViewGroup) layout.getParent()).removeView(layout);
         }
