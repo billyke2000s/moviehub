@@ -28,11 +28,35 @@ final class LiveHandoffEvidence {
         while (!ready[0] && SystemClock.elapsedRealtime() < deadline) {
             instrumentation.runOnMainSync(() -> {
                 assertSame("Handoff replaced the video output", output, LivePlayer.output());
-                ready[0] = output.pictures() > pictures + 1 && output.isShown();
+                // After a move, wait for the first picture drawn on the new surface itself, not
+                // pictures counted before the move.
+                ready[0] =
+                    output.pictures() > pictures + 1 &&
+                    output.isShown() &&
+                    (!handoff || output.lastHandoffGapMs >= 0);
             });
             if (!ready[0]) SystemClock.sleep(20);
         }
-        assertTrue("Destination did not show fresh pictures within 8 seconds", ready[0]);
+        String[] state = { "" };
+        instrumentation.runOnMainSync(() -> {
+            org.videolan.libvlc.MediaPlayer player = LivePlayer.player();
+            state[0] =
+                "pictures " +
+                output.pictures() +
+                " (before " +
+                pictures +
+                "), shown " +
+                output.isShown() +
+                ", gap " +
+                output.lastHandoffGapMs +
+                " ms, moves " +
+                output.handoffs +
+                ", playing " +
+                (player != null && player.isPlaying()) +
+                ", video tracks " +
+                (player == null ? -1 : player.getVideoTracksCount());
+        });
+        assertTrue("Destination did not show fresh pictures within 8 seconds: " + state[0], ready[0]);
         if (handoff) {
             long gap = output.lastHandoffGapMs;
             android.util.Log.i("MovieHubHandoff", "Fresh picture after " + gap + " ms");
