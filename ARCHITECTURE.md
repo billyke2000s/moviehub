@@ -94,7 +94,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `LiveTvPanels` | The guide's side panels: options, sections and groups, search, programme information with reminders, the parental lock, colour-key set-up. |
 | `GuidePicture` | The live picture in the guide's corner (the last channel watched); stops when the guide closes unless the full screen has taken the player over. |
 | `LivePlayer` | The one Live TV player (LibVLC engine and media player), shared by the full screen and the guide picture so going between them moves the picture without reconnecting. Films keep their own player. |
-| `LiveVideoOutput` | Session-long native Surface/SurfaceTexture and per-screen TextureViews, with retained-frame covers during guide/full-screen transfers. |
+| `LiveVideoOutput` | Where the session's one live player draws: VLC's standard `VLCVideoLayout` (SurfaceView), moved between the guide's mini picture and the full screen without reopening the stream. |
 | `PlayerOptions` | LibVLC engine options, one list for films and one for Live TV, so a change to one never reaches the other. |
 | `SettingsScreens` | Settings tabs, account setup (TMDB, Premiumize, Xtream, M3U), languages, toggles. |
 | `ForYou` | The Home "For you" shelf: blends TMDB recommendations for up to six titles you played, saved or opened, ranked and cached on the box. |
@@ -198,22 +198,23 @@ LivePlayer exposes its pending-resolution phase and notifies the currently attac
 
 PNG transport skips byte-wise unfiltering for filter-0 rows, copies RGB payload in bulk, and uses larger bounded inflate/gzip input buffers. Explicit Inflater instances are ended in finally; container validation and allocation limits are unchanged.
 
-## Retained live video output
+## Live video output
 
-`LiveVideoOutput` owns a session-long SurfaceTexture and Surface, bound once through
-LibVLC's low-level IVLCVout API. GuidePicture and VlcPlaybackActivity supply FrameLayout
-presentation hosts. The old TextureView is removed before the retained texture is assigned to
-the new view; returning false from onSurfaceTextureDestroyed keeps the BufferQueue alive.
-LibVLC uses its GLES compositor for aspect ratio and subtitles. Only final session stop detaches
-native vout and releases the Surface/texture. Films retain their existing VLCVideoLayout.
-A temporary bitmap of the last frame covers both outgoing and incoming hosts. The incoming
-cover clears on a fresh texture update; the outgoing host is discarded by its Activity's lifecycle.
-If another handoff happens before a fresh frame, the existing cover is reused. Presentation hosts
-are dedicated to LiveVideoOutput; revisiting a host clears its previous cover.
-No Activity context is retained after the view moves or playback stops.
+`LiveVideoOutput` draws the session's one live LibVLC player through VLC's standard
+`VLCVideoLayout` (a SurfaceView), attached with `MediaPlayer.attachViews(layout, null, false,
+false)` exactly as the film player does. The hardware decoder hands pictures to Android's
+compositor directly, so the picture does not depend on the app's main thread redrawing.
 
-References: [Android TextureView](https://developer.android.com/reference/android/view/TextureView#setSurfaceTexture(android.graphics.SurfaceTexture))
-and [SurfaceTextureListener](https://developer.android.com/reference/android/view/TextureView.SurfaceTextureListener#onSurfaceTextureDestroyed(android.graphics.SurfaceTexture)).
+GuidePicture and VlcPlaybackActivity supply FrameLayout hosts. Moving between them calls
+`detachViews()` and attaches a new layout in the destination. Only the screen surface changes:
+the player, its media, the network connection (and relay) and the audio carry on, so the stream
+is never reopened or re-resolved. The picture may blink while the new surface takes over; the
+owner accepted that on 21 October 2026.
+
+This replaced (21 October 2026) a session-long SurfaceTexture shown through TextureViews with
+last-frame covers. That gave blink-free moves, but every frame waited for the main thread to
+redraw: the owner saw full-screen live video lag, and stop while the sound played on, while the
+same stream played smoothly in the mini picture.
 
 Live Activity transitions use zero-animation launch options and matching close overrides (the
 API 34 transition override or the legacy finish override). The stream Surface survives the
@@ -222,16 +223,14 @@ window change; the UI does not add a system fade around it.
 Google's [Grafika double-decode sample](https://github.com/google/grafika/blob/master/app/src/main/java/com/android/grafika/DoubleDecodeActivity.java)
 also retains SurfaceTextures to preserve decoders across Activity recreation.
 
-## Video consumer freeze recovery
+## Video freeze recovery
 
-LiveVideoOutput counts onSurfaceTextureUpdated callbacks independently of source-defined EGL
-presentation timestamps. A new buffer may carry a repeated or reset timestamp; that must not
-leave the handoff cover visible. LivePlayer samples this consumer counter and the playback clock.
-After the existing eight-second live stall threshold, a clock-moving/video-stopped session gets
-one refresh of the TextureView consumer while preserving its SurfaceTexture, Surface, decoder,
-media, relay and audio. An absent clock or a persistent second freeze uses the existing bounded
-source retry/failure path. Paused and hidden playback are excluded; audio-only tracks are excluded
-from video monitoring. No new decoder flags or changes to sports buffering thresholds are applied.
+`LiveVideoOutput.pictures()` reads VLC's displayed-picture count (`IMedia.Stats.displayedPictures`;
+-1 until the first picture, so the check then falls back to the playback clock). LivePlayer samples
+it and the playback clock once a second. After the existing eight-second live stall threshold, a
+clock-moving/picture-stopped session gets one `refreshView()` (a fresh layout in the same place,
+with the same player, media, relay and audio). An absent clock or a persistent second freeze uses
+the existing bounded source retry/failure path. Paused and hidden playback are excluded.
 Troubleshooting shows fixed recovery descriptions and counts, with no URLs or tokens.
 
 LiveZapper owns the per-channel Automatic/manual source policy and two-step Back interaction. PlayerMenus lists Automatic followed by saved copies; SkyOverlay exposes a focusable Sources action. Listing copies is a local database operation; only the selected copy goes through LivePlayer resolution. Automatic failover visits the remaining saved copies once and stops.

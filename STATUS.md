@@ -47,6 +47,12 @@ Last updated: 20 October 2026.
    retries a timed-out provider once. Whether this removes the short pauses seen on the owner's
    phone (21 October 2026) is not yet confirmed on a phone or the TV box.
 
+6. **Live TV now draws through a SurfaceView** (21 October 2026), replacing the shared
+   TextureView after the owner saw full-screen lag and a still picture over playing sound. Moves
+   between the mini picture and full screen keep the stream but may blink. Emulator tests only;
+   not yet checked on a phone or the X905X5M box. Earlier notes below about the retained
+   SurfaceTexture describe the replaced design.
+
 7. **Phone layout covers Live TV only.** Films, series, My List and settings still open in the TV
    layout. MainActivity now handles rotation itself (configChanges), so screens are not rebuilt
    when a phone turns.
