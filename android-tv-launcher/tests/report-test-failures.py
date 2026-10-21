@@ -49,6 +49,15 @@ def main(root):
         first_lines = '\n'.join(detail.splitlines()[:6])[:1500]
         print(f'::error title=Device test failed: {name}::{escape(first_lines)}')
     video = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(root))), 'device-video.log')
+    if os.path.exists(video) and os.path.getsize(video) > 0:
+        with open(video, errors='replace') as source:
+            lines = source.read().splitlines()
+        crash = [i for i, line in enumerate(lines) if 'Fatal signal' in line]
+        if crash:
+            started = [line for line in lines[:crash[-1]] if 'TestRunner' in line and 'started' in line]
+            frames = [line for line in lines[crash[-1]:] if ' pc ' in line][:12]
+            text = (started[-1] if started else 'no test start found') + '\n' + lines[crash[-1]] + '\n' + '\n'.join(frames)
+            print(f'::error title=Native crash (test running, backtrace)::{escape(text[:3500])}')
     if failed and os.path.exists(video) and os.path.getsize(video) > 0:
         with open(video, errors='replace') as source:
             lines = source.read().splitlines()
