@@ -123,6 +123,23 @@ final class LiveZapper {
         return copies.size() <= 1 ? "1 of 1" : copy + 1 + " of " + copies.size();
     }
 
+    /** The provider of the copy playing now (for example "FreeShot"), or "" before one is known. */
+    String sourceProvider() {
+        if (copy < 0 || copy >= copies.size()) return "";
+        return AdapterSources.sourceName(copies.get(copy).source);
+    }
+
+    /** The banner's source text: the mode, the provider playing now, and which copy it is. */
+    String sourceText() {
+        String provider = sourceProvider();
+        return (
+            "Sources · " +
+            (automaticSources ? "Auto · " : "Manual · ") +
+            (provider.isEmpty() ? "" : provider + " · ") +
+            sourceLabel()
+        );
+    }
+
     boolean automaticSources() {
         return automaticSources;
     }
@@ -533,7 +550,7 @@ final class LiveZapper {
             next == null ? "" : "Next " + LiveTvScreen.clockTime(new Date(next.start)),
             shown == null ? "" : shown.description,
             progress,
-            !browse ? "Sources · " + (automaticSources ? "Auto · " : "Manual · ") + sourceLabel() : "",
+            !browse ? sourceText() : "",
             browse
         );
         if (overlay.infoShowing()) showInfo();
@@ -609,7 +626,10 @@ final class LiveZapper {
             }
         }
         if (key == KeyEvent.KEYCODE_DPAD_LEFT || key == KeyEvent.KEYCODE_DPAD_RIGHT) {
-            if (first) browse(0, key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : 0);
+            // With the controls revealed (BACK), ◀ ▶ move between the banner's buttons instead.
+            if (backControls && overlay.bannerShowing()) {
+                if (down) overlay.moveControl(key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
+            } else if (first) browse(0, key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : 0);
             return true;
         }
         boolean up =
@@ -631,8 +651,9 @@ final class LiveZapper {
         boolean handled = true;
         if (select) {
             if (first) {
-                if (backControls) player.menus.chooseSource();
-                else if (overlay.bannerShowing()) player.menus.liveOptions();
+                if (backControls) {
+                    if (!overlay.pressControl()) player.menus.chooseSource();
+                } else if (overlay.bannerShowing()) player.menus.liveOptions();
                 else showBanner();
             }
         } else if (key == KeyEvent.KEYCODE_INFO || colour == 'y') {

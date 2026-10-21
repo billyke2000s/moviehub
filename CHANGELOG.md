@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — banner buttons without colour keys, provider shown in Auto
+
+- The banner's Audio & subtitles, Source, Information and Options keys are now buttons: tap them, or press BACK and move with ◀ ▶ and SELECT, so remotes without coloured buttons can use them. The banner hint says so.
+- Auto mode names the provider playing now ("Sources · Auto · FreeShot · 1 of 2"), and the Sources list marks the playing copy with ▶ and shows it on the Automatic row.
+
 ## Unreleased — early live video freeze investigation
 
 - Count rendered texture-buffer updates even when presentation timestamps repeat or reset; clear handoff covers from buffer callbacks.
