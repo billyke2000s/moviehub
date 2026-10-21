@@ -48,6 +48,13 @@ def main(root):
     for name, detail in failed[:MAX_ANNOTATIONS]:
         first_lines = '\n'.join(detail.splitlines()[:6])[:1500]
         print(f'::error title=Device test failed: {name}::{escape(first_lines)}')
+    video = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(root))), 'device-video.log')
+    if failed and os.path.exists(video) and os.path.getsize(video) > 0:
+        with open(video, errors='replace') as source:
+            lines = source.read().splitlines()
+        keys = ('error', 'fail', 'cannot', 'unable', 'destroy', 'surface', 'vout', 'window', 'decoder')
+        useful = [line for line in lines if any(key in line.lower() for key in keys)]
+        print(f'::error title=Video log (VLC, last lines)::{escape(chr(10).join(useful[-25:])[-3500:])}')
     if not failed:
         # The step failed but no test did: the run stopped before results were written (an app
         # crash, an install failure, the emulator). Report why from the saved output.

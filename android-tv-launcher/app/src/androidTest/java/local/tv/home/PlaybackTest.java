@@ -69,6 +69,7 @@ public class PlaybackTest {
 
     @Before
     public void prepare() throws Exception {
+        LivePlayer.testVerbose = true;
         Context context = instrumentation.getTargetContext();
         oldHttp = context.getSharedPreferences("ui", 0).getBoolean("http", false);
         context.getSharedPreferences("ui", 0).edit().putBoolean("http", true).commit();

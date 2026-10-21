@@ -102,6 +102,8 @@ final class LivePlayer {
     }
 
     static Resolver testResolver;
+    /** Device tests only: VLC's detailed log, so a failing CI run shows what VLC did. */
+    static boolean testVerbose;
     /** How many streams were opened, so tests can tell a handover from a restart. */
     static int opened;
 
@@ -141,7 +143,9 @@ final class LivePlayer {
         String optionKey = String.valueOf(options);
         if (engine == null || !optionKey.equals(engineOptions)) {
             stop();
-            engine = new LibVLC(context.getApplicationContext(), new ArrayList<>(options));
+            List<String> vlcOptions = new ArrayList<>(options);
+            if (testVerbose) vlcOptions.add("-vv");
+            engine = new LibVLC(context.getApplicationContext(), vlcOptions);
             engineOptions = optionKey;
             player = new MediaPlayer(engine);
             output = new LiveVideoOutput(player);

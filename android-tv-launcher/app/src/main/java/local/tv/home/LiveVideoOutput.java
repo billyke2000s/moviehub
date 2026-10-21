@@ -69,17 +69,18 @@ final class LiveVideoOutput {
     }
 
     /**
-     * Pictures VLC has put on screen in this session, across source switches, or -1 while the
-     * current stream has shown none yet. A still picture over playing sound shows as no change.
+     * Video frames decoded in this session, across source switches, or -1 while the current
+     * stream has decoded none yet. A stopped picture over playing sound shows as no change.
      */
     long pictures() {
         IMedia media = player.getMedia();
         if (media == null) return -1;
         try {
             IMedia.Stats stats = media.getStats();
-            // Zero until the first picture; treat that as unknown so the stall check falls back
-            // to the playback clock instead of reading "no pictures" as a frozen picture.
-            long count = stats == null || stats.displayedPictures <= 0 ? -1 : stats.displayedPictures;
+            // Decoded video frames: VLC's displayed-picture count barely moves when the hardware
+            // decoder draws straight to the surface (CI, 21 October 2026). Zero until the first
+            // frame; treated as unknown so the stall check falls back to the playback clock.
+            long count = stats == null || stats.decodedVideo <= 0 ? -1 : stats.decodedVideo;
             if (count < 0) return -1;
             if (count < lastCount) countedBefore += lastCount;
             lastCount = count;
