@@ -205,6 +205,12 @@ VLC's displayed-picture count rises again in the destination, that the picture r
 actual pixels (read with PixelCopy) are not blank. Stream-open and resolver counters assert no
 restart or re-resolution. This verifies fixtures on the API 28 emulator, not the TV.
 
+After a move, VLC's hardware decoder shows nothing until the stream's next keyframe, so the
+blink lasts up to one keyframe interval. `androidTest/assets/playback.ts` was re-encoded on
+21 October 2026 with a keyframe every second (320x180, 15 fps, 30 s, audio unchanged), like
+typical live sports streams; the earlier file had keyframes 16.7 s apart, which no live channel
+uses and which made every move wait up to 16.7 s.
+
 Before 21 October 2026 the live picture used a retained SurfaceTexture/TextureView; its handoff
 times (47–104 ms on the emulator, 20 October 2026) are not comparable with the SurfaceView move.
 

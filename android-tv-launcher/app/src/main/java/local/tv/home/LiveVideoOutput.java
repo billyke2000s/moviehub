@@ -50,9 +50,12 @@ final class LiveVideoOutput {
             player.detachViews();
             if (layout.getParent() instanceof ViewGroup) ((ViewGroup) layout.getParent()).removeView(layout);
             handoffs++;
-            transferStarted = SystemClock.elapsedRealtime();
-            transferPictures = pictures();
+            // Read the count before marking the move, so this read is not taken as the
+            // first new picture.
+            transferStarted = 0;
+            transferPictures = Math.max(0, pictures());
             lastHandoffGapMs = -1;
+            transferStarted = SystemClock.elapsedRealtime();
         }
         holder = destination;
         destination.removeAllViews();
