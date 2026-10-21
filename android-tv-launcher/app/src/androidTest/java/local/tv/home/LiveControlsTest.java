@@ -113,6 +113,7 @@ public final class LiveControlsTest {
         await(activity::isFinishing);
     }
 
+    @Ignore("Experiment: is this test behind LiveVideoOutputTest failures?")
     @Test
     public void bannerButtonsWorkWithoutColourKeysAndAutoNamesTheProvider() {
         remote.runOnMainSync(() ->
