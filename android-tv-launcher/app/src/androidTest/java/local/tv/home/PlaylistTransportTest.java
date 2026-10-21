@@ -163,6 +163,55 @@ public final class PlaylistTransportTest {
         );
     }
 
+    @Test
+    public void relayRetriesASlowProviderOnceThenGivesUp() throws Exception {
+        byte[] ts = new byte[188 * 5];
+        for (int at = 0; at < ts.length; at += 188) ts[at] = 0x47;
+        AtomicInteger attempts = new AtomicInteger(),
+            timeouts = new AtomicInteger(1);
+        ProviderRelay.testConnections = uri ->
+            new HttpURLConnection(uri.toURL()) {
+                @Override
+                public void connect() {}
+
+                @Override
+                public void disconnect() {}
+
+                @Override
+                public boolean usingProxy() {
+                    return false;
+                }
+
+                @Override
+                public int getResponseCode() throws IOException {
+                    attempts.incrementAndGet();
+                    if (timeouts.getAndDecrement() > 0) throw new SocketTimeoutException("fixture");
+                    return 200;
+                }
+
+                @Override
+                public InputStream getInputStream() {
+                    return new ByteArrayInputStream(ts);
+                }
+            };
+        EngineSources.Stream stream = new EngineSources.Stream(
+            new JSONObject()
+                .put("url", ROOT + "segment.ts")
+                .put("headers", new JSONObject().put("Origin", "https://player.example"))
+        );
+        try (ProviderRelay relay = new ProviderRelay(stream)) {
+            assertArrayEquals("One timeout is retried", ts, read(relay.url));
+            assertEquals(2, attempts.get());
+            attempts.set(0);
+            timeouts.set(2);
+            try {
+                read(relay.url);
+                fail("A second timeout must reach the player");
+            } catch (IOException expected) {}
+            assertEquals("Only one retry", 2, attempts.get());
+        }
+    }
+
     private static byte[] read(String address) throws Exception {
         HttpURLConnection connection = (HttpURLConnection) new URL(address).openConnection();
         connection.setConnectTimeout(3000);

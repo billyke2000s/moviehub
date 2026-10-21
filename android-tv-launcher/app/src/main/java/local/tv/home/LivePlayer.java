@@ -211,7 +211,8 @@ final class LivePlayer {
                         open(
                             nextRelay == null ? resolved : nextRelay.url,
                             stream == null ? PlutoSource.USER_AGENT : stream.userAgent,
-                            stream == null ? null : stream.referer
+                            stream == null ? null : stream.referer,
+                            nextRelay != null
                         );
                         if (stream != null && stream.expiresAt > 0) {
                             long delay = Math.max(
@@ -245,16 +246,25 @@ final class LivePlayer {
                     });
                 }
             });
-        } else open(streamUrl, null, null);
+        } else open(streamUrl, null, null, false);
         return false;
     }
 
     private static ProviderRelay relay;
     private static Runnable renewal;
 
-    private static void open(String stream, String userAgent, String referer) {
+    /**
+     * How far ahead relayed provider streams (FreeShot, DaddyLive, ZLive) are buffered. Their
+     * segments arrive through the local relay, and FreeShot's are decoded from PNG first, so a
+     * slow segment drained the shared 1.5 s Live TV buffer (owner's phone, 21 October 2026: six
+     * short pauses in one session). Other channels keep the shorter buffer and faster start.
+     */
+    static final int RELAYED_CACHING_MS = 4000;
+
+    private static void open(String stream, String userAgent, String referer, boolean relayed) {
         Media media = new Media(engine, Uri.parse(stream));
         media.setHWDecoderEnabled(true, false);
+        if (relayed) media.addOption(":network-caching=" + RELAYED_CACHING_MS);
         if (userAgent != null) media.addOption(":http-user-agent=" + userAgent);
         if (referer != null && !referer.isEmpty()) media.addOption(":http-referrer=" + referer);
         player.setMedia(media);

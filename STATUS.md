@@ -43,6 +43,10 @@ Last updated: 20 October 2026.
    lock with playback, so running them in parallel would delay starting a channel), and the
    programme guide is fetched only after all of them. Not measured on the X905X5M box.
 
+6. **Relayed sports streams use a 4 s buffer** (`LivePlayer.RELAYED_CACHING_MS`) and the relay
+   retries a timed-out provider once. Whether this removes the short pauses seen on the owner's
+   phone (21 October 2026) is not yet confirmed on a phone or the TV box.
+
 7. **Phone layout covers Live TV only.** Films, series, My List and settings still open in the TV
    layout. MainActivity now handles rotation itself (configChanges), so screens are not rebuilt
    when a phone turns.

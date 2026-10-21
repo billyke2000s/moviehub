@@ -8,6 +8,12 @@
 
 - Import native Pluto and the free lists before FreeLiveSports and the optional providers. With every provider switched on, the free lists (most channels) previously waited until all sixteen providers had finished, each allowed up to four minutes. Numbering and preferred copies are unchanged because they follow `ChannelDatabase.ORDER`, not import order. Not measured on the TV box.
 
+## Unreleased — smoother relayed sports streams
+
+- Relayed provider streams (FreeShot, DaddyLive, ZLive) buffer 4 s ahead instead of the shared 1.5 s Live TV buffer; other channels keep the faster start.
+- The provider relay keeps upstream connections open for reuse after a complete response, runs four workers instead of two, and retries a provider that does not answer in time once before the player sees an error.
+- Prompted by the owner's phone diagnostics (six short buffering pauses and relay timeouts in one session). Not yet measured on a device after the change.
+
 ## Unreleased — early live video freeze investigation
 
 - Count rendered texture-buffer updates even when presentation timestamps repeat or reset; clear handoff covers from buffer callbacks.
