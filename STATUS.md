@@ -47,6 +47,11 @@ Last updated: 20 October 2026.
    retries a timed-out provider once. Whether this removes the short pauses seen on the owner's
    phone (21 October 2026) is not yet confirmed on a phone or the TV box.
 
+6. **Live picture can stop while sound plays.** Seen by the owner on 21 October 2026 (phone,
+   DaddyLive); a move to the mini picture fixed it. The cause is unknown. `LivePlayer` now
+   refreshes the view after `PICTURE_REPAIR_MS` (2.5 s) once per freeze; "Still picture refreshed"
+   in Troubleshooting → Playback shows how often this happens.
+
 7. **Phone layout covers Live TV only.** Films, series, My List and settings still open in the TV
    layout. MainActivity now handles rotation itself (configChanges), so screens are not rebuilt
    when a phone turns.

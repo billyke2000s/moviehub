@@ -21,6 +21,19 @@ final class LiveProgress {
         return frames >= 0 ? now - videoAt >= limit : now - clockAt >= limit;
     }
 
+    /**
+     * The picture has not changed for {@code limit} while the clock (and so the sound) still
+     * moved within it: a stopped picture over playing audio, not buffering.
+     */
+    boolean pictureFrozen(long now, long limit) {
+        return pictures >= 0 && position >= 0 && now - videoAt >= limit && now - clockAt < limit;
+    }
+
+    /** When the current still picture began; the same value for one whole freeze. */
+    long pictureSince() {
+        return videoAt;
+    }
+
     boolean clockMoving(long now, long limit) {
         return position >= 0 && now - clockAt < limit;
     }

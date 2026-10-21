@@ -140,6 +140,15 @@ public final class LiveControlsTest {
         assertNotNull(SidePanel.current);
         assertTrue("SELECT presses Options", SidePanel.current.isShowing());
         assertEquals("The buttons must not resolve backups", 1, resolutions.get());
+        // Leave as the other tests do: close the panels, then BACK out of the player, so no
+        // window from this test is left over the next test's video.
+        remote.runOnMainSync(() -> {
+            SidePanel.current.dismiss();
+            activity.zapper.hideInfo();
+        });
+        remote.waitForIdleSync();
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        await(activity::isFinishing);
     }
 
     @Test

@@ -912,7 +912,12 @@ public class PlaybackTest {
         });
         await(() -> samePlayer.getTime() > baseline[1] + 1000, 5000);
         assertEquals("Video consumer should actually be frozen", baseline[0], output.frames);
-        await(() -> output.handoffs > moves && output.frames > baseline[0] + 3, 16000);
+        // Refreshed after PICTURE_REPAIR_MS (2.5 s), well before the 8 s full-stall path.
+        await(() -> output.handoffs > moves && output.frames > baseline[0] + 3, 6000);
+        assertTrue(
+            "The early still-picture refresh did the repair",
+            LivePlayer.videoRecovery().startsWith("Picture stopped while the sound played")
+        );
         assertSame(samePlayer, LivePlayer.player());
         assertSame(output, LivePlayer.output());
         assertEquals("No source reconnection", opened, LivePlayer.opened);
