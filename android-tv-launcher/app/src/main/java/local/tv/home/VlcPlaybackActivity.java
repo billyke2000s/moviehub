@@ -431,6 +431,11 @@ public class VlcPlaybackActivity extends Activity {
         VodSources.Session sources = VodSources.get(getIntent().getStringExtra("vodSession"));
         if (sources != null) vod = new VodPlayback(this, sources);
         armStartupTimeout();
+        // A prepared replacement may have used a TextureView. Recreate the initial film layout
+        // when restarting so VLC never reuses a layout initialized for another output type.
+        if (filmVideo != null) video.removeView(filmVideo);
+        filmVideo = new VLCVideoLayout(this);
+        video.addView(filmVideo, new FrameLayout.LayoutParams(-1, -1));
         engine = new LibVLC(this, new ArrayList<>(PlayerOptions.film(this)));
         player = new MediaPlayer(engine);
         player.setRate(playbackRate);
