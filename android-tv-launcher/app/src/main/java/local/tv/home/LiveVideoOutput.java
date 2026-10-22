@@ -267,6 +267,8 @@ final class LiveVideoOutput {
         if (closed) return;
         closed = true;
         main.removeCallbacks(closeTimeout);
+        // whenSurfaceReady also schedules a delayed enable callback. Its closed guard
+        // prevents it from accessing the native player after this output is released.
         pendingDestination = null;
         pendingTrack = NO_TRACK;
         if (layout != null) player.detachViews();
