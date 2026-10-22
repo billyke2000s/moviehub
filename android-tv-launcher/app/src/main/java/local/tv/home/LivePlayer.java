@@ -367,6 +367,12 @@ final class LivePlayer {
             (event.type == MediaPlayer.Event.EndReached || event.type == MediaPlayer.Event.EncounteredError)
         ) return;
         if (event.type == MediaPlayer.Event.Playing) played = true;
+        if (
+            output != null &&
+            (event.type == MediaPlayer.Event.Playing ||
+                event.type == MediaPlayer.Event.ESAdded ||
+                event.type == MediaPlayer.Event.Vout)
+        ) output.restoreAudioTrack();
         if (event.type == MediaPlayer.Event.Vout && output != null) output.videoOutputs(event.getVoutCount());
         if (
             (event.type == MediaPlayer.Event.EncounteredError ||

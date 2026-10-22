@@ -320,3 +320,8 @@ unreported output counts and suppressed shutdown acknowledgement. Validation is 
 Release run 39870438797 exposed a delayed overlay callback querying an externally released
 shared live player. Overlay, skip, audio-focus, event, delayed-resume and error callbacks now
 apply the existing ownership check before native access; a real-player regression covers it.
+
+Independent release validation 39871238896 passed 146/146 tests. PR validation passed
+145/146, observing audio track -1 during picture recovery. Forced native-stop recovery now
+restores the selected audio track after rediscovery. Repair evidence waits for selected
+audio and playing state, then checks new audio-output progress rather than old-session stats.

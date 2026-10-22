@@ -60,6 +60,7 @@ final class LiveVideoOutput {
     private static final long SURFACE_WAIT_MS = 3000;
     private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
     private boolean restartAfterMove;
+    private int pendingAudioTrack = NO_TRACK;
     private final Runnable closeTimeout = this::stopBeforeMove;
     private final Runnable deferredFinish = this::finishMove;
     private Runnable pendingSurfaceTimeout;
@@ -122,6 +123,7 @@ final class LiveVideoOutput {
     /** Never destroy a native window merely because its shutdown acknowledgement is late. */
     private void stopBeforeMove() {
         if (closed || pendingTrack == NO_TRACK) return;
+        pendingAudioTrack = player.getAudioTrack();
         player.stop();
         vouts = 0;
         restartAfterMove = true;
@@ -133,6 +135,7 @@ final class LiveVideoOutput {
      * switching the old stream's video track back on: VLC picks the new stream's own tracks.
      */
     void streamChanging() {
+        pendingAudioTrack = NO_TRACK;
         restartAfterMove = false;
         cover.clear();
         cancelSurfaceWait();
@@ -140,6 +143,18 @@ final class LiveVideoOutput {
         if (pendingTrack == NO_TRACK) return;
         pendingTrack = -1;
         finishMove();
+    }
+
+    /** Restore the user's audio selection once a forced restart has rediscovered its tracks. */
+    void restoreAudioTrack() {
+        if (closed || pendingAudioTrack == NO_TRACK || restartAfterMove || !player.isPlaying()) return;
+        MediaPlayer.TrackDescription[] tracks = player.getAudioTracks();
+        if (tracks == null) return;
+        for (MediaPlayer.TrackDescription track : tracks) {
+            if (track.id != pendingAudioTrack) continue;
+            if (player.setAudioTrack(pendingAudioTrack)) pendingAudioTrack = NO_TRACK;
+            return;
+        }
     }
 
     /** LivePlayer passes on VLC's Vout events: how many video outputs are open. */
@@ -333,6 +348,7 @@ final class LiveVideoOutput {
     void stopping() {
         if (closed) return;
         closed = true;
+        pendingAudioTrack = NO_TRACK;
         restartAfterMove = false;
         cover.close();
         main.removeCallbacks(deferredFinish);

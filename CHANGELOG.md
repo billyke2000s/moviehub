@@ -2,6 +2,8 @@
 
 ## Unreleased — playback continuity
 
+- Restore the selected audio track after forced native-stop recovery.
+
 - Reject released shared live players in delayed controls, audio-focus and playback-event callbacks.
 
 - Wait for native video shutdown even before VLC reports an output; on shutdown timeout, stop native playback before releasing its surface, then restart at the destination.
