@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — continuous series, automatic play and TV remote controls
+## 0.43 (22 October 2026)
 
 - Continue to the next aired episode across season boundaries using TMDB episode metadata, prefetched while watching. Stop at the last available episode instead of inventing an episode number.
 - If the next episode is absent from the current pack, offer **Search for the next episode** in manual mode, or search automatically in automatic mode.
