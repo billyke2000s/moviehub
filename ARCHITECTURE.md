@@ -272,3 +272,10 @@ as well as provider streams, with video-track, visibility, pause and resolution 
 
 `LiveRepairBudget` permits one surface repair until two contiguous visible observations show
 video progress. Hidden/pending surfaces and old queued frames cannot replenish the budget.
+
+Native window shutdown follow-up: post-merge retry 39868257885 crashed in EGL window
+creation during native-source handoff. An unreported Vout count no longer permits immediate
+detachment. Every move requests track shutdown; a missing acknowledgement after 600 ms
+stops the native reader before moving and restarts playback on the destination. This rare
+fallback reconnects the stream; normal acknowledged moves retain it. Device fixtures cover
+unreported output counts and suppressed shutdown acknowledgement. Validation is pending.

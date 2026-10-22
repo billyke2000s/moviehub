@@ -309,3 +309,10 @@ before the first window attach. The native picture-repair fixture establishes ac
 progress before injecting a new freeze; hiding a surface is intentionally insufficient to
 reset the new repair budget. Failed device runs print the full crash buffer so Java process
 failures cannot disappear from a video-only filtered tail.
+
+Native window shutdown follow-up: post-merge retry 39868257885 crashed in EGL window
+creation during native-source handoff. An unreported Vout count no longer permits immediate
+detachment. Every move requests track shutdown; a missing acknowledgement after 600 ms
+stops the native reader before moving and restarts playback on the destination. This rare
+fallback reconnects the stream; normal acknowledged moves retain it. Device fixtures cover
+unreported output counts and suppressed shutdown acknowledgement. Validation is pending.

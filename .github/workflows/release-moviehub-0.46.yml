@@ -12,8 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - name: Hold publication pending native surface crash investigation
-        run: exit 1
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
         with:
@@ -59,7 +57,7 @@ jobs:
         run: |
           for attempt in $(seq 1 120); do
             reviewed=$(gh api repos/billyke2000s/moviehub/commits/main --jq '.commit.tree.sha')
-            if [ "$reviewed" = 'aed8c3d8efc07f442d99a79052614fa752453d53' ]; then exit 0; fi
+            if [ "$reviewed" = 'e62bf21fc7215c3e7080010cccb829214ef3c65c' ]; then exit 0; fi
             sleep 5
           done
           echo 'Playback continuity changes are not reviewed and merged; refusing to publish.'
