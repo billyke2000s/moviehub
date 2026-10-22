@@ -1,107 +1,143 @@
-# MovieHub for Android TV
+<div align="center">
 
-Settings → Playback offers **Automatic play: films** and **Automatic play: series** (both off by default), plus a preferred resolution. Automatic mode chooses among ready-to-play sources and falls back to manual selection if needed. Series continue across seasons using aired-episode metadata; missing pack episodes offer a search action in manual mode. On Live TV, physical colour buttons perform the displayed actions; Back reveals outlined controls for arrows and OK, and another Back leaves the page. Unusual remote codes can be learned in Live TV → Options → Set up coloured buttons.
+# 🎬 MOVIEHUB
 
+### Your TV. Your apps. Your entertainment. One home.
 
-> ## ⚠️ MovieHub doesn't host anything
->
-> **MovieHub is just an app. It doesn't store or share any videos, channels or streams.** The free
-> channels come from two public lists run by other people,
-> [Free-TV](https://github.com/Free-TV/IPTV) and [iptv-org](https://github.com/iptv-org/iptv), and
-> they play from other people's servers. Anything else comes from accounts you add yourself. **We
-> don't control or check any of it. What you watch is up to you.**
+**A remote-first Android TV launcher bringing films, series, live television and your favourite apps together.**
 
-MovieHub is a home screen for Android TV boxes (Android 9 or newer). It puts your apps, films,
-series and live TV in one place, and it's built to be used with a remote.
+[![Android](https://img.shields.io/badge/Android-9%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/tv/)
+[![License](https://img.shields.io/badge/License-MIT-8B5CF6?style=for-the-badge)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/billyke2000s/moviehub?include_prereleases&style=for-the-badge&label=Release&color=2563EB)](https://github.com/billyke2000s/moviehub/releases)
+[![GitHub stars](https://img.shields.io/github/stars/billyke2000s/moviehub?style=for-the-badge&color=F59E0B)](https://github.com/billyke2000s/moviehub/stargazers)
 
-## What it does
+**[⬇ Download APK](https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/home.apk)** · **[📦 Releases](https://github.com/billyke2000s/moviehub/releases)** · **[📖 Documentation](DEVELOPMENT.md)** · **[🛡 Security](SECURITY.md)**
 
-- **Home:** big artwork, a row of posters, a clock and your favourite apps. Move the apps around
-  with the remote. Android settings are one click away.
-- **Apps:** all your installed apps, with search and recently used apps. Hide the ones you never use.
-- **Films and series:** browse by category or genre, search by title or actor, and see cast,
-  trailers and similar titles.
-- **Playing things:** finds sources through Torrentio, MediaFusion or Comet, with Premiumize. Pick
-  subtitles, audio, speed and picture size, and set a sleep timer.
-- **My List and Continue Watching:** save titles and carry on where you left off.
-- **Live TV:** free channels, or your own Xtream or M3U playlist. A TV guide, favourites, search and
-  reminders. The channel list refreshes itself every 12 hours, and keeps the old list if that fails.
-- **Phones and tablets:** on first open it asks whether you're using a TV or a phone. The phone
-  layout covers Live TV for now.
-- **Updates:** an Update button shows up next to Settings when there's a new version. The app
-  checks the update is genuine before installing it.
+---
 
-Your account details are typed in on the TV and stored encrypted on the device. None of them are
-in this repository.
+*Browse beautifully. Navigate naturally. Watch your way.*
 
-## Install
+[Explore features](#-the-experience) · [Install](#-get-moviehub) · [Build](#-build-from-source) · [Project status](#-project-status) · [Legal](#-content-responsibility)
 
-> [!TIP]
-> ### 📺 Install with Downloader
-> **Downloader code: `1031512`**
->
-> Open the **Downloader** app on your Android TV device, enter **1031512** in its address/code field, and follow the download prompts.
->
-> **Direct APK:** [Download MovieHub (home.apk)](https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/home.apk)
+</div>
 
-Download [home.apk](https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/home.apk)
-from [Releases](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) and install
-it on your TV box. After that, new versions come through the Update button in the app.
+## ✨ The experience
 
-## Build
+<table>
+<tr><td width="50%" valign="top">
 
-You need JDK 17, Android SDK 35 and Gradle 8.10.2.
+### 🏠 A home built for the big screen
+A remote-friendly home screen with rich artwork, poster rows, a clock, rearrangeable favourite apps and quick access to Android settings.
 
-```sh
+</td><td width="50%" valign="top">
+
+### 🎞 Discover films & series
+Explore categories and genres, search by title or actor, and view cast, trailers and related titles.
+
+</td></tr>
+<tr><td valign="top">
+
+### 📺 Live TV, your way
+Browse free public channel directories or add your own Xtream or M3U playlist. Use the guide, favourites, search and reminders.
+
+</td><td valign="top">
+
+### ▶️ Playback controls
+Choose sources, subtitles, audio tracks, playback speed and picture size. Continue watching, save titles to My List and set a sleep timer.
+
+</td></tr>
+<tr><td valign="top">
+
+### 🧩 Your apps, organised
+Search installed apps, access recently used apps and hide apps you don't need.
+
+</td><td valign="top">
+
+### 🔄 Updates in the app
+MovieHub checks for new releases and offers an update action, with integrity checks before installation.
+
+</td></tr>
+</table>
+
+> [!NOTE]
+> MovieHub is under active development. Feature availability and playback depend on your device, configured accounts and third-party services. Read [STATUS.md](STATUS.md) and [TESTING.md](TESTING.md) before relying on a particular integration.
+
+## 📸 Screenshots
+
+Real device screenshots have not been added to this README yet. This section is reserved for verified captures of the home screen, browsing, guide and player rather than mockups presented as the running app.
+
+## 🚀 Get MovieHub
+
+<div align="center">
+
+### 📥 Downloader code: **`1031512`**
+
+Enter the code in the **Downloader** app on your Android TV device, or use the direct APK link below.
+
+**[⬇ Download home.apk](https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/home.apk)**
+
+[Browse release notes and files →](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest)
+
+</div>
+
+1. Install the APK on an **Android 9 or newer** TV device.
+2. Open MovieHub and follow the first-run setup.
+3. Add your own supported services or browse the available public channel lists.
+4. Use the in-app **Update** button when a new version is offered.
+
+> [!IMPORTANT]
+> Only install APKs from releases you trust. Real-device installation and updates must be verified on your particular hardware.
+
+## 🧭 What's inside?
+
+| Area | Highlights |
+| :--- | :--- |
+| **Home** | Artwork, favourites, poster rows, clock |
+| **Movies & Series** | Categories, discovery, search, cast and trailers |
+| **Live TV** | Public directories, personal M3U/Xtream, guide, favourites |
+| **Playback** | VLC-based playback, audio/subtitle controls, source selection |
+| **Library** | My List and Continue Watching |
+| **Settings** | Playback preferences, free-channel options and updates |
+
+### 🔌 Services and sources
+
+- **Catalogue browsing:** TMDB-powered metadata and artwork.
+- **Source discovery:** Torrentio, MediaFusion and Comet, with Premiumize support where configured.
+- **Live TV:** Your own Xtream/M3U services and public [Free-TV](https://github.com/Free-TV/IPTV) and [iptv-org](https://github.com/iptv-org/iptv) directories.
+- **Experimental integrations:** Additional free-channel/provider functionality is documented below and is **not** a promise of reliable playback.
+
+MovieHub does **not** include a subscription or guarantee access to any channel, film or series.
+
+## 🛠 Build from source
+
+**Requirements:** JDK 17 · Android SDK 35 · Gradle 8.10.2
+
+```bash
 gradle -p android-tv-launcher assembleDebug lintDebug
 ```
 
-Full setup, formatting and conventions are in [DEVELOPMENT.md](DEVELOPMENT.md).
+See [DEVELOPMENT.md](DEVELOPMENT.md) for setup and conventions, [ARCHITECTURE.md](ARCHITECTURE.md) for code structure and [TESTING.md](TESTING.md) for verification.
 
-## Documentation
+## 📚 Project handbook
 
-| Document | Read it for |
-| --- | --- |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | How the code is organised and which file does what |
-| [DEVELOPMENT.md](DEVELOPMENT.md) | Building, code style, branches and releases |
-| [TESTING.md](TESTING.md) | Test layers, how to run them, and known flaky tests |
-| [SECURITY.md](SECURITY.md) | How accounts, network access and updates are protected |
-| [STATUS.md](STATUS.md) | Current state, known issues and next steps |
-| [CHANGELOG.md](CHANGELOG.md) | What changed in each version |
-| [AGENTS.md](AGENTS.md) | Rules for AI assistants editing this repository |
-| [android-tv-launcher/UPDATES.md](android-tv-launcher/UPDATES.md) | Publishing signed updates |
-| [docs/](docs/) | Design notes: TV interface, catalogue categories, poster feeds |
+| Guide | What you'll find |
+| :--- | :--- |
+| [Architecture](ARCHITECTURE.md) | Project structure and major components |
+| [Development](DEVELOPMENT.md) | Local setup, coding conventions and releases |
+| [Testing](TESTING.md) | Test layers, commands and limitations |
+| [Security](SECURITY.md) | Account storage, networking and update protections |
+| [Status](STATUS.md) | Known issues and work in progress |
+| [Changelog](CHANGELOG.md) | Version history |
+| [AI contributor rules](AGENTS.md) | Repository editing instructions |
+| [Update publishing](android-tv-launcher/UPDATES.md) | Signed release process |
+| [Design notes](docs/) | Interface and catalogue documentation |
 
-## Limits
+## 🧪 Project status
 
-The automated tests use made-up data. They don't prove that a real TMDB, Premiumize or Xtream
-account works, or that the app installs and updates properly on every TV box. Check those on a real
-box before a release.
+Automated tests use synthetic data and do not establish that every external service, live channel or update path works on physical hardware. Device-specific behaviour, especially live video handoff and provider integrations, needs real-world testing. Experimental work and its evidence are described in the technical notes below.
 
-## Content and copyright
-
-- **Nothing is hosted here.** There are no videos, streams or channels in this repository, its
-  releases or on any server for this project.
-- **The free channels are other people's links.** If you haven't added a TV provider, Live TV loads
-  the public Free-TV and iptv-org lists from their own websites. The streams stay on other people's
-  servers. We don't pick, check or control them. If a stream has a problem, report it to those
-  lists.
-- **Everything else is added by you.** Xtream or M3U providers, Premiumize and the source finders
-  are services run by other people, and you choose whether to use them.
-- **It's your responsibility.** Only watch what you're allowed to, and only use services that are
-  legal where you live.
-- **We're not linked to any broadcaster.** Channel names and logos belong to their owners and are
-  only shown so you know what's on. The guide looks like an old UK satellite box, but this project
-  has nothing to do with Sky or any broadcaster.
-- **Takedowns.** If you think something here breaks your rights, contact the owner through GitHub
-  and it will be taken down quickly.
-
-This is here to be clear, not legal advice.
-
-## License
-
-[MIT](LICENSE). The Live TV screens use the Hind typeface (Indian Type Foundry), bundled under
-the SIL Open Font License 1.1: see `android-tv-launcher/app/src/main/assets/fonts/Hind-OFL.txt`.
+<details>
+<summary><strong>🔬 Expand technical notes, experiments and playback behaviour</strong></summary>
 
 ### Native free TV
 
@@ -154,3 +190,32 @@ A selected live backup and its Automatic/manual mode follow the active player th
 Films and episodes opened from Sources can switch among up to five cached sources. Backups resolve only when needed. A 4-second stall or two buffering starts in 60 seconds prepares a muted replacement; the current stream stays open until the replacement decodes near the current position. Seeking and user pause are excluded. Playback options → Sources offers manual selection and Automatic. Manual selection pins the playback service (currently Premiumize). Cloud-only/history playback without an in-memory source session keeps its existing single-source behavior.
 
 Live TV keeps its separate thresholds. A still video counter over advancing audio gets an early surface repair after 2.5 seconds. Troubleshooting reports decoded/displayed VLC rates separately for the guide and full screen; these counters are not direct measurements of SurfaceView presentation.
+
+</details>
+
+## ⚖️ Content responsibility
+
+> [!WARNING]
+> **MovieHub does not host, store or distribute films, series, channels or streams.** Public channel listings and user-configured services are supplied by independent third parties. Their availability, rights and reliability are outside this project's control.
+
+Use only content and services you are legally entitled to access. Channel names and logos belong to their respective owners. MovieHub is not affiliated with Sky, broadcasters, streaming platforms or source providers. For rights concerns, contact the repository owner through GitHub.
+
+## 🔐 Privacy & security
+
+Account credentials are entered on-device and stored encrypted locally, as described in [SECURITY.md](SECURITY.md). Review the security documentation and report sensitive vulnerabilities privately rather than publishing credentials or exploits in an issue.
+
+## 📄 License & credits
+
+MovieHub is distributed under the [MIT License](LICENSE). The Live TV interface includes the **Hind** typeface by Indian Type Foundry under SIL Open Font License 1.1; see [font license](android-tv-launcher/app/src/main/assets/fonts/Hind-OFL.txt).
+
+<div align="center">
+
+---
+
+### 🎬 Made for the living room.
+
+**[Back to top ↑](#-moviehub)** · **[Download](https://github.com/billyke2000s/moviehub/releases)** · **[Report an issue](https://github.com/billyke2000s/moviehub/issues)**
+
+<sub>MovieHub is an independent open-source project. No third-party services are endorsed by or affiliated with this repository.</sub>
+
+</div>
