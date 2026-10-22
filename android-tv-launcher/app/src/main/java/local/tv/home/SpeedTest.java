@@ -24,19 +24,22 @@ final class SpeedTest {
         final long bytes;
         final long pingMs;
         final long jitterMs;
+        final int failedProbes;
 
-        Result(float mbps, long answerMs, long bytes, long pingMs, long jitterMs) {
+        Result(float mbps, long answerMs, long bytes, long pingMs, long jitterMs, int failedProbes) {
             this.mbps = mbps;
             this.answerMs = answerMs;
             this.bytes = bytes;
             this.pingMs = pingMs;
             this.jitterMs = jitterMs;
+            this.failedProbes = failedProbes;
         }
     }
 
     private SpeedTest() {}
 
     static String rating(float mbps, long ping, long jitter) {
+        if (ping < 0 || jitter < 0) return "Unrated";
         if (mbps < 5 || (ping >= 0 && ping > 250) || (jitter >= 0 && jitter > 100)) return "Poor";
         if (mbps < 15 || (ping >= 0 && ping > 100) || (jitter >= 0 && jitter > 40)) return "Fair";
         if (mbps < 25 || (ping >= 0 && ping > 60) || (jitter >= 0 && jitter > 20)) return "Good";
@@ -65,9 +68,9 @@ final class SpeedTest {
                 // A failed probe must not invalidate a successful download test.
             } finally { if (connection != null) connection.disconnect(); }
         }
-        if (count < 2) return new long[] {-1, -1};
+        if (count < 2) return new long[] {-1, -1, 5 - count};
         java.util.Arrays.sort(values, 0, count);
-        return new long[] { values[count / 2], changes / (count - 1) };
+        return new long[] { values[count / 2], changes / (count - 1), 5 - count };
     }
 
 
@@ -89,7 +92,7 @@ final class SpeedTest {
             int n;
             while (System.nanoTime() < deadline && (n = in.read(buffer)) != -1) bytes += n;
             long millis = (System.nanoTime() - answered) / 1_000_000L;
-            return new Result(mbps(bytes, millis), (answered - asked) / 1_000_000L, bytes, latency[0], latency[1]);
+            return new Result(mbps(bytes, millis), (answered - asked) / 1_000_000L, bytes, latency[0], latency[1], (int) latency[2]);
         }
     }
 }
