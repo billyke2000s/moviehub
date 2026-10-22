@@ -269,7 +269,11 @@ final class LivePlayer {
         if (output != null) output.streamChanging();
         Media media = new Media(engine, Uri.parse(stream));
         media.setHWDecoderEnabled(true, false);
+        // Relayed streams need more headroom for segment retrieval and decoding.
+        // Plain HTTP transport streams use the low-latency engine default.
         if (relayed) media.addOption(":network-caching=" + RELAYED_CACHING_MS);
+        else if (stream != null && (stream.contains(".m3u8") || stream.contains("/hls/")))
+            media.addOption(":network-caching=2500");
         if (userAgent != null) media.addOption(":http-user-agent=" + userAgent);
         if (referer != null && !referer.isEmpty()) media.addOption(":http-referrer=" + referer);
         player.setMedia(media);
