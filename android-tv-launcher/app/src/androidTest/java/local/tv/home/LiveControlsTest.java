@@ -109,6 +109,7 @@ public final class LiveControlsTest {
         assertEquals("Opening controls and Sources must not resolve backups", 1, resolutions.get());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
         remote.waitForIdleSync();
+        await(() -> !activity.dialogOpen && SidePanel.current == null && activity.hasWindowFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         await(activity::isFinishing);
     }
@@ -147,6 +148,7 @@ public final class LiveControlsTest {
             activity.zapper.hideInfo();
         });
         remote.waitForIdleSync();
+        await(() -> !activity.dialogOpen && SidePanel.current == null && activity.hasWindowFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         await(activity::isFinishing);
     }

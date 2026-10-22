@@ -293,3 +293,11 @@ The attempted 0.45 publish ran all 136 tests with one failure: the manual-backup
 reported fresh pictures before its surface had a size. Nothing was uploaded. PixelCopy no
 longer delays closing the old video output; destination evidence excludes old decoded frames
 and waits for a valid, sized surface. Follow-up device validation is pending.
+
+## Panel lifecycle follow-up (22 October 2026)
+
+The second 0.45 release validation passed playback handoffs but failed two key-event tests
+during dialog focus transitions and a teardown that retained a detached dialog. The release
+upload was skipped. Panels now clear their reference on window detach and suppress follow-up
+actions for a finishing/destroyed Activity. Input tests wait for actual focus; a new device
+regression closes an Activity with a panel open. CI validation is pending.

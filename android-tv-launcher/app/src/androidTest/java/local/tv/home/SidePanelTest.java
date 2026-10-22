@@ -82,6 +82,28 @@ public class SidePanelTest {
     }
 
     @Test
+    public void closingTheActivityClearsItsPanelWithoutRunningAnotherAction() {
+        AtomicBoolean continued = new AtomicBoolean();
+        remote.runOnMainSync(() -> {
+            SidePanel.of(activity, "Closing fixture")
+                .action("Continue", () -> continued.set(true))
+                .onDismiss(() -> continued.set(true))
+                .show();
+            activity.finish();
+        });
+        long deadline = android.os.SystemClock.elapsedRealtime() + 8000;
+        while (!activity.isDestroyed() && android.os.SystemClock.elapsedRealtime() < deadline) {
+            remote.waitForIdleSync();
+            android.os.SystemClock.sleep(20);
+        }
+        remote.runOnMainSync(() -> {
+            assertTrue("The Activity was destroyed", activity.isDestroyed());
+            assertNull("No panel retains a detached Activity window", SidePanel.current);
+            assertFalse("Closing the Activity does not continue onboarding", continued.get());
+        });
+    }
+
+    @Test
     public void errorsAreExplainedPlainlyWithoutProviderText() {
         assertEquals(
             "No internet connection",

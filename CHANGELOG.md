@@ -2,6 +2,8 @@
 
 ## Unreleased — reviewed playback and pending-PR integration
 
+- Clear panels when their Activity window detaches; do not continue panel actions on a closing Activity.
+
 - Close the old live video output immediately during handoff while the optional still-image capture runs independently; require a valid destination surface for picture evidence.
 - Keep the live video surface alive until VLC has stopped its decoder and video-output threads when leaving playback.
 
