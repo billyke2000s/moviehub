@@ -57,10 +57,7 @@ final class Troubleshooting {
 
     private void speedTest() {
         heading("Internet speed");
-        row(
-            "Streaming connection quality",
-            testing ? "Testing download, latency and jitter…" : speedResult
-        );
+        row("Streaming connection quality", testing ? "Testing download, latency and jitter…" : speedResult);
         actions(new String[] { "Run speed test" }, new Runnable[] { this::runSpeedTest });
         body.addView(
             activity.muted(
@@ -81,7 +78,9 @@ final class Troubleshooting {
                     speedResult = String.format(
                         Locale.ROOT,
                         "%s for streaming  ·  Download %.1f Mb/s  ·  HTTP latency %s  ·  Jitter %s  ·  Failed probes %d/5  ·  %.1f MB tested",
-                        r.pingMs < 0 ? "Unrated (latency unavailable)" : SpeedTest.rating(r.mbps, r.pingMs, r.jitterMs),
+                        r.pingMs < 0
+                            ? "Unrated (latency unavailable)"
+                            : SpeedTest.rating(r.mbps, r.pingMs, r.jitterMs),
                         r.mbps,
                         r.pingMs < 0 ? "unavailable" : r.pingMs + " ms",
                         r.jitterMs < 0 ? "unavailable" : r.jitterMs + " ms",

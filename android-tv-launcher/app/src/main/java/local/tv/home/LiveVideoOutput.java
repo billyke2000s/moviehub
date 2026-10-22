@@ -59,6 +59,20 @@ final class LiveVideoOutput {
     private static final long SURFACE_WAIT_MS = 3000;
     private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
     private final Runnable closeTimeout = this::finishMove;
+    private final Runnable deferredFinish = this::finishMove;
+    private Runnable pendingSurfaceTimeout;
+    private android.view.SurfaceHolder pendingSurfaceHolder;
+    private android.view.SurfaceHolder.Callback pendingSurfaceCallback;
+
+    private void cancelSurfaceWait() {
+        if (pendingSurfaceTimeout != null) main.removeCallbacks(pendingSurfaceTimeout);
+        if (
+            pendingSurfaceHolder != null && pendingSurfaceCallback != null
+        ) pendingSurfaceHolder.removeCallback(pendingSurfaceCallback);
+        pendingSurfaceTimeout = null;
+        pendingSurfaceHolder = null;
+        pendingSurfaceCallback = null;
+    }
 
     void show(FrameLayout destination) {
         if (closed || holder == destination) return;
@@ -90,6 +104,7 @@ final class LiveVideoOutput {
             pendingTrack = waitingTrack != NO_TRACK ? waitingTrack : player.getVideoTrack();
             waitingTrack = NO_TRACK;
         }
+        cancelSurfaceWait();
         main.removeCallbacks(closeTimeout);
         if (pendingTrack >= 0 && vouts > 0) {
             player.setVideoTrack(-1);
@@ -102,6 +117,7 @@ final class LiveVideoOutput {
      * switching the old stream's video track back on: VLC picks the new stream's own tracks.
      */
     void streamChanging() {
+        cancelSurfaceWait();
         waitingTrack = NO_TRACK;
         if (pendingTrack == NO_TRACK) return;
         pendingTrack = -1;
@@ -113,12 +129,13 @@ final class LiveVideoOutput {
         vouts = count;
         if (count == 0 && pendingTrack != NO_TRACK) {
             main.removeCallbacks(closeTimeout);
-            main.post(this::finishMove);
+            main.post(deferredFinish);
         }
     }
 
     private void finishMove() {
         main.removeCallbacks(closeTimeout);
+        main.removeCallbacks(deferredFinish);
         if (closed || pendingTrack == NO_TRACK) return;
         FrameLayout destination = pendingDestination;
         pendingDestination = null;
@@ -143,6 +160,7 @@ final class LiveVideoOutput {
      * decode one frame and stall (CI, 21 October 2026). Falls back after SURFACE_WAIT_MS.
      */
     private void whenSurfaceReady(int track) {
+        cancelSurfaceWait();
         VLCVideoLayout target = layout;
         SurfaceView surface = surfaceView();
         boolean[] done = { false };
@@ -151,6 +169,7 @@ final class LiveVideoOutput {
             if (done[0] || closed || layout != target || waitingTrack != track) return;
             done[0] = true;
             waitingTrack = NO_TRACK;
+            cancelSurfaceWait();
             player.setVideoTrack(track);
         };
         if (surface == null) {
@@ -182,11 +201,14 @@ final class LiveVideoOutput {
             @Override
             public void surfaceDestroyed(android.view.SurfaceHolder destroyed) {}
         };
+        pendingSurfaceHolder = holder;
+        pendingSurfaceCallback = ready;
         holder.addCallback(ready);
-        main.postDelayed(() -> {
-            holder.removeCallback(ready);
+        pendingSurfaceTimeout = () -> {
+            cancelSurfaceWait();
             enable.run();
-        }, SURFACE_WAIT_MS);
+        };
+        main.postDelayed(pendingSurfaceTimeout, SURFACE_WAIT_MS);
     }
 
     private void attach(FrameLayout destination) {
@@ -266,7 +288,11 @@ final class LiveVideoOutput {
     void close() {
         if (closed) return;
         closed = true;
+        main.removeCallbacks(deferredFinish);
+        cancelSurfaceWait();
         main.removeCallbacks(closeTimeout);
+        // whenSurfaceReady also schedules a delayed enable callback. Its closed guard
+        // prevents it from accessing the native player after this output is released.
         pendingDestination = null;
         pendingTrack = NO_TRACK;
         if (layout != null) player.detachViews();

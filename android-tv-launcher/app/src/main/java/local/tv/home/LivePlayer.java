@@ -269,7 +269,12 @@ final class LivePlayer {
         if (output != null) output.streamChanging();
         Media media = new Media(engine, Uri.parse(stream));
         media.setHWDecoderEnabled(true, false);
+        // Relayed streams need more headroom for segment retrieval and decoding.
+        // Plain HTTP transport streams use the low-latency engine default.
         if (relayed) media.addOption(":network-caching=" + RELAYED_CACHING_MS);
+        else if (stream != null && (stream.contains(".m3u8") || stream.contains("/hls/"))) media.addOption(
+            ":network-caching=2500"
+        );
         if (userAgent != null) media.addOption(":http-user-agent=" + userAgent);
         if (referer != null && !referer.isEmpty()) media.addOption(":http-referrer=" + referer);
         player.setMedia(media);
@@ -370,8 +375,10 @@ final class LivePlayer {
         cancelResolution();
         if (player != null) {
             player.setEventListener(null);
-            player.stop();
+            // Cancel surface callbacks before releasing the VLC native player.
+            // Otherwise a queued repair may call setVideoTrack on a released VLCObject.
             if (output != null) output.close();
+            player.stop();
             player.release();
             player = null;
         }
