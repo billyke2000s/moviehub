@@ -219,13 +219,27 @@ public final class LiveRenewalTest {
     public void missingShutdownAcknowledgementStopsNativeReaderBeforeMoving() {
         start(false);
         int before = requests.get();
+        await(() -> LivePlayer.player().getAudioTrack() >= 0);
+        int selectedAudio = LivePlayer.player().getAudioTrack();
+        assertTrue(selectedAudio >= 0);
         remote.runOnMainSync(() -> {
             // Suppress Vout acknowledgement to exercise the bounded native-stop fallback.
-            LivePlayer.player().setEventListener(null);
+            LivePlayer.player().setEventListener(event -> {
+                if (
+                    event.type == MediaPlayer.Event.Vout && event.getVoutCount() > 0
+                ) LivePlayer.output().videoOutputs(event.getVoutCount());
+                if (
+                    event.type == MediaPlayer.Event.Playing || event.type == MediaPlayer.Event.ESAdded
+                ) LivePlayer.output().restoreAudioTrack();
+            });
             assertTrue(LivePlayer.output().refreshView());
         });
         await(
-            () -> requests.get() > before && LivePlayer.player().isPlaying() && LivePlayer.output().isShown()
+            () ->
+                requests.get() > before &&
+                LivePlayer.player().isPlaying() &&
+                LivePlayer.player().getAudioTrack() == selectedAudio &&
+                LivePlayer.output().isShown()
         );
     }
 

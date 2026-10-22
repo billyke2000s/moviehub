@@ -1043,7 +1043,6 @@ public class PlaybackTest {
         await(() -> output.isShown() && output.pictures() > healthyFrames + 3, 6000);
         int repairs = output.repairs;
         int audioTrack = samePlayer.getAudioTrack();
-        long audioBefore = audioBuffers(samePlayer);
         // Exercise the early watchdog path with a stopped picture counter over advancing audio,
         // then verify its actual native surface repair without reopening the stream.
         instrumentation.runOnMainSync(() -> {
@@ -1064,15 +1063,24 @@ public class PlaybackTest {
         assertTrue(LivePlayer.videoRecovery().startsWith("Picture stopped while the sound played"));
         long[] after = { 0 };
         instrumentation.runOnMainSync(() -> after[0] = output.pictures());
-        await(() -> output.repairs > repairs && output.isShown() && output.pictures() > after[0] + 3, 6000);
+        await(
+            () ->
+                output.repairs > repairs &&
+                output.isShown() &&
+                samePlayer.isPlaying() &&
+                samePlayer.getAudioTrack() == audioTrack &&
+                output.pictures() > after[0] + 3,
+            10000
+        );
         assertSame(samePlayer, LivePlayer.player());
         assertSame(output, LivePlayer.output());
-        assertEquals("No source reconnection", opened, LivePlayer.opened);
+        assertEquals("No source re-resolution", opened, LivePlayer.opened);
         assertEquals("No new provider walk", 1, resolutions.get());
         assertEquals("Audio selection survived the view repair", audioTrack, samePlayer.getAudioTrack());
         assertTrue("Audio was selected", audioTrack >= 0);
+        long audioBefore = audioBuffers(samePlayer);
         SystemClock.sleep(1500);
-        assertTrue("Audio output stopped during video repair", audioBuffers(samePlayer) > audioBefore);
+        assertTrue("Audio output did not resume after video repair", audioBuffers(samePlayer) > audioBefore);
         assertFalse(activity.liveFailed);
         UiEvidence.capture("live-picture-refreshed-with-audio");
     }

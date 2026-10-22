@@ -57,7 +57,7 @@ jobs:
         run: |
           for attempt in $(seq 1 120); do
             reviewed=$(gh api repos/billyke2000s/moviehub/commits/main --jq '.commit.tree.sha')
-            if [ "$reviewed" = 'c776ea6d22848441bf6e033b4564b746c70e37ee' ]; then exit 0; fi
+            if [ "$reviewed" = 'c817510a5a3aa0e9dbf8579a0af2897f8d3a60ee' ]; then exit 0; fi
             sleep 5
           done
           echo 'Playback continuity changes are not reviewed and merged; refusing to publish.'
