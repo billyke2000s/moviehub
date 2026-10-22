@@ -66,8 +66,9 @@ final class LiveVideoOutput {
 
     private void cancelSurfaceWait() {
         if (pendingSurfaceTimeout != null) main.removeCallbacks(pendingSurfaceTimeout);
-        if (pendingSurfaceHolder != null && pendingSurfaceCallback != null)
-            pendingSurfaceHolder.removeCallback(pendingSurfaceCallback);
+        if (
+            pendingSurfaceHolder != null && pendingSurfaceCallback != null
+        ) pendingSurfaceHolder.removeCallback(pendingSurfaceCallback);
         pendingSurfaceTimeout = null;
         pendingSurfaceHolder = null;
         pendingSurfaceCallback = null;
