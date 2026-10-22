@@ -533,6 +533,11 @@ public class PlaybackTest {
             UiEvidence.capture("live-paused");
             instrumentation.runOnMainSync(activity::backToLive);
             await(() -> !activity.behindLive && player() != null && player().isPlaying(), 30000);
+            // Leave immediately after restart, while native video output may still be opening.
+            // A Playing event does not mean EGL has finished creating its window surface.
+            instrumentation.runOnMainSync(activity::finish);
+            await(activity::isDestroyed, 5000);
+            assertNull("Leaving releases the shared player", LivePlayer.player());
         } finally {
             LiveZapper.session = null;
             db.clear();

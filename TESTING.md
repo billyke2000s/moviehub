@@ -268,3 +268,8 @@ Run `bash android-tv-launcher/tests/run-core-tests.sh`; regular CI and publishin
 LiveControlsTest waits for a dismissed panel to leave the event queue before injecting the next physical color key; panels have no closing window animation. Guide paging retains the next direction during asynchronous loads rather than dropping it.
 
 The guide wrap regression deliberately focuses the header before each Page Up/Page Down over four round trips. Paging is routed at the screen level; row-local handlers previously lost Page Down when asynchronous row replacement left focus on the header.
+
+Live channel-key playback explicitly leaves immediately after Back to live restarts VLC, before
+waiting for decoded frames. This covers shutdown while native video output is still opening.
+The post-merge run 39821398629 crashed in EGL window initialization in this path; shutdown now
+cancels view callbacks first, stops VLC with its surface retained, then detaches the surface.

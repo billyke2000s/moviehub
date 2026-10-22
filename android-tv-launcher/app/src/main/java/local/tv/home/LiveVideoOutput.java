@@ -288,7 +288,8 @@ final class LiveVideoOutput {
         return null;
     }
 
-    void close() {
+    /** Cancel callbacks while keeping the native window alive until MediaPlayer.stop returns. */
+    void stopping() {
         if (closed) return;
         closed = true;
         cover.close();
@@ -299,6 +300,10 @@ final class LiveVideoOutput {
         // prevents it from accessing the native player after this output is released.
         pendingDestination = null;
         pendingTrack = NO_TRACK;
+    }
+
+    void close() {
+        stopping();
         if (layout != null) player.detachViews();
         if (layout != null && layout.getParent() instanceof ViewGroup) {
             ((ViewGroup) layout.getParent()).removeView(layout);

@@ -2,6 +2,8 @@
 
 ## Unreleased — reviewed playback and pending-PR integration
 
+- Keep the live video surface alive until VLC has stopped its decoder and video-output threads when leaving playback.
+
 - Connect cached VOD alternatives to manual/automatic source selection, with 4-second/two-in-60-second buffering recovery, in-player Sources, pause/seek cancellation, bounded attempts and a prepared replacement before the current stream stops.
 - Adapt 2.5-second still-picture surface recovery and separate guide/full-screen VLC counters to the current SurfaceView implementation. Preserve later video reattachment and cancellation fixes.
 - Best-effort bounded still cover during live picture handoff; queue paging during guide loads and remove panel-closing animation/input races.
