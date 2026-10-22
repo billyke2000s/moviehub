@@ -26,7 +26,8 @@ public class VlcPlaybackActivity extends Activity {
     TextView titleView;
     /** The side panels (tracks, speed, picture, sleep timer). */
     final PlayerMenus menus = new PlayerMenus(this);
-    private FrameLayout video;
+    FrameLayout video;
+    VodPlayback vod;
     private VLCVideoLayout filmVideo;
     private String url, id;
     /** The film or episode this file is (see ResumePoint.titleKey), or null. */
@@ -84,6 +85,7 @@ public class VlcPlaybackActivity extends Activity {
     final SkipQueue skips = new SkipQueue();
     final Runnable applySkip = () -> {
         long target = skips.take();
+        if (target >= 0 && vod != null) vod.seeking();
         if (target >= 0 && player != null && player.isSeekable()) player.setTime(target);
     };
     private boolean nextPromptShown, nextCancelled;
@@ -102,6 +104,7 @@ public class VlcPlaybackActivity extends Activity {
     private final Runnable tick = new Runnable() {
         public void run() {
             forgetReleasedLivePlayer();
+            if (vod != null) vod.tick();
             if (player != null) {
                 // While a skip is waiting, show where it will land.
                 long length = player.getLength(),
@@ -254,6 +257,7 @@ public class VlcPlaybackActivity extends Activity {
             if (key == KeyEvent.KEYCODE_MEDIA_PLAY) {
                 if (player != null) player.play();
                 paused = false;
+                if (vod != null) vod.pauseChanged();
                 revealControls();
                 return true;
             }
@@ -261,6 +265,7 @@ public class VlcPlaybackActivity extends Activity {
                 if (player != null) player.pause();
                 if (live) behindLive = true;
                 paused = true;
+                if (vod != null) vod.pauseChanged();
                 showPlaying(false);
                 revealControls();
                 return true;
@@ -342,6 +347,41 @@ public class VlcPlaybackActivity extends Activity {
         revealControls();
     }
 
+    LibVLC filmEngine() {
+        return engine;
+    }
+
+    void adoptVod(MediaPlayer ready, VLCVideoLayout layout, String link) {
+        MediaPlayer previous = player;
+        VLCVideoLayout previousView = filmVideo;
+        int volume = previous == null ? 100 : previous.getVolume();
+        if (volume < 0) volume = 100;
+        player = ready;
+        filmVideo = layout;
+        url = link;
+        getIntent().putExtra("url", link);
+        ready.setEventListener(event -> {
+            if (player == ready) onPlayerEvent(event);
+        });
+        if (previous != null) {
+            previous.setEventListener(null);
+            previous.setVolume(0);
+            previous.stop();
+            previous.detachViews();
+            previous.release();
+        }
+        if (previousView != null) video.removeView(previousView);
+        layout.setAlpha(1f);
+        ready.setVolume(volume);
+        position = Math.max(0, ready.getTime());
+        resumeCheck = 0;
+        buffering = false;
+        playedOnce = true;
+        overlayHandler.removeCallbacks(stalled);
+        status.setVisibility(View.GONE);
+        showPlaying(true);
+    }
+
     /** Shows the play or pause icon to match the player. */
     private void showPlaying(boolean playing) {
         if (pauseIcon == null) return;
@@ -366,6 +406,7 @@ public class VlcPlaybackActivity extends Activity {
                 if (change < 0 && player != null) {
                     player.pause();
                     paused = true;
+                    if (vod != null) vod.pauseChanged();
                     showPlaying(false);
                     revealControls();
                 }
@@ -388,13 +429,23 @@ public class VlcPlaybackActivity extends Activity {
             startLive();
             return;
         }
+        VodSources.Session sources = VodSources.get(getIntent().getStringExtra("vodSession"));
+        if (sources != null) vod = new VodPlayback(this, sources);
         armStartupTimeout();
+        // A prepared replacement may have used a TextureView. Recreate the initial film layout
+        // when restarting so VLC never reuses a layout initialized for another output type.
+        if (filmVideo != null) video.removeView(filmVideo);
+        filmVideo = new VLCVideoLayout(this);
+        video.addView(filmVideo, new FrameLayout.LayoutParams(-1, -1));
         engine = new LibVLC(this, new ArrayList<>(PlayerOptions.film(this)));
         player = new MediaPlayer(engine);
         player.setRate(playbackRate);
         if (aspect != null) player.setAspectRatio(aspect);
         player.attachViews(filmVideo, null, false, false);
-        player.setEventListener(this::onPlayerEvent);
+        MediaPlayer opened = player;
+        player.setEventListener(event -> {
+            if (player == opened) onPlayerEvent(event);
+        });
         Media media = new Media(engine, Uri.parse(url));
         media.setHWDecoderEnabled(true, false);
         // Open directly at the resume point instead of starting at 0:00 and then seeking, which
@@ -460,6 +511,7 @@ public class VlcPlaybackActivity extends Activity {
             Timings.finish("play", "Press play to picture");
             Timings.finish("stall", "Buffering pause while watching");
             playedOnce = true;
+            if (vod != null) vod.onPlaying();
             player.setRate(playbackRate);
             if (aspect != null) player.setAspectRatio(aspect);
             overlayHandler.removeCallbacks(stalled);
@@ -479,6 +531,7 @@ public class VlcPlaybackActivity extends Activity {
             if (event.getBuffering() < 100) {
                 if (playedOnce) Timings.markOnce("stall");
                 if (playedOnce && zapper != null && !buffering) zapper.bufferingStarted();
+                if (playedOnce && vod != null && !buffering) vod.onBuffering(true);
                 buffering = true;
                 status.setText(
                     "Buffering… " +
@@ -492,6 +545,7 @@ public class VlcPlaybackActivity extends Activity {
                 Timings.finish("stall", "Buffering pause while watching");
                 buffering = false;
                 if (zapper != null) zapper.bufferingEnded();
+                if (vod != null) vod.onBuffering(false);
             }
         } else if (event.type == MediaPlayer.Event.EndReached) {
             if (live) {
@@ -542,6 +596,7 @@ public class VlcPlaybackActivity extends Activity {
     private void showError(String message) {
         if (!foreground || isFinishing() || dialogOpen) return;
         if (zapper != null && zapper.failover("This stream is not working")) return;
+        if (vod != null && vod.failover()) return;
         overlayHandler.removeCallbacks(stalled);
         if (player != null) {
             long time = player.getTime();
@@ -632,6 +687,7 @@ public class VlcPlaybackActivity extends Activity {
             paused = false;
             showPlaying(true);
         }
+        if (vod != null) vod.pauseChanged();
         revealControls();
     }
 
@@ -664,6 +720,7 @@ public class VlcPlaybackActivity extends Activity {
 
     /** Shows a waiting film jump on the controls and jumps once the presses stop. */
     void showSkipTarget(long target, long length) {
+        if (vod != null) vod.seeking();
         if (length > 0) {
             timeline.setProgress((int) Math.min(1000, (target * 1000) / length));
             timeLeft.setText(PlayerOverlay.timeLeft(Math.max(0, length - target)));
@@ -705,6 +762,10 @@ public class VlcPlaybackActivity extends Activity {
     }
 
     private void release() {
+        if (vod != null) {
+            vod.close();
+            vod = null;
+        }
         skips.clear();
         overlayHandler.removeCallbacks(applySkip);
         if (live) {
@@ -774,6 +835,7 @@ public class VlcPlaybackActivity extends Activity {
         overlayHandler.removeCallbacksAndMessages(null);
         release();
         if (live) LivePlayer.stopIfOwner(this);
+        if (isFinishing()) VodSources.forget(getIntent().getStringExtra("vodSession"));
         super.onDestroy();
     }
 }

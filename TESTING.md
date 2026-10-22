@@ -258,3 +258,13 @@ the stream. Build/lint, signing compatibility and provider run 39513033968 also 
 [Signed test APK ZIP](https://github.com/billyke2000s/moviehub/actions/runs/39513033996/artifacts/12307505129) ·
 [Emulator reports/screenshots](https://github.com/billyke2000s/moviehub/actions/runs/39513033996/artifacts/12306229486).
 Only documentation follows this tested application revision.
+
+## Reviewed PR regression coverage (22 October 2026)
+
+Run `bash android-tv-launcher/tests/run-core-tests.sh`; regular CI and publishing call this same script. The local run passed 664 checks in 13 suites, using Eclipse JDT 3.32 targeting Java 17 because this workspace has a JRE but no javac. GitHub CI still verifies javac, APK builds, lint, emulator behavior, and signing.
+
+`VodSourceFailoverTest` covers startup exclusion, threshold boundaries, seeking/pause exclusion, provider pinning, duplicates and exhaustion. PlaybackTest adds actual-VLC fixtures for repeated-buffering replacement through a failed candidate, preserving the old stream while resolving, cancellation on pause and late results, and exhausted alternatives without loops. These tests do not establish dual-decoder support on the target TV or live Premiumize availability.
+
+LiveControlsTest waits for a dismissed panel to leave the event queue before injecting the next physical color key; panels have no closing window animation. Guide paging retains the next direction during asynchronous loads rather than dropping it.
+
+The guide wrap regression deliberately focuses the header before each Page Up/Page Down over four round trips. Paging is routed at the screen level; row-local handlers previously lost Page Down when asynchronous row replacement left focus on the header.

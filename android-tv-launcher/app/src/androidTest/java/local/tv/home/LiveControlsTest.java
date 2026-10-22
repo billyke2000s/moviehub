@@ -205,12 +205,14 @@ public final class LiveControlsTest {
         remote.waitForIdleSync();
         assertTrue("Red opens Audio & subtitles", SidePanel.current != null && SidePanel.current.isShowing());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
-        await(activity::hasWindowFocus);
+        remote.waitForIdleSync();
+        await(() -> !activity.dialogOpen && SidePanel.current == null && activity.hasWindowFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
         remote.waitForIdleSync();
         assertTrue("Green opens Sources", SidePanel.current != null && SidePanel.current.isShowing());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
-        await(activity::hasWindowFocus);
+        remote.waitForIdleSync();
+        await(() -> !activity.dialogOpen && SidePanel.current == null && activity.hasWindowFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_YELLOW);
         remote.waitForIdleSync();
         assertTrue("Yellow opens information", activity.zapper.overlay.infoShowing());

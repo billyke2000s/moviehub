@@ -18,6 +18,8 @@ final class SafetyNotice {
         "MovieHub will never ask you to leave the app while you're watching.\n\n" +
         "If a message in a stream tells you to visit a website, ring a number, install something " +
         "or pay, it isn't from us. Ignore it and watch something else.\n\n" +
+        "Free channels and optional sources come from independent third parties. MovieHub does not " +
+        "host or endorse their content. Only watch content you are authorised to access.\n\n" +
         "You can read this again in Settings → System.";
 
     private SafetyNotice() {}

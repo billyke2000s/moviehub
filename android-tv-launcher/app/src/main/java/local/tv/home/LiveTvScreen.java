@@ -147,6 +147,7 @@ final class LiveTvScreen {
     boolean hasMore;
     /** Ignore paging while a page is being replaced, before hasMore reflects its rows. */
     private boolean pageLoading;
+    private int pendingPageDirection, pendingPageRow;
 
     /** Up from the colour keys: the bottom row, on its name or the programme at the cursor. */
     void focusLastRow() {
@@ -159,6 +160,26 @@ final class LiveTvScreen {
         else cells.get(last).requestFocus();
     }
 
+    /** Paging is a screen action even when row replacement has moved focus to the header. */
+    boolean handlePageKey(KeyEvent event) {
+        if (
+            frameGeneration != activity.generation || frame.grid == null || !frame.grid.isShown()
+        ) return false;
+        int key = event.getKeyCode();
+        int direction =
+            key == KeyEvent.KEYCODE_PAGE_UP || key == KeyEvent.KEYCODE_CHANNEL_UP
+                ? -1
+                : key == KeyEvent.KEYCODE_PAGE_DOWN || key == KeyEvent.KEYCODE_CHANNEL_DOWN
+                  ? 1
+                  : 0;
+        if (direction == 0) return false;
+        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) turnPage(
+            direction,
+            focusedRow()
+        );
+        return true;
+    }
+
     /** Page up or Page down tapped in the key guide (touch screens). */
     void pageFromBar(int direction) {
         turnPage(direction, 0);
@@ -169,7 +190,11 @@ final class LiveTvScreen {
      * goes to the first, up from the first to the last.
      */
     void turnPage(int direction, int row) {
-        if (pageLoading) return;
+        if (pageLoading) {
+            pendingPageDirection = direction;
+            pendingPageRow = row;
+            return;
+        }
         if (direction > 0) {
             if (hasMore) guide(pageStart + ROWS, row);
             else if (pageStart > 0) guide(0, row);
@@ -262,6 +287,17 @@ final class LiveTvScreen {
             result -> {
                 if (ticket != loadTicket) return; // a later page was asked for meanwhile
                 pageLoading = false;
+                if (pendingPageDirection != 0) {
+                    int direction = pendingPageDirection,
+                        row = pendingPageRow;
+                    pendingPageDirection = 0;
+                    activity.handler.post(() -> {
+                        if (ticket == loadTicket && frameGeneration == activity.generation) turnPage(
+                            direction,
+                            row
+                        );
+                    });
+                }
                 @SuppressWarnings("unchecked")
                 List<ChannelDatabase.Row> items = (List<ChannelDatabase.Row>) result[0];
                 @SuppressWarnings("unchecked")

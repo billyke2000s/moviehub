@@ -187,6 +187,7 @@ final class SidePanel {
         shape.setColor(BACKGROUND);
         shape.setCornerRadius(18 * density);
         window.setBackgroundDrawable(shape);
+        window.setWindowAnimations(0);
         window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
         window.setDimAmount(.55f);
         int width = activity.getResources().getDisplayMetrics().widthPixels,

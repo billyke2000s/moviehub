@@ -136,3 +136,7 @@ The Sources menu uses already imported channel rows and does not crawl provider 
 FreeShot executes no fetched scripts or adverts. Its catalogue and resolver have narrow audited HTTPS GET paths; media must be on a discovered BlueTier subdomain and the selected channel prefix. Only PlaylistSession may POST an anonymous current-token/channel body to exactly `https://wideiptv.top/api/refresh_token.php`, with no query or fragment. Tokens stay in memory; other origins and channel prefixes never receive them. No generic broker POST capability was added. PNG nonzero/partial ranges remain rejected; whole-entity ranges are decoded as complete entities without forwarding container offsets.
 
 Retained source choices and attempt keys stay in memory and are cleared on stop/new channel. Matching the guide selection to an active saved copy does not resolve or contact other providers, and exposes no URLs in the UI or logs.
+
+## In-memory VOD recovery sessions
+
+VOD alternatives are bounded to five cached sources, resolved on demand, and passed via a random in-process session token rather than lists of direct URLs in intents or preferences. Every resolved URL is validated against the existing HTTP setting. No new external executables or provider scripts are introduced. Logs and labels exclude resolved URLs. Cancellation generations discard late results; stopping playback releases the staged player and shuts down its resolver. Existing encrypted history stores the primary playback URL as before.
