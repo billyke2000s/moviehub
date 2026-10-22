@@ -4,7 +4,7 @@
 
 ### Films, series and live TV in one place.
 
-**An Android TV streaming app and launcher built for the remote.**
+**An Android TV launcher and streaming application for films, series and live television.**
 
 [![Android](https://img.shields.io/badge/Android-9%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/tv/)
 [![License](https://img.shields.io/badge/License-MIT-8B5CF6?style=for-the-badge)](LICENSE)
@@ -15,7 +15,7 @@
 
 ---
 
-*An Android TV launcher and streaming app.*
+*One interface for browsing, watching and live TV.*
 
 [Overview](#what-is-moviehub) · [Install](#get-moviehub) · [Build](#build-from-source) · [Project status](#project-status) · [Legal](#content-responsibility)
 
@@ -23,17 +23,17 @@
 
 ## What is MovieHub?
 
-MovieHub brings films, series and live TV together in a remote-first Android TV interface. It combines catalogue browsing, playback and channel guides with the apps already installed on your device.
+MovieHub is an Android TV launcher and streaming application that combines film and series discovery, live television, playback and installed applications in a single interface designed for TV remotes.
 
-### Built around watching
+### Features
 
-- **Films and series:** Browse TMDB-powered catalogues, resume playback and choose between available sources.
-- **Live TV:** Use public channel directories or connect your own M3U/Xtream service, with a unified channel guide.
-- **Source handling:** Optional integrations with Torrentio, MediaFusion, Comet and Premiumize; automatic or manual source selection.
-- **Playback:** VLC-based player with recovery and source-switching behaviour designed for unreliable streams.
-- **Android TV:** A launcher and streaming interface built for navigation with a remote.
+- **Films and series:** TMDB-powered discovery, watch history and source selection.
+- **Live TV:** Public channel directories, M3U and Xtream integration, and a unified channel guide.
+- **Sources:** Optional Torrentio, MediaFusion, Comet and Premiumize integrations with automatic or manual selection.
+- **Playback:** VLC-based playback with stream recovery and source switching.
+- **Launcher:** Remote-friendly navigation and access to installed Android TV applications.
 
-MovieHub does not provide a subscription, host streams or guarantee that third-party sources work. Some provider integrations and playback improvements are experimental; see [project status](#project-status).
+MovieHub is an independent application and does not provide streaming subscriptions or host content. Some provider integrations remain experimental; see [project status](#project-status).
 
 ## Get MovieHub
 
@@ -41,7 +41,7 @@ MovieHub does not provide a subscription, host streams or guarantee that third-p
 
 ### Downloader code: **`1031512`**
 
-Enter the code in the **Downloader** app on your Android TV device, or use the direct APK link below.
+Enter this code in the **Downloader** app on an Android TV device, or download the APK directly.
 
 **[Download home.apk](https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/home.apk)**
 
@@ -51,11 +51,8 @@ Enter the code in the **Downloader** app on your Android TV device, or use the d
 
 1. Install the APK on an **Android 9 or newer** TV device.
 2. Open MovieHub and follow the first-run setup.
-3. Add your own supported services or browse the available public channel lists.
+3. Configure supported services or browse available public channel lists.
 4. Use the in-app **Update** button when a new version is offered.
-
-> [!IMPORTANT]
-> Only install APKs from releases you trust. Real-device installation and updates must be verified on your particular hardware.
 
 ## Build from source
 
@@ -65,7 +62,7 @@ Enter the code in the **Downloader** app on your Android TV device, or use the d
 gradle -p android-tv-launcher assembleDebug lintDebug
 ```
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for setup and conventions, [ARCHITECTURE.md](ARCHITECTURE.md) for code structure and [TESTING.md](TESTING.md) for verification.
+Additional information is available in [DEVELOPMENT.md](DEVELOPMENT.md), [ARCHITECTURE.md](ARCHITECTURE.md) and [TESTING.md](TESTING.md).
 
 ## Project handbook
 
@@ -149,7 +146,7 @@ Scheduled provider-link renewal keeps the current stream running while a fresh l
 > [!WARNING]
 > **MovieHub does not host, store or distribute films, series, channels or streams.** Public channel listings and user-configured services are supplied by independent third parties. Their availability, rights and reliability are outside this project's control.
 
-Use only content and services you are legally entitled to access. Channel names and logos belong to their respective owners. MovieHub is not affiliated with Sky, broadcasters, streaming platforms or source providers. For rights concerns, contact the repository owner through GitHub.
+Users are responsible for accessing only content and services they are legally entitled to use. Channel names and logos belong to their respective owners. MovieHub is not affiliated with Sky, broadcasters, streaming platforms or source providers. For rights concerns, contact the repository owner through GitHub.
 
 ## Privacy & security
 
