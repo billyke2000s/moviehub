@@ -42,12 +42,13 @@ final class LivePlayer {
     private static NativeHttp request;
     private static int generation;
     private static boolean resolving;
+    private static boolean renewalPaused;
     private static boolean refreshed;
     private static Context appContext;
     private static List<String> lastOptions;
     private static final LiveProgress progress = new LiveProgress();
     private static boolean played;
-    private static boolean viewRepaired;
+    private static final LiveRepairBudget repairBudget = new LiveRepairBudget();
     static final long PICTURE_REPAIR_MS = 2500;
     private static long pictureRepairedFor = -1;
     private static int viewRepairs;
@@ -60,7 +61,6 @@ final class LivePlayer {
             int ticket = generation;
             LivePictureRates.sample(player, output, owner, android.os.SystemClock.elapsedRealtime());
             boolean watching =
-                (EngineSources.locator(url) || PlutoSource.nativeUrl(url)) &&
                 played &&
                 player.getVideoTracksCount() > 0 &&
                 !resolving &&
@@ -79,15 +79,18 @@ final class LivePlayer {
     };
 
     static void observeProgress(long now, long time, long frames, boolean watching) {
-        if (!(EngineSources.locator(url) || PlutoSource.nativeUrl(url))) return;
+        if (player == null || !alive) return;
+        repairBudget.observe(frames, watching);
         if (!progress.stalled(now, time, frames, watching, LiveZapper.STALL_MS)) {
             if (
                 watching &&
+                repairBudget.allowed() &&
                 progress.pictureFrozen(now, PICTURE_REPAIR_MS) &&
                 progress.pictureSince() != pictureRepairedFor &&
                 output != null &&
                 output.refreshView()
             ) {
+                repairBudget.repaired();
                 pictureRepairedFor = progress.pictureSince();
                 viewRepairs++;
                 lastVideoRecovery = "Picture stopped while the sound played; view refreshed";
@@ -98,8 +101,8 @@ final class LivePlayer {
         boolean clockMoving = progress.clockMoving(now, LiveZapper.STALL_MS);
         progress.reset();
         Timings.record("Live video stopped advancing", Timings.start());
-        if (clockMoving && !viewRepaired && output != null && output.refreshView()) {
-            viewRepaired = true;
+        if (clockMoving && repairBudget.allowed() && output != null && output.refreshView()) {
+            repairBudget.repaired();
             viewRepairs++;
             lastVideoRecovery = "Video view refreshed while the playback clock advanced";
             return;
@@ -157,6 +160,24 @@ final class LivePlayer {
      * engine) and this returns false.
      */
     static boolean play(Context context, String streamUrl, List<String> options, boolean restart) {
+        return play(context, streamUrl, options, restart, false);
+    }
+
+    /** Renew the current provider link without spending a second decoder or interrupting lookup. */
+    static void renew() {
+        if (appContext != null && player != null && player.isPlaying() && !resolving) {
+            refreshed = false;
+            play(appContext, url, lastOptions, true, true);
+        }
+    }
+
+    private static boolean play(
+        Context context,
+        String streamUrl,
+        List<String> options,
+        boolean restart,
+        boolean renewalOnly
+    ) {
         String optionKey = String.valueOf(options);
         if (engine == null || !optionKey.equals(engineOptions)) {
             stop();
@@ -178,12 +199,17 @@ final class LivePlayer {
         }
         if (!streamUrl.equals(url) || !restart) {
             refreshed = false;
-            viewRepaired = false;
+            repairBudget.reset();
         }
         appContext = context.getApplicationContext();
         lastOptions = new ArrayList<>(options);
+        boolean retain = renewalOnly && streamUrl.equals(url) && alive && player.isPlaying();
         cancelResolution();
-        player.stop();
+        renewalPaused = false;
+        if (!retain) {
+            player.stop();
+            closeRelay();
+        }
         url = streamUrl;
         alive = true;
         opened++;
@@ -227,14 +253,19 @@ final class LivePlayer {
                             if (nextRelay != null) nextRelay.close();
                             return;
                         }
-                        relay = nextRelay;
                         resolving = false;
+                        // A pause/focus loss during renewal must not start playback again.
+                        if (retain && renewalPaused) {
+                            if (nextRelay != null) nextRelay.close();
+                            played = true;
+                            return;
+                        }
                         if (resolutionReady != null) resolutionReady.run();
                         open(
                             nextRelay == null ? resolved : nextRelay.url,
                             stream == null ? PlutoSource.USER_AGENT : stream.userAgent,
                             stream == null ? null : stream.referer,
-                            nextRelay != null
+                            nextRelay
                         );
                         if (stream != null && stream.expiresAt > 0) {
                             long delay = Math.max(
@@ -251,8 +282,7 @@ final class LivePlayer {
                                     player.isPlaying() &&
                                     streamUrl.equals(url)
                                 ) {
-                                    refreshed = false;
-                                    play(appContext, url, lastOptions, true);
+                                    renew();
                                 }
                             };
                             main.postDelayed(renewal, delay);
@@ -262,13 +292,19 @@ final class LivePlayer {
                     main.post(() -> {
                         if (ticket != generation || player == null) return;
                         resolving = false;
-                        alive = false;
                         Diagnostics.recovered("Resolving native live channel", e);
+                        if (retain && (player.isPlaying() || renewalPaused)) {
+                            // A failed refresh does not establish that the existing stream is dead.
+                            played = true;
+                            progress.reset();
+                            return;
+                        }
+                        alive = false;
                         if (resolutionFailed != null) resolutionFailed.run();
                     });
                 }
             });
-        } else open(streamUrl, null, null, false);
+        } else open(streamUrl, null, null, null);
         return false;
     }
 
@@ -281,18 +317,17 @@ final class LivePlayer {
      * slow segment drained the shared 1.5 s Live TV buffer (owner's phone, 21 October 2026: six
      * short pauses in one session). Other channels keep the shorter buffer and faster start.
      */
-    static final int RELAYED_CACHING_MS = 4000;
+    static final int RELAYED_CACHING_MS = PlaybackBuffer.RELAY_MS;
 
-    private static void open(String stream, String userAgent, String referer, boolean relayed) {
+    private static void open(String stream, String userAgent, String referer, ProviderRelay nextRelay) {
+        // Stop native readers before closing the relay they still own.
+        player.stop();
+        closeRelay();
+        relay = nextRelay;
         if (output != null) output.streamChanging();
         Media media = new Media(engine, Uri.parse(stream));
         media.setHWDecoderEnabled(true, false);
-        // Relayed streams need more headroom for segment retrieval and decoding.
-        // Plain HTTP transport streams use the low-latency engine default.
-        if (relayed) media.addOption(":network-caching=" + RELAYED_CACHING_MS);
-        else if (stream != null && (stream.contains(".m3u8") || stream.contains("/hls/"))) media.addOption(
-            ":network-caching=2500"
-        );
+        media.addOption(":network-caching=" + PlaybackBuffer.live(stream, nextRelay != null));
         if (userAgent != null) media.addOption(":http-user-agent=" + userAgent);
         if (referer != null && !referer.isEmpty()) media.addOption(":http-referrer=" + referer);
         player.setMedia(media);
@@ -306,10 +341,6 @@ final class LivePlayer {
             main.removeCallbacks(renewal);
             renewal = null;
         }
-        if (relay != null) {
-            relay.close();
-            relay = null;
-        }
         generation++;
         if (request != null) request.cancel();
         if (pending != null) pending.cancel(true);
@@ -317,11 +348,24 @@ final class LivePlayer {
         request = null;
     }
 
+    private static void closeRelay() {
+        if (relay != null) {
+            relay.close();
+            relay = null;
+        }
+    }
+
     static void resume() {
         if (player != null && !resolving && !player.isPlaying()) player.play();
     }
 
     private static void event(MediaPlayer.Event event) {
+        if (resolving && event.type == MediaPlayer.Event.Paused) renewalPaused = true;
+        if (resolving && event.type == MediaPlayer.Event.Playing) renewalPaused = false;
+        if (
+            resolving &&
+            (event.type == MediaPlayer.Event.EndReached || event.type == MediaPlayer.Event.EncounteredError)
+        ) return;
         if (event.type == MediaPlayer.Event.Playing) played = true;
         if (event.type == MediaPlayer.Event.Vout && output != null) output.videoOutputs(event.getVoutCount());
         if (
@@ -398,6 +442,7 @@ final class LivePlayer {
             // threads. Detaching first can destroy the window during EGL initialization.
             if (output != null) output.stopping();
             player.stop();
+            closeRelay();
             if (output != null) output.close();
             player.release();
             player = null;
@@ -409,7 +454,7 @@ final class LivePlayer {
         appContext = null;
         lastOptions = null;
         refreshed = false;
-        viewRepaired = false;
+        repairBudget.reset();
         engineOptions = null;
         url = null;
         alive = false;

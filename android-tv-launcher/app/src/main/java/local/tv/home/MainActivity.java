@@ -75,7 +75,11 @@ public class MainActivity extends TvActivity {
             catalogues.catalogue.close();
             catalogues.catalogue = null;
         }
-        if (catalogueDialog != null) catalogueDialog.dismiss();
+        if (catalogueDialog != null) {
+            android.view.Window window = catalogueDialog.getWindow();
+            if (window != null && window.getDecorView().isAttachedToWindow()) catalogueDialog.dismiss();
+            catalogueDialog = null;
+        }
     }
 
     @Override
@@ -396,6 +400,7 @@ public class MainActivity extends TvActivity {
 
     @Override
     public void onDestroy() {
+        SidePanel.closeFor(this);
         try {
             unregisterReceiver(packageChanges);
         } catch (IllegalArgumentException e) {

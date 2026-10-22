@@ -831,6 +831,7 @@ public class VlcPlaybackActivity extends Activity {
 
     @Override
     public void onDestroy() {
+        SidePanel.closeFor(this);
         if (zapper != null) zapper.close();
         overlayHandler.removeCallbacksAndMessages(null);
         release();

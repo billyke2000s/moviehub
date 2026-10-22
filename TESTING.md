@@ -287,3 +287,25 @@ Handoff screenshots are sampled until the destination is visibly nonblank, withi
 three-second budget including time to resume decoding. One screenshot immediately after the
 first decoded frames can still precede SurfaceFlinger composition; this is not proof of a
 persistently black surface. The test still fails if the visible picture misses that budget.
+
+## Playback continuity validation (0.46 candidate)
+
+`LiveRenewalTest` serves fixture MPEG-TS through real LibVLC. A latch blocks provider renewal
+while the original video advances; tests then cover successful reopening, a failed refresh
+without reopening, pause without automatic resumption, exit without a late reopen, a
+synthetic video freeze repaired on ordinary IPTV without reopening, and a persistent freeze
+that reaches failure rather than starting another surface repair.
+`PlaybackBufferTest` checks URL-path classification (query/fragment decoys and uppercase HLS),
+relay precedence, malformed paths and bounded VOD headroom. The core script now runs 703 checks.
+CI must validate the full Android suite, builds/lint and signing before release. Physical-TV
+memory/decoder limits and long real-provider sessions remain unverified.
+
+`LiveRepairBudgetTest` verifies persistent freezes across hidden/paused surfaces cannot loop
+through repairs, queued frames do not count as recovery, and genuine progress replenishes
+the repair budget.
+
+Activity destruction now clears its owned SidePanel explicitly, including show-and-finish
+before the first window attach. The native picture-repair fixture establishes actual frame
+progress before injecting a new freeze; hiding a surface is intentionally insufficient to
+reset the new repair budget. Failed device runs print the full crash buffer so Java process
+failures cannot disappear from a video-only filtered tail.

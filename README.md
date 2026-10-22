@@ -121,7 +121,7 @@ screen share one player: moving between them changes only the screen surface, so
 sound carry on and the link is not reopened (the picture may blink briefly). Device tests check
 fresh, non-blank pictures in both directions; TV hardware still needs testing.
 
-Live video progress follows VLC's displayed-picture count rather than assuming advancing audio
+Live video progress follows VLC's decoded-picture count rather than assuming advancing audio
 means video is healthy. A stopped picture gets one surface refresh before the existing bounded
 source recovery. Troubleshooting retains the last safe recovery description.
 
@@ -135,7 +135,9 @@ A selected live backup and its Automatic/manual mode follow the active player th
 
 Films and episodes opened from Sources can switch among up to five cached sources. Backups resolve only when needed. A 4-second stall or two buffering starts in 60 seconds prepares a muted replacement; the current stream stays open until the replacement decodes near the current position. Seeking and user pause are excluded. Playback options → Sources offers manual selection and Automatic. Manual selection pins the playback service (currently Premiumize). Cloud-only/history playback without an in-memory source session keeps its existing single-source behavior.
 
-Live TV keeps its separate thresholds. A still video counter over advancing audio gets an early surface repair after 2.5 seconds. Troubleshooting reports decoded/displayed VLC rates separately for the guide and full screen; these counters are not direct measurements of SurfaceView presentation.
+Live TV keeps its separate thresholds. A still video counter over advancing audio gets an early surface repair after 2.5 seconds. Ordinary IPTV and provider streams share this watchdog; one repair is allowed until observed video progress resumes. Troubleshooting reports decoded/displayed VLC rates separately for the guide and full screen; these counters are not direct measurements of SurfaceView presentation.
+
+Scheduled provider-link renewal keeps the current stream running while a fresh link resolves; pause or exit discards late results, and failed refresh leaves working playback alone. Cross-provider switching still restarts the decoder. Transport cache profiles use 1.5 s for direct live, 2.5 s for HLS, 4 s for relayed live and 2.5 s for VOD; extra VOD headroom can increase startup/seek delay.
 
 </details>
 

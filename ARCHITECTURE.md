@@ -258,3 +258,17 @@ Restoring a retained source compares saved hashes rather than decrypting every b
 `VodSourceFailover` owns plain-Java thresholds and source exhaustion. `VodPlayback` owns asynchronous resolution, cancellation generations, a 45-second deadline per candidate, and a muted second VLC player using the film engine. The original player continues until video decodes within two seconds of its position. Replacement uses a TextureView so staging can be transparent on API 28; initial VOD and shared Live TV retain their existing SurfaceView path. Insufficient decoder resources may prevent a replacement: failure keeps the original player. Live thresholds and the shared live instance are independent.
 
 `LivePictureRates` samples current VLC stats without retaining a frame callback. `LiveHandoffCover` best-effort captures a bounded still during a guide/full-screen move; stale PixelCopy callbacks cannot move video, and the cover expires after five seconds. Existing surface cancellation and video-repair reattachment remain intact.
+
+## Playback continuity (0.46 candidate)
+
+`PlaybackBuffer` owns bounded transport cache profiles. `PlayerOptions` applies the VOD/live
+engine defaults; `LivePlayer.open` applies the selected direct/HLS/relay media profile.
+Scheduled provider renewal uses the existing resolver and one native player, retaining the
+current media/relay until a fresh link resolves. Pending lookup has a generation guard; a pause
+discards its late result, and a failed refresh leaves a still-working stream running. Closing
+VLC precedes closing its relay. The subsequent decoder restart can still blink. This is not
+dual-decoder prepared cross-provider failover. The progress watchdog now covers ordinary IPTV
+as well as provider streams, with video-track, visibility, pause and resolution exclusions.
+
+`LiveRepairBudget` permits one surface repair until two contiguous visible observations show
+video progress. Hidden/pending surfaces and old queued frames cannot replenish the budget.

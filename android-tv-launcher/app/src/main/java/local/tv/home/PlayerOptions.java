@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * LibVLC engine options. Films and Live TV each have their own list, so a change for one can never
- * reach the other. Today they hold the same values; change them here, one list at a time.
+ * reach the other. VOD has more buffering headroom; live channels keep a shorter startup profile.
  */
 final class PlayerOptions {
 
@@ -17,8 +17,8 @@ final class PlayerOptions {
     static List<String> film(Context context) {
         SharedPreferences prefs = prefs(context);
         return Arrays.asList(
-            // A larger buffer delays the start and every jump (see STATUS.md, Decisions).
-            "--network-caching=1500",
+            // VOD favours a little more headroom; this can add time to startup and seeks.
+            "--network-caching=" + PlaybackBuffer.VOD_MS,
             "--no-video-title-show",
             // Network files have no subtitle files beside them; do not probe for any.
             "--no-sub-autodetect-file",
@@ -32,7 +32,7 @@ final class PlayerOptions {
         SharedPreferences prefs = prefs(context);
         return Arrays.asList(
             // Short, so changing channel shows the picture quickly.
-            "--network-caching=1500",
+            "--network-caching=" + PlaybackBuffer.LIVE_MS,
             "--no-video-title-show",
             "--no-sub-autodetect-file",
             "--audio-language=" + prefs.getString("audioLanguage", "eng,en"),

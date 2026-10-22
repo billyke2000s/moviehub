@@ -1039,6 +1039,8 @@ public class PlaybackTest {
         org.videolan.libvlc.MediaPlayer samePlayer = player();
         LiveVideoOutput output = LivePlayer.output();
         int opened = LivePlayer.opened;
+        long healthyFrames = output.pictures();
+        await(() -> output.isShown() && output.pictures() > healthyFrames + 3, 6000);
         int repairs = output.repairs;
         int audioTrack = samePlayer.getAudioTrack();
         long audioBefore = audioBuffers(samePlayer);
@@ -1048,15 +1050,21 @@ public class PlaybackTest {
             long now = SystemClock.elapsedRealtime(),
                 time = samePlayer.getTime(),
                 frames = output.pictures();
-            LivePlayer.observeProgress(now - LivePlayer.PICTURE_REPAIR_MS, time, frames, false);
+            // Prove actual decoding progress first: hiding a surface no longer grants a repair.
+            LivePlayer.observeProgress(
+                now - 2 * LivePlayer.PICTURE_REPAIR_MS,
+                time - 2500,
+                healthyFrames,
+                true
+            );
             LivePlayer.observeProgress(now - LivePlayer.PICTURE_REPAIR_MS, time, frames, true);
             LivePlayer.observeProgress(now, time + LivePlayer.PICTURE_REPAIR_MS, frames, true);
         });
-        assertTrue("The early watchdog refreshed the picture", output.repairs > repairs);
+        assertEquals("The early watchdog refreshed the picture once", repairs + 1, output.repairs);
         assertTrue(LivePlayer.videoRecovery().startsWith("Picture stopped while the sound played"));
         long[] after = { 0 };
         instrumentation.runOnMainSync(() -> after[0] = output.pictures());
-        await(() -> output.repairs > repairs && output.pictures() > after[0] + 3, 6000);
+        await(() -> output.repairs > repairs && output.isShown() && output.pictures() > after[0] + 3, 6000);
         assertSame(samePlayer, LivePlayer.player());
         assertSame(output, LivePlayer.output());
         assertEquals("No source reconnection", opened, LivePlayer.opened);
