@@ -305,3 +305,17 @@ regression closes an Activity with a panel open. CI validation is pending.
 Post-merge run 39827167743 passed 135/136 tests with one screenshot captured during handoff
 before destination composition. Handoff evidence now observes actual pixels within the same
 three-second total budget, including decoding and composition; validation is pending.
+
+## Published 0.45 and next playback candidate
+
+0.45 was published after PR #102 passed full emulator, build/lint, provider and signing checks;
+the independent publish run 39828740034 and post-merge run 39829699262 also passed. The public
+numbered APK and updater APK have matching SHA-256 digests. Earlier pending-validation notes
+above describe intermediate attempts.
+
+The next candidate improves scheduled link renewal without a second decoder, covers ordinary
+IPTV with the existing freeze watchdog and separates bounded buffering profiles. Local core
+validation passes 672 checks. Android validation is pending. Cross-provider failover still
+restarts playback; preparing a second live decoder is deferred until physical-TV memory and
+decoder concurrency can be measured. VOD already has bounded prepared replacements. Cache
+profiles are fixed by transport, not dynamically adapted from measured network performance.

@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased — reviewed playback and pending-PR integration
+## Unreleased — playback continuity
+
+- Keep the current live stream and relay running during scheduled provider-link renewal. A failed refresh keeps working playback; pause and exit discard late renewal results. The cut still restarts the existing decoder once a fresh link resolves.
+- Extend clock/video freeze monitoring and early surface repair to ordinary IPTV, excluding paused, hidden and audio-only playback.
+- Use bounded transport buffering profiles: 1.5 s direct live, 2.5 s HLS, 4 s relayed live and 2.5 s VOD. HLS detection uses the URL path, including uppercase extensions, rather than tokens in its query. More VOD headroom can increase startup and seek delay.
+
+## 0.45 (22 October 2026)
 
 - Clear panels when their Activity window detaches; do not continue panel actions on a closing Activity.
 

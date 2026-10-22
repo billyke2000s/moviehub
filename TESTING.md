@@ -287,3 +287,14 @@ Handoff screenshots are sampled until the destination is visibly nonblank, withi
 three-second budget including time to resume decoding. One screenshot immediately after the
 first decoded frames can still precede SurfaceFlinger composition; this is not proof of a
 persistently black surface. The test still fails if the visible picture misses that budget.
+
+## Playback continuity validation (0.46 candidate)
+
+`LiveRenewalTest` serves fixture MPEG-TS through real LibVLC. A latch blocks provider renewal
+while the original video advances; tests then cover successful reopening, a failed refresh
+without reopening, pause without automatic resumption, exit without a late reopen, and a
+synthetic video freeze repaired on an ordinary IPTV stream without reopening its source.
+`PlaybackBufferTest` checks URL-path classification (query/fragment decoys and uppercase HLS),
+relay precedence, malformed paths and bounded VOD headroom. The core script now runs 672 checks.
+CI must validate the full Android suite, builds/lint and signing before release. Physical-TV
+memory/decoder limits and long real-provider sessions remain unverified.

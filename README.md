@@ -154,3 +154,9 @@ A selected live backup and its Automatic/manual mode follow the active player th
 Films and episodes opened from Sources can switch among up to five cached sources. Backups resolve only when needed. A 4-second stall or two buffering starts in 60 seconds prepares a muted replacement; the current stream stays open until the replacement decodes near the current position. Seeking and user pause are excluded. Playback options → Sources offers manual selection and Automatic. Manual selection pins the playback service (currently Premiumize). Cloud-only/history playback without an in-memory source session keeps its existing single-source behavior.
 
 Live TV keeps its separate thresholds. A still video counter over advancing audio gets an early surface repair after 2.5 seconds. Troubleshooting reports decoded/displayed VLC rates separately for the guide and full screen; these counters are not direct measurements of SurfaceView presentation.
+
+Scheduled live-provider renewal keeps the current stream running during link lookup; an
+unavailable refresh leaves a working stream alone. Ordinary IPTV shares the live freeze
+watchdog. Buffering profiles distinguish direct live, HLS, relayed live and VOD; additional
+VOD headroom trades some startup/seek latency for buffering margin. Cross-provider switching
+still restarts the decoder, and physical-TV validation remains outstanding.
