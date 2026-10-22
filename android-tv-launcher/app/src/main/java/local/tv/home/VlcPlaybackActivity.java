@@ -76,6 +76,7 @@ public class VlcPlaybackActivity extends Activity {
         if (exitHint != null) exitHint.setVisibility(View.GONE);
     };
     final Runnable hideOverlay = () -> {
+        forgetReleasedLivePlayer();
         if (
             controls != null && !dragging && !dialogOpen && player != null && player.isPlaying()
         ) controls.setVisibility(View.GONE);
@@ -84,6 +85,7 @@ public class VlcPlaybackActivity extends Activity {
     /** Film skips and seek-bar moves waiting to become one jump (see {@link SkipQueue}). */
     final SkipQueue skips = new SkipQueue();
     final Runnable applySkip = () -> {
+        forgetReleasedLivePlayer();
         long target = skips.take();
         if (target >= 0 && vod != null) vod.seeking();
         if (target >= 0 && player != null && player.isSeekable()) player.setTime(target);
@@ -403,6 +405,7 @@ public class VlcPlaybackActivity extends Activity {
                     .build()
             )
             .setOnAudioFocusChangeListener(change -> {
+                forgetReleasedLivePlayer();
                 if (change < 0 && player != null) {
                     player.pause();
                     paused = true;
@@ -506,6 +509,7 @@ public class VlcPlaybackActivity extends Activity {
 
     /** The player's events: playing, buffering, the end, and errors (which try the other format). */
     private void onPlayerEvent(MediaPlayer.Event event) {
+        forgetReleasedLivePlayer();
         if (!foreground || player == null) return;
         if (event.type == MediaPlayer.Event.Playing) {
             Timings.finish("play", "Press play to picture");
@@ -521,6 +525,7 @@ public class VlcPlaybackActivity extends Activity {
             long target = resumeCheck;
             resumeCheck = 0;
             if (target > 0) overlayHandler.postDelayed(() -> {
+                forgetReleasedLivePlayer();
                 if (player != null && player.isSeekable() && player.getTime() < target - 5000) player.setTime(
                     target
                 );
@@ -594,6 +599,7 @@ public class VlcPlaybackActivity extends Activity {
     }
 
     private void showError(String message) {
+        forgetReleasedLivePlayer();
         if (!foreground || isFinishing() || dialogOpen) return;
         if (zapper != null && zapper.failover("This stream is not working")) return;
         if (vod != null && vod.failover()) return;

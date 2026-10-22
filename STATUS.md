@@ -335,3 +335,7 @@ detachment. Every move requests track shutdown; a missing acknowledgement after 
 stops the native reader before moving and restarts playback on the destination. This rare
 fallback reconnects the stream; normal acknowledged moves retain it. Device fixtures cover
 unreported output counts and suppressed shutdown acknowledgement. Validation is pending.
+
+Release run 39870438797 exposed a delayed overlay callback querying an externally released
+shared live player. Overlay, skip, audio-focus, event, delayed-resume and error callbacks now
+apply the existing ownership check before native access; a real-player regression covers it.

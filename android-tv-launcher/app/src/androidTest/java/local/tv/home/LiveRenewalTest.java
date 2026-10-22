@@ -252,6 +252,20 @@ public final class LiveRenewalTest {
     }
 
     @Test
+    public void delayedControlsRejectAnExternallyReleasedLivePlayer() {
+        start(false);
+        remote.runOnMainSync(() -> {
+            LivePlayer.stop();
+            activity.dragging = false;
+            activity.dialogOpen = false;
+            assertNotNull(activity.controls);
+            activity.hideOverlay.run();
+            activity.applySkip.run();
+            assertNull(activity.player);
+        });
+    }
+
+    @Test
     public void leavingDuringRenewalRejectsTheLateResult() throws Exception {
         start(true);
         renewAndObserve();
