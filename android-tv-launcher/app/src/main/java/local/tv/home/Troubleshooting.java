@@ -64,7 +64,7 @@ final class Troubleshooting {
         actions(new String[] { "Run speed test" }, new Runnable[] { this::runSpeedTest });
         body.addView(
             activity.muted(
-                "Tests download speed, HTTP latency and jitter against Cloudflare (not your IPTV provider). Results are indicative, not a guarantee: server congestion and stream reliability also matter. Pause playback first.",
+                "Tests download speed, HTTP latency, jitter and failed HTTP probes against Cloudflare, not your IPTV provider. Failed requests are not an ICMP packet-loss measurement. Upload speed is not yet tested. Ratings are indicative, not a guarantee of smooth playback. Pause playback first.",
                 13
             )
         );
@@ -80,11 +80,12 @@ final class Troubleshooting {
                     SpeedTest.Result r = SpeedTest.run();
                     speedResult = String.format(
                         Locale.ROOT,
-                        "%s for streaming  ·  Download %.1f Mb/s  ·  HTTP latency %s  ·  Jitter %s  ·  %.1f MB tested",
+                        "%s for streaming  ·  Download %.1f Mb/s  ·  HTTP latency %s  ·  Jitter %s  ·  Failed probes %d/5  ·  %.1f MB tested",
                         r.pingMs < 0 ? "Unrated (latency unavailable)" : SpeedTest.rating(r.mbps, r.pingMs, r.jitterMs),
                         r.mbps,
                         r.pingMs < 0 ? "unavailable" : r.pingMs + " ms",
                         r.jitterMs < 0 ? "unavailable" : r.jitterMs + " ms",
+                        r.failedProbes,
                         r.bytes / (1024f * 1024f)
                     );
                 } catch (Exception e) {
