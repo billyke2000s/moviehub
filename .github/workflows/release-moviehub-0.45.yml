@@ -6,7 +6,7 @@ permissions:
   contents: write
 concurrency:
   group: publish-android-launcher
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -56,7 +56,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           for attempt in $(seq 1 60); do
-            reviewed=$(gh api repos/billyke2000s/moviehub/git/commits/main --jq '.tree.sha')
+            reviewed=$(gh api repos/billyke2000s/moviehub/commits/main --jq '.commit.tree.sha')
             if [ "$reviewed" = 'fb80212116f433d336b48d6fbec796f73bf9d0b0' ]; then exit 0; fi
             sleep 5
           done
