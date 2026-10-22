@@ -309,3 +309,19 @@ before the first window attach. The native picture-repair fixture establishes ac
 progress before injecting a new freeze; hiding a surface is intentionally insufficient to
 reset the new repair budget. Failed device runs print the full crash buffer so Java process
 failures cannot disappear from a video-only filtered tail.
+
+Native window shutdown follow-up: post-merge retry 39868257885 crashed in EGL window
+creation during native-source handoff. An unreported Vout count no longer permits immediate
+detachment. Every move requests track shutdown; a missing acknowledgement after 600 ms
+stops the native reader before moving and restarts playback on the destination. This rare
+fallback reconnects the stream; normal acknowledged moves retain it. Device fixtures cover
+unreported output counts and suppressed shutdown acknowledgement. Validation is pending.
+
+Release run 39870438797 exposed a delayed overlay callback querying an externally released
+shared live player. Overlay, skip, audio-focus, event, delayed-resume and error callbacks now
+apply the existing ownership check before native access; a real-player regression covers it.
+
+Independent release validation 39871238896 passed 146/146 tests. PR validation passed
+145/146, observing audio track -1 during picture recovery. Forced native-stop recovery now
+restores the selected audio track after rediscovery. Repair evidence waits for selected
+audio and playing state, then checks new audio-output progress rather than old-session stats.

@@ -202,6 +202,48 @@ public final class LiveRenewalTest {
     }
 
     @Test
+    public void unreportedOutputStillWaitsBeforeReplacingItsSurface() {
+        start(false);
+        long before = LivePlayer.output().pictures();
+        remote.runOnMainSync(() -> {
+            LiveVideoOutput output = LivePlayer.output();
+            android.view.SurfaceView surface = output.surfaceView();
+            output.videoOutputs(0);
+            assertTrue(output.refreshView());
+            assertSame("No detach before native shutdown acknowledgement", surface, output.surfaceView());
+        });
+        await(() -> LivePlayer.output().isShown() && LivePlayer.output().pictures() > before + 3);
+    }
+
+    @Test
+    public void missingShutdownAcknowledgementStopsNativeReaderBeforeMoving() {
+        start(false);
+        int before = requests.get();
+        await(() -> LivePlayer.player().getAudioTrack() >= 0);
+        int selectedAudio = LivePlayer.player().getAudioTrack();
+        assertTrue(selectedAudio >= 0);
+        remote.runOnMainSync(() -> {
+            // Suppress Vout acknowledgement to exercise the bounded native-stop fallback.
+            LivePlayer.player().setEventListener(event -> {
+                if (
+                    event.type == MediaPlayer.Event.Vout && event.getVoutCount() > 0
+                ) LivePlayer.output().videoOutputs(event.getVoutCount());
+                if (
+                    event.type == MediaPlayer.Event.Playing || event.type == MediaPlayer.Event.ESAdded
+                ) LivePlayer.output().restoreAudioTrack();
+            });
+            assertTrue(LivePlayer.output().refreshView());
+        });
+        await(
+            () ->
+                requests.get() > before &&
+                LivePlayer.player().isPlaying() &&
+                LivePlayer.player().getAudioTrack() == selectedAudio &&
+                LivePlayer.output().isShown()
+        );
+    }
+
+    @Test
     public void persistentFreezeReachesFailureInsteadOfRepairingForever() {
         start(false);
         AtomicInteger failures = new AtomicInteger();
@@ -220,6 +262,20 @@ public final class LiveRenewalTest {
             LivePlayer.observeProgress(14000, time + 13000, frames, true);
             assertEquals("One repair per persistent freeze", repairs + 1, LivePlayer.output().repairs);
             assertEquals("Persistent failure reaches source recovery", 1, failures.get());
+        });
+    }
+
+    @Test
+    public void delayedControlsRejectAnExternallyReleasedLivePlayer() {
+        start(false);
+        remote.runOnMainSync(() -> {
+            LivePlayer.stop();
+            activity.dragging = false;
+            activity.dialogOpen = false;
+            assertNotNull(activity.controls);
+            activity.hideOverlay.run();
+            activity.applySkip.run();
+            assertNull(activity.player);
         });
     }
 

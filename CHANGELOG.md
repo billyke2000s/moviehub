@@ -2,6 +2,12 @@
 
 ## Unreleased — playback continuity
 
+- Restore the selected audio track after forced native-stop recovery.
+
+- Reject released shared live players in delayed controls, audio-focus and playback-event callbacks.
+
+- Wait for native video shutdown even before VLC reports an output; on shutdown timeout, stop native playback before releasing its surface, then restart at the destination.
+
 - Clear owned dialogs during Activity destruction, including an immediate show-and-close before window attachment.
 
 - Keep the current live stream and relay running during scheduled provider-link renewal. A failed refresh keeps working playback; pause and exit discard late renewal results. The cut still restarts the existing decoder once a fresh link resolves.

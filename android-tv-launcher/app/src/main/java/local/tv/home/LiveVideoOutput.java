@@ -54,12 +54,14 @@ final class LiveVideoOutput {
     /** The video track waiting for a new surface to be ready, or NO_TRACK. */
     private int waitingTrack = NO_TRACK;
     private static final int NO_TRACK = -2;
-    /** If VLC does not report its video output closed, carry on after this long. */
+    /** If video shutdown is not acknowledged, stop the native reader before moving its window. */
     private static final long CLOSE_WAIT_MS = 600;
     /** If the new surface does not report a size, switch the picture on after this long. */
     private static final long SURFACE_WAIT_MS = 3000;
     private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
-    private final Runnable closeTimeout = this::finishMove;
+    private boolean restartAfterMove;
+    private int pendingAudioTrack = NO_TRACK;
+    private final Runnable closeTimeout = this::stopBeforeMove;
     private final Runnable deferredFinish = this::finishMove;
     private Runnable pendingSurfaceTimeout;
     private android.view.SurfaceHolder pendingSurfaceHolder;
@@ -112,10 +114,20 @@ final class LiveVideoOutput {
         }
         cancelSurfaceWait();
         main.removeCallbacks(closeTimeout);
-        if (pendingTrack >= 0 && vouts > 0) {
-            player.setVideoTrack(-1);
-            main.postDelayed(closeTimeout, CLOSE_WAIT_MS);
-        } else finishMove();
+        // Vout can still be zero while AWindowHandler is creating its EGL window. Always
+        // request shutdown and wait for its acknowledgement before releasing the old surface.
+        player.setVideoTrack(-1);
+        main.postDelayed(closeTimeout, CLOSE_WAIT_MS);
+    }
+
+    /** Never destroy a native window merely because its shutdown acknowledgement is late. */
+    private void stopBeforeMove() {
+        if (closed || pendingTrack == NO_TRACK) return;
+        pendingAudioTrack = player.getAudioTrack();
+        player.stop();
+        vouts = 0;
+        restartAfterMove = true;
+        finishMove();
     }
 
     /**
@@ -123,12 +135,26 @@ final class LiveVideoOutput {
      * switching the old stream's video track back on: VLC picks the new stream's own tracks.
      */
     void streamChanging() {
+        pendingAudioTrack = NO_TRACK;
+        restartAfterMove = false;
         cover.clear();
         cancelSurfaceWait();
         waitingTrack = NO_TRACK;
         if (pendingTrack == NO_TRACK) return;
         pendingTrack = -1;
         finishMove();
+    }
+
+    /** Restore the user's audio selection once a forced restart has rediscovered its tracks. */
+    void restoreAudioTrack() {
+        if (closed || pendingAudioTrack == NO_TRACK || restartAfterMove || !player.isPlaying()) return;
+        MediaPlayer.TrackDescription[] tracks = player.getAudioTracks();
+        if (tracks == null) return;
+        for (MediaPlayer.TrackDescription track : tracks) {
+            if (track.id != pendingAudioTrack) continue;
+            if (player.setAudioTrack(pendingAudioTrack)) pendingAudioTrack = NO_TRACK;
+            return;
+        }
     }
 
     /** LivePlayer passes on VLC's Vout events: how many video outputs are open. */
@@ -161,7 +187,7 @@ final class LiveVideoOutput {
         cover.show(holder);
         int track = pendingTrack;
         pendingTrack = NO_TRACK;
-        if (track >= 0) whenSurfaceReady(track);
+        if (track >= 0 || restartAfterMove) whenSurfaceReady(track);
     }
 
     /**
@@ -180,7 +206,10 @@ final class LiveVideoOutput {
             done[0] = true;
             waitingTrack = NO_TRACK;
             cancelSurfaceWait();
-            player.setVideoTrack(track);
+            if (restartAfterMove) {
+                restartAfterMove = false;
+                player.play();
+            } else player.setVideoTrack(track);
         };
         if (surface == null) {
             enable.run();
@@ -319,6 +348,8 @@ final class LiveVideoOutput {
     void stopping() {
         if (closed) return;
         closed = true;
+        pendingAudioTrack = NO_TRACK;
+        restartAfterMove = false;
         cover.close();
         main.removeCallbacks(deferredFinish);
         cancelSurfaceWait();
