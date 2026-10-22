@@ -59,6 +59,7 @@ final class LiveVideoOutput {
     private static final long SURFACE_WAIT_MS = 3000;
     private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
     private final Runnable closeTimeout = this::finishMove;
+    private final Runnable deferredFinish = this::finishMove;
     private Runnable pendingSurfaceTimeout;
     private android.view.SurfaceHolder pendingSurfaceHolder;
     private android.view.SurfaceHolder.Callback pendingSurfaceCallback;
@@ -127,12 +128,13 @@ final class LiveVideoOutput {
         vouts = count;
         if (count == 0 && pendingTrack != NO_TRACK) {
             main.removeCallbacks(closeTimeout);
-            main.post(this::finishMove);
+            main.post(deferredFinish);
         }
     }
 
     private void finishMove() {
         main.removeCallbacks(closeTimeout);
+        main.removeCallbacks(deferredFinish);
         if (closed || pendingTrack == NO_TRACK) return;
         FrameLayout destination = pendingDestination;
         pendingDestination = null;
@@ -285,6 +287,7 @@ final class LiveVideoOutput {
     void close() {
         if (closed) return;
         closed = true;
+        main.removeCallbacks(deferredFinish);
         cancelSurfaceWait();
         main.removeCallbacks(closeTimeout);
         // whenSurfaceReady also schedules a delayed enable callback. Its closed guard
