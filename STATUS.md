@@ -301,3 +301,7 @@ during dialog focus transitions and a teardown that retained a detached dialog. 
 upload was skipped. Panels now clear their reference on window detach and suppress follow-up
 actions for a finishing/destroyed Activity. Input tests wait for actual focus; a new device
 regression closes an Activity with a panel open. CI validation is pending.
+
+Post-merge run 39827167743 passed 135/136 tests with one screenshot captured during handoff
+before destination composition. Handoff evidence now observes actual pixels within the same
+three-second total budget, including decoding and composition; validation is pending.
