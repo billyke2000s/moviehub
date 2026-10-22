@@ -147,6 +147,7 @@ final class LiveTvScreen {
     boolean hasMore;
     /** Ignore paging while a page is being replaced, before hasMore reflects its rows. */
     private boolean pageLoading;
+    private int pendingPageDirection, pendingPageRow;
 
     /** Up from the colour keys: the bottom row, on its name or the programme at the cursor. */
     void focusLastRow() {
@@ -169,7 +170,11 @@ final class LiveTvScreen {
      * goes to the first, up from the first to the last.
      */
     void turnPage(int direction, int row) {
-        if (pageLoading) return;
+        if (pageLoading) {
+            pendingPageDirection = direction;
+            pendingPageRow = row;
+            return;
+        }
         if (direction > 0) {
             if (hasMore) guide(pageStart + ROWS, row);
             else if (pageStart > 0) guide(0, row);
@@ -262,6 +267,17 @@ final class LiveTvScreen {
             result -> {
                 if (ticket != loadTicket) return; // a later page was asked for meanwhile
                 pageLoading = false;
+                if (pendingPageDirection != 0) {
+                    int direction = pendingPageDirection,
+                        row = pendingPageRow;
+                    pendingPageDirection = 0;
+                    activity.handler.post(() -> {
+                        if (ticket == loadTicket && frameGeneration == activity.generation) turnPage(
+                            direction,
+                            row
+                        );
+                    });
+                }
                 @SuppressWarnings("unchecked")
                 List<ChannelDatabase.Row> items = (List<ChannelDatabase.Row>) result[0];
                 @SuppressWarnings("unchecked")

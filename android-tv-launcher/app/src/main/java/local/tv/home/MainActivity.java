@@ -492,6 +492,17 @@ public class MainActivity extends TvActivity {
     }
 
     void play(String title, String url, String id, boolean live, JSONObject metadata) {
+        play(title, url, id, live, metadata, null);
+    }
+
+    void play(
+        String title,
+        String url,
+        String id,
+        boolean live,
+        JSONObject metadata,
+        VodSources.Session sources
+    ) {
         final String safe;
         try {
             safe = Playlist.networkUrl(url, http());
@@ -536,6 +547,7 @@ public class MainActivity extends TvActivity {
                     .putExtra("url", safe)
                     .putExtra("id", id)
                     .putExtra("live", live)
+                    .putExtra("vodSession", live ? null : VodSources.remember(sources))
                     .putExtra("episodeKey", metadata == null ? null : metadata.optString("episodeKey", null))
                     .putExtra("titleKey", ResumePoint.titleKey(metadata)),
                 live ? ActivityOptions.makeCustomAnimation(this, 0, 0).toBundle() : null

@@ -250,3 +250,11 @@ LiveZapper owns the per-channel Automatic/manual source policy and two-step Back
 LivePlayer retains the current source mode and attempted source keys with the active stream. LiveTvScreen matches the active stable URL’s saved SHA-256 key against the selected channel’s copies before opening full screen. LiveZapper restores the matching copy/mode/attempt history, and resets them on a new channel. These comparisons read local metadata only.
 
 Restoring a retained source compares saved hashes rather than decrypting every backup URL; it performs no additional stream lookup.
+
+## Reviewed playback integration (22 October 2026)
+
+`VodSources` retains at most two short-lived sessions of up to five cached candidates, identified by random intent tokens. Manual Sources and AutoPlayback pass the selected file and remaining cached candidates. Alternative direct links resolve on demand through the existing repository; the session holds no Activity. A process restart loses alternatives and safely retains ordinary single-source history playback.
+
+`VodSourceFailover` owns plain-Java thresholds and source exhaustion. `VodPlayback` owns asynchronous resolution, cancellation generations, a 45-second deadline per candidate, and a muted second VLC player using the film engine. The original player continues until video decodes within two seconds of its position. Replacement uses a TextureView so staging can be transparent on API 28; initial VOD and shared Live TV retain their existing SurfaceView path. Insufficient decoder resources may prevent a replacement: failure keeps the original player. Live thresholds and the shared live instance are independent.
+
+`LivePictureRates` samples current VLC stats without retaining a frame callback. `LiveHandoffCover` best-effort captures a bounded still during a guide/full-screen move; stale PixelCopy callbacks cannot move video, and the cover expires after five seconds. Existing surface cancellation and video-repair reattachment remain intact.

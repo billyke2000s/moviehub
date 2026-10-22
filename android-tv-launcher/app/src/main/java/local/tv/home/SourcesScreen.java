@@ -338,7 +338,19 @@ final class SourcesScreen {
                                         source.uri + ":" + files.getJSONObject(pick).optString("path", "File")
                                     ),
                                     false,
-                                    metadata
+                                    metadata,
+                                    VodSources.prepare(
+                                        source,
+                                        pickLink,
+                                        files,
+                                        sources,
+                                        repo,
+                                        season,
+                                        episode,
+                                        title,
+                                        activity.prefs.getInt(AutoPlayback.QUALITY, 1080),
+                                        true
+                                    )
                                 );
                                 return;
                             }
@@ -435,7 +447,19 @@ final class SourcesScreen {
                                         link,
                                         activity.id(source.uri + ":" + name),
                                         false,
-                                        metadata
+                                        metadata,
+                                        VodSources.prepare(
+                                            source,
+                                            link,
+                                            files,
+                                            sources,
+                                            repo,
+                                            season,
+                                            episode,
+                                            title,
+                                            activity.prefs.getInt(AutoPlayback.QUALITY, 1080),
+                                            true
+                                        )
                                     )
                                 );
                                 LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);

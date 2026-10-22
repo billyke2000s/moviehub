@@ -48,6 +48,8 @@ final class LivePlayer {
     private static final LiveProgress progress = new LiveProgress();
     private static boolean played;
     private static boolean viewRepaired;
+    static final long PICTURE_REPAIR_MS = 2500;
+    private static long pictureRepairedFor = -1;
     private static int viewRepairs;
     private static String lastVideoRecovery = "None";
 
@@ -56,6 +58,7 @@ final class LivePlayer {
         public void run() {
             if (player == null) return;
             int ticket = generation;
+            LivePictureRates.sample(player, output, owner, android.os.SystemClock.elapsedRealtime());
             boolean watching =
                 (EngineSources.locator(url) || PlutoSource.nativeUrl(url)) &&
                 played &&
@@ -77,7 +80,21 @@ final class LivePlayer {
 
     static void observeProgress(long now, long time, long frames, boolean watching) {
         if (!(EngineSources.locator(url) || PlutoSource.nativeUrl(url))) return;
-        if (!progress.stalled(now, time, frames, watching, LiveZapper.STALL_MS)) return;
+        if (!progress.stalled(now, time, frames, watching, LiveZapper.STALL_MS)) {
+            if (
+                watching &&
+                progress.pictureFrozen(now, PICTURE_REPAIR_MS) &&
+                progress.pictureSince() != pictureRepairedFor &&
+                output != null &&
+                output.refreshView()
+            ) {
+                pictureRepairedFor = progress.pictureSince();
+                viewRepairs++;
+                lastVideoRecovery = "Picture stopped while the sound played; view refreshed";
+                Timings.record("Still picture refreshed", Timings.start());
+            }
+            return;
+        }
         boolean clockMoving = progress.clockMoving(now, LiveZapper.STALL_MS);
         progress.reset();
         Timings.record("Live video stopped advancing", Timings.start());
@@ -172,6 +189,7 @@ final class LivePlayer {
         opened++;
         played = false;
         progress.reset();
+        pictureRepairedFor = -1;
         main.removeCallbacks(watchProgress);
         main.postDelayed(watchProgress, 1000);
         if (PlutoSource.nativeUrl(streamUrl) || EngineSources.locator(streamUrl)) {

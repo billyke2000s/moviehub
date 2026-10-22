@@ -38,21 +38,7 @@ jobs:
           npx prettier --write android-tv-launcher/app/src/main/java/local/tv/home/{LiveVideoOutput,LivePlayer,LiveProgress,Troubleshooting,GuidePicture,LiveTvScreen,VlcPlaybackActivity,MainActivity,LiveZapper,PlayerMenus,SkyOverlay,ProviderRelay,PlaylistSession,ProviderBroker,AdapterSources,ProviderPackages}.java android-tv-launcher/app/src/androidTest/java/local/tv/home/{LiveHandoffEvidence,PlaybackTest,LiveControlsTest,PlaylistSessionTest}.java android-tv-launcher/tests/LiveProgressTest.java
           git diff --exit-code
       - name: Verify playlist, network, channel search and episode rules
-        run: |
-          mkdir -p build/core-tests
-          javac -d build/core-tests android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,EpisodeOrder,SourceRanking,ChannelQuery,EpgMatch,SkyNumbers,GuideOrder,SkipQueue,ErrorLog,SpeedTest,ChannelIdentity,ChannelCategory,ProviderFailure,LiveProgress}.java android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest,SkyNumbersTest,GuideOrderTest,SkipQueueTest,TroubleshootingTest,ChannelIdentityTest,ProviderFailureTest,LiveProgressTest}.java
-          java -cp build/core-tests local.tv.home.PlaylistTest
-          java -cp build/core-tests local.tv.home.NetworkTest
-          java -cp build/core-tests local.tv.home.VideoFilesTest
-          java -Xmx64m -cp build/core-tests local.tv.home.ChannelQueryTest
-          java -cp build/core-tests local.tv.home.EpgMatchTest
-          java -cp build/core-tests local.tv.home.SkyNumbersTest
-          java -cp build/core-tests local.tv.home.GuideOrderTest
-          java -cp build/core-tests local.tv.home.SkipQueueTest
-          java -cp build/core-tests local.tv.home.TroubleshootingTest
-          java -cp build/core-tests local.tv.home.ChannelIdentityTest
-          java -cp build/core-tests local.tv.home.ProviderFailureTest
-          java -cp build/core-tests local.tv.home.LiveProgressTest
+        run: bash android-tv-launcher/tests/run-core-tests.sh
       - name: Build APK and run Android lint
         run: gradle -p android-tv-launcher --no-daemon assembleDebug assembleRelease lintDebug lintRelease testDebugUnitTest assembleDebugAndroidTest
       - name: Verify APK signature and checksum

@@ -25,6 +25,7 @@ import org.videolan.libvlc.util.VLCVideoLayout;
 final class LiveVideoOutput {
 
     private final MediaPlayer player;
+    private final LiveHandoffCover cover = new LiveHandoffCover(this::pictures);
     private VLCVideoLayout layout;
     private FrameLayout holder;
     private boolean closed;
@@ -89,7 +90,7 @@ final class LiveVideoOutput {
         lastHandoffGapMs = -1;
         transferStarted = SystemClock.elapsedRealtime();
         pendingDestination = destination;
-        closeVideoThen();
+        cover.capture(surfaceView(), this::closeVideoThen);
     }
 
     /**
@@ -117,6 +118,7 @@ final class LiveVideoOutput {
      * switching the old stream's video track back on: VLC picks the new stream's own tracks.
      */
     void streamChanging() {
+        cover.clear();
         cancelSurfaceWait();
         waitingTrack = NO_TRACK;
         if (pendingTrack == NO_TRACK) return;
@@ -149,6 +151,7 @@ final class LiveVideoOutput {
             }
             attach(destination);
         }
+        cover.show(holder);
         int track = pendingTrack;
         pendingTrack = NO_TRACK;
         if (track >= 0) whenSurfaceReady(track);
@@ -288,6 +291,7 @@ final class LiveVideoOutput {
     void close() {
         if (closed) return;
         closed = true;
+        cover.close();
         main.removeCallbacks(deferredFinish);
         cancelSurfaceWait();
         main.removeCallbacks(closeTimeout);

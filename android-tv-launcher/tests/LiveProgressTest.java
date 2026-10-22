@@ -49,6 +49,24 @@ public final class LiveProgressTest {
         for (int now = 0; now <= 240000; now += 1000) {
             check(!p.stalled(now, now, now / 40, true, 8000));
         }
+        // A still picture over a moving clock (sound playing) is seen early, once per freeze.
+        p.reset();
+        check(!p.stalled(0, 0, 10, true, 8000));
+        check(!p.stalled(1000, 1000, 10, true, 8000));
+        check(!p.pictureFrozen(1000, 2500));
+        check(!p.stalled(2500, 2500, 10, true, 8000));
+        check(p.pictureFrozen(2500, 2500));
+        long freeze = p.pictureSince();
+        check(!p.stalled(3500, 3500, 10, true, 8000));
+        check(p.pictureSince() == freeze);
+        check(!p.stalled(4500, 4500, 11, true, 8000));
+        check(!p.pictureFrozen(4500, 2500));
+        check(p.pictureSince() != freeze);
+        // Buffering (clock and picture both stopped) is not a frozen picture.
+        p.reset();
+        check(!p.stalled(0, 0, 10, true, 8000));
+        check(!p.stalled(3000, 0, 10, true, 8000));
+        check(!p.pictureFrozen(3000, 2500));
         System.out.println(checks + " live progress checks passed");
     }
 }

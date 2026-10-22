@@ -142,7 +142,19 @@ final class AutoPlayback {
                     file.getString("link"),
                     activity.id(selected.source.uri + ":" + file.optString("path", file.optString("name"))),
                     false,
-                    metadata
+                    metadata,
+                    VodSources.prepare(
+                        selected.source,
+                        file.getString("link"),
+                        selected.files,
+                        sources,
+                        repo,
+                        season,
+                        episode,
+                        title,
+                        quality,
+                        false
+                    )
                 );
             }
         );

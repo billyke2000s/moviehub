@@ -111,6 +111,7 @@ final class PlayerMenus {
                 : "Sleep timer"
         );
         if (a.zapper != null) labels.add(0, a.zapper.sourceText());
+        if (!a.live && a.vod != null && a.vod.hasChoices()) labels.add(0, "Sources");
         if (a.live && a.behindLive) labels.add(0, "Back to live");
         if (liveTv) {
             // Everything the coloured buttons do is here too, for remotes without them.
@@ -126,6 +127,7 @@ final class PlayerMenus {
                 else if (label.equals("Audio & subtitles")) audioAndSubtitles();
                 else if (label.equals("Programme information")) a.zapper.information();
                 else if (label.equals("Back to live")) a.backToLive();
+                else if (label.equals("Sources") && !a.live) chooseVodSource();
                 else if (label.startsWith("Source")) chooseSource();
                 else if (label.startsWith("Playback speed")) chooseSpeed();
                 else if (label.equals("Picture size")) choosePicture();
@@ -198,6 +200,20 @@ final class PlayerMenus {
     }
 
     /** Automatic is the default; a manual choice stays selected until Auto or another channel. */
+    void chooseVodSource() {
+        if (a.vod == null) return;
+        var entries = a.vod.queue.sources();
+        String[] names = new String[entries.size() + 1];
+        names[0] = "Automatic · switch if a source fails";
+        for (int i = 0; i < entries.size(); i++) names[i + 1] =
+            (i == a.vod.activeIndex() ? "▶ " : "") + entries.get(i).label;
+        options("Sources", names, a.vod.activeIndex() + 1, which -> {
+            if (a.vod == null) return;
+            if (which == 0) a.vod.automatic();
+            else a.vod.select(which - 1);
+        });
+    }
+
     void chooseSource() {
         java.util.List<ChannelDatabase.Row> copies = a.zapper.copies();
         String[] names = new String[copies.size() + 1];

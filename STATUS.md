@@ -16,7 +16,7 @@ Last updated: 20 October 2026.
   `CatalogueScreens` was split (filter sheets in `CatalogueOptions`) and the Live TV guide's
   panels are in `LiveTvPanels`. `LiveTvScreen` is about 710 lines; split it further (for example
   colour keys and number entry) before it grows.
-- **CI on `main`:** build, lint, signing and device tests pass.
+- **CI on `main` before this integration:** APK build passed; the latest device run had 132 passes and one failure (Green opens Sources). The latest publish attempt failed. See the integration PR for subsequent validation.
 
 ## Known issues
 
@@ -270,3 +270,11 @@ handoffs measured 44–137 ms on this emulator; this is not a hardware latency g
 [Signed test build](https://github.com/billyke2000s/moviehub/actions/runs/39513033996/artifacts/12307505129)
 (source `4ae9dce6e6adeb8d95b319ff46f0eb90897a3b22`). Extract and install `moviehub-test.apk`.
 No production update has been merged or published.
+
+## Reviewed pending work (22 October 2026)
+
+The integration branch adapts #82 (VOD recovery), #88 (early still-picture repair), #89 (current SurfaceView diagnostics), and the remaining #90 still-picture cover while preserving subsequent surface fixes. #84, #85 and #87 already belong to main; #92's publishing checks are superseded by a shared core-test script. #91 is a duplicate combined test branch.
+
+#77's empty video registry and conflicting free-channel gate are not imported: DefaultSourceProviders.EXTRA already registers shared movie/series manifests, and ProviderSettings already owns provider opt-in and per-provider settings. Its third-party warning is added to the existing SafetyNotice without silently disabling existing channel preferences. No new provider adapters are claimed. WorkManager is updated to 2.12.0 for current CI validation.
+
+Local core validation: 664 checks passed (Eclipse JDT/Java 17). Android build, lint, emulator and signing validation must be read from this integration PR before merging. Physical TV playback and installation remain unverified.

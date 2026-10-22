@@ -213,6 +213,133 @@ public class PlaybackTest {
         );
     }
 
+    private void openVod(VodSources.Session session) {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        await(activity::isDestroyed, 10000);
+        Context context = instrumentation.getTargetContext();
+        activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+            new Intent(context, VlcPlaybackActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra("url", "http://127.0.0.1:" + server.getLocalPort() + "/playback.mp4")
+                .putExtra("id", "vod-backup-test")
+                .putExtra("vodSession", VodSources.remember(session))
+                .putExtra("title", "VOD backup fixture")
+        );
+        await(
+            () ->
+                activity.vod != null && player() != null && player().isPlaying() && player().getTime() > 500,
+            30000
+        );
+    }
+
+    private java.util.List<VodSourceFailover.Source> vodEntries() {
+        return java.util.Arrays.asList(
+            new VodSourceFailover.Source("first", "Current", "Premiumize"),
+            new VodSourceFailover.Source("broken", "Broken backup", "Premiumize"),
+            new VodSourceFailover.Source("third", "Working backup", "Premiumize")
+        );
+    }
+
+    @Test
+    public void vodRepeatedBufferingPreparesBackupsWithoutStoppingCurrentPlayback() throws Exception {
+        var release = new java.util.concurrent.CountDownLatch(1);
+        var resolves = new java.util.concurrent.atomic.AtomicInteger();
+        openVod(
+            new VodSources.Session(
+                vodEntries(),
+                index -> {
+                    resolves.incrementAndGet();
+                    if (index == 1) release.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                    return new VodSources.Resolved(
+                        "http://127.0.0.1:" +
+                            server.getLocalPort() +
+                            (index == 1 ? "/missing.mp4" : "/playback.mp4"),
+                        null
+                    );
+                },
+                false
+            )
+        );
+        MediaPlayer original = player();
+        assertEquals("Alternatives are not resolved at startup", 0, resolves.get());
+        instrumentation.runOnMainSync(() -> {
+            activity.vod.onBuffering(true);
+            activity.vod.onBuffering(false);
+            activity.vod.onBuffering(true);
+        });
+        await(() -> resolves.get() == 1, 5000);
+        assertSame("Current player survives backup resolution", original, player());
+        long before = original.getTime();
+        SystemClock.sleep(1100);
+        assertTrue("Current stream keeps advancing", original.getTime() > before);
+        release.countDown();
+        await(() -> player() != original && activity.vod.activeIndex() == 2 && player().isPlaying(), 30000);
+        assertEquals("Broken backup skipped once", 2, resolves.get());
+        assertTrue("Replacement preserves progress", player().getTime() >= before - 2000);
+        assertTrue("Replacement audio is enabled", player().getVolume() > 0);
+        instrumentation.runOnMainSync(activity.menus::chooseVodSource);
+        assertTrue(
+            "In-player sources are available",
+            SidePanel.current != null && SidePanel.current.isShowing()
+        );
+    }
+
+    @Test
+    public void vodPauseCancelsPendingReplacementAndRejectsItsLateResult() throws Exception {
+        var entered = new java.util.concurrent.CountDownLatch(1);
+        var release = new java.util.concurrent.CountDownLatch(1);
+        openVod(
+            new VodSources.Session(
+                vodEntries(),
+                index -> {
+                    entered.countDown();
+                    try {
+                        release.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                    } catch (InterruptedException ignored) {
+                        release.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                    }
+                    return new VodSources.Resolved(
+                        "http://127.0.0.1:" + server.getLocalPort() + "/playback.mp4",
+                        null
+                    );
+                },
+                false
+            )
+        );
+        MediaPlayer original = player();
+        instrumentation.runOnMainSync(() -> activity.vod.failover());
+        assertTrue(entered.await(5, java.util.concurrent.TimeUnit.SECONDS));
+        instrumentation.runOnMainSync(activity::toggle);
+        await(() -> activity.paused && !activity.vod.preparing(), 5000);
+        release.countDown();
+        SystemClock.sleep(1000);
+        assertSame("Late resolution cannot replace paused playback", original, player());
+        assertFalse(player().isPlaying());
+    }
+
+    @Test
+    public void vodExhaustionKeepsTheOriginalAndDoesNotRetryForever() throws Exception {
+        var attempts = new java.util.concurrent.atomic.AtomicInteger();
+        openVod(
+            new VodSources.Session(
+                vodEntries(),
+                index -> {
+                    attempts.incrementAndGet();
+                    throw new IOException("Fixture unavailable");
+                },
+                true
+            )
+        );
+        MediaPlayer original = player();
+        instrumentation.runOnMainSync(() -> activity.vod.failover());
+        await(() -> attempts.get() == 2 && !activity.vod.preparing(), 5000);
+        assertSame(original, player());
+        SystemClock.sleep(1100);
+        assertEquals(2, attempts.get());
+        assertTrue(original.isPlaying());
+    }
+
     /** Opens a player options dialog, moves down `steps` entries and selects. */
     private void option(Runnable open, int steps) {
         instrumentation.runOnMainSync(open);

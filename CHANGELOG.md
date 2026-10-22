@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — reviewed playback and pending-PR integration
+
+- Connect cached VOD alternatives to manual/automatic source selection, with 4-second/two-in-60-second buffering recovery, in-player Sources, pause/seek cancellation, bounded attempts and a prepared replacement before the current stream stops.
+- Adapt 2.5-second still-picture surface recovery and separate guide/full-screen VLC counters to the current SurfaceView implementation. Preserve later video reattachment and cancellation fixes.
+- Best-effort bounded still cover during live picture handoff; queue paging during guide loads and remove panel-closing animation/input races.
+- Use one core-test script for build and publishing, and update WorkManager to 2.12.0. Retain the existing source registry and provider consent instead of importing an empty conflicting scaffold.
+
 ## Unreleased — continuous series, automatic play and TV remote controls
 
 - Continue to the next aired episode across season boundaries using TMDB episode metadata, prefetched while watching. Stop at the last available episode instead of inventing an episode number.
