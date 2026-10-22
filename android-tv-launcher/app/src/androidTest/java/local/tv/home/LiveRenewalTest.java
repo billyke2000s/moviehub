@@ -202,6 +202,34 @@ public final class LiveRenewalTest {
     }
 
     @Test
+    public void unreportedOutputStillWaitsBeforeReplacingItsSurface() {
+        start(false);
+        long before = LivePlayer.output().pictures();
+        remote.runOnMainSync(() -> {
+            LiveVideoOutput output = LivePlayer.output();
+            android.view.SurfaceView surface = output.surfaceView();
+            output.videoOutputs(0);
+            assertTrue(output.refreshView());
+            assertSame("No detach before native shutdown acknowledgement", surface, output.surfaceView());
+        });
+        await(() -> LivePlayer.output().isShown() && LivePlayer.output().pictures() > before + 3);
+    }
+
+    @Test
+    public void missingShutdownAcknowledgementStopsNativeReaderBeforeMoving() {
+        start(false);
+        int before = requests.get();
+        remote.runOnMainSync(() -> {
+            // Suppress Vout acknowledgement to exercise the bounded native-stop fallback.
+            LivePlayer.player().setEventListener(null);
+            assertTrue(LivePlayer.output().refreshView());
+        });
+        await(
+            () -> requests.get() > before && LivePlayer.player().isPlaying() && LivePlayer.output().isShown()
+        );
+    }
+
+    @Test
     public void persistentFreezeReachesFailureInsteadOfRepairingForever() {
         start(false);
         AtomicInteger failures = new AtomicInteger();
