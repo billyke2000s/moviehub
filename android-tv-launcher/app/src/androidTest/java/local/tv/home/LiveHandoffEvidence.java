@@ -60,15 +60,26 @@ final class LiveHandoffEvidence {
                 (player == null ? -1 : player.getVideoTracksCount());
         });
         assertTrue("Destination did not show fresh pictures within 8 seconds: " + state[0], ready[0]);
+        // Decoding can resume before SurfaceFlinger composites the destination layer. Observe
+        // actual pixels within the same accepted handoff budget rather than sampling once in
+        // that gap (which reported a blank screenshot in post-merge run 39827167743).
+        long decodedAt = SystemClock.elapsedRealtime();
+        long decodedGap = handoff ? output.lastHandoffGapMs : 0;
+        long visibleDeadline = handoff ? decodedAt + Math.max(0, HANDOFF_LIMIT_MS - decodedGap) : deadline;
+        boolean visible = pictureNotBlank();
+        while (!visible && SystemClock.elapsedRealtime() < visibleDeadline) {
+            SystemClock.sleep(20);
+            visible = pictureNotBlank();
+        }
+        assertTrue("The picture on screen stayed black or blank within the handoff budget", visible);
         if (handoff) {
-            long gap = output.lastHandoffGapMs;
-            android.util.Log.i("MovieHubHandoff", "Fresh picture after " + gap + " ms");
+            long gap = decodedGap + SystemClock.elapsedRealtime() - decodedAt;
+            android.util.Log.i("MovieHubHandoff", "Visible picture after " + gap + " ms");
             assertTrue(
                 "Picture took " + gap + " ms to return after the move (limit " + HANDOFF_LIMIT_MS + " ms)",
                 gap >= 0 && gap <= HANDOFF_LIMIT_MS
             );
         }
-        assertPictureNotBlank();
         instrumentation.runOnMainSync(() -> pictures = output.pictures());
     }
 
@@ -76,7 +87,7 @@ final class LiveHandoffEvidence {
      * Reads what is actually on screen where the video surface is. A screenshot includes the
      * SurfaceView's layer; PixelCopy cannot read a hardware decoder's surface (SOURCE_NO_DATA).
      */
-    private void assertPictureNotBlank() {
+    private boolean pictureNotBlank() {
         int[] box = new int[4];
         instrumentation.runOnMainSync(() -> {
             SurfaceView surface = output.surfaceView();
@@ -88,7 +99,7 @@ final class LiveHandoffEvidence {
             box[2] = surface.getWidth();
             box[3] = surface.getHeight();
         });
-        assertTrue("The video surface has a size", box[2] > 0 && box[3] > 0);
+        if (box[2] <= 0 || box[3] <= 0) return false;
         Bitmap shot = instrumentation.getUiAutomation().takeScreenshot();
         assertNotNull("Screenshot taken", shot);
         // Some Android versions return a hardware bitmap, whose pixels cannot be read directly.
@@ -108,7 +119,7 @@ final class LiveHandoffEvidence {
                     darkest = Math.min(darkest, light);
                 }
             }
-            assertTrue("The picture on screen is black or a blank fill", brightest - darkest > 32);
+            return brightest - darkest > 32;
         } finally {
             screen.recycle();
         }

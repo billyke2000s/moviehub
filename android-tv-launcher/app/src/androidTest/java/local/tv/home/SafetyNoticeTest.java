@@ -32,7 +32,10 @@ public class SafetyNoticeTest {
 
     @After
     public void stop() {
-        if (activity != null) remote.runOnMainSync(() -> activity.finish());
+        if (activity != null) {
+            remote.runOnMainSync(() -> activity.finish());
+            await("activity destroyed", activity::isDestroyed);
+        }
         prefs.edit().putBoolean(SafetyNotice.PREF, true).putBoolean("autoUpdates", updates).commit();
     }
 
@@ -54,6 +57,7 @@ public class SafetyNoticeTest {
         );
         await("notice shown", () -> SidePanel.current != null && SidePanel.current.isShowing());
         UiEvidence.capture("safety-notice");
+        await("notice focused", () -> SidePanel.current.getWindow().getDecorView().hasWindowFocus());
         // "I understand" has the focus.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         await("read", () -> SafetyNotice.seen(context));
@@ -77,6 +81,7 @@ public class SafetyNoticeTest {
             );
             UiEvidence.capture("free-provider-question");
             android.app.Dialog question = SidePanel.current;
+            await("question focused", () -> question.getWindow().getDecorView().hasWindowFocus());
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
             await(
                 "notice after the question",
@@ -87,6 +92,7 @@ public class SafetyNoticeTest {
             );
             assertFalse("Back does not answer the question", prefs.getBoolean(ProviderSettings.ASKED, false));
             assertEquals("Back turns nothing on", fls, prefs.getBoolean(EngineSources.PREF, false));
+            await("notice focused", () -> SidePanel.current.getWindow().getDecorView().hasWindowFocus());
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
             await("read", () -> SafetyNotice.seen(context));
         } finally {
