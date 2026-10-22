@@ -34,6 +34,10 @@ final class VodPlayback {
         queue.select(active, session.pinned);
     }
 
+    boolean automaticSources() {
+        return !session.pinned;
+    }
+
     int activeIndex() {
         return active;
     }
@@ -190,11 +194,12 @@ final class VodPlayback {
                 if (resolved.files != null) SourcesScreen.Binge.files = resolved.files;
                 candidate = null;
                 candidateView = null;
-                preparing = false;
+                activity.adoptVod(ready, view, link);
                 active = queue.currentIndex();
                 session.active = active;
                 queue.onPlaying();
-                activity.adoptVod(ready, view, link);
+                // Publish completion only after the retiring player is released and audio restored.
+                preparing = false;
                 return;
             }
             // The original stream may recover during lookup. Catch the replacement up before cutting.

@@ -387,6 +387,7 @@ final class LivePlayer {
 
     /** Stops and releases everything. */
     static void stop() {
+        LivePictureRates.reset();
         main.removeCallbacks(watchProgress);
         progress.reset();
         played = false;

@@ -355,6 +355,7 @@ public class VlcPlaybackActivity extends Activity {
         MediaPlayer previous = player;
         VLCVideoLayout previousView = filmVideo;
         int volume = previous == null ? 100 : previous.getVolume();
+        if (volume < 0) volume = 100;
         player = ready;
         filmVideo = layout;
         url = link;

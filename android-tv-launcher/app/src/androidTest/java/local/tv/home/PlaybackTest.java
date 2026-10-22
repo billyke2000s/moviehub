@@ -274,10 +274,19 @@ public class PlaybackTest {
         SystemClock.sleep(1100);
         assertTrue("Current stream keeps advancing", original.getTime() > before);
         release.countDown();
-        await(() -> player() != original && activity.vod.activeIndex() == 2 && player().isPlaying(), 30000);
+        await(
+            () ->
+                player() != original &&
+                !activity.vod.preparing() &&
+                activity.vod.activeIndex() == 2 &&
+                player().isPlaying(),
+            30000
+        );
         assertEquals("Broken backup skipped once", 2, resolves.get());
         assertTrue("Replacement preserves progress", player().getTime() >= before - 2000);
-        assertTrue("Replacement audio is enabled", player().getVolume() > 0);
+        instrumentation.runOnMainSync(() ->
+            assertTrue("Replacement audio is enabled", player().getVolume() > 0)
+        );
         instrumentation.runOnMainSync(activity.menus::chooseVodSource);
         assertTrue(
             "In-player sources are available",
@@ -1028,10 +1037,18 @@ public class PlaybackTest {
         int repairs = output.repairs;
         int audioTrack = samePlayer.getAudioTrack();
         long audioBefore = audioBuffers(samePlayer);
-        // The freeze watchdog's repair: give the picture a fresh surface in the same place.
-        boolean[] refreshed = { false };
-        instrumentation.runOnMainSync(() -> refreshed[0] = output.refreshView());
-        assertTrue("The picture was refreshed", refreshed[0]);
+        // Exercise the early watchdog path with a stopped picture counter over advancing audio,
+        // then verify its actual native surface repair without reopening the stream.
+        instrumentation.runOnMainSync(() -> {
+            long now = SystemClock.elapsedRealtime(),
+                time = samePlayer.getTime(),
+                frames = output.pictures();
+            LivePlayer.observeProgress(now - LivePlayer.PICTURE_REPAIR_MS, time, frames, false);
+            LivePlayer.observeProgress(now - LivePlayer.PICTURE_REPAIR_MS, time, frames, true);
+            LivePlayer.observeProgress(now, time + LivePlayer.PICTURE_REPAIR_MS, frames, true);
+        });
+        assertTrue("The early watchdog refreshed the picture", output.repairs > repairs);
+        assertTrue(LivePlayer.videoRecovery().startsWith("Picture stopped while the sound played"));
         long[] after = { 0 };
         instrumentation.runOnMainSync(() -> after[0] = output.pictures());
         await(() -> output.repairs > repairs && output.pictures() > after[0] + 3, 6000);

@@ -15,6 +15,11 @@ final class LivePictureRates {
 
     private LivePictureRates() {}
 
+    static void reset() {
+        previousOwner = null;
+        previousPlayer = null;
+    }
+
     static void sample(MediaPlayer player, LiveVideoOutput output, Object owner, long now) {
         if (player == null || output == null || owner == null || !player.isPlaying() || !output.isShown()) {
             previousOwner = null;
