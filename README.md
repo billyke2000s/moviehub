@@ -1,5 +1,8 @@
 # MovieHub for Android TV
 
+Settings → Playback offers **Automatic play: films** and **Automatic play: series** (both off by default), plus a preferred resolution. Automatic mode chooses among ready-to-play sources and falls back to manual selection if needed. Series continue across seasons using aired-episode metadata; missing pack episodes offer a search action in manual mode. On Live TV, physical colour buttons perform the displayed actions; Back reveals outlined controls for arrows and OK, and another Back leaves the page. Unusual remote codes can be learned in Live TV → Options → Set up coloured buttons.
+
+
 > ## ⚠️ MovieHub doesn't host anything
 >
 > **MovieHub is just an app. It doesn't store or share any videos, channels or streams.** The free

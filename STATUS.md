@@ -1,5 +1,10 @@
 # Status
 
+## Continuous series and automatic playback
+
+New settings keep manual source selection as the default. Next-episode metadata is prefetched while watching; season transitions use catalogue episodes and air dates. Missing-pack episodes follow the selected manual/automatic mode. Guide colour shortcuts are handled independently of focused widgets, with Back revealing accessible controls. Physical TV, remote and real-account validation remain outstanding.
+
+
 Last updated: 20 October 2026.
 
 ## Where things stand

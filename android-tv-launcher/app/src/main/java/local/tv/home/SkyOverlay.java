@@ -46,6 +46,7 @@ final class SkyOverlay {
      * coloured buttons can still reach them (package-private for tests).
      */
     final List<View> controls = new ArrayList<>();
+    private boolean controlsRevealed;
 
     SkyOverlay(VlcPlaybackActivity activity, FrameLayout root) {
         a = activity;
@@ -102,12 +103,13 @@ final class SkyOverlay {
         source = label(15, false, Color.WHITE);
         source.setPadding(a.dp(12), a.dp(12), a.dp(16), a.dp(12));
         source.setMinHeight(a.dp(48));
-        source.setFocusable(true);
+        source.setFocusable(false);
         source.setContentDescription("Sources");
         source.setOnClickListener(v -> a.menus.chooseSource());
-        source.setOnFocusChangeListener((v, focused) ->
-            source.setTextColor(focused ? LiveTvScreen.YELLOW : Color.WHITE)
-        );
+        source.setOnFocusChangeListener((v, focused) -> {
+            source.setTextColor(focused ? LiveTvScreen.YELLOW : Color.WHITE);
+            controlOutline(v, focused);
+        });
         title.addView(source);
         controls.add(source);
         clock = label(20, true, Color.WHITE);
@@ -225,6 +227,12 @@ final class SkyOverlay {
     }
 
     void focusSources() {
+        controlsRevealed = true;
+        for (View control : controls) {
+            control.setFocusable(true);
+            control.setFocusableInTouchMode(true);
+            controlOutline(control, control.hasFocus());
+        }
         source.requestFocus();
     }
 
@@ -382,7 +390,7 @@ final class SkyOverlay {
     private void colourKey(int colour, String text, Runnable action) {
         LinearLayout key = row();
         key.setPadding(a.dp(6), a.dp(4), a.dp(10), a.dp(4));
-        key.setFocusable(true);
+        key.setFocusable(false);
         key.setClickable(true);
         key.setContentDescription(text);
         View swatch = new View(a);
@@ -402,6 +410,7 @@ final class SkyOverlay {
         focus.setCornerRadius(a.dp(3));
         key.setOnFocusChangeListener((v, focused) -> {
             key.setBackground(focused ? focus : null);
+            if (!focused) controlOutline(key, false);
             label.setTextColor(focused ? LiveTvScreen.INK : Color.WHITE);
         });
         key.setOnClickListener(v -> action.run());
@@ -409,6 +418,14 @@ final class SkyOverlay {
         keyLayout.rightMargin = a.dp(14);
         keys.addView(key, keyLayout);
         controls.add(key);
+    }
+
+    private void controlOutline(View view, boolean focused) {
+        GradientDrawable shape = new GradientDrawable();
+        shape.setColor(focused ? 0x445d8ae0 : 0x22182260);
+        shape.setCornerRadius(a.dp(3));
+        shape.setStroke(a.dp(focused ? 2 : 1), focused ? LiveTvScreen.YELLOW : 0x88ffffff);
+        view.setBackground(controlsRevealed ? shape : null);
     }
 
     private TextView label(int size, boolean bold, int colour) {

@@ -81,6 +81,7 @@ public class MainActivity extends TvActivity {
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         int key = event.getKeyCode();
+        if (activeKeyBar != null && activeKeyBar.handle(event)) return true;
         if (
             dock.eatSelectUp &&
             (key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER) &&
@@ -141,6 +142,7 @@ public class MainActivity extends TvActivity {
     /** The Home "For you" shelf; see {@link ForYou}. */
     ForYou forYou;
     LinearLayout page;
+    KeyBar activeKeyBar;
     Runnable back;
     Runnable destination;
     HomeScreen.HomeShelf homeShelf;
@@ -426,6 +428,7 @@ public class MainActivity extends TvActivity {
 
     /** Home is a viewport, never a vertically scrolling page. The dock has reserved space. */
     void fixedScreen(String title, Runnable goBack) {
+        activeKeyBar = null;
         runLeaving();
         resumeRefresh = null;
         myListRefresh = null;
@@ -519,6 +522,7 @@ public class MainActivity extends TvActivity {
             Diagnostics.recovered("Saving recent playback", e);
             /* History failure must never prevent playback. */
         }
+        if (!live) SeriesPlayback.prefetch(this, metadata);
         try {
             startActivity(
                 new Intent(this, VlcPlaybackActivity.class)

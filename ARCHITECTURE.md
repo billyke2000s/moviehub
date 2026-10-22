@@ -1,5 +1,10 @@
 # Architecture
 
+## Series continuation and automatic play
+
+`SeriesPlayback` prefetches next-episode metadata on the existing I/O pool and verifies real episode numbers and air dates before crossing a season boundary. It updates both the season and the history key. `EpisodeOrder` holds plain-Java ordering rules. `AutoPlayback` bounds selection to five cached sources, ranks them through `SourceRanking`, and uses `VideoFiles` to select movies or exact episodes; screen-generation and cancellation guards prevent late automatic playback. `KeyBar` registers with the active `MainActivity` screen, so hardware colours are routed before focused widgets. Screen changes clear that registration.
+
+
 MovieHub is a single native Android app (Java, no WebView, no Kotlin) in `android-tv-launcher/`.
 All source lives in one package, `local.tv.home`, under
 `android-tv-launcher/app/src/main/java/local/tv/home/`.

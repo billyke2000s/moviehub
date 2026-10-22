@@ -202,6 +202,43 @@ public class VideoFilesTest {
             ) == -1,
             "empty manifest"
         );
+        check(
+            EpisodeOrder.next(
+                java.util.Arrays.asList(
+                    new EpisodeOrder.Episode(3, "2020-01-03"),
+                    new EpisodeOrder.Episode(2, "2020-01-02")
+                ),
+                1,
+                "2026-10-22"
+            ) == 2,
+            "episode order is numeric"
+        );
+        check(
+            EpisodeOrder.next(
+                java.util.Arrays.asList(
+                    new EpisodeOrder.Episode(2, "2099-01-01"),
+                    new EpisodeOrder.Episode(3, "2020-01-01")
+                ),
+                1,
+                "2026-10-22"
+            ) == -1,
+            "never skip an unaired episode"
+        );
+        check(
+            EpisodeOrder.next(java.util.Arrays.asList(new EpisodeOrder.Episode(2, null)), 1, "2026-10-22") ==
+                -1,
+            "unknown air date needs confirmation"
+        );
+        check(
+            EpisodeOrder.laterSeasons(java.util.Arrays.asList(0, 3, 2, 2, 1), 1).equals(
+                java.util.Arrays.asList(2, 3)
+            ),
+            "season order excludes specials and duplicates"
+        );
+        check(SourceRanking.rank("1080p", 1080) > SourceRanking.rank("720p", 1080), "prefer desired quality");
+        check(SourceRanking.rank("720p", 1080) > SourceRanking.rank("4K", 1080), "respect preferred ceiling");
+        check(SourceRanking.rank("4K", 2160) > SourceRanking.rank("1080p", 2160), "4K preference works");
+        check(SourceRanking.resolution("WEB-DL 2160P") == 2160, "resolution case insensitive");
         System.out.println(checks + " episode/file checks passed");
     }
 }

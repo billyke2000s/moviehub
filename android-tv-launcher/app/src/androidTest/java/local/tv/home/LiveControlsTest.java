@@ -198,4 +198,22 @@ public final class LiveControlsTest {
             )
         );
     }
+
+    @Test
+    public void physicalColourButtonsOpenTheirAdvertisedPlayerActions() {
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_RED);
+        remote.waitForIdleSync();
+        assertTrue("Red opens Audio & subtitles", SidePanel.current != null && SidePanel.current.isShowing());
+        remote.runOnMainSync(() -> SidePanel.current.dismiss());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
+        remote.waitForIdleSync();
+        assertTrue("Green opens Sources", SidePanel.current != null && SidePanel.current.isShowing());
+        remote.runOnMainSync(() -> SidePanel.current.dismiss());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_YELLOW);
+        remote.waitForIdleSync();
+        assertTrue("Yellow opens information", activity.zapper.overlay.infoShowing());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_BLUE);
+        remote.waitForIdleSync();
+        assertTrue("Blue opens Options", SidePanel.current != null && SidePanel.current.isShowing());
+    }
 }

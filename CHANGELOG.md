@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — continuous series, automatic play and TV remote controls
+
+- Continue to the next aired episode across season boundaries using TMDB episode metadata, prefetched while watching. Stop at the last available episode instead of inventing an episode number.
+- If the next episode is absent from the current pack, offer **Search for the next episode** in manual mode, or search automatically in automatic mode.
+- Settings → Playback adds separate automatic-play switches for films and series, plus a preferred maximum resolution (1080p by default). Try up to five ready-to-play sources and fall back to manual selection if no clear file match is found; never silently queue transfers.
+- Route guide colour keys regardless of focus. Back reveals outlined, arrow/OK-accessible colour controls; the next Back uses the existing navigation action. Fullscreen colour controls also gain visible outlines. Standard colour keys, F1–F4 and learned mappings remain supported.
+
+
 ## 0.42
 
 - Movie torrent file lists now put **Recommended movie** first, with video labels and file sizes. Other files remain visible but cannot launch playback. Exact episode selection is unchanged.

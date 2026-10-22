@@ -562,6 +562,41 @@ final class SettingsScreens {
         } else if (tab.equals("Playback")) {
             heading(body, "Playback preferences");
             toggle(body, "Resume playback", "Continue from where you stopped", "resume", true);
+            toggle(
+                body,
+                "Automatic play: films",
+                "Choose the best ready-to-play source and movie file",
+                AutoPlayback.MOVIES,
+                false
+            );
+            toggle(
+                body,
+                "Automatic play: series",
+                "Choose sources automatically when starting or continuing a series",
+                AutoPlayback.SERIES,
+                false
+            );
+            String[] qualityNames = { "720p", "1080p", "4K" };
+            int[] qualityValues = { 720, 1080, 2160 };
+            TextView[] qualityLabel = new TextView[1];
+            int preferred = activity.prefs.getInt(AutoPlayback.QUALITY, 1080);
+            qualityLabel[0] = settingCard(
+                body,
+                "Automatic play quality",
+                "Prefer this resolution or lower; try a higher one only if needed",
+                preferred >= 2160 ? "4K" : preferred >= 1080 ? "1080p" : "720p",
+                false,
+                "Change",
+                () -> {
+                    int current = activity.prefs.getInt(AutoPlayback.QUALITY, 1080);
+                    SidePanel.of(activity, "Automatic play quality")
+                        .choices(qualityNames, current >= 2160 ? 2 : current >= 1080 ? 1 : 0, which -> {
+                            activity.prefs.edit().putInt(AutoPlayback.QUALITY, qualityValues[which]).apply();
+                            qualityLabel[0].setText(qualityNames[which]);
+                        })
+                        .show();
+                }
+            );
             languagePreference(body, "Subtitles", "subtitleLanguage", "none", true);
             languagePreference(body, "Audio track", "audioLanguage", "eng,en", false);
         } else {
