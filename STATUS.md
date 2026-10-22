@@ -285,3 +285,11 @@ The integration PR passed its full emulator suite, but post-merge run 3982139862
 native EGL initialization during the channel-key playback test. Live shutdown now cancels
 surface callbacks without destroying the native window, stops VLC, then detaches the view.
 Release validation is pending on this follow-up; no real-device result is claimed.
+
+## Handoff capture follow-up (22 October 2026)
+
+Post-merge run 39824605890 repeated the native EGL crash during a guide/full-screen handoff.
+The attempted 0.45 publish ran all 136 tests with one failure: the manual-backup handoff
+reported fresh pictures before its surface had a size. Nothing was uploaded. PixelCopy no
+longer delays closing the old video output; destination evidence excludes old decoded frames
+and waits for a valid, sized surface. Follow-up device validation is pending.
