@@ -81,6 +81,29 @@ final class SeriesPlayback {
         this.activity = activity;
     }
 
+    static String imdb(JSONObject metadata) {
+        JSONObject external = metadata.optJSONObject("external_ids");
+        return metadata.optString("imdb_id", external == null ? "" : external.optString("imdb_id"));
+    }
+
+    /** Continue Watching can restore an episode after the app process was restarted. */
+    static void restore(JSONObject metadata) {
+        if (metadata == null || !metadata.has("episodeKey")) return;
+        JSONObject previous = SourcesScreen.Binge.metadata;
+        if (
+            previous != null && metadata.optString("episodeKey").equals(previous.optString("episodeKey"))
+        ) return;
+        SourcesScreen.Binge.remember(
+            imdb(metadata),
+            metadata.optInt("season", -1),
+            metadata.optInt("episode", -1),
+            metadata.optString("name", "Series"),
+            "Series",
+            metadata,
+            null
+        );
+    }
+
     interface Metadata {
         JSONObject get(String path) throws Exception;
     }
@@ -101,6 +124,12 @@ final class SeriesPlayback {
         throws Exception {
         int id = current.optInt("tmdbId", current.optInt("id"));
         if (id <= 0) throw new IllegalArgumentException("Series metadata unavailable");
+        if (imdb(current).isEmpty() || !current.has("name")) {
+            JSONObject details = tmdb.get("tv/" + id + "?append_to_response=external_ids");
+            current = new JSONObject(current.toString());
+            current.put("name", details.optString("name", "Series"));
+            if (details.has("external_ids")) current.put("external_ids", details.get("external_ids"));
+        }
         JSONArray episodes = tmdb.get("tv/" + id + "/season/" + season).getJSONArray("episodes");
         boolean foundCurrent = false;
         for (int i = 0; i < episodes.length(); i++) if (
@@ -148,6 +177,7 @@ final class SeriesPlayback {
     private static Next prepare(JSONObject current, int season, int episode, JSONArray episodes, int id)
         throws JSONException {
         JSONObject metadata = new JSONObject(current.toString());
+        metadata.put("id", id).put("tmdbId", id);
         metadata
             .put("season", season)
             .put("episode", episode)
@@ -172,7 +202,9 @@ final class SeriesPlayback {
         if (imdb == null || season < 0 || episode <= 0 || current == null) return;
         String kind = SourcesScreen.Binge.kind;
         String title = current.optString("name", "Series");
-        activity.screen("Up next", () -> activity.seriesScreens.seasons(current.optInt("id"), title, season));
+        activity.screen("Up next", () ->
+            activity.seriesScreens.seasons(current.optInt("tmdbId", current.optInt("id")), title, season)
+        );
         activity.page.addView(activity.muted("Finding the next episode…", 16));
         activity.async(
             () -> lookup(current, season, episode),
@@ -184,11 +216,17 @@ final class SeriesPlayback {
                         "You're up to date",
                         "No further aired episode is available in the catalogue.",
                         "View episodes",
-                        () -> activity.seriesScreens.seasons(current.optInt("id"), title, season)
+                        () ->
+                            activity.seriesScreens.seasons(
+                                current.optInt("tmdbId", current.optInt("id")),
+                                title,
+                                season
+                            )
                     );
                     return;
                 }
-                String label = title + " · S" + next.season + " E" + next.episode;
+                String label =
+                    next.metadata.optString("name", title) + " · S" + next.season + " E" + next.episode;
                 if (!next.metadata.optString("episodeTitle").isEmpty()) label +=
                     " · " + next.metadata.optString("episodeTitle");
                 final String nextTitle = label;
@@ -213,9 +251,12 @@ final class SeriesPlayback {
                     );
                     return;
                 }
+                String nextImdb = imdb(next.metadata);
+                if (nextImdb.isEmpty()) nextImdb = imdb;
+                final String sourceImdb = nextImdb;
                 Runnable search = () -> {
                     activity.playbackTitle = next.metadata;
-                    activity.sources.torrentSources(imdb, next.season, next.episode, nextTitle, kind);
+                    activity.sources.torrentSources(sourceImdb, next.season, next.episode, nextTitle, kind);
                 };
                 if (AutoPlayback.enabled(activity, next.season)) {
                     activity.toast("Searching for the next episode…");

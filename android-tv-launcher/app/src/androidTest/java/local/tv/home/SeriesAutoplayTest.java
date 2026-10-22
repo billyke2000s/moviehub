@@ -29,6 +29,7 @@ public final class SeriesAutoplayTest {
         return new JSONObject()
             .put("id", 123)
             .put("name", "Fixture show")
+            .put("imdb_id", "tt123456")
             .put("media_type", "tv")
             .put("season", 1)
             .put("episode", 2)
@@ -203,5 +204,27 @@ public final class SeriesAutoplayTest {
             )
         );
         assertEquals(0, calls.get());
+    }
+
+    @Test
+    public void restoresSeriesIdentityFromOlderContinueWatchingRecords() throws Exception {
+        JSONObject old = new JSONObject(
+            "{\"tmdbId\":123,\"id\":\"file-id\",\"season\":1,\"episode\":2,\"episodeKey\":\"123:1:2\"}"
+        );
+        var next = SeriesPlayback.resolve(
+            old,
+            1,
+            2,
+            path ->
+                path.contains("append_to_response")
+                    ? new JSONObject(
+                          "{\"name\":\"Fixture show\",\"external_ids\":{\"imdb_id\":\"tt123456\"}}"
+                      )
+                    : season(episode(2, "2020-01-01"), episode(3, "2020-01-02")),
+            "2026-10-22"
+        );
+        assertEquals("tt123456", SeriesPlayback.imdb(next.metadata));
+        assertEquals("Fixture show", next.metadata.getString("name"));
+        assertEquals("123:1:3", next.metadata.getString("episodeKey"));
     }
 }

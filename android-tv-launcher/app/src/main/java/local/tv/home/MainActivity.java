@@ -511,6 +511,9 @@ public class MainActivity extends TvActivity {
                     "season",
                     "episode",
                     "episodeKey",
+                    "name",
+                    "imdb_id",
+                    "external_ids",
                 })
                     if (metadata.has(key)) record.put(key, metadata.get(key));
             }
@@ -522,7 +525,10 @@ public class MainActivity extends TvActivity {
             Diagnostics.recovered("Saving recent playback", e);
             /* History failure must never prevent playback. */
         }
-        if (!live) SeriesPlayback.prefetch(this, metadata);
+        if (!live) {
+            SeriesPlayback.restore(metadata);
+            SeriesPlayback.prefetch(this, metadata);
+        }
         try {
             startActivity(
                 new Intent(this, VlcPlaybackActivity.class)
