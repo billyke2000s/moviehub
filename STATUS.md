@@ -284,4 +284,12 @@ Local core validation: 664 checks passed (Eclipse JDT/Java 17). Android build, l
 The integration PR passed its full emulator suite, but post-merge run 39821398629 crashed in
 native EGL initialization during the channel-key playback test. Live shutdown now cancels
 surface callbacks without destroying the native window, stops VLC, then detaches the view.
-PR #100 passed APK build, lint, signed-update compatibility, provider-engine checks and the\nfull emulator suite (39823346098 / 39823346061). No real-device result is claimed.
+Release validation is pending on this follow-up; no real-device result is claimed.
+
+## Handoff capture follow-up (22 October 2026)
+
+Post-merge run 39824605890 repeated the native EGL crash during a guide/full-screen handoff.
+The attempted 0.45 publish ran all 136 tests with one failure: the manual-backup handoff
+reported fresh pictures before its surface had a size. Nothing was uploaded. PixelCopy no
+longer delays closing the old video output; destination evidence excludes old decoded frames
+and waits for a valid, sized surface. Follow-up device validation is pending.

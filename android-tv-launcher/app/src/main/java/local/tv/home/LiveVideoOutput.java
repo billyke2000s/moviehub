@@ -90,7 +90,12 @@ final class LiveVideoOutput {
         lastHandoffGapMs = -1;
         transferStarted = SystemClock.elapsedRealtime();
         pendingDestination = destination;
-        cover.capture(surfaceView(), this::closeVideoThen);
+        // PixelCopy is optional and asynchronous. Never delay closing the native video output:
+        // the old Activity may lose its surface while that copy is pending.
+        cover.capture(surfaceView(), () -> {
+            if (pendingTrack == NO_TRACK) cover.show(holder);
+        });
+        closeVideoThen();
     }
 
     /**
@@ -151,6 +156,8 @@ final class LiveVideoOutput {
             }
             attach(destination);
         }
+        // Frames decoded while closing the old output do not establish a destination picture.
+        transferPictures = Math.max(0, pictures());
         cover.show(holder);
         int track = pendingTrack;
         pendingTrack = NO_TRACK;
@@ -239,7 +246,14 @@ final class LiveVideoOutput {
             if (count < lastCount) countedBefore += lastCount;
             lastCount = count;
             long shown = countedBefore + count;
-            if (shown >= 0 && transferStarted != 0 && shown > transferPictures) {
+            if (
+                transferStarted != 0 &&
+                shown > transferPictures &&
+                pendingDestination == null &&
+                pendingTrack == NO_TRACK &&
+                waitingTrack == NO_TRACK &&
+                isShown()
+            ) {
                 lastHandoffGapMs = SystemClock.elapsedRealtime() - transferStarted;
                 transferStarted = 0;
             }
@@ -269,7 +283,20 @@ final class LiveVideoOutput {
     }
 
     boolean isShown() {
-        return layout != null && layout.isShown();
+        SurfaceView surface = surfaceView();
+        return (
+            !closed &&
+            layout != null &&
+            layout.isShown() &&
+            pendingDestination == null &&
+            pendingTrack == NO_TRACK &&
+            waitingTrack == NO_TRACK &&
+            surface != null &&
+            surface.isShown() &&
+            surface.getWidth() > 0 &&
+            surface.getHeight() > 0 &&
+            surface.getHolder().getSurface().isValid()
+        );
     }
 
     /** The layout's video surface (for tests that read its picture), or null. */

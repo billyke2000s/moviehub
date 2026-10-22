@@ -4,6 +4,7 @@
 
 - Speed Test ratings include latency and jitter alongside download speed.
 
+- Close the old live video output immediately during handoff while the optional still-image capture runs independently; require a valid destination surface for picture evidence.
 - Keep the live video surface alive until VLC has stopped its decoder and video-output threads when leaving playback.
 
 - Connect cached VOD alternatives to manual/automatic source selection, with 4-second/two-in-60-second buffering recovery, in-player Sources, pause/seek cancellation, bounded attempts and a prepared replacement before the current stream stops.
