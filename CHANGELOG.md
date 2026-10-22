@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — playback continuity
+## 0.46 (22 October 2026)
 
 - Keep the current live stream and relay running during scheduled provider-link renewal. A failed refresh keeps working playback; pause and exit discard late renewal results. The cut still restarts the existing decoder once a fresh link resolves.
 - Extend clock/video freeze monitoring and early surface repair to ordinary IPTV, excluding paused, hidden and audio-only playback.
