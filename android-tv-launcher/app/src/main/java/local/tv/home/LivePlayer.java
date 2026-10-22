@@ -48,7 +48,7 @@ final class LivePlayer {
     private static List<String> lastOptions;
     private static final LiveProgress progress = new LiveProgress();
     private static boolean played;
-    private static boolean viewRepaired;
+    private static final LiveRepairBudget repairBudget = new LiveRepairBudget();
     static final long PICTURE_REPAIR_MS = 2500;
     private static long pictureRepairedFor = -1;
     private static int viewRepairs;
@@ -80,14 +80,17 @@ final class LivePlayer {
 
     static void observeProgress(long now, long time, long frames, boolean watching) {
         if (player == null || !alive) return;
+        repairBudget.observe(frames, watching);
         if (!progress.stalled(now, time, frames, watching, LiveZapper.STALL_MS)) {
             if (
                 watching &&
+                repairBudget.allowed() &&
                 progress.pictureFrozen(now, PICTURE_REPAIR_MS) &&
                 progress.pictureSince() != pictureRepairedFor &&
                 output != null &&
                 output.refreshView()
             ) {
+                repairBudget.repaired();
                 pictureRepairedFor = progress.pictureSince();
                 viewRepairs++;
                 lastVideoRecovery = "Picture stopped while the sound played; view refreshed";
@@ -98,8 +101,8 @@ final class LivePlayer {
         boolean clockMoving = progress.clockMoving(now, LiveZapper.STALL_MS);
         progress.reset();
         Timings.record("Live video stopped advancing", Timings.start());
-        if (clockMoving && !viewRepaired && output != null && output.refreshView()) {
-            viewRepaired = true;
+        if (clockMoving && repairBudget.allowed() && output != null && output.refreshView()) {
+            repairBudget.repaired();
             viewRepairs++;
             lastVideoRecovery = "Video view refreshed while the playback clock advanced";
             return;
@@ -196,7 +199,7 @@ final class LivePlayer {
         }
         if (!streamUrl.equals(url) || !restart) {
             refreshed = false;
-            viewRepaired = false;
+            repairBudget.reset();
         }
         appContext = context.getApplicationContext();
         lastOptions = new ArrayList<>(options);
@@ -451,7 +454,7 @@ final class LivePlayer {
         appContext = null;
         lastOptions = null;
         refreshed = false;
-        viewRepaired = false;
+        repairBudget.reset();
         engineOptions = null;
         url = null;
         alive = false;
