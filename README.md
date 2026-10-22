@@ -117,9 +117,11 @@ Native/provider Live TV also watches playback progress: a stopped video counter 
 ### Live TV picture handoff
 
 Live TV draws through VLC's standard video layout (a SurfaceView). The guide preview and full
-screen share one player: moving between them changes only the screen surface, so the stream and
-sound carry on and the link is not reopened (the picture may blink briefly). Device tests check
-fresh, non-blank pictures in both directions; TV hardware still needs testing.
+screen share one player: normal moves change only the screen surface, retaining the stream and
+sound (the picture may blink briefly). If native video shutdown is not acknowledged within
+600 ms, recovery stops and restarts the stream before releasing its old surface, then restores
+the selected audio track. Device tests check fresh, non-blank pictures in both directions;
+TV hardware still needs testing.
 
 Live video progress follows VLC's decoded-picture count rather than assuming advancing audio
 means video is healthy. A stopped picture gets one surface refresh before the existing bounded
