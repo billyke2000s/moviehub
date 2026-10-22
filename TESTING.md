@@ -273,3 +273,8 @@ Live channel-key playback explicitly leaves immediately after Back to live resta
 waiting for decoded frames. This covers shutdown while native video output is still opening.
 The post-merge run 39821398629 crashed in EGL window initialization in this path; shutdown now
 cancels view callbacks first, stops VLC with its surface retained, then detaches the surface.
+
+Handoff evidence now excludes closing-output frames and requires the destination SurfaceView
+to be shown, valid and sized. The optional PixelCopy capture never delays disabling the old
+video track. The existing direct, native-resolved and manually pinned backup tests each make
+two full-screen/guide round trips without reconnecting.
