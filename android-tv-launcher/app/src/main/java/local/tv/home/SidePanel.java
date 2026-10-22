@@ -92,6 +92,7 @@ final class SidePanel {
 
     Dialog show() {
         Dialog dialog = new Dialog(activity, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar);
+        if (activity.isFinishing() || activity.isDestroyed()) return dialog;
         // The chosen action runs after the panel has closed, so it can open another panel.
         Runnable[] after = new Runnable[1];
         LinearLayout body = new LinearLayout(activity);
@@ -168,9 +169,23 @@ final class SidePanel {
         dialog.setContentView(body);
         dialog.setOnDismissListener(d -> {
             if (current == dialog) current = null;
+            if (activity.isFinishing() || activity.isDestroyed()) return;
             if (dismissed != null) dismissed.run();
             if (after[0] != null) after[0].run();
         });
+        // Android removes an Activity's windows without necessarily calling Dialog.dismiss().
+        // Do not retain a showing=true dialog whose DecorView is no longer registered.
+        dialog.getWindow().getDecorView().addOnAttachStateChangeListener(
+            new View.OnAttachStateChangeListener() {
+                @Override
+                public void onViewAttachedToWindow(View view) {}
+
+                @Override
+                public void onViewDetachedFromWindow(View view) {
+                    if (current == dialog) current = null;
+                }
+            }
+        );
         current = dialog;
         dialog.show();
         styleWindow(activity, dialog);

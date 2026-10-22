@@ -57,7 +57,7 @@ jobs:
         run: |
           for attempt in $(seq 1 60); do
             reviewed=$(gh api repos/billyke2000s/moviehub/commits/main --jq '.commit.tree.sha')
-            if [ "$reviewed" = 'fb80212116f433d336b48d6fbec796f73bf9d0b0' ]; then exit 0; fi
+            if [ "$reviewed" = 'aec9fc94a5f162a909717c0127ce34c89092f33c' ]; then exit 0; fi
             sleep 5
           done
           echo 'Reviewed handoff fix is not merged on main; refusing to sign or publish.'

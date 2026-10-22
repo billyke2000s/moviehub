@@ -278,3 +278,12 @@ Handoff evidence now excludes closing-output frames and requires the destination
 to be shown, valid and sized. The optional PixelCopy capture never delays disabling the old
 video track. The existing direct, native-resolved and manually pinned backup tests each make
 two full-screen/guide round trips without reconnecting.
+
+SidePanelTest covers Activity destruction with an open panel and rejects continuation callbacks.
+LiveControlsTest and SafetyNoticeTest wait for actual window focus before injecting keys across
+panel transitions; showing/idle alone does not establish input focus.
+
+Handoff screenshots are sampled until the destination is visibly nonblank, within the existing
+three-second budget including time to resume decoding. One screenshot immediately after the
+first decoded frames can still precede SurfaceFlinger composition; this is not proof of a
+persistently black surface. The test still fails if the visible picture misses that budget.
