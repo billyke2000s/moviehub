@@ -58,13 +58,13 @@ final class Troubleshooting {
     private void speedTest() {
         heading("Internet speed");
         row(
-            "Download speed",
-            testing ? "Testing… (up to " + SpeedTest.MAX_MS / 1000 + " seconds)" : speedResult
+            "Streaming connection quality",
+            testing ? "Testing download, latency and jitter…" : speedResult
         );
         actions(new String[] { "Run speed test" }, new Runnable[] { this::runSpeedTest });
         body.addView(
             activity.muted(
-                "Downloads test data from Cloudflare's speed test for up to ten seconds. Pause playback first for a fair result.",
+                "Tests download speed, HTTP latency and jitter against Cloudflare (not your IPTV provider). Results are indicative, not a guarantee: server congestion and stream reliability also matter. Pause playback first.",
                 13
             )
         );
@@ -80,9 +80,11 @@ final class Troubleshooting {
                     SpeedTest.Result r = SpeedTest.run();
                     speedResult = String.format(
                         Locale.ROOT,
-                        "%.1f Mb/s  ·  answered in %d ms  ·  %.1f MB downloaded",
+                        "%s for streaming  ·  Download %.1f Mb/s  ·  HTTP latency %s  ·  Jitter %s  ·  %.1f MB tested",
+                        r.pingMs < 0 ? "Unrated (latency unavailable)" : SpeedTest.rating(r.mbps, r.pingMs, r.jitterMs),
                         r.mbps,
-                        r.answerMs,
+                        r.pingMs < 0 ? "unavailable" : r.pingMs + " ms",
+                        r.jitterMs < 0 ? "unavailable" : r.jitterMs + " ms",
                         r.bytes / (1024f * 1024f)
                     );
                 } catch (Exception e) {
