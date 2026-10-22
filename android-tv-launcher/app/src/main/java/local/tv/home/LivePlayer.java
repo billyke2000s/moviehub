@@ -4,13 +4,15 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.widget.FrameLayout;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
 import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.Media;
 import org.videolan.libvlc.MediaPlayer;
-import org.videolan.libvlc.util.VLCVideoLayout;
 
 /**
  * The one Live TV player, shared by the full-screen player and the picture in the guide's corner,
@@ -23,19 +25,76 @@ final class LivePlayer {
     private static String engineOptions;
     private static MediaPlayer player;
     private static String url;
+    /** Selection mode follows the active stream through guide/full-screen view changes. */
+    static boolean automaticSources = true;
+    static final Set<String> attemptedSources = new HashSet<>();
     /** A stream has been started and has not failed, ended or been stopped. */
     private static boolean alive;
     /** Who shows the picture now (the full-screen player or the guide picture), and where. */
     private static Object owner;
-    private static VLCVideoLayout layout;
+    private static LiveVideoOutput output;
     private static MediaPlayer.EventListener listener;
     private static Runnable resolutionFailed;
+    private static Runnable resolutionReady;
     private static final Handler main = new Handler(Looper.getMainLooper());
     private static final ExecutorService resolver = Executors.newFixedThreadPool(2);
     private static Future<?> pending;
     private static NativeHttp request;
     private static int generation;
     private static boolean resolving;
+    private static boolean refreshed;
+    private static Context appContext;
+    private static List<String> lastOptions;
+    private static final LiveProgress progress = new LiveProgress();
+    private static boolean played;
+    private static boolean viewRepaired;
+    private static int viewRepairs;
+    private static String lastVideoRecovery = "None";
+
+    private static final Runnable watchProgress = new Runnable() {
+        @Override
+        public void run() {
+            if (player == null) return;
+            int ticket = generation;
+            boolean watching =
+                (EngineSources.locator(url) || PlutoSource.nativeUrl(url)) &&
+                played &&
+                player.getVideoTracksCount() > 0 &&
+                !resolving &&
+                alive &&
+                player.isPlaying() &&
+                output != null &&
+                output.isShown();
+            observeProgress(
+                android.os.SystemClock.elapsedRealtime(),
+                player.getTime(),
+                output == null ? -1 : output.pictures(),
+                watching
+            );
+            if (player != null && ticket == generation) main.postDelayed(this, 1000);
+        }
+    };
+
+    static void observeProgress(long now, long time, long frames, boolean watching) {
+        if (!(EngineSources.locator(url) || PlutoSource.nativeUrl(url))) return;
+        if (!progress.stalled(now, time, frames, watching, LiveZapper.STALL_MS)) return;
+        boolean clockMoving = progress.clockMoving(now, LiveZapper.STALL_MS);
+        progress.reset();
+        Timings.record("Live video stopped advancing", Timings.start());
+        if (clockMoving && !viewRepaired && output != null && output.refreshView()) {
+            viewRepaired = true;
+            viewRepairs++;
+            lastVideoRecovery = "Video view refreshed while the playback clock advanced";
+            return;
+        }
+        lastVideoRecovery = clockMoving
+            ? "Rendered video stopped after a view refresh; trying the source backup"
+            : "Playback clock and rendered video stopped; trying the source backup";
+        if (retryProvider()) return;
+        alive = false;
+        player.pause();
+        if (resolutionFailed != null) resolutionFailed.run();
+    }
 
     /** Fixture transport for device tests; never assigned by app code. */
     interface Resolver {
@@ -43,10 +102,20 @@ final class LivePlayer {
     }
 
     static Resolver testResolver;
+    /** Device tests only: VLC's detailed log, so a failing CI run shows what VLC did. */
+    static boolean testVerbose;
     /** How many streams were opened, so tests can tell a handover from a restart. */
     static int opened;
 
     private LivePlayer() {}
+
+    static String videoRecovery() {
+        return lastVideoRecovery + " · " + viewRepairs + " view refreshes";
+    }
+
+    static LiveVideoOutput output() {
+        return output;
+    }
 
     static MediaPlayer player() {
         return player;
@@ -55,6 +124,14 @@ final class LivePlayer {
     /** A stream is playing or opening, so a new view can take it over without reconnecting. */
     static boolean active() {
         return player != null && (alive || player.isPlaying());
+    }
+
+    static boolean isResolving() {
+        return resolving;
+    }
+
+    static String currentUrl() {
+        return active() ? url : null;
     }
 
     /**
@@ -66,21 +143,38 @@ final class LivePlayer {
         String optionKey = String.valueOf(options);
         if (engine == null || !optionKey.equals(engineOptions)) {
             stop();
-            engine = new LibVLC(context.getApplicationContext(), new ArrayList<>(options));
+            List<String> vlcOptions = new ArrayList<>(options);
+            if (testVerbose) vlcOptions.add("-vv");
+            engine = new LibVLC(context.getApplicationContext(), vlcOptions);
             engineOptions = optionKey;
             player = new MediaPlayer(engine);
+            output = new LiveVideoOutput(player);
             player.setEventListener(LivePlayer::event);
         }
         if (!restart && streamUrl.equals(url) && (alive || player.isPlaying())) {
             resume();
             return true;
         }
+        if (!streamUrl.equals(url)) {
+            automaticSources = true;
+            attemptedSources.clear();
+        }
+        if (!streamUrl.equals(url) || !restart) {
+            refreshed = false;
+            viewRepaired = false;
+        }
+        appContext = context.getApplicationContext();
+        lastOptions = new ArrayList<>(options);
         cancelResolution();
         player.stop();
         url = streamUrl;
         alive = true;
         opened++;
-        if (PlutoSource.nativeUrl(streamUrl)) {
+        played = false;
+        progress.reset();
+        main.removeCallbacks(watchProgress);
+        main.postDelayed(watchProgress, 1000);
+        if (PlutoSource.nativeUrl(streamUrl) || EngineSources.locator(streamUrl)) {
             resolving = true;
             int ticket = generation;
             NativeHttp http = new NativeHttp();
@@ -88,14 +182,63 @@ final class LivePlayer {
             pending = resolver.submit(() -> {
                 try {
                     Resolver fixture = testResolver;
+                    EngineSources.Stream stream = EngineSources.locator(streamUrl)
+                        ? EngineSources.resolve(context.getApplicationContext(), streamUrl, http)
+                        : null;
                     String resolved =
-                        fixture == null
-                            ? PlutoSource.resolve(streamUrl, http)
-                            : fixture.resolve(streamUrl, http);
+                        stream != null
+                            ? stream.url
+                            : fixture == null
+                              ? PlutoSource.resolve(streamUrl, http)
+                              : fixture.resolve(streamUrl, http);
+                    ProviderRelay nextRelay =
+                        stream != null &&
+                        (ProviderRelay.needed(stream) ||
+                            streamUrl.contains("/engine/dlhd/") ||
+                            streamUrl.contains("/engine/zlive/"))
+                            ? new ProviderRelay(stream)
+                            : null;
+                    try {
+                        http.check();
+                    } catch (Exception e) {
+                        if (nextRelay != null) nextRelay.close();
+                        throw e;
+                    }
                     main.post(() -> {
-                        if (ticket != generation || player == null) return;
+                        if (ticket != generation || player == null) {
+                            if (nextRelay != null) nextRelay.close();
+                            return;
+                        }
+                        relay = nextRelay;
                         resolving = false;
-                        open(resolved, PlutoSource.USER_AGENT);
+                        if (resolutionReady != null) resolutionReady.run();
+                        open(
+                            nextRelay == null ? resolved : nextRelay.url,
+                            stream == null ? PlutoSource.USER_AGENT : stream.userAgent,
+                            stream == null ? null : stream.referer,
+                            nextRelay != null
+                        );
+                        if (stream != null && stream.expiresAt > 0) {
+                            long delay = Math.max(
+                                30_000,
+                                Math.min(
+                                    3 * 3600_000L,
+                                    stream.expiresAt - System.currentTimeMillis() - 60_000
+                                )
+                            );
+                            renewal = () -> {
+                                if (
+                                    ticket == generation &&
+                                    player != null &&
+                                    player.isPlaying() &&
+                                    streamUrl.equals(url)
+                                ) {
+                                    refreshed = false;
+                                    play(appContext, url, lastOptions, true);
+                                }
+                            };
+                            main.postDelayed(renewal, delay);
+                        }
                     });
                 } catch (Exception e) {
                     main.post(() -> {
@@ -107,14 +250,28 @@ final class LivePlayer {
                     });
                 }
             });
-        } else open(streamUrl, null);
+        } else open(streamUrl, null, null, false);
         return false;
     }
 
-    private static void open(String stream, String userAgent) {
+    private static ProviderRelay relay;
+    private static Runnable renewal;
+
+    /**
+     * How far ahead relayed provider streams (FreeShot, DaddyLive, ZLive) are buffered. Their
+     * segments arrive through the local relay, and FreeShot's are decoded from PNG first, so a
+     * slow segment drained the shared 1.5 s Live TV buffer (owner's phone, 21 October 2026: six
+     * short pauses in one session). Other channels keep the shorter buffer and faster start.
+     */
+    static final int RELAYED_CACHING_MS = 4000;
+
+    private static void open(String stream, String userAgent, String referer, boolean relayed) {
+        if (output != null) output.streamChanging();
         Media media = new Media(engine, Uri.parse(stream));
         media.setHWDecoderEnabled(true, false);
+        if (relayed) media.addOption(":network-caching=" + RELAYED_CACHING_MS);
         if (userAgent != null) media.addOption(":http-user-agent=" + userAgent);
+        if (referer != null && !referer.isEmpty()) media.addOption(":http-referrer=" + referer);
         player.setMedia(media);
         media.release();
         player.play();
@@ -122,6 +279,14 @@ final class LivePlayer {
 
     private static void cancelResolution() {
         resolving = false;
+        if (renewal != null) {
+            main.removeCallbacks(renewal);
+            renewal = null;
+        }
+        if (relay != null) {
+            relay.close();
+            relay = null;
+        }
         generation++;
         if (request != null) request.cancel();
         if (pending != null) pending.cancel(true);
@@ -134,6 +299,15 @@ final class LivePlayer {
     }
 
     private static void event(MediaPlayer.Event event) {
+        if (event.type == MediaPlayer.Event.Playing) played = true;
+        if (event.type == MediaPlayer.Event.Vout && output != null) output.videoOutputs(event.getVoutCount());
+        if (
+            (event.type == MediaPlayer.Event.EncounteredError ||
+                event.type == MediaPlayer.Event.EndReached) &&
+            retryProvider()
+        ) {
+            return;
+        }
         // Not "Stopped": that comes late from our own stop() when opening a new stream, and would
         // mark the new stream as finished.
         if (
@@ -142,28 +316,41 @@ final class LivePlayer {
         if (listener != null) listener.onEvent(event);
     }
 
+    private static boolean retryProvider() {
+        if (!EngineSources.locator(url) || refreshed || appContext == null) return false;
+        refreshed = true;
+        AdapterSources.failed(url);
+        EngineSources.invalidate();
+        play(appContext, url, lastOptions, true);
+        return true;
+    }
+
     /**
      * Shows the picture in {@code view} for {@code who}, moving it from wherever it was. Events
      * now go to {@code events}.
      */
-    static void attach(Object who, VLCVideoLayout view, MediaPlayer.EventListener events) {
+    static void attach(Object who, FrameLayout view, MediaPlayer.EventListener events) {
         attach(who, view, events, null);
     }
 
-    static void attach(Object who, VLCVideoLayout view, MediaPlayer.EventListener events, Runnable failed) {
+    static void attach(Object who, FrameLayout view, MediaPlayer.EventListener events, Runnable failed) {
+        attach(who, view, events, failed, null);
+    }
+
+    static void attach(
+        Object who,
+        FrameLayout view,
+        MediaPlayer.EventListener events,
+        Runnable failed,
+        Runnable ready
+    ) {
         if (player == null) return;
-        if (layout != view) {
-            boolean moving = layout != null;
-            if (moving) player.detachViews();
-            player.attachViews(view, null, false, false);
-            layout = view;
-            // Do not restart the video decoder during a view handover. LibVLC
-            // binds its existing decoder to the new video output when the
-            // destination surface becomes available.
-        }
+        progress.reset();
+        output.show(view);
         owner = who;
         listener = events;
         resolutionFailed = failed;
+        resolutionReady = ready;
     }
 
     static boolean owns(Object who) {
@@ -177,11 +364,14 @@ final class LivePlayer {
 
     /** Stops and releases everything. */
     static void stop() {
+        main.removeCallbacks(watchProgress);
+        progress.reset();
+        played = false;
         cancelResolution();
         if (player != null) {
             player.setEventListener(null);
             player.stop();
-            if (layout != null) player.detachViews();
+            if (output != null) output.close();
             player.release();
             player = null;
         }
@@ -189,12 +379,19 @@ final class LivePlayer {
             engine.release();
             engine = null;
         }
+        appContext = null;
+        lastOptions = null;
+        refreshed = false;
+        viewRepaired = false;
         engineOptions = null;
         url = null;
         alive = false;
         owner = null;
-        layout = null;
+        automaticSources = true;
+        attemptedSources.clear();
+        output = null;
         listener = null;
         resolutionFailed = null;
+        resolutionReady = null;
     }
 }

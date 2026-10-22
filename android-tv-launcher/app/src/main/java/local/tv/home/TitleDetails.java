@@ -101,19 +101,24 @@ final class TitleDetails {
                           recent
                       )
                   );
-        Button play = action(actions, type.equals("tv") ? "Episodes" : "Find sources", resume == null, () -> {
-            ForYou.noteInterest(activity.prefs, type, tmdbId);
-            activity.playbackTitle = item;
-            if (type.equals("tv")) activity.seriesScreens.seasons(tmdbId, title);
-            else {
-                JSONObject external = item.optJSONObject("external_ids");
-                String imdb =
-                    external == null
-                        ? item.optString("imdb_id")
-                        : external.optString("imdb_id", item.optString("imdb_id"));
-                activity.sources.torrentSources(imdb, -1, -1, title, kind);
+        Button play = action(
+            actions,
+            type.equals("tv") ? "Episodes" : AutoPlayback.enabled(activity, -1) ? "▶  Play" : "Find sources",
+            resume == null,
+            () -> {
+                ForYou.noteInterest(activity.prefs, type, tmdbId);
+                activity.playbackTitle = item;
+                if (type.equals("tv")) activity.seriesScreens.seasons(tmdbId, title);
+                else {
+                    JSONObject external = item.optJSONObject("external_ids");
+                    String imdb =
+                        external == null
+                            ? item.optString("imdb_id")
+                            : external.optString("imdb_id", item.optString("imdb_id"));
+                    activity.sources.torrentSources(imdb, -1, -1, title, kind);
+                }
             }
-        });
+        );
         Button saved = action(
             actions,
             activity.libraryScreens.isWatchlisted(item) ? "✓ My list" : "+ My list",

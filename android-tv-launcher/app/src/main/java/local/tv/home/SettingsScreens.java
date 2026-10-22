@@ -163,7 +163,7 @@ final class SettingsScreens {
         copy.addView(name);
         TextView detail = activity.compactText(description, 13);
         detail.setTextColor(0xffaab4c4);
-        detail.setMaxLines(2);
+        detail.setMaxLines(4);
         detail.setEllipsize(android.text.TextUtils.TruncateAt.END);
         copy.addView(detail);
         card.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
@@ -176,7 +176,8 @@ final class SettingsScreens {
             lp.leftMargin = activity.dp(18);
             card.addView(button, lp);
         }
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, activity.dp(78));
+        card.setMinimumHeight(activity.dp(78));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.bottomMargin = activity.dp(8);
         body.addView(card, lp);
         return value;
@@ -561,6 +562,41 @@ final class SettingsScreens {
         } else if (tab.equals("Playback")) {
             heading(body, "Playback preferences");
             toggle(body, "Resume playback", "Continue from where you stopped", "resume", true);
+            toggle(
+                body,
+                "Automatic play: films",
+                "Choose the best ready-to-play source and movie file",
+                AutoPlayback.MOVIES,
+                false
+            );
+            toggle(
+                body,
+                "Automatic play: series",
+                "Choose sources automatically when starting or continuing a series",
+                AutoPlayback.SERIES,
+                false
+            );
+            String[] qualityNames = { "720p", "1080p", "4K" };
+            int[] qualityValues = { 720, 1080, 2160 };
+            TextView[] qualityLabel = new TextView[1];
+            int preferred = activity.prefs.getInt(AutoPlayback.QUALITY, 1080);
+            qualityLabel[0] = settingCard(
+                body,
+                "Automatic play quality",
+                "Prefer this resolution or lower; try a higher one only if needed",
+                preferred >= 2160 ? "4K" : preferred >= 1080 ? "1080p" : "720p",
+                false,
+                "Change",
+                () -> {
+                    int current = activity.prefs.getInt(AutoPlayback.QUALITY, 1080);
+                    SidePanel.of(activity, "Automatic play quality")
+                        .choices(qualityNames, current >= 2160 ? 2 : current >= 1080 ? 1 : 0, which -> {
+                            activity.prefs.edit().putInt(AutoPlayback.QUALITY, qualityValues[which]).apply();
+                            qualityLabel[0].setText(qualityNames[which]);
+                        })
+                        .show();
+                }
+            );
             languagePreference(body, "Subtitles", "subtitleLanguage", "none", true);
             languagePreference(body, "Audio track", "audioLanguage", "eng,en", false);
         } else {
@@ -676,6 +712,7 @@ final class SettingsScreens {
                             ChannelSync.refreshNow(activity);
                         }
                     )
+                    .option("Local provider engine", () -> new ProviderSettings(activity).show())
                     .option("Refresh channels", () -> ChannelSync.refreshNow(activity))
                     .option(
                         activity.secrets.has("masqueradarr")

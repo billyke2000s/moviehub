@@ -26,7 +26,8 @@ public class VlcPlaybackActivity extends Activity {
     TextView titleView;
     /** The side panels (tracks, speed, picture, sleep timer). */
     final PlayerMenus menus = new PlayerMenus(this);
-    private VLCVideoLayout video;
+    private FrameLayout video;
+    private VLCVideoLayout filmVideo;
     private String url, id;
     /** The film or episode this file is (see ResumePoint.titleKey), or null. */
     private String titleKey;
@@ -228,8 +229,11 @@ public class VlcPlaybackActivity extends Activity {
                 event.getKeyCode() == KeyEvent.KEYCODE_ENTER)
         ) {
             if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
-                restartLive = true;
-                startPlayer();
+                // Every copy failed: start again from the first copy so each gets another try.
+                if (!zapper.retryFromFirst()) {
+                    restartLive = true;
+                    startPlayer();
+                }
             }
             return true;
         }
@@ -290,6 +294,10 @@ public class VlcPlaybackActivity extends Activity {
         titleKey = getIntent().getStringExtra("titleKey");
         if (id == null) id = "media";
         live = getIntent().getBooleanExtra("live", false);
+        if (live && Build.VERSION.SDK_INT >= 34) {
+            overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, 0, 0);
+            overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, 0, 0);
+        }
         try {
             url = Playlist.networkUrl(
                 getIntent().getStringExtra("url"),
@@ -304,7 +312,11 @@ public class VlcPlaybackActivity extends Activity {
             state == null ? (live ? 0 : ResumePoint.load(this, id, titleKey)) : state.getLong("position");
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
-        video = new VLCVideoLayout(this);
+        video = new FrameLayout(this);
+        if (!live) {
+            filmVideo = new VLCVideoLayout(this);
+            video.addView(filmVideo, new FrameLayout.LayoutParams(-1, -1));
+        }
         root.addView(video, new FrameLayout.LayoutParams(-1, -1));
         status = new TextView(this);
         status.setTextColor(Color.WHITE);
@@ -372,17 +384,16 @@ public class VlcPlaybackActivity extends Activity {
         status.setText("Opening source…");
         status.setVisibility(View.VISIBLE);
         overlayHandler.removeCallbacks(stalled);
-        // Live TV with backups moves on sooner than a film would.
-        overlayHandler.postDelayed(stalled, zapper != null ? 15000 : 45000);
         if (live) {
             startLive();
             return;
         }
+        armStartupTimeout();
         engine = new LibVLC(this, new ArrayList<>(PlayerOptions.film(this)));
         player = new MediaPlayer(engine);
         player.setRate(playbackRate);
         if (aspect != null) player.setAspectRatio(aspect);
-        player.attachViews(video, null, false, false);
+        player.attachViews(filmVideo, null, false, false);
         player.setEventListener(this::onPlayerEvent);
         Media media = new Media(engine, Uri.parse(url));
         media.setHWDecoderEnabled(true, false);
@@ -407,10 +418,21 @@ public class VlcPlaybackActivity extends Activity {
         boolean carriedOn = LivePlayer.play(this, url, PlayerOptions.live(this), restartLive);
         restartLive = false;
         player = LivePlayer.player();
-        LivePlayer.attach(this, video, this::onPlayerEvent, () -> {
-            if (!foreground) return;
-            showError("This channel is unavailable. Check your connection or try another channel.");
-        });
+        LivePlayer.attach(
+            this,
+            video,
+            this::onPlayerEvent,
+            () -> {
+                if (!foreground) return;
+                showError("This channel is unavailable. Check your connection or try another channel.");
+            },
+            this::armStartupTimeout
+        );
+        // Resolution has its own bounded broker deadline. Starting the video timer before it
+        // finishes can discard a working provider before LibVLC has even received its URL.
+        if (LivePlayer.isResolving()) {
+            status.setText("Finding a working stream…");
+        } else armStartupTimeout();
         player.setRate(playbackRate);
         if (aspect != null) player.setAspectRatio(aspect);
         if (carriedOn && player.isPlaying()) {
@@ -421,6 +443,14 @@ public class VlcPlaybackActivity extends Activity {
             showPlaying(true);
             revealControls();
         }
+    }
+
+    private void armStartupTimeout() {
+        overlayHandler.removeCallbacks(stalled);
+        if (!foreground) return;
+        status.setText("Opening source…");
+        // Live TV with backups moves on sooner than a film would, after link resolution.
+        overlayHandler.postDelayed(stalled, zapper != null ? 15000 : 45000);
     }
 
     /** The player's events: playing, buffering, the end, and errors (which try the other format). */
@@ -504,6 +534,11 @@ public class VlcPlaybackActivity extends Activity {
         }
     }
 
+    /** Live TV: the current copy could not be opened; moves on to a backup or says so. */
+    void liveSourceFailed() {
+        showError("This source could not be played. Try another source or retry the connection.");
+    }
+
     private void showError(String message) {
         if (!foreground || isFinishing() || dialogOpen) return;
         if (zapper != null && zapper.failover("This stream is not working")) return;
@@ -549,6 +584,12 @@ public class VlcPlaybackActivity extends Activity {
     void panelClosed() {
         dialogOpen = false;
         revealControls();
+    }
+
+    @Override
+    public void finish() {
+        super.finish();
+        if (live && Build.VERSION.SDK_INT < 34) overridePendingTransition(0, 0);
     }
 
     /**

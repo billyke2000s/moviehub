@@ -29,6 +29,8 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         /** Channel number (101 BBC One …; see {@link SkyNumbers}) and guide section. */
         final int number;
         final String section;
+        /** Which list or provider this copy came from ("free", "enginedlhd" …); "" when unknown. */
+        final String source;
 
         Row(
             long id,
@@ -41,7 +43,23 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             int number,
             String section
         ) {
+            this(id, name, group, logo, key, epg, dkey, number, section, "");
+        }
+
+        Row(
+            long id,
+            String name,
+            String group,
+            String logo,
+            String key,
+            String epg,
+            String dkey,
+            int number,
+            String section,
+            String source
+        ) {
             this.id = id;
+            this.source = source == null ? "" : source;
             this.number = number;
             this.section = section == null ? "" : section;
             this.name = name;
@@ -101,6 +119,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     private static ChannelDatabase instance;
+    private final Context context;
     private final Secrets secrets;
     /** The favourites last written to favourite_keys; null until written since the database opened. */
     private Set<String> writtenFavourites;
@@ -111,7 +130,8 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     private ChannelDatabase(Context context) {
-        super(context, "channels-v2.db", null, 8);
+        super(context, "channels-v2.db", null, 9);
+        this.context = context;
         secrets = new Secrets(context);
         setWriteAheadLoggingEnabled(true);
     }
@@ -132,13 +152,17 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int from, int to) {
-        ChannelSchema.upgrade(db, from);
+        java.util.Map<String, String> moved = ChannelSchema.upgrade(db, from);
+        // Locked channels are stored by duplicate key: keep them locked under the new keys.
+        if (!moved.isEmpty()) ParentalLock.rekey(context, moved);
     }
 
-    /** The duplicate key for a channel; "" when its name has nothing usable (never merged). */
-    static String duplicateKey(String epgId, String name) {
-        String plain = EpgMatch.key(name);
-        return plain.isEmpty() ? "" : EpgMatch.country(epgId) + ":" + plain;
+    /**
+     * The duplicate key for a channel: copies with the same key are one channel in the guide and
+     * backups for each other ({@link ChannelIdentity}). "" when its name has nothing usable.
+     */
+    static String duplicateKey(String epgId, String name, String group, String source) {
+        return ChannelIdentity.duplicateKey(epgId, name, group, ChannelIdentity.sourceCountry(source));
     }
 
     // ---- URL encryption -------------------------------------------------------------------
@@ -221,7 +245,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             insert.bindString(6, c.epgId == null ? "" : c.epgId);
             insert.bindString(7, ChannelQuery.key(c.url));
             insert.bindBlob(8, blob);
-            insert.bindString(9, duplicateKey(c.epgId, name));
+            insert.bindString(9, duplicateKey(c.epgId, name, group, source));
             long id = insert.executeInsert();
             search.clearBindings();
             search.bindLong(1, id);
@@ -296,10 +320,14 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     // ---- Queries --------------------------------------------------------------------------
-    private static final String COLUMNS = "_id,name,grp,logo,key,epg,dkey,number,section";
-    /** Accounts first, then native Pluto, Free-TV and other public lists; playlist order within each. */
+    private static final String COLUMNS = "_id,name,grp,logo,key,epg,dkey,number,section,source";
+    /**
+     * Accounts first, then native Pluto, Free-TV and other public lists, then the experimental
+     * provider engine's channels; playlist order within each. A provider copy of a channel that a
+     * list already has is its backup.
+     */
     static final String ORDER =
-        "CASE source WHEN 'xtream' THEN 0 WHEN 'm3u' THEN 1 WHEN 'nativepluto' THEN 2 WHEN 'fta' THEN 3 ELSE 4 END";
+        "CASE WHEN source='xtream' THEN 0 WHEN source='m3u' THEN 1 WHEN source='nativepluto' THEN 2 WHEN source='fta' THEN 3 WHEN source LIKE 'engine%' THEN 5 ELSE 4 END";
     /** One row per channel: duplicates (same non-empty dkey) collapse to the first in ORDER. */
     static final String GROUP = "CASE WHEN dkey='' THEN 'id'||_id ELSE dkey END";
     /** The preferred copy of a channel: SQLite takes the other columns from the MIN row. */
@@ -370,7 +398,8 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             c.getString(5),
             c.getString(6),
             c.getInt(7),
-            c.getString(8)
+            c.getString(8),
+            c.getString(9)
         );
     }
 
@@ -606,6 +635,11 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     /** Replaces the whole programme guide in one transaction; a failed download keeps the old one. */
+    private static boolean knownEngineGuide(String prefix) {
+        for (String id : ProviderBroker.IDS) if (prefix.equals(AdapterSources.source(id) + ":")) return true;
+        return false;
+    }
+
     final class GuideWriter {
 
         private final SQLiteDatabase db = getWritableDatabase();
@@ -618,8 +652,23 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
         /** Native provider guides refresh independently; XMLTV refreshes retain those listings. */
         GuideWriter(boolean nativePluto) {
+            this(nativePluto ? "nativepluto:" : null);
+        }
+
+        GuideWriter(String prefix) {
+            if (
+                prefix != null &&
+                !prefix.equals("nativepluto:") &&
+                !prefix.equals("enginefls:") &&
+                !knownEngineGuide(prefix)
+            ) {
+                throw new IllegalArgumentException("Unknown native guide");
+            }
             db.beginTransactionNonExclusive();
-            String where = nativePluto ? "channel LIKE 'nativepluto:%'" : "channel NOT LIKE 'nativepluto:%'";
+            String where =
+                prefix == null
+                    ? "channel NOT LIKE 'nativepluto:%' AND channel NOT LIKE 'engine%:%'"
+                    : "channel LIKE '" + prefix + "%'";
             db.delete("programmes", where, null);
             db.delete("epg_map", where, null);
             map = db.compileStatement("INSERT INTO epg_map(chkey,channel) VALUES(?,?)");
@@ -675,9 +724,12 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         List<Programme> out = new ArrayList<>();
         // Native listings already belong to a provider/region identity. Do not apply the
         // UK XMLTV country filter, or match a similarly named foreign channel's guide.
-        List<String> keys = row.epg.matches("pluto:[0-9a-f]{24}\\.[a-z]{2}")
-            ? Collections.singletonList(EpgMatch.key(row.epg))
-            : EpgMatch.keys(row.epg, row.name, country);
+        List<String> keys =
+            row.epg.startsWith("enginefls:") ||
+            knownEngineGuide(row.epg.substring(0, row.epg.indexOf(':') + 1)) ||
+            row.epg.matches("pluto:[0-9a-f]{24}\\.[a-z]{2}")
+                ? Collections.singletonList(EpgMatch.key(row.epg))
+                : EpgMatch.keys(row.epg, row.name, country);
         if (keys.isEmpty()) return out;
         StringBuilder in = new StringBuilder();
         List<String> args = new ArrayList<>(keys);

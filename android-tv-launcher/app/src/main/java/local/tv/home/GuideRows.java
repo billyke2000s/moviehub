@@ -320,6 +320,23 @@ final class GuideRows {
         label.setSingleLine(true);
         label.setEllipsize(TextUtils.TruncateAt.END);
         label.setGravity(Gravity.CENTER_VERTICAL);
+        label.setIncludeFontPadding(false);
+        // Fit the available row height without shrinking long titles to fit their width.
+        // Width still ellipsizes, so channels in one column keep the same readable size.
+        label.addOnLayoutChangeListener(
+            (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+                float available = bottom - top - label.getPaddingTop() - label.getPaddingBottom();
+                android.graphics.Paint.FontMetrics metrics = label.getPaint().getFontMetrics();
+                float height = metrics.descent - metrics.ascent;
+                if (available <= 0 || height <= 0) return;
+                float maximum = size * label.getResources().getDisplayMetrics().scaledDensity;
+                float desired = Math.min(maximum, (label.getTextSize() * available) / height);
+                if (Math.abs(desired - label.getTextSize()) > 0.5f) label.setTextSize(
+                    android.util.TypedValue.COMPLEX_UNIT_PX,
+                    desired
+                );
+            }
+        );
         return label;
     }
 

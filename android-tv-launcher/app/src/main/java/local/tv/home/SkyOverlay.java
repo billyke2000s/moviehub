@@ -10,7 +10,9 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * What the full-screen Live TV picture shows, in the style of the classic UK satellite box:
@@ -38,6 +40,13 @@ final class SkyOverlay {
     private final TextView number, name, clock, nowTime, nowTitle, nextTime, nextTitle, about, source, hint;
     private final TextView infoTitle, infoWhen, infoAbout, infoChannel, pauseIcon, pauseText;
     private final ProgressBar progress;
+    /**
+     * The banner's buttons, left to right: Sources, then the four colour keys. Each works with a
+     * tap, and with ◀ ▶ and SELECT once BACK has revealed the controls, so a remote without
+     * coloured buttons can still reach them (package-private for tests).
+     */
+    final List<View> controls = new ArrayList<>();
+    private boolean controlsRevealed;
 
     SkyOverlay(VlcPlaybackActivity activity, FrameLayout root) {
         a = activity;
@@ -92,8 +101,17 @@ final class SkyOverlay {
         name = label(24, true, Color.WHITE);
         title.addView(name, new LinearLayout.LayoutParams(0, -2, 1));
         source = label(15, false, Color.WHITE);
-        source.setPadding(a.dp(12), 0, a.dp(16), 0);
+        source.setPadding(a.dp(12), a.dp(12), a.dp(16), a.dp(12));
+        source.setMinHeight(a.dp(48));
+        source.setFocusable(false);
+        source.setContentDescription("Sources");
+        source.setOnClickListener(v -> a.menus.chooseSource());
+        source.setOnFocusChangeListener((v, focused) -> {
+            source.setTextColor(focused ? LiveTvScreen.YELLOW : Color.WHITE);
+            controlOutline(v, focused);
+        });
         title.addView(source);
+        controls.add(source);
         clock = label(20, true, Color.WHITE);
         title.addView(clock);
         banner.addView(title);
@@ -126,13 +144,13 @@ final class SkyOverlay {
         content.addView(about);
         keys = row();
         keys.setPadding(0, a.dp(10), 0, 0);
-        colourKey(RED, "Audio & subtitles");
-        colourKey(GREEN, "Source");
-        colourKey(LiveTvScreen.YELLOW, "Information");
-        colourKey(BLUE, "Options");
-        // No coloured buttons on the remote: SELECT again opens Options, which has all of these.
+        colourKey(RED, "Audio & subtitles", () -> a.menus.audioAndSubtitles());
+        colourKey(GREEN, "Source", () -> a.menus.chooseSource());
+        colourKey(LiveTvScreen.YELLOW, "Information", this::toggleInformation);
+        colourKey(BLUE, "Options", () -> a.menus.liveOptions());
+        // No coloured buttons on the remote: BACK reveals these as buttons to pick with ◀ ▶.
         TextView noColours = label(15, true, SOFT);
-        noColours.setText("·  SELECT again for all of these");
+        noColours.setText("·  No colour buttons? BACK, then ◀ ▶");
         keys.addView(noColours);
         content.addView(keys);
         hint = label(16, true, LiveTvScreen.YELLOW);
@@ -206,6 +224,43 @@ final class SkyOverlay {
         banner.animate().cancel();
         banner.setVisibility(View.GONE);
         nowTime.setVisibility(View.VISIBLE);
+    }
+
+    void focusSources() {
+        controlsRevealed = true;
+        for (View control : controls) {
+            control.setFocusable(true);
+            control.setFocusableInTouchMode(true);
+            controlOutline(control, control.hasFocus());
+        }
+        source.requestFocus();
+    }
+
+    /** ◀ ▶ while the controls are revealed: the next or previous button, stopping at the ends. */
+    void moveControl(int direction) {
+        int at = focusedControl();
+        int next = at < 0 ? 0 : Math.max(0, Math.min(controls.size() - 1, at + direction));
+        controls.get(next).requestFocus();
+    }
+
+    /** SELECT while the controls are revealed: presses the focused button. False when none is. */
+    boolean pressControl() {
+        int at = focusedControl();
+        if (at < 0) return false;
+        controls.get(at).performClick();
+        return true;
+    }
+
+    /** The button that has the focus, or -1. */
+    int focusedControl() {
+        for (int i = 0; i < controls.size(); i++) if (controls.get(i).isFocused()) return i;
+        return -1;
+    }
+
+    private void toggleInformation() {
+        if (a.zapper == null) return;
+        if (infoShowing()) a.zapper.hideInfo();
+        else a.zapper.information();
     }
 
     boolean bannerShowing() {
@@ -332,7 +387,12 @@ final class SkyOverlay {
         return layout;
     }
 
-    private void colourKey(int colour, String text) {
+    private void colourKey(int colour, String text, Runnable action) {
+        LinearLayout key = row();
+        key.setPadding(a.dp(6), a.dp(4), a.dp(10), a.dp(4));
+        key.setFocusable(false);
+        key.setClickable(true);
+        key.setContentDescription(text);
         View swatch = new View(a);
         GradientDrawable shape = new GradientDrawable();
         shape.setColor(colour);
@@ -341,12 +401,31 @@ final class SkyOverlay {
         swatch.setBackground(shape);
         LinearLayout.LayoutParams swatchLayout = new LinearLayout.LayoutParams(a.dp(16), a.dp(16));
         swatchLayout.rightMargin = a.dp(6);
-        keys.addView(swatch, swatchLayout);
+        key.addView(swatch, swatchLayout);
         TextView label = label(15, true, Color.WHITE);
         label.setText(text);
-        LinearLayout.LayoutParams labelLayout = new LinearLayout.LayoutParams(-2, -2);
-        labelLayout.rightMargin = a.dp(26);
-        keys.addView(label, labelLayout);
+        key.addView(label);
+        GradientDrawable focus = new GradientDrawable();
+        focus.setColor(LiveTvScreen.YELLOW);
+        focus.setCornerRadius(a.dp(3));
+        key.setOnFocusChangeListener((v, focused) -> {
+            key.setBackground(focused ? focus : null);
+            if (!focused) controlOutline(key, false);
+            label.setTextColor(focused ? LiveTvScreen.INK : Color.WHITE);
+        });
+        key.setOnClickListener(v -> action.run());
+        LinearLayout.LayoutParams keyLayout = new LinearLayout.LayoutParams(-2, -2);
+        keyLayout.rightMargin = a.dp(14);
+        keys.addView(key, keyLayout);
+        controls.add(key);
+    }
+
+    private void controlOutline(View view, boolean focused) {
+        GradientDrawable shape = new GradientDrawable();
+        shape.setColor(focused ? 0x445d8ae0 : 0x22182260);
+        shape.setCornerRadius(a.dp(3));
+        shape.setStroke(a.dp(focused ? 2 : 1), focused ? LiveTvScreen.YELLOW : 0x88ffffff);
+        view.setBackground(controlsRevealed ? shape : null);
     }
 
     private TextView label(int size, boolean bold, int colour) {

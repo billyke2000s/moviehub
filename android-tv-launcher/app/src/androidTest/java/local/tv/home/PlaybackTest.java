@@ -22,9 +22,13 @@ public class PlaybackTest {
 
     private final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
     private byte[] transportStream;
+    private byte[] wrappedTransportStream;
     private VlcPlaybackActivity activity;
     private ServerSocket server;
     private volatile boolean closed;
+    /** Requests for broken fixture streams, so tests can see that no source is retried in a loop. */
+    private final java.util.concurrent.atomic.AtomicInteger missingRequests =
+        new java.util.concurrent.atomic.AtomicInteger();
     private boolean oldHttp;
 
     private MediaPlayer player() {
@@ -65,6 +69,7 @@ public class PlaybackTest {
 
     @Before
     public void prepare() throws Exception {
+        LivePlayer.testVerbose = true;
         Context context = instrumentation.getTargetContext();
         oldHttp = context.getSharedPreferences("ui", 0).getBoolean("http", false);
         context.getSharedPreferences("ui", 0).edit().putBoolean("http", true).commit();
@@ -87,6 +92,7 @@ public class PlaybackTest {
             while ((n = input.read(buffer)) != -1) output.write(buffer, 0, n);
             transportStream = output.toByteArray();
         }
+        wrappedTransportStream = pngSegment(transportStream);
         server = new ServerSocket(0, 8, InetAddress.getByName("127.0.0.1"));
         new Thread(() -> {
             while (!closed) {
@@ -123,6 +129,7 @@ public class PlaybackTest {
                     }
                 }
             if (request != null && request.contains("/missing")) {
+                missingRequests.incrementAndGet();
                 // A broken channel: nothing there.
                 connection
                     .getOutputStream()
@@ -136,11 +143,16 @@ public class PlaybackTest {
             String mime = "video/mp4";
             if (request != null && request.contains(".m3u8")) {
                 data = (
-                    "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:31\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:30.0,\nhttp://127.0.0.1:" +
-                    server.getLocalPort() +
-                    "/segment.ts\n#EXT-X-ENDLIST\n"
+                    "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:31\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:30.0,\n" +
+                    (request.contains("wrapped.m3u8")
+                        ? "https://8.8.8.8/channel/segment.png"
+                        : "http://127.0.0.1:" + server.getLocalPort() + "/segment.ts") +
+                    "\n#EXT-X-ENDLIST\n"
                 ).getBytes(java.nio.charset.StandardCharsets.UTF_8);
                 mime = "application/vnd.apple.mpegurl";
+            } else if (request != null && request.contains(".png")) {
+                data = wrappedTransportStream;
+                mime = "image/png";
             } else if (request != null && request.contains(".ts")) {
                 data = transportStream;
                 mime = "video/mp2t";
@@ -402,6 +414,15 @@ public class PlaybackTest {
     }
 
     private void handover(boolean nativeSource) throws Exception {
+        handover(nativeSource, false);
+    }
+
+    @Test
+    public void aManualBackupSurvivesGuideAndFullScreenWithoutReopening() throws Exception {
+        handover(false, true);
+    }
+
+    private void handover(boolean nativeSource, boolean manualBackup) throws Exception {
         instrumentation.runOnMainSync(activity::finish);
         instrumentation.waitForIdleSync();
         activity = null;
@@ -420,12 +441,24 @@ public class PlaybackTest {
             return fixture;
         };
         String url = nativeSource ? PlutoSource.ROOT + "5ad8d3a31b95267e225e4e09" : fixture;
-        ChannelDatabase.Writer writer = db.writer("handover-test", () -> {}, n -> {});
+        String backup = "http://127.0.0.1:" + server.getLocalPort() + "/live.ts?channel=backup";
+        String channelName = manualBackup ? "Sky Sports Main Event UK" : "Alpha";
+        String epg = manualBackup ? "SkySportsMainEvent.uk" : "";
+        ChannelDatabase.Writer writer = db.writer(manualBackup ? "m3u" : "handover-test", () -> {}, n -> {});
         try {
-            writer.accept(new Playlist.Channel("Alpha", url, "General", "", ""));
+            writer.accept(new Playlist.Channel(channelName, url, "General", "", epg));
             writer.commit();
         } finally {
             writer.abort();
+        }
+        if (manualBackup) {
+            ChannelDatabase.Writer alternative = db.writer("free", () -> {}, n -> {});
+            try {
+                alternative.accept(new Playlist.Channel(channelName, backup, "General", "", epg));
+                alternative.commit();
+            } finally {
+                alternative.abort();
+            }
         }
         prefs
             .edit()
@@ -444,38 +477,67 @@ public class PlaybackTest {
         try {
             instrumentation.runOnMainSync(() -> main.liveTv.live());
             await(() -> main.liveTv.picture.playing && main.liveTv.cells.size() == 1, 30000);
+            LiveHandoffEvidence rendered = new LiveHandoffEvidence(instrumentation);
+            rendered.awaitPicture(false);
             int opened = LivePlayer.opened;
-            // SELECT on the channel playing in the corner: the full screen carries it on.
-            instrumentation.runOnMainSync(() -> main.liveTv.cells.get(0).performClick());
-            VlcPlaybackActivity full = (VlcPlaybackActivity) instrumentation.waitForMonitorWithTimeout(
-                monitor,
-                15000
-            );
-            assertNotNull("The full screen opened", full);
-            activity = full;
-            await(
-                () -> LivePlayer.owns(full) && LivePlayer.player() != null && LivePlayer.player().isPlaying(),
-                15000
-            );
-            assertEquals("The full screen carried on the guide's stream", opened, LivePlayer.opened);
-            UiEvidence.capture("live-full-screen");
-            // BACK (after closing the banner) returns to the guide, whose picture carries on.
-            for (int i = 0; i < 3 && !full.isFinishing(); i++) {
-                instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-                instrumentation.waitForIdleSync();
+            MediaPlayer retainedPlayer = LivePlayer.player();
+            for (int trip = 0; trip < 2; trip++) {
+                // waitForMonitorWithTimeout removes the monitor after the first hit.
+                if (trip > 0) monitor = instrumentation.addMonitor(
+                    VlcPlaybackActivity.class.getName(),
+                    null,
+                    false
+                );
+                // SELECT on the channel playing in the corner: the full screen carries it on.
+                instrumentation.runOnMainSync(() -> main.liveTv.cells.get(0).performClick());
+                VlcPlaybackActivity full = (VlcPlaybackActivity) instrumentation.waitForMonitorWithTimeout(
+                    monitor,
+                    15000
+                );
+                assertNotNull("The full screen opened", full);
+                activity = full;
+                await(
+                    () ->
+                        LivePlayer.owns(full) &&
+                        LivePlayer.player() != null &&
+                        LivePlayer.player().isPlaying(),
+                    15000
+                );
+                assertEquals("The full screen carried on the guide's stream", opened, LivePlayer.opened);
+                assertSame("The same live player survived", retainedPlayer, LivePlayer.player());
+                rendered.awaitPicture(true);
+                if (manualBackup) {
+                    await(() -> full.zapper != null && full.zapper.copies().size() == 2, 5000);
+                    if (trip == 0) {
+                        instrumentation.runOnMainSync(() -> full.zapper.useCopy(1, false));
+                        await(
+                            () -> backup.equals(LivePlayer.currentUrl()) && LivePlayer.player().isPlaying(),
+                            15000
+                        );
+                        opened = LivePlayer.opened;
+                    }
+                    await(() -> full.zapper.selectedCopy() == 1 && !full.zapper.automaticSources(), 5000);
+                }
+                UiEvidence.capture("live-full-screen");
+                // BACK (after closing the banner) returns to the guide, whose picture carries on.
+                for (int i = 0; i < 3 && !full.isFinishing(); i++) {
+                    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+                    instrumentation.waitForIdleSync();
+                }
+                await(() -> full.isFinishing() || full.isDestroyed(), 5000);
+                await(
+                    () ->
+                        main.liveTv.picture.playing &&
+                        !LivePlayer.owns(full) &&
+                        LivePlayer.player() != null &&
+                        LivePlayer.player().isPlaying(),
+                    15000
+                );
+                assertEquals("The guide carried on the full screen's stream", opened, LivePlayer.opened);
+                if (nativeSource) assertEquals("Handover never resolves again", 1, resolutions.get());
+                rendered.awaitPicture(true);
+                UiEvidence.capture("live-back-in-guide");
             }
-            await(() -> full.isFinishing() || full.isDestroyed(), 5000);
-            await(
-                () ->
-                    main.liveTv.picture.playing &&
-                    !LivePlayer.owns(full) &&
-                    LivePlayer.player() != null &&
-                    LivePlayer.player().isPlaying(),
-                15000
-            );
-            assertEquals("The guide carried on the full screen's stream", opened, LivePlayer.opened);
-            if (nativeSource) assertEquals("Handover never resolves again", 1, resolutions.get());
-            UiEvidence.capture("live-back-in-guide");
         } finally {
             LivePlayer.testResolver = null;
             instrumentation.removeMonitor(monitor);
@@ -758,6 +820,261 @@ public class PlaybackTest {
     }
 
     @Test
+    public void silentVideoFreezeIsReportedWithoutABufferingEventAndPauseIsIgnored() throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        Context context = instrumentation.getTargetContext();
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        String locator = PlutoSource.ROOT + "5ad8d3a31b95267e225e4e09";
+        ChannelDatabase.Writer writer = db.writer("nativepluto", () -> {}, n -> {});
+        try {
+            writer.accept(new Playlist.Channel("Silent freeze", locator, "General", "", ""));
+            writer.commit();
+        } finally {
+            writer.abort();
+        }
+        LivePlayer.testResolver = (url, http) -> "http://127.0.0.1:" + server.getLocalPort() + "/live.ts";
+        LiveZapper.session = new LiveZapper.Session("all", "", java.util.Collections.emptySet(), 0);
+        try {
+            activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+                new Intent(context, VlcPlaybackActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra("url", locator)
+                    .putExtra("live", true)
+                    .putExtra("id", ChannelQuery.key(locator))
+                    .putExtra("title", "Silent freeze")
+            );
+            await(() -> player() != null && player().isPlaying() && player().getTime() > 500, 30000);
+            instrumentation.runOnMainSync(() -> {
+                assertNotNull("Guide session was not attached", activity.zapper);
+                LivePlayer.observeProgress(0, 1000, 20, false);
+                LivePlayer.observeProgress(1000, 1000, 20, true);
+                LivePlayer.observeProgress(12000, 1000, 20, false);
+                assertFalse("Pause triggered recovery", activity.liveFailed);
+                LivePlayer.observeProgress(13000, 1000, 20, true);
+                // Audio/clock progresses, video frames do not; no buffering/error event is sent.
+                LivePlayer.observeProgress(21000, 9000, 20, true);
+                assertEquals("Unexpected inherited backup", "1 of 1", activity.zapper.sourceLabel());
+                assertFalse(
+                    "The first clock-moving freeze should refresh only the view",
+                    activity.liveFailed
+                );
+                LivePlayer.observeProgress(22000, 10000, 20, true);
+                LivePlayer.observeProgress(30000, 18000, 20, true);
+                assertTrue(
+                    "A persistent freeze must reach the attached failure callback",
+                    activity.liveFailed
+                );
+            });
+            assertTrue(status().contains("unavailable"));
+        } finally {
+            LiveZapper.session = null;
+            db.clear();
+        }
+    }
+
+    @Test
+    public void aPictureRefreshKeepsTheSameStreamAndSound() throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        Context context = instrumentation.getTargetContext();
+        String locator = PlutoSource.ROOT + "5ad8d3a31b95267e225e4e09";
+        java.util.concurrent.atomic.AtomicInteger resolutions =
+            new java.util.concurrent.atomic.AtomicInteger();
+        LivePlayer.testResolver = (url, http) -> {
+            resolutions.incrementAndGet();
+            return "http://127.0.0.1:" + server.getLocalPort() + "/live.ts";
+        };
+        activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+            new Intent(context, VlcPlaybackActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra("url", locator)
+                .putExtra("live", true)
+                .putExtra("id", "consumer-freeze")
+                .putExtra("title", "Consumer freeze")
+        );
+        await(() -> player() != null && player().isPlaying() && LivePlayer.output().pictures() > 5, 30000);
+        org.videolan.libvlc.MediaPlayer samePlayer = player();
+        LiveVideoOutput output = LivePlayer.output();
+        int opened = LivePlayer.opened;
+        int repairs = output.repairs;
+        int audioTrack = samePlayer.getAudioTrack();
+        long audioBefore = audioBuffers(samePlayer);
+        // The freeze watchdog's repair: give the picture a fresh surface in the same place.
+        boolean[] refreshed = { false };
+        instrumentation.runOnMainSync(() -> refreshed[0] = output.refreshView());
+        assertTrue("The picture was refreshed", refreshed[0]);
+        long[] after = { 0 };
+        instrumentation.runOnMainSync(() -> after[0] = output.pictures());
+        await(() -> output.repairs > repairs && output.pictures() > after[0] + 3, 6000);
+        assertSame(samePlayer, LivePlayer.player());
+        assertSame(output, LivePlayer.output());
+        assertEquals("No source reconnection", opened, LivePlayer.opened);
+        assertEquals("No new provider walk", 1, resolutions.get());
+        assertEquals("Audio selection survived the view repair", audioTrack, samePlayer.getAudioTrack());
+        assertTrue("Audio was selected", audioTrack >= 0);
+        SystemClock.sleep(1500);
+        assertTrue("Audio output stopped during video repair", audioBuffers(samePlayer) > audioBefore);
+        assertFalse(activity.liveFailed);
+        UiEvidence.capture("live-picture-refreshed-with-audio");
+    }
+
+    private long audioBuffers(MediaPlayer mediaPlayer) {
+        var media = mediaPlayer.getMedia();
+        if (media == null) return -1;
+        try {
+            return media.getStats().playedAbuffers;
+        } finally {
+            media.release();
+        }
+    }
+
+    @Test
+    public void reloadingWrappedHlsKeepsRenderedVideoAndAudioOutputAdvancing() throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        ProviderRelay.testConnections = uri ->
+            (HttpURLConnection) new URL(
+                "http://127.0.0.1:" + server.getLocalPort() + uri.getRawPath()
+            ).openConnection();
+        org.json.JSONObject session = new org.json.JSONObject()
+            .put("endpoint", "https://8.8.8.8/api/playlist-token?slug=channel")
+            .put("slug", "channel")
+            .put("token", "fixture-token")
+            .put("expiresAtMs", System.currentTimeMillis() + 90000);
+        EngineSources.Stream stream = new EngineSources.Stream(
+            new org.json.JSONObject()
+                .put("url", "https://8.8.8.8/channel/wrapped.m3u8")
+                .put("headers", new org.json.JSONObject())
+                .put("playlistSession", session)
+        );
+        try (ProviderRelay relay = new ProviderRelay(stream)) {
+            Context context = instrumentation.getTargetContext();
+            activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+                new Intent(context, VlcPlaybackActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra("url", relay.url)
+                    .putExtra("live", true)
+                    .putExtra("id", "wrapped-reload")
+                    .putExtra("title", "Wrapped HLS reload")
+            );
+            for (int reload = 0; reload < 3; reload++) {
+                await(
+                    () -> player() != null && player().isPlaying() && LivePlayer.output().pictures() > 5,
+                    30000
+                );
+                long before = audioBuffers(player());
+                long frames = LivePlayer.output().pictures();
+                SystemClock.sleep(1500);
+                assertTrue(
+                    "Video stopped after reload " + reload,
+                    LivePlayer.output().pictures() > frames + 5
+                );
+                assertTrue("Audio stopped after reload " + reload, audioBuffers(player()) > before);
+                if (reload < 2) instrumentation.runOnMainSync(activity::backToLive);
+            }
+        } finally {
+            ProviderRelay.testConnections = null;
+        }
+    }
+
+    private static byte[] pngSegment(byte[] video) throws IOException {
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
+        result.write(new byte[] { (byte) 137, 80, 78, 71, 13, 10, 26, 10 });
+        ByteArrayOutputStream header = new ByteArrayOutputStream();
+        DataOutputStream values = new DataOutputStream(header);
+        values.writeInt(1);
+        values.writeInt(1);
+        values.write(new byte[] { 8, 2, 0, 0, 0 });
+        pngChunk(result, "IHDR", header.toByteArray());
+        ByteArrayOutputStream pixels = new ByteArrayOutputStream();
+        try (java.util.zip.DeflaterOutputStream compressed = new java.util.zip.DeflaterOutputStream(pixels)) {
+            compressed.write(new byte[] { 0, 0, 0, 0 });
+        }
+        pngChunk(result, "IDAT", pixels.toByteArray());
+        pngChunk(result, "IEND", new byte[0]);
+        result.write(video);
+        return result.toByteArray();
+    }
+
+    private static void pngChunk(OutputStream output, String name, byte[] data) throws IOException {
+        DataOutputStream bytes = new DataOutputStream(output);
+        byte[] type = name.getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        bytes.writeInt(data.length);
+        bytes.write(type);
+        bytes.write(data);
+        java.util.zip.CRC32 crc = new java.util.zip.CRC32();
+        crc.update(type);
+        crc.update(data);
+        bytes.writeInt((int) crc.getValue());
+    }
+
+    @Test
+    public void slowLinkResolutionDoesNotSpendTheVideoStartupTimeout() throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        Context context = instrumentation.getTargetContext();
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        String locator = PlutoSource.ROOT + "5ad8d3a31b95267e225e4e09";
+        String fixture = "http://127.0.0.1:" + server.getLocalPort() + "/live.ts";
+        for (String source : new String[] { "nativepluto", "free" }) {
+            ChannelDatabase.Writer writer = db.writer(source, () -> {}, n -> {});
+            try {
+                writer.accept(
+                    new Playlist.Channel(
+                        "Slow resolver",
+                        source.equals("nativepluto") ? locator : fixture,
+                        "General",
+                        "",
+                        ""
+                    )
+                );
+                writer.commit();
+            } finally {
+                writer.abort();
+            }
+        }
+        java.util.concurrent.CountDownLatch started = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch finish = new java.util.concurrent.CountDownLatch(1);
+        LivePlayer.testResolver = (url, http) -> {
+            started.countDown();
+            if (!finish.await(25, java.util.concurrent.TimeUnit.SECONDS)) throw new IOException(
+                "Fixture resolution timeout"
+            );
+            http.check();
+            return fixture;
+        };
+        LiveZapper.session = new LiveZapper.Session("all", "", java.util.Collections.emptySet(), 0);
+        try {
+            activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+                new Intent(context, VlcPlaybackActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra("url", locator)
+                    .putExtra("live", true)
+                    .putExtra("id", ChannelQuery.key(locator))
+                    .putExtra("title", "Slow resolver")
+            );
+            assertTrue(started.await(5, java.util.concurrent.TimeUnit.SECONDS));
+            // Cross the real 15-second startup deadline while the resolver is still pending.
+            SystemClock.sleep(16_000);
+            instrumentation.runOnMainSync(() -> {
+                assertTrue("Resolver abandoned before it returned", LivePlayer.isResolving());
+                assertFalse(activity.liveFailed);
+                assertEquals("1 of 2", activity.zapper.sourceLabel());
+            });
+            finish.countDown();
+            await(() -> player() != null && player().isPlaying() && player().getTime() > 500, 30000);
+            assertEquals("1 of 2", activity.zapper.sourceLabel());
+        } finally {
+            finish.countDown();
+            LiveZapper.session = null;
+            db.clear();
+        }
+    }
+
+    @Test
     public void failedNativeResolutionFallsBackToTheSameChannelsBackup() throws Exception {
         instrumentation.runOnMainSync(activity::finish);
         instrumentation.waitForIdleSync();
@@ -804,6 +1121,114 @@ public class PlaybackTest {
         } finally {
             LiveZapper.session = null;
             db.clear();
+        }
+    }
+
+    /**
+     * Imports one copy of a channel per source (name, guide id, fixture path each), opens the
+     * first copy from the guide's list and returns the first copy's address.
+     */
+    private String openChannelCopies(String[]... copies) throws Exception {
+        instrumentation.runOnMainSync(activity::finish);
+        instrumentation.waitForIdleSync();
+        Context context = instrumentation.getTargetContext();
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        String base = "http://127.0.0.1:" + server.getLocalPort() + "/";
+        for (String[] copy : copies) {
+            ChannelDatabase.Writer writer = db.writer(copy[0], () -> {}, n -> {});
+            try {
+                writer.accept(new Playlist.Channel(copy[1], base + copy[3], "Sports", "", copy[2]));
+                writer.commit();
+            } finally {
+                writer.abort();
+            }
+        }
+        java.util.List<ChannelDatabase.Row> all = db.browse("all", "", java.util.Collections.emptySet(), 0);
+        assertEquals("Every copy is one channel in the guide", 1, all.size());
+        assertEquals(copies.length, db.copies(all.get(0)).size());
+        ChannelDatabase.Row first = db.copies(all.get(0)).get(0);
+        String url = db.url(first.id, first.key);
+        LiveZapper.session = new LiveZapper.Session("all", "", java.util.Collections.emptySet(), 0);
+        activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
+            new Intent(context, VlcPlaybackActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra("url", url)
+                .putExtra("live", true)
+                .putExtra("id", first.key)
+                .putExtra("title", first.name)
+        );
+        return url;
+    }
+
+    private String status() {
+        String[] text = new String[1];
+        instrumentation.runOnMainSync(
+            () ->
+                text[0] =
+                    activity.status.getVisibility() == View.VISIBLE
+                        ? activity.status.getText().toString()
+                        : ""
+        );
+        return text[0];
+    }
+
+    /**
+     * The reported problem: Sky Sports F1 (720p) from the free list does not play while a provider
+     * has the same channel as "Sky Sports F1 UK". The player must move to the provider's copy
+     * instead of saying "This channel isn't working right now."
+     */
+    @Test
+    public void skySportsF1FailsOverToAnotherProvidersCopy() throws Exception {
+        try {
+            String first = openChannelCopies(
+                new String[] { "free", "Sky Sports F1 (720p)", "SkySportsF1.uk@SD", "missing-f1.ts" },
+                new String[] { "enginedlhd", "Sky Sports F1 UK", "enginedlhd:60", "live.ts" }
+            );
+            assertTrue("The failing free-list copy is tried first", first.endsWith("missing-f1.ts"));
+            await(() -> player() != null && player().isPlaying() && player().getTime() > 500, 30000);
+            assertEquals("2 of 2", activity.zapper.sourceLabel());
+            assertFalse(activity.liveFailed);
+            assertFalse(status().contains("isn't working"));
+        } finally {
+            LiveZapper.session = null;
+            ChannelDatabase.get(instrumentation.getTargetContext()).clear();
+        }
+    }
+
+    @Test
+    public void failoverTriesEachCopyInTurnUntilOnePlays() throws Exception {
+        try {
+            openChannelCopies(
+                new String[] { "fta", "Sky Sports F1", "", "missing-a.ts" },
+                new String[] { "free", "Sky Sports F1 (720p)", "SkySportsF1.uk@SD", "missing-b.ts" },
+                new String[] { "enginedlhd", "Sky Sports Formula 1 UK", "enginedlhd:60", "live.ts" }
+            );
+            await(() -> player() != null && player().isPlaying() && player().getTime() > 500, 45000);
+            assertEquals("3 of 3", activity.zapper.sourceLabel());
+            assertFalse(activity.liveFailed);
+        } finally {
+            LiveZapper.session = null;
+            ChannelDatabase.get(instrumentation.getTargetContext()).clear();
+        }
+    }
+
+    @Test
+    public void whenEveryCopyFailsTheChannelSaysSoWithoutRetryingForever() throws Exception {
+        try {
+            openChannelCopies(
+                new String[] { "free", "Sky Sports F1 (720p)", "SkySportsF1.uk@SD", "missing-a.ts" },
+                new String[] { "enginedlhd", "Sky Sports F1 UK", "enginedlhd:60", "missing-b.ts" }
+            );
+            await(() -> activity.liveFailed, 45000);
+            assertEquals("Both copies were tried", "2 of 2", activity.zapper.sourceLabel());
+            assertTrue(status().contains("isn't working"));
+            int requests = missingRequests.get();
+            SystemClock.sleep(5000);
+            assertEquals("No dead source is retried in a loop", requests, missingRequests.get());
+        } finally {
+            LiveZapper.session = null;
+            ChannelDatabase.get(instrumentation.getTargetContext()).clear();
         }
     }
 

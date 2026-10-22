@@ -1,11 +1,11 @@
 # Status
 
-## Movie file picker
+## Continuous series and automatic playback
 
-Movie sources show a recommended video first with file sizes and video labels; non-video files are retained as disabled rows. Recommendations are based on manifest metadata. Real-provider and physical-TV validation remain outstanding.
+New settings keep manual source selection as the default. Next-episode metadata is prefetched while watching; season transitions use catalogue episodes and air dates. Missing-pack episodes follow the selected manual/automatic mode. Guide colour shortcuts are handled independently of focused widgets, with Back revealing accessible controls. Physical TV, remote and real-account validation remain outstanding.
 
 
-Last updated: 19 October 2026.
+Last updated: 20 October 2026.
 
 ## Where things stand
 
@@ -43,7 +43,22 @@ Last updated: 19 October 2026.
    LibVLC player, views detached and attached) is tested on the emulator with a local stream,
    not on the X905X5M box.
 
-6. **Phone layout covers Live TV only.** Films, series, My List and settings still open in the TV
+6. **Provider channels still arrive slowly.** Pluto and the free lists now import before the
+   optional providers, but the providers still run one after another (their script steps share one
+   lock with playback, so running them in parallel would delay starting a channel), and the
+   programme guide is fetched only after all of them. Not measured on the X905X5M box.
+
+6. **Relayed sports streams use a 4 s buffer** (`LivePlayer.RELAYED_CACHING_MS`) and the relay
+   retries a timed-out provider once. Whether this removes the short pauses seen on the owner's
+   phone (21 October 2026) is not yet confirmed on a phone or the TV box.
+
+6. **Live TV now draws through a SurfaceView** (21 October 2026), replacing the shared
+   TextureView after the owner saw full-screen lag and a still picture over playing sound. Moves
+   between the mini picture and full screen keep the stream but may blink. Emulator tests only;
+   not yet checked on a phone or the X905X5M box. Earlier notes below about the retained
+   SurfaceTexture describe the replaced design.
+
+7. **Phone layout covers Live TV only.** Films, series, My List and settings still open in the TV
    layout. MainActivity now handles rotation itself (configChanges), so screens are not rebuilt
    when a phone turns.
 
@@ -95,3 +110,163 @@ Last updated: 19 October 2026.
 ## Native free-TV work (19 October 2026)
 
 PR #81 adds native regional Pluto discovery, resolve-on-play, source cancellation, guide data and Settings → Free channels controls on top of #80’s optional hosted connection. A real GB catalogue returned 187 channels; one sample decoded successfully on desktop. Other upstream providers are not advertised as native. Validation and release status are linked in the PR and GitHub release; physical TV checks remain outstanding. See [the full evidence record](docs/NATIVE_FREE_SOURCES.md).
+
+## Standalone engine development
+
+Experimental local JS engine and FreeLiveSports wiring are implemented on a development branch.
+This is incomplete, opt-in and not a production release. The current Masqueradarr server submodule
+returns 404; current adapter parity and automatic inheritance are blocked by source access.
+Signing-key setup and physical ARM64 playback checks remain outstanding. Full implementation,
+provider matrix and evidence: [standalone provider engine](docs/STANDALONE_PROVIDER_ENGINE.md).
+
+## Extended Android provider port
+
+Draft PR #83 now adapts fifteen additional historical upstream providers through Runtime 2, including
+DaddyLive's multi-player resolver and Tubi's signing/bootstrap. Discovery has succeeded for several FAST
+platforms; DaddyLive discovery alone does not establish playback. Remaining unported dulo login
+and HDHomeRun transport are documented. Nothing is merged or released by this work.
+
+The standalone-engine code at `4ca05fdf89eebc659e7ba8f3e0c66cdd04b72abf` passed build/lint, signing
+compatibility, provider verification and the complete TV emulator suite. A debug APK is available in
+[CI artifacts](https://github.com/billyke2000s/moviehub/actions/runs/39341576650). Ten added providers
+have one decoded desktop media sample each; this does not prove physical TV playback or all channels.
+The PR remains draft, and automatic remote provider updates remain unconfigured.
+
+## Provider channels as backups (20 October 2026)
+
+Provider-engine channels now join the existing Live TV guide and backup switching instead of
+standing alone: copies of one channel across free lists, accounts and providers share a duplicate
+key (`ChannelIdentity`, database version 9), provider channels go into the shared sections
+(`ChannelCategory`), and a failed source moves to the next copy once each. Enabled providers no
+longer depend on the free-list setting. Checked with core checks, the real Free-TV/iptv-org lists
+on a computer, and fixture device tests in CI. **Not yet seen on the TV box or on a real failing
+provider stream**; whether a given provider's Sky Sports copy actually plays depends on that provider.
+
+Flaky device tests seen 20 October 2026: run 39357280476 (attempt 1) failed
+`EpgImporterTest.matchesChannelsAcrossNamingStylesAndKeepsOnlyCurrentProgrammes` (a parsed XMLTV time
+130 s off) and `LiveGuideTest.pagesWrapRoundLikeTheSatelliteGuide` (timed out on "first page again").
+The commit changed neither area, both passed on the two previous commits, and attempt 2 passed
+unchanged. Cause not found; watch for a repeat.
+
+## Live provider probe (20 October 2026, GitHub runner, United States)
+
+`provider-engine/tools/live-probe.mjs` (workflow "Live provider probe") runs each provider with the
+app's own interpreter, allow-lists and limits, then decodes samples with ffmpeg. Run 39361949935,
+after raising the limits:
+
+| Provider | Catalogue | Sample playback | Fault |
+| --- | --- | --- | --- |
+| STIRR, TCL, Xumo, LG, Whale, Vizio, Roku, Tubi, FreeLiveSports, Local Now | works | plays | — |
+| Samsung TV Plus (GB) | 252 channels | some play; some GB streams fail from a US runner | probably region |
+| Plex | 692 channels | stream 404 | provider |
+| DaddyLive | 899 channels (45 Sky Sports) | original probe: 403; missing token step identified below | incomplete integration |
+| DistroTV, Vidaa | host does not resolve (ENOTFOUND) | — | provider |
+| ZLive | catalogue 404 | — | provider |
+
+Before the fixes, Samsung (GitHub redirect not allowed), Tubi and Plex (over the 3/4 MB limits)
+failed inside MovieHub. Not checked on the TV box: catalogue steps there are slower (Plex's slowest
+step took 2.9 s on the runner; the box limit is now 10 s), and UK region results may differ.
+
+## DaddyLive investigation correction (20 October 2026)
+
+The original "outside players refused" conclusion was too broad. The actual CDN response was `token
+required`: the current player bootstraps an anonymous 120-second playlist token, which the historical
+resolver omitted. Adding that ordinary request returned HTTP 200 HLS. Media then needed PNG container
+unpacking; direct FFmpeg initially failed. After unpacking, Main Event, Football, Action, F1 and ABC USA
+samples each decoded successfully (FFmpeg exit 0). The original walk also exhausted its 20-second budget
+before later players, so it was not evidence about every player.
+
+The development fix adds the current token protocol, scoped in-memory renewal and bounded PNG transport
+to the existing native player/relay. Local core checks, new PNG fixtures and relay/session fixtures have
+passed; live checks and Android CI are recorded with the change. Physical TV, long sessions and all-channel
+availability remain unverified. No release or in-app update has been published by this fix.
+
+## Box report: hidden provider failure (20 October 2026)
+
+The user's TV reports no successful DaddyLive refresh, before the playback resolver is reached. Its
+failure description is clipped because Settings cards had a fixed 78dp height; the guide also clips
+large text in short rows. This follow-up fixes card sizing, places failures before catalogue metadata,
+and retains safe HTTP/network/runtime failure categories rather than only the outer exception class.
+Guide labels now fit row height. This is a readability and diagnosis fix: the actual cause of the
+reported box's DaddyLive catalogue failure is still unknown until another refresh records its category.
+
+## Main Event playback report (20 October 2026)
+
+The latest TV screenshot shows DaddyLive discovery succeeding (899 channels), so the previous catalogue-failure report is no longer current. Playback is a separate path: selecting its stored channel identity runs the player-chain resolver and hands a transient session to the native relay. A fresh Main Event (38) walk returned valid HLS/session metadata through Player 1 in about 28 seconds in this workspace, using the bundled module in Node VM and curl transport. The actual JVM step hit its processing deadline in this slower environment; this Node observation is not Android interpreter evidence.
+
+A confirmed app mismatch started the 15-second video-startup timeout before provider resolution, even though the broker allows a longer bounded lookup. The fix starts that timer when LivePlayer has the URL/relay, retaining immediate resolution-error failover and cancellation. Physical TV playback remains to be tested; a successful directory refresh alone never proves playback.
+
+The same fresh Main Event result returned HTTP 200 media HLS and a 6,803,517-byte PNG segment. Production ProviderPngSegments unpacked it on Java 17; FFmpeg decoded four seconds of video with exit 0. This verifies a desktop sample and the native unpacker, not physical TV playback or a complete native-network relay session.
+
+## Sustained playback report (20 October 2026)
+
+The user confirmed Main Event starts on the physical TV, then reported repeated freezes and a frame stuck for several minutes without a buffering spinner. This verifies startup only, not sustained playback or token renewal. The exact TV-side cause remains unknown. Confirmed code gaps: only VLC buffering/error events could initiate recovery, and PNG processing unnecessarily walked every byte of filter-0 rows. The latest sample used filter 0 on 3,815 of 4,477 rows.
+
+The fix adds native/provider progress monitoring (clock plus displayed-picture counter) with the existing eight-second threshold, one provider retry then normal backup/error handling; paused/hidden playback is excluded. PNG bulk copying and larger inflate buffers improve desktop decoding with identical output. This does not prove that provider-side frozen content, timestamp discontinuities, hardware decoding or network delivery is fixed on the box. Token renewal already has bounded fixture coverage; this report alone does not identify a renewal failure.
+
+## Live guide/full-screen handoff repair
+
+The previous shared-player handoff still detached LibVLC's native video output. LiveVideoOutput
+now retains its SurfaceTexture/Surface across both presentations, with a temporary last-frame
+cover until fresh video arrives. Stronger emulator checks verify rendered output and repeated
+round trips, rather than only the playback clock. Revision `89f90e285b7944b1be93f40b9cde40dfef7df873` passed
+formatting, all 293 core checks, APK/debug/release builds and lint, signing compatibility,
+provider checks and the complete API 28 TV emulator suite. Eight measured handoffs produced
+fresh destination frames in 47–104 ms, preserving the output and avoiding stream restarts.
+Physical-TV frame pacing and seamlessness are not yet verified. Local execution was unavailable;
+checks ran in CI.
+
+- [Android validation](https://github.com/billyke2000s/moviehub/actions/runs/39492778810)
+- [Provider validation](https://github.com/billyke2000s/moviehub/actions/runs/39492778815)
+- [Test APK ZIP](https://github.com/billyke2000s/moviehub/actions/runs/39492778810/artifacts/12296945928)
+
+The earlier repeated-trip test reused an ActivityMonitor after waitForMonitorWithTimeout
+removed it. Both first trips passed with fresh frames; the second trips could not detect their
+Activity. The test now registers a new monitor per trip, and the final full suite passed.
+
+## Live playback, controls and FreeShot (20 October 2026)
+
+The user confirmed instant mini-player/full-screen movement on the physical TV, then reported
+video freezing within about five seconds while audio continued, audio missing after a reload,
+and playback recovering on a move back to the mini-player. Physical-TV sustained playback and
+the precise cause of its audio symptom remain unverified.
+
+The candidate counts actual TextureView updates even when presentation timestamps repeat and
+tries one consumer-only refresh for stopped rendered video while the clock advances. It keeps
+the decoder, network session and audio output. Persistent stalls use bounded source recovery.
+The relay also accepts `Range: bytes=0-` for wrapped segments by fetching/decoding the complete
+entity instead of applying decoded offsets to its PNG container.
+
+First Back reveals the live controls and Sources; the next returns to the retained mini-player.
+Sources defaults to Automatic. A manual choice pins that source; restoring Automatic tries
+unvisited copies once, including earlier copies, then stops. The menu reads saved database rows;
+only a selected source or needed failover is resolved.
+
+FreeShot (UK sports) is available as an opt-in source in Settings → Provider engine. It imports
+the public related-channel directory in one request, follows only the chosen channel's literal
+embed/player links, normalizes relative/whitespace-containing iframe addresses, and uses the
+native player. Fetched page scripts and adverts never execute. Anonymous tokens renew at the
+fixed WideIPTV endpoint within one discovered BlueTier origin and channel prefix. Other website
+countries/categories are not imported.
+
+Verified live host evidence: FreeShot Main Event decoded video (149.92 seconds, 3,748 unique
+frames) and audio (150 seconds, 7,032 unique frames) through the actual resolver and production
+relay, including forced token renewal, with no timestamp gaps. DaddyLive Football decoded both
+tracks for 150 seconds without timestamp gaps after the wrapped-range fix. DaddyLive Main Event
+showed a roughly 10-second timestamp gap in the host check; this is not proof of the TV's cause.
+The desktop diagnostic explicitly preserves Origin to match Android; otherwise Java silently
+omits that header.
+
+Local validation: 540 core checks, compiler tests, 21 engine checks, 45 actual-Rhino multi-provider
+checks, 17 PNG checks and four real-TCP wrapped-range checks passed. The FreeShot relative-URL and
+channel-identity fixtures also passed after normalization. Android run 39513033996 passed all 122
+TV emulator tests (zero failures/skips), debug/release builds and lint, instrumentation compilation,
+and permanent-signing compatibility. This includes a stopped real texture consumer with continuing
+audio, three wrapped-HLS reloads with both tracks advancing, constant EGL timestamps, Back/Sources,
+and two guide/full-screen round trips after manually selecting a backup. Player/output identity,
+current copy/mode, source-open counts and fresh nonblank video remained correct. Twelve fresh-frame
+handoffs measured 44–137 ms on this emulator; this is not a hardware latency guarantee.
+
+[Signed test build](https://github.com/billyke2000s/moviehub/actions/runs/39513033996/artifacts/12307505129)
+(source `4ae9dce6e6adeb8d95b319ff46f0eb90897a3b22`). Extract and install `moviehub-test.apk`.
+No production update has been merged or published.

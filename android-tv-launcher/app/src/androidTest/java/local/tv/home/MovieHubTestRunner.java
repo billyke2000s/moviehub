@@ -16,6 +16,7 @@ public class MovieHubTestRunner extends AndroidJUnitRunner {
             .getSharedPreferences("ui", 0)
             .edit()
             .putBoolean(SafetyNotice.PREF, true)
+            .putBoolean(ProviderSettings.ASKED, true)
             .putString(DeviceMode.PREF, DeviceMode.TV)
             .commit();
     }

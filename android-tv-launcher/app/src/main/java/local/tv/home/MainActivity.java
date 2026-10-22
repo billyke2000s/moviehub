@@ -81,6 +81,7 @@ public class MainActivity extends TvActivity {
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         int key = event.getKeyCode();
+        if (activeKeyBar != null && activeKeyBar.handle(event)) return true;
         if (
             dock.eatSelectUp &&
             (key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER) &&
@@ -141,6 +142,7 @@ public class MainActivity extends TvActivity {
     /** The Home "For you" shelf; see {@link ForYou}. */
     ForYou forYou;
     LinearLayout page;
+    KeyBar activeKeyBar;
     Runnable back;
     Runnable destination;
     HomeScreen.HomeShelf homeShelf;
@@ -318,7 +320,8 @@ public class MainActivity extends TvActivity {
         if (DeviceMode.chosen(this).isEmpty()) LayoutChooser.show(this);
         else LayoutChooser.open(this);
         // After the first frame, so the notice sits over Home.
-        handler.post(() -> SafetyNotice.showOnce(this));
+        // First the free-provider question (once), then the safety notice.
+        handler.post(() -> ProviderSettings.askOnce(this, () -> SafetyNotice.showOnce(this)));
     }
 
     private void tvFullscreen() {
@@ -425,6 +428,7 @@ public class MainActivity extends TvActivity {
 
     /** Home is a viewport, never a vertically scrolling page. The dock has reserved space. */
     void fixedScreen(String title, Runnable goBack) {
+        activeKeyBar = null;
         runLeaving();
         resumeRefresh = null;
         myListRefresh = null;
@@ -507,6 +511,9 @@ public class MainActivity extends TvActivity {
                     "season",
                     "episode",
                     "episodeKey",
+                    "name",
+                    "imdb_id",
+                    "external_ids",
                 })
                     if (metadata.has(key)) record.put(key, metadata.get(key));
             }
@@ -518,6 +525,10 @@ public class MainActivity extends TvActivity {
             Diagnostics.recovered("Saving recent playback", e);
             /* History failure must never prevent playback. */
         }
+        if (!live) {
+            SeriesPlayback.restore(metadata);
+            SeriesPlayback.prefetch(this, metadata);
+        }
         try {
             startActivity(
                 new Intent(this, VlcPlaybackActivity.class)
@@ -526,7 +537,8 @@ public class MainActivity extends TvActivity {
                     .putExtra("id", id)
                     .putExtra("live", live)
                     .putExtra("episodeKey", metadata == null ? null : metadata.optString("episodeKey", null))
-                    .putExtra("titleKey", ResumePoint.titleKey(metadata))
+                    .putExtra("titleKey", ResumePoint.titleKey(metadata)),
+                live ? ActivityOptions.makeCustomAnimation(this, 0, 0).toBundle() : null
             );
         } catch (Exception e) {
             toast("Playback could not be started");

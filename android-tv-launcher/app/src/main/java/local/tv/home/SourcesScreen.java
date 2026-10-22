@@ -45,57 +45,7 @@ final class SourcesScreen {
         }
 
         static void next(MainActivity activity) {
-            if (imdb == null || episode < 1) return;
-            int nextEpisode = episode + 1;
-            JSONObject nextMetadata;
-            try {
-                nextMetadata = metadata == null ? new JSONObject() : new JSONObject(metadata.toString());
-            } catch (JSONException error) {
-                nextMetadata = new JSONObject();
-            }
-            try {
-                nextMetadata.put("season", season).put("episode", nextEpisode);
-                String key = nextMetadata.optString("episodeKey", "");
-                if (!key.isEmpty()) {
-                    int last = key.lastIndexOf(':');
-                    if (last > 0) nextMetadata.put("episodeKey", key.substring(0, last + 1) + nextEpisode);
-                }
-            } catch (Exception ignored) {}
-            if (files != null) {
-                List<String> paths = new ArrayList<>();
-                List<Long> sizes = new ArrayList<>();
-                for (int i = 0; i < files.length(); i++) {
-                    JSONObject file = files.optJSONObject(i);
-                    if (file == null) continue;
-                    paths.add(file.optString("path", file.optString("name", "")));
-                    sizes.add(file.optLong("size"));
-                }
-                int match = VideoFiles.autoPick(paths, sizes, season, nextEpisode);
-                if (match >= 0) {
-                    JSONObject file = files.optJSONObject(match);
-                    String link = file == null ? "" : file.optString("link");
-                    if (!link.isEmpty()) {
-                        remember(imdb, season, nextEpisode, title, kind, nextMetadata, files);
-                        activity.play(
-                            title + " · S" + season + " E" + nextEpisode,
-                            link,
-                            activity.id(link),
-                            false,
-                            nextMetadata
-                        );
-                        return;
-                    }
-                }
-            }
-            remember(imdb, season, nextEpisode, title, kind, nextMetadata, null);
-            activity.playbackTitle = nextMetadata;
-            activity.sources.torrentSources(
-                imdb,
-                season,
-                nextEpisode,
-                title + " · S" + season + " E" + nextEpisode,
-                kind
-            );
+            new SeriesPlayback(activity).next();
         }
     }
 
@@ -163,7 +113,7 @@ final class SourcesScreen {
         activity.posters.listBackdrop(metadata);
         activity.pageTitle(
             activity.page,
-            "Choose a source",
+            AutoPlayback.enabled(activity, season) ? "Finding a source" : "Choose a source",
             title,
             "Ready-to-play sources start straight away. Others are sent to your cloud first."
         );
@@ -197,35 +147,60 @@ final class SourcesScreen {
                     );
                     return;
                 }
-                LinearLayout filters = activity.horizontal(activity.page),
-                    results = activity.vertical();
-                activity.page.addView(results);
-                List<Button> tabs = new ArrayList<>();
-                for (String quality : new String[] { "All", "4K", "1080p", "720p" }) {
-                    Button tab = activity.chip(filters, quality, () -> {});
-                    tabs.add(tab);
-                    tab.setOnClickListener(v -> {
-                        for (Button other : tabs) {
-                            other.setSelected(other == v);
-                            activity.styleFocus(other, other.hasFocus());
-                        }
-                        renderSources(
-                            results,
-                            sources,
-                            quality,
-                            repo,
-                            metadata,
-                            imdb,
-                            season,
-                            episode,
-                            title,
-                            kind
-                        );
-                    });
-                }
-                tabs.get(0).setSelected(true);
-                activity.styleFocus(tabs.get(0), false);
-                renderSources(results, sources, "All", repo, metadata, imdb, season, episode, title, kind);
+                Runnable showList = () -> {
+                    LinearLayout filters = activity.horizontal(activity.page),
+                        results = activity.vertical();
+                    activity.page.addView(results);
+                    List<Button> tabs = new ArrayList<>();
+                    for (String quality : new String[] { "All", "4K", "1080p", "720p" }) {
+                        Button tab = activity.chip(filters, quality, () -> {});
+                        tabs.add(tab);
+                        tab.setOnClickListener(v -> {
+                            for (Button other : tabs) {
+                                other.setSelected(other == v);
+                                activity.styleFocus(other, other.hasFocus());
+                            }
+                            renderSources(
+                                results,
+                                sources,
+                                quality,
+                                repo,
+                                metadata,
+                                imdb,
+                                season,
+                                episode,
+                                title,
+                                kind
+                            );
+                        });
+                    }
+                    tabs.get(0).setSelected(true);
+                    activity.styleFocus(tabs.get(0), false);
+                    renderSources(
+                        results,
+                        sources,
+                        "All",
+                        repo,
+                        metadata,
+                        imdb,
+                        season,
+                        episode,
+                        title,
+                        kind
+                    );
+                };
+                if (AutoPlayback.enabled(activity, season)) new AutoPlayback(activity).start(
+                    sources,
+                    repo,
+                    metadata,
+                    imdb,
+                    season,
+                    episode,
+                    title,
+                    kind,
+                    showList
+                );
+                else showList.run();
             }
         );
     }

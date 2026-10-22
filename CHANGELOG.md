@@ -1,10 +1,97 @@
 # Changelog
 
-## Unreleased — movie file recommendations
+## Unreleased — continuous series, automatic play and TV remote controls
 
-- Movie sources open a file list with **Recommended movie** first and focused, video labels and file sizes. Other files remain listed but cannot be played. Exact episode auto-selection is preserved.
-- Recognise common and legacy video extensions, including M2TS, MTS, VOB, MPEG, MOV, AVI, WebM, FLV, WMV, 3GP and elementary video streams. Filename recognition is separate from decoder support.
-- Rank movies locally by title and size, excluding samples, trailers and bonus material, without downloading files to inspect them.
+- Continue to the next aired episode across season boundaries using TMDB episode metadata, prefetched while watching. Stop at the last available episode instead of inventing an episode number.
+- If the next episode is absent from the current pack, offer **Search for the next episode** in manual mode, or search automatically in automatic mode.
+- Settings → Playback adds separate automatic-play switches for films and series, plus a preferred maximum resolution (1080p by default). Try up to five ready-to-play sources and fall back to manual selection if no clear file match is found; never silently queue transfers.
+- Route guide colour keys regardless of focus. Back reveals outlined, arrow/OK-accessible colour controls; the next Back uses the existing navigation action. Fullscreen colour controls also gain visible outlines. Standard colour keys, F1–F4 and learned mappings remain supported.
+
+
+## 0.42
+
+- Movie torrent file lists now put **Recommended movie** first, with video labels and file sizes. Other files remain visible but cannot launch playback. Exact episode selection is unchanged.
+- Expanded video filename recognition and local title/size ranking exclude samples, trailers and extras. No file downloads or extra provider calls are needed for ranking.
+
+
+## 0.41
+
+- Live TV plays through Android's standard video surface: aimed at smoother full-screen video and at the picture stopping while the sound carried on. Moving between the guide's mini picture and full screen keeps the stream playing (a brief blink is normal).
+- Sports streams from FreeShot, DaddyLive and ZLive buffer further ahead, and a slow provider gets one retry, so fewer short pauses.
+- On first start, Pluto TV and the free channel lists load before the optional providers, so most channels appear much sooner.
+- The live banner's Audio & subtitles, Source, Information and Options are buttons: tap them, or press BACK and use ◀ ▶ and SELECT on remotes without coloured buttons. Auto mode names the provider playing.
+
+## Unreleased — free channels before providers
+
+- Import native Pluto and the free lists before FreeLiveSports and the optional providers. With every provider switched on, the free lists (most channels) previously waited until all sixteen providers had finished, each allowed up to four minutes. Numbering and preferred copies are unchanged because they follow `ChannelDatabase.ORDER`, not import order. Not measured on the TV box.
+
+## Unreleased — banner buttons without colour keys, provider shown in Auto
+
+- The banner's Audio & subtitles, Source, Information and Options keys are now buttons: tap them, or press BACK and move with ◀ ▶ and SELECT, so remotes without coloured buttons can use them. The banner hint says so.
+- Auto mode names the provider playing now ("Sources · Auto · FreeShot · 1 of 2"), and the Sources list marks the playing copy with ▶ and shows it on the Automatic row.
+
+## Unreleased — smoother relayed sports streams
+
+- Relayed provider streams (FreeShot, DaddyLive, ZLive) buffer 4 s ahead instead of the shared 1.5 s Live TV buffer; other channels keep the faster start.
+- The provider relay keeps upstream connections open for reuse after a complete response, runs four workers instead of two, and retries a provider that does not answer in time once before the player sees an error.
+- Prompted by the owner's phone diagnostics (six short buffering pauses and relay timeouts in one session). Not yet measured on a device after the change.
+
+## Unreleased — live TV on VLC's standard SurfaceView
+
+- Live TV now draws through VLC's `VLCVideoLayout` (SurfaceView), as the film player already did, instead of a shared SurfaceTexture/TextureView. Pictures go from the hardware decoder to the screen without waiting for the app's main thread, which the owner's full-screen lag and still-picture-with-sound reports pointed at (21 October 2026).
+- Moving between the guide's mini picture and the full screen still keeps one player, stream, relay and sound (no reconnect or re-resolve); the picture may blink while the new surface takes over.
+- Freeze detection counts VLC's displayed pictures. Tests rewritten accordingly; the EGL/SurfaceTexture test was removed with that design. Not yet checked on a phone or the TV box.
+
+## Unreleased — early live video freeze investigation
+
+- Count rendered texture-buffer updates even when presentation timestamps repeat or reset; clear handoff covers from buffer callbacks.
+- Detect a stopped visible video consumer independently of advancing audio; try one consumer refresh without reopening media or audio before bounded source recovery.
+- Add constant-timestamp EGL, actual consumer-stall recovery and wrapped-HLS audio/video reload checks, plus a sustained numerical live diagnostic.
+
+## Unreleased — retained live picture
+
+- Remove system Activity fades for Live TV entry/return, including Android 14+ transition overrides.
+
+- Keep the decoder Surface and SurfaceTexture through guide/full-screen handoffs instead of detaching native video output. Cover the transfer with the last rendered frame until a fresh frame arrives.
+- Check repeated round trips using rendered frames, nonblank pixels and output identity, alongside existing stream and resolver counters. Physical-TV timing still needs verification.
+
+## Unreleased — sustained provider playback
+
+- Detect stopped native/provider video progress, with clock fallback when video counters are unavailable even without buffering/error events, using the existing eight-second stall threshold and bounded provider retry/backup handling. Ignore paused and hidden playback.
+- Speed up PNG segment decoding with filter-0 and RGB bulk-copy paths and larger inflate buffers, preserving validation limits and releasing the inflater on failure. Physical-TV cause and sustained playback remain unverified.
+
+## Unreleased — provider playback startup
+
+- Give bounded link resolution its own phase, then start the video-opening timer when the URL/relay is ready. Previously a working provider taking over 15 seconds could be discarded before LibVLC received a stream.
+- Show “Finding a working stream…” during resolution; preserve source backup, cancellation and view handoff behaviour.
+
+## Unreleased — readable provider refresh failures
+
+- Expand Settings cards to fit descriptions, put provider failures first, and retain safe network/HTTP/
+  runtime diagnostics. The TV's DaddyLive import failure still needs a fresh diagnostic result.
+- Fit guide labels to row height so constrained displays do not cut text in half.
+
+## Unreleased — DaddyLive playlist sessions and PNG media
+
+- Add the current anonymous playlist-token bootstrap, memory-only renewal and a single refresh after a
+  rejected token. Keep tokens scoped to the discovered CDN/channel and preserve the existing player.
+- Unpack supported PNG-contained MPEG-TS segments with strict format, size and decompression bounds.
+- Add provider, renewal/scoping and segment regression checks. Desktop samples decoded for five channels;
+  physical TV and sustained playback are not yet verified.
+
+
+## Unreleased — experimental standalone provider engine
+
+- Live probe on real services (20 October 2026) found MovieHub itself blocking providers: Samsung TV Plus now redirects through github.com (not allowed), and Tubi's guide (3.7 MB) and Plex's catalogue (3.1 MB) were over the 3 MB response limit. Allowed that redirect and raised the limits to 6 MB per response and 15 MB per operation, with a 16 MB script input cap (Tubi totals 7.5 MB, Plex 8.7 MB). A catalogue step may now take 10 s in the interpreter (3 s before) for slower TV boxes. Samsung redirects to Amagi's CDN are allowed. DaddyLive's stream servers answer 403 (referrer/signature gate) and ZLive's catalogue 404: provider-side, not changed.
+- Failed providers are named in one line in the guide ("Unavailable now: …"), and the guide status is at most two lines; one line per provider had squeezed the channel rows to nothing. Settings → Provider engine shows the type of each provider's last refresh error, and the import count rises as providers load.
+- On start, MovieHub asks once whether to turn on the free TV providers ("Turn them all on" or "Not now"), then shows the safety notice. Existing installs are asked too; Back leaves the question for next time. Providers were previously all off with no prompt.
+- Provider channels now back up the same channel from the free lists and accounts: "Sky Sports F1 (720p)", "Sky Sports F1 UK", "… HD" and "Sky Sports Formula 1" are one channel with several sources (channel database version 9 re-keys saved channels; favourites and locks kept). Other countries, +1, regional and UHD channels stay separate.
+- When a source fails, Live TV tries each other copy once ("Trying another source") before saying the channel is not working; SELECT then tries all copies again from the first. A slow error and a timeout from the same source no longer skip a backup.
+- Provider channels are filed in the guide's existing sections by whole words (the earlier mapping put "TF1" in Sports). The Source list names each copy's provider.
+- A provider turned on in Settings → Provider engine now imports whatever the free-list choice is; before, an account or "only without a TV provider" silently hid it.
+- Add isolated local JavaScript execution of the historical FreeLiveSports TypeScript leaf, stable SQLite channels, inline EPG and resolve-on-play.
+- Add opt-in provider settings, signed package validation, atomic rollback and gated upstream update CI.
+- Document private upstream access, missing signing setup and provider/runtime limitations; no production release.
 
 
 Versions are published to TVs through the in-app updater (`android-tv-latest` release). Each
@@ -400,3 +487,23 @@ Built from PR #16: TV home fits the viewport; catalogue and account navigation m
 
 Built from PR #15: MovieHub TV browsing, scalable IPTV and fullscreen playback, with signing
 continuity checks.
+
+### Experimental provider runtime 2 (unreleased)
+
+- Execute fifteen additional historical Masqueradarr adapters locally, including HTTP/POST, async replay,
+  cookies within operations, Tubi crypto, compressed catalogues and fresh stream resolution.
+- Add individual settings, stable SQLite locators, inline guide isolation and optional local HLS header transport.
+- Preserve direct playback and existing providers; document partial live evidence and remaining browser/source blockers.
+
+## Unreleased — live controls and source choice
+
+- First Back shows live controls; next Back returns to the guide’s retained mini-player.
+- Add a selectable Sources action, Automatic by default, with manual source pinning.
+- Keep backup discovery local and resolve only a selected source or the next bounded failover.
+
+## Unreleased — additional sports source and segment requests
+
+- Add opt-in FreeShot UK sports with lazy channel resolution, native playback headers and scoped anonymous token renewal.
+- Accept whole-entity byte-zero requests for wrapped DaddyLive segments and return decoded video bytes instead of rejecting playback.
+
+- Retain a manual or automatic backup and its finite retry history through mini-player/full-screen handoffs, instead of reverting to the primary source on reopening the same channel.

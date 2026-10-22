@@ -226,6 +226,7 @@ final class Troubleshooting {
             "Last download speed while playing",
             mbps < 0 ? "Nothing played yet" : String.format(Locale.ROOT, "%.1f Mb/s", mbps)
         );
+        row("Last live video recovery", LivePlayer.videoRecovery());
         List<Timings.Stat> stats = Timings.snapshot();
         if (stats.isEmpty()) row("Nothing measured yet", "Use the app, then open this page again");
         for (Timings.Stat stat : stats)

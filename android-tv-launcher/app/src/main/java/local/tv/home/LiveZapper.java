@@ -57,6 +57,15 @@ final class LiveZapper {
     private int copy,
         previousPosition = -1,
         request;
+    /**
+     * A move to the next backup is on its way. Errors reported meanwhile (a stream can report an
+     * error and then time out) belong to the copy that already failed, so they must not skip the
+     * next copy before it has been tried.
+     */
+    private boolean switching;
+    private boolean automaticSources = true,
+        backControls;
+    private final Set<Integer> attemptedCopies = new HashSet<>();
     private final List<Long> stalls = new ArrayList<>();
     /** The banner, programme information and pause bar (package-private for tests). */
     SkyOverlay overlay;
@@ -97,10 +106,7 @@ final class LiveZapper {
                     if (overlay.infoShowing()) hideInfo();
                     else showInfo();
                 },
-                () -> {
-                    if (copies.size() > 1) player.menus.chooseSource();
-                    else Toast.makeText(player, "This channel has one source", Toast.LENGTH_SHORT).show();
-                },
+                player.menus::chooseSource,
                 player.menus::audioAndSubtitles,
                 player::toggle,
                 player::finish,
@@ -117,8 +123,51 @@ final class LiveZapper {
         return copies.size() <= 1 ? "1 of 1" : copy + 1 + " of " + copies.size();
     }
 
+    /** The provider of the copy playing now (for example "FreeShot"), or "" before one is known. */
+    String sourceProvider() {
+        if (copy < 0 || copy >= copies.size()) return "";
+        return AdapterSources.sourceName(copies.get(copy).source);
+    }
+
+    /** The banner's source text: the mode, the provider playing now, and which copy it is. */
+    String sourceText() {
+        String provider = sourceProvider();
+        return (
+            "Sources · " +
+            (automaticSources ? "Auto · " : "Manual · ") +
+            (provider.isEmpty() ? "" : provider + " · ") +
+            sourceLabel()
+        );
+    }
+
+    boolean automaticSources() {
+        return automaticSources;
+    }
+
+    int selectedCopy() {
+        return copy;
+    }
+
+    void automaticSources(boolean enabled) {
+        if (enabled && !automaticSources) {
+            attemptedCopies.clear();
+            attemptedCopies.add(copy);
+        }
+        automaticSources = enabled;
+        rememberSources();
+        if (enabled && player.liveFailed && !copies.isEmpty()) useCopy(0, true);
+        else showBanner();
+    }
+
     List<ChannelDatabase.Row> copies() {
         return copies;
+    }
+
+    private void rememberSources() {
+        LivePlayer.automaticSources = automaticSources;
+        LivePlayer.attemptedSources.clear();
+        for (int index : attemptedCopies)
+            if (index >= 0 && index < copies.size()) LivePlayer.attemptedSources.add(copies.get(index).key);
     }
 
     // ---- Changing channel -----------------------------------------------------------------
@@ -206,12 +255,28 @@ final class LiveZapper {
     private void load(int position, boolean play, boolean current) {
         int ticket = ++request;
         Session s = own;
+        String activeUrl = current ? LivePlayer.currentUrl() : null;
+        String activeKey = activeUrl == null ? null : ChannelQuery.key(activeUrl);
+        boolean activeAutomatic = LivePlayer.automaticSources;
+        Set<String> activeAttempts = new HashSet<>(LivePlayer.attemptedSources);
         worker.execute(() -> {
             try {
                 List<ChannelDatabase.Row> rows = db.browse(s.filter, s.search, s.favourites, position, 1);
                 if (rows.isEmpty()) return;
                 ChannelDatabase.Row row = rows.get(0);
                 List<ChannelDatabase.Row> found = db.copies(row);
+                int selected = 0;
+                boolean carried = false;
+                if (activeUrl != null) for (int i = 0; i < found.size(); i++) {
+                    ChannelDatabase.Row candidate = found.get(i);
+                    if (candidate.key.equals(activeKey)) {
+                        selected = i;
+                        carried = true;
+                        break;
+                    }
+                }
+                final int playingCopy = selected;
+                final boolean automatic = !carried || activeAutomatic;
                 String url = play ? db.url(found.get(0).id, found.get(0).key) : null;
                 List<ChannelDatabase.Programme> on = listing(row);
                 player.runOnUiThread(() -> {
@@ -220,12 +285,24 @@ final class LiveZapper {
                         if (!current) previousPosition = s.position;
                         s.position = position;
                         copies = found;
-                        copy = 0;
+                        copy = playingCopy;
+                        automaticSources = automatic;
+                        attemptedCopies.clear();
+                        attemptedCopies.add(copy);
+                        if (activeUrl != null) for (int i = 0; i < found.size(); i++) {
+                            if (activeAttempts.contains(found.get(i).key)) attemptedCopies.add(i);
+                        }
+                        switching = false;
                         stalls.clear();
+                        // A stall timer from the channel before must not move this one on.
+                        player.overlayHandler.removeCallbacks(stalledTooLong);
                         if (play) {
+                            automaticSources = true;
+                            backControls = false;
                             player.switchTo(row.name, url, found.get(0).key);
                             remember(row);
                         }
+                        rememberSources();
                         showBanner(row, on);
                         // A native resolver can fail before this initial database read finishes.
                         if (current && player.liveFailed) failover("This source is unavailable");
@@ -321,38 +398,81 @@ final class LiveZapper {
 
     // ---- Backups ----------------------------------------------------------------------------
 
-    /** Plays backup copy {@code index} (0 is the main one). */
-    void useCopy(int index, String reason) {
+    /**
+     * Plays copy {@code index} (0 is the main one). {@code automatic} is true when a failed copy
+     * moved on by itself; false when the viewer chose it in the Source list.
+     */
+    void useCopy(int index, boolean automatic) {
         if (index < 0 || index >= copies.size()) return;
+        if (!automatic) {
+            automaticSources = false;
+            attemptedCopies.clear();
+        }
+        attemptedCopies.add(index);
+        rememberSources();
         ChannelDatabase.Row row = copies.get(index);
+        List<ChannelDatabase.Row> list = copies;
         int ticket = ++request;
         worker.execute(() -> {
             try {
                 String url = db.url(row.id, row.key);
                 player.runOnUiThread(() -> {
-                    if (ticket != request || player.isFinishing()) return;
+                    if (ticket != request || player.isFinishing() || list != copies) return;
                     copy = index;
+                    switching = false;
                     stalls.clear();
                     player.switchTo(row.name, url, row.key);
-                    if (reason != null) Toast.makeText(
+                    rememberSources();
+                    if (automatic) Toast.makeText(
                         player,
-                        reason + ": trying source " + (index + 1) + " of " + copies.size(),
-                        Toast.LENGTH_LONG
+                        "Trying another source (" + (index + 1) + " of " + copies.size() + ")",
+                        Toast.LENGTH_SHORT
                     ).show();
                     showBanner();
                 });
             } catch (Exception e) {
                 Diagnostics.recovered("Switching to a backup", e);
+                // This copy cannot be opened (its row changed under a refresh): count it as
+                // failed and go on to the next, or say the channel is not working.
+                player.runOnUiThread(() -> {
+                    if (ticket != request || player.isFinishing() || list != copies) return;
+                    copy = index;
+                    switching = false;
+                    player.liveSourceFailed();
+                });
             }
         });
     }
 
-    /** Moves to the next backup. Returns false when there is none left to try. */
+    /**
+     * Moves to the next copy of this channel after the current one failed. Each copy is tried at
+     * most once per channel change, so a dead source is never retried in a loop. Returns false when
+     * none is left, and the player then says the channel is not working.
+     */
     boolean failover(String reason) {
         player.overlayHandler.removeCallbacks(stalledTooLong);
-        if (copy + 1 >= copies.size()) return false;
-        Timings.record("Live TV backup used", Timings.start());
-        useCopy(copy + 1, reason);
+        if (!automaticSources) return false;
+        if (switching) return true; // the next copy is already on its way
+        for (int offset = 1; offset < copies.size(); offset++) {
+            int next = (copy + offset) % copies.size();
+            if (attemptedCopies.contains(next)) continue;
+            switching = true;
+            Timings.record("Live TV backup used", Timings.start());
+            useCopy(next, true);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Try again after every copy failed (SELECT): starts from the first copy again, so all of them
+     * get another chance in order. Returns false when the channel has one copy only.
+     */
+    boolean retryFromFirst() {
+        if (!automaticSources || copies.size() <= 1) return false;
+        switching = true;
+        attemptedCopies.clear();
+        useCopy(0, true);
         return true;
     }
 
@@ -430,12 +550,12 @@ final class LiveZapper {
             next == null ? "" : "Next " + LiveTvScreen.clockTime(new Date(next.start)),
             shown == null ? "" : shown.description,
             progress,
-            copies.size() > 1 && !browse ? "Source " + sourceLabel() : "",
+            !browse ? sourceText() : "",
             browse
         );
         if (overlay.infoShowing()) showInfo();
         player.overlayHandler.removeCallbacks(hideBanner);
-        player.overlayHandler.postDelayed(hideBanner, browse ? BROWSE_MS : BANNER_MS);
+        if (!backControls) player.overlayHandler.postDelayed(hideBanner, browse ? BROWSE_MS : BANNER_MS);
     }
 
     /** The "i" panel: the programme the banner shows, in full. Shown until closed. */
@@ -506,7 +626,10 @@ final class LiveZapper {
             }
         }
         if (key == KeyEvent.KEYCODE_DPAD_LEFT || key == KeyEvent.KEYCODE_DPAD_RIGHT) {
-            if (first) browse(0, key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : 0);
+            // With the controls revealed (BACK), ◀ ▶ move between the banner's buttons instead.
+            if (backControls && overlay.bannerShowing()) {
+                if (down) overlay.moveControl(key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
+            } else if (first) browse(0, key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : 0);
             return true;
         }
         boolean up =
@@ -528,7 +651,9 @@ final class LiveZapper {
         boolean handled = true;
         if (select) {
             if (first) {
-                if (overlay.bannerShowing()) player.menus.liveOptions();
+                if (backControls) {
+                    if (!overlay.pressControl()) player.menus.chooseSource();
+                } else if (overlay.bannerShowing()) player.menus.liveOptions();
                 else showBanner();
             }
         } else if (key == KeyEvent.KEYCODE_INFO || colour == 'y') {
@@ -542,10 +667,7 @@ final class LiveZapper {
         } else if (colour == 'r') {
             if (first) player.menus.audioAndSubtitles();
         } else if (colour == 'g') {
-            if (first) {
-                if (copies.size() > 1) player.menus.chooseSource();
-                else Toast.makeText(player, "This channel has one source", Toast.LENGTH_SHORT).show();
-            }
+            if (first) player.menus.chooseSource();
         } else if (colour == 'b' || key == KeyEvent.KEYCODE_MENU) {
             if (first) player.menus.liveOptions();
         } else if (key == KeyEvent.KEYCODE_LAST_CHANNEL) {
@@ -570,11 +692,15 @@ final class LiveZapper {
         } else showBanner();
     }
 
-    /** BACK closes the information panel, then browsing, then the banner, then goes to the guide. */
+    /** BACK reveals the controls first; the next press returns to the guide's same live picture. */
     private void back() {
         if (overlay.infoShowing()) hideInfo();
         else if (browsing) endBrowse();
-        else if (overlay.bannerShowing()) hideBanner.run();
-        else player.finish();
+        else if (backControls) player.finish();
+        else {
+            backControls = true;
+            showBanner();
+            overlay.focusSources();
+        }
     }
 }

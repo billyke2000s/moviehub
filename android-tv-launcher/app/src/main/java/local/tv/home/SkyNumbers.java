@@ -180,6 +180,12 @@ final class SkyNumbers {
 
     private SkyNumbers() {}
 
+    /** The satellite number for a plain key ("skysportsf1"), or 0. */
+    static int byKey(String key) {
+        Integer found = NUMBERS.get(key);
+        return found == null ? 0 : found;
+    }
+
     /**
      * The satellite number for a channel, or 0. Channels from other countries ({@code home} false)
      * only get a number when it is a news channel the UK guide carries (CNN, France 24 …), so
@@ -190,6 +196,13 @@ final class SkyNumbers {
         String plain = name == null ? "" : name.replaceFirst("(?i)^\\s*(uk|gb)\\s*[:|\\-]\\s*", "");
         Integer found = NUMBERS.get(EpgMatch.key(plain));
         if (found == null && epgId != null && !epgId.isEmpty()) found = NUMBERS.get(EpgMatch.key(epgId));
+        if (found == null) {
+            // Provider spellings: "Sky Sports F1 UK", "Sky Sports Formula 1". A UHD variant or
+            // another country's feed does not take the UK channel's number.
+            ChannelIdentity identity = ChannelIdentity.of("", plain, "", "");
+            if (!identity.uhd && (identity.country.isEmpty() || identity.country.equals("uk"))) found =
+                NUMBERS.get(identity.key);
+        }
         if (found == null) return 0;
         return home || (found >= 500 && found < 580) ? found : 0;
     }

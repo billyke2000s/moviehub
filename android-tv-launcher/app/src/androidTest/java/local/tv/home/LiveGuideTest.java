@@ -81,6 +81,43 @@ public class LiveGuideTest {
     }
 
     @Test
+    public void labelsFitShortGuideRowsInsteadOfBeingCutInHalf() {
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await("ten guide rows", () -> activity.liveTv.cells.size() == 10);
+        remote.runOnMainSync(() -> {
+            LinearLayout grid = activity.liveTv.frame.grid;
+            LinearLayout.LayoutParams layout = (LinearLayout.LayoutParams) grid.getLayoutParams();
+            layout.height = activity.dp(200);
+            layout.weight = 0;
+            grid.setLayoutParams(layout);
+        });
+        await("text fits short rows", () -> {
+            for (View view : activity.liveTv.cells) {
+                TextView label = (TextView) view;
+                android.graphics.Paint.FontMetrics fm = label.getPaint().getFontMetrics();
+                if (
+                    label.getHeight() == 0 ||
+                    fm.descent - fm.ascent >
+                        label.getHeight() - label.getPaddingTop() - label.getPaddingBottom() + 1
+                ) return false;
+            }
+            return true;
+        });
+        remote.runOnMainSync(() -> {
+            for (java.util.List<TextView> cells : activity.liveTv.rows.programmes)
+                for (TextView label : cells) {
+                    android.graphics.Paint.FontMetrics fm = label.getPaint().getFontMetrics();
+                    assertTrue(
+                        "Programme clipped",
+                        fm.descent - fm.ascent <=
+                            label.getHeight() - label.getPaddingTop() - label.getPaddingBottom() + 1
+                    );
+                }
+        });
+        UiEvidence.capture("live-guide-short-rows");
+    }
+
+    @Test
     public void tenChannelsPerPageNumberedFrom101AndPagedWithTheRemote() {
         remote.runOnMainSync(() -> activity.liveTv.live());
         await(
@@ -187,6 +224,7 @@ public class LiveGuideTest {
         await("first row", () -> focused().startsWith("101  Channel 00"));
         // BACK: the guide menu; 1 opens All Channels again.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         await(
             "guide menu",
             () -> activity.liveTv.menu.rows.size() == 10 && activity.liveTv.menu.rows.get(0).hasFocus()
@@ -243,10 +281,12 @@ public class LiveGuideTest {
         remote.runOnMainSync(() -> assertAllRowsOnScreen(6));
         // BACK: the main menu again; 9 opens Music in the grid.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         await("main menu", () -> activity.liveTv.menu.rows.size() == 10);
         // The satellite box's order: 8 is Music, 9 Radio.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_8);
         await("music", () -> activity.liveTv.filter.equals("section:Music"));
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         await(
             "menu after music",
@@ -301,6 +341,35 @@ public class LiveGuideTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_0);
         await("second page", () -> activity.liveTv.menu.page == 1 && activity.liveTv.menu.rows.size() == 6);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         await("first page", () -> activity.liveTv.menu.page == 0 && activity.liveTv.menu.rows.size() == 10);
+    }
+
+    @Test
+    public void physicalColoursWorkFromTheHeaderAndBackRevealsTheSameActions() {
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await("first page", () -> activity.liveTv.cells.size() == 10);
+        remote.runOnMainSync(() -> activity.liveTv.frame.optionsButton.requestFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
+        await(
+            "green pages from header",
+            () -> activity.liveTv.pageStart == 10 && activity.liveTv.cells.size() == 10
+        );
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        await("back focuses colour row", () -> activity.liveTv.frame.bar.focused() == 0);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        await(
+            "OK presses red page up",
+            () -> activity.liveTv.pageStart == 0 && activity.liveTv.cells.size() == 10
+        );
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_F2);
+        await("F2 also pages down", () -> activity.liveTv.pageStart == 10);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_RED);
+        await("red pages up", () -> activity.liveTv.pageStart == 0);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_BLUE);
+        await("blue opens sections", () -> activity.liveTv.menu.rows.get(0).hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
+        await("green opens reminders", () -> SidePanel.current != null && SidePanel.current.isShowing());
+        remote.runOnMainSync(() -> SidePanel.current.dismiss());
     }
 }

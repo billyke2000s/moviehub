@@ -1,6 +1,6 @@
 # MovieHub for Android TV
 
-Movie torrent file lists label recognised video files, show sizes and put the **Recommended movie** first. Recommendations use the requested title and file sizes, excluding samples and extras. Video filename recognition covers common and legacy containers; actual decoding depends on LibVLC and the device.
+Settings → Playback offers **Automatic play: films** and **Automatic play: series** (both off by default), plus a preferred resolution. Automatic mode chooses among ready-to-play sources and falls back to manual selection if needed. Series continue across seasons using aired-episode metadata; missing pack episodes offer a search action in manual mode. On Live TV, physical colour buttons perform the displayed actions; Back reveals outlined controls for arrows and OK, and another Back leaves the page. Unusual remote codes can be learned in Live TV → Options → Set up coloured buttons.
 
 
 > ## ⚠️ MovieHub doesn't host anything
@@ -106,3 +106,45 @@ the SIL Open Font License 1.1: see `android-tv-launcher/app/src/main/assets/font
 ### Native free TV
 
 Live TV can discover regional Pluto TV channels directly, with no separate server. Settings → Free channels controls native Pluto and public lists; Xtream, personal M3U and optional hosted Masqueradarr remain separate. Streams resolve when played, with cached channel metadata and the shared guide/fullscreen player. See [provider support, test evidence and limitations](docs/NATIVE_FREE_SOURCES.md).
+
+### Experimental standalone provider engine
+
+Development adds opt-in FreeLiveSports using local compiled TypeScript/JavaScript and the existing
+Live TV guide/player, with no home server. This is incomplete: current upstream adapters are in
+an inaccessible private submodule, and signed remote updates require maintainer key setup.
+See [implementation, provider status and tests](docs/STANDALONE_PROVIDER_ENGINE.md).
+
+Experimental Runtime 2 in draft PR #83 adapts additional historical Masqueradarr provider code locally on
+Android, including DaddyLive's resolver and Tubi's signing flow. This is unfinished development, not a
+production release or a claim that every provider/channel plays. [Architecture, status and evidence](docs/STANDALONE_PROVIDER_ENGINE.md).
+
+### DaddyLive playback compatibility (experimental)
+
+The provider-engine development fix supports the current player's anonymous playlist-token bootstrap,
+in-memory renewal and PNG-wrapped MPEG-TS segments through MovieHub's existing local relay. The web
+player and its page advertising are not loaded. Desktop samples decoded for Main Event, Football,
+Action, F1 and ABC USA on 20 October 2026; this does not establish every channel or physical-TV playback.
+
+Provider refresh failures now show a safe reason at the start of each provider's status. Settings cards
+expand to fit their descriptions, and guide labels fit shorter rows instead of clipping vertically.
+
+Provider playback resolves a fresh stream when you select a channel. The screen shows “Finding a working stream…” during that bounded lookup, then starts the video-opening timeout after a URL is ready. Refreshing channels updates the directory; it does not pre-resolve expiring video links.
+
+Native/provider Live TV also watches playback progress: a stopped video counter (falling back to the clock when video counters are unavailable) can recover even when VLC emits no buffering event. Paused or hidden playback is excluded.
+
+### Live TV picture handoff
+
+Live TV draws through VLC's standard video layout (a SurfaceView). The guide preview and full
+screen share one player: moving between them changes only the screen surface, so the stream and
+sound carry on and the link is not reopened (the picture may blink briefly). Device tests check
+fresh, non-blank pictures in both directions; TV hardware still needs testing.
+
+Live video progress follows VLC's displayed-picture count rather than assuming advancing audio
+means video is healthy. A stopped picture gets one surface refresh before the existing bounded
+source recovery. Troubleshooting retains the last safe recovery description.
+
+Live TV Back now reveals the channel controls and a selectable Sources link before returning to the mini-player on the next Back. Sources defaults to Automatic; selecting a particular saved copy pins it until Automatic or another channel is selected. Source menus read saved channel metadata; stream resolution remains on demand.
+
+FreeShot (UK sports) is an additional opt-in source in Settings → Provider engine. Its directory is imported without opening streams; a selected channel follows its literal player links on demand and uses MovieHub’s existing player. Anonymous playlist tokens renew in memory.
+
+A selected live backup and its Automatic/manual mode follow the active player through guide/full-screen movement; reopening the same channel keeps that source. Choosing another channel starts in Automatic mode.

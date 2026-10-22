@@ -1,8 +1,8 @@
 # Architecture
 
-## Torrent file recommendation
+## Series continuation and automatic play
 
-`VideoFiles.recommendMovie` ranks manifest entries locally by filename title match and size, excluding samples and extras. `SourcesScreen` shows the recommended movie first, then recognised videos and non-video entries; non-video entries cannot launch playback. Exact episode auto-selection is unchanged.
+`SeriesPlayback` prefetches next-episode metadata on the existing I/O pool and verifies real episode numbers and air dates before crossing a season boundary. It updates both the season and the history key. `EpisodeOrder` holds plain-Java ordering rules. `AutoPlayback` bounds selection to five cached sources, ranks them through `SourceRanking`, and uses `VideoFiles` to select movies or exact episodes; screen-generation and cancellation guards prevent late automatic playback. `KeyBar` registers with the active `MainActivity` screen, so hardware colours are routed before focused widgets. Screen changes clear that registration.
 
 
 MovieHub is a single native Android app (Java, no WebView, no Kotlin) in `android-tv-launcher/`.
@@ -99,6 +99,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `LiveTvPanels` | The guide's side panels: options, sections and groups, search, programme information with reminders, the parental lock, colour-key set-up. |
 | `GuidePicture` | The live picture in the guide's corner (the last channel watched); stops when the guide closes unless the full screen has taken the player over. |
 | `LivePlayer` | The one Live TV player (LibVLC engine and media player), shared by the full screen and the guide picture so going between them moves the picture without reconnecting. Films keep their own player. |
+| `LiveVideoOutput` | Where the session's one live player draws: VLC's standard `VLCVideoLayout` (SurfaceView), moved between the guide's mini picture and the full screen without reopening the stream. |
 | `PlayerOptions` | LibVLC engine options, one list for films and one for Live TV, so a change to one never reaches the other. |
 | `SettingsScreens` | Settings tabs, account setup (TMDB, Premiumize, Xtream, M3U), languages, toggles. |
 | `ForYou` | The Home "For you" shelf: blends TMDB recommendations for up to six titles you played, saved or opened, ranked and cached on the box. |
@@ -114,12 +115,13 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `Network` | Bounded HTTP(S) streams with manual redirect handling; bearer tokens only sent over HTTPS to the same host. |
 | `Playlist` | M3U/Xtream playlist parsing and URL validation (refuses `http://` unless the user allows it). |
 | `ChannelDatabase`, `ChannelStore`, `ChannelQuery` | On-device SQLite channel database, paging and search. All channels, sections and countries are read from each channel's preferred copy (`main=1`, indexed); favourites, groups and searches group the copies. |
-| `ChannelSchema` | The channel database's tables, indexes and version upgrades (version 8 adds `main`). |
+| `ChannelSchema` | The channel database's tables, indexes and version upgrades (version 8 adds `main`; version 9 recomputes duplicate keys). |
+| `ChannelIdentity`, `ChannelCategory` | Which copies are the same channel across lists and providers (country + plain name, quality and country tags dropped, +1/regions/UHD kept apart), and the guide section for a provider channel (plain Java). |
 | `EpgImporter`, `EpgMatch` | The free UK XMLTV programme guide (epgshare01): streamed, matched to saved channels by a plain name key (programmes on other channels skipped unread), the next day kept in the channel database with titles, descriptions and categories. `EpgMatch` also reads XMLTV times (plain Java). |
 | `SkyNumbers`, `GuideOrder`, `ChannelNumbers` | UK satellite channel numbers and sections (`SkyNumbers`, a fixed table matched by name); the whole guide's layout: UK blocks by section, regions in the 800s, radio in the 900s, other countries from 1001 (`GuideOrder`, plain Java); applied to the saved channels after every import (`ChannelNumbers`). |
 | `Reminders`, `ParentalLock` | Programme reminders (kept in preferences, shown while the app is open) and the Live TV PIN lock (a salted hash of the PIN, locked channels and sections). |
 | `FreeChannels` | Which free lists Live TV imports (Free-TV, then iptv-org by country, all, or off); "automatic" (the full list) only without a provider, imported when Live TV is first opened. New TV channel lists go in `FreeChannels.EXTRA` (see AGENTS.md, Adding sources). |
-| `ChannelImporter`, `ChannelSync` | Background channel import (WorkManager), refreshed every 12 hours. |
+| `ChannelImporter`, `ChannelSync` | Background channel import (WorkManager), refreshed every 12 hours. Order: accounts, native Pluto, free lists, then FreeLiveSports and the optional providers (which can take minutes each), then the XMLTV guide. Each source commits on its own, so its channels appear as it finishes. |
 | `Secrets` | Account details encrypted with an Android Keystore key; the key and read values are cached in memory. |
 | `VideoFiles` | Chooses the right file in a multi-file release: the film beside extras, or the episode in a season pack (exact matches can play straight away; likely ones are only marked "Suggested episode"). Plain Java. |
 | `SkipQueue` | Combines quick film skips and seek-bar moves into one jump, 750 ms after the last (plain Java). |
@@ -161,3 +163,90 @@ once, when the activity is constructed, and keep almost no state of their own.
 ## Native free TV
 
 `PlutoSource` implements regional anonymous discovery, in-memory session/catalogue caching and resolve-on-play. `NativeHttp` bounds and cancels HTTPS requests. `NativeSources` connects catalogue and programme refresh to the existing SQLite store and ChannelImporter. LivePlayer resolves stable native locators asynchronously and preserves them through view handoff. Native guides and XMLTV refresh independently. Native Pluto is preferred to public-list copies, after connected accounts. See [provider scope and evidence](docs/NATIVE_FREE_SOURCES.md).
+
+## Experimental standalone JavaScript providers
+
+`ProviderScript` executes compiled upstream leaf functions in the isolated `ProviderService`;
+`ProviderBridge` uses bounded file-descriptor IPC. `EngineSources` connects FreeLiveSports discovery,
+on-play resolution and inline EPG to SQLite and the shared LivePlayer. `ProviderPackages`,
+`ProviderSignature` and `ProviderUpdates` implement signed package checks, atomic slots and rollback.
+Remote updates fail closed without a pinned key. See [scope and limitations](docs/STANDALONE_PROVIDER_ENGINE.md).
+
+## Runtime 2 provider compatibility
+
+`ProviderBroker` services bounded async HTTP continuations from isolated scripts. `ProviderCodec` supplies
+pure crypto/compression primitives; `AdapterSources` integrates the historical FAST, DaddyLive, Tubi and Local Now
+modules with SQLite and settings. `ProviderRelay` adds session-scoped loopback HLS header transport and
+`ProviderSegments` ports upstream TS-prefix detection. See the updated [provider architecture and evidence](docs/STANDALONE_PROVIDER_ENGINE.md).
+
+`ProviderSessions` retains encrypted ZLive HTTP/DNS event history and replays it through the original
+resolver without repeating those requests, preserving token reuse, cooldowns and decoy latches across
+disposable processes. Native IP/subnet primitives supply the required Node `net` subset. Signed token
+expiry can renew an actively playing live stream; stopping, switching or pausing does not auto-start video.
+
+DaddyLive's current anonymous playlist protocol is adapted by `provider-engine/tools/dlhd-session.js`
+without modifying the historical upstream files. It learns literal CDN/channel declarations from player
+HTML and returns session metadata after validating a tokenized manifest. `PlaylistSession` renews tokens
+inside the existing `ProviderRelay`, scoped to one HTTPS authority and channel directory. The relay uses
+`ProviderPngSegments` for bounded PNG-to-MPEG-TS unpacking only for this session type. Direct sources and
+other providers retain their existing paths; fullscreen/mini-player share the same relay session.
+
+`ProviderFailure` classifies fixed diagnostic summaries and HTTP status codes without copying exception
+messages. `ProviderBroker` retains safe transport failure categories across replay and wraps failed script
+steps with the observed HTTP/network cause. `ChannelImporter` stores the summary; `ProviderSettings`
+puts it first in the description. Settings cards use minimum height plus wrap-content. Guide label sizing
+fits row height while retaining horizontal ellipsis.
+
+LivePlayer exposes its pending-resolution phase and notifies the currently attached owner when a resolved stream/relay is ready. VlcPlaybackActivity arms its normal video-startup timer at that transition, rather than spending the 15-second backup timeout on the provider walk. Guide/fullscreen handoffs replace the callback with the owner; switching cancels stale resolutions as before.
+
+`LiveProgress` is the pure progress rule for native/provider Live TV. `LivePlayer` samples the live clock and LibVLC displayed-picture counter once per second after playback starts, only while the video view is visible and playing. It reuses LiveZapper’s eight-second stall limit, attempts the existing bounded provider retry once, then reports failure through the current owner’s backup/error callback. Changing channels, handing off views, stopping and pausing reset the baseline. The sampler uses the generation ticket so recovery cannot schedule duplicate polling loops.
+
+PNG transport skips byte-wise unfiltering for filter-0 rows, copies RGB payload in bulk, and uses larger bounded inflate/gzip input buffers. Explicit Inflater instances are ended in finally; container validation and allocation limits are unchanged.
+
+## Live video output
+
+`LiveVideoOutput` draws the session's one live LibVLC player through VLC's standard
+`VLCVideoLayout` (a SurfaceView), attached with `MediaPlayer.attachViews(layout, null, false,
+false)` exactly as the film player does. The hardware decoder hands pictures to Android's
+compositor directly, so the picture does not depend on the app's main thread redrawing.
+
+GuidePicture and VlcPlaybackActivity supply FrameLayout hosts. Moving between them follows
+VLC's own Android app: the video track is switched off, LiveVideoOutput waits for VLC's Vout event
+to report no video output (at most 600 ms), then calls `detachViews()`, attaches a new layout in
+the destination and switches the track back on. Changing the surface under a running video
+output crashed VLC's window thread (AWindowHandler, SIGSEGV) or stopped decoding in CI. Only the screen surface changes:
+the player, its media, the network connection (and relay) and the audio carry on, so the stream
+is never reopened or re-resolved. The picture may blink while the new surface takes over; the
+owner accepted that on 21 October 2026.
+
+This replaced (21 October 2026) a session-long SurfaceTexture shown through TextureViews with
+last-frame covers. That gave blink-free moves, but every frame waited for the main thread to
+redraw: the owner saw full-screen live video lag, and stop while the sound played on, while the
+same stream played smoothly in the mini picture.
+
+Live Activity transitions use zero-animation launch options and matching close overrides (the
+API 34 transition override or the legacy finish override). The stream Surface survives the
+window change; the UI does not add a system fade around it.
+
+Google's [Grafika double-decode sample](https://github.com/google/grafika/blob/master/app/src/main/java/com/android/grafika/DoubleDecodeActivity.java)
+also retains SurfaceTextures to preserve decoders across Activity recreation.
+
+## Video freeze recovery
+
+`LiveVideoOutput.pictures()` reads VLC's decoded-video count (`IMedia.Stats.decodedVideo`, kept
+rising across source switches; the displayed-picture count barely moves with hardware decoding;
+-1 until the first frame, so the check then falls back to the playback clock). LivePlayer samples
+it and the playback clock once a second. After the existing eight-second live stall threshold, a
+clock-moving/picture-stopped session gets one `refreshView()`: the same off-wait-on sequence on
+the same surface, restarting only the video decoder and output (same player, media, relay and
+audio). Swapping the surface in place raced the old surface's teardown on the emulator. An absent clock or a persistent second freeze uses
+the existing bounded source retry/failure path. Paused and hidden playback are excluded.
+Troubleshooting shows fixed recovery descriptions and counts, with no URLs or tokens.
+
+LiveZapper owns the per-channel Automatic/manual source policy and two-step Back interaction. PlayerMenus lists Automatic followed by saved copies; SkyOverlay exposes a focusable Sources action. Listing copies is a local database operation; only the selected copy goes through LivePlayer resolution. Automatic failover visits the remaining saved copies once and stops.
+
+`provider-engine/tools/freeshot.js` parses the FreeShot related-channel directory and follows only the selected UK sports channel’s two literal iframe links. ProviderBroker permits only FreeShot directory/embed and WideIPTV player paths. PlaylistSession supports the fixed WideIPTV anonymous JSON renewal endpoint, scoped to one discovered BlueTier origin/channel path; ProviderRelay posts renewal bodies and rewrites tokens without exposing them to VLC. Zero-to-end range requests fetch and decode the complete wrapped segment rather than applying decoded offsets to its PNG container.
+
+LivePlayer retains the current source mode and attempted source keys with the active stream. LiveTvScreen matches the active stable URL’s saved SHA-256 key against the selected channel’s copies before opening full screen. LiveZapper restores the matching copy/mode/attempt history, and resets them on a new channel. These comparisons read local metadata only.
+
+Restoring a retained source compares saved hashes rather than decrypting every backup URL; it performs no additional stream lookup.

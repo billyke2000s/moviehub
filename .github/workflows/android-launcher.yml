@@ -29,10 +29,18 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: '9.6.0'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Format live handoff Java and show any required changes
+        run: |
+          npm install --no-save prettier@3 prettier-plugin-java
+          npx prettier --write android-tv-launcher/app/src/main/java/local/tv/home/{LiveVideoOutput,LivePlayer,LiveProgress,Troubleshooting,GuidePicture,LiveTvScreen,VlcPlaybackActivity,MainActivity,LiveZapper,PlayerMenus,SkyOverlay,ProviderRelay,PlaylistSession,ProviderBroker,AdapterSources,ProviderPackages}.java android-tv-launcher/app/src/androidTest/java/local/tv/home/{LiveHandoffEvidence,PlaybackTest,LiveControlsTest,PlaylistSessionTest}.java android-tv-launcher/tests/LiveProgressTest.java
+          git diff --exit-code
       - name: Verify playlist, network, channel search and episode rules
         run: |
           mkdir -p build/core-tests
-          javac -d build/core-tests android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,ChannelQuery,EpgMatch,SkyNumbers,GuideOrder,SkipQueue,ErrorLog,SpeedTest}.java android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest,SkyNumbersTest,GuideOrderTest,SkipQueueTest,TroubleshootingTest}.java
+          javac -d build/core-tests android-tv-launcher/app/src/main/java/local/tv/home/{Playlist,Network,VideoFiles,EpisodeOrder,SourceRanking,ChannelQuery,EpgMatch,SkyNumbers,GuideOrder,SkipQueue,ErrorLog,SpeedTest,ChannelIdentity,ChannelCategory,ProviderFailure,LiveProgress}.java android-tv-launcher/tests/{PlaylistTest,NetworkTest,VideoFilesTest,ChannelQueryTest,EpgMatchTest,SkyNumbersTest,GuideOrderTest,SkipQueueTest,TroubleshootingTest,ChannelIdentityTest,ProviderFailureTest,LiveProgressTest}.java
           java -cp build/core-tests local.tv.home.PlaylistTest
           java -cp build/core-tests local.tv.home.NetworkTest
           java -cp build/core-tests local.tv.home.VideoFilesTest
@@ -42,6 +50,9 @@ jobs:
           java -cp build/core-tests local.tv.home.GuideOrderTest
           java -cp build/core-tests local.tv.home.SkipQueueTest
           java -cp build/core-tests local.tv.home.TroubleshootingTest
+          java -cp build/core-tests local.tv.home.ChannelIdentityTest
+          java -cp build/core-tests local.tv.home.ProviderFailureTest
+          java -cp build/core-tests local.tv.home.LiveProgressTest
       - name: Build APK and run Android lint
         run: gradle -p android-tv-launcher --no-daemon assembleDebug assembleRelease lintDebug lintRelease testDebugUnitTest assembleDebugAndroidTest
       - name: Verify APK signature and checksum
@@ -163,6 +174,17 @@ jobs:
           if not package or package[1]!=manifest['packageName'] or int(package[2])<=manifest['versionCode']: raise SystemExit('Updater would reject package or version')
           print('Signed candidate matches the existing updater package and certificate, with an increasing version code.')
           PY
+      - name: Prepare installable signed test APK
+        run: |
+          mkdir -p android-tv-launcher/app/build/outputs/apk/test
+          cp android-tv-launcher/app/build/outputs/apk/release/app-release.apk android-tv-launcher/app/build/outputs/apk/test/moviehub-test.apk
+          sha256sum android-tv-launcher/app/build/outputs/apk/test/moviehub-test.apk > android-tv-launcher/app/build/outputs/apk/test/moviehub-test.apk.sha256
+      - name: Upload installable signed test APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: moviehub-signed-test-apk
+          path: android-tv-launcher/app/build/outputs/apk/test/moviehub-test.apk*
+          if-no-files-found: error
       - name: Remove temporary signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/compatibility-signing.jks"

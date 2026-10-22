@@ -348,8 +348,16 @@ final class LiveTvScreen {
     private void play(ChannelDatabase.Row channel, int position) {
         String listFilter = filter,
             listSearch = search;
+        String activeUrl = LivePlayer.currentUrl();
+        String activeKey = activeUrl == null ? null : ChannelQuery.key(activeUrl);
         activity.async(
-            () -> channelsDb().url(channel.id, channel.key),
+            () -> {
+                ChannelDatabase db = channelsDb();
+                if (activeUrl != null) for (ChannelDatabase.Row candidate : db.copies(channel)) {
+                    if (candidate.key.equals(activeKey)) return activeUrl;
+                }
+                return db.url(channel.id, channel.key);
+            },
             url -> {
                 LiveZapper.session = new LiveZapper.Session(
                     listFilter,

@@ -104,6 +104,10 @@ final class ChannelImporter {
                     }
                 }
                 boolean providerConnected = anySource;
+                // Pluto and the free lists first: they hold most channels and are plain downloads,
+                // while each optional provider below may take minutes (ProviderBroker allows a
+                // catalogue four minutes). Channels appear in the guide as each source commits.
+                // Import order does not change numbering or the preferred copy (ChannelDatabase.ORDER).
                 if (NativeSources.enabled(context, providerConnected)) {
                     configured.add("nativepluto");
                     anySource = true;
@@ -125,6 +129,46 @@ final class ChannelImporter {
                         problems.add(free.name + ": " + describe(e));
                     }
                 }
+                try {
+                    ProviderUpdates.check(context, false);
+                } catch (Exception e) {
+                    Diagnostics.recovered("Provider package update", e);
+                }
+                if (EngineSources.enabled(context, providerConnected)) {
+                    configured.add(EngineSources.SOURCE);
+                    anySource = true;
+                    try {
+                        total += EngineSources.refresh(context, db, cancel);
+                    } catch (Exception e) {
+                        cancel.check();
+                        Diagnostics.recovered("FreeLiveSports refresh", e);
+                        problems.add("FreeLiveSports unavailable; cached channels kept.");
+                    }
+                }
+                // Providers that failed this time, named once in one line: a list of one line per
+                // provider pushed the guide's channel rows off the screen.
+                List<String> unavailable = new ArrayList<>();
+                for (String id : ProviderBroker.IDS)
+                    if (AdapterSources.enabled(context, id, providerConnected)) {
+                        configured.add(AdapterSources.source(id));
+                        anySource = true;
+                        try {
+                            total += AdapterSources.refresh(context, id, db, cancel);
+                            progress = total;
+                        } catch (Exception e) {
+                            cancel.check();
+                            Diagnostics.recovered("Provider refresh " + id, e);
+                            context
+                                .getSharedPreferences("providerEngine", 0)
+                                .edit()
+                                .putString(id + "Error", ProviderFailure.describe(e))
+                                .apply();
+                            unavailable.add(AdapterSources.sourceName(AdapterSources.source(id)));
+                        }
+                    }
+                if (!unavailable.isEmpty()) problems.add(
+                    "Unavailable now: " + String.join(", ", unavailable) + " (saved channels kept)"
+                );
                 cancel.check();
                 // Failed sources are still configured and keep their last good rows. Disabled
                 // sources must disappear even when a different provider is offline.
