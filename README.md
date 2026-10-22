@@ -54,9 +54,6 @@ Enter the code in the **Downloader** app on your Android TV device, or use the d
 3. Add your own supported services or browse the available public channel lists.
 4. Use the in-app **Update** button when a new version is offered.
 
-> [!IMPORTANT]
-> Only install APKs from releases you trust. Real-device installation and updates must be verified on your particular hardware.
-
 ## Build from source
 
 **Requirements:** JDK 17 · Android SDK 35 · Gradle 8.10.2
