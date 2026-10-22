@@ -278,3 +278,10 @@ The integration branch adapts #82 (VOD recovery), #88 (early still-picture repai
 #77's empty video registry and conflicting free-channel gate are not imported: DefaultSourceProviders.EXTRA already registers shared movie/series manifests, and ProviderSettings already owns provider opt-in and per-provider settings. Its third-party warning is added to the existing SafetyNotice without silently disabling existing channel preferences. No new provider adapters are claimed. WorkManager is updated to 2.12.0 for current CI validation.
 
 Local core validation: 664 checks passed (Eclipse JDT/Java 17). Android build, lint, emulator and signing validation must be read from this integration PR before merging. Physical TV playback and installation remain unverified.
+
+## Live shutdown follow-up (22 October 2026)
+
+The integration PR passed its full emulator suite, but post-merge run 39821398629 crashed in
+native EGL initialization during the channel-key playback test. Live shutdown now cancels
+surface callbacks without destroying the native window, stops VLC, then detaches the view.
+Release validation is pending on this follow-up; no real-device result is claimed.
