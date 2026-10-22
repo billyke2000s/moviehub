@@ -235,6 +235,10 @@ final class LiveVideoOutput {
         // Restart only the video decoder and output on the same surface (no destination), the
         // same off-wait-on sequence as a move. Media, network and sound are untouched.
         repairs++;
+        // A video-track toggle alone can leave VLC bound to a valid but black SurfaceView.
+        // Recreate and reattach the output exactly as a successful full-screen/guide handoff
+        // does, without stopping the MediaPlayer or reopening the network stream.
+        pendingDestination = holder;
         closeVideoThen();
         return true;
     }
