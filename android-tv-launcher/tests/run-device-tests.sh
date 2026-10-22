@@ -10,6 +10,8 @@ result=${PIPESTATUS[0]}
 adb logcat -d -s MovieHubHandoff:I '*:S' || true
 if [ "$result" -ne 0 ]; then
   adb logcat -d -b crash > "$build/device-crash.log" 2>/dev/null || true
+  # Preserve Java exceptions as well as native faults; the filtered video tail can omit them.
+  cat "$build/device-crash.log"
   # VLC's own lines about video output and decoding (fixture streams only), for the report.
   adb logcat -d -v time 2>/dev/null | grep -E -i "vlc|vout|mediacodec|awindow|surface|egl|codec2|omx|TestRunner|Fatal signal|backtrace|  #[0-9][0-9] pc" | tail -n 400 > "$build/device-video.log" || true
 fi

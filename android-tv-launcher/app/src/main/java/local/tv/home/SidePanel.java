@@ -93,6 +93,7 @@ final class SidePanel {
     Dialog show() {
         Dialog dialog = new Dialog(activity, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar);
         if (activity.isFinishing() || activity.isDestroyed()) return dialog;
+        dialog.setOwnerActivity(activity);
         // The chosen action runs after the panel has closed, so it can open another panel.
         Runnable[] after = new Runnable[1];
         LinearLayout body = new LinearLayout(activity);
@@ -191,6 +192,17 @@ final class SidePanel {
         styleWindow(activity, dialog);
         if (focus != null) focus.requestFocus();
         return dialog;
+    }
+
+    /** Activity destruction can precede the DecorView's first attach/detach callbacks. */
+    static void closeFor(Activity activity) {
+        Dialog dialog = current;
+        if (dialog == null || dialog.getOwnerActivity() != activity) return;
+        current = null;
+        // Closing a screen must not launch another panel through its dismissal callback.
+        dialog.setOnDismissListener(null);
+        Window window = dialog.getWindow();
+        if (window != null && window.getDecorView().isAttachedToWindow()) dialog.dismiss();
     }
 
     /** The shared panel look: floating on the right, full height, rounded, dimming the screen. */
