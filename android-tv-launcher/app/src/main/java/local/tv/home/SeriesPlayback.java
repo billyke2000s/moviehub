@@ -58,6 +58,7 @@ final class SeriesPlayback {
         Pending cached = pending;
         if (
             cached != null &&
+            cached.result.isDone() &&
             cached.key.equals(key(current)) &&
             System.currentTimeMillis() - cached.created < 30 * 60 * 1000L
         ) {

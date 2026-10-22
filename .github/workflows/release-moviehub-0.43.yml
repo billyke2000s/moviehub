@@ -6,7 +6,7 @@ permissions:
   contents: write
 concurrency:
   group: publish-android-launcher
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   release:
     runs-on: ubuntu-latest
