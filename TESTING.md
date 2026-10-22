@@ -266,3 +266,5 @@ Run `bash android-tv-launcher/tests/run-core-tests.sh`; regular CI and publishin
 `VodSourceFailoverTest` covers startup exclusion, threshold boundaries, seeking/pause exclusion, provider pinning, duplicates and exhaustion. PlaybackTest adds actual-VLC fixtures for repeated-buffering replacement through a failed candidate, preserving the old stream while resolving, cancellation on pause and late results, and exhausted alternatives without loops. These tests do not establish dual-decoder support on the target TV or live Premiumize availability.
 
 LiveControlsTest waits for a dismissed panel to leave the event queue before injecting the next physical color key; panels have no closing window animation. Guide paging retains the next direction during asynchronous loads rather than dropping it.
+
+The guide wrap regression deliberately focuses the header before each Page Up/Page Down over four round trips. Paging is routed at the screen level; row-local handlers previously lost Page Down when asynchronous row replacement left focus on the header.

@@ -160,6 +160,26 @@ final class LiveTvScreen {
         else cells.get(last).requestFocus();
     }
 
+    /** Paging is a screen action even when row replacement has moved focus to the header. */
+    boolean handlePageKey(KeyEvent event) {
+        if (
+            frameGeneration != activity.generation || frame.grid == null || !frame.grid.isShown()
+        ) return false;
+        int key = event.getKeyCode();
+        int direction =
+            key == KeyEvent.KEYCODE_PAGE_UP || key == KeyEvent.KEYCODE_CHANNEL_UP
+                ? -1
+                : key == KeyEvent.KEYCODE_PAGE_DOWN || key == KeyEvent.KEYCODE_CHANNEL_DOWN
+                  ? 1
+                  : 0;
+        if (direction == 0) return false;
+        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) turnPage(
+            direction,
+            focusedRow()
+        );
+        return true;
+    }
+
     /** Page up or Page down tapped in the key guide (touch screens). */
     void pageFromBar(int direction) {
         turnPage(direction, 0);

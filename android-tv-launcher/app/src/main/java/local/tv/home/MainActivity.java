@@ -82,6 +82,7 @@ public class MainActivity extends TvActivity {
     public boolean dispatchKeyEvent(KeyEvent event) {
         int key = event.getKeyCode();
         if (activeKeyBar != null && activeKeyBar.handle(event)) return true;
+        if (liveTv.handlePageKey(event)) return true;
         if (
             dock.eatSelectUp &&
             (key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER) &&

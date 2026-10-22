@@ -316,12 +316,21 @@ public class LiveGuideTest {
             "first page",
             () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
         );
-        // Page up from the first page: the last page.
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PAGE_UP);
-        await("last page", () -> activity.liveTv.pageStart == 20 && activity.liveTv.cells.size() == 5);
-        // Page down from the last page: the first again.
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PAGE_DOWN);
-        await("first page again", () -> activity.liveTv.pageStart == 0 && activity.liveTv.cells.size() == 10);
+        for (int round = 0; round < 4; round++) {
+            // Paging must not depend on a channel cell retaining focus during row replacement.
+            remote.runOnMainSync(() -> activity.liveTv.frame.focusTop());
+            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PAGE_UP);
+            await(
+                "last page from header",
+                () -> activity.liveTv.pageStart == 20 && activity.liveTv.cells.size() == 5
+            );
+            remote.runOnMainSync(() -> activity.liveTv.frame.focusTop());
+            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PAGE_DOWN);
+            await(
+                "first page again from header",
+                () -> activity.liveTv.pageStart == 0 && activity.liveTv.cells.size() == 10
+            );
+        }
     }
 
     @Test
