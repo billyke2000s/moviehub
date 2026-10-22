@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased — reviewed playback and pending-PR integration
+## 0.45 (22 October 2026)
+
+- Speed Test ratings include latency and jitter alongside download speed.
 
 - Keep the live video surface alive until VLC has stopped its decoder and video-output threads when leaving playback.
 

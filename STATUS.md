@@ -284,4 +284,4 @@ Local core validation: 664 checks passed (Eclipse JDT/Java 17). Android build, l
 The integration PR passed its full emulator suite, but post-merge run 39821398629 crashed in
 native EGL initialization during the channel-key playback test. Live shutdown now cancels
 surface callbacks without destroying the native window, stops VLC, then detaches the view.
-Release validation is pending on this follow-up; no real-device result is claimed.
+PR #100 passed APK build, lint, signed-update compatibility, provider-engine checks and the\nfull emulator suite (39823346098 / 39823346061). No real-device result is claimed.
