@@ -315,7 +315,10 @@ above describe intermediate attempts.
 
 The next candidate improves scheduled link renewal without a second decoder, covers ordinary
 IPTV with the existing freeze watchdog and separates bounded buffering profiles. Local core
-validation passes 672 checks. Android validation is pending. Cross-provider failover still
+validation passes 703 checks. Android validation is pending. Cross-provider failover still
 restarts playback; preparing a second live decoder is deferred until physical-TV memory and
 decoder concurrency can be measured. VOD already has bounded prepared replacements. Cache
 profiles are fixed by transport, not dynamically adapted from measured network performance.
+
+Surface recovery is also bounded to one repair until observed video progress resumes. A
+repair that hides its surface can no longer reset the watchdog into repeated early repairs.

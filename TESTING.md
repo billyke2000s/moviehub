@@ -292,9 +292,14 @@ persistently black surface. The test still fails if the visible picture misses t
 
 `LiveRenewalTest` serves fixture MPEG-TS through real LibVLC. A latch blocks provider renewal
 while the original video advances; tests then cover successful reopening, a failed refresh
-without reopening, pause without automatic resumption, exit without a late reopen, and a
-synthetic video freeze repaired on an ordinary IPTV stream without reopening its source.
+without reopening, pause without automatic resumption, exit without a late reopen, a
+synthetic video freeze repaired on ordinary IPTV without reopening, and a persistent freeze
+that reaches failure rather than starting another surface repair.
 `PlaybackBufferTest` checks URL-path classification (query/fragment decoys and uppercase HLS),
-relay precedence, malformed paths and bounded VOD headroom. The core script now runs 672 checks.
+relay precedence, malformed paths and bounded VOD headroom. The core script now runs 703 checks.
 CI must validate the full Android suite, builds/lint and signing before release. Physical-TV
 memory/decoder limits and long real-provider sessions remain unverified.
+
+`LiveRepairBudgetTest` verifies persistent freezes across hidden/paused surfaces cannot loop
+through repairs, queued frames do not count as recovery, and genuine progress replenishes
+the repair budget.

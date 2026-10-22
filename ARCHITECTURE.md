@@ -269,3 +269,6 @@ discards its late result, and a failed refresh leaves a still-working stream run
 VLC precedes closing its relay. The subsequent decoder restart can still blink. This is not
 dual-decoder prepared cross-provider failover. The progress watchdog now covers ordinary IPTV
 as well as provider streams, with video-track, visibility, pause and resolution exclusions.
+
+`LiveRepairBudget` permits one surface repair until two contiguous visible observations show
+video progress. Hidden/pending surfaces and old queued frames cannot replenish the budget.
