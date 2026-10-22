@@ -370,8 +370,10 @@ final class LivePlayer {
         cancelResolution();
         if (player != null) {
             player.setEventListener(null);
-            player.stop();
+            // Cancel surface callbacks before releasing the VLC native player.
+            // Otherwise a queued repair may call setVideoTrack on a released VLCObject.
             if (output != null) output.close();
+            player.stop();
             player.release();
             player = null;
         }
