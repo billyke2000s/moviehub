@@ -2,9 +2,9 @@
 
 # MOVIEHUB
 
-### Your TV. Your apps. Your entertainment. One home.
+### Films, series and live TV in one place.
 
-**A remote-first Android TV launcher bringing films, series, live television and your favourite apps together.**
+**An Android TV streaming app and launcher built for the remote.**
 
 [![Android](https://img.shields.io/badge/Android-9%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/tv/)
 [![License](https://img.shields.io/badge/License-MIT-8B5CF6?style=for-the-badge)](LICENSE)
@@ -15,56 +15,25 @@
 
 ---
 
-*Browse beautifully. Navigate naturally. Watch your way.*
+*An Android TV launcher and streaming app.*
 
-[Explore features](#the-experience) · [Install](#get-moviehub) · [Build](#build-from-source) · [Project status](#project-status) · [Legal](#content-responsibility)
+[Overview](#what-is-moviehub) · [Install](#get-moviehub) · [Build](#build-from-source) · [Project status](#project-status) · [Legal](#content-responsibility)
 
 </div>
 
-## The experience
+## What is MovieHub?
 
-<table>
-<tr><td width="50%" valign="top">
+MovieHub brings films, series and live TV together in a remote-first Android TV interface. It combines catalogue browsing, playback and channel guides with the apps already installed on your device.
 
-### A home built for the big screen
-A remote-friendly home screen with rich artwork, poster rows, a clock, rearrangeable favourite apps and quick access to Android settings.
+### Built around watching
 
-</td><td width="50%" valign="top">
+- **Films and series:** Browse TMDB-powered catalogues, resume playback and choose between available sources.
+- **Live TV:** Use public channel directories or connect your own M3U/Xtream service, with a unified channel guide.
+- **Source handling:** Optional integrations with Torrentio, MediaFusion, Comet and Premiumize; automatic or manual source selection.
+- **Playback:** VLC-based player with recovery and source-switching behaviour designed for unreliable streams.
+- **Android TV:** A launcher and streaming interface built for navigation with a remote.
 
-### Discover films & series
-Explore categories and genres, search by title or actor, and view cast, trailers and related titles.
-
-</td></tr>
-<tr><td valign="top">
-
-### Live TV, your way
-Browse free public channel directories or add your own Xtream or M3U playlist. Use the guide, favourites, search and reminders.
-
-</td><td valign="top">
-
-### Playback controls
-Choose sources, subtitles, audio tracks, playback speed and picture size. Continue watching, save titles to My List and set a sleep timer.
-
-</td></tr>
-<tr><td valign="top">
-
-### Your apps, organised
-Search installed apps, access recently used apps and hide apps you don't need.
-
-</td><td valign="top">
-
-### Updates in the app
-MovieHub checks for new releases and offers an update action, with integrity checks before installation.
-
-</td></tr>
-</table>
-
-> [!NOTE]
-> MovieHub is under active development. Feature availability and playback depend on your device, configured accounts and third-party services. Read [STATUS.md](STATUS.md) and [TESTING.md](TESTING.md) before relying on a particular integration.
-
-## Screenshots
-
-Real device screenshots have not been added to this README yet. This section is reserved for verified captures of the home screen, browsing, guide and player rather than mockups presented as the running app.
+MovieHub does not provide a subscription, host streams or guarantee that third-party sources work. Some provider integrations and playback improvements are experimental; see [project status](#project-status).
 
 ## Get MovieHub
 
@@ -87,26 +56,6 @@ Enter the code in the **Downloader** app on your Android TV device, or use the d
 
 > [!IMPORTANT]
 > Only install APKs from releases you trust. Real-device installation and updates must be verified on your particular hardware.
-
-## What's inside?
-
-| Area | Highlights |
-| :--- | :--- |
-| **Home** | Artwork, favourites, poster rows, clock |
-| **Movies & Series** | Categories, discovery, search, cast and trailers |
-| **Live TV** | Public directories, personal M3U/Xtream, guide, favourites |
-| **Playback** | VLC-based playback, audio/subtitle controls, source selection |
-| **Library** | My List and Continue Watching |
-| **Settings** | Playback preferences, free-channel options and updates |
-
-### Services and sources
-
-- **Catalogue browsing:** TMDB-powered metadata and artwork.
-- **Source discovery:** Torrentio, MediaFusion and Comet, with Premiumize support where configured.
-- **Live TV:** Your own Xtream/M3U services and public [Free-TV](https://github.com/Free-TV/IPTV) and [iptv-org](https://github.com/iptv-org/iptv) directories.
-- **Experimental integrations:** Additional free-channel/provider functionality is documented below and is **not** a promise of reliable playback.
-
-MovieHub does **not** include a subscription or guarantee access to any channel, film or series.
 
 ## Build from source
 
