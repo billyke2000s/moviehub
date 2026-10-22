@@ -2,6 +2,8 @@
 
 ## 0.46 (22 October 2026)
 
+- Clear owned dialogs during Activity destruction, including an immediate show-and-close before window attachment.
+
 - Keep the current live stream and relay running during scheduled provider-link renewal. A failed refresh keeps working playback; pause and exit discard late renewal results. The cut still restarts the existing decoder once a fresh link resolves.
 - Allow one surface repair until visible decoding progress resumes; a persistent freeze then reaches bounded provider/source recovery rather than repeatedly rebuilding the surface.
 - Extend clock/video freeze monitoring and early surface repair to ordinary IPTV, excluding paused, hidden and audio-only playback.

@@ -303,3 +303,9 @@ memory/decoder limits and long real-provider sessions remain unverified.
 `LiveRepairBudgetTest` verifies persistent freezes across hidden/paused surfaces cannot loop
 through repairs, queued frames do not count as recovery, and genuine progress replenishes
 the repair budget.
+
+Activity destruction now clears its owned SidePanel explicitly, including show-and-finish
+before the first window attach. The native picture-repair fixture establishes actual frame
+progress before injecting a new freeze; hiding a surface is intentionally insufficient to
+reset the new repair budget. Failed device runs print the full crash buffer so Java process
+failures cannot disappear from a video-only filtered tail.

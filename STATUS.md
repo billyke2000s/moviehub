@@ -322,3 +322,9 @@ profiles are fixed by transport, not dynamically adapted from measured network p
 
 Surface recovery is also bounded to one repair until observed video progress resumes. A
 repair that hides its surface can no longer reset the watchdog into repeated early repairs.
+
+Release validation 39834499208 passed 142/143 tests, with a panel still retained when its
+Activity was destroyed before window attachment. Explicit owner cleanup now covers that path.
+PR validation also stopped during the native picture-repair fixture; that fixture now
+establishes real frame progress before a second synthetic freeze, and full crash-buffer
+diagnostics are preserved for subsequent validation. Main's newer README is retained.
