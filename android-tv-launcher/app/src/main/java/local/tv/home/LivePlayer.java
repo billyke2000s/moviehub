@@ -466,7 +466,7 @@ final class LivePlayer {
                         if (ticket != generation || player == null) return;
                         resolving = false;
                         Diagnostics.recovered("Resolving native live channel", e);
-                        if (retain && (player.isPlaying() || renewalPaused)) {
+                        if (retain && ((!LiveNative.busy(player) && player.isPlaying()) || renewalPaused)) {
                             // A failed refresh does not establish that the existing stream is dead.
                             played = true;
                             progress.reset();
@@ -488,7 +488,13 @@ final class LivePlayer {
             Math.min(3 * 3600_000L, expiresAt - System.currentTimeMillis() - 60_000)
         );
         renewal = () -> {
-            if (ticket == generation && player != null && player.isPlaying() && locator.equals(url)) renew();
+            if (
+                ticket == generation &&
+                player != null &&
+                !LiveNative.busy(player) &&
+                player.isPlaying() &&
+                locator.equals(url)
+            ) renew();
         };
         main.postDelayed(renewal, delay);
     }

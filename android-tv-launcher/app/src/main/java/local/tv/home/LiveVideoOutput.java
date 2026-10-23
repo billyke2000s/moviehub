@@ -145,7 +145,7 @@ final class LiveVideoOutput {
     /** Never destroy a native window merely because its shutdown acknowledgement is late. */
     private void stopBeforeMove() {
         if (closed || pendingTrack == NO_TRACK) return;
-        pendingAudioTrack = player.getAudioTrack();
+        if (!LiveNative.busy(player)) pendingAudioTrack = player.getAudioTrack();
         LiveNative.stop(player, () -> {
             if (closed || pendingTrack == NO_TRACK) return;
             vouts = 0;
@@ -172,7 +172,13 @@ final class LiveVideoOutput {
 
     /** Restore the user's audio selection once a forced restart has rediscovered its tracks. */
     void restoreAudioTrack() {
-        if (closed || pendingAudioTrack == NO_TRACK || restartAfterMove || !player.isPlaying()) return;
+        if (
+            closed ||
+            LiveNative.busy(player) ||
+            pendingAudioTrack == NO_TRACK ||
+            restartAfterMove ||
+            !player.isPlaying()
+        ) return;
         MediaPlayer.TrackDescription[] tracks = player.getAudioTracks();
         if (tracks == null) return;
         for (MediaPlayer.TrackDescription track : tracks) {
@@ -227,15 +233,22 @@ final class LiveVideoOutput {
         SurfaceView surface = surfaceView();
         boolean[] done = { false };
         waitingTrack = track;
-        Runnable enable = () -> {
-            if (done[0] || closed || layout != target || waitingTrack != track) return;
-            done[0] = true;
-            waitingTrack = NO_TRACK;
-            cancelSurfaceWait();
-            if (restartAfterMove) {
-                restartAfterMove = false;
-                player.play();
-            } else player.setVideoTrack(track);
+        Runnable enable = new Runnable() {
+            @Override
+            public void run() {
+                if (done[0] || closed || layout != target || waitingTrack != track) return;
+                if (LiveNative.busy(player)) {
+                    LiveNative.whenIdle(player, this);
+                    return;
+                }
+                done[0] = true;
+                waitingTrack = NO_TRACK;
+                cancelSurfaceWait();
+                if (restartAfterMove) {
+                    restartAfterMove = false;
+                    player.play();
+                } else player.setVideoTrack(track);
+            }
         };
         if (surface == null) {
             enable.run();

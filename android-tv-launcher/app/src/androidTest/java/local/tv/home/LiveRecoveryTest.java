@@ -196,17 +196,23 @@ public final class LiveRecoveryTest {
     }
 
     @Test
-    public void slowNativeStopDoesNotBlockBackOrColourControls() {
+    public void slowNativeStopDoesNotBlockBackOrColourControls() throws Exception {
         MediaPlayer selected = LivePlayer.player();
+        CountDownLatch stopping = new CountDownLatch(1);
         LiveNative.testStopper = target -> {
             if (target == selected) try {
+                stopping.countDown();
                 unblock.await(15, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
             target.stop();
         };
-        remote.runOnMainSync(() -> assertTrue(LivePlayer.retryProvider()));
+        remote.runOnMainSync(() -> {
+            assertTrue(LivePlayer.output().refreshView());
+            assertTrue(LivePlayer.retryProvider());
+        });
+        assertTrue("Native shutdown entered the deliberate wait", stopping.await(5, TimeUnit.SECONDS));
         assertTrue(LiveNative.busy(selected));
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         remote.waitForIdleSync();

@@ -49,6 +49,12 @@ final class LiveNative {
         return player != null && waiting.containsKey(player);
     }
 
+    static void whenIdle(MediaPlayer player, Runnable completed) {
+        Job existing = waiting.get(player);
+        if (existing == null) completed.run();
+        else existing.callbacks.add(completed);
+    }
+
     static void videoOff(MediaPlayer player, Runnable completed) {
         if (busy(player)) {
             waiting.get(player).callbacks.add(() -> videoOff(player, completed));
