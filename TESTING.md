@@ -389,8 +389,14 @@ expressions. A separate CI probe reports public provider availability without lo
 
 `LiveControlsTest` injects down/up events with the same down time, matching a physical
 press across an Activity-to-Dialog focus transfer. Android's convenience
-`sendKeyDownUpSync` constructs the events separately; a canceled held event followed
-by an unrelated release can replace the first dialog and leave a test waiting on
-its detached window. All asynchronous UI predicates are read on the main thread,
-with window state included in timeout messages. The color-key test still requires
+`sendKeyDownUpSync` constructs the events separately. All asynchronous UI predicates
+are read on the main thread. Focus timeouts include a screenshot and WindowManager
+window identities and focus state, rather than guessing which window owns input. The color-key test still requires
 each replacement panel to receive window focus before sending the next color.
+
+The isolated diagnostic run (40041941903) reproduced the timeout: WindowManager's
+`mCurrentFocus` identified the Audio panel while its DecorView still reported
+`hasWindowFocus=false`. The test therefore waits on `WindowId.isFocused()`, which
+queries WindowManager, before injecting the next physical color key. It still
+requires the previous panel to close and the replacement to own input: sending a
+key to the underlying Activity cannot satisfy those assertions.
