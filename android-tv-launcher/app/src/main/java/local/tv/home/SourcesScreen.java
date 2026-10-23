@@ -117,6 +117,11 @@ final class SourcesScreen {
             title,
             "Free website streams and connected cloud sources appear together."
         );
+        if (activity.secrets.has("premiumize")) {
+            LinearLayout tools = activity.horizontal(activity.page);
+            activity.chip(tools, "Premiumize cloud", () -> activity.cloudScreens.cloud("", kind));
+            activity.chip(tools, "Transfers", () -> activity.cloudScreens.transfers(kind));
+        }
         new FreeVodScreen(activity).start(imdb, season, episode, title, kind, metadata);
     }
 

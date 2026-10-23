@@ -18,6 +18,13 @@ _HOSTS = [d for cls in resolveurl.relevant_resolvers(include_universal=False, in
 def providers():
     return json.dumps(_RECORDS)
 
+def validate():
+    """Import and instantiate every bundled adapter without contacting a provider."""
+    for record in _RECORDS:
+        importlib.import_module(record['module']).source()
+    return len(_RECORDS)
+
+
 def query(provider_id, raw, cancelled, emit=None):
     client.scope(cancelled.get if hasattr(cancelled, "get") else cancelled, timeout=18, http=json.loads(raw).get('http', False))
     info = json.loads(raw)

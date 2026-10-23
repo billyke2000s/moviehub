@@ -32,6 +32,10 @@ public final class FreeVodProviders {
         return result;
     }
 
+    static int validate(Context context) {
+        return runtime(context).callAttr("validate").toInt();
+    }
+
     public interface Result {
         void ready(String json);
     }
