@@ -268,6 +268,10 @@ final class LiveBackup {
         request = null;
         LivePlayer.adoptBackup(original, ready, readyView, host, locator, stream.relay, stream.expiresAt);
         stream.relay = null;
+        original = null;
+        host = null;
+        selected = null;
+        locator = null;
         exhausted = false;
     }
 
@@ -304,6 +308,10 @@ final class LiveBackup {
             view
         );
         view = null;
+        original = null;
+        host = null;
+        selected = null;
+        locator = null;
     }
 
     void close() {
