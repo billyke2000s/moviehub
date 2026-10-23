@@ -468,7 +468,14 @@ public class VlcPlaybackActivity extends Activity {
         player.setEventListener(event -> {
             if (player == opened) onPlayerEvent(event);
         });
-        Media media = new Media(engine, Uri.parse(url));
+        String mediaUrl = url;
+        try {
+            if (vod != null) mediaUrl = vod.mediaUrl(vod.activeIndex(), url);
+        } catch (Exception error) {
+            status.setText("Could not prepare this source's stream headers");
+            return;
+        }
+        Media media = new Media(engine, Uri.parse(mediaUrl));
         media.setHWDecoderEnabled(true, false);
         // Open directly at the resume point instead of starting at 0:00 and then seeking, which
         // made the player buffer twice.

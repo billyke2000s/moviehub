@@ -15,10 +15,20 @@ final class SourceRepository {
 
         final String title, uri;
         Cache cache = Cache.UNKNOWN;
+        final JSONArray files;
+        final JSONObject headers;
+        EngineSources.Stream stream;
 
         Source(String title, String uri) {
+            this(title, uri, null, new JSONObject());
+        }
+
+        Source(String title, String uri, JSONArray files, JSONObject headers) {
             this.title = title;
             this.uri = uri;
+            this.files = files;
+            this.headers = headers;
+            if (files != null) cache = Cache.CACHED;
         }
     }
 
@@ -112,6 +122,7 @@ final class SourceRepository {
     }
 
     JSONArray direct(Source source) throws Exception {
+        if (source.files != null) return source.files;
         long started = Timings.start();
         JSONArray files = post("transfer/directdl", "src=" + Network.q(source.uri)).getJSONArray("content");
         Timings.record("Premiumize file link", started);

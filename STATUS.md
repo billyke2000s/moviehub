@@ -388,3 +388,16 @@ The owner supplied new photographs after 0.49: a full banner on some channels an
 ## One live overlay and shared colour input
 
 The owner confirms the problem persists on the current release. A concrete UI mismatch remained: OK opened Options when the banner was already visible, and TV picture clicks only revealed pause state. The candidate routes entry/OK/click/Back through the same banner and removes the attached film-controls tree from live sessions. Visible video receives initial focus. Colour dispatch is centralized before native access and shared with player Dialogs; first-received repeats, standalone releases and standard scan identities are covered without requiring remote setup or code capture. Core validation: 775 passing checks. Android validation is recorded on the pull request/release. The owner’s exact hardware-input failure is not reproduced and must not be declared conclusively resolved.
+
+## Free VOD integration candidate (23 October 2026)
+
+Bundled all 59 Scrubs V2 and nine Free99 non-archived provider modules and ResolveURL host
+extractors. Added free discovery without a Premiumize gate, the three-second best-available
+selection window and late-source appending to existing VOD recovery. Website responses are
+probed before selection; reported quality is not a measured decoder resolution. Local Java
+core checks and Python offline fixtures pass. Android build/emulator validation is pending
+on this branch. No production release or real-provider/physical-TV success is claimed.
+The Free99 metadata licence field is blank; its Scrubs ancestry and inherited GPL notices
+are recorded. Kodi-library and API-key sources are explicitly not represented as working
+anonymous website providers. The follow-up removes website-fed eval/exec, bounds direct urllib
+requests, adds an external CI availability probe and verifies packaged Python imports on Android.

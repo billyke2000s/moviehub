@@ -567,14 +567,14 @@ final class SettingsScreens {
                 "Automatic play: films",
                 "Choose the best ready-to-play source and movie file",
                 AutoPlayback.MOVIES,
-                false
+                true
             );
             toggle(
                 body,
                 "Automatic play: series",
                 "Choose sources automatically when starting or continuing a series",
                 AutoPlayback.SERIES,
-                false
+                true
             );
             String[] qualityNames = { "720p", "1080p", "4K" };
             int[] qualityValues = { 720, 1080, 2160 };

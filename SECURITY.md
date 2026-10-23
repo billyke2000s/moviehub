@@ -154,3 +154,15 @@ No background discovery or new provider capability is introduced.
 ## Live playback recovery
 
 Presentation sampling is 32×18 pixels, asynchronous, at most one request at a time and every two seconds while watched. Pixel contents are neither inspected for programme content, persisted, uploaded nor logged. Recovery preserves regional Pluto checks and normal ads/authentication; it refreshes only the existing anonymous session. Native windows and relays stay alive until their readers stop; timeout does not authorize premature destruction. Fixed-label diagnostics contain no URLs/tokens.
+
+## Bundled Python VOD providers
+
+The candidate bundles executable provider/host code in the signed APK. ResolveURL remote
+code updates are disabled, paid/universal and popup resolvers are not selected, and alias
+strings use literal parsing. The compatibility client bounds responses, checks public
+HTTP(S) targets and observes cancellation/deadlines. HTTPS is required unless the existing
+HTTP setting permits otherwise. Headers are retained in memory and relayed only through
+the existing authenticated loopback transport. Python executes with the app's privileges;
+this is not a sandbox boundary. Website-fed text decoders use a restricted literal/arithmetic interpreter; Python eval/exec
+calls were removed. Direct urllib host requests also use the bounded client. Physical-device
+verification remains outstanding. See the third-party notices for component provenance.

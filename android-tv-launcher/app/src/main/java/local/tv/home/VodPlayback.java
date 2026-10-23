@@ -18,6 +18,7 @@ final class VodPlayback {
     final VodSourceFailover queue = new VodSourceFailover();
     private final ExecutorService resolver = Executors.newSingleThreadExecutor();
     private Future<?> resolving;
+    private final java.util.Map<Integer, ProviderRelay> relays = new java.util.HashMap<>();
     private MediaPlayer candidate;
     private VLCVideoLayout candidateView;
     private VodSources.Resolved resolved;
@@ -47,6 +48,7 @@ final class VodPlayback {
     }
 
     boolean hasChoices() {
+        queue.appendSources(session.sources);
         return session.sources.size() > 1;
     }
 
@@ -66,6 +68,7 @@ final class VodPlayback {
 
     void tick() {
         if (closed) return;
+        queue.appendSources(session.sources);
         boolean seeking =
             activity.dragging || activity.skips.pending() || SystemClock.elapsedRealtime() < seekUntil;
         queue.setSeeking(seeking);
@@ -111,6 +114,17 @@ final class VodPlayback {
         if (activity.player != null && activity.player.isPlaying()) queue.onPlaying();
     }
 
+    String mediaUrl(int index, String link) throws Exception {
+        EngineSources.Stream stream = session.transport.apply(index);
+        if (stream == null) return link;
+        ProviderRelay relay = relays.get(index);
+        if (relay == null) {
+            relay = new ProviderRelay(stream);
+            relays.put(index, relay);
+        }
+        return relay.url;
+    }
+
     private void prepare(int index) {
         preparing = true;
         playing = false;
@@ -149,7 +163,7 @@ final class VodPlayback {
                                 event.type == MediaPlayer.Event.EndReached
                             ) failed();
                         });
-                        Media media = new Media(activity.filmEngine(), Uri.parse(link));
+                        Media media = new Media(activity.filmEngine(), Uri.parse(mediaUrl(index, link)));
                         try {
                             media.setHWDecoderEnabled(true, false);
                             if (target > 1000) media.addOption(":start-time=" + target / 1000);
@@ -158,7 +172,7 @@ final class VodPlayback {
                             media.release();
                         }
                         candidate.play();
-                    } catch (RuntimeException error) {
+                    } catch (Exception error) {
                         failed();
                     }
                 });
@@ -195,6 +209,8 @@ final class VodPlayback {
                 candidate = null;
                 candidateView = null;
                 activity.adoptVod(ready, view, link);
+                ProviderRelay oldRelay = relays.remove(active);
+                if (oldRelay != null) oldRelay.close();
                 active = queue.currentIndex();
                 session.active = active;
                 queue.onPlaying();
@@ -248,6 +264,10 @@ final class VodPlayback {
         ).removeView(candidateView);
         candidateView = null;
         resolved = null;
+        if (queue.currentIndex() != active) {
+            ProviderRelay unused = relays.remove(queue.currentIndex());
+            if (unused != null) unused.close();
+        }
     }
 
     private void cancelPreparation() {
@@ -265,5 +285,7 @@ final class VodPlayback {
         preparing = false;
         discardCandidate();
         resolver.shutdownNow();
+        for (ProviderRelay relay : relays.values()) relay.close();
+        relays.clear();
     }
 }

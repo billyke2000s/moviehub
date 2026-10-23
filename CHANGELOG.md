@@ -1,3 +1,11 @@
+## Unreleased — progressive free VOD candidate
+
+- Bundle Scrubs/Free99 provider modules and headless ResolveURL extraction inside the APK.
+- Search free providers without requiring Premiumize; retain connected cloud results.
+- Select the best reported result at three seconds, wait if none is ready, and append late backups.
+- Preserve VOD buffering thresholds and prepared replacement playback.
+- Preserve host headers and record third-party provenance and outstanding release blockers.
+
 # Changelog
 
 ## Unreleased

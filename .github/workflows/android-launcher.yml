@@ -21,6 +21,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
@@ -39,6 +42,10 @@ jobs:
           git diff --exit-code
       - name: Verify playlist, network, channel search and episode rules
         run: bash android-tv-launcher/tests/run-core-tests.sh
+      - name: Verify bundled free VOD providers
+        run: |
+          python -m pip install requests==2.32.5 six==1.17.0
+          python android-tv-launcher/tests/test_free_vod.py
       - name: Build APK and run Android lint
         run: gradle -p android-tv-launcher --no-daemon assembleDebug assembleRelease lintDebug lintRelease testDebugUnitTest assembleDebugAndroidTest
       - name: Verify APK signature and checksum
@@ -70,6 +77,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
@@ -112,6 +122,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
@@ -174,3 +187,18 @@ jobs:
       - name: Remove temporary signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/compatibility-signing.jks"
+
+  free-vod-live-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install source probe dependencies
+        run: python -m pip install requests==2.32.5 six==1.17.0
+      - name: Probe public provider availability without logging stream URLs
+        # External availability is diagnostic, never a substitute for playback fixtures.
+        continue-on-error: true
+        run: timeout 180s python -u android-tv-launcher/tests/probe-free-vod.py

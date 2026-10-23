@@ -179,3 +179,14 @@ Live TV uses the same channel banner on initial playback and restored sessions. 
 ## Live playback recovery
 
 Live TV retries an established Pluto/direct connection within a bounded recovery budget, preserving the selected source. Options includes Repair picture and Reconnect channel. Background native shutdown keeps playback controls available while a decoder closes. Recovery cannot guarantee availability of an external channel or correct operation of every TV decoder.
+
+### Free movie and series sources
+
+The candidate source system bundles Scrubs V2 and Free99 provider modules with headless
+host resolution inside the APK. Premiumize is optional. Automatic play defaults on (existing
+explicit preferences remain): after three seconds, it selects the highest reported quality
+available within the configured quality preference. If none is ready, search continues until
+a playable response arrives or the bounded search ends. Later discoveries join the player’s
+backup list. The existing two-stalls-in-60-seconds / four-second-stall VOD policy is unchanged.
+Provider availability varies; inclusion does not establish successful live playback.
+See [provider provenance and licensing](docs/third-party/vod/NOTICE.md).
