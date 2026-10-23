@@ -393,3 +393,10 @@ press across an Activity-to-Dialog focus transfer. Android's convenience
 are read on the main thread. Focus timeouts include a screenshot and WindowManager
 window identities and focus state, rather than guessing which window owns input. The color-key test still requires
 each replacement panel to receive window focus before sending the next color.
+
+The isolated diagnostic run (40041941903) reproduced the timeout: WindowManager's
+`mCurrentFocus` identified the Audio panel while its DecorView still reported
+`hasWindowFocus=false`. The test therefore waits on `WindowId.isFocused()`, which
+queries WindowManager, before injecting the next physical color key. It still
+requires the previous panel to close and the replacement to own input: sending a
+key to the underlying Activity cannot satisfy those assertions.
