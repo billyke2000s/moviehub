@@ -275,7 +275,8 @@ final class LiveZapper {
     private void load(int position, boolean play, boolean current) {
         int ticket = ++request;
         Session s = own;
-        String activeUrl = current ? player.playbackUrl() : null;
+        String launchKey = current ? ChannelQuery.key(player.playbackUrl()) : null;
+        String activeUrl = current ? LivePlayer.currentUrl() : null;
         String activeKey = activeUrl == null ? null : ChannelQuery.key(activeUrl);
         boolean activeAutomatic = LivePlayer.automaticSources;
         Set<String> activeAttempts = new HashSet<>(LivePlayer.attemptedSources);
@@ -285,7 +286,7 @@ final class LiveZapper {
                 int targetPosition = position;
                 if (current) {
                     // The launch URL is authoritative, including when a stale static session survived.
-                    ChannelDatabase.Row playing = db.byKey(activeKey);
+                    ChannelDatabase.Row playing = db.byKey(launchKey);
                     if (playing == null) return;
                     targetPosition = db.position(s.filter, s.search, s.favourites, playing.number, false);
                     if (targetPosition < 0) {
