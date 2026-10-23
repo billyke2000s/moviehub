@@ -112,7 +112,7 @@ public final class LiveRecoveryTest {
             byte[] body;
             if (path.contains(".m3u8")) {
                 StringBuilder list = new StringBuilder(
-                    "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:3\n#EXT-X-MEDIA-SEQUENCE:0\n"
+                    "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:3\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-DISCONTINUITY-SEQUENCE:0\n"
                 );
                 for (int i = 0; i < 40; i++) {
                     if (i > 0) list.append("#EXT-X-DISCONTINUITY\n");
@@ -158,36 +158,58 @@ public final class LiveRecoveryTest {
         context.getSharedPreferences("ui", 0).edit().putBoolean("http", oldHttp).commit();
     }
 
+    private long[] audioStats(MediaPlayer player) {
+        org.videolan.libvlc.interfaces.IMedia media = player.getMedia();
+        if (media == null) return new long[] { -1, -1 };
+        try {
+            org.videolan.libvlc.interfaces.IMedia.Stats stats = media.getStats();
+            return stats == null
+                ? new long[] { -1, -1 }
+                : new long[] { stats.decodedAudio, stats.playedAbuffers };
+        } finally {
+            media.release();
+        }
+    }
+
     @Test
     public void resolutionAndTimestampChangesKeepVideoAndAudioAdvancing() {
         MediaPlayer same = LivePlayer.player();
-        long frames = LivePlayer.output().pictures();
-        int[] resets = { 0 };
-        long[] previousTime = { same.getTime() },
-            advanced = { 0 },
-            latestFrames = { frames };
+        long frames = LivePlayer.output().pictures(),
+            started = SystemClock.elapsedRealtime();
+        long[] initialAudio = audioStats(same),
+            latestAudio = initialAudio.clone();
+        long[] latest = { same.getTime(), frames };
         try {
             await(() -> {
                 if (LiveNative.busy(same)) return false;
-                long time = same.getTime();
-                // HLS discontinuities can reset the reported clock. Require eleven seconds of
-                // forward clock progress across those resets, plus real decoded-frame progress.
-                if (time < previousTime[0]) resets[0]++;
-                if (time > previousTime[0]) advanced[0] += time - previousTime[0];
-                previousTime[0] = time;
-                latestFrames[0] = LivePlayer.output().pictures();
-                return advanced[0] >= 11000 && latestFrames[0] > frames + 100;
+                latest[0] = same.getTime();
+                latest[1] = LivePlayer.output().pictures();
+                long[] audio = audioStats(same);
+                latestAudio[0] = audio[0];
+                latestAudio[1] = audio[1];
+                // A live HLS demuxer's reported clock need not advance across discontinuities.
+                // Require actual video decoding and audio output through several real periods.
+                return (
+                    SystemClock.elapsedRealtime() - started >= 11000 &&
+                    latest[1] > frames + 100 &&
+                    latestAudio[0] > initialAudio[0] + 100 &&
+                    latestAudio[1] > initialAudio[1] + 100
+                );
             });
         } catch (AssertionError error) {
             throw new AssertionError(
                 "HLS transition: clock=" +
-                    previousTime[0] +
-                    ", forward=" +
-                    advanced[0] +
-                    ", decoded=" +
-                    latestFrames[0] +
-                    ", initial=" +
+                    latest[0] +
+                    ", decoded video=" +
+                    latest[1] +
+                    ", initial video=" +
                     frames +
+                    ", decoded audio=" +
+                    latestAudio[0] +
+                    ", output buffers=" +
+                    latestAudio[1] +
+                    ", initial output=" +
+                    initialAudio[1] +
                     ", resolutions=" +
                     resolutions.get() +
                     ", recovery=" +
@@ -197,18 +219,36 @@ public final class LiveRecoveryTest {
         }
         android.util.Log.i(
             "MovieHubHandoff",
-            "HLS clock resets=" +
-                resets[0] +
-                ", forward ms=" +
-                advanced[0] +
-                ", decoded frames=" +
-                (latestFrames[0] - frames)
+            "HLS transitions: decoded frames=" +
+                (latest[1] - frames) +
+                ", audio output buffers=" +
+                (latestAudio[1] - initialAudio[1]) +
+                ", resolutions=" +
+                resolutions.get()
         );
         assertSame(same, LivePlayer.player());
         assertEquals(1, resolutions.get());
         assertTrue(same.getAudioTrack() >= 0);
         new LiveHandoffEvidence(remote).awaitPicture(false);
+        long audioBefore = audioStats(same)[1];
+        await(() -> !LiveNative.busy(same) && audioStats(same)[1] > audioBefore + 2);
         UiEvidence.capture("live-hls-resolution-discontinuity");
+    }
+
+    @Test
+    public void briefBufferNotificationsKeepTheAdvancingSelectedChannel() {
+        MediaPlayer same = LivePlayer.player();
+        long frames = LivePlayer.output().pictures();
+        remote.runOnMainSync(() -> {
+            for (int i = 0; i < 3; i++) {
+                LivePlayer.bufferingEnded();
+                LivePlayer.bufferingStarted();
+            }
+            assertSame(same, LivePlayer.player());
+            assertEquals(1, resolutions.get());
+        });
+        await(() -> !LiveNative.busy(same) && LivePlayer.output().pictures() > frames + 10);
+        assertEquals(1, resolutions.get());
     }
 
     @Test

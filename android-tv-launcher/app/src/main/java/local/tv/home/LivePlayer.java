@@ -57,7 +57,8 @@ final class LivePlayer {
     static final long PICTURE_REPAIR_MS = 2500;
     private static long pictureRepairedFor = -1;
     private static int viewRepairs;
-    private static String lastVideoRecovery = "None";
+    private static String lastVideoRecovery = "None",
+        lastFailureCause = "None";
 
     private static final Runnable watchProgress = new Runnable() {
         @Override
@@ -80,6 +81,7 @@ final class LivePlayer {
             long now = android.os.SystemClock.elapsedRealtime();
             if (output != null && output.presentationMissing(now, watching)) {
                 videoFault = true;
+                lastFailureCause = "Video surface unavailable";
                 if (output.repairPresentation()) repairBudget.repaired();
                 else if (!retryProvider() && resolutionFailed != null) resolutionFailed.run();
                 lastVideoRecovery = "Rendered buffers missing; repairing live picture";
@@ -90,8 +92,7 @@ final class LivePlayer {
             }
             observeProgress(now, player.getTime(), output == null ? -1 : output.pictures(), watching);
             if (
-                player != null &&
-                buffering.stalled(android.os.SystemClock.elapsedRealtime(), bufferWatching())
+                player != null && (buffering.stalled(now, bufferWatching()) || buffering.persistent(now))
             ) recoverBuffering();
             if (player != null && ticket == generation) main.postDelayed(this, 1000);
         }
@@ -120,6 +121,7 @@ final class LivePlayer {
         }
         boolean clockMoving = progress.clockMoving(now, LiveZapper.STALL_MS);
         videoFault = clockMoving;
+        lastFailureCause = "Video progress stopped";
         progress.reset();
         Timings.record("Live video stopped advancing", Timings.start());
         if (clockMoving && repairBudget.allowed() && output != null && output.refreshView()) {
@@ -154,6 +156,8 @@ final class LivePlayer {
     static String videoRecovery() {
         return (
             lastVideoRecovery +
+            " · " +
+            lastFailureCause +
             " · " +
             viewRepairs +
             " view refreshes · " +
@@ -250,9 +254,16 @@ final class LivePlayer {
     }
 
     private static void recoverBuffering() {
-        if (
-            !prepareBackupForFailure() && !retryProvider() && resolutionFailed != null
-        ) resolutionFailed.run();
+        if (prepareBackupForFailure()) return;
+        // Three brief buffer notifications may be normal HLS period transitions. They can warm
+        // an alternate source, but must not tear down a progressing channel with no backup.
+        if (!buffering.persistent(android.os.SystemClock.elapsedRealtime())) return;
+        if (progress.videoMoving(android.os.SystemClock.elapsedRealtime(), 2000)) return;
+        lastFailureCause = "Prolonged buffering";
+        if (!retryProvider() && resolutionFailed != null) {
+            buffering.reset();
+            resolutionFailed.run();
+        }
     }
 
     /** Promotes a running, muted SurfaceView; its decoder and resolved relay are retained. */
@@ -551,6 +562,8 @@ final class LivePlayer {
             resolving &&
             (event.type == MediaPlayer.Event.EndReached || event.type == MediaPlayer.Event.EncounteredError)
         ) return;
+        if (event.type == MediaPlayer.Event.EndReached) lastFailureCause = "Live input ended";
+        if (event.type == MediaPlayer.Event.EncounteredError) lastFailureCause = "Live input error";
         if (event.type == MediaPlayer.Event.Playing) played = true;
         if (
             output != null &&
@@ -694,6 +707,9 @@ final class LivePlayer {
         } else if (retiringEngine != null) retiringEngine.release();
         appContext = null;
         lastOptions = null;
+        lastVideoRecovery = lastFailureCause = "None";
+        backupStatus = "None";
+        viewRepairs = 0;
         reconnects.reset();
         softwareVideo = videoFault = false;
         refreshed = false;

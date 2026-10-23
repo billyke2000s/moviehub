@@ -40,6 +40,17 @@ public final class LiveBufferingTest {
         check(!live.update(7999, false, true));
         check(!live.stalled(8000, true));
         check(!live.stalled(60000, true));
+        live.reset();
+        live.update(0, true, true);
+        live.update(1, false, true);
+        live.update(1000, true, true);
+        live.update(1001, false, true);
+        check(live.update(2000, true, true));
+        check(!live.persistent(9999));
+        check(live.persistent(10000));
+        check(!live.stalled(10000, true));
+        live.update(10001, false, true);
+        check(!live.persistent(10002));
         System.out.println(checks + " live buffering checks passed");
     }
 
