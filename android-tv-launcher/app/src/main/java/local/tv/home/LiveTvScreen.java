@@ -560,11 +560,20 @@ final class LiveTvScreen {
     }
 
     static char colour(android.content.SharedPreferences prefs, int key) {
-        for (int i = 0; i < 4; i++) if (prefs.getInt(COLOUR_PREFS[i], -1) == key) return COLOURS[i];
-        if (key == KeyEvent.KEYCODE_PROG_RED || key == KeyEvent.KEYCODE_F1) return 'r';
-        if (key == KeyEvent.KEYCODE_PROG_GREEN || key == KeyEvent.KEYCODE_F2) return 'g';
-        if (key == KeyEvent.KEYCODE_PROG_YELLOW || key == KeyEvent.KEYCODE_F3) return 'y';
-        if (key == KeyEvent.KEYCODE_PROG_BLUE || key == KeyEvent.KEYCODE_F4) return 'b';
+        // Standard colour buttons always perform the colour printed on the remote. Old learned
+        // aliases must not turn (for example) a real green button into the red action.
+        if (key == KeyEvent.KEYCODE_PROG_RED) return 'r';
+        if (key == KeyEvent.KEYCODE_PROG_GREEN) return 'g';
+        if (key == KeyEvent.KEYCODE_PROG_YELLOW) return 'y';
+        if (key == KeyEvent.KEYCODE_PROG_BLUE) return 'b';
+        if (key != KeyEvent.KEYCODE_UNKNOWN) for (int i = 0; i < 4; i++) if (
+            prefs.getInt(COLOUR_PREFS[i], -1) == key
+        ) return COLOURS[i];
+        // Keep existing custom aliases for remotes which use ordinary function keys.
+        if (key == KeyEvent.KEYCODE_F1) return 'r';
+        if (key == KeyEvent.KEYCODE_F2) return 'g';
+        if (key == KeyEvent.KEYCODE_F3) return 'y';
+        if (key == KeyEvent.KEYCODE_F4) return 'b';
         return 0;
     }
 

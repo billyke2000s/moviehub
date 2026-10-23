@@ -649,7 +649,7 @@ final class LiveZapper {
         }
         char colour = LiveTvScreen.colour(player.getSharedPreferences("ui", 0), key);
         if (colour != 0) {
-            if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) colour(colour);
+            if (first) colour(colour);
             return true;
         }
         boolean select = key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER;

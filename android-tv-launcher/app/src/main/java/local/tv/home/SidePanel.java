@@ -98,13 +98,14 @@ final class SidePanel {
         // The chosen action runs after the panel has closed, so it can open another panel.
         Runnable[] after = new Runnable[1];
         // A Dialog owns input while open; Activity.dispatchKeyEvent cannot see these keys.
-        // Complete the press on release so its key-up cannot leak into the replacement panel.
+        // Act on the first press, as the guide does. Repeats/releases are consumed without
+        // firing again when Android delivers them to the replacement window.
         if (activity instanceof VlcPlaybackActivity) {
             VlcPlaybackActivity player = (VlcPlaybackActivity) activity;
             if (player.zapper != null) dialog.setOnKeyListener((d, key, event) -> {
                 char colour = LiveTvScreen.colour(activity.getSharedPreferences("ui", 0), key);
                 if (colour == 0) return false;
-                if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
+                if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
                     after[0] = () -> player.zapper.colour(colour);
                     dialog.dismiss();
                 }
