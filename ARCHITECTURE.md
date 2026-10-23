@@ -321,4 +321,4 @@ Three short buffering notifications can still prepare an alternate source. A sam
 
 ## Consistent live banner and standard colours
 
-The live overlay measures the channel banner before optional pause/information panels, so those panels cannot consume its layout height. The channel strip has an explicit height scaled for text size. Standard PROG_RED/GREEN/YELLOW/BLUE and F1–F4 identities precede learned aliases. Player and dialog colour handlers act on the initial key-down and consume repeat/up events without reopening menus.
+The live overlay measures the channel banner before optional pause/information panels, so those panels cannot consume its layout height. The channel strip has an explicit height scaled for text size. Standard PROG_RED/GREEN/YELLOW/BLUE identities precede learned aliases; function-key aliases remain configurable. Player and dialog colour handlers act on the initial key-down and consume repeat/up events without reopening menus.

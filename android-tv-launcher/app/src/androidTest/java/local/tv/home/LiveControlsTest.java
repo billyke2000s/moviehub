@@ -354,7 +354,11 @@ public final class LiveControlsTest {
             assertEquals('g', LiveTvScreen.colour(prefs, KeyEvent.KEYCODE_PROG_GREEN));
             assertEquals('y', LiveTvScreen.colour(prefs, KeyEvent.KEYCODE_PROG_YELLOW));
             assertEquals('b', LiveTvScreen.colour(prefs, KeyEvent.KEYCODE_PROG_BLUE));
-            assertEquals('r', LiveTvScreen.colour(prefs, KeyEvent.KEYCODE_F1));
+            assertEquals(
+                "Nonstandard learned aliases are retained",
+                'y',
+                LiveTvScreen.colour(prefs, KeyEvent.KEYCODE_F1)
+            );
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
             await(() -> SidePanel.current != null && SidePanel.current.isShowing());
             remote.runOnMainSync(() ->
