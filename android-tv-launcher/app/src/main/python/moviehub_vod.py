@@ -62,7 +62,7 @@ def query(provider_id, raw, cancelled, emit=None):
                 result=playable(url)
                 if result is None: continue
                 seen.add(url)
-                result.update({'provider':provider_id, 'quality':str(item.get('quality','SD')),
+                result.update({'provider':provider_id, 'providerName':urlparse(provider.base_link).hostname or record['name'], 'quality':str(item.get('quality','SD')),
                                'info':str(item.get('info','')), 'title': title})
                 sources.append(result)
                 if emit is not None: emit.ready(json.dumps(result))

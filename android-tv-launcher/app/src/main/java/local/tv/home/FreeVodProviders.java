@@ -67,7 +67,11 @@ public final class FreeVodProviders {
                     ".mp4";
                 JSONArray files = new JSONArray().put(new JSONObject().put("path", path).put("link", link));
                 SourceRepository.Source source = new SourceRepository.Source(
-                    id + "\n" + label + " · " + item.optString("info"),
+                    item.optString("providerName", id).replaceFirst("^www\\.", "") +
+                        "\n" +
+                        label +
+                        " · " +
+                        item.optString("info"),
                     link,
                     files,
                     headers

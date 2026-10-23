@@ -121,8 +121,56 @@ final class SourcesScreen {
             LinearLayout tools = activity.horizontal(activity.page);
             activity.chip(tools, "Premiumize cloud", () -> activity.cloudScreens.cloud("", kind));
             activity.chip(tools, "Transfers", () -> activity.cloudScreens.transfers(kind));
+            activity.chip(tools, "All cloud sources", () ->
+                cloudSources(imdb, season, episode, title, kind, metadata)
+            );
         }
         new FreeVodScreen(activity).start(imdb, season, episode, title, kind, metadata);
+    }
+
+    /** Preserve cached/uncached cloud browsing and explicit transfer actions beside free autoplay. */
+    private void cloudSources(
+        String imdb,
+        int season,
+        int episode,
+        String title,
+        String kind,
+        JSONObject metadata
+    ) {
+        activity.screen("Cloud sources", () -> {
+            activity.playbackTitle = metadata;
+            torrentSources(imdb, season, episode, title, kind);
+        });
+        activity.posters.listBackdrop(metadata);
+        TextView loading = activity.muted("Checking cloud source availability…", 16);
+        activity.page.addView(loading);
+        SourceRepository repo = new SourceRepository(activity.secrets);
+        activity.async(
+            () -> repo.torrentio(imdb, season, episode),
+            sources -> {
+                activity.page.removeView(loading);
+                LinearLayout filters = activity.horizontal(activity.page),
+                    results = activity.vertical();
+                activity.page.addView(results);
+                for (String grade : new String[] { "All", "4K", "1080p", "720p" }) {
+                    activity.chip(filters, grade, () ->
+                        renderSources(
+                            results,
+                            sources,
+                            grade,
+                            repo,
+                            metadata,
+                            imdb,
+                            season,
+                            episode,
+                            title,
+                            kind
+                        )
+                    );
+                }
+                renderSources(results, sources, "All", repo, metadata, imdb, season, episode, title, kind);
+            }
+        );
     }
 
     void renderSources(
