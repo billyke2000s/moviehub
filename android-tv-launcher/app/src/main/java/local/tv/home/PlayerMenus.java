@@ -114,6 +114,8 @@ final class PlayerMenus {
         if (!a.live && a.vod != null && a.vod.hasChoices()) labels.add(0, "Sources");
         if (a.live && a.behindLive) labels.add(0, "Back to live");
         if (liveTv) {
+            labels.add(0, "Reconnect channel");
+            labels.add(0, "Repair picture");
             // Everything the coloured buttons do is here too, for remotes without them.
             if (a.zapper != null) labels.add(0, "Programme information");
             labels.add(0, "Audio & subtitles");
@@ -123,7 +125,9 @@ final class PlayerMenus {
         SidePanel panel = SidePanel.of(a, liveTv ? "Options" : "Playback options").onDismiss(a::panelClosed);
         for (String label : labels)
             panel.option(label, () -> {
-                if (label.equals("Pause") || label.equals("Play")) a.toggle();
+                if (label.equals("Repair picture")) LivePlayer.repairPicture();
+                else if (label.equals("Reconnect channel")) a.backToLive();
+                else if (label.equals("Pause") || label.equals("Play")) a.toggle();
                 else if (label.equals("Audio & subtitles")) audioAndSubtitles();
                 else if (label.equals("Programme information")) a.zapper.information();
                 else if (label.equals("Back to live")) a.backToLive();

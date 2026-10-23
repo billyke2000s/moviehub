@@ -48,6 +48,11 @@ final class PlutoSource {
         }
     }
 
+    static void invalidate() {
+        cached = null;
+        catalogue = null;
+    }
+
     static Session session(Http http) throws Exception {
         Session current = cached;
         long now = System.currentTimeMillis();

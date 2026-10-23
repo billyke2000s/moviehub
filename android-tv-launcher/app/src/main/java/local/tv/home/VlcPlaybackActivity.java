@@ -501,8 +501,10 @@ public class VlcPlaybackActivity extends Activity {
         if (LivePlayer.isResolving()) {
             status.setText("Finding a working stream…");
         } else armStartupTimeout();
-        player.setRate(playbackRate);
-        if (aspect != null) player.setAspectRatio(aspect);
+        if (!LiveNative.busy(player)) {
+            player.setRate(playbackRate);
+            if (aspect != null) player.setAspectRatio(aspect);
+        }
         if (carriedOn && player.isPlaying()) {
             // Already playing: no "Playing" event will come, so show it as playing now.
             playedOnce = true;
@@ -707,6 +709,7 @@ public class VlcPlaybackActivity extends Activity {
     }
 
     void toggle() {
+        forgetReleasedLivePlayer();
         revealControls();
         if (player == null) return;
         if (player.isPlaying()) {
@@ -730,6 +733,7 @@ public class VlcPlaybackActivity extends Activity {
      * otherwise it says so.
      */
     void seek(long delta) {
+        forgetReleasedLivePlayer();
         revealControls();
         if (player == null) return;
         if (!live && player.isSeekable()) {
@@ -791,7 +795,10 @@ public class VlcPlaybackActivity extends Activity {
      * one that is no longer the shared player.
      */
     private void forgetReleasedLivePlayer() {
-        if (live && player != null && player != LivePlayer.player()) player = null;
+        if (live) {
+            MediaPlayer current = LivePlayer.player();
+            player = LiveNative.busy(current) ? null : current;
+        }
     }
 
     private void release() {

@@ -1,9 +1,12 @@
 # Changelog
 
-## Unreleased
+## Unreleased — live playback recovery
 
-- Preserve space for the complete Live TV channel header during banner updates.
-- Keep remote colour shortcuts working while a player menu is open; finish colour presses on release before opening another menu.
+- Retry established Pluto/direct live streams with a bounded reconnect budget; refresh Pluto’s anonymous session and allow a software-video fallback after repeated video stalls.
+- Move live native stop/video-disable operations off the UI thread, retaining surfaces and transport until shutdown completes.
+- Check rendered-buffer availability as well as decoding progress, and add Repair picture/Reconnect channel to live Options.
+- Add HLS resolution/timestamp transition, same-channel retry, missing-surface and slow-native-stop regression fixtures.
+
 
 ## 0.48 (23 October 2026)
 

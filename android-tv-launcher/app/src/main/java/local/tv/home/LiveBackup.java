@@ -295,18 +295,29 @@ final class LiveBackup {
         if (pending != null) pending.cancel(true);
         request = null;
         pending = null;
-        if (candidate != null) {
-            candidate.setEventListener(null);
-            candidate.stop();
-            candidate.detachViews();
-            candidate.release();
-            candidate = null;
-        }
-        if (resolved != null) resolved.close();
+        MediaPlayer retired = candidate;
+        VLCVideoLayout retiredView = view;
+        Resolved retiredStream = resolved;
+        candidate = null;
         resolved = null;
-        if (view != null && view.getParent() instanceof ViewGroup) ((ViewGroup) view.getParent()).removeView(
-            view
-        );
+        if (retired != null) {
+            retired.setEventListener(null);
+            engine.retain();
+            LiveNative.stop(retired, () -> {
+                retired.detachViews();
+                retired.release();
+                if (retiredStream != null) retiredStream.close();
+                if (retiredView != null && retiredView.getParent() instanceof ViewGroup) (
+                    (ViewGroup) retiredView.getParent()
+                ).removeView(retiredView);
+                engine.release();
+            });
+        } else {
+            if (retiredStream != null) retiredStream.close();
+            if (retiredView != null && retiredView.getParent() instanceof ViewGroup) (
+                (ViewGroup) retiredView.getParent()
+            ).removeView(retiredView);
+        }
         view = null;
         original = null;
         host = null;
