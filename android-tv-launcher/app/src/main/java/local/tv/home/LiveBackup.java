@@ -235,6 +235,10 @@ final class LiveBackup {
                     (radio ? nextAudio >= audio + 3 : nextFrames >= frames + 3) &&
                     (!hasAudio || nextAudio > audio)
                 ) {
+                    if (LiveNative.busy(original)) {
+                        main.postDelayed(check, 100);
+                        return;
+                    }
                     promote();
                     return;
                 }

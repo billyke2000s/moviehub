@@ -13,7 +13,9 @@ import org.videolan.libvlc.MediaPlayer;
 final class LiveNative {
 
     private static final Handler main = new Handler(Looper.getMainLooper());
-    private static final Map<MediaPlayer, Job> waiting = new IdentityHashMap<>();
+    private static final Map<MediaPlayer, Job> waiting = java.util.Collections.synchronizedMap(
+        new IdentityHashMap<>()
+    );
     private static final ExecutorService workers = new ThreadPoolExecutor(
         2,
         2,

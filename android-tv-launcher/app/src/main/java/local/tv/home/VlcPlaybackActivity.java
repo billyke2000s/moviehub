@@ -505,7 +505,7 @@ public class VlcPlaybackActivity extends Activity {
             player.setRate(playbackRate);
             if (aspect != null) player.setAspectRatio(aspect);
         }
-        if (carriedOn && player.isPlaying()) {
+        if (carriedOn && !LiveNative.busy(player) && player.isPlaying()) {
             // Already playing: no "Playing" event will come, so show it as playing now.
             playedOnce = true;
             overlayHandler.removeCallbacks(stalled);

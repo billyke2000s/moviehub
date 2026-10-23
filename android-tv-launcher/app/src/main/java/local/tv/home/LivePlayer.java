@@ -364,7 +364,9 @@ final class LivePlayer {
             output = new LiveVideoOutput(player);
             player.setEventListener(LivePlayer::event);
         }
-        if (!restart && streamUrl.equals(url) && (alive || player.isPlaying())) {
+        if (
+            !restart && streamUrl.equals(url) && (alive || (!LiveNative.busy(player) && player.isPlaying()))
+        ) {
             resume();
             return true;
         }
