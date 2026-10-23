@@ -162,6 +162,7 @@ public final class LiveRecoveryTest {
     public void resolutionAndTimestampChangesKeepVideoAndAudioAdvancing() {
         MediaPlayer same = LivePlayer.player();
         long frames = LivePlayer.output().pictures();
+        int[] resets = { 0 };
         long[] previousTime = { same.getTime() },
             advanced = { 0 },
             latestFrames = { frames };
@@ -171,6 +172,7 @@ public final class LiveRecoveryTest {
                 long time = same.getTime();
                 // HLS discontinuities can reset the reported clock. Require eleven seconds of
                 // forward clock progress across those resets, plus real decoded-frame progress.
+                if (time < previousTime[0]) resets[0]++;
                 if (time > previousTime[0]) advanced[0] += time - previousTime[0];
                 previousTime[0] = time;
                 latestFrames[0] = LivePlayer.output().pictures();
@@ -193,6 +195,15 @@ public final class LiveRecoveryTest {
                 error
             );
         }
+        android.util.Log.i(
+            "MovieHubHandoff",
+            "HLS clock resets=" +
+                resets[0] +
+                ", forward ms=" +
+                advanced[0] +
+                ", decoded frames=" +
+                (latestFrames[0] - frames)
+        );
         assertSame(same, LivePlayer.player());
         assertEquals(1, resolutions.get());
         assertTrue(same.getAudioTrack() >= 0);
