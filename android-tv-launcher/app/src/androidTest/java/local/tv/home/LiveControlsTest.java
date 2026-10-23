@@ -230,6 +230,66 @@ public final class LiveControlsTest {
     }
 
     @Test
+    public void physicalColoursKeepWorkingWhileAnotherPlayerPanelOwnsFocus() {
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_RED);
+        await(() -> SidePanel.current != null && SidePanel.current.isShowing());
+        android.app.Dialog audio = SidePanel.current;
+        await(() -> audio.getWindow().getDecorView().hasWindowFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
+        await(() -> SidePanel.current != null && SidePanel.current != audio);
+        android.app.Dialog sources = SidePanel.current;
+        assertFalse("Green closes Audio", audio.isShowing());
+        await(() -> sources.getWindow().getDecorView().hasWindowFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_BLUE);
+        await(() -> SidePanel.current != null && SidePanel.current != sources);
+        android.app.Dialog options = SidePanel.current;
+        assertFalse("Blue closes Sources", sources.isShowing());
+        await(() -> options.getWindow().getDecorView().hasWindowFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_YELLOW);
+        await(() -> SidePanel.current == null && activity.zapper.overlay.infoShowing());
+        assertFalse("Yellow closes Options", options.isShowing());
+        assertEquals("Colour shortcuts never restart the source", 1, resolutions.get());
+    }
+
+    @Test
+    public void completeHeaderSurvivesProgrammeUpdatesAndBackControls() {
+        remote.runOnMainSync(() -> {
+            activity.zapper.overlay.hideBanner();
+            activity.zapper.overlay.typing("325");
+            activity.zapper.overlay.hideBanner();
+            activity.zapper.overlay.banner(
+                "325",
+                "Pluto TV Movies",
+                "Black Knight",
+                "Now 12.49pm",
+                "The Way Back (2011)",
+                "Next 2.39pm",
+                "A long programme description that wraps onto two lines while the channel header stays visible.",
+                600,
+                "Sources · Auto · Pluto TV · 1 of 3",
+                false
+            );
+            activity.zapper.overlay.focusSources();
+        });
+        remote.waitForIdleSync();
+        SystemClock.sleep(250);
+        remote.runOnMainSync(() -> {
+            android.widget.LinearLayout strip = activity.zapper.overlay.channelStrip;
+            android.graphics.Rect visible = new android.graphics.Rect();
+            assertTrue(strip.getGlobalVisibleRect(visible));
+            assertTrue("Full channel strip has reserved height", strip.getHeight() >= activity.dp(64));
+            assertEquals("Header is not vertically clipped", strip.getHeight(), visible.height());
+            for (int i = 0; i < strip.getChildCount(); i++) {
+                android.view.View label = strip.getChildAt(i);
+                assertTrue("Each channel/header label is visible", label.getGlobalVisibleRect(visible));
+                assertEquals("Header label is not vertically clipped", label.getHeight(), visible.height());
+                assertTrue("Header label has width", visible.width() > 0);
+            }
+        });
+        UiEvidence.capture("live-complete-channel-header");
+    }
+
+    @Test
     public void recreatedPlayerKeepsLiveControlsWithoutStaticGuideState() {
         android.app.Instrumentation.ActivityMonitor monitor = remote.addMonitor(
             VlcPlaybackActivity.class.getName(),

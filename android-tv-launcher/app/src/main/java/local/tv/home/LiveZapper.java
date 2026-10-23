@@ -649,7 +649,7 @@ final class LiveZapper {
         }
         char colour = LiveTvScreen.colour(player.getSharedPreferences("ui", 0), key);
         if (colour != 0) {
-            if (first) colour(colour);
+            if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) colour(colour);
             return true;
         }
         boolean select = key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER;
@@ -707,7 +707,7 @@ final class LiveZapper {
         return handled;
     }
 
-    private void colour(char colour) {
+    void colour(char colour) {
         if (colour == 'r') player.menus.audioAndSubtitles();
         else if (colour == 'g') player.menus.chooseSource();
         else if (colour == 'b') player.menus.liveOptions();

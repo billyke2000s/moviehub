@@ -346,3 +346,6 @@ decoder support, actual TV memory limits and live-feed timing require physical-d
 ## Live TV control consistency
 
 `LiveControlsTest` now opens its live fixture without the static guide session. It covers physical colours, real Activity recreation with cleared static context, saved guide snapshot independence, a learned green button using a numeric key, and visible unclipped controls with long source/channel names. Existing Back/arrow/OK tests remain. These fixtures do not verify the owner’s physical remote. Local core checks pass (733); Android CI is pending.
+
+
+`LiveControlsTest.physicalColoursKeepWorkingWhileAnotherPlayerPanelOwnsFocus` sends red, green, blue and yellow without manually dismissing intermediate dialogs. `completeHeaderSurvivesProgrammeUpdatesAndBackControls` checks full-height channel-strip labels, not only footer buttons, after typing and programme updates; it saves `live-complete-channel-header.png`. These use fixtures, not the physical remote.

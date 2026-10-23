@@ -363,3 +363,8 @@ No physical-TV or real-provider concurrent-decoder test is claimed.
 ## Live TV control consistency
 
 The owner reports colour keys still failing and inconsistent live-player controls. Confirmed code paths allowed live launches without the static guide session to use film controls, learned number/channel codes to be consumed before colour handling, and a fixed-width banner row to overflow. The candidate always builds live controls, persists per-player guide context, matches initial metadata to the launch channel, prioritizes learned colours and bounds banner content. Core checks pass (733); Android CI is pending. Physical remote behaviour and the precise appearance seen on the owner’s TV remain unverified.
+
+
+## Live header and menu-owned remote keys
+
+The supplied photographs both show SkyOverlay; losing the channel strip is distinct from falling back to film controls. The strip now reserves at least 64 dp while allowing larger text to expand it. Player side panels now forward colour shortcuts after dismissal, since their Dialog window otherwise consumes keys before the Activity sees them. Colour actions complete on release to avoid passing a trailing release into a replacement window. Added fixture checks cover all four colours across open panels and the entire header after number entry, programme updates and Back focus. All 733 core checks pass locally; Android CI and physical remote confirmation are pending. The exact cause of the photographed strip collapse has not been reproduced.

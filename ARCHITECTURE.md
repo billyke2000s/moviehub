@@ -307,3 +307,6 @@ unrelated playback clocks: a cut can jump in programme time.
 ## Live TV control consistency
 
 Live launches snapshot `LiveZapper.Session` through `LiveGuideState` into the Intent, and Activity state saves the current list/position. Every live Activity builds `SkyOverlay`; a missing static session cannot select film controls. The initial database lookup matches the launch URL and falls back to all channels if its saved list excludes that channel. Learned colour actions precede generic number/channel shortcuts.
+
+
+Player-owned `SidePanel` dialogs route recognized colour keys through `LiveZapper` after closing, because dialog input does not reach Activity dispatch. Live colours complete on uncancelled release. `SkyOverlay` reserves the channel strip independently of programme content, with room to expand for larger fonts.

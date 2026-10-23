@@ -7,6 +7,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -96,6 +97,20 @@ final class SidePanel {
         dialog.setOwnerActivity(activity);
         // The chosen action runs after the panel has closed, so it can open another panel.
         Runnable[] after = new Runnable[1];
+        // A Dialog owns input while open; Activity.dispatchKeyEvent cannot see these keys.
+        // Complete the press on release so its key-up cannot leak into the replacement panel.
+        if (activity instanceof VlcPlaybackActivity) {
+            VlcPlaybackActivity player = (VlcPlaybackActivity) activity;
+            if (player.zapper != null) dialog.setOnKeyListener((d, key, event) -> {
+                char colour = LiveTvScreen.colour(activity.getSharedPreferences("ui", 0), key);
+                if (colour == 0) return false;
+                if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
+                    after[0] = () -> player.zapper.colour(colour);
+                    dialog.dismiss();
+                }
+                return true;
+            });
+        }
         LinearLayout body = new LinearLayout(activity);
         body.setOrientation(LinearLayout.VERTICAL);
         body.setPadding(dp(28), dp(26), dp(28), dp(24));
