@@ -164,6 +164,7 @@ public class VlcPlaybackActivity extends Activity {
     void revealControls() {
         if (zapper != null) {
             // Live TV from the guide shows the satellite-box overlay instead of film controls.
+            zapper.showBanner();
             if (zapper.overlay != null) zapper.overlay.pause(paused, behindLive);
             return;
         }
@@ -225,6 +226,7 @@ public class VlcPlaybackActivity extends Activity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (zapper != null && zapper.colourKey(event, zapper::colour)) return true;
         forgetReleasedLivePlayer();
         // A Live TV channel that failed: SELECT tries it again (unless browsing other channels).
         if (
@@ -353,7 +355,11 @@ public class VlcPlaybackActivity extends Activity {
             else revealControls();
         });
         setContentView(root);
-        pause.requestFocus();
+        if (live) {
+            video.setFocusable(true);
+            video.setFocusableInTouchMode(true);
+            video.requestFocus();
+        } else pause.requestFocus();
         revealControls();
     }
 

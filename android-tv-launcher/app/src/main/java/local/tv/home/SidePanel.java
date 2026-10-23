@@ -7,7 +7,6 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -97,20 +96,16 @@ final class SidePanel {
         dialog.setOwnerActivity(activity);
         // The chosen action runs after the panel has closed, so it can open another panel.
         Runnable[] after = new Runnable[1];
-        // A Dialog owns input while open; Activity.dispatchKeyEvent cannot see these keys.
-        // Act on the first press, as the guide does. Repeats/releases are consumed without
-        // firing again when Android delivers them to the replacement window.
+        // A Dialog owns input while open. Share press identity with the player so a held key
+        // or trailing release cannot reopen a menu after this window is replaced.
         if (activity instanceof VlcPlaybackActivity) {
             VlcPlaybackActivity player = (VlcPlaybackActivity) activity;
-            if (player.zapper != null) dialog.setOnKeyListener((d, key, event) -> {
-                char colour = LiveTvScreen.colour(activity.getSharedPreferences("ui", 0), key);
-                if (colour == 0) return false;
-                if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+            if (player.zapper != null) dialog.setOnKeyListener((d, key, event) ->
+                player.zapper.colourKey(event, colour -> {
                     after[0] = () -> player.zapper.colour(colour);
                     dialog.dismiss();
-                }
-                return true;
-            });
+                })
+            );
         }
         LinearLayout body = new LinearLayout(activity);
         body.setOrientation(LinearLayout.VERTICAL);

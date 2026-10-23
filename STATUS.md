@@ -383,3 +383,8 @@ The owner supplied new photographs after 0.49: a full banner on some channels an
 
 
 0.50 validation: all 169 Android tests passed without skips in CI run 40006802520, along with builds/lint/signing and provider checks. Inspected normal and constrained banner screenshots; header and all four controls are visible. Core validation: 753 checks. Physical-TV behaviour still requires confirmation.
+
+
+## One live overlay and shared colour input
+
+The owner confirms the problem persists on the current release. A concrete UI mismatch remained: OK opened Options when the banner was already visible, and TV picture clicks only revealed pause state. The candidate routes entry/OK/click/Back through the same banner and removes the attached film-controls tree from live sessions. Visible video receives initial focus. Colour dispatch is centralized before native access and shared with player Dialogs; first-received repeats, standalone releases and standard scan identities are covered without requiring remote setup or code capture. Core validation: 775 passing checks. Android validation is recorded on the pull request/release. The owner’s exact hardware-input failure is not reproduced and must not be declared conclusively resolved.

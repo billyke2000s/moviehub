@@ -97,7 +97,7 @@ final class PlayerMenus {
     }
 
     /**
-     * Live TV's Options (SELECT twice, the blue key or MENU): there are no on-screen controls, so
+     * Live TV's Options (the blue key, MENU, or the focused Options button): there are no on-screen controls, so
      * pause and audio and subtitles are here too.
      */
     void liveOptions() {

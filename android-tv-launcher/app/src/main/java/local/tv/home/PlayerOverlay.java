@@ -20,6 +20,10 @@ final class PlayerOverlay {
     private PlayerOverlay() {}
 
     static void build(VlcPlaybackActivity a, FrameLayout root) {
+        if (a.live) {
+            liveState(a);
+            return;
+        }
         // Streaming-app layout: the title on a shade at the top; at the bottom a full-width
         // timeline with the time on the right, then play controls on the left and options on
         // the right. The whole overlay hides together.
@@ -136,6 +140,20 @@ final class PlayerOverlay {
         );
         hintLayout.topMargin = a.dp(96);
         root.addView(a.exitHint, hintLayout);
+    }
+
+    /** Live TV has one visible overlay (SkyOverlay); shared playback bookkeeping needs no film UI. */
+    private static void liveState(VlcPlaybackActivity a) {
+        a.controls = new View(a);
+        a.controls.setVisibility(View.GONE);
+        a.titleView = new TextView(a);
+        a.titleView.setText(a.getIntent().getStringExtra("title"));
+        a.speed = new TextView(a);
+        a.timeLeft = new TextView(a);
+        a.timeline = new SeekBar(a);
+        a.pause = new View(a);
+        a.pauseIcon = new ImageView(a);
+        a.exitHint = new TextView(a);
     }
 
     private static android.graphics.drawable.GradientDrawable shade(

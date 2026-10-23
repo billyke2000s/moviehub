@@ -304,8 +304,11 @@ public final class LiveControlsTest {
     }
 
     private void playerKey(int action, int key, int repeat) {
+        playerKey(new KeyEvent(1, 2, action, key, repeat));
+    }
+
+    private void playerKey(KeyEvent event) {
         remote.runOnMainSync(() -> {
-            KeyEvent event = new KeyEvent(1, 2, action, key, repeat);
             if (SidePanel.current != null) SidePanel.current.dispatchKeyEvent(event);
             else activity.dispatchKeyEvent(event);
         });
@@ -428,6 +431,112 @@ public final class LiveControlsTest {
         } finally {
             remote.runOnMainSync(() -> ((android.view.ViewGroup) host.getParent()).removeView(host));
         }
+    }
+
+    @Test
+    public void entryOkClickAndBackUseTheSameFullBanner() {
+        remote.runOnMainSync(() -> {
+            assertTrue("Live input focuses the visible video", activity.video.hasFocus());
+            assertNull("Live TV never attaches the film overlay", activity.controls.getParent());
+        });
+        remote.waitForIdleSync();
+        SystemClock.sleep(250);
+        android.graphics.Rect initial = new android.graphics.Rect();
+        remote.runOnMainSync(() ->
+            assertTrue(activity.zapper.overlay.channelStrip.getGlobalVisibleRect(initial))
+        );
+        for (int i = 0; i < 3; i++) {
+            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+            remote.waitForIdleSync();
+            assertNull("OK refreshes the banner rather than opening Options", SidePanel.current);
+            assertTrue(activity.zapper.overlay.bannerShowing());
+        }
+        remote.runOnMainSync(() -> {
+            activity.zapper.overlay.hideBanner();
+            ((android.view.View) activity.video.getParent()).performClick();
+            assertTrue("Click uses the same live banner", activity.zapper.overlay.bannerShowing());
+        });
+        remote.waitForIdleSync();
+        SystemClock.sleep(250);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            android.graphics.Rect after = new android.graphics.Rect();
+            assertTrue(activity.zapper.overlay.channelStrip.getGlobalVisibleRect(after));
+            assertEquals("Every reveal retains the complete header layout", initial, after);
+            assertEquals(
+                "Back only enables focus on the existing controls",
+                0,
+                activity.zapper.overlay.focusedControl()
+            );
+            assertNull(SidePanel.current);
+            assertEquals(android.view.View.GONE, activity.controls.getVisibility());
+        });
+        UiEvidence.capture("live-entry-ok-click-back-one-banner");
+    }
+
+    private KeyEvent remoteEvent(int action, int key, int scan, int repeat, long pressTime) {
+        return new KeyEvent(
+            pressTime,
+            pressTime + 1,
+            action,
+            key,
+            repeat,
+            0,
+            77,
+            scan,
+            0,
+            android.view.InputDevice.SOURCE_DPAD
+        );
+    }
+
+    @Test
+    public void standardColourDeliveryVariantsShareOneActionAcrossWindows() {
+        playerKey(remoteEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_PROG_RED, 398, 2, 100));
+        android.app.Dialog audio = SidePanel.current;
+        assertNotNull("First received press need not have repeat count zero", audio);
+        assertTrue(containsText(audio.getWindow().getDecorView(), "Audio & Subtitles"));
+        playerKey(remoteEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_PROG_RED, 398, 3, 100));
+        playerKey(remoteEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_PROG_RED, 398, 0, 100));
+        assertSame("A held press and release crossing windows run only once", audio, SidePanel.current);
+        playerKey(remoteEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_PROG_GREEN, 399, 0, 200));
+        android.app.Dialog sources = SidePanel.current;
+        assertTrue(
+            "Release-only green still opens Sources",
+            containsText(sources.getWindow().getDecorView(), "Sources")
+        );
+        playerKey(remoteEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_UNKNOWN, 401, 0, 300));
+        android.app.Dialog options = SidePanel.current;
+        assertTrue(
+            "Android's standard blue scan identity works without translation",
+            containsText(options.getWindow().getDecorView(), "Options")
+        );
+        playerKey(remoteEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_UNKNOWN, 401, 0, 300));
+        assertSame(options, SidePanel.current);
+        playerKey(remoteEvent(KeyEvent.ACTION_MULTIPLE, KeyEvent.KEYCODE_PROG_YELLOW, 400, 1, 400));
+        assertNull(SidePanel.current);
+        assertTrue(activity.zapper.overlay.infoShowing());
+        playerKey(remoteEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_PROG_YELLOW, 400, 0, 400));
+        assertTrue(
+            "The final release does not toggle Information off",
+            activity.zapper.overlay.infoShowing()
+        );
+        android.content.SharedPreferences prefs = activity.getSharedPreferences("ui", 0);
+        for (int i = 0; i < 4; i++) assertEquals(
+            LiveTvScreen.COLOURS[i],
+            LiveTvScreen.colour(
+                prefs,
+                remoteEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_UNKNOWN, 398 + i, 0, 500 + i)
+            )
+        );
+        assertEquals(
+            "A known non-colour key is never remapped using its scan",
+            (char) 0,
+            LiveTvScreen.colour(
+                prefs,
+                remoteEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_UP, 398, 0, 600)
+            )
+        );
     }
 
     @Test
