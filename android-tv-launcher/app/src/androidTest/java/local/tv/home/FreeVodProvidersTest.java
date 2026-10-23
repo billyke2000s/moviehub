@@ -23,6 +23,56 @@ public final class FreeVodProvidersTest {
     }
 
     @Test
+    public void realExtractorEmitsBothServersThroughTheAndroidCallback() throws Exception {
+        FreeVodProviders.ids(context);
+        Context tests = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().getContext();
+        java.io.File script = java.io.File.createTempFile("free-vod-fixture", ".py", context.getCacheDir());
+        try (
+            java.io.InputStream input = tests.getAssets().open("free_vod_fixture.py");
+            java.io.OutputStream output = new java.io.FileOutputStream(script)
+        ) {
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
+        }
+        com.chaquo.python.PyObject fixture = com.chaquo.python.Python.getInstance()
+            .getModule("runpy")
+            .callAttr("run_path", script.getAbsolutePath());
+        fixture.callAttr("get", "install").call();
+        try {
+            java.util.List<SourceRepository.Source> sources = new java.util.ArrayList<>();
+            FreeVodProviders.search(
+                context,
+                "free99:my4hydra_top",
+                new JSONObject()
+                    .put("imdb", "tt1234567")
+                    .put("tmdb", 12)
+                    .put("title", "Fixture Film")
+                    .put("year", "2020")
+                    .put("season", -1)
+                    .put("episode", -1)
+                    .put("http", false),
+                new AtomicBoolean(false),
+                sources::add
+            );
+            assertEquals(2, sources.size());
+            assertEquals(SourceRepository.Cache.CACHED, sources.get(0).cache);
+            assertEquals(
+                "https://one.example/video.mp4",
+                sources.get(0).files.getJSONObject(0).getString("link")
+            );
+            assertEquals(
+                "https://two.example/video.mp4",
+                sources.get(1).files.getJSONObject(0).getString("link")
+            );
+            assertEquals(0, AutoPlayback.pick(sources.get(0).files, -1, -1, "Fixture Film"));
+        } finally {
+            fixture.callAttr("get", "restore").call();
+            script.delete();
+        }
+    }
+
+    @Test
     public void javaCancellationReachesPackagedPythonBeforeAnyProviderRequest() throws Exception {
         AtomicInteger emitted = new AtomicInteger();
         FreeVodProviders.search(
