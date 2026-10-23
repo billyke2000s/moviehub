@@ -162,7 +162,7 @@ public final class LiveControlsTest {
         await(() -> !activity.zapper.automaticSources());
         assertEquals(
             "Selected channel survives Activity recreation",
-            activity.url,
+            activity.playbackUrl(),
             activity.getIntent().getStringExtra("url")
         );
         remote.runOnMainSync(() ->

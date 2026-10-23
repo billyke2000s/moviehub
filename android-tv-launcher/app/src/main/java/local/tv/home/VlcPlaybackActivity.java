@@ -357,6 +357,10 @@ public class VlcPlaybackActivity extends Activity {
         revealControls();
     }
 
+    String playbackUrl() {
+        return url;
+    }
+
     LibVLC filmEngine() {
         return engine;
     }

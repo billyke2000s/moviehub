@@ -275,7 +275,7 @@ final class LiveZapper {
     private void load(int position, boolean play, boolean current) {
         int ticket = ++request;
         Session s = own;
-        String activeUrl = current ? player.url : null;
+        String activeUrl = current ? player.playbackUrl() : null;
         String activeKey = activeUrl == null ? null : ChannelQuery.key(activeUrl);
         boolean activeAutomatic = LivePlayer.automaticSources;
         Set<String> activeAttempts = new HashSet<>(LivePlayer.attemptedSources);
