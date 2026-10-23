@@ -380,3 +380,6 @@ Three short buffering notifications can still prepare an alternate source. A sam
 ## Consistent live banner and standard colours
 
 The owner supplied new photographs after 0.49: a full banner on some channels and a collapsed strip on others, with colour shortcuts still failing. The next candidate restores first-down colour handling, prevents saved aliases from overriding standard colour identities, reserves explicit scaled header height and measures the banner before optional panels. The constrained-layout case and input edge cases have new regressions. 753 core checks pass locally; Android CI is pending. The exact physical-TV failure remains unconfirmed; no claim that the owner must inspect remote codes or configure standard buttons.
+
+
+0.50 validation: all 169 Android tests passed without skips in CI run 40006802520, along with builds/lint/signing and provider checks. Inspected normal and constrained banner screenshots; header and all four controls are visible. Core validation: 753 checks. Physical-TV behaviour still requires confirmation.
