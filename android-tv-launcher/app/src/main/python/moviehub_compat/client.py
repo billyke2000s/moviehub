@@ -16,6 +16,7 @@ class Cancelled(BaseException): pass
 
 def scope(cancel, timeout=18, http=False):
     _STATE.cancel, _STATE.deadline, _STATE.http = cancel, time.monotonic()+timeout, http
+    _STATE.failure = None
 
 def check():
     callback = getattr(_STATE, 'cancel', None)
@@ -34,12 +35,16 @@ def safe(url):
         if not address.is_global: raise ValueError('Private provider address')
     return url
 
-def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=MAX_BODY, session=None):
-    current = safe(url)
+def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=MAX_BODY, session=None, method=None):
+    try:
+        current = safe(url)
+    except Exception as error:
+        _STATE.failure = type(error).__name__
+        raise
     owned = session is None
     session = session or requests.Session()
     session.trust_env = False
-    method = 'POST' if post is not None else 'GET'
+    method = method or ('POST' if post is not None else 'GET')
     data = post
     try:
         for attempt in range(6):
@@ -70,6 +75,9 @@ def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=MAX_
             response.close()
             return response
         raise ValueError('Redirect limit')
+    except Exception as error:
+        _STATE.failure = type(error).__name__
+        raise
     finally:
         if owned: session.close()
 
@@ -100,3 +108,6 @@ def request(url, close=True, redirect=True, error=False, verify=True, post=None,
 def url_ok(url):
     try: return fetch(url).status_code < 400
     except Exception: return False
+
+def failure():
+    return getattr(_STATE, "failure", None)

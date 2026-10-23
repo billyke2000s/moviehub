@@ -182,7 +182,7 @@ public class FocusStyleTest {
             assertEquals("Synopsis appears once", 1, countText(root, overview));
             View primary = activity.getCurrentFocus();
             assertTrue("The main action is focused", primary instanceof Button);
-            assertEquals("Find sources", ((Button) primary).getText().toString());
+            assertEquals("▶  Play", ((Button) primary).getText().toString());
             assertTrue("The main action uses the standard selected button style", primary.isSelected());
             assertEquals("Cast is listed", 1, countText(root, "Actor One"));
             assertEquals("Genres in the kicker", 1, countText(root, "MOVIE  ·  DRAMA"));

@@ -187,3 +187,18 @@ jobs:
       - name: Remove temporary signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/compatibility-signing.jks"
+
+  free-vod-live-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install source probe dependencies
+        run: python -m pip install requests==2.32.5 six==1.17.0
+      - name: Probe public provider availability without logging stream URLs
+        # External availability is diagnostic, never a substitute for playback fixtures.
+        continue-on-error: true
+        run: timeout 180s python -u android-tv-launcher/tests/probe-free-vod.py

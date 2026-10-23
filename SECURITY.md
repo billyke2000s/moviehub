@@ -163,6 +163,6 @@ strings use literal parsing. The compatibility client bounds responses, checks p
 HTTP(S) targets and observes cancellation/deadlines. HTTPS is required unless the existing
 HTTP setting permits otherwise. Headers are retained in memory and relayed only through
 the existing authenticated loopback transport. Python executes with the app's privileges;
-this is not a sandbox boundary. Vendored host code still needs a complete transport/security
-review and live-device verification before production distribution. See third-party notices
-for the unresolved Free99 modification-licensing provenance.
+this is not a sandbox boundary. Website-fed text decoders use a restricted literal/arithmetic interpreter; Python eval/exec
+calls were removed. Direct urllib host requests also use the bounded client. Physical-device
+verification remains outstanding. See the third-party notices for component provenance.

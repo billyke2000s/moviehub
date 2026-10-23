@@ -397,6 +397,7 @@ selection window and late-source appending to existing VOD recovery. Website res
 probed before selection; reported quality is not a measured decoder resolution. Local Java
 core checks and Python offline fixtures pass. Android build/emulator validation is pending
 on this branch. No production release or real-provider/physical-TV success is claimed.
-Free99 modification licence provenance and full vendored-host transport review remain
-production blockers; Kodi-library and API-key sources are explicitly not represented as
-working anonymous website providers.
+The Free99 metadata licence field is blank; its Scrubs ancestry and inherited GPL notices
+are recorded. Kodi-library and API-key sources are explicitly not represented as working
+anonymous website providers. The follow-up removes website-fed eval/exec, bounds direct urllib
+requests, adds an external CI availability probe and verifies packaged Python imports on Android.

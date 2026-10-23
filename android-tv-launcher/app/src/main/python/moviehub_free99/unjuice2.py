@@ -1,3 +1,4 @@
+from moviehub_compat.expression import evaluate
 from ast import literal_eval
 ### Pulled from resolveurl for a scraper that uses it.
 
@@ -21,7 +22,7 @@ def run(code):
     try:
         symbolMap = ["`", "%", "-", "+", "*", "$", "!", "_", "^", "="]
         code = re.findall(r'_juicycodes\(([^\)]+)', code, re.IGNORECASE)[0]
-        code = eval(code)
+        code = evaluate(code)
         ordSalt = decodeSalt(code[-3:])
         jscode = code[:-3]
         x = (len(jscode) + 3) % 4

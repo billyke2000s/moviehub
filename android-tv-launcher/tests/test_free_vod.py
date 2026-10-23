@@ -63,4 +63,12 @@ class FreeVodTests(unittest.TestCase):
         for url in ['file:///tmp/video.mp4','http://example.com/video.mp4','https://127.0.0.1/video.mp4','https://user:pass@example.com/video.mp4']:
             with self.subTest(url=url),self.assertRaises(ValueError):client.safe(url)
 
+    def test_decoder_expressions_never_execute_website_code(self):
+        from moviehub_compat.expression import evaluate
+        self.assertEqual(evaluate("(3 + 4) * 2"),14)
+        self.assertEqual(evaluate("'one' + 'two'"),'onetwo')
+        self.assertEqual(evaluate("seed + 2", {'seed':3}),5)
+        for expression in ["__import__('os').getcwd()", "(1).__class__", "[x for x in []]", "2**1000", "'a'*99999999"]:
+            with self.subTest(expression=expression),self.assertRaises(ValueError):evaluate(expression)
+
 if __name__=='__main__':unittest.main()

@@ -79,6 +79,9 @@ public final class LiveControlsTest {
         await(
             () -> activity.zapper != null && activity.zapper.copies().size() == 2 && resolutions.get() == 1
         );
+        // Resolver readiness does not imply that Android has finished transferring input focus.
+        // Inject physical keys only once this newly launched player owns the window.
+        await(() -> activity.hasWindowFocus());
     }
 
     @After

@@ -1,3 +1,4 @@
+from moviehub_compat.expression import evaluate
 # -*- coding: utf-8 -*-
 # ------------------------------------------------------------
 # Alfa Addon - Kodi Plugin
@@ -42,7 +43,7 @@ def decode(text, alt=False):
             c += v
             try:
                 x = c
-                subchar += str(eval(x))
+                subchar += str(evaluate(x))
                 c = ""
             except:
                 pass
@@ -70,7 +71,7 @@ def toStringCases(txt_result):
         else:
             txt_temp = re.findall(r'(\d+)\.0.\w+.([^\)]+).', txt_result, re.DOTALL)
         for numero, base in txt_temp:
-            code = toString(int(numero), eval(base + sum_base))
+            code = toString(int(numero), evaluate(base + sum_base))
             if m3:
                 txt_result = re.sub(r'"|\+', '', txt_result.replace("(" + base + "," + numero + ")", code))
             else:

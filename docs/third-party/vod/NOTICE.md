@@ -12,9 +12,9 @@ alone does not describe all bundled components.
 - Free99 2.0.1: https://github.com/nebulous42069/Omega , package
   `omega/zips/plugin.video.free99/plugin.video.free99-2.0.1.zip`. Its metadata identifies
   JewBMX and DIGGZ and describes a Scrubs fork, but leaves the licence field empty.
-  No new permissive licence is inferred for its modifications; inherited Scrubs GPL
-  notices and obligations are preserved. Redistribution of the Free99 modifications
-  still needs provenance/licensing confirmation before a production release.
+  No new permissive licence is inferred for its modifications; its Scrubs ancestry,
+  inherited GPL notices and obligations are recorded here. The combined distribution
+  is supplied with GPLv3 terms and corresponding source, retaining original MIT notices.
 - ResolveURL 5.1.212: https://github.com/Gujal00/ResolveURL , directory
   `script.module.resolveurl/lib/resolveurl`. GPLv3-or-later, with embedded per-file notices.
   See ResolveURL-LICENSE.txt and the individual component headers.
@@ -38,3 +38,6 @@ No Kodi UI, accounts, add-on service or executable website scripts are started.
 
 Availability and playback depend on each remote service. Bundling a provider is not evidence
 that its domain is live, that every title matches, or that it can stream on a particular TV.
+
+Additional hardening: website-fed decoders use a bounded literal/arithmetic interpreter;
+Python eval/exec calls were removed. Direct urllib host requests use the bounded transport.

@@ -380,3 +380,7 @@ plain-HTTP target rejection. Run `python android-tv-launcher/tests/test_free_vod
 requests and six installed. These checks do not prove live playback. Python 3.11 is required
 for Android builds; Chaquopy adds native runtime ABIs to the APK. Full Android CI and device
 validation must pass before treating this as a release candidate.
+
+FreeVodProvidersTest imports all 68 constructors from the packaged Android Python runtime
+and checks Java-to-Python cancellation. The offline suite also rejects executable decoder
+expressions. A separate CI probe reports public provider availability without logging URLs.

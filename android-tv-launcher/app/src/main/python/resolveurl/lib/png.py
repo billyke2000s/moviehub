@@ -214,15 +214,15 @@ def group(s, n):
 
 def _rel_import(module, tgt):
     """Using relative import in both Python 2 and Python 3"""
+    import importlib
+    if not module.isidentifier() or not tgt.isidentifier():
+        raise ValueError("Invalid internal import")
     try:
-        exec("from ." + module + " import " + tgt, globals(), locals())
-    except SyntaxError:
-        # On Python < 2.5 relative import cause syntax error
-        exec("from " + module + " import " + tgt, globals(), locals())
-    except (ValueError, SystemError):
-        # relative import in non-package, try absolute
-        exec("from " + module + " import " + tgt, globals(), locals())
-    return eval(tgt)
+        imported = importlib.import_module("." + module, __package__)
+    except (ImportError, TypeError):
+        imported = importlib.import_module(module)
+    return getattr(imported, tgt)
+
 
 
 try:

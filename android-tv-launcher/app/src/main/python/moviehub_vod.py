@@ -70,7 +70,7 @@ def query(provider_id, raw, cancelled, emit=None):
                 break
             except Exception:
                 continue
-        return json.dumps({'status':'complete','sources':sources})
+        return json.dumps({'status':('complete' if sources else client.failure() or 'no_matches'),'sources':sources})
     except client.Cancelled:
         return json.dumps({'status':'timeout','sources':[]})
     except Exception as error:
@@ -121,5 +121,46 @@ def net_fetch(self,url,form_data=None,headers=None,compression=True,jdata=False,
     out.setdefault('User-Agent', self.get_user_agent() or client.UserAgent)
     if jdata and form_data is not None:
         form_data=json.dumps(form_data);out['Content-Type']='application/json'
-    return Response(client.fetch(url,out,form_data,timeout,redirect))
+    session=client.requests.Session()
+    session.cookies.update(self._cj)
+    try:
+        response=client.fetch(url,out,form_data,timeout,redirect,session=session,method=method)
+        for cookie in session.cookies: self._cj.set_cookie(cookie)
+        response.cookies=session.cookies
+        return Response(response)
+    finally:
+        session.close()
 Net._fetch=net_fetch
+
+
+# A few host plugins use urllib directly instead of Net. Route both through the same
+# public-target, TLS, cancellation, response-size and redirect checks.
+import io
+import email.message
+import urllib.request
+import urllib.response
+
+def urllib_open(request, data=None, timeout=8, **kwargs):
+    if isinstance(request,str):
+        address,headers,method=request,{},('POST' if data is not None else 'GET')
+    else:
+        address=request.full_url
+        headers=dict(request.header_items())
+        data=request.data if data is None else data
+        method=request.get_method()
+    response=client.fetch(address,headers,data,timeout,method=method)
+    message=email.message.Message()
+    for key,value in response.headers.items(): message[key]=value
+    result=urllib.response.addinfourl(io.BytesIO(response.content),message,response.url,response.status_code)
+    result.msg=response.reason
+    return result
+
+class SafeOpener:
+    def __init__(self): self.addheaders=[]
+    def open(self,request,data=None,timeout=8):
+        if isinstance(request,str): request=urllib.request.Request(request,data=data,headers=dict(self.addheaders))
+        return urllib_open(request,data,timeout)
+    def add_handler(self,handler): pass
+
+urllib.request.urlopen=urllib_open
+urllib.request.build_opener=lambda *handlers: SafeOpener()
