@@ -322,3 +322,8 @@ Three short buffering notifications can still prepare an alternate source. A sam
 ## Consistent live banner and standard colours
 
 The live overlay measures the channel banner before optional pause/information panels, so those panels cannot consume its layout height. The channel strip has an explicit height scaled for text size. Standard PROG_RED/GREEN/YELLOW/BLUE identities precede learned aliases; function-key aliases remain configurable. Player and dialog colour handlers act on the initial key-down and consume repeat/up events without reopening menus.
+
+
+## One live overlay and shared colour input
+
+Live TV does not attach PlayerOverlay film controls. PlayerOverlay creates only unattached bookkeeping widgets for shared playback state; SkyOverlay is the sole visible live controls view. Entry, OK and picture click call LiveZapper.showBanner; Back enables focus on that same banner. Options remains an explicit blue/Menu/selected-button action. Activity and SidePanel route colours through one session-owned ColourPress before native-player access, recognizing the first delivered press, standalone release or complete multiple event while suppressing duplicates across changing windows. Unknown translated keys can use Android TV Generic.kl’s standard colour scan identities (398–401); known non-colour keys are never overridden.

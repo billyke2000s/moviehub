@@ -53,6 +53,7 @@ final class LiveZapper {
     private Session own;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final ChannelDatabase db;
+    private final ColourPress colourPress = new ColourPress();
     private List<ChannelDatabase.Row> copies = new ArrayList<>();
     private int copy,
         previousPosition = -1,
@@ -110,19 +111,7 @@ final class LiveZapper {
                 player::finish,
             }
         );
-        overlay.banner(
-            "",
-            player.getIntent().getStringExtra("title"),
-            "No programme information",
-            "",
-            "",
-            "",
-            "",
-            -1,
-            sourceText(),
-            false
-        );
-        player.overlayHandler.postDelayed(hideBanner, BANNER_MS);
+        showBanner();
         load(own.position, false, true);
     }
 
@@ -546,6 +535,22 @@ final class LiveZapper {
     void showBanner() {
         endBrowse();
         if (bannerRow != null) showBanner(bannerRow, bannerListing);
+        else {
+            overlay.banner(
+                "",
+                player.getIntent().getStringExtra("title"),
+                "No programme information",
+                "",
+                "",
+                "",
+                "",
+                -1,
+                sourceText(),
+                false
+            );
+            player.overlayHandler.removeCallbacks(hideBanner);
+            if (!backControls) player.overlayHandler.postDelayed(hideBanner, BANNER_MS);
+        }
     }
 
     private void showBanner(ChannelDatabase.Row row, List<ChannelDatabase.Programme> listing) {
@@ -633,7 +638,7 @@ final class LiveZapper {
      * <ul>
      *   <li>▲ ▼, CH+ CH-: change channel (in the banner while browsing: other channels).
      *   <li>◀ ▶: browse what is on, without changing channel; SELECT watches the channel shown.
-     *   <li>SELECT: the banner; SELECT again: options. Numbers, last channel, GUIDE.
+     *   <li>SELECT: reveal/refresh the same banner. Numbers, last channel, GUIDE.
      *   <li>i (or yellow): programme information. Red: audio and subtitles. Green: source.
      *       Blue (or MENU): options.
      *   <li>BACK: closes what is open; then back to the guide, whose picture carries on.
@@ -647,11 +652,7 @@ final class LiveZapper {
             if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) back();
             return true;
         }
-        char colour = LiveTvScreen.colour(player.getSharedPreferences("ui", 0), key);
-        if (colour != 0) {
-            if (first) colour(colour);
-            return true;
-        }
+        if (colourKey(event, this::colour)) return true;
         boolean select = key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER;
         if (browsing) {
             int channel = key == KeyEvent.KEYCODE_DPAD_UP ? 1 : key == KeyEvent.KEYCODE_DPAD_DOWN ? -1 : 0,
@@ -694,8 +695,7 @@ final class LiveZapper {
             if (first) {
                 if (backControls) {
                     if (!overlay.pressControl()) player.menus.chooseSource();
-                } else if (overlay.bannerShowing()) player.menus.liveOptions();
-                else showBanner();
+                } else showBanner();
             }
         } else if (key == KeyEvent.KEYCODE_INFO || key == KeyEvent.KEYCODE_MENU) {
             if (first) colour(key == KeyEvent.KEYCODE_INFO ? 'y' : 'b');
@@ -705,6 +705,22 @@ final class LiveZapper {
             if (first) player.finish();
         } else handled = false;
         return handled;
+    }
+
+    /** One input path for Activity and Dialog windows, before any native-player access. */
+    boolean colourKey(KeyEvent event, java.util.function.Consumer<Character> action) {
+        char colour = LiveTvScreen.colour(player.getSharedPreferences("ui", 0), event);
+        if (colour == 0) return false;
+        if (
+            colourPress.accept(
+                event.getDeviceId(),
+                colour,
+                event.getAction(),
+                event.getDownTime(),
+                event.isCanceled()
+            )
+        ) action.accept(colour);
+        return true;
     }
 
     void colour(char colour) {

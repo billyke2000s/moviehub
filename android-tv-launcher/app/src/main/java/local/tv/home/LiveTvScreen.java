@@ -559,6 +559,16 @@ final class LiveTvScreen {
         return colour(activity.prefs, key);
     }
 
+    static char colour(android.content.SharedPreferences prefs, KeyEvent event) {
+        int scan = event.getScanCode();
+        // Android TV Generic.kl maps Linux KEY_RED/GREEN/YELLOW/BLUE (398–401) to PROG_*.
+        // Retain those standard identities when firmware leaves the translated key unknown.
+        if (event.getKeyCode() == KeyEvent.KEYCODE_UNKNOWN && scan >= 398 && scan <= 401) return COLOURS[
+            scan - 398
+        ];
+        return colour(prefs, event.getKeyCode());
+    }
+
     static char colour(android.content.SharedPreferences prefs, int key) {
         // Standard colour buttons always perform the colour printed on the remote. Old learned
         // aliases must not turn (for example) a real green button into the red action.

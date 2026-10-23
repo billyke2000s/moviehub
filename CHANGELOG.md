@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.51 (23 October 2026)
+
+- Use one visible Live TV overlay for entry, OK, picture clicks and Back; repeated OK refreshes the same banner instead of opening Options. Keep Options on the blue/Menu button and selectable control.
+- Focus the visible live picture instead of a hidden film control, and route colour presses through one handler shared with player menus before native-player access.
+- Accept the first delivered press, standalone release and standard Android TV colour scan identities while suppressing repeats across menu windows.
+
 ## 0.50 (23 October 2026)
 
 - Keep the full Live TV channel banner ahead of optional information/pause panels when space is limited, with a reserved header height that grows for larger text.
