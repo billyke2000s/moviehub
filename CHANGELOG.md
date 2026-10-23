@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Preserve space for the complete Live TV channel header during banner updates.
+- Keep remote colour shortcuts working while a player menu is open; finish colour presses on release before opening another menu.
+
 ## 0.48 (23 October 2026)
 
 - Always use the Live TV banner and colour-key actions on live launches, including restored activities without a static guide session. Save each player’s guide context and match the initial listings to its actual channel.

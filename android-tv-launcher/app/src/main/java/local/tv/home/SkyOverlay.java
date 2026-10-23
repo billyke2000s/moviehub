@@ -37,6 +37,7 @@ final class SkyOverlay {
 
     private final VlcPlaybackActivity a;
     private final LinearLayout banner, info, pauseBar, keys;
+    final LinearLayout channelStrip;
     private final TextView number, name, clock, nowTime, nowTitle, nextTime, nextTitle, about, source, hint;
     private final TextView infoTitle, infoWhen, infoAbout, infoChannel, pauseIcon, pauseText;
     private final ProgressBar progress;
@@ -94,7 +95,8 @@ final class SkyOverlay {
 
         // The banner.
         banner = panel();
-        LinearLayout title = strip();
+        channelStrip = strip();
+        LinearLayout title = channelStrip;
         number = label(26, true, LiveTvScreen.YELLOW);
         number.setMinWidth(a.dp(78));
         title.addView(number);
@@ -115,7 +117,10 @@ final class SkyOverlay {
         controls.add(source);
         clock = label(20, true, Color.WHITE);
         title.addView(clock);
-        banner.addView(title);
+        // Reserve the complete channel strip independently of now/next and information content.
+        // A wrap-content strip must never collapse to just its blue padding during a relayout.
+        title.setMinimumHeight(a.dp(64));
+        banner.addView(title, new LinearLayout.LayoutParams(-1, -2));
         LinearLayout content = body();
         LinearLayout nowRow = row();
         nowTime = label(18, true, TIME);
