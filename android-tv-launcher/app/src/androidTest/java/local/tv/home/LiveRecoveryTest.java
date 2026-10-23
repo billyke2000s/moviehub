@@ -162,12 +162,37 @@ public final class LiveRecoveryTest {
     public void resolutionAndTimestampChangesKeepVideoAndAudioAdvancing() {
         MediaPlayer same = LivePlayer.player();
         long frames = LivePlayer.output().pictures();
-        await(
-            () ->
-                !LiveNative.busy(same) &&
-                same.getTime() > 11000 &&
-                LivePlayer.output().pictures() > frames + 100
-        );
+        long[] previousTime = { same.getTime() },
+            advanced = { 0 },
+            latestFrames = { frames };
+        try {
+            await(() -> {
+                if (LiveNative.busy(same)) return false;
+                long time = same.getTime();
+                // HLS discontinuities can reset the reported clock. Require eleven seconds of
+                // forward clock progress across those resets, plus real decoded-frame progress.
+                if (time > previousTime[0]) advanced[0] += time - previousTime[0];
+                previousTime[0] = time;
+                latestFrames[0] = LivePlayer.output().pictures();
+                return advanced[0] >= 11000 && latestFrames[0] > frames + 100;
+            });
+        } catch (AssertionError error) {
+            throw new AssertionError(
+                "HLS transition: clock=" +
+                    previousTime[0] +
+                    ", forward=" +
+                    advanced[0] +
+                    ", decoded=" +
+                    latestFrames[0] +
+                    ", initial=" +
+                    frames +
+                    ", resolutions=" +
+                    resolutions.get() +
+                    ", recovery=" +
+                    LivePlayer.videoRecovery(),
+                error
+            );
+        }
         assertSame(same, LivePlayer.player());
         assertEquals(1, resolutions.get());
         assertTrue(same.getAudioTrack() >= 0);

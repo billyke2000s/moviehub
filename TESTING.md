@@ -354,3 +354,5 @@ decoder support, actual TV memory limits and live-feed timing require physical-d
 ## Live playback recovery
 
 LiveRecoveryTest serves deterministic 320×180 and 640×360 H.264/AAC MPEG-TS segments behind an HLS playlist with timestamp discontinuities. It checks actual video/audio progression across format changes, bounded same-channel Pluto retries, controls during a deliberately blocked native stop, and recovery after hiding the active SurfaceView. Pure-Java checks cover retry exhaustion/replenishment and presentation timeouts without treating valid static/black buffers as failures. Physical ARM64/TV-box decoding and comparative Media3 testing remain outstanding; no claim that these fixtures reproduce every Pluto broadcast.
+
+The alternating-resolution HLS fixture contains explicit timestamp discontinuities. Its progress assertion accumulates forward clock movement across clock resets and separately requires increasing decoded frames; failure output includes both counters and recovery state.
