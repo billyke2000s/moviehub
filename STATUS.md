@@ -401,3 +401,10 @@ The Free99 metadata licence field is blank; its Scrubs ancestry and inherited GP
 are recorded. Kodi-library and API-key sources are explicitly not represented as working
 anonymous website providers. The follow-up removes website-fed eval/exec, bounds direct urllib
 requests, adds an external CI availability probe and verifies packaged Python imports on Android.
+
+0.52 validation checkpoint: PR #113 source 30a9342113fa3ee853237563352a1a292c54210d
+passed full Android CI run 40037911059 (build/lint, signing compatibility, TV emulator,
+packaged extractor callbacks and provider diagnostics). Publishing uses the unchanged
+permanent signing key and a separately validated 0.52/versionCode 52 build. The CI live
+probe retrieved media responses for the test film; this is not full-film decoding or
+physical-TV evidence.

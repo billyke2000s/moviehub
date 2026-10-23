@@ -8,6 +8,15 @@
 
 # Changelog
 
+## 0.52 (2026-10-23)
+
+- Add free movie and series providers alongside connected cloud sources, without requiring Premiumize.
+- Choose the best ready stream after about three seconds; keep searching when none is ready.
+- Collect later results as backups and keep the existing two-buffers-in-60-seconds or four-second-stall recovery rule.
+- Preserve stream headers, cloud transfers and manual source selection; strengthen bundled host decoding and cancellation.
+- Provider availability varies by title and service. No source catalogue guarantees that every site is currently working.
+
+
 ## Unreleased
 
 ## 0.51 (23 October 2026)
