@@ -384,3 +384,13 @@ validation must pass before treating this as a release candidate.
 FreeVodProvidersTest imports all 68 constructors from the packaged Android Python runtime
 and checks Java-to-Python cancellation. The offline suite also rejects executable decoder
 expressions. A separate CI probe reports public provider availability without logging URLs.
+
+### Live-control window handoff
+
+`LiveControlsTest` injects down/up events with the same down time, matching a physical
+press across an Activity-to-Dialog focus transfer. Android's convenience
+`sendKeyDownUpSync` constructs the events separately; a canceled held event followed
+by an unrelated release can replace the first dialog and leave a test waiting on
+its detached window. All asynchronous UI predicates are read on the main thread,
+with window state included in timeout messages. The color-key test still requires
+each replacement panel to receive window focus before sending the next color.
