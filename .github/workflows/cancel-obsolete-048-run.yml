@@ -1,0 +1,21 @@
+name: Cancel obsolete 0.48 validation
+on:
+  push:
+    branches: [ci/cancel-obsolete-048-run]
+permissions:
+  actions: write
+  contents: read
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Cancel only the superseded release validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          status=$(gh api "repos/$GH_REPO/actions/runs/39952761816" --jq .status)
+          if [ "$status" != completed ]; then
+            gh api --method POST "repos/$GH_REPO/actions/runs/39952761816/cancel"
+          fi
