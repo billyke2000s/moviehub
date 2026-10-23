@@ -45,6 +45,17 @@ final class LiveVideoOutput {
         this.player = player;
     }
 
+    /** A standby has already attached this standard SurfaceView and decoded on it. */
+    LiveVideoOutput(MediaPlayer player, VLCVideoLayout prepared, FrameLayout destination) {
+        this(player);
+        layout = prepared;
+        holder = destination;
+    }
+
+    FrameLayout host() {
+        return holder;
+    }
+
     /** VLC's video outputs now open (MediaPlayer Vout events, via LivePlayer). */
     private int vouts;
     /** A move waiting for VLC to close its video output, or null. */

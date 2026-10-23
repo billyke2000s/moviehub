@@ -39,8 +39,8 @@ final class LiveZapper {
     static volatile Session session;
 
     /** Buffering this long, or this many pauses in a minute, moves to the next backup. */
-    static final long STALL_MS = 8000;
-    static final int STALLS_PER_MINUTE = 3;
+    static final long STALL_MS = LiveBuffering.STALL_MS;
+    static final int STALLS_PER_MINUTE = LiveBuffering.STARTS_PER_MINUTE;
     /** The banner stays this long; browsing in it a little longer. */
     static final long BANNER_MS = 5000,
         BROWSE_MS = 8000;
@@ -66,7 +66,6 @@ final class LiveZapper {
     private boolean automaticSources = true,
         backControls;
     private final Set<Integer> attemptedCopies = new HashSet<>();
-    private final List<Long> stalls = new ArrayList<>();
     /** The banner, programme information and pause bar (package-private for tests). */
     SkyOverlay overlay;
     private final StringBuilder typed = new StringBuilder();
@@ -75,7 +74,6 @@ final class LiveZapper {
         browsing = false;
         if (overlay != null) overlay.hideBanner();
     };
-    private final Runnable stalledTooLong = () -> failover("The stream kept buffering");
 
     /** Browsing other channels in the banner: which channel and which of its programmes. */
     private boolean browsing;
@@ -150,6 +148,8 @@ final class LiveZapper {
 
     void automaticSources(boolean enabled) {
         if (enabled && !automaticSources) {
+            LivePlayer.retryBackups();
+            LivePlayer.attemptedSources.clear();
             attemptedCopies.clear();
             attemptedCopies.add(copy);
         }
@@ -165,7 +165,10 @@ final class LiveZapper {
 
     private void rememberSources() {
         LivePlayer.automaticSources = automaticSources;
-        LivePlayer.attemptedSources.clear();
+        if (!automaticSources) {
+            LivePlayer.cancelBackup();
+            LivePlayer.attemptedSources.clear();
+        }
         for (int index : attemptedCopies)
             if (index >= 0 && index < copies.size()) LivePlayer.attemptedSources.add(copies.get(index).key);
     }
@@ -293,16 +296,15 @@ final class LiveZapper {
                             if (activeAttempts.contains(found.get(i).key)) attemptedCopies.add(i);
                         }
                         switching = false;
-                        stalls.clear();
-                        // A stall timer from the channel before must not move this one on.
-                        player.overlayHandler.removeCallbacks(stalledTooLong);
                         if (play) {
                             automaticSources = true;
                             backControls = false;
                             player.switchTo(row.name, url, found.get(0).key);
                             remember(row);
                         }
+                        if (current) sourceReplaced();
                         rememberSources();
+                        LivePlayer.backups(player, copies);
                         showBanner(row, on);
                         // A native resolver can fail before this initial database read finishes.
                         if (current && player.liveFailed) failover("This source is unavailable");
@@ -420,7 +422,6 @@ final class LiveZapper {
                     if (ticket != request || player.isFinishing() || list != copies) return;
                     copy = index;
                     switching = false;
-                    stalls.clear();
                     player.switchTo(row.name, url, row.key);
                     rememberSources();
                     if (automatic) Toast.makeText(
@@ -450,9 +451,12 @@ final class LiveZapper {
      * none is left, and the player then says the channel is not working.
      */
     boolean failover(String reason) {
-        player.overlayHandler.removeCallbacks(stalledTooLong);
         if (!automaticSources) return false;
         if (switching) return true; // the next copy is already on its way
+        if (LivePlayer.prepareBackup()) return true;
+        for (int i = 0; i < copies.size(); i++) if (
+            LivePlayer.attemptedSources.contains(copies.get(i).key)
+        ) attemptedCopies.add(i);
         for (int offset = 1; offset < copies.size(); offset++) {
             int next = (copy + offset) % copies.size();
             if (attemptedCopies.contains(next)) continue;
@@ -476,25 +480,21 @@ final class LiveZapper {
         return true;
     }
 
-    /** Buffering started while watching: a long pause, or frequent ones, try the next backup. */
-    void bufferingStarted() {
-        long now = System.currentTimeMillis();
-        stalls.add(now);
-        stalls.removeIf(at -> now - at > 60000);
-        if (stalls.size() >= STALLS_PER_MINUTE) {
-            failover("The stream keeps buffering");
-            return;
+    /** Promotion changed the shared player, without calling switchTo or resolving again. */
+    void sourceReplaced() {
+        String current = LivePlayer.currentUrl();
+        if (current == null) return;
+        String key = ChannelQuery.key(current);
+        for (int i = 0; i < copies.size(); i++) {
+            if (copies.get(i).key.equals(key)) copy = i;
+            if (LivePlayer.attemptedSources.contains(copies.get(i).key)) attemptedCopies.add(i);
         }
-        player.overlayHandler.removeCallbacks(stalledTooLong);
-        player.overlayHandler.postDelayed(stalledTooLong, STALL_MS);
-    }
-
-    void bufferingEnded() {
-        player.overlayHandler.removeCallbacks(stalledTooLong);
+        switching = false;
+        automaticSources = LivePlayer.automaticSources;
+        showBanner();
     }
 
     void close() {
-        player.overlayHandler.removeCallbacks(stalledTooLong);
         player.overlayHandler.removeCallbacks(jump);
         player.overlayHandler.removeCallbacks(hideBanner);
         worker.shutdownNow();

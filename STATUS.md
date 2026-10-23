@@ -344,3 +344,17 @@ Independent release validation 39871238896 passed 146/146 tests. PR validation p
 145/146, observing audio track -1 during picture recovery. Forced native-stop recovery now
 restores the selected audio track after rediscovery. Repair evidence waits for selected
 audio and playing state, then checks new audio-output progress rather than old-session stats.
+
+## Prepared live backups (23 October 2026)
+
+0.46 was published with matching numbered/updater assets after 703 core checks and 146 Android
+tests passed; its post-merge build/device run also passed. Earlier pending notes are history.
+
+The next change adds bounded prepared Live TV failover to the shared session. It preserves
+the live 8-second/3-buffer thresholds and the current stream until a single muted candidate
+decodes video and available audio. Failed candidates are released and tried once each, with
+working original playback retained after exhaustion. Fullscreen and guide ownership, manual
+pinning, cancellation, native surface lifetime and provider relay renewal are covered by new
+fixtures. A low-memory signal skips additional allocation. Different provider delays mean
+programme-time alignment is not promised. Local core checks pass (733); Android CI is pending.
+No physical-TV or real-provider concurrent-decoder test is claimed.

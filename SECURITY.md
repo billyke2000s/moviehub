@@ -140,3 +140,12 @@ Retained source choices and attempt keys stay in memory and are cleared on stop/
 ## In-memory VOD recovery sessions
 
 VOD alternatives are bounded to five cached sources, resolved on demand, and passed via a random in-process session token rather than lists of direct URLs in intents or preferences. Every resolved URL is validated against the existing HTTP setting. No new external executables or provider scripts are introduced. Logs and labels exclude resolved URLs. Cancellation generations discard late results; stopping playback releases the staged player and shuts down its resolver. Existing encrypted history stores the primary playback URL as before.
+
+## Prepared live playback
+
+A standby uses the same saved-channel URL validation, HTTP opt-in, provider allow-lists and
+scoped relay transport as the active source. It resolves one saved copy at a time, with bounded
+resolution/playback lifetimes and one candidate decoder/relay. Cancellation generations reject
+late results and close their relays; native readers stop before their surfaces or relays close.
+Diagnostics retain fixed descriptions only, without resolved links, tokens or account details.
+No background discovery or new provider capability is introduced.

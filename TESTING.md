@@ -325,3 +325,19 @@ Independent release validation 39871238896 passed 146/146 tests. PR validation p
 145/146, observing audio track -1 during picture recovery. Forced native-stop recovery now
 restores the selected audio track after rediscovery. Repair evidence waits for selected
 audio and playing state, then checks new audio-output progress rather than old-session stats.
+
+## Prepared live backup validation
+
+`LiveBufferingTest` covers exact live thresholds, duplicate buffering notifications, window
+expiry, startup/pause exclusion, buffering completion and one trigger per recovery window.
+The shared core script runs 733 checks.
+
+`LiveBackupTest` uses actual LibVLC and local MPEG-TS: old frames during preparation, one muted
+candidate, promotion of the same already-running decoder/transport, audio volume restoration,
+failed candidates followed by a working copy, exhaustion without loops, bounded startup,
+pause/manual/channel/exit cancellation with deliberately late resolver completion, and a real
+fullscreen/guide transition followed by preparation and promotion in the mini-player. Actual
+screenshots must contain nonblank video after promotion and later full-screen reuse. No new
+provider sources or account credentials are used. Local core validation passed; Android
+build/lint, full emulator and signing validation are pending on the PR. Concurrent hardware
+decoder support, actual TV memory limits and live-feed timing require physical-device checks.

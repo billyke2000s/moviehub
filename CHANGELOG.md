@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased — playback continuity
+## Unreleased — prepared live backups
+
+- Live TV Automatic now prepares one muted backup after the existing 8-second stall or three buffering starts per minute. Working playback stays open until replacement video and available audio advance; promotion keeps the prepared decoder and relay.
+- Bound each candidate to a 45-second resolution deadline and a 15-second playback deadline, visit saved copies once, and retain working playback if none succeeds. Preparation runs for fullscreen and guide playback, with cancellation on pause, manual selection, channel change, view handoff and exit. Low-memory signals skip standby allocation.
+
+## 0.46 (22 October 2026)
 
 - Restore the selected audio track after forced native-stop recovery.
 
