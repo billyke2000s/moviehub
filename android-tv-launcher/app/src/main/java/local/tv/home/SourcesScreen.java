@@ -115,94 +115,9 @@ final class SourcesScreen {
             activity.page,
             AutoPlayback.enabled(activity, season) ? "Finding a source" : "Choose a source",
             title,
-            "Ready-to-play sources start straight away. Others are sent to your cloud first."
+            "Free website streams and connected cloud sources appear together."
         );
-        if (!activity.secrets.has("premiumize")) {
-            activity.emptyState(
-                activity.page,
-                "Connect Premiumize",
-                "Check available sources and play from your cloud account.",
-                "Connect Premiumize",
-                () -> activity.settingsScreens.accountScreen("Premiumize")
-            );
-            return;
-        }
-        LinearLayout tools = activity.horizontal(activity.page);
-        activity.chip(tools, "Premiumize cloud", () -> activity.cloudScreens.cloud("", kind));
-        activity.chip(tools, "Transfers", () -> activity.cloudScreens.transfers(kind));
-        TextView loading = activity.muted("Loading sources and checking your Premiumize cache…", 16);
-        activity.page.addView(loading);
-        SourceRepository repo = new SourceRepository(activity.secrets);
-        activity.async(
-            () -> repo.torrentio(imdb, season, episode),
-            sources -> {
-                activity.page.removeView(loading);
-                if (sources.isEmpty()) {
-                    activity.emptyState(
-                        activity.page,
-                        "No sources found",
-                        "Try again later or choose a file from your cloud.",
-                        "Open cloud",
-                        () -> activity.cloudScreens.cloud("", kind)
-                    );
-                    return;
-                }
-                Runnable showList = () -> {
-                    LinearLayout filters = activity.horizontal(activity.page),
-                        results = activity.vertical();
-                    activity.page.addView(results);
-                    List<Button> tabs = new ArrayList<>();
-                    for (String quality : new String[] { "All", "4K", "1080p", "720p" }) {
-                        Button tab = activity.chip(filters, quality, () -> {});
-                        tabs.add(tab);
-                        tab.setOnClickListener(v -> {
-                            for (Button other : tabs) {
-                                other.setSelected(other == v);
-                                activity.styleFocus(other, other.hasFocus());
-                            }
-                            renderSources(
-                                results,
-                                sources,
-                                quality,
-                                repo,
-                                metadata,
-                                imdb,
-                                season,
-                                episode,
-                                title,
-                                kind
-                            );
-                        });
-                    }
-                    tabs.get(0).setSelected(true);
-                    activity.styleFocus(tabs.get(0), false);
-                    renderSources(
-                        results,
-                        sources,
-                        "All",
-                        repo,
-                        metadata,
-                        imdb,
-                        season,
-                        episode,
-                        title,
-                        kind
-                    );
-                };
-                if (AutoPlayback.enabled(activity, season)) new AutoPlayback(activity).start(
-                    sources,
-                    repo,
-                    metadata,
-                    imdb,
-                    season,
-                    episode,
-                    title,
-                    kind,
-                    showList
-                );
-                else showList.run();
-            }
-        );
+        new FreeVodScreen(activity).start(imdb, season, episode, title, kind, metadata);
     }
 
     void renderSources(

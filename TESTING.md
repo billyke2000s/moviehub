@@ -368,3 +368,15 @@ LiveControlsTest now checks actions on key-down before any release, repeats/rele
 ## One live overlay and shared colour input
 
 LiveControlsTest.entryOkClickAndBackUseTheSameFullBanner checks visible video focus, absence of an attached film overlay, repeated OK without opening Options, picture click and Back, and stable header bounds. standardColourDeliveryVariantsShareOneActionAcrossWindows covers a first received nonzero-repeat event, held/released events crossing dialogs, standalone release, multiple delivery, the standard colour scan fallback and preservation of known non-colour keys. ColourPressTest adds 22 pure-Java gesture checks. Core total: 775. Android build/emulator/signing results are recorded on the change’s pull request and release run; physical-TV confirmation remains outstanding.
+
+## Free VOD provider candidate
+
+SourceWindowTest covers the exact three-second boundary, best available result, no-result
+waiting, late results, duplicates, cancellation and appending alternatives without resetting
+VOD stall/failed-source state. test_free_vod.py imports all 68 bundled constructors and runs
+the real MP4Hydra provider against offline search/page/playlist/media fixtures with two CDN
+servers. It also covers header preservation, HTML error rejection, cancellation and private/
+plain-HTTP target rejection. Run `python android-tv-launcher/tests/test_free_vod.py` with
+requests and six installed. These checks do not prove live playback. Python 3.11 is required
+for Android builds; Chaquopy adds native runtime ABIs to the APK. Full Android CI and device
+validation must pass before treating this as a release candidate.

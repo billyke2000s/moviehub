@@ -59,6 +59,20 @@ final class VodSourceFailover {
         pinnedProvider = null;
     }
 
+    /** Append late discoveries without resetting stall history, failed sources or manual pinning. */
+    void appendSources(List<Source> discovered) {
+        for (Source source : discovered) {
+            if (source == null || source.url == null || source.url.trim().isEmpty()) continue;
+            boolean duplicate = false;
+            for (Source existing : sources)
+                if (existing.url.equals(source.url)) {
+                    duplicate = true;
+                    break;
+                }
+            if (!duplicate) sources.add(source);
+        }
+    }
+
     List<Source> sources() {
         return Collections.unmodifiableList(sources);
     }

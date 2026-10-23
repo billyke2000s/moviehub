@@ -16,7 +16,7 @@ final class AutoPlayback {
     }
 
     static boolean enabled(MainActivity activity, int season) {
-        return activity.prefs.getBoolean(season < 0 ? MOVIES : SERIES, false);
+        return activity.prefs.getBoolean(season < 0 ? MOVIES : SERIES, true);
     }
 
     static int pick(JSONArray files, int season, int episode, String title) {

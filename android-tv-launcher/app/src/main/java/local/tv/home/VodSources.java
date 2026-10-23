@@ -28,12 +28,14 @@ final class VodSources {
 
         final List<VodSourceFailover.Source> sources;
         final Resolve resolve;
+        Runnable close = () -> {};
+        java.util.function.IntFunction<EngineSources.Stream> transport = index -> null;
         boolean pinned;
         int active;
 
         Session(List<VodSourceFailover.Source> sources, Resolve resolve, boolean pinned) {
-            this.sources = Collections.unmodifiableList(
-                new ArrayList<>(sources.subList(0, Math.min(LIMIT, sources.size())))
+            this.sources = new java.util.concurrent.CopyOnWriteArrayList<>(
+                sources.subList(0, Math.min(LIMIT, sources.size()))
             );
             this.resolve = resolve;
             this.pinned = pinned;
@@ -45,7 +47,10 @@ final class VodSources {
     static synchronized String remember(Session session) {
         if (session == null) return null;
         String token = UUID.randomUUID().toString();
-        while (sessions.size() >= 2) sessions.remove(sessions.keySet().iterator().next());
+        while (sessions.size() >= 2) {
+            Session removed = sessions.remove(sessions.keySet().iterator().next());
+            removed.close.run();
+        }
         sessions.put(token, session);
         return token;
     }
@@ -55,7 +60,50 @@ final class VodSources {
     }
 
     static synchronized void forget(String token) {
-        sessions.remove(token);
+        Session removed = sessions.remove(token);
+        if (removed != null) removed.close.run();
+    }
+
+    static Session progressive(
+        SourceRepository.Source selected,
+        String link,
+        VodSearch search,
+        SourceRepository repo,
+        int season,
+        int episode,
+        String title,
+        boolean pinned
+    ) {
+        List<SourceRepository.Source> ordered = new java.util.concurrent.CopyOnWriteArrayList<>();
+        ordered.add(selected);
+        Session session = new Session(
+            Collections.singletonList(entry(selected)),
+            index -> {
+                SourceRepository.Source source = ordered.get(index);
+                JSONArray files = repo.direct(source);
+                int pick = AutoPlayback.pick(files, season, episode, title);
+                if (pick < 0) throw new IllegalArgumentException("No exact playable backup");
+                return new Resolved(files.getJSONObject(pick).getString("link"), files);
+            },
+            pinned
+        );
+        session.transport = index -> ordered.get(index).stream;
+        session.close = search::close;
+        search.observe(source -> {
+            for (var existing : ordered) if (existing.uri.equals(source.uri)) return;
+            if (ordered.size() >= 200) return;
+            ordered.add(source);
+            session.sources.add(entry(source));
+        });
+        return session;
+    }
+
+    private static VodSourceFailover.Source entry(SourceRepository.Source source) {
+        return new VodSourceFailover.Source(
+            source.uri,
+            SourcesScreen.provider(source.title) + " · " + SourcesScreen.quality(source.title),
+            SourcesScreen.provider(source.title)
+        );
     }
 
     static Session prepare(

@@ -327,3 +327,16 @@ The live overlay measures the channel banner before optional pause/information p
 ## One live overlay and shared colour input
 
 Live TV does not attach PlayerOverlay film controls. PlayerOverlay creates only unattached bookkeeping widgets for shared playback state; SkyOverlay is the sole visible live controls view. Entry, OK and picture click call LiveZapper.showBanner; Back enables focus on that same banner. Options remains an explicit blue/Menu/selected-button action. Activity and SidePanel route colours through one session-owned ColourPress before native-player access, recognizing the first delivered press, standalone release or complete multiple event while suppressing duplicates across changing windows. Unknown translated keys can use Android TV Generic.kl’s standard colour scan identities (398–401); known non-colour keys are never overridden.
+
+## Progressive free VOD discovery
+
+SourcesScreen delegates discovery to FreeVodScreen and VodSearch. SourceWindow holds the
+three-second initial ranking window. Eight workers query the bundled Scrubs/Free99 modules
+through FreeVodProviders and Chaquopy; an optional Premiumize search runs alongside them.
+The overall search budget is 120 seconds, with per-provider HTTP/processing deadlines.
+Free sources retain already-resolved file links and headers in SourceRepository.Source.
+VodSources.progressive appends late results without reordering existing session indices.
+VodSourceFailover.appendSources preserves failed sources, pinning and buffer history.
+VodPlayback uses session-owned ProviderRelay instances when host headers are required.
+A new title replaces the previous search; screen-generation checks and player-session cleanup
+prevent abandoned screens from starting playback. App screens remain native Java.
