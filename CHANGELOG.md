@@ -5,6 +5,13 @@
 - Preserve space for the complete Live TV channel header during banner updates.
 - Keep remote colour shortcuts working while a player menu is open; finish colour presses on release before opening another menu.
 
+- Retry established Pluto/direct live streams with a bounded reconnect budget; refresh Pluto’s anonymous session and allow a software-video fallback after repeated video stalls.
+- Move live native stop/video-disable operations off the UI thread, retaining surfaces and transport until shutdown completes.
+- Recover structurally missing video surfaces and monitor decoding progress, and add Repair picture/Reconnect channel to live Options.
+- Keep advancing live video playing through brief HLS buffering notifications instead of reconnecting unnecessarily.
+- Add HLS resolution/timestamp transition, same-channel retry, missing-surface and slow-native-stop regression fixtures.
+
+
 ## 0.48 (23 October 2026)
 
 - Always use the Live TV banner and colour-key actions on live launches, including restored activities without a static guide session. Save each player’s guide context and match the initial listings to its actual channel.

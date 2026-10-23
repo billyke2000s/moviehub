@@ -174,3 +174,8 @@ MovieHub is distributed under the [MIT License](LICENSE). The Live TV interface 
 ## Live TV control consistency
 
 Live TV uses the same channel banner on initial playback and restored sessions. Red opens audio/subtitles, green opens sources, yellow shows programme information and blue opens options. Back reveals controls for arrow/OK selection on remotes without colour buttons.
+
+
+## Live playback recovery
+
+Live TV retries an established Pluto/direct connection within a bounded recovery budget, preserving the selected source. Options includes Repair picture and Reconnect channel. Background native shutdown keeps playback controls available while a decoder closes. Recovery cannot guarantee availability of an external channel or correct operation of every TV decoder.

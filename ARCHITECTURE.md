@@ -309,4 +309,11 @@ unrelated playback clocks: a cut can jump in programme time.
 Live launches snapshot `LiveZapper.Session` through `LiveGuideState` into the Intent, and Activity state saves the current list/position. Every live Activity builds `SkyOverlay`; a missing static session cannot select film controls. The initial database lookup matches the launch URL and falls back to all channels if its saved list excludes that channel. Learned colour actions precede generic number/channel shortcuts.
 
 
+
 Player-owned `SidePanel` dialogs route recognized colour keys through `LiveZapper` after closing, because dialog input does not reach Activity dispatch. Live colours complete on uncancelled release. `SkyOverlay` reserves the channel strip independently of programme content, with room to expand for larger fonts.
+
+## Live playback recovery
+
+`LiveStream` resolves live transports and configures VLC media; selection, lifetime and recovery remain in `LivePlayer`. `LiveNative` serializes native stop/video-disable operations per player on two bounded workers. Main-thread consumers suspend native access while that player is busy. Surface/relay/player/engine disposal follows completion, never a timeout. Generation guards drop obsolete opens. `LiveRestartBudget` allows two reconnects and replenishes only after 30 seconds of observed progress. Native Pluto invalidates its anonymous session on retry. `LiveSurfaceProbe` uses one tiny asynchronous PixelCopy at most every two seconds; structurally missing surfaces reach recovery after eight seconds. PixelCopy NO_DATA/UNKNOWN is inconclusive on hardware decoders and never triggers a reconnect; visible decoding progress replenishes surface recovery. Slow joins are logged without releasing windows underneath native readers.
+
+Three short buffering notifications can still prepare an alternate source. A same-source reconnect requires prolonged buffering (eight seconds) or stalled video progress; ordinary HLS period notifications do not consume the reconnect budget.

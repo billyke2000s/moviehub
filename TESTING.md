@@ -348,4 +348,11 @@ decoder support, actual TV memory limits and live-feed timing require physical-d
 `LiveControlsTest` now opens its live fixture without the static guide session. It covers physical colours, real Activity recreation with cleared static context, saved guide snapshot independence, a learned green button using a numeric key, and visible unclipped controls with long source/channel names. Existing Back/arrow/OK tests remain. These fixtures do not verify the owner’s physical remote. Local core checks pass (733); Android CI is pending.
 
 
+
 `LiveControlsTest.physicalColoursKeepWorkingWhileAnotherPlayerPanelOwnsFocus` sends red, green, blue and yellow without manually dismissing intermediate dialogs. `completeHeaderSurvivesProgrammeUpdatesAndBackControls` checks full-height channel-strip labels, not only footer buttons, after typing and programme updates; it saves `live-complete-channel-header.png`. These use fixtures, not the physical remote.
+
+## Live playback recovery
+
+LiveRecoveryTest serves deterministic 320×180 and 640×360 H.264/AAC MPEG-TS segments behind an HLS playlist with timestamp discontinuities. It checks actual video/audio progression across format changes, bounded same-channel Pluto retries, controls during a deliberately blocked native stop, and recovery after hiding the active SurfaceView. Pure-Java checks cover retry exhaustion/replenishment and presentation timeouts without treating valid static/black buffers as failures. Physical ARM64/TV-box decoding and comparative Media3 testing remain outstanding; no claim that these fixtures reproduce every Pluto broadcast.
+
+The alternating-resolution HLS fixture contains explicit timestamp discontinuities. It requires advancing decoded video, decoded audio and played audio buffers across at least eleven seconds, unchanged source/player identity and actual visible pixels. LibVLC's live demux clock alone is not proof of stalled output. A separate test verifies three brief buffering notifications do not reconnect an advancing selected channel when there is no alternate source; the existing third-buffer test still verifies prepared-backup promotion.

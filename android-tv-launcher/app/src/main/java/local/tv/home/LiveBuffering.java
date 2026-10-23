@@ -45,6 +45,11 @@ final class LiveBuffering {
         return false;
     }
 
+    /** A prolonged pause is still actionable after the frequency threshold warmed a backup. */
+    boolean persistent(long now) {
+        return buffering && now - since >= STALL_MS;
+    }
+
     void reset() {
         starts.clear();
         buffering = triggered = false;

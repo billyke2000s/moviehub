@@ -34,6 +34,10 @@ final class LiveProgress {
         return videoAt;
     }
 
+    boolean videoMoving(long now, long limit) {
+        return pictures >= 0 && now - videoAt < limit;
+    }
+
     boolean clockMoving(long now, long limit) {
         return position >= 0 && now - clockAt < limit;
     }

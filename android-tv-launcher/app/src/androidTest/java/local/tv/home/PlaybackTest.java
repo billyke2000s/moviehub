@@ -961,7 +961,7 @@ public class PlaybackTest {
     }
 
     @Test
-    public void silentVideoFreezeIsReportedWithoutABufferingEventAndPauseIsIgnored() throws Exception {
+    public void silentVideoFreezeIsRepairedWithoutABufferingEventAndPauseIsIgnored() throws Exception {
         instrumentation.runOnMainSync(activity::finish);
         instrumentation.waitForIdleSync();
         Context context = instrumentation.getTargetContext();
@@ -1001,14 +1001,16 @@ public class PlaybackTest {
                     "The first clock-moving freeze should refresh only the view",
                     activity.liveFailed
                 );
-                LivePlayer.observeProgress(22000, 10000, 20, true);
-                LivePlayer.observeProgress(30000, 18000, 20, true);
-                assertTrue(
-                    "A persistent freeze must reach the attached failure callback",
-                    activity.liveFailed
-                );
             });
-            assertTrue(status().contains("unavailable"));
+            await(
+                () ->
+                    player() != null &&
+                    !LiveNative.busy(player()) &&
+                    player().isPlaying() &&
+                    LivePlayer.output().isShown(),
+                15000
+            );
+            assertFalse("Picture repair does not report a failed channel", activity.liveFailed);
         } finally {
             LiveZapper.session = null;
             db.clear();

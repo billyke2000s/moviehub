@@ -149,3 +149,8 @@ resolution/playback lifetimes and one candidate decoder/relay. Cancellation gene
 late results and close their relays; native readers stop before their surfaces or relays close.
 Diagnostics retain fixed descriptions only, without resolved links, tokens or account details.
 No background discovery or new provider capability is introduced.
+
+
+## Live playback recovery
+
+Presentation sampling is 32×18 pixels, asynchronous, at most one request at a time and every two seconds while watched. Pixel contents are neither inspected for programme content, persisted, uploaded nor logged. Recovery preserves regional Pluto checks and normal ads/authentication; it refreshes only the existing anonymous session. Native windows and relays stay alive until their readers stop; timeout does not authorize premature destruction. Fixed-label diagnostics contain no URLs/tokens.

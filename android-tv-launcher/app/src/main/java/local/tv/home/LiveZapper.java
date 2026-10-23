@@ -487,7 +487,7 @@ final class LiveZapper {
     boolean failover(String reason) {
         if (!automaticSources) return false;
         if (switching) return true; // the next copy is already on its way
-        if (LivePlayer.prepareBackup()) return true;
+        if (LivePlayer.prepareBackupForFailure()) return true;
         for (int i = 0; i < copies.size(); i++) if (
             LivePlayer.attemptedSources.contains(copies.get(i).key)
         ) attemptedCopies.add(i);

@@ -25,6 +25,7 @@ import org.videolan.libvlc.util.VLCVideoLayout;
 final class LiveVideoOutput {
 
     private final MediaPlayer player;
+    private final LiveSurfaceProbe probe = new LiveSurfaceProbe();
     private final LiveHandoffCover cover = new LiveHandoffCover(this::pictures);
     private VLCVideoLayout layout;
     private FrameLayout holder;
@@ -70,7 +71,7 @@ final class LiveVideoOutput {
     /** If the new surface does not report a size, switch the picture on after this long. */
     private static final long SURFACE_WAIT_MS = 3000;
     private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
-    private boolean restartAfterMove;
+    private boolean restartAfterMove, closeAcknowledged;
     private int pendingAudioTrack = NO_TRACK;
     private final Runnable closeTimeout = this::stopBeforeMove;
     private final Runnable deferredFinish = this::finishMove;
@@ -118,6 +119,12 @@ final class LiveVideoOutput {
      * SIGSEGV) or left decoding stopped in CI (21 October 2026). Media, network and sound carry on.
      */
     private void closeVideoThen() {
+        if (LiveNative.busy(player)) {
+            LiveNative.stop(player, () -> {
+                if (!closed) closeVideoThen();
+            });
+            return;
+        }
         if (pendingTrack == NO_TRACK) {
             // A track still waiting for the last move's surface is the one to restore.
             pendingTrack = waitingTrack != NO_TRACK ? waitingTrack : player.getVideoTrack();
@@ -127,18 +134,24 @@ final class LiveVideoOutput {
         main.removeCallbacks(closeTimeout);
         // Vout can still be zero while AWindowHandler is creating its EGL window. Always
         // request shutdown and wait for its acknowledgement before releasing the old surface.
-        player.setVideoTrack(-1);
-        main.postDelayed(closeTimeout, CLOSE_WAIT_MS);
+        closeAcknowledged = false;
+        LiveNative.videoOff(player, () -> {
+            if (closed || pendingTrack == NO_TRACK) return;
+            if (closeAcknowledged) finishMove();
+            else main.postDelayed(closeTimeout, CLOSE_WAIT_MS);
+        });
     }
 
     /** Never destroy a native window merely because its shutdown acknowledgement is late. */
     private void stopBeforeMove() {
         if (closed || pendingTrack == NO_TRACK) return;
-        pendingAudioTrack = player.getAudioTrack();
-        player.stop();
-        vouts = 0;
-        restartAfterMove = true;
-        finishMove();
+        if (!LiveNative.busy(player)) pendingAudioTrack = player.getAudioTrack();
+        LiveNative.stop(player, () -> {
+            if (closed || pendingTrack == NO_TRACK) return;
+            vouts = 0;
+            restartAfterMove = true;
+            finishMove();
+        });
     }
 
     /**
@@ -148,6 +161,7 @@ final class LiveVideoOutput {
     void streamChanging() {
         pendingAudioTrack = NO_TRACK;
         restartAfterMove = false;
+        probe.newStream();
         cover.clear();
         cancelSurfaceWait();
         waitingTrack = NO_TRACK;
@@ -158,7 +172,13 @@ final class LiveVideoOutput {
 
     /** Restore the user's audio selection once a forced restart has rediscovered its tracks. */
     void restoreAudioTrack() {
-        if (closed || pendingAudioTrack == NO_TRACK || restartAfterMove || !player.isPlaying()) return;
+        if (
+            closed ||
+            LiveNative.busy(player) ||
+            pendingAudioTrack == NO_TRACK ||
+            restartAfterMove ||
+            !player.isPlaying()
+        ) return;
         MediaPlayer.TrackDescription[] tracks = player.getAudioTracks();
         if (tracks == null) return;
         for (MediaPlayer.TrackDescription track : tracks) {
@@ -172,6 +192,7 @@ final class LiveVideoOutput {
     void videoOutputs(int count) {
         vouts = count;
         if (count == 0 && pendingTrack != NO_TRACK) {
+            closeAcknowledged = true;
             main.removeCallbacks(closeTimeout);
             main.post(deferredFinish);
         }
@@ -180,7 +201,7 @@ final class LiveVideoOutput {
     private void finishMove() {
         main.removeCallbacks(closeTimeout);
         main.removeCallbacks(deferredFinish);
-        if (closed || pendingTrack == NO_TRACK) return;
+        if (closed || pendingTrack == NO_TRACK || LiveNative.busy(player)) return;
         FrameLayout destination = pendingDestination;
         pendingDestination = null;
         if (destination != null) {
@@ -212,15 +233,22 @@ final class LiveVideoOutput {
         SurfaceView surface = surfaceView();
         boolean[] done = { false };
         waitingTrack = track;
-        Runnable enable = () -> {
-            if (done[0] || closed || layout != target || waitingTrack != track) return;
-            done[0] = true;
-            waitingTrack = NO_TRACK;
-            cancelSurfaceWait();
-            if (restartAfterMove) {
-                restartAfterMove = false;
-                player.play();
-            } else player.setVideoTrack(track);
+        Runnable enable = new Runnable() {
+            @Override
+            public void run() {
+                if (done[0] || closed || layout != target || waitingTrack != track) return;
+                if (LiveNative.busy(player)) {
+                    LiveNative.whenIdle(player, this);
+                    return;
+                }
+                done[0] = true;
+                waitingTrack = NO_TRACK;
+                cancelSurfaceWait();
+                if (restartAfterMove) {
+                    restartAfterMove = false;
+                    player.play();
+                } else player.setVideoTrack(track);
+            }
         };
         if (surface == null) {
             enable.run();
@@ -274,6 +302,7 @@ final class LiveVideoOutput {
      * stream has decoded none yet. A stopped picture over playing sound shows as no change.
      */
     long pictures() {
+        if (LiveNative.busy(player)) return -1;
         IMedia media = player.getMedia();
         if (media == null) return -1;
         try {
@@ -306,14 +335,52 @@ final class LiveVideoOutput {
     }
 
     /** The freeze watchdog's repair: restart the picture without touching the stream or sound. */
+    boolean presentationMissing(long now, boolean watching) {
+        probe.sample(surfaceView(), now, watching, watching ? pictures() : -1);
+        return watching && probe.missing(now);
+    }
+
+    boolean repairPresentation() {
+        if (!probe.repairAllowed() || !refreshView()) return false;
+        probe.repaired();
+        return true;
+    }
+
+    boolean presentationUnavailable() {
+        return probe.unavailable();
+    }
+
+    String surfaceHealth() {
+        return probe.status();
+    }
+
+    boolean shouldRender() {
+        return (
+            !closed &&
+            holder != null &&
+            holder.isShown() &&
+            layout != null &&
+            layout.isShown() &&
+            pendingDestination == null &&
+            pendingTrack == NO_TRACK &&
+            waitingTrack == NO_TRACK
+        );
+    }
+
     boolean refreshView() {
         if (
-            closed || holder == null || !isShown() || pendingTrack != NO_TRACK || waitingTrack != NO_TRACK
+            closed ||
+            holder == null ||
+            !shouldRender() ||
+            LiveNative.busy(player) ||
+            pendingTrack != NO_TRACK ||
+            waitingTrack != NO_TRACK
         ) return false;
         if (player.getVideoTrack() < 0) return false;
         // Restart only the video decoder and output on the same surface (no destination), the
         // same off-wait-on sequence as a move. Media, network and sound are untouched.
         repairs++;
+        probe.reset();
         // A video-track toggle alone can leave VLC bound to a valid but black SurfaceView.
         // Recreate and reattach the output exactly as a successful full-screen/guide handoff
         // does, without stopping the MediaPlayer or reopening the network stream.
@@ -359,6 +426,7 @@ final class LiveVideoOutput {
     void stopping() {
         if (closed) return;
         closed = true;
+        probe.reset();
         pendingAudioTrack = NO_TRACK;
         restartAfterMove = false;
         cover.close();

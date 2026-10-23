@@ -1,7 +1,6 @@
 package local.tv.home;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.FrameLayout;
@@ -11,7 +10,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 import org.videolan.libvlc.LibVLC;
-import org.videolan.libvlc.Media;
 import org.videolan.libvlc.MediaPlayer;
 import org.videolan.libvlc.util.VLCVideoLayout;
 
@@ -44,7 +42,9 @@ final class LivePlayer {
     private static int generation;
     private static boolean resolving;
     private static boolean renewalPaused;
-    private static boolean refreshed;
+    private static boolean refreshed, retrying;
+    private static final LiveRestartBudget reconnects = new LiveRestartBudget();
+    private static boolean softwareVideo, videoFault;
     private static Context appContext;
     private static List<String> lastOptions;
     private static final LiveProgress progress = new LiveProgress();
@@ -57,12 +57,17 @@ final class LivePlayer {
     static final long PICTURE_REPAIR_MS = 2500;
     private static long pictureRepairedFor = -1;
     private static int viewRepairs;
-    private static String lastVideoRecovery = "None";
+    private static String lastVideoRecovery = "None",
+        lastFailureCause = "None";
 
     private static final Runnable watchProgress = new Runnable() {
         @Override
         public void run() {
             if (player == null) return;
+            if (LiveNative.busy(player)) {
+                main.postDelayed(this, 1000);
+                return;
+            }
             int ticket = generation;
             LivePictureRates.sample(player, output, owner, android.os.SystemClock.elapsedRealtime());
             boolean watching =
@@ -72,24 +77,31 @@ final class LivePlayer {
                 alive &&
                 player.isPlaying() &&
                 output != null &&
-                output.isShown();
-            observeProgress(
-                android.os.SystemClock.elapsedRealtime(),
-                player.getTime(),
-                output == null ? -1 : output.pictures(),
-                watching
-            );
+                output.shouldRender();
+            long now = android.os.SystemClock.elapsedRealtime();
+            if (output != null && output.presentationMissing(now, watching)) {
+                videoFault = true;
+                lastFailureCause = "Video surface unavailable";
+                if (output.repairPresentation()) repairBudget.repaired();
+                else if (!retryProvider() && resolutionFailed != null) resolutionFailed.run();
+                lastVideoRecovery = "Rendered buffers missing; repairing live picture";
+            }
+            if (player == null || LiveNative.busy(player) || ticket != generation) {
+                if (player != null && ticket == generation) main.postDelayed(this, 1000);
+                return;
+            }
+            observeProgress(now, player.getTime(), output == null ? -1 : output.pictures(), watching);
             if (
-                player != null &&
-                buffering.stalled(android.os.SystemClock.elapsedRealtime(), bufferWatching())
+                player != null && (buffering.stalled(now, bufferWatching()) || buffering.persistent(now))
             ) recoverBuffering();
             if (player != null && ticket == generation) main.postDelayed(this, 1000);
         }
     };
 
     static void observeProgress(long now, long time, long frames, boolean watching) {
-        if (player == null || !alive) return;
+        if (player == null || !alive || LiveNative.busy(player)) return;
         repairBudget.observe(frames, watching);
+        reconnects.observe(now, frames, watching && output != null && !output.presentationUnavailable());
         if (!progress.stalled(now, time, frames, watching, LiveZapper.STALL_MS)) {
             if (
                 watching &&
@@ -108,6 +120,8 @@ final class LivePlayer {
             return;
         }
         boolean clockMoving = progress.clockMoving(now, LiveZapper.STALL_MS);
+        videoFault = clockMoving;
+        lastFailureCause = "Video progress stopped";
         progress.reset();
         Timings.record("Live video stopped advancing", Timings.start());
         if (clockMoving && repairBudget.allowed() && output != null && output.refreshView()) {
@@ -119,7 +133,7 @@ final class LivePlayer {
         lastVideoRecovery = clockMoving
             ? "Rendered video stopped after a view refresh; trying the source backup"
             : "Playback clock and rendered video stopped; trying the source backup";
-        if (prepareBackup()) return;
+        if (prepareBackupForFailure()) return;
         if (retryProvider()) return;
         alive = false;
         player.pause();
@@ -140,7 +154,17 @@ final class LivePlayer {
     private LivePlayer() {}
 
     static String videoRecovery() {
-        return lastVideoRecovery + " · " + viewRepairs + " view refreshes · " + backupStatus;
+        return (
+            lastVideoRecovery +
+            " · " +
+            lastFailureCause +
+            " · " +
+            viewRepairs +
+            " view refreshes · " +
+            backupStatus +
+            " · " +
+            (output == null ? "No surface" : output.surfaceHealth())
+        );
     }
 
     static void backups(Context context, List<ChannelDatabase.Row> copies) {
@@ -170,6 +194,7 @@ final class LivePlayer {
     static boolean canPrepareBackup() {
         return (
             player != null &&
+            !LiveNative.busy(player) &&
             played &&
             !userPaused &&
             !resolving &&
@@ -181,6 +206,10 @@ final class LivePlayer {
 
     static boolean prepareBackup() {
         return backup != null && backup.recover();
+    }
+
+    static boolean prepareBackupForFailure() {
+        return backup != null && !backup.exhausted() && backup.recover();
     }
 
     static void cancelBackup() {
@@ -225,7 +254,16 @@ final class LivePlayer {
     }
 
     private static void recoverBuffering() {
-        if (!prepareBackup() && resolutionFailed != null) resolutionFailed.run();
+        if (prepareBackupForFailure()) return;
+        // Three brief buffer notifications may be normal HLS period transitions. They can warm
+        // an alternate source, but must not tear down a progressing channel with no backup.
+        if (!buffering.persistent(android.os.SystemClock.elapsedRealtime())) return;
+        if (progress.videoMoving(android.os.SystemClock.elapsedRealtime(), 2000)) return;
+        lastFailureCause = "Prolonged buffering";
+        if (!retryProvider() && resolutionFailed != null) {
+            buffering.reset();
+            resolutionFailed.run();
+        }
     }
 
     /** Promotes a running, muted SurfaceView; its decoder and resolved relay are retained. */
@@ -247,10 +285,13 @@ final class LivePlayer {
         previous.setVolume(0);
         layout.setLayoutParams(new FrameLayout.LayoutParams(-1, -1));
         layout.setTranslationX(0);
-        previous.stop();
-        closeRelay();
-        output.close();
-        previous.release();
+        LiveVideoOutput previousOutput = output;
+        ProviderRelay previousRelay = relay;
+        LiveNative.stop(previous, () -> {
+            if (previousRelay != null) previousRelay.close();
+            previousOutput.close();
+            previous.release();
+        });
         player = ready;
         output = new LiveVideoOutput(ready, layout, host);
         relay = nextRelay;
@@ -283,7 +324,7 @@ final class LivePlayer {
 
     /** A stream is playing or opening, so a new view can take it over without reconnecting. */
     static boolean active() {
-        return player != null && (alive || player.isPlaying());
+        return player != null && (alive || (!LiveNative.busy(player) && player.isPlaying()));
     }
 
     static boolean isResolving() {
@@ -305,7 +346,13 @@ final class LivePlayer {
 
     /** Renew the current provider link without spending a second decoder or interrupting lookup. */
     static void renew() {
-        if (appContext != null && player != null && player.isPlaying() && !resolving) {
+        if (
+            appContext != null &&
+            player != null &&
+            !LiveNative.busy(player) &&
+            player.isPlaying() &&
+            !resolving
+        ) {
             refreshed = false;
             play(appContext, url, lastOptions, true, true);
         }
@@ -332,9 +379,15 @@ final class LivePlayer {
             output = new LiveVideoOutput(player);
             player.setEventListener(LivePlayer::event);
         }
-        if (!restart && streamUrl.equals(url) && (alive || player.isPlaying())) {
+        if (
+            !restart && streamUrl.equals(url) && (alive || (!LiveNative.busy(player) && player.isPlaying()))
+        ) {
             resume();
             return true;
+        }
+        if ((!streamUrl.equals(url) || restart) && !retrying && !renewalOnly) {
+            reconnects.reset();
+            softwareVideo = videoFault = false;
         }
         if (!streamUrl.equals(url)) {
             automaticSources = true;
@@ -352,8 +405,11 @@ final class LivePlayer {
         userPaused = false;
         buffering.reset();
         if (!retain) {
-            player.stop();
-            closeRelay();
+            ProviderRelay oldRelay = relay;
+            relay = null;
+            LiveNative.stop(player, () -> {
+                if (oldRelay != null) oldRelay.close();
+            });
         }
         url = streamUrl;
         alive = true;
@@ -370,29 +426,10 @@ final class LivePlayer {
             request = http;
             pending = resolver.submit(() -> {
                 try {
-                    Resolver fixture = testResolver;
-                    EngineSources.Stream stream = EngineSources.locator(streamUrl)
-                        ? EngineSources.resolve(context.getApplicationContext(), streamUrl, http)
-                        : null;
-                    String resolved =
-                        stream != null
-                            ? stream.url
-                            : fixture == null
-                              ? PlutoSource.resolve(streamUrl, http)
-                              : fixture.resolve(streamUrl, http);
-                    ProviderRelay nextRelay =
-                        stream != null &&
-                        (ProviderRelay.needed(stream) ||
-                            streamUrl.contains("/engine/dlhd/") ||
-                            streamUrl.contains("/engine/zlive/"))
-                            ? new ProviderRelay(stream)
-                            : null;
-                    try {
-                        http.check();
-                    } catch (Exception e) {
-                        if (nextRelay != null) nextRelay.close();
-                        throw e;
-                    }
+                    LiveStream.Resolution source = LiveStream.resolve(context, streamUrl, http, testResolver);
+                    EngineSources.Stream stream = source.provider;
+                    ProviderRelay nextRelay = source.relay;
+                    String resolved = source.url;
                     main.post(() -> {
                         if (ticket != generation || player == null) {
                             if (nextRelay != null) nextRelay.close();
@@ -419,7 +456,7 @@ final class LivePlayer {
                         if (ticket != generation || player == null) return;
                         resolving = false;
                         Diagnostics.recovered("Resolving native live channel", e);
-                        if (retain && (player.isPlaying() || renewalPaused)) {
+                        if (retain && ((!LiveNative.busy(player) && player.isPlaying()) || renewalPaused)) {
                             // A failed refresh does not establish that the existing stream is dead.
                             played = true;
                             progress.reset();
@@ -441,7 +478,13 @@ final class LivePlayer {
             Math.min(3 * 3600_000L, expiresAt - System.currentTimeMillis() - 60_000)
         );
         renewal = () -> {
-            if (ticket == generation && player != null && player.isPlaying() && locator.equals(url)) renew();
+            if (
+                ticket == generation &&
+                player != null &&
+                !LiveNative.busy(player) &&
+                player.isPlaying() &&
+                locator.equals(url)
+            ) renew();
         };
         main.postDelayed(renewal, delay);
     }
@@ -458,19 +501,18 @@ final class LivePlayer {
     static final int RELAYED_CACHING_MS = PlaybackBuffer.RELAY_MS;
 
     private static void open(String stream, String userAgent, String referer, ProviderRelay nextRelay) {
-        // Stop native readers before closing the relay they still own.
-        player.stop();
-        closeRelay();
-        relay = nextRelay;
-        if (output != null) output.streamChanging();
-        Media media = new Media(engine, Uri.parse(stream));
-        media.setHWDecoderEnabled(true, false);
-        media.addOption(":network-caching=" + PlaybackBuffer.live(stream, nextRelay != null));
-        if (userAgent != null) media.addOption(":http-user-agent=" + userAgent);
-        if (referer != null && !referer.isEmpty()) media.addOption(":http-referrer=" + referer);
-        player.setMedia(media);
-        media.release();
-        player.play();
+        MediaPlayer opening = player;
+        int ticket = generation;
+        LiveNative.stop(opening, () -> {
+            if (player != opening || ticket != generation) {
+                if (nextRelay != null) nextRelay.close();
+                return;
+            }
+            closeRelay();
+            relay = nextRelay;
+            if (output != null) output.streamChanging();
+            LiveStream.play(engine, opening, stream, userAgent, referer, nextRelay, softwareVideo);
+        });
     }
 
     private static void cancelResolution() {
@@ -494,10 +536,17 @@ final class LivePlayer {
     }
 
     static void resume() {
-        if (player != null && !resolving && !player.isPlaying()) player.play();
+        if (player != null && !LiveNative.busy(player) && !resolving && !player.isPlaying()) player.play();
     }
 
     private static void event(MediaPlayer.Event event) {
+        if (player == null) return;
+        if (LiveNative.busy(player)) {
+            if (event.type == MediaPlayer.Event.Vout && output != null) output.videoOutputs(
+                event.getVoutCount()
+            );
+            return;
+        }
         if (event.type == MediaPlayer.Event.Paused) {
             userPaused = true;
             buffering.reset();
@@ -513,6 +562,8 @@ final class LivePlayer {
             resolving &&
             (event.type == MediaPlayer.Event.EndReached || event.type == MediaPlayer.Event.EncounteredError)
         ) return;
+        if (event.type == MediaPlayer.Event.EndReached) lastFailureCause = "Live input ended";
+        if (event.type == MediaPlayer.Event.EncounteredError) lastFailureCause = "Live input error";
         if (event.type == MediaPlayer.Event.Playing) played = true;
         if (
             output != null &&
@@ -524,7 +575,7 @@ final class LivePlayer {
         if (
             (event.type == MediaPlayer.Event.EncounteredError ||
                 event.type == MediaPlayer.Event.EndReached) &&
-            (preparingBackup() || prepareBackup() || retryProvider())
+            (preparingBackup() || prepareBackupForFailure() || retryProvider())
         ) {
             return;
         }
@@ -536,12 +587,43 @@ final class LivePlayer {
         if (listener != null) listener.onEvent(event);
     }
 
-    private static boolean retryProvider() {
-        if (!EngineSources.locator(url) || refreshed || appContext == null) return false;
-        refreshed = true;
-        AdapterSources.failed(url);
-        EngineSources.invalidate();
-        play(appContext, url, lastOptions, true);
+    static boolean repairPicture() {
+        if (player == null || userPaused || LiveNative.busy(player)) return false;
+        videoFault = true;
+        if (output != null && output.refreshView()) {
+            repairBudget.repaired();
+            viewRepairs++;
+            lastVideoRecovery = "Picture repair requested from live controls";
+            return true;
+        }
+        return retryProvider();
+    }
+
+    static boolean retryProvider() {
+        if (appContext == null || userPaused || resolving || url == null) return false;
+        boolean engineSource = EngineSources.locator(url);
+        if (engineSource) {
+            if (refreshed) return false;
+            refreshed = true;
+            AdapterSources.failed(url);
+            EngineSources.invalidate();
+        } else {
+            // Initial bad addresses still fail promptly. Reconnect an established live session.
+            if (!played && reconnects.attempts() == 0) return false;
+            if (!reconnects.acquire()) return false;
+            if (PlutoSource.nativeUrl(url)) PlutoSource.invalidate();
+            softwareVideo = reconnects.attempts() > 1 && videoFault;
+        }
+        lastVideoRecovery =
+            "Reconnecting selected live source · attempt " +
+            (engineSource ? 1 : reconnects.attempts()) +
+            (softwareVideo ? " · software video" : "");
+        retrying = true;
+        try {
+            play(appContext, url, lastOptions, true);
+        } finally {
+            retrying = false;
+        }
         return true;
     }
 
@@ -606,23 +688,30 @@ final class LivePlayer {
         progress.reset();
         played = false;
         cancelResolution();
-        if (player != null) {
-            player.setEventListener(null);
-            // Cancel repairs first, but retain the surface while VLC joins its decoder/vout
-            // threads. Detaching first can destroy the window during EGL initialization.
-            if (output != null) output.stopping();
-            player.stop();
-            closeRelay();
-            if (output != null) output.close();
-            player.release();
-            player = null;
-        }
-        if (engine != null) {
-            engine.release();
-            engine = null;
-        }
+        MediaPlayer retiring = player;
+        LiveVideoOutput retiringOutput = output;
+        LibVLC retiringEngine = engine;
+        ProviderRelay retiringRelay = relay;
+        player = null;
+        engine = null;
+        relay = null;
+        if (retiring != null) {
+            retiring.setEventListener(null);
+            if (retiringOutput != null) retiringOutput.stopping();
+            LiveNative.stop(retiring, () -> {
+                if (retiringRelay != null) retiringRelay.close();
+                if (retiringOutput != null) retiringOutput.close();
+                retiring.release();
+                if (retiringEngine != null) retiringEngine.release();
+            });
+        } else if (retiringEngine != null) retiringEngine.release();
         appContext = null;
         lastOptions = null;
+        lastVideoRecovery = lastFailureCause = "None";
+        backupStatus = "None";
+        viewRepairs = 0;
+        reconnects.reset();
+        softwareVideo = videoFault = false;
         refreshed = false;
         repairBudget.reset();
         engineOptions = null;
