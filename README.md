@@ -148,7 +148,7 @@ Scheduled provider-link renewal keeps the current stream running while a fresh l
 > [!WARNING]
 > **MovieHub does not host, store or distribute films, series, channels or streams.** Public channel listings and user-configured services are supplied by independent third parties. Their availability, rights and reliability are outside this project's control.
 
-Users are responsible for accessing only content and services they are legally entitled to use. Channel names and logos belong to their respective owners. MovieHub is not affiliated with Sky, broadcasters, streaming platforms or source providers
+Users are responsible for accessing only content and services they are legally entitled to use. Channel names and logos belong to their respective owners. MovieHub is not affiliated with Sky, broadcasters, streaming platforms or source providers. For rights concerns, contact the repository owner through GitHub.
 
 ## Privacy & security
 
