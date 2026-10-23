@@ -82,7 +82,7 @@ final class LivePlayer {
             long now = android.os.SystemClock.elapsedRealtime();
             if (output != null && output.presentationMissing(now, watching)) {
                 videoFault = true;
-                if (repairBudget.allowed() && output.refreshView()) repairBudget.repaired();
+                if (output.repairPresentation()) repairBudget.repaired();
                 else if (!retryProvider() && resolutionFailed != null) resolutionFailed.run();
                 lastVideoRecovery = "Rendered buffers missing; repairing live picture";
             }
@@ -102,7 +102,7 @@ final class LivePlayer {
     static void observeProgress(long now, long time, long frames, boolean watching) {
         if (player == null || !alive || LiveNative.busy(player)) return;
         repairBudget.observe(frames, watching);
-        reconnects.observe(now, frames, watching);
+        reconnects.observe(now, frames, watching && output != null && !output.presentationUnavailable());
         if (!progress.stalled(now, time, frames, watching, LiveZapper.STALL_MS)) {
             if (
                 watching &&
@@ -133,7 +133,7 @@ final class LivePlayer {
         lastVideoRecovery = clockMoving
             ? "Rendered video stopped after a view refresh; trying the source backup"
             : "Playback clock and rendered video stopped; trying the source backup";
-        if (prepareBackup()) return;
+        if (prepareBackupForFailure()) return;
         if (retryProvider()) return;
         alive = false;
         player.pause();
@@ -206,6 +206,10 @@ final class LivePlayer {
         return backup != null && backup.recover();
     }
 
+    static boolean prepareBackupForFailure() {
+        return backup != null && !backup.exhausted() && backup.recover();
+    }
+
     static void cancelBackup() {
         if (backup != null) backup.cancel();
     }
@@ -248,7 +252,9 @@ final class LivePlayer {
     }
 
     private static void recoverBuffering() {
-        if (!prepareBackup() && !retryProvider() && resolutionFailed != null) resolutionFailed.run();
+        if (
+            !prepareBackupForFailure() && !retryProvider() && resolutionFailed != null
+        ) resolutionFailed.run();
     }
 
     /** Promotes a running, muted SurfaceView; its decoder and resolved relay are retained. */
@@ -578,7 +584,7 @@ final class LivePlayer {
         if (
             (event.type == MediaPlayer.Event.EncounteredError ||
                 event.type == MediaPlayer.Event.EndReached) &&
-            (preparingBackup() || prepareBackup() || retryProvider())
+            (preparingBackup() || prepareBackupForFailure() || retryProvider())
         ) {
             return;
         }

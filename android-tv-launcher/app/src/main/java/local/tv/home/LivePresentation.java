@@ -14,6 +14,10 @@ final class LivePresentation {
         return missingSince >= 0 && now - missingSince >= limit;
     }
 
+    boolean unavailable() {
+        return missingSince >= 0;
+    }
+
     void reset() {
         missingSince = -1;
     }

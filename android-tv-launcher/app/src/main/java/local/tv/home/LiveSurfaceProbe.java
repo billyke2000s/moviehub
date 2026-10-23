@@ -13,7 +13,7 @@ final class LiveSurfaceProbe {
     private final LivePresentation state = new LivePresentation();
     private long sampledAt = -1;
     private int generation;
-    private boolean pending;
+    private boolean pending, repaired;
     private String status = "Not sampled";
 
     void sample(SurfaceView surface, long now, boolean watching) {
@@ -55,6 +55,24 @@ final class LiveSurfaceProbe {
             pending = false;
             status = "Surface probe unavailable";
         }
+    }
+
+    boolean repairAllowed() {
+        return !repaired;
+    }
+
+    void repaired() {
+        repaired = true;
+        reset();
+    }
+
+    boolean unavailable() {
+        return repaired || state.unavailable();
+    }
+
+    void newStream() {
+        repaired = false;
+        reset();
     }
 
     boolean missing(long now) {

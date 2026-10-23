@@ -54,6 +54,10 @@ final class LiveBackup {
         return preparing;
     }
 
+    boolean exhausted() {
+        return exhausted;
+    }
+
     boolean contains(String url) {
         String key = ChannelQuery.key(url);
         for (ChannelDatabase.Row row : copies) if (row.key.equals(key)) return true;

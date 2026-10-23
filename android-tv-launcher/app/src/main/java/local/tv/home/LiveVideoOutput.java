@@ -161,7 +161,7 @@ final class LiveVideoOutput {
     void streamChanging() {
         pendingAudioTrack = NO_TRACK;
         restartAfterMove = false;
-        probe.reset();
+        probe.newStream();
         cover.clear();
         cancelSurfaceWait();
         waitingTrack = NO_TRACK;
@@ -325,6 +325,16 @@ final class LiveVideoOutput {
     boolean presentationMissing(long now, boolean watching) {
         probe.sample(surfaceView(), now, watching);
         return watching && probe.missing(now);
+    }
+
+    boolean repairPresentation() {
+        if (!probe.repairAllowed() || !refreshView()) return false;
+        probe.repaired();
+        return true;
+    }
+
+    boolean presentationUnavailable() {
+        return probe.unavailable();
     }
 
     String surfaceHealth() {
