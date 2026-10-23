@@ -244,9 +244,10 @@ public final class LiveRenewalTest {
     }
 
     @Test
-    public void persistentFreezeReachesFailureInsteadOfRepairingForever() {
+    public void stalledPlaybackReconnectsAfterPictureRepair() {
         start(false);
         AtomicInteger failures = new AtomicInteger();
+        int opened = LivePlayer.opened;
         remote.runOnMainSync(() -> {
             LivePlayer.attach(activity, activity.video, event -> {}, failures::incrementAndGet);
             long time = LivePlayer.player().getTime(),
@@ -256,13 +257,18 @@ public final class LiveRenewalTest {
             LivePlayer.observeProgress(1000, time, frames, true);
             LivePlayer.observeProgress(4000, time + 3000, frames, true);
             assertEquals(repairs + 1, LivePlayer.output().repairs);
-            // The repair hides the surface temporarily. That must not grant another repair.
-            LivePlayer.observeProgress(4500, time + 3500, frames, false);
-            LivePlayer.observeProgress(5000, time + 4000, frames, true);
-            LivePlayer.observeProgress(14000, time + 13000, frames, true);
-            assertEquals("One repair per persistent freeze", repairs + 1, LivePlayer.output().repairs);
-            assertEquals("Persistent failure reaches source recovery", 1, failures.get());
         });
+        await(() -> !LiveNative.busy(LivePlayer.player()) && LivePlayer.output().isShown());
+        remote.runOnMainSync(() -> {
+            long time = LivePlayer.player().getTime(),
+                frames = LivePlayer.output().pictures();
+            LivePlayer.observeProgress(0, time, frames, false);
+            LivePlayer.observeProgress(1000, time, frames, true);
+            LivePlayer.observeProgress(10000, time, frames, true);
+            assertEquals("A persistent stall reconnects the selected channel", opened + 1, LivePlayer.opened);
+            assertEquals("Reconnect happens before reporting failure", 0, failures.get());
+        });
+        await(() -> !LiveNative.busy(LivePlayer.player()) && LivePlayer.player().isPlaying());
     }
 
     @Test

@@ -235,5 +235,6 @@ public final class LiveRecoveryTest {
         );
         assertFalse(activity.isFinishing());
         new LiveHandoffEvidence(remote).awaitPicture(false);
+        await(() -> !LivePlayer.output().presentationUnavailable());
     }
 }

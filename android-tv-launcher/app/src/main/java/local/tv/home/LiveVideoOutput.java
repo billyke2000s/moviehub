@@ -323,7 +323,7 @@ final class LiveVideoOutput {
 
     /** The freeze watchdog's repair: restart the picture without touching the stream or sound. */
     boolean presentationMissing(long now, boolean watching) {
-        probe.sample(surfaceView(), now, watching);
+        probe.sample(surfaceView(), now, watching, watching ? pictures() : -1);
         return watching && probe.missing(now);
     }
 

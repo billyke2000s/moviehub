@@ -11,12 +11,13 @@ final class LiveSurfaceProbe {
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final LivePresentation state = new LivePresentation();
-    private long sampledAt = -1;
+    private long sampledAt = -1,
+        previousFrames = -1;
     private int generation;
     private boolean pending, repaired;
     private String status = "Not sampled";
 
-    void sample(SurfaceView surface, long now, boolean watching) {
+    void sample(SurfaceView surface, long now, boolean watching, long frames) {
         if (!watching) {
             reset();
             return;
@@ -28,6 +29,11 @@ final class LiveSurfaceProbe {
             status = "Video surface unavailable";
             return;
         }
+        // A valid hardware-decoder SurfaceView may reject PixelCopy with NO_DATA. That is not
+        // evidence of missing video; only structural surface loss establishes an outage here.
+        state.result(now, true);
+        if (frames >= 0 && previousFrames >= 0 && frames > previousFrames) repaired = false;
+        previousFrames = frames;
         int ticket = generation;
         pending = true;
         Bitmap sample = Bitmap.createBitmap(32, 18, Bitmap.Config.ARGB_8888);
@@ -40,14 +46,10 @@ final class LiveSurfaceProbe {
                     if (ticket != generation) return;
                     // ERROR_TIMEOUT/UNKNOWN alone cannot establish that video output is broken.
                     if (result == PixelCopy.SUCCESS) {
+                        repaired = false;
                         state.result(android.os.SystemClock.elapsedRealtime(), true);
                         status = "Rendered buffer available";
-                    } else if (
-                        result == PixelCopy.ERROR_SOURCE_NO_DATA || result == PixelCopy.ERROR_SOURCE_INVALID
-                    ) {
-                        state.result(android.os.SystemClock.elapsedRealtime(), false);
-                        status = "Rendered buffer missing";
-                    }
+                    } else status = "Surface valid; rendered-buffer probe unavailable";
                 },
                 main
             );
@@ -86,6 +88,6 @@ final class LiveSurfaceProbe {
     void reset() {
         generation++;
         state.reset();
-        sampledAt = -1;
+        sampledAt = previousFrames = -1;
     }
 }

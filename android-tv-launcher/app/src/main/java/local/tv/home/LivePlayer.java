@@ -378,7 +378,7 @@ final class LivePlayer {
         }
         if ((!streamUrl.equals(url) || restart) && !retrying && !renewalOnly) {
             reconnects.reset();
-            softwareVideo = false;
+            softwareVideo = videoFault = false;
         }
         if (!streamUrl.equals(url)) {
             automaticSources = true;
@@ -717,7 +717,7 @@ final class LivePlayer {
         appContext = null;
         lastOptions = null;
         reconnects.reset();
-        softwareVideo = false;
+        softwareVideo = videoFault = false;
         refreshed = false;
         repairBudget.reset();
         engineOptions = null;

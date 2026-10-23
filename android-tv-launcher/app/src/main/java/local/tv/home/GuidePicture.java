@@ -42,7 +42,7 @@ final class GuidePicture {
         if (carryOn) {
             attach(activity, holder);
             LivePlayer.resume();
-            playing = !LiveNative.busy(LivePlayer.player()) && LivePlayer.player().isPlaying();
+            playing = carryOn;
         } else removeVideo();
         String key = activity.prefs.getString(LiveTvScreen.LAST_CHANNEL, "");
         if (key.isEmpty()) {

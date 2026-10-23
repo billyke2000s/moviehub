@@ -19,6 +19,12 @@ final class PlayerMenus {
         a = activity;
     }
 
+    private boolean ready() {
+        return (
+            a.player != null && (!a.live || (a.player == LivePlayer.player() && !LiveNative.busy(a.player)))
+        );
+    }
+
     /** One panel for both, as streaming apps do: pick which one to change. */
     void audioAndSubtitles() {
         a.dialogOpen = true;
@@ -30,7 +36,7 @@ final class PlayerMenus {
     }
 
     void resolution() {
-        if (a.player == null) return;
+        if (!ready()) return;
         Media.VideoTrack track = a.player.getCurrentVideoTrack();
         String size = track == null ? "Resolution unavailable" : track.width + " × " + track.height;
         MediaPlayer.TrackDescription[] choices = a.player.getVideoTracks();
@@ -49,7 +55,7 @@ final class PlayerMenus {
     }
 
     void tracks(boolean subtitles) {
-        if (a.player == null) return;
+        if (!ready()) return;
         MediaPlayer.TrackDescription[] choices = subtitles
             ? a.player.getSpuTracks()
             : a.player.getAudioTracks();
@@ -75,7 +81,7 @@ final class PlayerMenus {
         a.dialogOpen = true;
         SidePanel.of(a, title)
             .choices(names, selected, which -> {
-                if (a.player != null) {
+                if (ready()) {
                     int choice = choices[which].id;
                     if (type == 2) a.player.setSpuTrack(choice);
                     else if (type == 1) a.player.setAudioTrack(choice);
@@ -119,7 +125,7 @@ final class PlayerMenus {
             // Everything the coloured buttons do is here too, for remotes without them.
             if (a.zapper != null) labels.add(0, "Programme information");
             labels.add(0, "Audio & subtitles");
-            labels.add(0, a.player != null && a.player.isPlaying() ? "Pause" : "Play");
+            labels.add(0, ready() && a.player.isPlaying() ? "Pause" : "Play");
         }
         a.dialogOpen = true;
         SidePanel panel = SidePanel.of(a, liveTv ? "Options" : "Playback options").onDismiss(a::panelClosed);
@@ -156,7 +162,7 @@ final class PlayerMenus {
             selected,
             which -> {
                 a.playbackRate = rates[which];
-                if (a.player != null) a.player.setRate(a.playbackRate);
+                if (ready()) a.player.setRate(a.playbackRate);
             }
         );
     }
@@ -167,7 +173,7 @@ final class PlayerMenus {
         for (int i = 1; i < aspects.length; i++) if (aspects[i].equals(a.aspect)) selected = i;
         options("Picture size", new String[] { "Original · Fit", "16:9", "4:3", "21:9" }, selected, which -> {
             a.aspect = aspects[which];
-            if (a.player != null) {
+            if (ready()) {
                 a.player.setScale(0);
                 a.player.setAspectRatio(a.aspect);
             }
@@ -175,16 +181,14 @@ final class PlayerMenus {
     }
 
     void subtitleTiming() {
-        if (a.player == null) return;
+        if (!ready()) return;
         long delay = a.player.getSpuDelay();
         options(
             "Subtitle timing · " + delay / 1000 + " ms",
             new String[] { "Earlier by 250 ms", "Later by 250 ms", "Reset timing" },
             -1,
             which -> {
-                if (a.player != null) a.player.setSpuDelay(
-                    which == 2 ? 0 : delay + (which == 0 ? -250000 : 250000)
-                );
+                if (ready()) a.player.setSpuDelay(which == 2 ? 0 : delay + (which == 0 ? -250000 : 250000));
             }
         );
     }

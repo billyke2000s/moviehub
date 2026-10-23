@@ -7,7 +7,7 @@
 
 - Retry established Pluto/direct live streams with a bounded reconnect budget; refresh Pluto’s anonymous session and allow a software-video fallback after repeated video stalls.
 - Move live native stop/video-disable operations off the UI thread, retaining surfaces and transport until shutdown completes.
-- Check rendered-buffer availability as well as decoding progress, and add Repair picture/Reconnect channel to live Options.
+- Recover structurally missing video surfaces and monitor decoding progress, and add Repair picture/Reconnect channel to live Options.
 - Add HLS resolution/timestamp transition, same-channel retry, missing-surface and slow-native-stop regression fixtures.
 
 
