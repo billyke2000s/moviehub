@@ -289,6 +289,143 @@ public final class LiveControlsTest {
         UiEvidence.capture("live-complete-channel-header");
     }
 
+    private boolean containsText(android.view.View view, String expected) {
+        if (
+            view instanceof android.widget.TextView &&
+            expected.contentEquals(((android.widget.TextView) view).getText())
+        ) return true;
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) if (
+                containsText(group.getChildAt(i), expected)
+            ) return true;
+        }
+        return false;
+    }
+
+    private void playerKey(int action, int key, int repeat) {
+        remote.runOnMainSync(() -> {
+            KeyEvent event = new KeyEvent(1, 2, action, key, repeat);
+            if (SidePanel.current != null) SidePanel.current.dispatchKeyEvent(event);
+            else activity.dispatchKeyEvent(event);
+        });
+        remote.waitForIdleSync();
+    }
+
+    @Test
+    public void colourPressWorksBeforeReleaseAndDoesNotRepeatAcrossWindows() {
+        remote.runOnMainSync(() -> activity.zapper.overlay.focusSources());
+        playerKey(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_PROG_RED, 0);
+        android.app.Dialog audio = SidePanel.current;
+        assertNotNull("A press opens Audio without waiting for release", audio);
+        assertTrue(containsText(audio.getWindow().getDecorView(), "Audio & Subtitles"));
+        playerKey(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_PROG_RED, 0);
+        assertSame("The release must not reopen Audio", audio, SidePanel.current);
+        playerKey(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_PROG_GREEN, 0);
+        android.app.Dialog sources = SidePanel.current;
+        assertNotSame("Green works while a panel owns input", audio, sources);
+        assertTrue(containsText(sources.getWindow().getDecorView(), "Sources"));
+        playerKey(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_PROG_GREEN, 1);
+        playerKey(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_PROG_GREEN, 0);
+        assertSame("Held/released green must not reopen Sources", sources, SidePanel.current);
+        playerKey(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_PROG_BLUE, 0);
+        android.app.Dialog options = SidePanel.current;
+        assertTrue(containsText(options.getWindow().getDecorView(), "Options"));
+        playerKey(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_PROG_YELLOW, 0);
+        assertNull(SidePanel.current);
+        assertTrue(activity.zapper.overlay.infoShowing());
+        playerKey(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_PROG_YELLOW, 0);
+        assertTrue("Yellow release must not close Information again", activity.zapper.overlay.infoShowing());
+    }
+
+    @Test
+    public void standardColoursCannotBeSwappedByOldLearnedAliases() {
+        android.content.SharedPreferences prefs = activity.getSharedPreferences("ui", 0);
+        java.util.Map<String, ?> previous = prefs.getAll();
+        try {
+            prefs
+                .edit()
+                .putInt("remoteRed", KeyEvent.KEYCODE_PROG_GREEN)
+                .putInt("remoteGreen", KeyEvent.KEYCODE_PROG_BLUE)
+                .putInt("remoteYellow", KeyEvent.KEYCODE_F1)
+                .putInt("remoteBlue", KeyEvent.KEYCODE_PROG_YELLOW)
+                .commit();
+            assertEquals('r', LiveTvScreen.colour(prefs, KeyEvent.KEYCODE_PROG_RED));
+            assertEquals('g', LiveTvScreen.colour(prefs, KeyEvent.KEYCODE_PROG_GREEN));
+            assertEquals('y', LiveTvScreen.colour(prefs, KeyEvent.KEYCODE_PROG_YELLOW));
+            assertEquals('b', LiveTvScreen.colour(prefs, KeyEvent.KEYCODE_PROG_BLUE));
+            assertEquals('r', LiveTvScreen.colour(prefs, KeyEvent.KEYCODE_F1));
+            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
+            await(() -> SidePanel.current != null && SidePanel.current.isShowing());
+            remote.runOnMainSync(() ->
+                assertTrue(containsText(SidePanel.current.getWindow().getDecorView(), "Sources"))
+            );
+        } finally {
+            android.content.SharedPreferences.Editor edit = prefs.edit();
+            for (String key : LiveTvScreen.COLOUR_PREFS) {
+                if (previous.containsKey(key)) edit.putInt(key, (Integer) previous.get(key));
+                else edit.remove(key);
+            }
+            edit.commit();
+        }
+    }
+
+    @Test
+    public void bannerKeepsFullHeaderAndColoursWhenOptionalPanelsExceedTheViewport() {
+        android.widget.FrameLayout host = new android.widget.FrameLayout(activity);
+        SkyOverlay[] overlay = new SkyOverlay[1];
+        remote.runOnMainSync(() -> {
+            android.view.ViewGroup content = activity.findViewById(android.R.id.content);
+            content.addView(host, new android.widget.FrameLayout.LayoutParams(-1, activity.dp(260)));
+            overlay[0] = new SkyOverlay(activity, host);
+            overlay[0].banner(
+                "407",
+                "Sky Sports F1 (720p)",
+                "No programme information",
+                "",
+                "",
+                "",
+                "",
+                -1,
+                "Sources · Auto · FreeShot (UK sports) · 2 of 3",
+                false
+            );
+            overlay[0].info(
+                "407 Sky Sports F1",
+                "Programme information",
+                "19:42",
+                "Line one\nLine two\nLine three\nLine four\nLine five\nLine six\nLine seven\nLine eight"
+            );
+            overlay[0].pause(true, true);
+            overlay[0].focusSources();
+        });
+        try {
+            remote.waitForIdleSync();
+            SystemClock.sleep(250);
+            remote.runOnMainSync(() -> {
+                android.graphics.Rect visible = new android.graphics.Rect();
+                android.view.View strip = overlay[0].channelStrip;
+                assertTrue("Full header remains shown in limited space", strip.getGlobalVisibleRect(visible));
+                assertTrue(strip.getHeight() >= activity.dp(64));
+                assertEquals(
+                    "Header never gives up its height to optional panels",
+                    strip.getHeight(),
+                    visible.height()
+                );
+                for (android.view.View control : overlay[0].controls) {
+                    assertTrue(
+                        "Source and colour buttons remain visible",
+                        control.getGlobalVisibleRect(visible)
+                    );
+                    assertEquals(control.getHeight(), visible.height());
+                }
+            });
+            UiEvidence.capture("live-banner-constrained-viewport");
+        } finally {
+            remote.runOnMainSync(() -> ((android.view.ViewGroup) host.getParent()).removeView(host));
+        }
+    }
+
     @Test
     public void recreatedPlayerKeepsLiveControlsWithoutStaticGuideState() {
         android.app.Instrumentation.ActivityMonitor monitor = remote.addMonitor(

@@ -6,6 +6,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -51,8 +52,7 @@ final class SkyOverlay {
 
     SkyOverlay(VlcPlaybackActivity activity, FrameLayout root) {
         a = activity;
-        LinearLayout stack = new LinearLayout(a);
-        stack.setOrientation(LinearLayout.VERTICAL);
+        BannerStack stack = new BannerStack(a);
         FrameLayout.LayoutParams stackLayout = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
         stackLayout.setMargins(a.dp(56), 0, a.dp(56), a.dp(34));
         root.addView(stack, stackLayout);
@@ -117,10 +117,16 @@ final class SkyOverlay {
         controls.add(source);
         clock = label(20, true, Color.WHITE);
         title.addView(clock);
-        // Reserve the complete channel strip independently of now/next and information content.
-        // A wrap-content strip must never collapse to just its blue padding during a relayout.
-        title.setMinimumHeight(a.dp(64));
-        banner.addView(title, new LinearLayout.LayoutParams(-1, -2));
+        // Reserve an actual header row, not only a suggested minimum. Grow with system text
+        // size, including the source button's vertical padding.
+        int stripHeight = Math.max(
+            a.dp(64),
+            Math.max(
+                (int) Math.ceil(number.getTextSize() * 1.5f) + a.dp(16),
+                (int) Math.ceil(source.getTextSize() * 1.5f) + a.dp(40)
+            )
+        );
+        banner.addView(title, new LinearLayout.LayoutParams(-1, stripHeight));
         LinearLayout content = body();
         LinearLayout nowRow = row();
         nowTime = label(18, true, TIME);
@@ -165,7 +171,7 @@ final class SkyOverlay {
         hint.setText("SELECT to watch   ▲ ▼ channels   ◀ ▶ later programmes   BACK to close");
         content.addView(hint);
         banner.addView(content);
-        stack.addView(banner);
+        stack.addView(banner, new ViewGroup.MarginLayoutParams(-1, -2));
 
         info.setVisibility(View.GONE);
         pauseBar.setVisibility(View.GONE);
@@ -342,6 +348,72 @@ final class SkyOverlay {
         return pauseBar.getVisibility() == View.VISIBLE;
     }
 
+    /** Measure the bottom banner first; optional information must never consume its space. */
+    private static final class BannerStack extends ViewGroup {
+
+        BannerStack(android.content.Context context) {
+            super(context);
+        }
+
+        @Override
+        protected void onMeasure(int widthSpec, int heightSpec) {
+            int width = MeasureSpec.getSize(widthSpec);
+            int remaining =
+                MeasureSpec.getMode(heightSpec) == MeasureSpec.UNSPECIFIED
+                    ? Integer.MAX_VALUE / 4
+                    : MeasureSpec.getSize(heightSpec);
+            int used = 0;
+            // Children are added in visual order: information, pause, channel banner.
+            for (int i = getChildCount() - 1; i >= 0; i--) {
+                View child = getChildAt(i);
+                if (child.getVisibility() == GONE) continue;
+                MarginLayoutParams lp = (MarginLayoutParams) child.getLayoutParams();
+                int margins = lp.topMargin + lp.bottomMargin;
+                if (remaining <= margins) {
+                    child.measure(
+                        MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+                        MeasureSpec.makeMeasureSpec(0, MeasureSpec.EXACTLY)
+                    );
+                    continue;
+                }
+                child.measure(
+                    MeasureSpec.makeMeasureSpec(
+                        Math.max(0, width - lp.leftMargin - lp.rightMargin),
+                        MeasureSpec.EXACTLY
+                    ),
+                    MeasureSpec.makeMeasureSpec(Math.max(0, remaining - margins), MeasureSpec.AT_MOST)
+                );
+                int height = child.getMeasuredHeight() + margins;
+                used += height;
+                remaining = Math.max(0, remaining - height);
+            }
+            setMeasuredDimension(resolveSize(width, widthSpec), resolveSize(used, heightSpec));
+        }
+
+        @Override
+        protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+            int y = 0;
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                if (child.getVisibility() == GONE || child.getMeasuredHeight() == 0) continue;
+                MarginLayoutParams lp = (MarginLayoutParams) child.getLayoutParams();
+                y += lp.topMargin;
+                child.layout(
+                    lp.leftMargin,
+                    y,
+                    lp.leftMargin + child.getMeasuredWidth(),
+                    y + child.getMeasuredHeight()
+                );
+                y += child.getMeasuredHeight() + lp.bottomMargin;
+            }
+        }
+
+        @Override
+        protected LayoutParams generateDefaultLayoutParams() {
+            return new MarginLayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        }
+    }
+
     // ---- Building blocks ------------------------------------------------------------------------
 
     /** A rounded panel with a thin light edge; its strip and body go inside. */
@@ -363,6 +435,7 @@ final class SkyOverlay {
     private LinearLayout strip() {
         LinearLayout strip = row();
         strip.setGravity(Gravity.CENTER_VERTICAL);
+        strip.setBaselineAligned(false);
         strip.setPadding(a.dp(18), a.dp(8), a.dp(18), a.dp(8));
         GradientDrawable shape = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {
             STRIP_TOP,

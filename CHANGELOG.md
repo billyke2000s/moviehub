@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep the full Live TV channel banner ahead of optional information/pause panels when space is limited, with a reserved header height that grows for larger text.
+- Handle standard coloured remote buttons on the first press, including inside player menus; prevent saved aliases from swapping standard colour actions.
+
 ## 0.49 (23 October 2026)
 
 - Keep the complete Live TV channel header visible and coloured remote buttons working from open player menus.
