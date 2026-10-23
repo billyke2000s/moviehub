@@ -52,7 +52,29 @@ public final class LiveControlsTest {
                     (panel != null && panel.getWindow().getDecorView().hasWindowFocus())
             );
         });
-        fail(state.get());
+        UiEvidence.capture("live-controls-timeout");
+        StringBuilder windows = new StringBuilder();
+        try (
+            android.os.ParcelFileDescriptor fd = remote
+                .getUiAutomation()
+                .executeShellCommand("dumpsys window windows");
+            java.io.BufferedReader reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(new android.os.ParcelFileDescriptor.AutoCloseInputStream(fd))
+            )
+        ) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (
+                    line.contains("mCurrentFocus") ||
+                    line.contains("mFocusedApp") ||
+                    line.contains("Window #") ||
+                    line.contains("mAttrs=")
+                ) windows.append("\n").append(line);
+            }
+        } catch (Exception error) {
+            windows.append("\nWindow diagnostic: ").append(error.getClass().getSimpleName());
+        }
+        fail(state.get() + windows);
     }
 
     private void press(int key) {
