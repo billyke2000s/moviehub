@@ -264,6 +264,7 @@ public class VlcPlaybackActivity extends Activity {
                 return true;
             }
             if (key == KeyEvent.KEYCODE_MEDIA_PAUSE) {
+                if (live) LivePlayer.pauseForUser();
                 if (player != null) player.pause();
                 if (live) behindLive = true;
                 paused = true;
@@ -407,6 +408,7 @@ public class VlcPlaybackActivity extends Activity {
             .setOnAudioFocusChangeListener(change -> {
                 forgetReleasedLivePlayer();
                 if (change < 0 && player != null) {
+                    if (live) LivePlayer.pauseForUser();
                     player.pause();
                     paused = true;
                     if (vod != null) vod.pauseChanged();
@@ -480,7 +482,8 @@ public class VlcPlaybackActivity extends Activity {
                 if (!foreground) return;
                 showError("This channel is unavailable. Check your connection or try another channel.");
             },
-            this::armStartupTimeout
+            this::armStartupTimeout,
+            this::livePlayerReplaced
         );
         // Resolution has its own bounded broker deadline. Starting the video timer before it
         // finishes can discard a working provider before LibVLC has even received its URL.
@@ -497,6 +500,19 @@ public class VlcPlaybackActivity extends Activity {
             showPlaying(true);
             revealControls();
         }
+    }
+
+    private void livePlayerReplaced() {
+        player = LivePlayer.player();
+        url = LivePlayer.currentUrl();
+        id = ChannelQuery.key(url);
+        getIntent().putExtra("url", url).putExtra("id", id);
+        liveFailed = buffering = false;
+        playedOnce = true;
+        overlayHandler.removeCallbacks(stalled);
+        status.setVisibility(View.GONE);
+        showPlaying(true);
+        if (zapper != null) zapper.sourceReplaced();
     }
 
     private void armStartupTimeout() {
@@ -535,7 +551,6 @@ public class VlcPlaybackActivity extends Activity {
         } else if (event.type == MediaPlayer.Event.Buffering) {
             if (event.getBuffering() < 100) {
                 if (playedOnce) Timings.markOnce("stall");
-                if (playedOnce && zapper != null && !buffering) zapper.bufferingStarted();
                 if (playedOnce && vod != null && !buffering) vod.onBuffering(true);
                 buffering = true;
                 status.setText(
@@ -549,7 +564,6 @@ public class VlcPlaybackActivity extends Activity {
                 status.setVisibility(View.GONE);
                 Timings.finish("stall", "Buffering pause while watching");
                 buffering = false;
-                if (zapper != null) zapper.bufferingEnded();
                 if (vod != null) vod.onBuffering(false);
             }
         } else if (event.type == MediaPlayer.Event.EndReached) {
@@ -684,6 +698,7 @@ public class VlcPlaybackActivity extends Activity {
         revealControls();
         if (player == null) return;
         if (player.isPlaying()) {
+            if (live) LivePlayer.pauseForUser();
             player.pause();
             if (live) behindLive = true;
             paused = true;

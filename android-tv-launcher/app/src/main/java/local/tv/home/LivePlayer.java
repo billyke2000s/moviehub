@@ -13,6 +13,7 @@ import java.util.concurrent.*;
 import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.Media;
 import org.videolan.libvlc.MediaPlayer;
+import org.videolan.libvlc.util.VLCVideoLayout;
 
 /**
  * The one Live TV player, shared by the full-screen player and the picture in the guide's corner,
@@ -47,7 +48,11 @@ final class LivePlayer {
     private static Context appContext;
     private static List<String> lastOptions;
     private static final LiveProgress progress = new LiveProgress();
-    private static boolean played;
+    private static boolean played, userPaused;
+    private static LiveBackup backup;
+    private static Runnable playerChanged;
+    private static final LiveBuffering buffering = new LiveBuffering();
+    private static String backupStatus = "None";
     private static final LiveRepairBudget repairBudget = new LiveRepairBudget();
     static final long PICTURE_REPAIR_MS = 2500;
     private static long pictureRepairedFor = -1;
@@ -74,6 +79,10 @@ final class LivePlayer {
                 output == null ? -1 : output.pictures(),
                 watching
             );
+            if (
+                player != null &&
+                buffering.stalled(android.os.SystemClock.elapsedRealtime(), bufferWatching())
+            ) recoverBuffering();
             if (player != null && ticket == generation) main.postDelayed(this, 1000);
         }
     };
@@ -110,6 +119,7 @@ final class LivePlayer {
         lastVideoRecovery = clockMoving
             ? "Rendered video stopped after a view refresh; trying the source backup"
             : "Playback clock and rendered video stopped; trying the source backup";
+        if (prepareBackup()) return;
         if (retryProvider()) return;
         alive = false;
         player.pause();
@@ -130,7 +140,137 @@ final class LivePlayer {
     private LivePlayer() {}
 
     static String videoRecovery() {
-        return lastVideoRecovery + " · " + viewRepairs + " view refreshes";
+        return lastVideoRecovery + " · " + viewRepairs + " view refreshes · " + backupStatus;
+    }
+
+    static void backups(Context context, List<ChannelDatabase.Row> copies) {
+        if (player == null || engine == null) return;
+        if (backup == null) backup = new LiveBackup(context, engine);
+        backup.configure(copies);
+    }
+
+    static boolean preparingBackup() {
+        return backup != null && backup.preparing();
+    }
+
+    static void pauseForUser() {
+        userPaused = true;
+        buffering.reset();
+        cancelBackup();
+    }
+
+    static MediaPlayer standbyPlayer() {
+        return backup == null ? null : backup.player();
+    }
+
+    static boolean userPaused() {
+        return userPaused;
+    }
+
+    static boolean canPrepareBackup() {
+        return (
+            player != null &&
+            played &&
+            !userPaused &&
+            !resolving &&
+            output != null &&
+            output.host() != null &&
+            output.isShown()
+        );
+    }
+
+    static boolean prepareBackup() {
+        return backup != null && backup.recover();
+    }
+
+    static void cancelBackup() {
+        if (backup != null) backup.cancel();
+    }
+
+    static void retryBackups() {
+        if (backup != null) backup.newSelection();
+    }
+
+    static void backupStatus(String status) {
+        backupStatus = status;
+    }
+
+    static void backupUnavailable() {
+        if (player != null && !player.isPlaying()) {
+            alive = false;
+            if (resolutionFailed != null) resolutionFailed.run();
+        }
+    }
+
+    private static boolean bufferWatching() {
+        return (
+            played &&
+            alive &&
+            !userPaused &&
+            !resolving &&
+            output != null &&
+            output.host() != null &&
+            output.isShown()
+        );
+    }
+
+    static void bufferingStarted() {
+        if (
+            buffering.update(android.os.SystemClock.elapsedRealtime(), true, bufferWatching())
+        ) recoverBuffering();
+    }
+
+    static void bufferingEnded() {
+        buffering.update(android.os.SystemClock.elapsedRealtime(), false, bufferWatching());
+    }
+
+    private static void recoverBuffering() {
+        if (!prepareBackup() && resolutionFailed != null) resolutionFailed.run();
+    }
+
+    /** Promotes a running, muted SurfaceView; its decoder and resolved relay are retained. */
+    static void adoptBackup(
+        MediaPlayer previous,
+        MediaPlayer ready,
+        VLCVideoLayout layout,
+        FrameLayout host,
+        String locator,
+        ProviderRelay nextRelay,
+        long expiresAt
+    ) {
+        int volume = previous.getVolume();
+        ready.setRate(previous.getRate());
+        ready.setAspectRatio(previous.getAspectRatio());
+        cancelResolution();
+        previous.setEventListener(null);
+        output.stopping();
+        previous.setVolume(0);
+        layout.setLayoutParams(new FrameLayout.LayoutParams(-1, -1));
+        layout.setTranslationX(0);
+        previous.stop();
+        closeRelay();
+        output.close();
+        previous.release();
+        player = ready;
+        output = new LiveVideoOutput(ready, layout, host);
+        relay = nextRelay;
+        url = locator;
+        alive = played = true;
+        userPaused = false;
+        refreshed = false;
+        opened++;
+        buffering.reset();
+        progress.reset();
+        repairBudget.reset();
+        pictureRepairedFor = -1;
+        LivePictureRates.reset();
+        player.setEventListener(LivePlayer::event);
+        player.setVolume(volume);
+        backupStatus = "Prepared live backup is playing";
+        scheduleRenewal(expiresAt, locator, generation);
+        main.removeCallbacks(watchProgress);
+        main.postDelayed(watchProgress, 1000);
+        if (playerChanged != null) playerChanged.run();
     }
 
     static LiveVideoOutput output() {
@@ -178,6 +318,9 @@ final class LivePlayer {
         boolean restart,
         boolean renewalOnly
     ) {
+        cancelBackup();
+        if (backup != null && (!streamUrl.equals(url) || restart)) backup.newSelection();
+        if (backup != null && !backup.contains(streamUrl)) backup.clearSources();
         String optionKey = String.valueOf(options);
         if (engine == null || !optionKey.equals(engineOptions)) {
             stop();
@@ -206,6 +349,8 @@ final class LivePlayer {
         boolean retain = renewalOnly && streamUrl.equals(url) && alive && player.isPlaying();
         cancelResolution();
         renewalPaused = false;
+        userPaused = false;
+        buffering.reset();
         if (!retain) {
             player.stop();
             closeRelay();
@@ -267,26 +412,7 @@ final class LivePlayer {
                             stream == null ? null : stream.referer,
                             nextRelay
                         );
-                        if (stream != null && stream.expiresAt > 0) {
-                            long delay = Math.max(
-                                30_000,
-                                Math.min(
-                                    3 * 3600_000L,
-                                    stream.expiresAt - System.currentTimeMillis() - 60_000
-                                )
-                            );
-                            renewal = () -> {
-                                if (
-                                    ticket == generation &&
-                                    player != null &&
-                                    player.isPlaying() &&
-                                    streamUrl.equals(url)
-                                ) {
-                                    renew();
-                                }
-                            };
-                            main.postDelayed(renewal, delay);
-                        }
+                        if (stream != null) scheduleRenewal(stream.expiresAt, streamUrl, ticket);
                     });
                 } catch (Exception e) {
                     main.post(() -> {
@@ -306,6 +432,18 @@ final class LivePlayer {
             });
         } else open(streamUrl, null, null, null);
         return false;
+    }
+
+    private static void scheduleRenewal(long expiresAt, String locator, int ticket) {
+        if (expiresAt <= 0) return;
+        long delay = Math.max(
+            30_000,
+            Math.min(3 * 3600_000L, expiresAt - System.currentTimeMillis() - 60_000)
+        );
+        renewal = () -> {
+            if (ticket == generation && player != null && player.isPlaying() && locator.equals(url)) renew();
+        };
+        main.postDelayed(renewal, delay);
     }
 
     private static ProviderRelay relay;
@@ -360,6 +498,15 @@ final class LivePlayer {
     }
 
     private static void event(MediaPlayer.Event event) {
+        if (event.type == MediaPlayer.Event.Paused) {
+            userPaused = true;
+            buffering.reset();
+            cancelBackup();
+        } else if (event.type == MediaPlayer.Event.Playing) userPaused = false;
+        if (event.type == MediaPlayer.Event.Buffering) {
+            if (event.getBuffering() < 100) bufferingStarted();
+            else bufferingEnded();
+        }
         if (resolving && event.type == MediaPlayer.Event.Paused) renewalPaused = true;
         if (resolving && event.type == MediaPlayer.Event.Playing) renewalPaused = false;
         if (
@@ -377,7 +524,7 @@ final class LivePlayer {
         if (
             (event.type == MediaPlayer.Event.EncounteredError ||
                 event.type == MediaPlayer.Event.EndReached) &&
-            retryProvider()
+            (preparingBackup() || prepareBackup() || retryProvider())
         ) {
             return;
         }
@@ -417,13 +564,26 @@ final class LivePlayer {
         Runnable failed,
         Runnable ready
     ) {
+        attach(who, view, events, failed, ready, null);
+    }
+
+    static void attach(
+        Object who,
+        FrameLayout view,
+        MediaPlayer.EventListener events,
+        Runnable failed,
+        Runnable ready,
+        Runnable changed
+    ) {
         if (player == null) return;
+        if (output.host() != view) cancelBackup();
         progress.reset();
         output.show(view);
         owner = who;
         listener = events;
         resolutionFailed = failed;
         resolutionReady = ready;
+        playerChanged = changed;
     }
 
     static boolean owns(Object who) {
@@ -437,6 +597,10 @@ final class LivePlayer {
 
     /** Stops and releases everything. */
     static void stop() {
+        if (backup != null) backup.close();
+        backup = null;
+        buffering.reset();
+        userPaused = false;
         LivePictureRates.reset();
         main.removeCallbacks(watchProgress);
         progress.reset();
@@ -471,5 +635,6 @@ final class LivePlayer {
         listener = null;
         resolutionFailed = null;
         resolutionReady = null;
+        playerChanged = null;
     }
 }

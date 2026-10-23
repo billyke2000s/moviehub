@@ -54,7 +54,11 @@ final class GuidePicture {
             () -> {
                 try {
                     ChannelDatabase.Row row = db.byKey(key);
-                    if (row != null) return new Object[] { row, carryOn ? null : db.url(row.id, row.key) };
+                    if (row != null) return new Object[] {
+                        row,
+                        carryOn ? null : db.url(row.id, row.key),
+                        db.copies(row),
+                    };
                 } catch (Exception e) {
                     Diagnostics.recovered("Finding the guide picture's channel", e);
                 }
@@ -69,18 +73,27 @@ final class GuidePicture {
                 }
                 String name = row.number + " " + row.name;
                 label.setText(name);
-                if (carryOn) return;
+                if (carryOn) {
+                    configureBackups(activity, result);
+                    return;
+                }
                 if (ParentalLock.locked(activity, row)) {
                     label.setText(name + "  ·  Locked");
                     return;
                 }
                 try {
                     start(activity, holder, Playlist.networkUrl((String) result[1], activity.http()));
+                    configureBackups(activity, result);
                 } catch (Exception e) {
                     label.setText(name + "  ·  No picture");
                 }
             }
         );
+    }
+
+    @SuppressWarnings("unchecked")
+    private void configureBackups(Context context, Object[] result) {
+        LivePlayer.backups(context, (java.util.List<ChannelDatabase.Row>) result[2]);
     }
 
     /** Plays {@code url} in {@code holder} on the shared live player. */
@@ -100,7 +113,7 @@ final class GuidePicture {
             video = new FrameLayout(context);
             holder.addView(video, 0, new FrameLayout.LayoutParams(-1, -1));
         }
-        LivePlayer.attach(this, video, this::event, () -> playing = false);
+        LivePlayer.attach(this, video, this::event, () -> playing = false, null, () -> playing = true);
     }
 
     private void event(MediaPlayer.Event event) {

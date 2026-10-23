@@ -279,3 +279,26 @@ detachment. Every move requests track shutdown; a missing acknowledgement after 
 stops the native reader before moving and restarts playback on the destination. This rare
 fallback reconnects the stream; normal acknowledged moves retain it. Device fixtures cover
 unreported output counts and suppressed shutdown acknowledgement. Validation is pending.
+
+## Prepared live backups
+
+`LiveBackup` belongs to the shared `LivePlayer`, rather than the fullscreen Activity. It reads
+saved channel-copy URLs only when recovery is needed, resolves through the existing provider
+capabilities and owns at most one muted MediaPlayer/relay at a time. The candidate uses a
+standard SurfaceView staged outside the visible host, then that same layout/player is moved
+into place without a decoder restart. It must show increasing decoded video and, where present,
+audio over at least 500 ms. Radio copies can qualify through advancing audio. On promotion,
+the old native reader is stopped before its output/relay are closed; the new owner callback
+updates controls and the current source without calling play again. Provider renewal transfers
+with the adopted relay. Native decoder allocation failure leaves the original intact.
+
+`LiveBuffering` owns monotonic, edge-counted live thresholds: 8 seconds or 3 starts per 60
+seconds, excluding startup, pause and hidden/transitioning output. Movies/series retain their
+independent 4-second/2-start rules. The progress watchdog also prepares a backup after its
+bounded surface repair. Resolution (45 s) and playback (15 s) have deadlines. Each copy is
+attempted once; exhausted candidates retain working original playback. Pause, manual mode,
+channel change, exit and view handoff cancel and release standby native resources before
+removing their surface. Handoff retains the source configuration so the guide can prepare its
+own replacement. Resuming Automatic/new selection resets exhaustion. Android low-memory
+signals skip candidate allocation. Separate providers cannot be synchronized from their
+unrelated playback clocks: a cut can jump in programme time.
