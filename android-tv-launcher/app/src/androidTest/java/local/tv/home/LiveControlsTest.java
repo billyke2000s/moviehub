@@ -77,6 +77,13 @@ public final class LiveControlsTest {
         fail(state.get() + windows);
     }
 
+    private boolean ownsInput(android.app.Dialog panel) {
+        android.view.WindowId id = panel.getWindow().getDecorView().getWindowId();
+        // Query the input owner in WindowManager. On API 28 the DecorView's cached
+        // hasWindowFocus can remain false after WindowManager has focused this dialog.
+        return id != null && id.isFocused();
+    }
+
     private void press(int key) {
         // Instrumentation.sendKeyDownUpSync creates unrelated down times. A window transfer
         // can cancel the held key before its release arrives in the new dialog: preserve
@@ -289,17 +296,17 @@ public final class LiveControlsTest {
         press(KeyEvent.KEYCODE_PROG_RED);
         await(() -> SidePanel.current != null && SidePanel.current.isShowing());
         android.app.Dialog audio = SidePanel.current;
-        await(() -> audio.getWindow().getDecorView().hasWindowFocus());
+        await(() -> ownsInput(audio));
         press(KeyEvent.KEYCODE_PROG_GREEN);
         await(() -> SidePanel.current != null && SidePanel.current != audio);
         android.app.Dialog sources = SidePanel.current;
         assertFalse("Green closes Audio", audio.isShowing());
-        await(() -> sources.getWindow().getDecorView().hasWindowFocus());
+        await(() -> ownsInput(sources));
         press(KeyEvent.KEYCODE_PROG_BLUE);
         await(() -> SidePanel.current != null && SidePanel.current != sources);
         android.app.Dialog options = SidePanel.current;
         assertFalse("Blue closes Sources", sources.isShowing());
-        await(() -> options.getWindow().getDecorView().hasWindowFocus());
+        await(() -> ownsInput(options));
         press(KeyEvent.KEYCODE_PROG_YELLOW);
         await(() -> SidePanel.current == null && activity.zapper.overlay.infoShowing());
         assertFalse("Yellow closes Options", options.isShowing());
