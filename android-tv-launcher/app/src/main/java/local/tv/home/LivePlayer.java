@@ -1,7 +1,6 @@
 package local.tv.home;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.FrameLayout;
@@ -11,7 +10,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 import org.videolan.libvlc.LibVLC;
-import org.videolan.libvlc.Media;
 import org.videolan.libvlc.MediaPlayer;
 import org.videolan.libvlc.util.VLCVideoLayout;
 
@@ -417,29 +415,10 @@ final class LivePlayer {
             request = http;
             pending = resolver.submit(() -> {
                 try {
-                    Resolver fixture = testResolver;
-                    EngineSources.Stream stream = EngineSources.locator(streamUrl)
-                        ? EngineSources.resolve(context.getApplicationContext(), streamUrl, http)
-                        : null;
-                    String resolved =
-                        stream != null
-                            ? stream.url
-                            : fixture == null
-                              ? PlutoSource.resolve(streamUrl, http)
-                              : fixture.resolve(streamUrl, http);
-                    ProviderRelay nextRelay =
-                        stream != null &&
-                        (ProviderRelay.needed(stream) ||
-                            streamUrl.contains("/engine/dlhd/") ||
-                            streamUrl.contains("/engine/zlive/"))
-                            ? new ProviderRelay(stream)
-                            : null;
-                    try {
-                        http.check();
-                    } catch (Exception e) {
-                        if (nextRelay != null) nextRelay.close();
-                        throw e;
-                    }
+                    LiveStream.Resolution source = LiveStream.resolve(context, streamUrl, http, testResolver);
+                    EngineSources.Stream stream = source.provider;
+                    ProviderRelay nextRelay = source.relay;
+                    String resolved = source.url;
                     main.post(() -> {
                         if (ticket != generation || player == null) {
                             if (nextRelay != null) nextRelay.close();
@@ -521,14 +500,7 @@ final class LivePlayer {
             closeRelay();
             relay = nextRelay;
             if (output != null) output.streamChanging();
-            Media media = new Media(engine, Uri.parse(stream));
-            media.setHWDecoderEnabled(!softwareVideo, false);
-            media.addOption(":network-caching=" + PlaybackBuffer.live(stream, nextRelay != null));
-            if (userAgent != null) media.addOption(":http-user-agent=" + userAgent);
-            if (referer != null && !referer.isEmpty()) media.addOption(":http-referrer=" + referer);
-            opening.setMedia(media);
-            media.release();
-            opening.play();
+            LiveStream.play(engine, opening, stream, userAgent, referer, nextRelay, softwareVideo);
         });
     }
 
