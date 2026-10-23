@@ -302,3 +302,8 @@ removing their surface. Handoff retains the source configuration so the guide ca
 own replacement. Resuming Automatic/new selection resets exhaustion. Android low-memory
 signals skip candidate allocation. Separate providers cannot be synchronized from their
 unrelated playback clocks: a cut can jump in programme time.
+
+
+## Live TV control consistency
+
+Live launches snapshot `LiveZapper.Session` through `LiveGuideState` into the Intent, and Activity state saves the current list/position. Every live Activity builds `SkyOverlay`; a missing static session cannot select film controls. The initial database lookup matches the launch URL and falls back to all channels if its saved list excludes that channel. Learned colour actions precede generic number/channel shortcuts.

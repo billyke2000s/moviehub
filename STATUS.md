@@ -358,3 +358,8 @@ pinning, cancellation, native surface lifetime and provider relay renewal are co
 fixtures. A low-memory signal skips additional allocation. Different provider delays mean
 programme-time alignment is not promised. Local core checks pass (733); Android CI is pending.
 No physical-TV or real-provider concurrent-decoder test is claimed.
+
+
+## Live TV control consistency
+
+The owner reports colour keys still failing and inconsistent live-player controls. Confirmed code paths allowed live launches without the static guide session to use film controls, learned number/channel codes to be consumed before colour handling, and a fixed-width banner row to overflow. The candidate always builds live controls, persists per-player guide context, matches initial metadata to the launch channel, prioritizes learned colours and bounds banner content. Core checks pass (733); Android CI is pending. Physical remote behaviour and the precise appearance seen on the owner’s TV remain unverified.

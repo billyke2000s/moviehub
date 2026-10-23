@@ -205,6 +205,7 @@ public class VlcPlaybackActivity extends Activity {
             return;
         }
         id = newId;
+        getIntent().putExtra("title", title).putExtra("url", url).putExtra("id", id);
         behindLive = false;
         paused = false;
         if (titleView != null) titleView.setText(title);
@@ -334,8 +335,14 @@ public class VlcPlaybackActivity extends Activity {
         status.setText("Opening source…");
         root.addView(status, new FrameLayout.LayoutParams(-1, -1));
         PlayerOverlay.build(this, root);
-        LiveZapper.Session guide = LiveZapper.session;
-        if (live && guide != null) {
+        if (live) {
+            Bundle guideState =
+                state == null ? getIntent().getBundleExtra("liveGuide") : state.getBundle("liveGuide");
+            // Older/internal launchers may have no snapshot. Always build Live TV controls.
+            LiveZapper.Session guide =
+                guideState == null && LiveZapper.session != null
+                    ? LiveGuideState.restore(LiveGuideState.save(LiveZapper.session))
+                    : LiveGuideState.restore(guideState);
             zapper = new LiveZapper(this, guide);
             zapper.attach(root);
             // The film controls never show over Live TV; the satellite-box overlay does.
@@ -348,6 +355,10 @@ public class VlcPlaybackActivity extends Activity {
         setContentView(root);
         pause.requestFocus();
         revealControls();
+    }
+
+    String playbackUrl() {
+        return url;
     }
 
     LibVLC filmEngine() {
@@ -849,6 +860,7 @@ public class VlcPlaybackActivity extends Activity {
         forgetReleasedLivePlayer();
         long now = player == null ? 0 : player.getTime();
         out.putLong("position", Math.max(Math.max(position, resumeCheck), now));
+        if (zapper != null) out.putBundle("liveGuide", LiveGuideState.save(zapper.guideSession()));
     }
 
     @Override

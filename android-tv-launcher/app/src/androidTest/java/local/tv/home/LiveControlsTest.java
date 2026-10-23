@@ -66,7 +66,8 @@ public final class LiveControlsTest {
             release.await(30, TimeUnit.SECONDS);
             throw new IOException("Fixture resolver stopped");
         };
-        LiveZapper.session = new LiveZapper.Session("all", "", Collections.emptySet(), 0);
+        // Cold/direct live launches have no process-global guide session.
+        LiveZapper.session = null;
         activity = (VlcPlaybackActivity) remote.startActivitySync(
             new Intent(context, VlcPlaybackActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -159,6 +160,11 @@ public final class LiveControlsTest {
         assertEquals("Loading the channel did not probe its backup", 1, resolutions.get());
         remote.runOnMainSync(() -> activity.zapper.useCopy(0, false));
         await(() -> !activity.zapper.automaticSources());
+        assertEquals(
+            "Selected channel survives Activity recreation",
+            activity.playbackUrl(),
+            activity.getIntent().getStringExtra("url")
+        );
         remote.runOnMainSync(() ->
             assertFalse(
                 "Manual mode must stay on the selected source",
@@ -221,5 +227,97 @@ public final class LiveControlsTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_BLUE);
         remote.waitForIdleSync();
         assertTrue("Blue opens Options", SidePanel.current != null && SidePanel.current.isShowing());
+    }
+
+    @Test
+    public void recreatedPlayerKeepsLiveControlsWithoutStaticGuideState() {
+        android.app.Instrumentation.ActivityMonitor monitor = remote.addMonitor(
+            VlcPlaybackActivity.class.getName(),
+            null,
+            false
+        );
+        remote.runOnMainSync(() -> {
+            LiveZapper.session = null;
+            activity.recreate();
+        });
+        VlcPlaybackActivity recreated = (VlcPlaybackActivity) remote.waitForMonitorWithTimeout(
+            monitor,
+            10000
+        );
+        remote.removeMonitor(monitor);
+        assertNotNull("Player recreation completed", recreated);
+        activity = recreated;
+        await(
+            () -> activity.zapper != null && activity.zapper.copies().size() == 2 && activity.hasWindowFocus()
+        );
+        assertEquals(android.view.View.GONE, activity.controls.getVisibility());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
+        await(() -> SidePanel.current != null && SidePanel.current.isShowing());
+        assertTrue(activity.zapper.sourceText().contains("Pluto TV"));
+    }
+
+    @Test
+    public void learnedColourWinsOverNumberEntryWithControlsHidden() {
+        android.content.SharedPreferences prefs = activity.getSharedPreferences("ui", 0);
+        boolean existed = prefs.contains("remoteGreen");
+        int previous = prefs.getInt("remoteGreen", -1);
+        try {
+            prefs.edit().putInt("remoteGreen", KeyEvent.KEYCODE_7).commit();
+            remote.runOnMainSync(() -> activity.zapper.overlay.hideBanner());
+            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_7);
+            await(() -> SidePanel.current != null && SidePanel.current.isShowing());
+            assertEquals("Colour did not change channel", 0, activity.zapper.position());
+            assertEquals("Colour did not resolve another source", 1, resolutions.get());
+        } finally {
+            if (existed) prefs.edit().putInt("remoteGreen", previous).commit();
+            else prefs.edit().remove("remoteGreen").commit();
+        }
+    }
+
+    @Test
+    public void bannerColourButtonsFitWithLongSourceAndChannelNames() {
+        remote.runOnMainSync(() ->
+            activity.zapper.overlay.banner(
+                "401",
+                "A very long channel name with region and quality information",
+                "Programme on now",
+                "Now 12:00",
+                "Next programme",
+                "Next 13:00",
+                "Description",
+                500,
+                "Sources · Auto · A provider with a very long name · 10 of 100",
+                false
+            )
+        );
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            android.graphics.Rect screen = new android.graphics.Rect();
+            activity.getWindow().getDecorView().getGlobalVisibleRect(screen);
+            for (android.view.View control : activity.zapper.overlay.controls) {
+                android.graphics.Rect visible = new android.graphics.Rect();
+                assertTrue("Every colour/source control is visible", control.getGlobalVisibleRect(visible));
+                assertEquals("Control is not clipped horizontally", control.getWidth(), visible.width());
+                assertTrue("Control stays inside the display", screen.contains(visible));
+            }
+        });
+    }
+
+    @Test
+    public void guideSnapshotSurvivesAndDoesNotShareMutableStaticPosition() {
+        LiveZapper.Session original = new LiveZapper.Session(
+            "favourites",
+            "sports",
+            Collections.singleton("fixture-key"),
+            4
+        );
+        android.os.Bundle snapshot = LiveGuideState.save(original);
+        original.position = 99;
+        LiveZapper.session = null;
+        LiveZapper.Session restored = LiveGuideState.restore(snapshot);
+        assertEquals("favourites", restored.filter);
+        assertEquals("sports", restored.search);
+        assertEquals(4, restored.position);
+        assertTrue(restored.favourites.contains("fixture-key"));
     }
 }

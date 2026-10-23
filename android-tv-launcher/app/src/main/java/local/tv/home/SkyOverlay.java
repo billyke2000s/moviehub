@@ -103,6 +103,7 @@ final class SkyOverlay {
         source = label(15, false, Color.WHITE);
         source.setPadding(a.dp(12), a.dp(12), a.dp(16), a.dp(12));
         source.setMinHeight(a.dp(48));
+        source.setMaxWidth(a.dp(300));
         source.setFocusable(false);
         source.setContentDescription("Sources");
         source.setOnClickListener(v -> a.menus.chooseSource());
@@ -151,8 +152,9 @@ final class SkyOverlay {
         // No coloured buttons on the remote: BACK reveals these as buttons to pick with ◀ ▶.
         TextView noColours = label(15, true, SOFT);
         noColours.setText("·  No colour buttons? BACK, then ◀ ▶");
-        keys.addView(noColours);
         content.addView(keys);
+        noColours.setText("No colour buttons? BACK, then ◀ ▶ and OK");
+        content.addView(noColours);
         hint = label(16, true, LiveTvScreen.YELLOW);
         hint.setPadding(0, a.dp(8), 0, 0);
         hint.setText("SELECT to watch   ▲ ▼ channels   ◀ ▶ later programmes   BACK to close");
@@ -404,7 +406,7 @@ final class SkyOverlay {
         key.addView(swatch, swatchLayout);
         TextView label = label(15, true, Color.WHITE);
         label.setText(text);
-        key.addView(label);
+        key.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
         GradientDrawable focus = new GradientDrawable();
         focus.setColor(LiveTvScreen.YELLOW);
         focus.setCornerRadius(a.dp(3));
@@ -414,8 +416,8 @@ final class SkyOverlay {
             label.setTextColor(focused ? LiveTvScreen.INK : Color.WHITE);
         });
         key.setOnClickListener(v -> action.run());
-        LinearLayout.LayoutParams keyLayout = new LinearLayout.LayoutParams(-2, -2);
-        keyLayout.rightMargin = a.dp(14);
+        LinearLayout.LayoutParams keyLayout = new LinearLayout.LayoutParams(0, -2, 1);
+        keyLayout.rightMargin = a.dp(6);
         keys.addView(key, keyLayout);
         controls.add(key);
     }

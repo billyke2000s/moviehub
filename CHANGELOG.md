@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased — prepared live backups
+## 0.48 (23 October 2026)
+
+- Always use the Live TV banner and colour-key actions on live launches, including restored activities without a static guide session. Save each player’s guide context and match the initial listings to its actual channel.
+- Apply learned colour buttons before number/channel shortcuts. Keep source text and all four colour controls inside the banner width.
+
+
+## 0.47 (23 October 2026)
 
 - Live TV Automatic now prepares one muted backup after the existing 8-second stall or three buffering starts per minute. Working playback stays open until replacement video and available audio advance; promotion keeps the prepared decoder and relay.
 - Bound each candidate to a 45-second resolution deadline and a 15-second playback deadline, visit saved copies once, and retain working playback if none succeeds. Preparation runs for fullscreen and guide playback, with cancellation on pause, manual selection, channel change, view handoff and exit. Low-memory signals skip standby allocation.

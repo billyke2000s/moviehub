@@ -110,7 +110,24 @@ final class LiveZapper {
                 player::finish,
             }
         );
+        overlay.banner(
+            "",
+            player.getIntent().getStringExtra("title"),
+            "No programme information",
+            "",
+            "",
+            "",
+            "",
+            -1,
+            sourceText(),
+            false
+        );
+        player.overlayHandler.postDelayed(hideBanner, BANNER_MS);
         load(own.position, false, true);
+    }
+
+    Session guideSession() {
+        return own;
     }
 
     int position() {
@@ -258,13 +275,28 @@ final class LiveZapper {
     private void load(int position, boolean play, boolean current) {
         int ticket = ++request;
         Session s = own;
+        String launchKey = current ? ChannelQuery.key(player.playbackUrl()) : null;
         String activeUrl = current ? LivePlayer.currentUrl() : null;
         String activeKey = activeUrl == null ? null : ChannelQuery.key(activeUrl);
         boolean activeAutomatic = LivePlayer.automaticSources;
         Set<String> activeAttempts = new HashSet<>(LivePlayer.attemptedSources);
         worker.execute(() -> {
             try {
-                List<ChannelDatabase.Row> rows = db.browse(s.filter, s.search, s.favourites, position, 1);
+                Session target = s;
+                int targetPosition = position;
+                if (current) {
+                    // The launch URL is authoritative, including when a stale static session survived.
+                    ChannelDatabase.Row playing = db.byKey(launchKey);
+                    if (playing == null) return;
+                    targetPosition = db.position(s.filter, s.search, s.favourites, playing.number, false);
+                    if (targetPosition < 0) {
+                        target = new Session("all", "", s.favourites, 0);
+                        targetPosition = db.position("all", "", s.favourites, playing.number, true);
+                    }
+                }
+                final Session list = target;
+                final int at = Math.max(0, targetPosition);
+                List<ChannelDatabase.Row> rows = db.browse(list.filter, list.search, list.favourites, at, 1);
                 if (rows.isEmpty()) return;
                 ChannelDatabase.Row row = rows.get(0);
                 List<ChannelDatabase.Row> found = db.copies(row);
@@ -286,7 +318,9 @@ final class LiveZapper {
                     if (ticket != request || player.isFinishing()) return;
                     Runnable apply = () -> {
                         if (!current) previousPosition = s.position;
-                        s.position = position;
+                        own = list;
+                        own.position = at;
+                        session = own;
                         copies = found;
                         copy = playingCopy;
                         automaticSources = automatic;
@@ -560,8 +594,11 @@ final class LiveZapper {
 
     /** The "i" panel: the programme the banner shows, in full. Shown until closed. */
     void showInfo() {
-        if (shownRow == null) return;
         player.overlayHandler.removeCallbacks(hideBanner);
+        if (shownRow == null) {
+            overlay.info("", player.getIntent().getStringExtra("title"), "", "No programme information");
+            return;
+        }
         ChannelDatabase.Programme item = shownProgramme;
         String when =
             item == null
@@ -611,6 +648,10 @@ final class LiveZapper {
             return true;
         }
         char colour = LiveTvScreen.colour(player.getSharedPreferences("ui", 0), key);
+        if (colour != 0) {
+            if (first) colour(colour);
+            return true;
+        }
         boolean select = key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER;
         if (browsing) {
             int channel = key == KeyEvent.KEYCODE_DPAD_UP ? 1 : key == KeyEvent.KEYCODE_DPAD_DOWN ? -1 : 0,
@@ -656,26 +697,22 @@ final class LiveZapper {
                 } else if (overlay.bannerShowing()) player.menus.liveOptions();
                 else showBanner();
             }
-        } else if (key == KeyEvent.KEYCODE_INFO || colour == 'y') {
-            if (first) {
-                if (overlay.infoShowing()) hideInfo();
-                else {
-                    if (!overlay.bannerShowing()) showBanner();
-                    showInfo();
-                }
-            }
-        } else if (colour == 'r') {
-            if (first) player.menus.audioAndSubtitles();
-        } else if (colour == 'g') {
-            if (first) player.menus.chooseSource();
-        } else if (colour == 'b' || key == KeyEvent.KEYCODE_MENU) {
-            if (first) player.menus.liveOptions();
+        } else if (key == KeyEvent.KEYCODE_INFO || key == KeyEvent.KEYCODE_MENU) {
+            if (first) colour(key == KeyEvent.KEYCODE_INFO ? 'y' : 'b');
         } else if (key == KeyEvent.KEYCODE_LAST_CHANNEL) {
             if (first) lastChannel();
         } else if (key == KeyEvent.KEYCODE_GUIDE) {
             if (first) player.finish();
         } else handled = false;
         return handled;
+    }
+
+    private void colour(char colour) {
+        if (colour == 'r') player.menus.audioAndSubtitles();
+        else if (colour == 'g') player.menus.chooseSource();
+        else if (colour == 'b') player.menus.liveOptions();
+        else if (overlay.infoShowing()) hideInfo();
+        else information();
     }
 
     /** Programme information from Options (the yellow or i key's job, for remotes without them). */

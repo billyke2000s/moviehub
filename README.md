@@ -169,3 +169,8 @@ MovieHub is distributed under the [MIT License](LICENSE). The Live TV interface 
 <sub>MovieHub is an independent open-source project. No third-party services are endorsed by or affiliated with this repository.</sub>
 
 </div>
+
+
+## Live TV control consistency
+
+Live TV uses the same channel banner on initial playback and restored sessions. Red opens audio/subtitles, green opens sources, yellow shows programme information and blue opens options. Back reveals controls for arrow/OK selection on remotes without colour buttons.
