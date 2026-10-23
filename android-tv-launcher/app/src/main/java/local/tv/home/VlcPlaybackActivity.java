@@ -507,8 +507,9 @@ public class VlcPlaybackActivity extends Activity {
         url = LivePlayer.currentUrl();
         id = ChannelQuery.key(url);
         getIntent().putExtra("url", url).putExtra("id", id);
-        liveFailed = buffering = false;
+        liveFailed = buffering = paused = behindLive = triedAlternative = false;
         playedOnce = true;
+        Timings.finish("stall", "Buffering pause while watching");
         overlayHandler.removeCallbacks(stalled);
         status.setVisibility(View.GONE);
         showPlaying(true);

@@ -149,6 +149,7 @@ final class LiveZapper {
     void automaticSources(boolean enabled) {
         if (enabled && !automaticSources) {
             LivePlayer.retryBackups();
+            LivePlayer.attemptedSources.clear();
             attemptedCopies.clear();
             attemptedCopies.add(copy);
         }
@@ -164,8 +165,10 @@ final class LiveZapper {
 
     private void rememberSources() {
         LivePlayer.automaticSources = automaticSources;
-        if (!automaticSources) LivePlayer.cancelBackup();
-        LivePlayer.attemptedSources.clear();
+        if (!automaticSources) {
+            LivePlayer.cancelBackup();
+            LivePlayer.attemptedSources.clear();
+        }
         for (int index : attemptedCopies)
             if (index >= 0 && index < copies.size()) LivePlayer.attemptedSources.add(copies.get(index).key);
     }
