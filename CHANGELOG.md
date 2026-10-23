@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — consistent Live TV controls
+
+- Always use the Live TV banner and colour-key actions on live launches, including restored activities without a static guide session. Save each player’s guide context and match the initial listings to its actual channel.
+- Apply learned colour buttons before number/channel shortcuts. Keep source text and all four colour controls inside the banner width.
+
+
 ## Unreleased — prepared live backups
 
 - Live TV Automatic now prepares one muted backup after the existing 8-second stall or three buffering starts per minute. Working playback stays open until replacement video and available audio advance; promotion keeps the prepared decoder and relay.

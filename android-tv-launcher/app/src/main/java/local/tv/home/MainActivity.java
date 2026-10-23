@@ -553,6 +553,7 @@ public class MainActivity extends TvActivity {
                     .putExtra("url", safe)
                     .putExtra("id", id)
                     .putExtra("live", live)
+                    .putExtra("liveGuide", live ? LiveGuideState.save(LiveZapper.session) : null)
                     .putExtra("vodSession", live ? null : VodSources.remember(sources))
                     .putExtra("episodeKey", metadata == null ? null : metadata.optString("episodeKey", null))
                     .putExtra("titleKey", ResumePoint.titleKey(metadata)),

@@ -341,3 +341,8 @@ screenshots must contain nonblank video after promotion and later full-screen re
 provider sources or account credentials are used. Local core validation passed; Android
 build/lint, full emulator and signing validation are pending on the PR. Concurrent hardware
 decoder support, actual TV memory limits and live-feed timing require physical-device checks.
+
+
+## Live TV control consistency
+
+`LiveControlsTest` now opens its live fixture without the static guide session. It covers physical colours, real Activity recreation with cleared static context, saved guide snapshot independence, a learned green button using a numeric key, and visible unclipped controls with long source/channel names. Existing Back/arrow/OK tests remain. These fixtures do not verify the owner’s physical remote. Local core checks pass (733); Android CI is pending.
