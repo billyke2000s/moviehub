@@ -49,9 +49,9 @@ def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=MAX_
     try:
         for attempt in range(6):
             check()
-            remaining = max(.1, min(float(timeout), 8, getattr(_STATE, 'deadline', time.monotonic()+8)-time.monotonic()))
+            remaining = max(.1, min(float(timeout), getattr(_STATE, 'deadline', time.monotonic()+8)-time.monotonic()))
             response=session.request(method, current, data=data, headers=headers or dnt_headers,
-                                     timeout=(remaining, remaining), allow_redirects=False, stream=True)
+                                     timeout=(min(8, remaining), remaining), allow_redirects=False, stream=True)
             if response.is_redirect and redirect:
                 target = requests.compat.urljoin(current, response.headers['Location'])
                 safe(target)

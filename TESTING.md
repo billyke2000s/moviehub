@@ -410,9 +410,13 @@ The Python suite individually checks all 68 provider lookup contracts and explic
 
 ## Provider compatibility regressions
 
-The 16 Python tests include the actual Scrubs Levidia lookup from landing page through
+The 17 Python tests include the actual Scrubs Levidia lookup from landing page through
 bodyless POST, result, host and media probe; redirect methods for 301/302/303/307/308;
 explicit/default Referer; and both families' movie title/alias and episode mapping rules.
 FreeVodProvidersTest checks movie/series TMDB alias forwarding on Android. Local Python
 and 814 core assertions pass (Eclipse JDT/Java 17). Android build/lint/emulator results
 must be read from the final PR commit; fixtures do not prove physical-TV availability.
+
+Provider-request read timeouts now honor explicit upstream values within the remaining
+search budget, with an eight-second connection cap. A regression checks a 20-second read
+request and clipping to a five-second remaining budget; cancellation remains bounded.

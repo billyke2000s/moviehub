@@ -357,3 +357,7 @@ redirect method/cookie rules. The legacy client supplies default Referer/languag
 FreeVodScreen forwards TMDB original/alternative titles; moviehub_vod applies each family's
 scene title and episode mapping. Work is bounded to 30 seconds per provider and 300 seconds
 for the eight-worker search; selection still begins after three seconds.
+
+Provider-request read timeouts now honor explicit upstream values within the remaining
+search budget, with an eight-second connection cap. A regression checks a 20-second read
+request and clipping to a five-second remaining budget; cancellation remains bounded.

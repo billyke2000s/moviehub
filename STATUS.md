@@ -419,6 +419,10 @@ Reproduced and fixed bodyless POST becoming GET in the requests adapter, affecti
 actual Scrubs Levidia search. Added legacy default Referer/language headers, upstream
 movie/episode title preparation and original/alternative TMDB aliases. Providers now have
 30 seconds each and 300 seconds of background search headroom; the three-second initial
-choice and buffering thresholds remain. Sixteen Python tests and 814 core assertions pass
+choice and buffering thresholds remain. Seventeen Python tests and 814 core assertions pass
 locally. Android CI and real-provider outcomes remain to be checked on the final commit.
 No Guardians playback or physical-TV success is claimed.
+
+Provider-request read timeouts now honor explicit upstream values within the remaining
+search budget, with an eight-second connection cap. A regression checks a 20-second read
+request and clipping to a five-second remaining budget; cancellation remains bounded.

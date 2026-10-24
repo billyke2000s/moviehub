@@ -11,6 +11,21 @@ import moviehub_vod as vod
 from moviehub_compat import client
 
 class FreeVodTests(unittest.TestCase):
+    def test_provider_requested_read_timeout_is_honored_within_search_budget(self):
+        response=requests.Response();response.status_code=200;response.url='https://site.example/path'
+        response._content=b'ok';response._content_consumed=True
+        client.scope(lambda:False,timeout=30)
+        with patch.object(client,'safe',side_effect=lambda url:url), patch.object(requests.Session,'request',return_value=response) as request:
+            client.request(response.url,timeout=20)
+            connect,read=request.call_args.kwargs['timeout']
+            self.assertLessEqual(connect,8)
+            self.assertEqual(read,20)
+        client.scope(lambda:False,timeout=5)
+        with patch.object(client,'safe',side_effect=lambda url:url), patch.object(requests.Session,'request',return_value=response) as request:
+            client.request(response.url,timeout=30)
+            self.assertGreater(request.call_args.kwargs['timeout'][1],0)
+            self.assertLessEqual(request.call_args.kwargs['timeout'][1],5)
+
     def test_real_levidia_search_preserves_empty_post(self):
         from moviehub_scrubs import scrape_sources
         query={'imdb':'tt1234567','tmdb':12,'title':'Fixture Film','year':'2020','season':-1,'episode':-1}

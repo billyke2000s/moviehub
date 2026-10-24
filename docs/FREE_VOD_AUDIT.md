@@ -135,6 +135,10 @@ Regression coverage drives the real Levidia provider through its landing page, e
 POST search, result page, host and media probe; checks all five redirect codes; checks
 movie punctuation/aliases and upstream episode remapping for both families; and checks
 request headers. Android coverage checks movie/series alternative-title metadata.
-Local validation: 16 Python tests and 814 core assertions pass (Eclipse JDT targeting
+Local validation: 17 Python tests and 814 core assertions pass (Eclipse JDT targeting
 Java 17). Android build/lint/emulator CI and live-provider outcomes must be checked on
 the final commit. No physical-TV or Guardians playback success is claimed.
+
+Provider-request read timeouts now honor explicit upstream values within the remaining
+search budget, with an eight-second connection cap. A regression checks a 20-second read
+request and clipping to a five-second remaining budget; cancellation remains bounded.

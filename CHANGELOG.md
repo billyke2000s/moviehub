@@ -597,3 +597,7 @@ continuity checks.
 - Accept whole-entity byte-zero requests for wrapped DaddyLive segments and return decoded video bytes instead of rejecting playback.
 
 - Retain a manual or automatic backup and its finite retry history through mini-player/full-screen handoffs, instead of reverting to the primary source on reopening the same channel.
+
+Provider-request read timeouts now honor explicit upstream values within the remaining
+search budget, with an eight-second connection cap. A regression checks a 20-second read
+request and clipping to a five-second remaining budget; cancellation remains bounded.
