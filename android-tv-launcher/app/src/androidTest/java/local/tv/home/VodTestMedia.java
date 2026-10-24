@@ -13,11 +13,11 @@ final class VodTestMedia {
 
     private static byte[] cached;
 
-    static synchronized byte[] movie(Context context) throws Exception {
+    static synchronized byte[] movie(Context context, Context assets) throws Exception {
         if (cached != null) return cached;
         File input = new File(context.getCacheDir(), "vod-input.mp4");
         File output = new File(context.getCacheDir(), "vod-movie.mp4");
-        try (var stream = context.getAssets().open("playback.mp4")) {
+        try (var stream = assets.getAssets().open("playback.mp4")) {
             Files.copy(stream, input.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         }
         MediaExtractor extractor = new MediaExtractor();
