@@ -190,3 +190,7 @@ a playable response arrives or the bounded search ends. Later discoveries join t
 backup list. The existing two-stalls-in-60-seconds / four-second-stall VOD policy is unchanged.
 Provider availability varies; inclusion does not establish successful live playback.
 See [provider provenance and licensing](docs/third-party/vod/NOTICE.md).
+
+## Free-stream playback information
+
+Free movie and series controls show incoming traffic from the selected source. Automatic selection uses the configured resolution ceiling, manifest resolution where available, camera-recording penalties, and startup transfer evidence among equal-quality results. The selection window remains about three seconds; late results remain backups.

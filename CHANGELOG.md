@@ -1,3 +1,8 @@
+## Unreleased
+
+- Restore free-stream incoming speed from actual upstream relay bytes; count only the active source.
+- Rank ready VOD by quality aliases and HLS variant resolution, avoid camera recordings, and compare sampled media throughput/response time within equal quality. Keep the three-second window and buffering thresholds.
+
 ## Unreleased — progressive free VOD candidate
 
 - Bundle Scrubs/Free99 provider modules and headless ResolveURL extraction inside the APK.
@@ -7,6 +12,9 @@
 - Preserve host headers and record third-party provenance and outstanding release blockers.
 
 # Changelog
+
+
+
 
 ## Unreleased
 

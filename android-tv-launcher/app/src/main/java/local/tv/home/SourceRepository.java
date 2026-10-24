@@ -18,6 +18,9 @@ final class SourceRepository {
         final JSONArray files;
         final JSONObject headers;
         EngineSources.Stream stream;
+        String ranking;
+        double probeMbps;
+        long responseMs = Long.MAX_VALUE;
 
         Source(String title, String uri) {
             this(title, uri, null, new JSONObject());

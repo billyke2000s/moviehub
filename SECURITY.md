@@ -166,3 +166,7 @@ the existing authenticated loopback transport. Python executes with the app's pr
 this is not a sandbox boundary. Website-fed text decoders use a restricted literal/arithmetic interpreter; Python eval/exec
 calls were removed. Direct urllib host requests also use the bounded client. Physical-device
 verification remains outstanding. See the third-party notices for component provenance.
+
+## VOD startup sampling
+
+Ready-source validation requests at most 64 KiB of response data through the existing bounded provider transport. Samples and relay byte counters remain in memory; no provider URLs or credentials are logged. Header-free HLS and media-file streams use the same protected loopback relay as sources requiring headers.

@@ -384,3 +384,9 @@ validation must pass before treating this as a release candidate.
 FreeVodProvidersTest imports all 68 constructors from the packaged Android Python runtime
 and checks Java-to-Python cancellation. The offline suite also rejects executable decoder
 expressions. A separate CI probe reports public provider availability without logging URLs.
+
+## Incoming VOD traffic and ranking
+
+`StreamRateTest` covers timed byte deltas, idle zero, counter resets, quality aliases, camera penalties, the resolution ceiling and equal-quality transfer comparisons. Provider adapter instrumentation counts actual upstream bytes once; the Android Python bridge verifies counted transport for header-free sources. Offline Python tests verify master-playlist resolution and sampled media rates. These small startup samples estimate readiness, not future host stability.
+
+The VOD relay regression includes real file playback/seeking and a TCP check that files retain their byte lengths and range headers without being advertised as HLS. Android extractor fixtures use public literal IP addresses so transport validation never depends on DNS for `.example` test hosts.

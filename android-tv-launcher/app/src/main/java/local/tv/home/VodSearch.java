@@ -25,7 +25,19 @@ final class VodSearch implements AutoCloseable {
         long started = SystemClock.elapsedRealtime();
         deadline = started + 120000;
         pending.set(premiumize ? 2 : 1);
-        window = new SourceWindow<>(started, source -> SourceRanking.rank(source.title, quality));
+        try {
+            query.put("maxQuality", quality);
+        } catch (JSONException error) {
+            throw new IllegalArgumentException("Invalid source quality", error);
+        }
+        window = new SourceWindow<>(started, source ->
+            SourceRanking.readyRank(
+                source.ranking == null ? source.title : source.ranking,
+                quality,
+                source.probeMbps,
+                source.responseMs
+            )
+        );
         Context app = context.getApplicationContext();
         // Runtime extraction and imports must never hold the UI thread.
         workers.submit(() -> {

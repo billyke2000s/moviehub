@@ -340,3 +340,7 @@ VodSourceFailover.appendSources preserves failed sources, pinning and buffer his
 VodPlayback uses session-owned ProviderRelay instances when host headers are required.
 A new title replaces the previous search; screen-generation checks and player-session cleanup
 prevent abandoned screens from starting playback. App screens remain native Java.
+
+## VOD incoming traffic
+
+Free HLS and media-file sources use the existing session-scoped `ProviderRelay`, including header-free URLs. Header-free DASH retains native base-URL handling and VLC statistics. It counts upstream payload reads and `StreamRate` converts active-relay deltas to Mb/s; backup prefetches have separate counters. Direct cloud playback continues using VLC statistics. `VodSearch` ranks picture quality first, then bounded transfer sample and response time; HLS manifests provide variant resolution, not a fictitious media throughput.

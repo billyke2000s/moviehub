@@ -76,9 +76,12 @@ public final class FreeVodProviders {
                     files,
                     headers
                 );
-                if (headers.length() > 0) source.stream = new EngineSources.Stream(
-                    new JSONObject().put("url", link).put("headers", headers)
-                );
+                source.ranking = label + (SourceRanking.camera(item.optString("info")) ? " CAM" : "");
+                source.probeMbps = item.optDouble("probeMbps", 0);
+                source.responseMs = item.optLong("responseMs", Long.MAX_VALUE);
+                // Preserve native DASH base-URL handling; the relay rewrites HLS, not MPD templates.
+                if (!"dash".equals(item.optString("format")) || headers.length() > 0) source.stream =
+                    new EngineSources.Stream(new JSONObject().put("url", link).put("headers", headers));
                 found.accept(source);
             } catch (Exception error) {
                 Diagnostics.recovered("Free source result", error);

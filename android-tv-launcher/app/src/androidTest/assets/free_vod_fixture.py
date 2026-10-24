@@ -15,7 +15,7 @@ def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=clie
         return response
     elif url.endswith('/playlist'):
         content={'playlist':[{'title':'Fixture Film (2020)','src':'video.mp4'}],
-                 'servers':{'one':'https://one.example','two':'https://two.example'}}
+                 'servers':{'one':'https://8.8.8.8','two':'https://1.1.1.1'}}
     else:
         response.headers['Content-Type']='video/mp4';response._content=b'ftyp';return response
     response._content=json.dumps(content).encode();return response

@@ -242,6 +242,43 @@ public class PlaybackTest {
     }
 
     @Test
+    public void freeVodRelayShowsIncomingTrafficWhileRealVlcPlays() throws Exception {
+        ProviderRelay.testConnections = uri ->
+            (HttpURLConnection) new URL(
+                "http://127.0.0.1:" + server.getLocalPort() + "/playback.mp4"
+            ).openConnection();
+        EngineSources.Stream transport = new EngineSources.Stream(
+            new org.json.JSONObject()
+                .put("url", "https://8.8.8.8/playback.mp4")
+                .put("headers", new org.json.JSONObject())
+        );
+        VodSources.Session session = new VodSources.Session(
+            java.util.Collections.singletonList(new VodSourceFailover.Source("free", "Free fixture", "Free")),
+            index -> {
+                throw new IOException("No backup expected");
+            },
+            true
+        );
+        session.transport = index -> transport;
+        openVod(session);
+        java.util.concurrent.atomic.AtomicBoolean labelled = new java.util.concurrent.atomic.AtomicBoolean();
+        await(() -> {
+            instrumentation.runOnMainSync(() -> {
+                activity.revealControls();
+                labelled.set(activity.speed.getText().toString().startsWith("Downloading at "));
+            });
+            return labelled.get();
+        }, 5000);
+        instrumentation.runOnMainSync(() -> {
+            assertTrue(activity.vod.incomingMbps() >= 0);
+            assertTrue(player().isPlaying());
+            assertEquals("No blind source switch", 0, activity.vod.activeIndex());
+            player().setTime(8000);
+        });
+        await(() -> player().getTime() >= 6000, 10000);
+    }
+
+    @Test
     public void vodRepeatedBufferingPreparesBackupsWithoutStoppingCurrentPlayback() throws Exception {
         var release = new java.util.concurrent.CountDownLatch(1);
         var resolves = new java.util.concurrent.atomic.AtomicInteger();
@@ -1438,6 +1475,7 @@ public class PlaybackTest {
         // No live stream carries over into the next test.
         instrumentation.runOnMainSync(LivePlayer::stop);
         LivePlayer.testResolver = null;
+        ProviderRelay.testConnections = null;
         closed = true;
         if (server != null) server.close();
         Context context = instrumentation.getTargetContext();
