@@ -39,7 +39,7 @@ final class SkyOverlay {
     private final VlcPlaybackActivity a;
     private final LinearLayout banner, info, pauseBar, keys;
     final LinearLayout channelStrip;
-    private final TextView number, name, clock, nowTime, nowTitle, nextTime, nextTitle, about, source, hint;
+    private final TextView number, name, clock, nowTime, nowTitle, nextTime, nextTitle, about, source, hint, keyInfo;
     private final TextView infoTitle, infoWhen, infoAbout, infoChannel, pauseIcon, pauseText;
     private final ProgressBar progress;
     /**
@@ -169,6 +169,11 @@ final class SkyOverlay {
         hint.setPadding(0, a.dp(8), 0, 0);
         hint.setText("SELECT to watch   ▲ ▼ channels   ◀ ▶ later programmes   BACK to close");
         content.addView(hint);
+        // Which button the player last received, to identify a remote's colour-button codes.
+        keyInfo = label(14, false, SOFT);
+        keyInfo.setPadding(0, a.dp(6), 0, 0);
+        keyInfo.setVisibility(View.GONE);
+        content.addView(keyInfo);
         banner.addView(content);
         stack.addView(banner, new ViewGroup.MarginLayoutParams(-1, -2));
 
@@ -230,6 +235,16 @@ final class SkyOverlay {
         number.setText(digits + "–");
         keys.setVisibility(View.GONE);
         nowTime.setVisibility(View.GONE);
+    }
+
+    /** Shows which button the player last received (package-private for tests). */
+    void lastButton(String text) {
+        keyInfo.setText(text);
+        keyInfo.setVisibility(View.VISIBLE);
+    }
+
+    CharSequence lastButtonText() {
+        return keyInfo.getText();
     }
 
     void hideBanner() {

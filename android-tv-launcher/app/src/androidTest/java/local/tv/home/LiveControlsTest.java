@@ -547,6 +547,29 @@ public final class LiveControlsTest {
     }
 
     @Test
+    public void bannerNamesTheLastButtonReceived() {
+        physicalColour(KeyEvent.KEYCODE_PROG_RED);
+        await(() -> SidePanel.current != null);
+        remote.runOnMainSync(() -> {
+            assertEquals(
+                "Last button received: KEYCODE_PROG_RED · scan 0",
+                activity.zapper.overlay.lastButtonText().toString()
+            );
+            SidePanel.current.dismiss();
+        });
+        remote.waitForIdleSync();
+        await(() -> SidePanel.current == null && !activity.dialogOpen);
+        playerKey(remoteEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_UNKNOWN, 251, 0, 800));
+        remote.runOnMainSync(() -> {
+            assertEquals(
+                "Last button received: KEYCODE_UNKNOWN · scan 251",
+                activity.zapper.overlay.lastButtonText().toString()
+            );
+            assertTrue("An unused button opens the banner", activity.zapper.overlay.bannerShowing());
+        });
+    }
+
+    @Test
     public void learnedScanCodeColourWorksInThePlayer() {
         android.content.SharedPreferences prefs = activity.getSharedPreferences("ui", 0);
         java.util.Map<String, ?> previous = prefs.getAll();
