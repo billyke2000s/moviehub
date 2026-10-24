@@ -71,6 +71,7 @@ def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=MAX_
                 chunks.append(chunk)
                 if max_bytes != MAX_BODY and size >= max_bytes: break
             if response.status_code >= 400: _STATE.failure = 'http_' + str(response.status_code)
+            response.cookies = session.cookies.copy()
             response._content=b''.join(chunks)
             response._content_consumed=True
             response.encoding='utf-8'
@@ -84,8 +85,11 @@ def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=MAX_
         if owned: session.close()
 
 def scrapePage(url, referer=None, headers=None, post=None, cookie=None, timeout=8):
+    url = 'https:' + url if url.startswith('//') else url
     out=dict(dnt_headers); out.update(headers or {})
-    if referer: out['Referer']=referer
+    if not any(key.lower() == 'referer' for key in out):
+        parsed = urlparse(url)
+        out['Referer'] = referer or parsed.scheme + '://' + parsed.netloc
     if cookie: out['Cookie']=cookie
     return fetch(url, out, post, timeout)
 
@@ -102,9 +106,11 @@ def request(url, close=True, redirect=True, error=False, verify=True, post=None,
     if output=='cookie': return '; '.join(k+'='+v for k,v in result.cookies.items())
     if output=='geturl': return result.url
     if output=='headers': return result.headers
-    if output=='response': return result.status_code,result.text
+    if output=='response': return str(result.status_code),result.content if as_bytes else result.text
     if output=='json': return result.json()
-    if output=='extended': return result.text,result.status_code,result.headers,result.headers,request(raw,output='cookie')
+    if output=='extended':
+        cookies = '; '.join(k+'='+v for k,v in result.cookies.items())
+        return result.content if as_bytes else result.text,out,result.headers,cookies,result.url
     return result.content if as_bytes else result.text
 
 def url_ok(url):

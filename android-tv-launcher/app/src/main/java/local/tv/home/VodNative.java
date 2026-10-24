@@ -12,6 +12,9 @@ final class VodNative {
 
     static void retire(MediaPlayer player, VLCVideoLayout view, LibVLC engine, Runnable completed) {
         if (player == null) {
+            if (view != null && view.getParent() instanceof ViewGroup) (
+                (ViewGroup) view.getParent()
+            ).removeView(view);
             completed.run();
             return;
         }

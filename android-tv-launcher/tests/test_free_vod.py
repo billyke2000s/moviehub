@@ -11,6 +11,41 @@ import moviehub_vod as vod
 from moviehub_compat import client
 
 class FreeVodTests(unittest.TestCase):
+    def test_extended_transport_contract_drives_real_watchseries_provider(self):
+        from moviehub_scrubs import scrape_sources
+        query={'imdb':'tt1234567','tmdb':12,'title':'Fixture Film','year':'2020','season':-1,'episode':-1}
+        calls=[]
+        def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=client.MAX_BODY):
+            self.assertIsInstance(headers,dict)
+            calls.append((url,headers))
+            response=requests.Response();response.status_code=200;response.url=url
+            response.headers['Content-Type']='text/html'
+            response.cookies.set('fixture','session')
+            if '?s=' in url:
+                response._content=b'<div class="item"><a href="https://fixture.example/film" title="Fixture Film (2020)">Film</a></div>'
+            elif url.endswith('/film'):
+                response._content=b'<div data-vs="https://fixture.example/redirect"></div>'
+            elif url.endswith('/redirect'):
+                response.url='https://host.example/embed';response._content=b''
+            else:
+                response.headers['Content-Type']='video/mp4';response._content=b'ftyp'
+            return response
+        item={'url':'https://media.example/film.mp4','direct':True,'quality':'HD','source':'fixture'}
+        with patch.object(client,'fetch',side_effect=fetch),patch.object(client,'safe',side_effect=lambda url:url),patch.object(scrape_sources,'process',return_value=[item]):
+            result=json.loads(vod.query('scrubs:watchserieshd_stream',json.dumps(query),lambda:False))
+        self.assertEqual(result['status'],'complete')
+        self.assertEqual(len(result['sources']),1)
+        self.assertEqual(len(calls),4) # extended output must not make a second cookie request
+        self.assertIn('User-Agent',calls[1][1])
+
+    def test_scrape_page_keeps_upstream_default_referer_and_protocol_relative_url(self):
+        with patch.object(client,'fetch') as fetch:
+            client.scrapePage('//site.example/path')
+            self.assertEqual(fetch.call_args.args[0],'https://site.example/path')
+            self.assertEqual(fetch.call_args.args[1]['Referer'],'https://site.example')
+            client.scrapePage('https://site.example/path',headers={'Referer':'https://original.example'})
+            self.assertEqual(fetch.call_args.args[1]['Referer'],'https://original.example')
+
     def test_every_provider_lookup_contract_and_individual_outcome(self):
         import inspect
         from unittest.mock import Mock

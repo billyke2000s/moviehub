@@ -201,4 +201,4 @@ jobs:
       - name: Probe public provider availability without logging stream URLs
         # External availability is diagnostic, never a substitute for playback fixtures.
         continue-on-error: true
-        run: timeout 180s python -u android-tv-launcher/tests/probe-free-vod.py
+        run: timeout 210s python -u android-tv-launcher/tests/probe-free-vod.py

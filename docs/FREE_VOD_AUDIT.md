@@ -30,6 +30,15 @@ Sources: [Scrubs package](https://github.com/jewbmx/repo/tree/master/zips/plugin
 Archived `_duds` are not active providers. `library` uses Kodi's database; `filepursuit` requires
 an API key. Their inclusion in the inventory does not make them anonymous website providers.
 
+Independent audit [run 40094277573](https://github.com/billyke2000s/moviehub/actions/runs/40094277573)
+queried all 68 modules on GitHub's runner. Both BNWMovies adapters returned three media-response
+links in total. Other outcomes included HTTP 403 (12), DNS failure (6), TLS failure (7), connection
+timeouts (4), read timeouts (8), no matches (14), unsupported media type (6), missing key (1),
+local library (1), other HTTP errors (4) and rejected/unsupported URL or response limits (3).
+This was one public-domain film, with HTTPS/public-address policy enabled, before the extended-
+response compatibility correction. It does not establish availability for other films, website
+health from the owner's network, sustained playback, or physical-TV success.
+
 | Provider | Constructor | Movies | Episodes | Constraint |
 | --- | --- | --- | --- | --- |
 | free99:anymovies_co | Loaded | Yes | No | Website availability varies |
@@ -100,3 +109,5 @@ an API key. Their inclusion in the inventory does not make them anonymous websit
 | scrubs:watchtvseries_net | Loaded | Yes | Yes | Website availability varies |
 | scrubs:watchug_com | Loaded | Yes | Yes | Website availability varies |
 | scrubs:winnoise_com | Loaded | Yes | Yes | Website availability varies |
+
+Additional confirmed compatibility defect: the bounded HTTP adapter returned an HTTP status integer in place of request headers in `output="extended"`. The actual WatchSeries provider then passed that integer as headers and swallowed the resulting exception. The adapter now returns the original five fields (body, request headers, response headers, cookies, final URL), without an extra cookie request. Default scrapePage Referer/protocol-relative handling and redirect cookie accumulation also match the upstream contract. A fixture drives the real WatchSeries provider through search, page and host lookup.
