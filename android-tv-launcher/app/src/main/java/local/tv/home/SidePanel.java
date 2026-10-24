@@ -98,8 +98,8 @@ final class SidePanel {
         Runnable[] after = new Runnable[1];
         // A Dialog owns input while open. Share press identity with the player so a held key
         // or trailing release cannot reopen a menu after this window is replaced.
-        if (activity instanceof VlcPlaybackActivity) {
-            VlcPlaybackActivity player = (VlcPlaybackActivity) activity;
+        if (activity instanceof LiveHost) {
+            LiveHost player = (LiveHost) activity;
             if (player.zapper != null) dialog.setOnKeyListener((d, key, event) ->
                 player.zapper.colourKey(event, colour -> {
                     after[0] = () -> player.zapper.colour(colour);

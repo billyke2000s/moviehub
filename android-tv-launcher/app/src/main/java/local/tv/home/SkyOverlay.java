@@ -36,7 +36,7 @@ final class SkyOverlay {
         GREEN = 0xff43a047,
         BLUE = 0xff1e63d6;
 
-    private final VlcPlaybackActivity a;
+    private final LiveHost a;
     private final LinearLayout banner, info, pauseBar, keys;
     final LinearLayout channelStrip;
     private final TextView number, name, clock, nowTime, nowTitle, nextTime, nextTitle, about, source, hint, keyInfo;
@@ -50,7 +50,7 @@ final class SkyOverlay {
     final List<View> controls = new ArrayList<>();
     private boolean controlsRevealed;
 
-    SkyOverlay(VlcPlaybackActivity activity, FrameLayout root) {
+    SkyOverlay(LiveHost activity, FrameLayout root) {
         a = activity;
         BannerStack stack = new BannerStack(a);
         FrameLayout.LayoutParams stackLayout = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
@@ -108,7 +108,7 @@ final class SkyOverlay {
         source.setMaxWidth(a.dp(300));
         source.setFocusable(false);
         source.setContentDescription("Sources");
-        source.setOnClickListener(v -> a.menus.chooseSource());
+        source.setOnClickListener(v -> a.liveMenus().chooseSource());
         source.setOnFocusChangeListener((v, focused) -> {
             source.setTextColor(focused ? LiveTvScreen.YELLOW : Color.WHITE);
             controlOutline(v, focused);
@@ -156,10 +156,10 @@ final class SkyOverlay {
         content.addView(about);
         keys = row();
         keys.setPadding(0, a.dp(10), 0, 0);
-        colourKey(RED, "Audio & subtitles", () -> a.menus.audioAndSubtitles());
-        colourKey(GREEN, "Source", () -> a.menus.chooseSource());
+        colourKey(RED, "Audio & subtitles", () -> a.liveMenus().audioAndSubtitles());
+        colourKey(GREEN, "Source", () -> a.liveMenus().chooseSource());
         colourKey(LiveTvScreen.YELLOW, "Information", this::toggleInformation);
-        colourKey(BLUE, "Options", () -> a.menus.liveOptions());
+        colourKey(BLUE, "Options", () -> a.liveMenus().liveOptions());
         // No coloured buttons on the remote: BACK reveals these as buttons to pick with ◀ ▶.
         TextView noColours = label(15, true, SOFT);
         content.addView(keys);

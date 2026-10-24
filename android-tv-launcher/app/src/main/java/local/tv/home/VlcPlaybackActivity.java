@@ -16,29 +16,24 @@ import org.videolan.libvlc.MediaPlayer;
 import org.videolan.libvlc.util.VLCVideoLayout;
 
 /** Fullscreen TV playback; account and resume storage retain their original identities. */
-public class VlcPlaybackActivity extends Activity {
+public class VlcPlaybackActivity extends LiveHost {
 
     private LibVLC engine;
     MediaPlayer player;
-    /** Channel changing and backups while watching Live TV from the guide; null otherwise. */
-    LiveZapper zapper;
     /** The title at the top of the controls (changes with the channel). */
     TextView titleView;
     /** The side panels (tracks, speed, picture, sleep timer). */
     final PlayerMenus menus = new PlayerMenus(this);
-    FrameLayout video;
     VodPlayback vod;
     private VLCVideoLayout filmVideo;
     private String url, id;
     /** The film or episode this file is (see ResumePoint.titleKey), or null. */
     private String titleKey;
     private long position;
-    boolean live, ended, foreground, dragging, dialogOpen;
+    boolean live, ended, foreground, dragging;
     boolean triedAlternative;
     /** The next live start opens the stream again instead of carrying on. */
     private boolean restartLive;
-    /** Live TV: this channel failed; the message is in the picture and SELECT tries again. */
-    boolean liveFailed;
     /** Live TV was paused, so the picture is behind the live broadcast until "Back to live". */
     boolean behindLive;
     /** Paused by the viewer (the player reports pausing a moment later, so this is kept here). */
@@ -71,7 +66,6 @@ public class VlcPlaybackActivity extends Activity {
     /** A buffering pause is in progress (counted once, not for every progress update). */
     private boolean buffering;
     TextView exitHint;
-    final Handler overlayHandler = new Handler(Looper.getMainLooper());
     private final Runnable hideExitHint = () -> {
         if (exitHint != null) exitHint.setVisibility(View.GONE);
     };
@@ -169,8 +163,9 @@ public class VlcPlaybackActivity extends Activity {
         }
     };
 
-    int dp(int n) {
-        return (int) (n * getResources().getDisplayMetrics().density + .5f);
+    @Override
+    LiveMenus liveMenus() {
+        return menus;
     }
 
     void revealControls() {
@@ -205,6 +200,7 @@ public class VlcPlaybackActivity extends Activity {
      * Plays another stream in place: the next channel, or a backup copy of this one. Called by
      * {@link LiveZapper}.
      */
+    @Override
     void switchTo(String title, String newUrl, String newId) {
         try {
             url = Playlist.networkUrl(
@@ -419,6 +415,7 @@ public class VlcPlaybackActivity extends Activity {
         revealControls();
     }
 
+    @Override
     String playbackUrl() {
         return url;
     }
@@ -690,6 +687,7 @@ public class VlcPlaybackActivity extends Activity {
     }
 
     /** Live TV: the current copy could not be opened; moves on to a backup or says so. */
+    @Override
     void liveSourceFailed() {
         showError("This source could not be played. Try another source or retry the connection.");
     }
@@ -738,6 +736,7 @@ public class VlcPlaybackActivity extends Activity {
     }
 
     /** A side panel over the video closed: show the controls again. */
+    @Override
     void panelClosed() {
         dialogOpen = false;
         revealControls();
@@ -776,6 +775,7 @@ public class VlcPlaybackActivity extends Activity {
         overlayHandler.postDelayed(hideExitHint, EXIT_WINDOW_MS);
     }
 
+    @Override
     void toggle() {
         forgetReleasedLivePlayer();
         revealControls();

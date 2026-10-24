@@ -45,7 +45,7 @@ final class LiveZapper {
     static final long BANNER_MS = 5000,
         BROWSE_MS = 8000;
 
-    private final VlcPlaybackActivity player;
+    private final LiveHost player;
     /**
      * This player's own copy of the guide's list, so a later guide visit or test clearing the
      * shared one is safe. Replaced by all channels when a typed number is not in the list.
@@ -86,7 +86,7 @@ final class LiveZapper {
     /** Phone layout: the banner has touch buttons and a tap on the picture shows or hides it. */
     final boolean touch;
 
-    LiveZapper(VlcPlaybackActivity player, Session session) {
+    LiveZapper(LiveHost player, Session session) {
         this.player = player;
         touch = DeviceMode.phone(player);
         own = session;
@@ -106,8 +106,8 @@ final class LiveZapper {
                     if (overlay.infoShowing()) hideInfo();
                     else showInfo();
                 },
-                player.menus::chooseSource,
-                player.menus::audioAndSubtitles,
+                player.liveMenus()::chooseSource,
+                player.liveMenus()::audioAndSubtitles,
                 player::toggle,
                 player::finish,
             }
@@ -355,7 +355,7 @@ final class LiveZapper {
     /** The guide's picture shows the last channel watched. */
     private void remember(ChannelDatabase.Row row) {
         player
-            .getSharedPreferences("ui", VlcPlaybackActivity.MODE_PRIVATE)
+            .getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
             .edit()
             .putString(LiveTvScreen.LAST_CHANNEL, row.key)
             .apply();
@@ -741,9 +741,9 @@ final class LiveZapper {
     }
 
     void colour(char colour) {
-        if (colour == 'r') player.menus.audioAndSubtitles();
-        else if (colour == 'g') player.menus.chooseSource();
-        else if (colour == 'b') player.menus.liveOptions();
+        if (colour == 'r') player.liveMenus().audioAndSubtitles();
+        else if (colour == 'g') player.liveMenus().chooseSource();
+        else if (colour == 'b') player.liveMenus().liveOptions();
         else if (overlay.infoShowing()) hideInfo();
         else information();
     }
