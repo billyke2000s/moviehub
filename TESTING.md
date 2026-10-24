@@ -434,6 +434,19 @@ regression and its correction require a new full emulator result.
 ## Experimental app
 
 CI's `apk` job also compiles MovieHub Experimental (`-Pexperimental assembleDebug`) and checks its
-package name. Device tests run on the normal build only; the experimental ExoPlayer path is
-checked on the owner's TV.
+package name. The separate `experimental-device-tests` job builds with `-Pexperimental` and runs
+`ExoLiveTest` on the TV emulator against Media3 itself: decoded frame progress and nonblank
+screenshots through two guide/fullscreen round trips without new stream requests; 404 retry
+cancellation on channel change and stop; pause/resume; foreground restart and Activity
+destruction; HLS audio/subtitle selection and remote banner entry. Experimental lint also runs.
+
+Run that suite on a running emulator with:
+
+```sh
+gradle -p android-tv-launcher -Pexperimental connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=local.tv.home.ExoLiveTest
+```
+
+These local HTTP fixtures establish decoder and lifecycle behaviour, not real-provider or
+physical-TV compatibility. Freeze detection remains diagnostic; this release does not add an
+automatic picture-repair algorithm.
 

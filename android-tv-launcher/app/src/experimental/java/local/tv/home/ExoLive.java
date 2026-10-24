@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Experimental builds: the one Live TV player, on Media3 ExoPlayer, drawn by Media3's own
@@ -75,6 +76,9 @@ final class ExoLive {
     private static Object owner;
     private static Listener listener;
     private static int generation, reopens;
+    private static Runnable pendingReopen;
+    private static Future<?> resolution;
+    private static NativeHttp resolvingHttp;
     private static boolean hlsRetried;
     private static String status = "Idle",
         decoder = "";
@@ -124,6 +128,7 @@ final class ExoLive {
             hlsRetried = false;
             event("New channel");
         }
+        cancelReopen();
         url = locator;
         open();
         return false;
@@ -299,17 +304,37 @@ final class ExoLive {
         reopens++;
         status = "Reopening (" + reopens + " of " + MAX_REOPENS + ")";
         event("Reopening the channel (" + reasonShort(reason) + ")");
-        main.postDelayed(ExoLive::open, 1000);
+        cancelReopen();
+        int ticket = generation;
+        pendingReopen = () -> {
+            pendingReopen = null;
+            if (ticket == generation && url != null && player != null) open();
+        };
+        main.postDelayed(pendingReopen, 1000);
     }
 
     private static String reasonShort(String reason) {
         return reason.length() > 60 ? reason.substring(0, 60) + "…" : reason;
     }
 
+    private static void cancelReopen() {
+        if (pendingReopen != null) main.removeCallbacks(pendingReopen);
+        pendingReopen = null;
+    }
+
+    private static void cancelResolution() {
+        if (resolvingHttp != null) resolvingHttp.cancel();
+        if (resolution != null) resolution.cancel(true);
+        resolvingHttp = null;
+        resolution = null;
+    }
+
     private static void open() {
+        cancelReopen();
+        cancelResolution();
         int ticket = ++generation;
         String locator = url;
-        if (locator == null) return;
+        if (locator == null || player == null) return;
         player.stop();
         closeRelay();
         status = "Finding the stream";
@@ -319,9 +344,11 @@ final class ExoLive {
             return;
         }
         Context context = app;
-        resolver.execute(() -> {
+        NativeHttp http = new NativeHttp();
+        resolvingHttp = http;
+        resolution = resolver.submit(() -> {
             try {
-                LiveStream.Resolution source = LiveStream.resolve(context, locator, new NativeHttp(), null);
+                LiveStream.Resolution source = LiveStream.resolve(context, locator, http, null);
                 EngineSources.Stream stream = source.provider;
                 main.post(() -> {
                     event("Link found in " + (SystemClock.elapsedRealtime() - started) / 1000 + " s");
@@ -398,10 +425,22 @@ final class ExoLive {
 
     static void stop() {
         generation++;
+        cancelReopen();
+        cancelResolution();
+        main.removeCallbacks(watch);
+        listener = null;
+        owner = null;
+        if (view != null) view.setPlayer(null);
+        view = null;
         if (player != null) {
-            player.stop();
-            player.clearMediaItems();
+            player.release();
+            player = null;
         }
+        lastRendered = -1;
+        stillSeconds = 0;
+        reopens = 0;
+        hlsRetried = false;
+        decoder = "";
         closeRelay();
         url = null;
         owner = null;
@@ -414,6 +453,19 @@ final class ExoLive {
             relay.close();
             relay = null;
         }
+    }
+
+    /** Package-private playback evidence for the experimental instrumentation suite. */
+    static ExoPlayer player() {
+        return player;
+    }
+
+    static PlayerView picture() {
+        return view;
+    }
+
+    static boolean retryPending() {
+        return pendingReopen != null;
     }
 
     static boolean active() {

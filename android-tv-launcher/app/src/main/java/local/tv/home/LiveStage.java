@@ -34,6 +34,7 @@ final class LiveStage implements LiveScreen {
     private final LiveMenus menus = new ExoMenus(this, this::reconnect);
     private LiveZapper zapper;
     private boolean dialogOpen, liveFailed, full;
+    private boolean foreground = true;
     private String url, title;
     /** The guide's corner box the picture sits over, or null when no guide is showing. */
     private View anchor;
@@ -240,11 +241,26 @@ final class LiveStage implements LiveScreen {
 
     /** MovieHub went into the background while watching. */
     void stopped() {
+        foreground = false;
+        overlayHandler.removeCallbacksAndMessages(null);
         ExoLive.stopIfOwner(this);
+    }
+
+    /** Discards screen callbacks and view references when MainActivity is destroyed. */
+    void destroyed() {
+        stopped();
+        SidePanel.closeFor(a);
+        if (zapper != null) zapper.close();
+        zapper = null;
+        full = false;
+        clearAnchor();
+        bannerHost.removeAllViews();
+        focusBeforeFull = null;
     }
 
     /** MovieHub came back while watching full screen. */
     void started() {
+        foreground = true;
         if (!full || url == null) return;
         ExoLive.attach(this, surface, events);
         if (!ExoLive.play(a, url, false)) opening("Opening channel…");
@@ -288,6 +304,9 @@ final class LiveStage implements LiveScreen {
 
     /** Says the channel is opening; after {@link #SLOW_MS} says it may not be available, and keeps waiting. */
     private void opening(String text) {
+        // A selected channel owns its entire startup budget. Old failed-channel timers cannot
+        // restart a slow replacement before its resolver/decoder has had a chance to finish.
+        overlayHandler.removeCallbacks(retry);
         status.setText(text);
         status.setBackgroundColor(Color.TRANSPARENT);
         status.setVisibility(View.VISIBLE);
@@ -309,7 +328,7 @@ final class LiveStage implements LiveScreen {
     private final Runnable retry = this::retryNow;
 
     private void showError(String reason) {
-        if (!full) return;
+        if (!full || !foreground) return;
         if (zapper != null && zapper.failover(reason)) return;
         status.setText(
             "Still trying this channel…\nIt may not be available right now.\n\nBACK  guide     ▲ ▼  another channel"
@@ -322,14 +341,13 @@ final class LiveStage implements LiveScreen {
     }
 
     private void retryNow() {
-        if (!full || ExoLive.isPlaying()) return;
+        if (!full || !foreground || ExoLive.isPlaying()) return;
         // Start again from the first copy, so every copy gets another go; or the one copy again.
         if (zapper == null || !zapper.retryFromFirst()) {
             ExoLive.attach(this, surface, events);
             ExoLive.play(a, url, true);
         }
-        overlayHandler.removeCallbacks(retry);
-        overlayHandler.postDelayed(retry, RETRY_MS);
+        // The new attempt schedules its next retry only after it actually fails.
     }
 
     // ---- LiveScreen ----------------------------------------------------------------------------
@@ -381,6 +399,7 @@ final class LiveStage implements LiveScreen {
 
     @Override
     public void switchTo(String newTitle, String newUrl, String newId) {
+        if (!foreground || !full) return;
         try {
             url = Playlist.networkUrl(newUrl, a.http());
         } catch (Exception e) {

@@ -202,3 +202,10 @@ Free movie/episode searches use bundled provider title normalization and TMDB or
 titles, preserve session request methods and cookies, and continue collecting backups after the
 three-second initial selection. Remote availability varies; provider details distinguish network,
 HTTP, host-resolution and no-match outcomes.
+
+### Experimental playback validation
+
+MovieHub Experimental uses Media3 for Live TV and has a separate emulator playback suite.
+It tests shared guide/fullscreen video, channel retries, audio/subtitles and player cleanup.
+Experimental builds use their own app data and update feed. Physical-TV/provider behaviour
+still needs verification; recorded picture freezes do not trigger automatic repair.
