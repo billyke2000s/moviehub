@@ -720,18 +720,11 @@ public class PlaybackTest {
                 () -> activity.zapper.position() == 0 && "Alpha".contentEquals(activity.titleView.getText()),
                 10000
             );
-            // Browsing in the banner without changing channel: Right with the controls hidden,
-            // Up to the next channel, SELECT to watch it.
+            // ▲ goes to the next channel (the banner no longer has a separate browsing layout).
             await(() -> player() != null && player().isPlaying(), 30000);
             SystemClock.sleep(500);
             instrumentation.runOnMainSync(() -> activity.controls.setVisibility(View.GONE));
-            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
-            await(() -> activity.zapper.browsing(), 5000);
             instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
-            await(() -> activity.zapper.browsePosition == 1, 5000);
-            assertEquals("Browsing does not change channel", 0, activity.zapper.position());
-            UiEvidence.capture("live-browse");
-            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
             await(
                 () -> activity.zapper.position() == 1 && "Bravo".contentEquals(activity.titleView.getText()),
                 10000
