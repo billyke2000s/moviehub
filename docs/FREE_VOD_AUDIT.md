@@ -1,0 +1,144 @@
+# Free VOD provider audit — 24 October 2026
+
+The inventory exactly matches the active provider directories in Scrubs V2 5.1.42 (59)
+and Free99 2.0.1 (nine): **68 modules, zero missing, zero extra**. Every recorded original-file
+SHA-256 matches the downloaded upstream package. All 68 adapted constructors import locally;
+the lookup-contract fixture checks the movie and series signatures and individually drives
+every applicable adapter through MovieHub's query entry point with mocked network results.
+Android's packaged-runtime constructor test remains part of CI.
+
+The upstream loader walks provider modules, constructs `source()`, calls `movie(...)` or
+`tvshow(...)` then `episode(...)`, and calls `sources(key, hostDict)`. MovieHub uses the same
+sequence with a fresh instance per query, then calls `resolve` and free, non-popup ResolveURL
+host extractors. It deliberately omits Kodi's settings/UI/database and paid/interactive hosts.
+The supported host list excludes wildcard/universal resolvers, matching upstream's host-list
+filter. These are compatible call contracts, not a claim of a complete Kodi runtime.
+
+The previous 120-second overall search could leave the last modules unstarted with eight
+18-second workers. The bound is now 180 seconds; first selection still occurs at three seconds
+and discoveries continue as backups. Each provider records queued, searching and final outcomes.
+HTTP, DNS/TLS, timeout, unsupported host, rejected media, local-library and missing-key outcomes
+are shown separately from no matches. Outcomes contain no source URLs, cookies or error bodies.
+
+Local live availability checks cannot establish provider health: this workspace's direct public
+DNS lookups fail. The independent Free VOD provider audit workflow runs a public-domain film
+query on GitHub's runner and saves one result per module. Neither a constructor pass nor one
+film's no-match result proves a website supports a particular title or plays on the TV.
+
+Sources: [Scrubs package](https://github.com/jewbmx/repo/tree/master/zips/plugin.video.scrubsv2),
+[Free99 package](https://github.com/nebulous42069/Omega/tree/main/omega/zips/plugin.video.free99).
+Archived `_duds` are not active providers. `library` uses Kodi's database; `filepursuit` requires
+an API key. Their inclusion in the inventory does not make them anonymous website providers.
+
+Independent audit [run 40094574136](https://github.com/billyke2000s/moviehub/actions/runs/40094574136)
+queried all 68 modules on GitHub's runner after the HTTP correction. Both BNWMovies adapters and
+Free99 Levidia returned five media-response links in total. Other outcomes included HTTP 403 (12),
+DNS failure (6), TLS failure (7), connection timeouts (3), read timeouts (7), no matches (14),
+unsupported media type (6), missing key (1), local library (1), other HTTP errors (4) and
+rejected/unsupported URL or response limits (4). These counts include duplicate adapters/links.
+This was one public-domain film, with HTTPS/public-address policy enabled. It does not
+establish availability for other films, website
+health from the owner's network, sustained playback, or physical-TV success.
+
+| Provider | Constructor | Movies | Episodes | Constraint | Probe outcome |
+| --- | --- | --- | --- | --- | --- |
+| free99:anymovies_co | Loaded | Yes | No | Website availability varies | http_404 (0 links) |
+| free99:bnwmovies_com | Loaded | Yes | No | Website availability varies | complete (2 links) |
+| free99:fzmovies_live | Loaded | Yes | Yes | Website availability varies | no_matches (0 links) |
+| free99:levidia_ch | Loaded | Yes | Yes | Website availability varies | complete (1 links) |
+| free99:my4hydra_top | Loaded | Yes | Yes | Website availability varies | gaierror (0 links) |
+| free99:naijavault_com | Loaded | Yes | Yes | Website availability varies | http_403 (0 links) |
+| free99:seriesloaded_ng | Loaded | Yes | Yes | Website availability varies | http_403 (0 links) |
+| free99:stagatv_com | Loaded | Yes | Yes | Website availability varies | http_400 (0 links) |
+| free99:tvseries_in | Loaded | Yes | Yes | Website availability varies | no_matches (0 links) |
+| scrubs:123movies_skin | Loaded | Yes | Yes | Website availability varies | gaierror (0 links) |
+| scrubs:123moviestv_me | Loaded | Yes | Yes | Website availability varies | SSLError (0 links) |
+| scrubs:1movies_la | Loaded | Yes | Yes | Website availability varies | SSLError (0 links) |
+| scrubs:9pm_to | Loaded | Yes | Yes | Website availability varies | SSLError (0 links) |
+| scrubs:anymovies_co | Loaded | Yes | No | Website availability varies | http_404 (0 links) |
+| scrubs:bluray7_com | Loaded | Yes | No | Website availability varies | http_403 (0 links) |
+| scrubs:bnwmovies_com | Loaded | Yes | No | Website availability varies | complete (2 links) |
+| scrubs:bstsrs_one | Loaded | No | Yes | Website availability varies | unsupported_type (0 links) |
+| scrubs:cinebox_cc | Loaded | Yes | Yes | Website availability varies | ReadTimeout (0 links) |
+| scrubs:couchtuner_show | Loaded | No | Yes | Website availability varies | unsupported_type (0 links) |
+| scrubs:doomovies_ga | Loaded | Yes | No | Website availability varies | http_403 (0 links) |
+| scrubs:dopebox_to | Loaded | Yes | Yes | Website availability varies | gaierror (0 links) |
+| scrubs:filepursuit | Loaded | Yes | Yes | API key required | requires_api_key (0 links) |
+| scrubs:filmxy_pw | Loaded | Yes | No | Website availability varies | ReadTimeout (0 links) |
+| scrubs:flixhq_to | Loaded | Yes | Yes | Website availability varies | ReadTimeout (0 links) |
+| scrubs:flixwave_me | Loaded | Yes | Yes | Website availability varies | ConnectTimeout (0 links) |
+| scrubs:gdriveplayer_us | Loaded | Yes | Yes | Website availability varies | no_matches (0 links) |
+| scrubs:gogoanime_bid | Loaded | No | Yes | Website availability varies | unsupported_type (0 links) |
+| scrubs:gogoanime_tel | Loaded | No | Yes | Website availability varies | unsupported_type (0 links) |
+| scrubs:gogoanimes_to | Loaded | No | Yes | Website availability varies | unsupported_type (0 links) |
+| scrubs:goojara_club | Loaded | Yes | No | Website availability varies | no_matches (0 links) |
+| scrubs:goojara_to | Loaded | Yes | Yes | Website availability varies | http_403 (0 links) |
+| scrubs:hdbest_net | Loaded | Yes | No | Website availability varies | ReadTimeout (0 links) |
+| scrubs:himovies_top | Loaded | Yes | Yes | Website availability varies | ReadTimeout (0 links) |
+| scrubs:iwaatch_com | Loaded | Yes | No | Website availability varies | no_matches (0 links) |
+| scrubs:levidia_ch | Loaded | Yes | Yes | Website availability varies | no_matches (0 links) |
+| scrubs:levidiamovies_club | Loaded | Yes | No | Website availability varies | http_521 (0 links) |
+| scrubs:library | Loaded | Yes | Yes | Kodi library only | local_library (0 links) |
+| scrubs:m4ufree_se | Loaded | Yes | No | Website availability varies | ConnectTimeout (0 links) |
+| scrubs:m4uhd_tv | Loaded | Yes | No | Website availability varies | http_403 (0 links) |
+| scrubs:movie4u_live | Loaded | Yes | Yes | Website availability varies | SSLError (0 links) |
+| scrubs:movies2watch_tv | Loaded | Yes | Yes | Website availability varies | ReadTimeout (0 links) |
+| scrubs:movies4fun_net | Loaded | Yes | Yes | Website availability varies | SSLError (0 links) |
+| scrubs:moviesnipipay_me | Loaded | Yes | Yes | Website availability varies | no_matches (0 links) |
+| scrubs:myflixer_it | Loaded | Yes | Yes | Website availability varies | ValueError (0 links) |
+| scrubs:noxx_to | Loaded | No | Yes | Website availability varies | unsupported_type (0 links) |
+| scrubs:okmov_to | Loaded | Yes | Yes | Website availability varies | no_matches (0 links) |
+| scrubs:pressplay_top | Loaded | Yes | Yes | Website availability varies | no_matches (0 links) |
+| scrubs:projectfreetv_cyou | Loaded | Yes | Yes | Website availability varies | http_403 (0 links) |
+| scrubs:projectfreetv_lol | Loaded | Yes | Yes | Website availability varies | gaierror (0 links) |
+| scrubs:putlocker_gives | Loaded | Yes | Yes | Website availability varies | ConnectTimeout (0 links) |
+| scrubs:rarefilmm_com | Loaded | Yes | No | Website availability varies | no_matches (0 links) |
+| scrubs:series9movies_com | Loaded | Yes | No | Website availability varies | http_403 (0 links) |
+| scrubs:series9mx_pro | Loaded | Yes | No | Website availability varies | no_matches (0 links) |
+| scrubs:sflixz_watch | Loaded | Yes | Yes | Website availability varies | SSLError (0 links) |
+| scrubs:soap2day_fan | Loaded | Yes | Yes | Website availability varies | gaierror (0 links) |
+| scrubs:streamlord_com | Loaded | Yes | Yes | Website availability varies | ValueError (0 links) |
+| scrubs:tinyzonetv_to | Loaded | Yes | Yes | Website availability varies | ReadTimeout (0 links) |
+| scrubs:tubitv_com | Loaded | Yes | Yes | Website availability varies | no_matches (0 links) |
+| scrubs:tvids_net | Loaded | Yes | Yes | Website availability varies | gaierror (0 links) |
+| scrubs:tvmovieflix_com | Loaded | Yes | No | Website availability varies | http_403 (0 links) |
+| scrubs:tvseries_video | Loaded | Yes | Yes | Website availability varies | http_403 (0 links) |
+| scrubs:upmovies_net | Loaded | Yes | Yes | Website availability varies | no_matches (0 links) |
+| scrubs:vumoo_mx | Loaded | Yes | Yes | Website availability varies | no_matches (0 links) |
+| scrubs:watchseries_cyou | Loaded | Yes | Yes | Website availability varies | http_403 (0 links) |
+| scrubs:watchserieshd_stream | Loaded | Yes | Yes | Website availability varies | ValueError (0 links) |
+| scrubs:watchtvseries_net | Loaded | Yes | Yes | Website availability varies | http_403 (0 links) |
+| scrubs:watchug_com | Loaded | Yes | Yes | Website availability varies | SSLError (0 links) |
+| scrubs:winnoise_com | Loaded | Yes | Yes | Website availability varies | ValueError (0 links) |
+
+Additional confirmed compatibility defect: the bounded HTTP adapter returned an HTTP status integer in place of request headers in `output="extended"`. The actual WatchSeries provider then passed that integer as headers and swallowed the resulting exception. The adapter now returns the original five fields (body, request headers, response headers, cookies, final URL), without an extra cookie request. Default scrapePage Referer/protocol-relative handling and redirect cookie accumulation also match the upstream contract. A fixture drives the real WatchSeries provider through search, page and host lookup.
+
+
+## Provider request and title compatibility follow-up (24 October 2026)
+
+Reproduced an additional adapter defect: `Session.post(url)` with no body became GET.
+The Scrubs Levidia search uses this exact request. Explicit GET/POST methods now reach
+the bounded transport and retain the existing redirect semantics (301/302/303 switch
+POST to GET; 307/308 retain POST), session cookies and TLS/public-address checks.
+`client.request` supplies upstream's default Referer and Accept-Language without
+replacing explicit values.
+
+Movie and series searches now use each bundled add-on's `scene_title`/`scene_tvtitle`
+preparation and receive original and alternative titles from TMDB detail metadata.
+These aliases use TMDB rather than Kodi's Trakt account/runtime. Matching still depends
+on the individual provider. Per-provider work has a 30-second cancellation budget and
+the eight-worker search has 300 seconds of background headroom for the full inventory.
+The three-second initial selection and existing buffering/failover rules are unchanged.
+The diagnostic workflow uses the same search budget.
+
+Regression coverage drives the real Levidia provider through its landing page, empty
+POST search, result page, host and media probe; checks all five redirect codes; checks
+movie punctuation/aliases and upstream episode remapping for both families; and checks
+request headers. Android coverage checks movie/series alternative-title metadata.
+Local validation: 17 Python tests and 814 core assertions pass (Eclipse JDT targeting
+Java 17). Android build/lint/emulator CI and live-provider outcomes must be checked on
+the final commit. No physical-TV or Guardians playback success is claimed.
+
+Provider-request read timeouts now honor explicit upstream values within the remaining
+search budget, with an eight-second connection cap. A regression checks a 20-second read
+request and clipping to a five-second remaining budget; cancellation remains bounded.

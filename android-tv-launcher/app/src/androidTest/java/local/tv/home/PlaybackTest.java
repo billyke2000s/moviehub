@@ -22,6 +22,7 @@ public class PlaybackTest {
 
     private final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
     private byte[] transportStream;
+    private byte[] movie;
     private byte[] wrappedTransportStream;
     private VlcPlaybackActivity activity;
     private ServerSocket server;
@@ -92,6 +93,15 @@ public class PlaybackTest {
             while ((n = input.read(buffer)) != -1) output.write(buffer, 0, n);
             transportStream = output.toByteArray();
         }
+        try (
+            InputStream input = instrumentation.getContext().getAssets().open("vod.mp4");
+            ByteArrayOutputStream output = new ByteArrayOutputStream()
+        ) {
+            byte[] buffer = new byte[8192];
+            int n;
+            while ((n = input.read(buffer)) != -1) output.write(buffer, 0, n);
+            movie = output.toByteArray();
+        }
         wrappedTransportStream = pngSegment(transportStream);
         server = new ServerSocket(0, 8, InetAddress.getByName("127.0.0.1"));
         new Thread(() -> {
@@ -140,6 +150,7 @@ public class PlaybackTest {
                     );
                 return;
             }
+            if (request != null && request.contains("/vod.mp4")) data = movie;
             String mime = "video/mp4";
             if (request != null && request.contains(".m3u8")) {
                 data = (
@@ -214,6 +225,10 @@ public class PlaybackTest {
     }
 
     private void openVod(VodSources.Session session) {
+        openVod(session, "/vod.mp4");
+    }
+
+    private void openVod(VodSources.Session session, String path) {
         instrumentation.runOnMainSync(activity::finish);
         instrumentation.waitForIdleSync();
         await(activity::isDestroyed, 10000);
@@ -221,14 +236,16 @@ public class PlaybackTest {
         activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
             new Intent(context, VlcPlaybackActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                .putExtra("url", "http://127.0.0.1:" + server.getLocalPort() + "/playback.mp4")
+                .putExtra("url", "http://127.0.0.1:" + server.getLocalPort() + path)
                 .putExtra("id", "vod-backup-test")
                 .putExtra("vodSession", VodSources.remember(session))
                 .putExtra("title", "VOD backup fixture")
         );
         await(
             () ->
-                activity.vod != null && player() != null && player().isPlaying() && player().getTime() > 500,
+                activity.vod != null &&
+                player() != null &&
+                (path.equals("/playback.mp4") || (player().isPlaying() && player().getTime() > 500)),
             30000
         );
     }
@@ -245,11 +262,11 @@ public class PlaybackTest {
     public void freeVodRelayShowsIncomingTrafficWhileRealVlcPlays() throws Exception {
         ProviderRelay.testConnections = uri ->
             (HttpURLConnection) new URL(
-                "http://127.0.0.1:" + server.getLocalPort() + "/playback.mp4"
+                "http://127.0.0.1:" + server.getLocalPort() + "/vod.mp4"
             ).openConnection();
         EngineSources.Stream transport = new EngineSources.Stream(
             new org.json.JSONObject()
-                .put("url", "https://8.8.8.8/playback.mp4")
+                .put("url", "https://8.8.8.8/vod.mp4")
                 .put("headers", new org.json.JSONObject())
         );
         VodSources.Session session = new VodSources.Session(
@@ -260,12 +277,18 @@ public class PlaybackTest {
             true
         );
         session.transport = index -> transport;
+        session.free = true;
         openVod(session);
         java.util.concurrent.atomic.AtomicBoolean labelled = new java.util.concurrent.atomic.AtomicBoolean();
         await(() -> {
             instrumentation.runOnMainSync(() -> {
                 activity.revealControls();
-                labelled.set(activity.speed.getText().toString().startsWith("Downloading at "));
+                labelled.set(
+                    activity.speed.getText().toString().contains("Downloading at ") &&
+                        activity.speed.getText().toString().contains("MB received") &&
+                        activity.vod.incomingBytes() > 0 &&
+                        activity.speed.isShown()
+                );
             });
             return labelled.get();
         }, 5000);
@@ -291,7 +314,7 @@ public class PlaybackTest {
                     return new VodSources.Resolved(
                         "http://127.0.0.1:" +
                             server.getLocalPort() +
-                            (index == 1 ? "/missing.mp4" : "/playback.mp4"),
+                            (index == 1 ? "/missing.mp4" : "/vod.mp4"),
                         null
                     );
                 },
@@ -346,7 +369,7 @@ public class PlaybackTest {
                         release.await(10, java.util.concurrent.TimeUnit.SECONDS);
                     }
                     return new VodSources.Resolved(
-                        "http://127.0.0.1:" + server.getLocalPort() + "/playback.mp4",
+                        "http://127.0.0.1:" + server.getLocalPort() + "/vod.mp4",
                         null
                     );
                 },
@@ -384,6 +407,167 @@ public class PlaybackTest {
         SystemClock.sleep(1100);
         assertEquals(2, attempts.get());
         assertTrue(original.isPlaying());
+    }
+
+    @Test
+    public void manualFreeServiceFailureSkipsShortClipAndPlaysAnotherProvider() throws Exception {
+        var attempts = new java.util.concurrent.CopyOnWriteArrayList<Integer>();
+        var entries = java.util.Arrays.asList(
+            new VodSourceFailover.Source("original", "Original", "one"),
+            new VodSourceFailover.Source("missing", "Unavailable", "two"),
+            new VodSourceFailover.Source("short", "Error clip", "three"),
+            new VodSourceFailover.Source("working", "Working", "four")
+        );
+        VodSources.Session session = new VodSources.Session(
+            entries,
+            index -> {
+                attempts.add(index);
+                String path = index == 1 ? "/missing.mp4" : index == 2 ? "/playback.mp4" : "/vod.mp4";
+                return new VodSources.Resolved("http://127.0.0.1:" + server.getLocalPort() + path, null);
+            },
+            false
+        );
+        session.free = true;
+        openVod(session);
+        MediaPlayer original = player();
+        instrumentation.runOnMainSync(() -> activity.vod.select(1));
+        await(() -> activity.vod.activeIndex() == 3 && !activity.vod.preparing(), 30000);
+        instrumentation.waitForIdleSync();
+        assertNotSame(original, player());
+        assertEquals(java.util.Arrays.asList(1, 2, 3), attempts);
+        assertFalse(activity.isFinishing());
+        assertTrue(player().isPlaying());
+        assertTrue(player().getLength() >= 120000);
+    }
+
+    @Test
+    public void shortInitialFreeClipWaitsForLateBackupWithoutEndingMovie() throws Exception {
+        VodSources.Session session = new VodSources.Session(
+            java.util.Collections.singletonList(new VodSourceFailover.Source("short", "Error clip", "one")),
+            index -> new VodSources.Resolved("http://127.0.0.1:" + server.getLocalPort() + "/vod.mp4", null),
+            false
+        );
+        session.free = true;
+        var searching = new java.util.concurrent.atomic.AtomicBoolean(true);
+        session.searching = searching::get;
+        openVod(session, "/playback.mp4");
+        await(() -> activity.status.getText().toString().contains("Still searching"), 10000);
+        assertFalse(activity.isFinishing());
+        assertFalse(activity.ended);
+        session.sources.add(new VodSourceFailover.Source("late", "Late backup", "two"));
+        searching.set(false);
+        await(() -> activity.vod.activeIndex() == 1 && !activity.vod.preparing(), 30000);
+        assertTrue(player().isPlaying());
+        assertTrue(player().getLength() >= 120000);
+    }
+
+    @Test
+    public void leavingRejectedFreeClipPreservesExistingResumeHistory() throws Exception {
+        VodSources.Session session = new VodSources.Session(
+            java.util.Collections.singletonList(new VodSourceFailover.Source("short", "Error clip", "one")),
+            index -> {
+                throw new IOException("No backup");
+            },
+            false
+        );
+        session.free = true;
+        openVod(session, "/playback.mp4");
+        await(() -> activity.vod.rejectedMedia(), 10000);
+        var positions = activity.getSharedPreferences("positions", 0);
+        positions.edit().putLong("vod-backup-test", 600000).commit();
+        instrumentation.runOnMainSync(activity::finish);
+        await(activity::isDestroyed, 10000);
+        assertEquals(
+            "Error clips must not clear the film resume point",
+            600000,
+            positions.getLong("vod-backup-test", 0)
+        );
+        positions.edit().remove("vod-backup-test").commit();
+    }
+
+    @Test
+    public void finishingFilmRetainsDetachedTextureUntilNativeStopCompletes() throws Exception {
+        await(() -> player() != null && player().isPlaying() && player().getTime() > 500, 30000);
+        MediaPlayer original = player();
+        android.graphics.SurfaceTexture[] surface = new android.graphics.SurfaceTexture[1];
+        TextureView[] texture = new TextureView[1];
+        instrumentation.runOnMainSync(() -> {
+            texture[0] = VodSurface.texture(activity.video);
+            assertNotNull("The film needs an independently retained texture", texture[0]);
+            surface[0] = texture[0].getSurfaceTexture();
+            assertNotNull(surface[0]);
+        });
+        var entered = new java.util.concurrent.CountDownLatch(1);
+        var release = new java.util.concurrent.CountDownLatch(1);
+        var stopped = new java.util.concurrent.atomic.AtomicBoolean();
+        LiveNative.testStopper = retired -> {
+            if (retired == original) {
+                entered.countDown();
+                try {
+                    release.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (InterruptedException error) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            retired.stop();
+            if (retired == original) stopped.set(true);
+        };
+        try {
+            instrumentation.runOnMainSync(activity::finish);
+            assertTrue(entered.await(5, java.util.concurrent.TimeUnit.SECONDS));
+            await(() -> activity.isDestroyed() && !texture[0].isAttachedToWindow(), 5000);
+            assertFalse("The decoder still owns the detached buffer queue", surface[0].isReleased());
+            assertFalse("The native join is still deliberately blocked", stopped.get());
+            release.countDown();
+            await(() -> stopped.get() && surface[0].isReleased(), 10000);
+        } finally {
+            release.countDown();
+            LiveNative.testStopper = null;
+        }
+    }
+
+    @Test
+    public void failedVodNativeStopKeepsControlsResponsiveUntilShutdownCompletes() throws Exception {
+        VodSources.Session session = new VodSources.Session(
+            vodEntries(),
+            index ->
+                new VodSources.Resolved(
+                    "http://127.0.0.1:" + server.getLocalPort() + (index == 1 ? "/missing.mp4" : "/vod.mp4"),
+                    null
+                ),
+            false
+        );
+        openVod(session);
+        var entered = new java.util.concurrent.CountDownLatch(1);
+        var release = new java.util.concurrent.CountDownLatch(1);
+        MediaPlayer original = player();
+        LiveNative.testStopper = retired -> {
+            entered.countDown();
+            try {
+                release.await(10, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (InterruptedException error) {
+                Thread.currentThread().interrupt();
+            }
+            retired.stop();
+        };
+        try {
+            instrumentation.runOnMainSync(() -> activity.vod.select(1));
+            assertTrue(entered.await(10, java.util.concurrent.TimeUnit.SECONDS));
+            instrumentation.runOnMainSync(() -> {
+                activity.revealControls();
+                assertSame(original, player());
+                assertTrue(activity.controls.isShown());
+            });
+            long before = original.getTime();
+            SystemClock.sleep(1100);
+            assertTrue(original.getTime() > before);
+            release.countDown();
+            await(() -> activity.vod.activeIndex() == 2 && !activity.vod.preparing(), 30000);
+            assertTrue(player().isPlaying());
+        } finally {
+            release.countDown();
+            LiveNative.testStopper = null;
+        }
     }
 
     /** Opens a player options dialog, moves down `steps` entries and selects. */

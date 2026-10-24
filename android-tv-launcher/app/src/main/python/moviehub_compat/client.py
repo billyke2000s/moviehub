@@ -49,9 +49,9 @@ def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=MAX_
     try:
         for attempt in range(6):
             check()
-            remaining = max(.1, min(float(timeout), 8, getattr(_STATE, 'deadline', time.monotonic()+8)-time.monotonic()))
+            remaining = max(.1, min(float(timeout), getattr(_STATE, 'deadline', time.monotonic()+8)-time.monotonic()))
             response=session.request(method, current, data=data, headers=headers or dnt_headers,
-                                     timeout=(remaining, remaining), allow_redirects=False, stream=True)
+                                     timeout=(min(8, remaining), remaining), allow_redirects=False, stream=True)
             if response.is_redirect and redirect:
                 target = requests.compat.urljoin(current, response.headers['Location'])
                 safe(target)
@@ -70,6 +70,8 @@ def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=MAX_
                     chunks.append(chunk[:max(0,max_bytes-(size-len(chunk)))]); break
                 chunks.append(chunk)
                 if max_bytes != MAX_BODY and size >= max_bytes: break
+            if response.status_code >= 400: _STATE.failure = 'http_' + str(response.status_code)
+            response.cookies = session.cookies.copy()
             response._content=b''.join(chunks)
             response._content_consumed=True
             response.encoding='utf-8'
@@ -83,8 +85,11 @@ def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=MAX_
         if owned: session.close()
 
 def scrapePage(url, referer=None, headers=None, post=None, cookie=None, timeout=8):
+    url = 'https:' + url if url.startswith('//') else url
     out=dict(dnt_headers); out.update(headers or {})
-    if referer: out['Referer']=referer
+    if not any(key.lower() == 'referer' for key in out):
+        parsed = urlparse(url)
+        out['Referer'] = referer or parsed.scheme + '://' + parsed.netloc
     if cookie: out['Cookie']=cookie
     return fetch(url, out, post, timeout)
 
@@ -92,7 +97,11 @@ def request(url, close=True, redirect=True, error=False, verify=True, post=None,
             mobile=False, XHR=False, limit=None, referer=None, cookie=None, compression=False,
             output='', timeout=8, as_bytes=False):
     out=dict(dnt_headers); out.update(headers or {})
-    if referer: out['Referer']=referer
+    if not any(key.lower() == 'referer' for key in out):
+        parsed = urlparse(url)
+        out['Referer'] = referer or parsed.scheme + '://' + parsed.netloc + '/'
+    if not any(key.lower() == 'accept-language' for key in out):
+        out['Accept-Language'] = 'en-US,en'
     if cookie: out['Cookie']=cookie
     if XHR: out['X-Requested-With']='XMLHttpRequest'
     raw, sep, suffix=url.partition('|')
@@ -101,9 +110,11 @@ def request(url, close=True, redirect=True, error=False, verify=True, post=None,
     if output=='cookie': return '; '.join(k+'='+v for k,v in result.cookies.items())
     if output=='geturl': return result.url
     if output=='headers': return result.headers
-    if output=='response': return result.status_code,result.text
+    if output=='response': return str(result.status_code),result.content if as_bytes else result.text
     if output=='json': return result.json()
-    if output=='extended': return result.text,result.status_code,result.headers,result.headers,request(raw,output='cookie')
+    if output=='extended':
+        cookies = '; '.join(k+'='+v for k,v in result.cookies.items())
+        return result.content if as_bytes else result.text,out,result.headers,cookies,result.url
     return result.content if as_bytes else result.text
 
 def url_ok(url):

@@ -15,9 +15,11 @@ results = []
 def probe(row):
     begin = time.monotonic()
     try:
-        result = json.loads(vod.query(row['id'], query, lambda: time.monotonic()-started > 160))
+        result = json.loads(vod.query(row['id'], query, lambda: time.monotonic()-started > 300))
         return {'provider':row['id'], 'status':result['status'], 'streams':len(result['sources']),
-                'seconds':round(time.monotonic()-begin, 1)}
+                'seconds':round(time.monotonic()-begin, 1), 'extracted':result.get('extracted',0),
+                'rejected':result.get('rejected',0),'resolutionErrors':result.get('resolutionErrors',0),
+                'unsupportedHosts':result.get('unsupportedHosts',0)}
     except BaseException as error:
         return {'provider':row['id'], 'status':type(error).__name__, 'streams':0}
 

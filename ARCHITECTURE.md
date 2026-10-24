@@ -344,3 +344,30 @@ prevent abandoned screens from starting playback. App screens remain native Java
 ## VOD incoming traffic
 
 Free HLS and media-file sources use the existing session-scoped `ProviderRelay`, including header-free URLs. Header-free DASH retains native base-URL handling and VLC statistics. It counts upstream payload reads and `StreamRate` converts active-relay deltas to Mb/s; backup prefetches have separate counters. Direct cloud playback continues using VLC statistics. `VodSearch` ranks picture quality first, then bounded transfer sample and response time; HLS manifests provide variant resolution, not a fictitious media throughput.
+
+## Free VOD diagnosis and safe replacement
+
+`VodSearch` records every module's sanitized outcome and permits 180 seconds for eight 18-second workers, while retaining the three-second first-selection window. `FreeVodProviders.search` returns the bridge outcome as well as progressive sources. `moviehub_compat.media` reads declared MP4/HLS/DASH duration from bounded probe bytes. Free videos with known duration below 120 seconds are rejected during probing and again by the active/prepared decoder. Unknown duration remains unknown; live/event playlist windows are not movie durations. `VodNative` reuses the existing off-main native-stop coordinator, retaining the player window and engine until shutdown completes. Free manual source choices allow cross-provider recovery; cloud pinning and buffering thresholds remain unchanged.
+
+
+## Provider compatibility follow-up
+
+The requests adapter preserves explicit GET/POST independently of the body, including
+redirect method/cookie rules. The legacy client supplies default Referer/language headers.
+FreeVodScreen forwards TMDB original/alternative titles; moviehub_vod applies each family's
+scene title and episode mapping. Work is bounded to 30 seconds per provider and 300 seconds
+for the eight-worker search; selection still begins after three seconds.
+
+Provider-request read timeouts now honor explicit upstream values within the remaining
+search budget, with an eight-second connection cap. A regression checks a 20-second read
+request and clipping to a five-second remaining budget; cancellation remains bounded.
+
+
+## VOD window lifetime during asynchronous shutdown
+
+Films use TextureView output, as prepared VOD replacements already do. VodNative installs
+a VodSurface listener before starting the native join. If Android detaches the Activity's
+window first, the listener retains its SurfaceTexture and defers VLC's destruction callback.
+After native stop returns, detachViews closes VLC's output and the retained textures are
+released. An unsuccessful native join keeps the window/engine quarantined. Live TV's
+retained guide/fullscreen output is unchanged.

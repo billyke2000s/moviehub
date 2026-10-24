@@ -126,9 +126,12 @@ final class SeriesPlayback {
         int id = current.optInt("tmdbId", current.optInt("id"));
         if (id <= 0) throw new IllegalArgumentException("Series metadata unavailable");
         if (imdb(current).isEmpty() || !current.has("name")) {
-            JSONObject details = tmdb.get("tv/" + id + "?append_to_response=external_ids");
+            JSONObject details = tmdb.get("tv/" + id + "?append_to_response=external_ids,alternative_titles");
             current = new JSONObject(current.toString());
             current.put("name", details.optString("name", "Series"));
+            for (String field : new String[] { "original_name", "alternative_titles", "first_air_date" }) {
+                if (details.has(field)) current.put(field, details.get(field));
+            }
             if (details.has("external_ids")) current.put("external_ids", details.get("external_ids"));
         }
         JSONArray episodes = tmdb.get("tv/" + id + "/season/" + season).getJSONArray("episodes");

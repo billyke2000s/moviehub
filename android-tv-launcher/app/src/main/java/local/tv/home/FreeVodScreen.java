@@ -24,6 +24,8 @@ final class FreeVodScreen {
                 .put("imdb", imdb)
                 .put("tmdb", info.optInt("tmdbId", info.optInt("id")))
                 .put("title", searchTitle)
+                .put("localTitle", searchTitle)
+                .put("aliases", aliases(info, season < 0))
                 .put("year", info.optString(season < 0 ? "release_date" : "first_air_date").split("-")[0])
                 .put("season", season)
                 .put("episode", episode)
@@ -48,6 +50,11 @@ final class FreeVodScreen {
             boolean[] automatic = { AutoPlayback.enabled(activity, season) };
             Button choose = activity.button("Choose a source instead", () -> automatic[0] = false);
             activity.page.addView(choose);
+            activity.page.addView(
+                activity.button("Provider search details", () ->
+                    SidePanel.of(activity, "Provider search details").message(search.report()).show()
+                )
+            );
             final int generation = activity.generation;
             Runnable refresh = new Runnable() {
                 int count = -1;
@@ -94,10 +101,15 @@ final class FreeVodScreen {
                     boolean done = search.finished();
                     status.setText(
                         count > 0
-                            ? count + " streams found" + (done ? "" : " · searching for backups…")
+                            ? count +
+                                  " streams found · " +
+                                  search.progress() +
+                                  (done ? "" : " · searching for backups…")
                             : done
-                              ? "No playable stream found. Try again later."
-                              : "No stream yet · still searching…"
+                              ? "No playable stream found · " +
+                                search.progress() +
+                                ". See provider search details."
+                              : "No stream yet · " + search.progress() + " · still searching…"
                     );
                     // Even an immediate complete response waits for the original selection window.
                     if (!done || (automatic[0] && best == null && count > 0)) handler.postDelayed(this, 100);
@@ -109,6 +121,23 @@ final class FreeVodScreen {
             Diagnostics.recovered("Starting source search", error);
             activity.toast("Could not start the source search");
         }
+    }
+
+    static JSONArray aliases(JSONObject metadata, boolean movie) {
+        Set<String> titles = new LinkedHashSet<>();
+        String original = metadata.optString(movie ? "original_title" : "original_name");
+        if (!original.trim().isEmpty()) titles.add(original);
+        JSONObject alternatives = metadata.optJSONObject("alternative_titles");
+        if (alternatives != null) {
+            JSONArray rows = alternatives.optJSONArray(movie ? "titles" : "results");
+            if (rows != null) for (int i = 0; i < rows.length(); i++) {
+                JSONObject row = rows.optJSONObject(i);
+                if (row == null) continue;
+                String name = row.optString("title").trim();
+                if (!name.isEmpty()) titles.add(name);
+            }
+        }
+        return new JSONArray(titles);
     }
 
     private void play(

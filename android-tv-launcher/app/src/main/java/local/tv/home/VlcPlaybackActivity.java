@@ -124,6 +124,7 @@ public class VlcPlaybackActivity extends Activity {
                 );
                 if (
                     !live &&
+                    (vod == null || !vod.rejectedMedia()) &&
                     !nextPromptShown &&
                     length > 0 &&
                     time > 0 &&
@@ -143,11 +144,22 @@ public class VlcPlaybackActivity extends Activity {
                 if (++reminderTicks % 15 == 0 && !dialogOpen) showDueReminder();
                 downloadMbps = vod == null ? PlayerOverlay.downloadSpeed(player) : vod.incomingMbps();
                 if (downloadMbps >= 0) Timings.lastMbps = downloadMbps;
-                speed.setText(
+                String traffic =
                     downloadMbps < 0
                         ? "Receiving stream…"
-                        : String.format(Locale.ROOT, "Downloading at %.1f Mb/s", downloadMbps)
-                );
+                        : String.format(Locale.ROOT, "Downloading at %.1f Mb/s", downloadMbps);
+                if (vod != null) {
+                    long bytes = vod.incomingBytes();
+                    traffic =
+                        "Source: " +
+                        vod.sourceLabel() +
+                        "\n" +
+                        traffic +
+                        (bytes < 0
+                            ? ""
+                            : String.format(Locale.ROOT, " · %.2f MB received", bytes / 1000000d));
+                }
+                speed.setText(traffic);
                 timeline.setEnabled(!live && player.isSeekable() && length > 0);
                 if (!dragging && length > 0) timeline.setProgress(
                     (int) Math.min(1000, (time * 1000) / length)
@@ -386,11 +398,9 @@ public class VlcPlaybackActivity extends Activity {
         if (previous != null) {
             previous.setEventListener(null);
             previous.setVolume(0);
-            previous.stop();
-            previous.detachViews();
-            previous.release();
+            VodNative.retire(previous, previousView, engine, () -> {});
         }
-        if (previousView != null) video.removeView(previousView);
+
         layout.setAlpha(1f);
         ready.setVolume(volume);
         position = Math.max(0, ready.getTime());
@@ -454,8 +464,8 @@ public class VlcPlaybackActivity extends Activity {
         VodSources.Session sources = VodSources.get(getIntent().getStringExtra("vodSession"));
         if (sources != null) vod = new VodPlayback(this, sources);
         armStartupTimeout();
-        // A prepared replacement may have used a TextureView. Recreate the initial film layout
-        // when restarting so VLC never reuses a layout initialized for another output type.
+        // Use an owned TextureView for films and prepared replacements. Its buffer queue can
+        // survive Activity-window destruction while the native decoder stops off main.
         if (filmVideo != null) video.removeView(filmVideo);
         filmVideo = new VLCVideoLayout(this);
         video.addView(filmVideo, new FrameLayout.LayoutParams(-1, -1));
@@ -463,7 +473,7 @@ public class VlcPlaybackActivity extends Activity {
         player = new MediaPlayer(engine);
         player.setRate(playbackRate);
         if (aspect != null) player.setAspectRatio(aspect);
-        player.attachViews(filmVideo, null, false, false);
+        player.attachViews(filmVideo, null, false, true);
         MediaPlayer opened = player;
         player.setEventListener(event -> {
             if (player == opened) onPlayerEvent(event);
@@ -472,7 +482,7 @@ public class VlcPlaybackActivity extends Activity {
         try {
             if (vod != null) mediaUrl = vod.mediaUrl(vod.activeIndex(), url);
         } catch (Exception error) {
-            status.setText("Could not prepare this source's stream headers");
+            showError("Could not prepare this source's stream headers");
             return;
         }
         Media media = new Media(engine, Uri.parse(mediaUrl));
@@ -547,7 +557,7 @@ public class VlcPlaybackActivity extends Activity {
         if (!foreground) return;
         status.setText("Opening source…");
         // Live TV with backups moves on sooner than a film would, after link resolution.
-        overlayHandler.postDelayed(stalled, zapper != null ? 15000 : 45000);
+        overlayHandler.postDelayed(stalled, zapper != null || vod != null ? 15000 : 45000);
     }
 
     /** The player's events: playing, buffering, the end, and errors (which try the other format). */
@@ -598,6 +608,7 @@ public class VlcPlaybackActivity extends Activity {
                 showError("This live stream ended. Try another source or channel.");
                 return;
             }
+            if (vod != null && vod.rejectShortVideo(true)) return;
             ended = true;
             ResumePoint.clear(this, id, titleKey);
             String episode = getIntent().getStringExtra("episodeKey");
@@ -826,11 +837,10 @@ public class VlcPlaybackActivity extends Activity {
             return;
         }
         if (player != null) {
-            player.setEventListener(null);
-            player.stop();
-            player.detachViews();
-            player.release();
+            MediaPlayer retired = player;
             player = null;
+            VodNative.retire(retired, filmVideo, engine, () -> {});
+            filmVideo = null;
         }
         if (engine != null) {
             engine.release();
@@ -849,7 +859,7 @@ public class VlcPlaybackActivity extends Activity {
             // Before playback starts the time is 0; keep the resume point the media opened at.
             if (time > 0) position = time;
             else if (resumeCheck > 0) position = resumeCheck;
-            if (!live) {
+            if (!live && (vod == null || !vod.rejectedMedia())) {
                 long length = player.getLength();
                 boolean completed = ended || ResumePoint.completed(position, length);
                 ResumePoint.save(this, id, titleKey, position, length, completed);

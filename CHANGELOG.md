@@ -1,9 +1,22 @@
 ## Unreleased
+- Audit all 68 free VOD adapters, expose per-provider outcomes, and allow every scheduled provider time to run without extending the three-second initial selection.
+- Reject known free videos shorter than two minutes, recover across free services after manual selection, and retain late backups.
+- Keep failed VOD native shutdown off the UI thread with retained window/engine lifetime; show selected source, Mb/s and received bytes.
+
 
 - Configure player panels before window attachment to stabilize the first input-focus handoff.
 
 - Restore free-stream incoming speed from actual upstream relay bytes; count only the active source.
 - Rank ready VOD by quality aliases and HLS variant resolution, avoid camera recordings, and compare sampled media throughput/response time within equal quality. Keep the three-second window and buffering thresholds.
+
+## Provider compatibility correction — unreleased
+
+- Preserve bodyless POST searches used by Levidia, default request Referer/language,
+  session cookies and redirect methods.
+- Prepare movie/episode lookup titles with the bundled add-on rules and supply original
+  and alternative TMDB titles. Allow 30 seconds per provider within a 300-second
+  background search, preserving three-second initial selection and buffering rules.
+- Add real-provider-path HTTP and title-preparation regressions.
 
 ## Unreleased — progressive free VOD candidate
 
@@ -584,3 +597,12 @@ continuity checks.
 - Accept whole-entity byte-zero requests for wrapped DaddyLive segments and return decoded video bytes instead of rejecting playback.
 
 - Retain a manual or automatic backup and its finite retry history through mini-player/full-screen handoffs, instead of reverting to the primary source on reopening the same channel.
+
+Provider-request read timeouts now honor explicit upstream values within the remaining
+search budget, with an eight-second connection cap. A regression checks a 20-second read
+request and clipping to a five-second remaining budget; cancellation remains bounded.
+
+
+- Keep detached VOD SurfaceTextures alive until asynchronous native shutdown completes,
+  including Activity destruction while switching to Live TV. Retain non-blocking controls
+  and add a real-VLC blocked-stop/window-destruction regression.

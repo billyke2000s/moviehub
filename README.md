@@ -194,3 +194,11 @@ See [provider provenance and licensing](docs/third-party/vod/NOTICE.md).
 ## Free-stream playback information
 
 Free movie and series controls show incoming traffic from the selected source. Automatic selection uses the configured resolution ceiling, manifest resolution where available, camera-recording penalties, and startup transfer evidence among equal-quality results. The selection window remains about three seconds; late results remain backups.
+
+Free movie searches include **Provider search details** with separate outcomes for timeouts, connection failures, unsupported hosts and no matching links. The player shows the selected source and incoming traffic, rejects known videos shorter than two minutes, and can try another free service after a failed manual choice. [Provider inventory and audit](docs/FREE_VOD_AUDIT.md).
+
+
+Free movie/episode searches use bundled provider title normalization and TMDB original/alternative
+titles, preserve session request methods and cookies, and continue collecting backups after the
+three-second initial selection. Remote availability varies; provider details distinguish network,
+HTTP, host-resolution and no-match outcomes.

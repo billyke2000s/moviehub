@@ -40,7 +40,7 @@ public final class FreeVodProviders {
         void ready(String json);
     }
 
-    static void search(
+    static String search(
         Context context,
         String id,
         JSONObject query,
@@ -87,6 +87,6 @@ public final class FreeVodProviders {
                 Diagnostics.recovered("Free source result", error);
             }
         };
-        runtime(context).callAttr("query", id, query.toString(), cancelled, callback);
+        return runtime(context).callAttr("query", id, query.toString(), cancelled, callback).toString();
     }
 }

@@ -405,3 +405,35 @@ requests, adds an external CI availability probe and verifies packaged Python im
 ## VOD incoming-speed correction
 
 The candidate counts incoming upstream relay bytes for free HLS/media-file sources, shows an explicit waiting state instead of blank statistics, and strengthens ready-link ranking. It preserves the three-second selection window and existing failover thresholds. Local fixtures and CI validate code paths; physical-TV validation is outstanding. A startup sample does not guarantee future host performance.
+
+## Free VOD source audit and failure recovery candidate (24 October 2026)
+
+The owner reports mostly empty providers, short error clips, absent speed and crashes on switching services. All 68 module constructors and original package hashes were checked: 59 Scrubs and nine Free99, no missing active files. Confirmed code gaps: discarded provider outcomes, a global deadline shorter than the worst-case worker schedule, manual free-provider pinning, no short-duration rejection and main-thread native shutdown. The candidate addresses these gaps and shows selected source, Mb/s and cumulative incoming bytes. The three-second first choice and existing buffering thresholds remain. See docs/FREE_VOD_AUDIT.md for the per-module inventory. Local live DNS is unavailable; provider availability must be recorded from the independent GitHub audit. Android/emulator validation is pending. No physical-TV crash diagnosis or real-title availability is claimed.
+
+Additional confirmed compatibility defect: the bounded HTTP adapter returned an HTTP status integer in place of request headers in `output="extended"`. The actual WatchSeries provider then passed that integer as headers and swallowed the resulting exception. The adapter now returns the original five fields (body, request headers, response headers, cookies, final URL), without an extra cookie request. Default scrapePage Referer/protocol-relative handling and redirect cookie accumulation also match the upstream contract. A fixture drives the real WatchSeries provider through search, page and host lookup.
+
+
+## Provider request/title compatibility correction (24 October 2026)
+
+Reproduced and fixed bodyless POST becoming GET in the requests adapter, affecting the
+actual Scrubs Levidia search. Added legacy default Referer/language headers, upstream
+movie/episode title preparation and original/alternative TMDB aliases. Providers now have
+30 seconds each and 300 seconds of background search headroom; the three-second initial
+choice and buffering thresholds remain. Seventeen Python tests and 814 core assertions pass
+locally. Android CI and real-provider outcomes remain to be checked on the final commit.
+No Guardians playback or physical-TV success is claimed.
+
+Provider-request read timeouts now honor explicit upstream values within the remaining
+search budget, with an eight-second connection cap. A regression checks a 20-second read
+request and clipping to a five-second remaining budget; cancellation remains bounded.
+
+
+## EGL crash during film-to-Live-TV transition
+
+Provider revision 202ecee passed Android build/lint/signing, core/Python/provider checks,
+but emulator run 40100218911 crashed after 121 passes while the native-channel test closed
+its initial film Activity. The prior asynchronous VOD join retained the Java view/engine
+but could not prevent Android from destroying its SurfaceView buffer queue. Films now
+use retainable TextureViews; VodSurface owns detached textures until native stop and
+detachViews finish. A blocked-stop/Activity-destruction regression verifies this lifetime.
+Full new Android validation is pending; no physical-device fix is claimed.

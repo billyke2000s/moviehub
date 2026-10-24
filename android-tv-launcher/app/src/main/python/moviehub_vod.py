@@ -14,7 +14,8 @@ from pathlib import Path
 _RECORDS = json.loads(Path(__file__).with_name('moviehub_providers.json').read_text())
 _MODULES = {r['id']: r for r in _RECORDS}
 # Keep host selection headless and free-only. Never authorize a cloud service or open a popup.
-_HOSTS = [d for cls in resolveurl.relevant_resolvers(include_universal=False, include_popups=False) for d in cls.domains]
+_HOSTS = sorted({d.lower() for cls in resolveurl.relevant_resolvers(include_universal=False, include_popups=False)
+                 if '*' not in cls.domains for d in cls.domains})
 
 def providers():
     return json.dumps(_RECORDS)
@@ -27,11 +28,12 @@ def validate():
 
 
 def query(provider_id, raw, cancelled, emit=None):
-    client.scope(cancelled.get if hasattr(cancelled, "get") else cancelled, timeout=18, http=json.loads(raw).get('http', False))
+    client.scope(cancelled.get if hasattr(cancelled, "get") else cancelled, timeout=30, http=json.loads(raw).get('http', False))
     info = json.loads(raw)
     record = _MODULES[provider_id]
     # Kodi's local library is not an Internet provider. Its module remains bundled for provenance.
     if record['name'] == 'library': return json.dumps({'status': 'local_library', 'sources': []})
+    if record['name'] == 'filepursuit': return json.dumps({'status': 'requires_api_key', 'sources': []})
     try:
         client.check()
         utils = importlib.import_module('moviehub_'+record['family']+'.source_utils')
@@ -39,17 +41,37 @@ def query(provider_id, raw, cancelled, emit=None):
         provider = importlib.import_module(record['module']).source()
         imdb, tmdb = info.get('imdb', ''), str(info.get('tmdb', ''))
         title, year = info.get('title', ''), str(info.get('year', ''))
-        aliases = [{'title': title, 'country': 'us'}]
-        aliases += [{'title': t, 'country': ''} for t in info.get('aliases', []) if t != title]
+        # Use each add-on's title preparation before constructing its lookup key.
+        clean = importlib.import_module('moviehub_'+record['family']+'.cleantitle')
+        localtitle = info.get('localTitle') or title
+        season, episode = str(info['season']), str(info['episode'])
+        original_title = title
+        if info['season'] < 0:
+            title, imdb, year = clean.scene_title(title, imdb, year)
+        else:
+            title, imdb, year, season, episode = clean.scene_tvtitle(title, imdb, year, season, episode)
+        aliases = []
+        seen_titles = set()
+        for candidate in [title, original_title, localtitle] + info.get('aliases', []):
+            if not isinstance(candidate, str) or not candidate.strip(): continue
+            candidate = candidate.strip()
+            if candidate.casefold() in seen_titles: continue
+            seen_titles.add(candidate.casefold())
+            aliases.append({'title': candidate, 'country': 'us'})
         if info['season'] < 0:
             if not hasattr(provider, 'movie'): return json.dumps({'status':'unsupported_type', 'sources':[]})
-            key = provider.movie(imdb, tmdb, title, title, aliases, year)
+            key = provider.movie(imdb, tmdb, title, localtitle, aliases, year)
         else:
             if not hasattr(provider, 'tvshow'): return json.dumps({'status':'unsupported_type', 'sources':[]})
-            key = provider.tvshow(imdb, tmdb, '', title, title, aliases, year)
+            key = provider.tvshow(imdb, tmdb, '', title, localtitle, aliases, year)
             key = provider.episode(key, imdb, tmdb, '', info.get('episodeTitle',''), info.get('premiered',''),
-                                   str(info['season']), str(info['episode']))
+                                   season, episode)
         candidates = provider.sources(key, list(_HOSTS)) or []
+        client.check()
+        extracted = len(candidates)
+        rejected = 0
+        errors = 0
+        unsupported = 0
         sources=[]; seen=set()
         for item in candidates[:40]:
             client.check()
@@ -57,11 +79,15 @@ def query(provider_id, raw, cancelled, emit=None):
                 url=provider.resolve(item['url'])
                 if not item.get('direct', False):
                     host=resolveurl.HostedMediaFile(url=url, include_universal=False, include_popups=False)
-                    if not host.valid_url(): continue
+                    if not host.valid_url():
+                        unsupported += 1
+                        continue
                     url=host.resolve()
                 if not isinstance(url,str) or url in seen: continue
                 result=playable(url, info.get("maxQuality", 2160))
-                if result is None: continue
+                if result is None:
+                    rejected += 1
+                    continue
                 seen.add(url)
                 result.update({'provider':provider_id, 'providerName':urlparse(provider.base_link).hostname or record['name'], 'quality':result.pop('verifiedQuality', None) or str(item.get('quality','SD')),
                                'info':str(item.get('info','')), 'title': title})
@@ -70,8 +96,13 @@ def query(provider_id, raw, cancelled, emit=None):
             except client.Cancelled:
                 break
             except Exception:
+                errors += 1
                 continue
-        return json.dumps({'status':('complete' if sources else client.failure() or 'no_matches'),'sources':sources})
+        status = ('complete' if sources else client.failure() or
+                  ('rejected_media' if rejected else 'resolution_failed' if errors else
+                   'unsupported_host' if unsupported else 'no_matches'))
+        return json.dumps({'status':status,'sources':sources,'extracted':extracted,
+                           'rejected':rejected,'resolutionErrors':errors,'unsupportedHosts':unsupported})
     except client.Cancelled:
         return json.dumps({'status':'timeout','sources':[]})
     except Exception as error:
@@ -81,6 +112,8 @@ def playable(raw, preferred=2160):
     url, sep, suffix=raw.partition('|')
     client.safe(url)
     headers=dict(parse_qsl(suffix)) if sep else {}
+    original_headers = dict(headers)
+    if not any(k.lower() == 'user-agent' for k in headers): headers['User-Agent'] = client.UserAgent
     allowed={'user-agent','referer','origin','cookie','accept','authorization'}
     if any(k.lower() not in allowed or '\r' in v or '\n' in v for k,v in headers.items()): return None
     # A host page or expired error response must not win the three-second window.
@@ -104,12 +137,17 @@ def playable(raw, preferred=2160):
     elif not kind.startswith(('video/','audio/')):
         known=re.search(r'\.(?:mp4|mkv|webm|avi|ts|mov|m4v)(?:$|/)',path)
         if not known or 'application/octet-stream' not in kind: return None
+    from moviehub_compat.media import duration_seconds
+    duration = duration_seconds(prefix, kind)
+    if duration is not None and 0 < duration < 120: return None
     playlist = '.m3u8' in path or '.mpd' in path or 'mpegurl' in kind or 'dash+xml' in kind
     # A manifest's byte size says nothing about its media throughput. Only compare media samples.
     rate=len(response.content)*8/(elapsed*1000000) if not playlist and len(response.content)>=32768 else 0
+    # Keep header-free DASH native: a loopback URL would change relative MPD base paths.
+    if '.mpd' in path or 'dash+xml' in kind: headers = original_headers
     return {'url':url,'headers':headers,'verifiedQuality':verified,
             'format':'dash' if '.mpd' in path or 'dash+xml' in kind else 'stream',
-            'probeMbps':rate,'responseMs':round(elapsed*1000)}
+            'probeMbps':rate,'responseMs':round(elapsed*1000),'durationSeconds':duration}
 
 # Replace the upstream HTTP fetcher with the bounded transport; retain Net's cookie and UA API.
 from resolveurl.lib.net import Net
