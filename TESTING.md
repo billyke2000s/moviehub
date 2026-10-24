@@ -398,3 +398,5 @@ The live-controls physical-key regression must receive actual window focus for A
 Live-controls physical colour injection uses one down-time identity for both events and drains pending UI work before capturing a replacement dialog. Android Instrumentation’s convenience down/up helper constructs independently timed events, which can look like another press after a window-transfer cancellation. Existing window-focus and old-panel-closure assertions remain required.
 
 The decoded-backup test drains the main-thread handoff before checking the Activity reference. It still requires the same standby decoder to be promoted and the old picture to keep advancing until candidate data is released.
+
+Live-controls wait predicates and dialog snapshots execute on the main thread; the instrumentation thread receives their result through atomics. This keeps window focus checks inside Android’s UI-thread contract.
