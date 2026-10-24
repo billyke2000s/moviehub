@@ -18,11 +18,13 @@ final class VodNative {
             completed.run();
             return;
         }
+        VodSurface surface = VodSurface.retain(view);
         player.setEventListener(null);
         // Activity destruction may release its reference while this native reader is stopping.
         engine.retain();
         LiveNative.stop(player, () -> {
             player.detachViews();
+            if (surface != null) surface.stopped();
             player.release();
             if (view != null && view.getParent() instanceof ViewGroup) (
                 (ViewGroup) view.getParent()

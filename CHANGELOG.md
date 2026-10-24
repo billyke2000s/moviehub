@@ -601,3 +601,8 @@ continuity checks.
 Provider-request read timeouts now honor explicit upstream values within the remaining
 search budget, with an eight-second connection cap. A regression checks a 20-second read
 request and clipping to a five-second remaining budget; cancellation remains bounded.
+
+
+- Keep detached VOD SurfaceTextures alive until asynchronous native shutdown completes,
+  including Activity destruction while switching to Live TV. Retain non-blocking controls
+  and add a real-VLC blocked-stop/window-destruction regression.

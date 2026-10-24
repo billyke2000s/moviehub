@@ -464,8 +464,8 @@ public class VlcPlaybackActivity extends Activity {
         VodSources.Session sources = VodSources.get(getIntent().getStringExtra("vodSession"));
         if (sources != null) vod = new VodPlayback(this, sources);
         armStartupTimeout();
-        // A prepared replacement may have used a TextureView. Recreate the initial film layout
-        // when restarting so VLC never reuses a layout initialized for another output type.
+        // Use an owned TextureView for films and prepared replacements. Its buffer queue can
+        // survive Activity-window destruction while the native decoder stops off main.
         if (filmVideo != null) video.removeView(filmVideo);
         filmVideo = new VLCVideoLayout(this);
         video.addView(filmVideo, new FrameLayout.LayoutParams(-1, -1));
@@ -473,7 +473,7 @@ public class VlcPlaybackActivity extends Activity {
         player = new MediaPlayer(engine);
         player.setRate(playbackRate);
         if (aspect != null) player.setAspectRatio(aspect);
-        player.attachViews(filmVideo, null, false, false);
+        player.attachViews(filmVideo, null, false, true);
         MediaPlayer opened = player;
         player.setEventListener(event -> {
             if (player == opened) onPlayerEvent(event);

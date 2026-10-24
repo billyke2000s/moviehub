@@ -361,3 +361,13 @@ for the eight-worker search; selection still begins after three seconds.
 Provider-request read timeouts now honor explicit upstream values within the remaining
 search budget, with an eight-second connection cap. A regression checks a 20-second read
 request and clipping to a five-second remaining budget; cancellation remains bounded.
+
+
+## VOD window lifetime during asynchronous shutdown
+
+Films use TextureView output, as prepared VOD replacements already do. VodNative installs
+a VodSurface listener before starting the native join. If Android detaches the Activity's
+window first, the listener retains its SurfaceTexture and defers VLC's destruction callback.
+After native stop returns, detachViews closes VLC's output and the retained textures are
+released. An unsuccessful native join keeps the window/engine quarantined. Live TV's
+retained guide/fullscreen output is unchanged.

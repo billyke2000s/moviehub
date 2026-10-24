@@ -420,3 +420,13 @@ must be read from the final PR commit; fixtures do not prove physical-TV availab
 Provider-request read timeouts now honor explicit upstream values within the remaining
 search budget, with an eight-second connection cap. A regression checks a 20-second read
 request and clipping to a five-second remaining budget; cancellation remains bounded.
+
+
+## VOD Activity destruction regression
+
+PlaybackTest.finishingFilmRetainsDetachedTextureUntilNativeStopCompletes plays real VLC
+video, blocks its native stop, finishes/destroys the Activity and verifies the detached
+SurfaceTexture remains unreleased. Unblocking stop must release it. The full suite also
+retains the film-to-native-Live-TV cancellation test that exposed the EGL crash.
+The previous final run failed after 121 passes with SIGSEGV in EGL swapBuffers; this
+regression and its correction require a new full emulator result.

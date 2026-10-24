@@ -426,3 +426,14 @@ No Guardians playback or physical-TV success is claimed.
 Provider-request read timeouts now honor explicit upstream values within the remaining
 search budget, with an eight-second connection cap. A regression checks a 20-second read
 request and clipping to a five-second remaining budget; cancellation remains bounded.
+
+
+## EGL crash during film-to-Live-TV transition
+
+Provider revision 202ecee passed Android build/lint/signing, core/Python/provider checks,
+but emulator run 40100218911 crashed after 121 passes while the native-channel test closed
+its initial film Activity. The prior asynchronous VOD join retained the Java view/engine
+but could not prevent Android from destroying its SurfaceView buffer queue. Films now
+use retainable TextureViews; VodSurface owns detached textures until native stop and
+detachViews finish. A blocked-stop/Activity-destruction regression verifies this lifetime.
+Full new Android validation is pending; no physical-device fix is claimed.

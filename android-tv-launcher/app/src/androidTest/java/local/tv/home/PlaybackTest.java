@@ -486,6 +486,47 @@ public class PlaybackTest {
     }
 
     @Test
+    public void finishingFilmRetainsDetachedTextureUntilNativeStopCompletes() throws Exception {
+        await(() -> player() != null && player().isPlaying() && player().getTime() > 500, 30000);
+        MediaPlayer original = player();
+        android.graphics.SurfaceTexture[] surface = new android.graphics.SurfaceTexture[1];
+        TextureView[] texture = new TextureView[1];
+        instrumentation.runOnMainSync(() -> {
+            texture[0] = VodSurface.texture(activity.video);
+            assertNotNull("The film needs an independently retained texture", texture[0]);
+            surface[0] = texture[0].getSurfaceTexture();
+            assertNotNull(surface[0]);
+        });
+        var entered = new java.util.concurrent.CountDownLatch(1);
+        var release = new java.util.concurrent.CountDownLatch(1);
+        var stopped = new java.util.concurrent.atomic.AtomicBoolean();
+        LiveNative.testStopper = retired -> {
+            if (retired == original) {
+                entered.countDown();
+                try {
+                    release.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (InterruptedException error) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            retired.stop();
+            if (retired == original) stopped.set(true);
+        };
+        try {
+            instrumentation.runOnMainSync(activity::finish);
+            assertTrue(entered.await(5, java.util.concurrent.TimeUnit.SECONDS));
+            await(() -> activity.isDestroyed() && !texture[0].isAttachedToWindow(), 5000);
+            assertFalse("The decoder still owns the detached buffer queue", surface[0].isReleased());
+            assertFalse("The native join is still deliberately blocked", stopped.get());
+            release.countDown();
+            await(() -> stopped.get() && surface[0].isReleased(), 10000);
+        } finally {
+            release.countDown();
+            LiveNative.testStopper = null;
+        }
+    }
+
+    @Test
     public void failedVodNativeStopKeepsControlsResponsiveUntilShutdownCompletes() throws Exception {
         VodSources.Session session = new VodSources.Session(
             vodEntries(),

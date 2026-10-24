@@ -174,3 +174,8 @@ Ready-source validation requests at most 64 KiB of response data through the exi
 ## Free VOD failure diagnostics
 
 Per-provider reports expose fixed summaries, counts and module IDs; they never include playback URLs, headers, cookies, website bodies or exception messages. Bounded media probes reject declared sub-two-minute error clips; decoder-side checks cover formats whose metadata was unavailable in the probe. This is not content authentication. Native VOD shutdown retains its engine and video window until the native reader stops; failed stops are quarantined by the existing coordinator instead of destroying an in-use window.
+
+
+VOD native shutdown retains detached texture buffer queues and the LibVLC engine until
+the reader and output have stopped. A failed native join quarantines these resources
+instead of releasing a surface that native code may still access.
