@@ -397,7 +397,7 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
         } else if (dock.refreshAppsOnResume) {
             dock.refreshAppsOnResume = false;
             appsScreen.refresh();
-        } else if (resumeRefresh != null) {
+        } else if (resumeRefresh != null && (stage == null || !stage.full())) {
             Runnable refresh = resumeRefresh;
             resumeRefresh = null;
             refresh.run();

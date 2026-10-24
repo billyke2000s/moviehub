@@ -266,13 +266,25 @@ public final class ExoLiveTest {
         await(() -> !ExoLive.isPlaying());
         remote.runOnMainSync(ExoLive::resume);
         picturesAdvance();
+        AtomicInteger guideRefreshes = new AtomicInteger();
         remote.runOnMainSync(() -> {
-            activity.stage.stopped();
-            assertNull(ExoLive.player());
-            assertNull(ExoLive.picture());
-            activity.stage.started();
+            activity.resumeRefresh = guideRefreshes::incrementAndGet;
+            assertTrue(activity.moveTaskToBack(true));
         });
-        await(() -> ExoLive.isPlaying() && rendered() > 5);
+        await(() -> ExoLive.player() == null && !activity.hasWindowFocus());
+        remote.runOnMainSync(() -> {
+            assertNull(ExoLive.picture());
+            remote
+                .getTargetContext()
+                .startActivity(
+                    new Intent(remote.getTargetContext(), MainActivity.class).addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                    )
+                );
+        });
+        await(() -> activity.hasWindowFocus() && ExoLive.isPlaying() && rendered() > 5);
+        remote.runOnMainSync(() -> assertTrue(activity.stage.full()));
+        assertEquals("Foreground return must not run the deferred guide navigation", 0, guideRefreshes.get());
         remote.runOnMainSync(() -> activity.finish());
         await(() -> activity.isDestroyed());
         remote.runOnMainSync(() -> {
