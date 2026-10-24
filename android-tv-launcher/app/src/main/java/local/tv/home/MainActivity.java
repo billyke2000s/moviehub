@@ -570,10 +570,7 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
         }
         try {
             startActivity(
-                new Intent(
-                    this,
-                    live && ExoLive.available() ? ExoLiveActivity.class : VlcPlaybackActivity.class
-                )
+                new Intent(this, VlcPlaybackActivity.class)
                     .putExtra("title", title)
                     .putExtra("url", safe)
                     .putExtra("id", id)
