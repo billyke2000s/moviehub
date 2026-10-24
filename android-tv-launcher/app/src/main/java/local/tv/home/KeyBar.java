@@ -95,7 +95,8 @@ final class KeyBar {
     /** Route hardware colours independently of which guide widget currently owns focus. */
     boolean handle(KeyEvent event) {
         int code = event.getKeyCode();
-        char colour = LiveTvScreen.colour(activity.prefs, code);
+        // The event form also recognises standard and learned scan codes, as the player does.
+        char colour = LiveTvScreen.colour(activity.prefs, event);
         int at = colour == 'r' ? 0 : colour == 'g' ? 1 : colour == 'y' ? 2 : colour == 'b' ? 3 : -1;
         if (at >= 0 && at < actions.size()) {
             if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) actions

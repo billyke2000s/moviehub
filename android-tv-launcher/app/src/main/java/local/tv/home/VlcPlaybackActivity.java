@@ -305,7 +305,34 @@ public class VlcPlaybackActivity extends Activity {
                 revealControls();
             }
         }
+        if (live) showUnusedButton(event);
         return super.dispatchKeyEvent(event);
+    }
+
+    /**
+     * Live TV: names a remote button MovieHub does not use, so a remote whose colour buttons send
+     * unexpected codes can be identified (and taught in "Set up coloured buttons").
+     */
+    private void showUnusedButton(KeyEvent event) {
+        if (event.getAction() != KeyEvent.ACTION_DOWN || event.getRepeatCount() != 0) return;
+        int key = event.getKeyCode();
+        if (
+            key == KeyEvent.KEYCODE_VOLUME_UP ||
+            key == KeyEvent.KEYCODE_VOLUME_DOWN ||
+            key == KeyEvent.KEYCODE_VOLUME_MUTE ||
+            key == KeyEvent.KEYCODE_MUTE ||
+            key == KeyEvent.KEYCODE_HOME ||
+            key == KeyEvent.KEYCODE_POWER ||
+            key == KeyEvent.KEYCODE_APP_SWITCH ||
+            key == KeyEvent.KEYCODE_SEARCH ||
+            key == KeyEvent.KEYCODE_VOICE_ASSIST ||
+            key == KeyEvent.KEYCODE_ASSIST
+        ) return;
+        Toast.makeText(
+            this,
+            "Button not used: " + KeyEvent.keyCodeToString(key) + " (scan " + event.getScanCode() + ")",
+            Toast.LENGTH_SHORT
+        ).show();
     }
 
     @Override
@@ -363,7 +390,9 @@ public class VlcPlaybackActivity extends Activity {
             controls.setVisibility(View.GONE);
         }
         root.setOnClickListener(v -> {
+            // An air mouse's OK arrives as a click on the picture: same overlay as the OK key.
             if (zapper != null && zapper.touch) zapper.tapped();
+            else if (zapper != null) zapper.ok();
             else revealControls();
         });
         setContentView(root);

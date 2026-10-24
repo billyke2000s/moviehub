@@ -407,12 +407,13 @@ final class LiveZapper {
         });
     }
 
-    /** SELECT while browsing: watch the channel shown (or just close the banner on this one). */
+    /** SELECT while browsing: watch the channel shown, or show this channel's full overlay. */
     void browseSelect() {
         int position = browsePosition;
         boolean other = browseRow != null && position != own.position;
         endBrowse();
         if (other) tune(position);
+        else ok();
     }
 
     void endBrowse() {
@@ -638,7 +639,8 @@ final class LiveZapper {
      * <ul>
      *   <li>▲ ▼, CH+ CH-: change channel (in the banner while browsing: other channels).
      *   <li>◀ ▶: browse what is on, without changing channel; SELECT watches the channel shown.
-     *   <li>SELECT: reveal/refresh the same banner. Numbers, last channel, GUIDE.
+     *   <li>SELECT: the same full banner, every time (a revealed and focused banner button is
+     *       pressed instead). Numbers, last channel, GUIDE.
      *   <li>i (or yellow): programme information. Red: audio and subtitles. Green: source.
      *       Blue (or MENU): options.
      *   <li>BACK: closes what is open; then back to the guide, whose picture carries on.
@@ -671,7 +673,12 @@ final class LiveZapper {
             // With the controls revealed (BACK), ◀ ▶ move between the banner's buttons instead.
             if (backControls && overlay.bannerShowing()) {
                 if (down) overlay.moveControl(key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
-            } else if (first) browse(0, key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : 0);
+            } else if (first) {
+                // ▶ browses later programmes. ◀ has nothing earlier to show, so it shows the
+                // normal banner rather than the reduced browsing layout.
+                if (key == KeyEvent.KEYCODE_DPAD_RIGHT) browse(0, 1);
+                else showBanner();
+            }
             return true;
         }
         boolean up =
@@ -692,11 +699,9 @@ final class LiveZapper {
         }
         boolean handled = true;
         if (select) {
-            if (first) {
-                if (backControls) {
-                    if (!overlay.pressControl()) player.menus.chooseSource();
-                } else showBanner();
-            }
+            // OK presses a banner button only when BACK has revealed them and one has the focus.
+            // Otherwise it always shows the same full overlay.
+            if (first && (!backControls || !overlay.bannerShowing() || !overlay.pressControl())) ok();
         } else if (key == KeyEvent.KEYCODE_INFO || key == KeyEvent.KEYCODE_MENU) {
             if (first) colour(key == KeyEvent.KEYCODE_INFO ? 'y' : 'b');
         } else if (key == KeyEvent.KEYCODE_LAST_CHANNEL) {
@@ -720,6 +725,19 @@ final class LiveZapper {
                 event.isCanceled()
             )
         ) action.accept(colour);
+        else if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+            // A fresh press was recognised but not acted on: say so, so it is never silent.
+            Diagnostics.recovered("Colour press ignored", new IllegalStateException(String.valueOf(colour)));
+            Toast.makeText(
+                player,
+                "Colour button " +
+                    colour +
+                    " recognised but ignored (" +
+                    KeyEvent.keyCodeToString(event.getKeyCode()) +
+                    ")",
+                Toast.LENGTH_SHORT
+            ).show();
+        }
         return true;
     }
 
@@ -735,6 +753,14 @@ final class LiveZapper {
     void information() {
         if (!overlay.bannerShowing()) showBanner();
         showInfo();
+    }
+
+    /**
+     * OK, or a click on the picture: always the same full channel banner (number, name, clock,
+     * sources, now and next when the channel has listings, and the colour keys).
+     */
+    void ok() {
+        showBanner();
     }
 
     /** A tap on the picture (phone layout): shows the banner and its buttons, or hides them. */

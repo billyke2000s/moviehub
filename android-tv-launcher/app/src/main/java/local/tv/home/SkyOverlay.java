@@ -162,7 +162,6 @@ final class SkyOverlay {
         colourKey(BLUE, "Options", () -> a.menus.liveOptions());
         // No coloured buttons on the remote: BACK reveals these as buttons to pick with ◀ ▶.
         TextView noColours = label(15, true, SOFT);
-        noColours.setText("·  No colour buttons? BACK, then ◀ ▶");
         content.addView(keys);
         noColours.setText("No colour buttons? BACK, then ◀ ▶ and OK");
         content.addView(noColours);

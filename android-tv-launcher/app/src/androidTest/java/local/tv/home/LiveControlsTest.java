@@ -474,11 +474,13 @@ public final class LiveControlsTest {
             remote.waitForIdleSync();
             assertNull("OK refreshes the banner rather than opening Options", SidePanel.current);
             assertTrue(activity.zapper.overlay.bannerShowing());
+            assertFalse("OK shows only the banner", activity.zapper.overlay.infoShowing());
         }
         remote.runOnMainSync(() -> {
             activity.zapper.overlay.hideBanner();
             ((android.view.View) activity.video.getParent()).performClick();
             assertTrue("Click uses the same live banner", activity.zapper.overlay.bannerShowing());
+            assertFalse("Click matches OK", activity.zapper.overlay.infoShowing());
         });
         remote.waitForIdleSync();
         SystemClock.sleep(250);
@@ -497,6 +499,78 @@ public final class LiveControlsTest {
             assertEquals(android.view.View.GONE, activity.controls.getVisibility());
         });
         UiEvidence.capture("live-entry-ok-click-back-one-banner");
+    }
+
+    @Test
+    public void leftAndOkNeverSwitchToADifferentOverlay() {
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            assertFalse("◀ does not open the reduced browsing layout", activity.zapper.browsing());
+            assertTrue(activity.zapper.overlay.bannerShowing());
+        });
+        // Browsing, then OK on the same channel: the full banner rather than closing it.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        await(activity.zapper::browsing);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
+        remote.waitForIdleSync();
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            assertFalse(activity.zapper.browsing());
+            assertTrue(activity.zapper.overlay.bannerShowing());
+            assertFalse(activity.zapper.overlay.infoShowing());
+            assertNull(SidePanel.current);
+        });
+        // With the controls revealed but none focused, OK still shows the banner.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            activity.video.requestFocus();
+            assertEquals(-1, activity.zapper.overlay.focusedControl());
+        });
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            assertNull("Unfocused OK does not open Sources", SidePanel.current);
+            assertTrue(activity.zapper.overlay.bannerShowing());
+        });
+    }
+
+    @Test
+    public void learnedScanCodeColourWorksInThePlayer() {
+        android.content.SharedPreferences prefs = activity.getSharedPreferences("ui", 0);
+        java.util.Map<String, ?> previous = prefs.getAll();
+        try {
+            prefs.edit().putInt("remoteRedScan", 250).commit();
+            assertEquals(
+                'r',
+                LiveTvScreen.colour(
+                    prefs,
+                    remoteEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_UNKNOWN, 250, 0, 700)
+                )
+            );
+            assertEquals(
+                "An unlearned unknown button is not a colour",
+                (char) 0,
+                LiveTvScreen.colour(
+                    prefs,
+                    remoteEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_UNKNOWN, 251, 0, 701)
+                )
+            );
+            playerKey(remoteEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_UNKNOWN, 250, 0, 702));
+            android.app.Dialog audio = currentPanel();
+            assertNotNull("A learned scan code opens red's panel", audio);
+            assertTrue(containsText(audio.getWindow().getDecorView(), "Audio & Subtitles"));
+            playerKey(remoteEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_UNKNOWN, 250, 0, 702));
+        } finally {
+            android.content.SharedPreferences.Editor edit = prefs.edit();
+            for (String key : LiveTvScreen.COLOUR_SCAN_PREFS) {
+                if (previous.containsKey(key)) edit.putInt(key, (Integer) previous.get(key));
+                else edit.remove(key);
+            }
+            edit.commit();
+        }
     }
 
     private KeyEvent remoteEvent(int action, int key, int scan, int repeat, long pressTime) {

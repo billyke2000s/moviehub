@@ -548,6 +548,16 @@ final class LiveTvScreen {
 
     /** Remote colour-key preferences, set by "Set up coloured buttons". */
     static final String[] COLOUR_PREFS = { "remoteRed", "remoteGreen", "remoteYellow", "remoteBlue" };
+    /**
+     * Learned scan codes, for remotes whose colour buttons Android has no key name for (they
+     * arrive as KEYCODE_UNKNOWN, so only the scan code tells them apart).
+     */
+    static final String[] COLOUR_SCAN_PREFS = {
+        "remoteRedScan",
+        "remoteGreenScan",
+        "remoteYellowScan",
+        "remoteBlueScan",
+    };
     static final char[] COLOURS = { 'r', 'g', 'y', 'b' };
 
     /**
@@ -563,9 +573,13 @@ final class LiveTvScreen {
         int scan = event.getScanCode();
         // Android TV Generic.kl maps Linux KEY_RED/GREEN/YELLOW/BLUE (398–401) to PROG_*.
         // Retain those standard identities when firmware leaves the translated key unknown.
-        if (event.getKeyCode() == KeyEvent.KEYCODE_UNKNOWN && scan >= 398 && scan <= 401) return COLOURS[
-            scan - 398
-        ];
+        if (event.getKeyCode() == KeyEvent.KEYCODE_UNKNOWN) {
+            if (scan >= 398 && scan <= 401) return COLOURS[scan - 398];
+            if (scan > 0) for (int i = 0; i < 4; i++) if (
+                prefs.getInt(COLOUR_SCAN_PREFS[i], -1) == scan
+            ) return COLOURS[i];
+            return 0;
+        }
         return colour(prefs, event.getKeyCode());
     }
 
