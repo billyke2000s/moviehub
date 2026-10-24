@@ -34,7 +34,7 @@ public final class ExoLiveTest {
     private byte[] media;
     private final AtomicInteger opens = new AtomicInteger();
     private final AtomicInteger slowRequests = new AtomicInteger();
-    private boolean oldHttp;
+    private boolean oldHttp, oldAutoUpdates;
 
     private String link(String path) {
         return "http://127.0.0.1:" + server.getLocalPort() + path;
@@ -48,7 +48,8 @@ public final class ExoLiveTest {
             if (done[0]) return;
             SystemClock.sleep(25);
         } while (SystemClock.elapsedRealtime() < until);
-        fail("Experimental player timed out");
+        UiEvidence.capture("experimental-timeout");
+        fail("Experimental player timed out; focus=" + (activity != null && activity.hasWindowFocus()));
     }
 
     @Before
@@ -56,6 +57,8 @@ public final class ExoLiveTest {
         Context context = remote.getTargetContext();
         assertEquals("local.tv.home.experimental", context.getPackageName());
         oldHttp = context.getSharedPreferences("ui", 0).getBoolean("http", false);
+        oldAutoUpdates = context.getSharedPreferences("ui", 0).getBoolean("autoUpdates", true);
+        context.getSharedPreferences("ui", 0).edit().putBoolean("autoUpdates", false).commit();
         context.getSharedPreferences("ui", 0).edit().putBoolean("http", true).commit();
         try (InputStream in = remote.getContext().getAssets().open("playback.ts")) {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
