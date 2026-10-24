@@ -457,3 +457,12 @@ rendering yet); no prepared standby backup. Built in CI only; not yet run on the
 exp-2 candidate: one-screen Live TV (`LiveStage`) replaces the separate ExoPlayer full-screen
 Activity. Same guide and banner code. Not yet compiled at the time of writing; not run on a TV.
 
+
+## Experimental release follow-up (25 October 2026)
+
+The published exp-3 predates the latest OK/banner changes. This candidate cancels stale engine
+and screen retries, cancels abandoned resolution, and releases the static Media3 player/view
+on stop. A dedicated experimental emulator suite now covers actual Media3 playback, picture
+continuity, 404 retry cancellation, lifecycle and HLS tracks. Results must be checked on the
+final CI commit before publishing exp-4. No physical-TV or real-provider success is claimed.
+Frozen-picture detection remains diagnostic, preserving the experimental comparison behaviour.

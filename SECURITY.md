@@ -179,3 +179,10 @@ Per-provider reports expose fixed summaries, counts and module IDs; they never i
 VOD native shutdown retains detached texture buffer queues and the LibVLC engine until
 the reader and output have stopped. A failed native join quarantines these resources
 instead of releasing a surface that native code may still access.
+
+### Experimental player lifetime
+
+Leaving experimental playback cancels pending network resolution/retries and releases the
+player and Activity-backed view. Late resolver results cannot adopt a relay after cancellation.
+The experimental instrumentation suite uses only loopback fixture media and contains no
+provider credentials. Experimental releases retain their separate package and update feed.

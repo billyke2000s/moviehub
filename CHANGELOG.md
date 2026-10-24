@@ -1,4 +1,7 @@
 ## Unreleased
+- Experimental: cancel stale channel retries/resolution and release the Media3 player/view on stop.
+- Experimental: retain the latest OK/banner changes and add a dedicated ExoPlayer emulator suite
+  for guide/fullscreen video, failed sources, screen lifetime and audio/subtitle tracks.
 - Audit all 68 free VOD adapters, expose per-provider outcomes, and allow every scheduled provider time to run without extending the three-second initial selection.
 - Reject known free videos shorter than two minutes, recover across free services after manual selection, and retain late backups.
 - Keep failed VOD native shutdown off the UI thread with retained window/engine lifetime; show selected source, Mb/s and received bytes.

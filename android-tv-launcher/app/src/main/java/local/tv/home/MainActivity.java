@@ -414,6 +414,7 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
 
     @Override
     public void onDestroy() {
+        if (stage != null) stage.destroyed();
         SidePanel.closeFor(this);
         try {
             unregisterReceiver(packageChanges);

@@ -389,3 +389,13 @@ channel changing are the same `SkyOverlay` and `LiveZapper`, through the `LiveSc
 audio, Sources and Options panels. Link lookup still goes through `LiveStream.resolve`
 unchanged. Recovery: behind-live-window rejoins; other errors and 15 s stalls reopen the channel at
 most twice, then `LiveZapper.failover` moves to a backup copy.
+
+### Experimental retry and screen lifetime
+
+ExoLive cancels its delayed reopen and its cancellable NativeHttp/Future resolution on every
+new open and stop. Generation checks discard late results and close unused relays. Stopping
+detaches PlayerView, releases ExoPlayer and drops static view/owner/listener references and
+frame polling. LiveStage cancels screen timers in the background and on each new selection;
+a full-screen return creates a fresh player. Destroying MainActivity disposes the stage.
+Exhausted-channel retries wait for the new attempt to fail before starting another cycle.
+Freeze observations remain diagnostic, with no automatic repair.
