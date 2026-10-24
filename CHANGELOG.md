@@ -33,6 +33,7 @@
 
 ## Unreleased
 
+- Live TV: the banner's Sources label names the copy actually playing when full screen opens, instead of assuming the first copy before the player reports its link.
 - Live TV: the banner always draws its buttons boxed, as after BACK, whether it opened from OK, a channel change or BACK. ◀ ▶ move between the buttons and OK presses the highlighted one; with none highlighted, OK shows the banner. The separate browsing layout is gone.
 - Build switch for a separate MovieHub Experimental app (own package, data and update feed) and a manual workflow to publish it. Normal builds are unchanged.
 - Live TV: OK (and an air-mouse click on the picture) always shows the same full channel banner. OK while browsing the current channel, and OK with the banner buttons revealed but none focused, show that banner instead of closing it or opening Sources. ◀ no longer opens the reduced browsing layout.

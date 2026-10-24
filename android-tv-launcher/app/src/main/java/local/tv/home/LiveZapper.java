@@ -266,7 +266,9 @@ final class LiveZapper {
         int ticket = ++request;
         Session s = own;
         String launchKey = current ? ChannelQuery.key(player.playbackUrl()) : null;
-        String activeUrl = current ? LivePlayer.currentUrl() : null;
+        // The copy playing is the one the engine reports or, before it reports one, the one this
+        // screen was opened with. Never assume the first copy (that mislabelled the source).
+        String activeUrl = current ? playingUrl() : null;
         String activeKey = activeUrl == null ? null : ChannelQuery.key(activeUrl);
         boolean activeAutomatic = LivePlayer.automaticSources;
         Set<String> activeAttempts = new HashSet<>(LivePlayer.attemptedSources);
@@ -505,9 +507,15 @@ final class LiveZapper {
         return true;
     }
 
+    /** The link playing now: the live engine's, else the one this screen was opened with. */
+    private String playingUrl() {
+        String engine = LivePlayer.currentUrl();
+        return engine != null ? engine : player.playbackUrl();
+    }
+
     /** Promotion changed the shared player, without calling switchTo or resolving again. */
     void sourceReplaced() {
-        String current = LivePlayer.currentUrl();
+        String current = playingUrl();
         if (current == null) return;
         String key = ChannelQuery.key(current);
         for (int i = 0; i < copies.size(); i++) {
