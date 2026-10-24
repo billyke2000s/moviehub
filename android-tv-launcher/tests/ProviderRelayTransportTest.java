@@ -105,6 +105,64 @@ public final class ProviderRelayTransportTest {
         } finally {
             ProviderRelay.testConnections = null;
         }
-        System.out.println("4 real TCP wrapped-segment range checks passed");
+        byte[] movie = "fixture-mp4-payload".getBytes(StandardCharsets.US_ASCII);
+        ProviderRelay.testConnections = uri ->
+            new HttpURLConnection(uri.toURL()) {
+                public void connect() {}
+
+                public void disconnect() {}
+
+                public boolean usingProxy() {
+                    return false;
+                }
+
+                public int getResponseCode() {
+                    return 206;
+                }
+
+                public InputStream getInputStream() {
+                    return new ByteArrayInputStream(movie);
+                }
+
+                public String getContentType() {
+                    return "video/mp4";
+                }
+
+                public long getContentLengthLong() {
+                    return movie.length;
+                }
+
+                public String getHeaderField(String name) {
+                    if (name.equalsIgnoreCase("Content-Range")) return "bytes 0-18/19";
+                    if (name.equalsIgnoreCase("Accept-Ranges")) return "bytes";
+                    return null;
+                }
+            };
+        EngineSources.Stream file = new EngineSources.Stream(
+            new JSONObject().put("url", "https://8.8.8.8/movie.mp4").put("headers", new JSONObject())
+        );
+        try (ProviderRelay relay = new ProviderRelay(file)) {
+            if (relay.url.endsWith(".m3u8")) throw new AssertionError("File advertised as HLS");
+            HttpURLConnection c = (HttpURLConnection) new URL(relay.url).openConnection();
+            c.setRequestProperty("Range", "bytes=0-");
+            c.setReadTimeout(5000);
+            try (InputStream input = c.getInputStream()) {
+                if (
+                    c.getContentLengthLong() != movie.length ||
+                    !"bytes".equals(c.getHeaderField("Accept-Ranges"))
+                ) throw new AssertionError("File seek headers lost");
+                if (!Arrays.equals(movie, input.readAllBytes())) throw new AssertionError(
+                    "File payload changed"
+                );
+                if (relay.incomingBytes() != movie.length) throw new AssertionError(
+                    "Incoming file bytes miscounted"
+                );
+            } finally {
+                c.disconnect();
+            }
+        } finally {
+            ProviderRelay.testConnections = null;
+        }
+        System.out.println("8 real TCP file and wrapped-segment range checks passed");
     }
 }

@@ -273,7 +273,9 @@ public class PlaybackTest {
             assertTrue(activity.vod.incomingMbps() >= 0);
             assertTrue(player().isPlaying());
             assertEquals("No blind source switch", 0, activity.vod.activeIndex());
+            player().setTime(8000);
         });
+        await(() -> player().getTime() >= 6000, 10000);
     }
 
     @Test
