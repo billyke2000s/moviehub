@@ -67,6 +67,16 @@ jobs:
           name: android-launcher-diagnostics
           path: android-tv-launcher/app/build/reports/
           if-no-files-found: ignore
+      - name: Build the separate MovieHub Experimental app
+        run: |
+          gradle -p android-tv-launcher --no-daemon -Pexperimental assembleDebug
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk | head -1 | grep -q "name='local.tv.home.experimental'"
+      - name: Upload installable experimental debug APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: moviehub-experimental-debug-apk
+          path: android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
 
   device-tests:
     runs-on: ubuntu-latest

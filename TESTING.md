@@ -430,3 +430,10 @@ SurfaceTexture remains unreleased. Unblocking stop must release it. The full sui
 retains the film-to-native-Live-TV cancellation test that exposed the EGL crash.
 The previous final run failed after 121 passes with SIGSEGV in EGL swapBuffers; this
 regression and its correction require a new full emulator result.
+
+## Experimental app
+
+CI's `apk` job also compiles MovieHub Experimental (`-Pexperimental assembleDebug`) and checks its
+package name. Device tests run on the normal build only; the experimental ExoPlayer path is
+checked on the owner's TV.
+

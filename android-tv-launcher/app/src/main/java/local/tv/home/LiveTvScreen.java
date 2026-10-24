@@ -389,7 +389,7 @@ final class LiveTvScreen {
     private void play(ChannelDatabase.Row channel, int position) {
         String listFilter = filter,
             listSearch = search;
-        String activeUrl = LivePlayer.currentUrl();
+        String activeUrl = ExoLive.available() ? ExoLive.currentUrl() : LivePlayer.currentUrl();
         String activeKey = activeUrl == null ? null : ChannelQuery.key(activeUrl);
         activity.async(
             () -> {

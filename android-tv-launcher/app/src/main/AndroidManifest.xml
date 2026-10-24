@@ -20,6 +20,8 @@
     <service android:name=".ProviderService" android:process=":providers" android:isolatedProcess="true" android:exported="false"/>
     <provider android:name=".UpdateApkProvider" android:authorities="${applicationId}.updates" android:exported="false" android:grantUriPermissions="true"/>
     <activity android:name=".VlcPlaybackActivity" android:exported="false" android:screenOrientation="landscape"/>
+    <!-- MovieHub Experimental only: Live TV on ExoPlayer (never opened by normal builds). -->
+    <activity android:name=".ExoLiveActivity" android:exported="false" android:screenOrientation="landscape"/>
     <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="landscape" android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>

@@ -447,3 +447,10 @@ The owner wants OK to always show the most detailed overlay, and reports that th
 
 Owner photographs on 0.56 showed the banner with unboxed buttons (OK/channel change), with boxed buttons (after BACK, the look the owner wants) and once with the channel header strip missing. The banner now always boxes its buttons and ◀ ▶ move between them; the browsing layout is removed. The missing header strip is still unexplained: the strip has a fixed reserved height, and no app code hides it or draws over it. Its trigger on the owner's TV is unknown.
 
+## Experimental ExoPlayer Live TV (24 October 2026)
+
+At the owner's request, Live TV on Media3 ExoPlayer is being built as a separate MovieHub
+Experimental app, keeping the normal app on LibVLC. First version: same guide and banner, ExoPlayer
+shared between the guide picture and the full screen. Audio track choice only (no subtitle
+rendering yet); no prepared standby backup. Built in CI only; not yet run on the owner's TV.
+

@@ -38,10 +38,11 @@ final class GuidePicture {
             return;
         }
         // Take over at once (before the full-screen player stops), so the stream never pauses.
-        boolean carryOn = LivePlayer.active();
+        boolean carryOn = ExoLive.available() ? ExoLive.active() : LivePlayer.active();
         if (carryOn) {
             attach(activity, holder);
-            LivePlayer.resume();
+            if (ExoLive.available()) ExoLive.resume();
+            else LivePlayer.resume();
             playing = carryOn;
         } else removeVideo();
         String key = activity.prefs.getString(LiveTvScreen.LAST_CHANNEL, "");
@@ -93,13 +94,15 @@ final class GuidePicture {
 
     @SuppressWarnings("unchecked")
     private void configureBackups(Context context, Object[] result) {
+        if (ExoLive.available()) return; // the experimental engine prepares no standby player
         LivePlayer.backups(context, (java.util.List<ChannelDatabase.Row>) result[2]);
     }
 
     /** Plays {@code url} in {@code holder} on the shared live player. */
     void start(Context context, FrameLayout holder, String url) {
         try {
-            LivePlayer.play(context, url, PlayerOptions.live(context), false);
+            if (ExoLive.available()) ExoLive.play(context, url, false);
+            else LivePlayer.play(context, url, PlayerOptions.live(context), false);
             attach(context, holder);
         } catch (RuntimeException e) {
             Diagnostics.recovered("Starting the guide picture", e);
@@ -113,6 +116,10 @@ final class GuidePicture {
             video = new FrameLayout(context);
             holder.addView(video, 0, new FrameLayout.LayoutParams(-1, -1));
         }
+        if (ExoLive.available()) {
+            attachExo(context);
+            return;
+        }
         LivePlayer.attach(this, video, this::event, () -> playing = false, null, () -> playing = true);
     }
 
@@ -123,10 +130,40 @@ final class GuidePicture {
         ) playing = false;
     }
 
+    /** Experimental builds: the shared ExoPlayer draws on a surface in this box. */
+    private void attachExo(Context context) {
+        android.view.SurfaceView surface = null;
+        if (video.getChildCount() > 0 && video.getChildAt(0) instanceof android.view.SurfaceView) {
+            surface = (android.view.SurfaceView) video.getChildAt(0);
+        } else {
+            surface = new android.view.SurfaceView(context);
+            video.addView(surface, new FrameLayout.LayoutParams(-1, -1));
+        }
+        ExoLive.attach(
+            this,
+            surface,
+            new ExoLive.Listener() {
+                @Override
+                public void playing() {
+                    playing = true;
+                }
+
+                @Override
+                public void buffering(boolean buffering) {}
+
+                @Override
+                public void failed(String reason) {
+                    playing = false;
+                }
+            }
+        );
+    }
+
     /** The guide closed: stops the live player unless the full screen has taken it over. */
     void stop() {
         playing = false;
-        LivePlayer.stopIfOwner(this);
+        if (ExoLive.available()) ExoLive.stopIfOwner(this);
+        else LivePlayer.stopIfOwner(this);
         removeVideo();
     }
 

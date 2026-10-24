@@ -18,6 +18,8 @@ android {
         buildConfigField 'boolean', 'EXPERIMENTAL', experimental ? 'true' : 'false'
     }
     buildFeatures { buildConfig true }
+    // The Live TV engine: ExoPlayer only in the experimental build, a stub otherwise (see ExoLive).
+    sourceSets { main { java.srcDirs += experimental ? 'src/experimental/java' : 'src/stable/java' } }
     signingConfigs {
         release {
             if (System.getenv('APK_KEYSTORE')) {
@@ -32,6 +34,10 @@ android {
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 dependencies {
+    if (experimental) {
+        implementation 'androidx.media3:media3-exoplayer:1.5.1'
+        implementation 'androidx.media3:media3-exoplayer-hls:1.5.1'
+    }
     implementation 'org.mozilla:rhino:1.9.1'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'

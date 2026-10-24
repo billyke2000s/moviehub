@@ -548,7 +548,10 @@ public class MainActivity extends TvActivity {
         }
         try {
             startActivity(
-                new Intent(this, VlcPlaybackActivity.class)
+                new Intent(
+                    this,
+                    live && ExoLive.available() ? ExoLiveActivity.class : VlcPlaybackActivity.class
+                )
                     .putExtra("title", title)
                     .putExtra("url", safe)
                     .putExtra("id", id)
