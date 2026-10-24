@@ -45,6 +45,7 @@ final class LiveStage implements LiveScreen {
         @Override
         public void playing() {
             liveFailed = false;
+            overlayHandler.removeCallbacks(slow);
             status.setVisibility(View.GONE);
         }
 
@@ -212,9 +213,8 @@ final class LiveStage implements LiveScreen {
         video.setFocusableInTouchMode(true);
         video.requestFocus();
         ExoLive.attach(this, surface, events);
-        status.setText("Opening channel…");
-        status.setBackgroundColor(Color.TRANSPARENT);
-        status.setVisibility(ExoLive.play(a, url, false) ? View.GONE : View.VISIBLE);
+        if (!ExoLive.play(a, url, false)) opening("Opening channel…");
+        else status.setVisibility(View.GONE);
     }
 
     /** BACK from full screen: the guide, exactly as it was, with the picture back in its box. */
@@ -255,10 +255,7 @@ final class LiveStage implements LiveScreen {
     void started() {
         if (!full || url == null) return;
         ExoLive.attach(this, surface, events);
-        if (!ExoLive.play(a, url, false)) {
-            status.setText("Opening channel…");
-            status.setVisibility(View.VISIBLE);
-        }
+        if (!ExoLive.play(a, url, false)) opening("Opening channel…");
     }
 
     /** Shows which button arrived (every key, before anything else uses it). */
@@ -299,12 +296,29 @@ final class LiveStage implements LiveScreen {
         return false;
     }
 
+    /** How long a channel may take to start before the viewer is told it may be unavailable. */
+    static final long SLOW_MS = 10_000;
+
+    private final Runnable slow = () -> {
+        if (!full || liveFailed || ExoLive.isPlaying() || status.getVisibility() != View.VISIBLE) return;
+        status.setText(
+            "Still finding this channel's link…\nIt may not be available right now.\n\nBACK  guide     ▲ ▼  another channel"
+        );
+    };
+
+    /** Says the channel is opening; after {@link #SLOW_MS} says it may not be available, and keeps waiting. */
+    private void opening(String text) {
+        status.setText(text);
+        status.setBackgroundColor(Color.TRANSPARENT);
+        status.setVisibility(View.VISIBLE);
+        overlayHandler.removeCallbacks(slow);
+        overlayHandler.postDelayed(slow, SLOW_MS);
+    }
+
     private void reconnect() {
         if (url == null) return;
         liveFailed = false;
-        status.setText("Reconnecting…");
-        status.setBackgroundColor(Color.TRANSPARENT);
-        status.setVisibility(View.VISIBLE);
+        opening("Reconnecting…");
         ExoLive.attach(this, surface, events);
         ExoLive.play(a, url, true);
     }
@@ -382,9 +396,7 @@ final class LiveStage implements LiveScreen {
         }
         title = newTitle;
         liveFailed = false;
-        status.setText("Opening channel…");
-        status.setBackgroundColor(Color.TRANSPARENT);
-        status.setVisibility(View.VISIBLE);
+        opening("Opening channel…");
         ExoLive.attach(this, surface, events);
         ExoLive.play(a, url, true);
     }
