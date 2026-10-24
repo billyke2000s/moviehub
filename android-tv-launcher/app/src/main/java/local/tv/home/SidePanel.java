@@ -44,6 +44,8 @@ final class SidePanel {
     private Runnable dismissed;
     /** The last panel shown; tests read it. */
     static Dialog current;
+    static java.util.function.Consumer<String> testEvents;
+    private static void trace(String text) { if (testEvents != null) testEvents.accept(text); }
 
     private SidePanel(Activity activity, String title) {
         this.activity = activity;
@@ -91,7 +93,13 @@ final class SidePanel {
     }
 
     Dialog show() {
-        Dialog dialog = new Dialog(activity, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar);
+        Dialog dialog = new Dialog(activity, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar) {
+            @Override public void onWindowFocusChanged(boolean focused) {
+                super.onWindowFocusChanged(focused);
+                trace("focus " + this + " " + focused);
+            }
+        };
+        trace("created " + title + " " + dialog);
         if (activity.isFinishing() || activity.isDestroyed()) return dialog;
         dialog.setOwnerActivity(activity);
         // The chosen action runs after the panel has closed, so it can open another panel.
@@ -100,12 +108,14 @@ final class SidePanel {
         // or trailing release cannot reopen a menu after this window is replaced.
         if (activity instanceof VlcPlaybackActivity) {
             VlcPlaybackActivity player = (VlcPlaybackActivity) activity;
-            if (player.zapper != null) dialog.setOnKeyListener((d, key, event) ->
-                player.zapper.colourKey(event, colour -> {
+            if (player.zapper != null) dialog.setOnKeyListener((d, key, event) -> {
+                trace("key " + dialog + " " + event);
+                return player.zapper.colourKey(event, colour -> {
+                    trace("colour action " + colour + " " + dialog);
                     after[0] = () -> player.zapper.colour(colour);
                     dialog.dismiss();
-                })
-            );
+                });
+            });
         }
         LinearLayout body = new LinearLayout(activity);
         body.setOrientation(LinearLayout.VERTICAL);
@@ -180,6 +190,7 @@ final class SidePanel {
 
         dialog.setContentView(body);
         dialog.setOnDismissListener(d -> {
+            trace("dismiss " + dialog);
             if (current == dialog) current = null;
             if (activity.isFinishing() || activity.isDestroyed()) return;
             if (dismissed != null) dismissed.run();
@@ -203,6 +214,7 @@ final class SidePanel {
         styleWindow(activity, dialog);
         current = dialog;
         dialog.show();
+        trace("shown " + dialog + " attached=" + dialog.getWindow().getDecorView().isAttachedToWindow());
         if (focus != null) focus.requestFocus();
         return dialog;
     }

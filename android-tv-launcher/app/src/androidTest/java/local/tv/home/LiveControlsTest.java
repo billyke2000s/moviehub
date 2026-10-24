@@ -27,15 +27,26 @@ public final class LiveControlsTest {
     private final CountDownLatch release = new CountDownLatch(1);
     private VlcPlaybackActivity activity;
     private ChannelDatabase db;
+    private final java.util.List<String> focusEvents = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     private void await(BooleanSupplier condition) {
         long deadline = SystemClock.elapsedRealtime() + 10000;
         while (!condition.getAsBoolean() && SystemClock.elapsedRealtime() < deadline) SystemClock.sleep(20);
-        assertTrue("Live controls condition timed out", condition.getAsBoolean());
+        if (!condition.getAsBoolean()) {
+            remote.runOnMainSync(() -> {
+                android.app.Dialog d = SidePanel.current;
+                focusEvents.add("timeout current=" + d + " showing=" + (d != null && d.isShowing()) +
+                    " viewFocus=" + (d != null && d.getWindow().getDecorView().hasWindowFocus()) +
+                    " serverFocus=" + (d != null && d.getWindow().getDecorView().getWindowId() != null &&
+                    d.getWindow().getDecorView().getWindowId().isFocused()));
+            });
+        }
+        assertTrue("Live controls condition timed out\n" + String.join("\n", focusEvents), condition.getAsBoolean());
     }
 
     @Before
     public void open() throws Exception {
+        remote.runOnMainSync(() -> SidePanel.testEvents = focusEvents::add);
         Context context = remote.getTargetContext();
         remote.runOnMainSync(LivePlayer::stop);
         db = ChannelDatabase.get(context);
@@ -90,6 +101,7 @@ public final class LiveControlsTest {
             if (SidePanel.current != null && SidePanel.current.isShowing()) SidePanel.current.dismiss();
             if (activity != null) activity.finish();
             LivePlayer.stop();
+            SidePanel.testEvents = null;
         });
         release.countDown();
         remote.waitForIdleSync();
@@ -237,6 +249,7 @@ public final class LiveControlsTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_RED);
         await(() -> SidePanel.current != null && SidePanel.current.isShowing());
         android.app.Dialog audio = SidePanel.current;
+        focusEvents.add("captured Audio " + audio);
         await(() -> audio.getWindow().getDecorView().hasWindowFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
         await(() -> SidePanel.current != null && SidePanel.current != audio);
