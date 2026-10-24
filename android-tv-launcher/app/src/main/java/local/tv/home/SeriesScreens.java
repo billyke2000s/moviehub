@@ -41,7 +41,7 @@ final class SeriesScreens {
         TextView loading = activity.muted("Loading seasons…", 16);
         activity.page.addView(loading);
         activity.async(
-            () -> activity.media.tmdb("tv/" + tmdbId + "?append_to_response=external_ids"),
+            () -> activity.media.tmdb("tv/" + tmdbId + "?append_to_response=external_ids,alternative_titles"),
             details -> {
                 activity.page.removeView(loading);
                 details.put("media_type", "tv");

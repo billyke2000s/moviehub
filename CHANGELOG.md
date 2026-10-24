@@ -9,6 +9,15 @@
 - Restore free-stream incoming speed from actual upstream relay bytes; count only the active source.
 - Rank ready VOD by quality aliases and HLS variant resolution, avoid camera recordings, and compare sampled media throughput/response time within equal quality. Keep the three-second window and buffering thresholds.
 
+## Provider compatibility correction — unreleased
+
+- Preserve bodyless POST searches used by Levidia, default request Referer/language,
+  session cookies and redirect methods.
+- Prepare movie/episode lookup titles with the bundled add-on rules and supply original
+  and alternative TMDB titles. Allow 30 seconds per provider within a 300-second
+  background search, preserving three-second initial selection and buffering rules.
+- Add real-provider-path HTTP and title-preparation regressions.
+
 ## Unreleased — progressive free VOD candidate
 
 - Bundle Scrubs/Free99 provider modules and headless ResolveURL extraction inside the APK.

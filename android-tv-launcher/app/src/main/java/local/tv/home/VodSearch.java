@@ -24,7 +24,8 @@ final class VodSearch implements AutoCloseable {
         if (previous != null) previous.close();
         current = this;
         long started = SystemClock.elapsedRealtime();
-        deadline = started + 180000;
+        // Nine batches of eight providers, each with a 30-second budget, plus startup headroom.
+        deadline = started + 300000;
         pending.set(premiumize ? 2 : 1);
         try {
             query.put("maxQuality", quality);

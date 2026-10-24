@@ -11,6 +11,79 @@ import moviehub_vod as vod
 from moviehub_compat import client
 
 class FreeVodTests(unittest.TestCase):
+    def test_real_levidia_search_preserves_empty_post(self):
+        from moviehub_scrubs import scrape_sources
+        query={'imdb':'tt1234567','tmdb':12,'title':'Fixture Film','year':'2020','season':-1,'episode':-1}
+        calls=[]
+        def request(session, method, url, **kwargs):
+            calls.append((method,url))
+            response=requests.Response();response.status_code=200;response.url=url
+            response.headers['Content-Type']='text/html'
+            if 'search.php' in url:
+                self.assertEqual(method,'POST')
+                response._content=b'<div class="mainlink"><a href="movie.php?id=1">Fixture Film (2020)</a></div>'
+            elif 'movie.php' in url:
+                response._content=b"<li class=\"xxx0\"><span class=\"kiri xxx1\">Fixture</span><a class=\"xxx xflv\" href=\"https://host.example/embed\">Play</a></li><script>_3chk('session','fixture')</script>"
+            elif 'media.example' in url:
+                response.headers['Content-Type']='video/mp4';response._content=b'ftyp'
+            else:
+                response._content=b''
+            response._content_consumed=True
+            return response
+        item={'url':'https://media.example/film.mp4','direct':True,'quality':'HD','source':'fixture'}
+        with patch.object(requests.Session,'request',autospec=True,side_effect=request), patch.object(client,'safe',side_effect=lambda url:url), patch.object(scrape_sources,'process',return_value=[item]):
+            result=json.loads(vod.query('scrubs:levidia_ch',json.dumps(query),lambda:False))
+        self.assertEqual(result['status'],'complete')
+        self.assertEqual(len(result['sources']),1)
+        self.assertEqual([method for method,url in calls],['GET','POST','GET','GET','GET'])
+
+    def test_post_redirect_method_and_cookie_contract(self):
+        from moviehub_compat import http_requests
+        for status, expected in [(301,'GET'),(302,'GET'),(303,'GET'),(307,'POST'),(308,'POST')]:
+            with self.subTest(status=status):
+                first=requests.Response();first.status_code=status;first.url='https://site.example/start'
+                first.headers['Location']='/target';first._content=b'';first._content_consumed=True
+                second=requests.Response();second.status_code=200;second.url='https://site.example/target';second._content=b'ok';second._content_consumed=True
+                client.scope(lambda:False)
+                with patch.object(client,'safe',side_effect=lambda url:url), patch.object(requests.Session,'request',side_effect=[first,second]) as request:
+                    with http_requests.Session() as session:
+                        session.post(first.url,cookies={'session':'fixture'})
+                        self.assertEqual(session.cookies.get('session'),'fixture')
+                self.assertEqual([call.args[0] for call in request.call_args_list],['POST',expected])
+
+    def test_upstream_movie_and_episode_title_preparation(self):
+        from unittest.mock import Mock
+        for family in ('scrubs','free99'):
+            module=importlib.import_module('moviehub_'+family+'.providers.levidia_ch')
+            provider=module.source()
+            provider.movie=Mock(return_value='movie')
+            provider.tvshow=Mock(return_value='show')
+            provider.episode=Mock(return_value='episode')
+            provider.sources=Mock(return_value=[])
+            query={'imdb':'tt3896198','tmdb':283995,'title':'Guardians of the Galaxy Vol. 2','localTitle':'Local Title',
+                   'year':'2017','season':-1,'episode':-1,'aliases':['Alternate Title','alternate title','',None]}
+            with patch.object(module,'source',return_value=provider):
+                vod.query(family+':levidia_ch',json.dumps(query),lambda:False)
+                args=provider.movie.call_args.args
+                self.assertEqual(args[2],'Guardians of the Galaxy Vol 2')
+                self.assertEqual(args[3],'Local Title')
+                self.assertEqual([row['title'] for row in args[4]],['Guardians of the Galaxy Vol 2','Guardians of the Galaxy Vol. 2','Local Title','Alternate Title'])
+                query.update(title='The Haunting',year='2018',season=2,episode=3)
+                vod.query(family+':levidia_ch',json.dumps(query),lambda:False)
+                self.assertEqual(provider.tvshow.call_args.args[3],'The Haunting of Bly Manor')
+                self.assertEqual(provider.tvshow.call_args.args[-1],'2020')
+                self.assertEqual(provider.episode.call_args.args[-2:],('1','3'))
+
+    def test_request_default_headers_and_explicit_referer(self):
+        response=requests.Response();response.status_code=200;response._content=b'ok'
+        with patch.object(client,'fetch',return_value=response) as fetch:
+            client.request('https://site.example/path')
+            self.assertEqual(fetch.call_args.args[1]['Referer'],'https://site.example/')
+            self.assertEqual(fetch.call_args.args[1]['Accept-Language'],'en-US,en')
+            client.request('https://site.example/path',headers={'referer':'https://original.example/'})
+            self.assertEqual(fetch.call_args.args[1]['referer'],'https://original.example/')
+            self.assertNotIn('Referer',fetch.call_args.args[1])
+
     def test_extended_transport_contract_drives_real_watchseries_provider(self):
         from moviehub_scrubs import scrape_sources
         query={'imdb':'tt1234567','tmdb':12,'title':'Fixture Film','year':'2020','season':-1,'episode':-1}

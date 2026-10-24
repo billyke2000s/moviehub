@@ -112,3 +112,29 @@ health from the owner's network, sustained playback, or physical-TV success.
 | scrubs:winnoise_com | Loaded | Yes | Yes | Website availability varies | ValueError (0 links) |
 
 Additional confirmed compatibility defect: the bounded HTTP adapter returned an HTTP status integer in place of request headers in `output="extended"`. The actual WatchSeries provider then passed that integer as headers and swallowed the resulting exception. The adapter now returns the original five fields (body, request headers, response headers, cookies, final URL), without an extra cookie request. Default scrapePage Referer/protocol-relative handling and redirect cookie accumulation also match the upstream contract. A fixture drives the real WatchSeries provider through search, page and host lookup.
+
+
+## Provider request and title compatibility follow-up (24 October 2026)
+
+Reproduced an additional adapter defect: `Session.post(url)` with no body became GET.
+The Scrubs Levidia search uses this exact request. Explicit GET/POST methods now reach
+the bounded transport and retain the existing redirect semantics (301/302/303 switch
+POST to GET; 307/308 retain POST), session cookies and TLS/public-address checks.
+`client.request` supplies upstream's default Referer and Accept-Language without
+replacing explicit values.
+
+Movie and series searches now use each bundled add-on's `scene_title`/`scene_tvtitle`
+preparation and receive original and alternative titles from TMDB detail metadata.
+These aliases use TMDB rather than Kodi's Trakt account/runtime. Matching still depends
+on the individual provider. Per-provider work has a 30-second cancellation budget and
+the eight-worker search has 300 seconds of background headroom for the full inventory.
+The three-second initial selection and existing buffering/failover rules are unchanged.
+The diagnostic workflow uses the same search budget.
+
+Regression coverage drives the real Levidia provider through its landing page, empty
+POST search, result page, host and media probe; checks all five redirect codes; checks
+movie punctuation/aliases and upstream episode remapping for both families; and checks
+request headers. Android coverage checks movie/series alternative-title metadata.
+Local validation: 16 Python tests and 814 core assertions pass (Eclipse JDT targeting
+Java 17). Android build/lint/emulator CI and live-provider outcomes must be checked on
+the final commit. No physical-TV or Guardians playback success is claimed.

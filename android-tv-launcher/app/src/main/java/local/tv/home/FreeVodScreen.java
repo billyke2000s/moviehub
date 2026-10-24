@@ -24,6 +24,8 @@ final class FreeVodScreen {
                 .put("imdb", imdb)
                 .put("tmdb", info.optInt("tmdbId", info.optInt("id")))
                 .put("title", searchTitle)
+                .put("localTitle", searchTitle)
+                .put("aliases", aliases(info, season < 0))
                 .put("year", info.optString(season < 0 ? "release_date" : "first_air_date").split("-")[0])
                 .put("season", season)
                 .put("episode", episode)
@@ -119,6 +121,23 @@ final class FreeVodScreen {
             Diagnostics.recovered("Starting source search", error);
             activity.toast("Could not start the source search");
         }
+    }
+
+    static JSONArray aliases(JSONObject metadata, boolean movie) {
+        Set<String> titles = new LinkedHashSet<>();
+        String original = metadata.optString(movie ? "original_title" : "original_name");
+        if (!original.trim().isEmpty()) titles.add(original);
+        JSONObject alternatives = metadata.optJSONObject("alternative_titles");
+        if (alternatives != null) {
+            JSONArray rows = alternatives.optJSONArray(movie ? "titles" : "results");
+            if (rows != null) for (int i = 0; i < rows.length(); i++) {
+                JSONObject row = rows.optJSONObject(i);
+                if (row == null) continue;
+                String name = row.optString("title").trim();
+                if (!name.isEmpty()) titles.add(name);
+            }
+        }
+        return new JSONArray(titles);
     }
 
     private void play(

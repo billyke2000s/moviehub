@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,6 +16,37 @@ import org.junit.runner.RunWith;
 public final class FreeVodProvidersTest {
 
     private final Context context = ApplicationProvider.getApplicationContext();
+
+    @Test
+    public void movieAndSeriesAliasesRetainOriginalAndAlternativeTitles() throws Exception {
+        JSONObject movie = new JSONObject()
+            .put("original_title", "Original Film")
+            .put(
+                "alternative_titles",
+                new JSONObject().put(
+                    "titles",
+                    new JSONArray()
+                        .put(new JSONObject().put("title", "Regional Film"))
+                        .put(new JSONObject().put("title", "Original Film"))
+                        .put(new JSONObject().put("title", "  "))
+                )
+            );
+        JSONArray titles = FreeVodScreen.aliases(movie, true);
+        assertEquals(2, titles.length());
+        assertEquals("Original Film", titles.getString(0));
+        assertEquals("Regional Film", titles.getString(1));
+        JSONObject series = new JSONObject()
+            .put("original_name", "Original Series")
+            .put(
+                "alternative_titles",
+                new JSONObject().put(
+                    "results",
+                    new JSONArray().put(new JSONObject().put("title", "Regional Series"))
+                )
+            );
+        assertEquals(2, FreeVodScreen.aliases(series, false).length());
+        assertEquals(0, FreeVodScreen.aliases(new JSONObject(), true).length());
+    }
 
     @Test
     public void packagedPythonImportsEveryProviderAndHostResolverWithoutKodi() throws Exception {

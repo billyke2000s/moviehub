@@ -191,7 +191,9 @@ final class PosterCards {
         activity.page.addView(loading);
         activity.async(
             () ->
-                activity.media.tmdb(type + "/" + tmdbId + "?append_to_response=external_ids,credits,videos"),
+                activity.media.tmdb(
+                    type + "/" + tmdbId + "?append_to_response=external_ids,credits,videos,alternative_titles"
+                ),
             details -> {
                 details.put("media_type", type);
                 activity.page.removeView(loading);

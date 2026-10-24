@@ -406,3 +406,13 @@ Player panels request input focus after their DecorView attaches, with the initi
 ## Free VOD failure and duration regressions
 
 The Python suite individually checks all 68 provider lookup contracts and explicit library/API-key exclusions, rejects 7/30/119.9-second media, accepts the 120-second boundary and unknown metadata, and preserves a matching playback User-Agent. See [inventory audit](docs/FREE_VOD_AUDIT.md). `PlaybackTest` adds real-VLC manual free-source failure through a broken host and short clip to another provider, initial short-clip rejection with a late-discovered backup, and a deliberately blocked native stop while controls and original playback remain responsive. The speed regression requires visible Mb/s and received-byte labels with a positive real relay byte count. The checked-in `vod.mp4` fixture is real 150-second H.264/AAC media, generated from the original fixture with FFmpeg and fully decoded locally. Duration checks stay active; short-video regressions still use the original 30-second fixture. See the test-assets README for the reproduction command. Full Android CI validation is required; these are fixtures, not physical-TV/provider evidence.
+
+
+## Provider compatibility regressions
+
+The 16 Python tests include the actual Scrubs Levidia lookup from landing page through
+bodyless POST, result, host and media probe; redirect methods for 301/302/303/307/308;
+explicit/default Referer; and both families' movie title/alias and episode mapping rules.
+FreeVodProvidersTest checks movie/series TMDB alias forwarding on Android. Local Python
+and 814 core assertions pass (Eclipse JDT/Java 17). Android build/lint/emulator results
+must be read from the final PR commit; fixtures do not prove physical-TV availability.

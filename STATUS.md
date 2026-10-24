@@ -411,3 +411,14 @@ The candidate counts incoming upstream relay bytes for free HLS/media-file sourc
 The owner reports mostly empty providers, short error clips, absent speed and crashes on switching services. All 68 module constructors and original package hashes were checked: 59 Scrubs and nine Free99, no missing active files. Confirmed code gaps: discarded provider outcomes, a global deadline shorter than the worst-case worker schedule, manual free-provider pinning, no short-duration rejection and main-thread native shutdown. The candidate addresses these gaps and shows selected source, Mb/s and cumulative incoming bytes. The three-second first choice and existing buffering thresholds remain. See docs/FREE_VOD_AUDIT.md for the per-module inventory. Local live DNS is unavailable; provider availability must be recorded from the independent GitHub audit. Android/emulator validation is pending. No physical-TV crash diagnosis or real-title availability is claimed.
 
 Additional confirmed compatibility defect: the bounded HTTP adapter returned an HTTP status integer in place of request headers in `output="extended"`. The actual WatchSeries provider then passed that integer as headers and swallowed the resulting exception. The adapter now returns the original five fields (body, request headers, response headers, cookies, final URL), without an extra cookie request. Default scrapePage Referer/protocol-relative handling and redirect cookie accumulation also match the upstream contract. A fixture drives the real WatchSeries provider through search, page and host lookup.
+
+
+## Provider request/title compatibility correction (24 October 2026)
+
+Reproduced and fixed bodyless POST becoming GET in the requests adapter, affecting the
+actual Scrubs Levidia search. Added legacy default Referer/language headers, upstream
+movie/episode title preparation and original/alternative TMDB aliases. Providers now have
+30 seconds each and 300 seconds of background search headroom; the three-second initial
+choice and buffering thresholds remain. Sixteen Python tests and 814 core assertions pass
+locally. Android CI and real-provider outcomes remain to be checked on the final commit.
+No Guardians playback or physical-TV success is claimed.

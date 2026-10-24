@@ -97,7 +97,11 @@ def request(url, close=True, redirect=True, error=False, verify=True, post=None,
             mobile=False, XHR=False, limit=None, referer=None, cookie=None, compression=False,
             output='', timeout=8, as_bytes=False):
     out=dict(dnt_headers); out.update(headers or {})
-    if referer: out['Referer']=referer
+    if not any(key.lower() == 'referer' for key in out):
+        parsed = urlparse(url)
+        out['Referer'] = referer or parsed.scheme + '://' + parsed.netloc + '/'
+    if not any(key.lower() == 'accept-language' for key in out):
+        out['Accept-Language'] = 'en-US,en'
     if cookie: out['Cookie']=cookie
     if XHR: out['X-Requested-With']='XMLHttpRequest'
     raw, sep, suffix=url.partition('|')

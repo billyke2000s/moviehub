@@ -28,7 +28,7 @@ def validate():
 
 
 def query(provider_id, raw, cancelled, emit=None):
-    client.scope(cancelled.get if hasattr(cancelled, "get") else cancelled, timeout=18, http=json.loads(raw).get('http', False))
+    client.scope(cancelled.get if hasattr(cancelled, "get") else cancelled, timeout=30, http=json.loads(raw).get('http', False))
     info = json.loads(raw)
     record = _MODULES[provider_id]
     # Kodi's local library is not an Internet provider. Its module remains bundled for provenance.
@@ -41,16 +41,31 @@ def query(provider_id, raw, cancelled, emit=None):
         provider = importlib.import_module(record['module']).source()
         imdb, tmdb = info.get('imdb', ''), str(info.get('tmdb', ''))
         title, year = info.get('title', ''), str(info.get('year', ''))
-        aliases = [{'title': title, 'country': 'us'}]
-        aliases += [{'title': t, 'country': ''} for t in info.get('aliases', []) if t != title]
+        # Use each add-on's title preparation before constructing its lookup key.
+        clean = importlib.import_module('moviehub_'+record['family']+'.cleantitle')
+        localtitle = info.get('localTitle') or title
+        season, episode = str(info['season']), str(info['episode'])
+        original_title = title
+        if info['season'] < 0:
+            title, imdb, year = clean.scene_title(title, imdb, year)
+        else:
+            title, imdb, year, season, episode = clean.scene_tvtitle(title, imdb, year, season, episode)
+        aliases = []
+        seen_titles = set()
+        for candidate in [title, original_title, localtitle] + info.get('aliases', []):
+            if not isinstance(candidate, str) or not candidate.strip(): continue
+            candidate = candidate.strip()
+            if candidate.casefold() in seen_titles: continue
+            seen_titles.add(candidate.casefold())
+            aliases.append({'title': candidate, 'country': 'us'})
         if info['season'] < 0:
             if not hasattr(provider, 'movie'): return json.dumps({'status':'unsupported_type', 'sources':[]})
-            key = provider.movie(imdb, tmdb, title, title, aliases, year)
+            key = provider.movie(imdb, tmdb, title, localtitle, aliases, year)
         else:
             if not hasattr(provider, 'tvshow'): return json.dumps({'status':'unsupported_type', 'sources':[]})
-            key = provider.tvshow(imdb, tmdb, '', title, title, aliases, year)
+            key = provider.tvshow(imdb, tmdb, '', title, localtitle, aliases, year)
             key = provider.episode(key, imdb, tmdb, '', info.get('episodeTitle',''), info.get('premiered',''),
-                                   str(info['season']), str(info['episode']))
+                                   season, episode)
         candidates = provider.sources(key, list(_HOSTS)) or []
         client.check()
         extracted = len(candidates)
