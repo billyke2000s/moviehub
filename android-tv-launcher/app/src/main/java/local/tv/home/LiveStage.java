@@ -6,7 +6,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -28,7 +27,8 @@ final class LiveStage implements LiveScreen {
     private final MainActivity a;
     private final FrameLayout root, pageHost, overlay, bannerHost;
     private final FrameLayout video;
-    private final SurfaceView surface;
+    /** The one picture: Media3's PlayerView in experimental builds. */
+    private final View surface;
     private final TextView status, lastButton;
     private final Handler overlayHandler = new Handler(Looper.getMainLooper());
     private final LiveMenus menus = new ExoMenus(this, this::reconnect);
@@ -72,7 +72,7 @@ final class LiveStage implements LiveScreen {
         root.addView(pageHost, new FrameLayout.LayoutParams(-1, -1));
         // After the pages, so the picture shows through them wherever it is placed.
         video = new FrameLayout(a);
-        surface = new SurfaceView(a);
+        surface = ExoLive.createVideoView(a);
         video.addView(surface, new FrameLayout.LayoutParams(-1, -1));
         root.addView(video, hidden());
         overlay = new FrameLayout(a);

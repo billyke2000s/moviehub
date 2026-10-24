@@ -33,6 +33,7 @@
 
 ## Unreleased
 
+- MovieHub Experimental: the Live TV picture is Media3's PlayerView (correct picture shape, subtitles in Audio & subtitles); Options → Player event log records the decoder, video formats, quality switches, dropped frames, errors and any picture stall (records only, never repairs). The custom stall timer is removed; a failing channel keeps being retried.
 - MovieHub Experimental: Live TV is one screen. The TV Guide menu, channel guide and banner are drawn over one video picture that is only resized (corner box or full screen), never rebuilt or moved to another screen. A "Last button" readout shows every key MovieHub receives, on every screen.
 - MovieHub Experimental only: Live TV plays on Media3 ExoPlayer (ExoLiveActivity, ExoLive), shared by the guide picture and the full screen by pointing the same decoder at each surface. Normal builds keep LibVLC and do not contain ExoPlayer.
 - Live TV: the banner's Sources label names the copy actually playing when full screen opens, instead of assuming the first copy before the player reports its link.

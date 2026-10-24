@@ -16,6 +16,37 @@ final class ExoMenus implements LiveMenus {
 
     @Override
     public void audioAndSubtitles() {
+        screen.dialogOpen(true);
+        SidePanel.of(screen.activity(), "Audio & Subtitles")
+            .option("Audio", this::audio)
+            .option("Subtitles", this::subtitles)
+            .onDismiss(screen::panelClosed)
+            .show();
+    }
+
+    private void subtitles() {
+        List<String> tracks = ExoLive.subtitleTracks();
+        screen.dialogOpen(true);
+        if (tracks.isEmpty()) {
+            SidePanel.of(screen.activity(), "Subtitles")
+                .message("This channel has no subtitles.")
+                .action("Close", null)
+                .onDismiss(screen::panelClosed)
+                .show();
+            return;
+        }
+        String[] names = new String[tracks.size() + 1];
+        names[0] = "Off";
+        for (int i = 0; i < tracks.size(); i++) names[i + 1] = tracks.get(i);
+        SidePanel.of(screen.activity(), "Subtitles")
+            .choices(names, ExoLive.selectedSubtitleTrack() + 1, which ->
+                ExoLive.selectSubtitleTrack(which - 1)
+            )
+            .onDismiss(screen::panelClosed)
+            .show();
+    }
+
+    private void audio() {
         List<String> tracks = ExoLive.audioTracks();
         screen.dialogOpen(true);
         if (tracks.size() < 2) {
@@ -68,16 +99,27 @@ final class ExoMenus implements LiveMenus {
             .show();
     }
 
+    /** What the player recorded, newest first (decoder, formats, dropped frames, freezes, errors). */
+    private void eventLog() {
+        screen.dialogOpen(true);
+        SidePanel.of(screen.activity(), "Player event log")
+            .message("ExoPlayer · " + ExoLive.status() + "\n\n" + ExoLive.eventLog())
+            .action("Close", null)
+            .onDismiss(screen::panelClosed)
+            .show();
+    }
+
     @Override
     public void liveOptions() {
         LiveZapper zapper = screen.zapper();
         if (zapper == null) return;
         String[] labels = {
             ExoLive.isPlaying() ? "Pause" : "Play",
-            "Audio",
+            "Audio & subtitles",
             "Programme information",
             zapper.sourceText(),
             "Reconnect channel",
+            "Player event log",
             "Player status · ExoPlayer · " + ExoLive.status(),
         };
         screen.dialogOpen(true);
@@ -85,7 +127,8 @@ final class ExoMenus implements LiveMenus {
         for (String label : labels)
             panel.option(label, () -> {
                 if (label.equals("Pause") || label.equals("Play")) screen.toggle();
-                else if (label.equals("Audio")) audioAndSubtitles();
+                else if (label.equals("Audio & subtitles")) audioAndSubtitles();
+                else if (label.equals("Player event log")) eventLog();
                 else if (label.equals("Programme information")) zapper.information();
                 else if (label.startsWith("Sources")) chooseSource();
                 else if (label.equals("Reconnect channel")) reconnect.run();

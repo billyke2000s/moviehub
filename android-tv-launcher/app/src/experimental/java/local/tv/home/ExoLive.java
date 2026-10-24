@@ -1,9 +1,11 @@
 package local.tv.home;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.SurfaceView;
+import android.os.SystemClock;
+import android.view.View;
 import androidx.annotation.OptIn;
 import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.C;
@@ -16,9 +18,17 @@ import androidx.media3.common.TrackSelectionOverride;
 import androidx.media3.common.Tracks;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.datasource.DefaultHttpDataSource;
+import androidx.media3.exoplayer.DecoderCounters;
+import androidx.media3.exoplayer.DecoderReuseEvaluation;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.analytics.AnalyticsListener;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
+import androidx.media3.ui.AspectRatioFrameLayout;
+import androidx.media3.ui.PlayerView;
+import java.text.SimpleDateFormat;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -27,14 +37,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Experimental builds: the one Live TV player, on Media3 ExoPlayer. It is shared by the guide's
- * corner picture and the full screen, like {@link LivePlayer}, but moving between them only
- * points the same decoder at another surface ({@code setVideoSurfaceView}, which uses
- * {@code MediaCodec.setOutputSurface} on Android 6+), so the picture is never rebuilt.
+ * Experimental builds: the one Live TV player, on Media3 ExoPlayer, drawn by Media3's own
+ * {@link PlayerView} (the standard Android TV picture: correct shape, subtitles, surface lifecycle).
+ * There is one view for all of Live TV ({@link LiveStage}); it is resized, never handed over.
  *
- * <p>Channel links are found by the existing {@link LiveStream#resolve} step, unchanged. Recovery
- * is bounded: falling behind a live window rejoins it; other errors reopen the channel at most
- * twice, then the owner is told the channel failed (and moves to a backup copy).
+ * <p>Channel links are found by the existing {@link LiveStream#resolve} step, unchanged. Live
+ * playback uses ExoPlayer's own handling (live edge, quality switching, device workarounds).
+ * Errors reopen the channel at most twice; after that the owner keeps trying (see LiveStage).
+ *
+ * <p>An event log records what the player did (decoder, video formats, quality switches, dropped
+ * frames, errors, and the picture stopping while sound plays) so a freeze can be explained. It only
+ * records; it never repairs.
  */
 @OptIn(markerClass = UnstableApi.class)
 final class ExoLive {
@@ -49,27 +62,50 @@ final class ExoLive {
 
     /** Reopens per channel before the owner is told it failed. */
     static final int MAX_REOPENS = 2;
-    /** Buffering this long after playing reopens the channel. */
-    static final long STALL_MS = 15_000;
+    /** Events kept for the log. */
+    static final int LOG_SIZE = 60;
 
     private static final Handler main = new Handler(Looper.getMainLooper());
     private static final ExecutorService resolver = Executors.newSingleThreadExecutor();
     private static ExoPlayer player;
+    private static PlayerView view;
     private static Context app;
     private static String url;
     private static ProviderRelay relay;
     private static Object owner;
-    private static SurfaceView surface;
     private static Listener listener;
     private static int generation, reopens;
-    private static boolean playedOnce, hlsRetried;
-    private static String status = "Idle";
-    private static final Runnable stalled = () -> reopen("The picture stopped for 15 seconds");
+    private static boolean hlsRetried;
+    private static String status = "Idle",
+        decoder = "";
+    private static final ArrayDeque<String> log = new ArrayDeque<>();
+    /** Rendered-frame count at the last check, to notice the picture stopping while sound plays. */
+    private static int lastRendered = -1,
+        stillSeconds;
+    private static final Runnable watch = new Runnable() {
+        @Override
+        public void run() {
+            checkPicture();
+            main.postDelayed(this, 1000);
+        }
+    };
 
     private ExoLive() {}
 
     static boolean available() {
         return true;
+    }
+
+    /** The one picture for Live TV: Media3's PlayerView, without its own on-screen controls. */
+    static View createVideoView(Context context) {
+        PlayerView picture = new PlayerView(context);
+        picture.setUseController(false);
+        picture.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
+        picture.setShutterBackgroundColor(Color.BLACK);
+        picture.setKeepContentOnPlayerReset(true);
+        picture.setFocusable(false);
+        picture.setDescendantFocusability(android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        return picture;
     }
 
     /**
@@ -86,6 +122,7 @@ final class ExoLive {
         if (!locator.equals(url)) {
             reopens = 0;
             hlsRetried = false;
+            event("New channel");
         }
         url = locator;
         open();
@@ -102,6 +139,7 @@ final class ExoLive {
                 .build(),
             true
         );
+        if (view != null) view.setPlayer(player);
         player.addListener(
             new Player.Listener() {
                 @Override
@@ -109,22 +147,17 @@ final class ExoLive {
                     if (state == Player.STATE_BUFFERING) {
                         status = "Buffering";
                         if (listener != null) listener.buffering(true);
-                        if (playedOnce) {
-                            main.removeCallbacks(stalled);
-                            main.postDelayed(stalled, STALL_MS);
-                        }
                     } else if (state == Player.STATE_READY) {
-                        main.removeCallbacks(stalled);
                         status = "Playing";
                         if (listener != null) listener.buffering(false);
                     } else if (state == Player.STATE_ENDED) {
+                        event("Stream ended");
                         reopen("The live stream ended");
                     }
                 }
 
                 @Override
                 public void onRenderedFirstFrame() {
-                    playedOnce = true;
                     reopens = 0;
                     if (listener != null) listener.playing();
                 }
@@ -132,6 +165,7 @@ final class ExoLive {
                 @Override
                 public void onPlayerError(PlaybackException error) {
                     Diagnostics.recovered("ExoPlayer live " + error.getErrorCodeName(), error);
+                    event("Error " + error.getErrorCodeName());
                     if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
                         // Fell behind the live window: rejoin live without reopening the channel.
                         player.seekToDefaultPosition();
@@ -152,11 +186,110 @@ final class ExoLive {
                 }
             }
         );
+        player.addAnalyticsListener(
+            new AnalyticsListener() {
+                @Override
+                public void onVideoDecoderInitialized(
+                    EventTime time,
+                    String name,
+                    long initializedTimestampMs,
+                    long initializationDurationMs
+                ) {
+                    decoder = name;
+                    event("Video decoder " + name);
+                }
+
+                @Override
+                public void onVideoInputFormatChanged(
+                    EventTime time,
+                    Format format,
+                    DecoderReuseEvaluation reuse
+                ) {
+                    event(
+                        "Video " +
+                            format.width +
+                            "×" +
+                            format.height +
+                            (format.frameRate > 0
+                                ? String.format(Locale.ROOT, " %.2f fps", format.frameRate)
+                                : "") +
+                            (format.codecs == null ? "" : " " + format.codecs) +
+                            (format.bitrate > 0 ? " " + format.bitrate / 1000 + " kb/s" : "") +
+                            (reuse == null
+                                ? ""
+                                : reuse.result == DecoderReuseEvaluation.REUSE_RESULT_NO
+                                  ? " (decoder restarted)"
+                                  : "")
+                    );
+                }
+
+                @Override
+                public void onDroppedVideoFrames(EventTime time, int dropped, long elapsedMs) {
+                    event("Dropped " + dropped + " frames in " + elapsedMs + " ms");
+                }
+
+                @Override
+                public void onSurfaceSizeChanged(EventTime time, int width, int height) {
+                    event("Picture size " + width + "×" + height);
+                }
+
+                @Override
+                public void onVideoCodecError(EventTime time, Exception error) {
+                    event("Video decoder error " + error.getClass().getSimpleName());
+                }
+
+                @Override
+                public void onAudioUnderrun(
+                    EventTime time,
+                    int bufferSize,
+                    long bufferSizeMs,
+                    long elapsedSinceLastFeedMs
+                ) {
+                    event("Sound ran short");
+                }
+            }
+        );
+        main.removeCallbacks(watch);
+        main.postDelayed(watch, 1000);
+    }
+
+    /** Records (only) when the picture stops advancing while the sound plays on. */
+    private static void checkPicture() {
+        if (player == null || !player.isPlaying()) {
+            lastRendered = -1;
+            stillSeconds = 0;
+            return;
+        }
+        DecoderCounters counters = player.getVideoDecoderCounters();
+        if (counters == null) return;
+        counters.ensureUpdated();
+        int rendered = counters.renderedOutputBufferCount;
+        if (rendered == lastRendered) {
+            stillSeconds++;
+            if (stillSeconds == 3) event("Picture stopped advancing while sound plays");
+        } else {
+            if (stillSeconds >= 3) event("Picture moving again after " + stillSeconds + " s");
+            stillSeconds = 0;
+        }
+        lastRendered = rendered;
+    }
+
+    private static void event(String text) {
+        String time = new SimpleDateFormat("HH:mm:ss", Locale.ROOT).format(new Date());
+        log.addFirst(time + "  " + text);
+        while (log.size() > LOG_SIZE) log.removeLast();
+    }
+
+    /** The event log, newest first. */
+    static String eventLog() {
+        if (log.isEmpty()) return "Nothing recorded yet.";
+        StringBuilder text = new StringBuilder();
+        for (String line : log) text.append(line).append('\n');
+        return text.toString().trim();
     }
 
     /** Reopens the channel (a fresh link lookup), or tells the owner after {@link #MAX_REOPENS}. */
     private static void reopen(String reason) {
-        main.removeCallbacks(stalled);
         if (url == null) return;
         if (reopens >= MAX_REOPENS) {
             status = "Failed: " + reason;
@@ -165,17 +298,22 @@ final class ExoLive {
         }
         reopens++;
         status = "Reopening (" + reopens + " of " + MAX_REOPENS + ")";
+        event("Reopening the channel (" + reasonShort(reason) + ")");
         main.postDelayed(ExoLive::open, 1000);
+    }
+
+    private static String reasonShort(String reason) {
+        return reason.length() > 60 ? reason.substring(0, 60) + "…" : reason;
     }
 
     private static void open() {
         int ticket = ++generation;
         String locator = url;
-        playedOnce = false;
-        main.removeCallbacks(stalled);
+        if (locator == null) return;
         player.stop();
         closeRelay();
         status = "Finding the stream";
+        long started = SystemClock.elapsedRealtime();
         if (!(PlutoSource.nativeUrl(locator) || EngineSources.locator(locator))) {
             start(ticket, locator, null, null, null);
             return;
@@ -185,19 +323,22 @@ final class ExoLive {
             try {
                 LiveStream.Resolution source = LiveStream.resolve(context, locator, new NativeHttp(), null);
                 EngineSources.Stream stream = source.provider;
-                main.post(() ->
+                main.post(() -> {
+                    event("Link found in " + (SystemClock.elapsedRealtime() - started) / 1000 + " s");
                     start(
                         ticket,
                         source.relay == null ? source.url : source.relay.url,
                         stream == null ? PlutoSource.USER_AGENT : stream.userAgent,
                         stream == null ? null : stream.referer,
                         source.relay
-                    )
-                );
+                    );
+                });
             } catch (Exception e) {
                 Diagnostics.recovered("Resolving live channel for ExoPlayer", e);
                 main.post(() -> {
-                    if (ticket == generation) reopen("This channel's address could not be found");
+                    if (ticket != generation) return;
+                    event("Link not found after " + (SystemClock.elapsedRealtime() - started) / 1000 + " s");
+                    reopen("This channel's address could not be found");
                 });
             }
         });
@@ -231,19 +372,22 @@ final class ExoLive {
             MimeTypes.APPLICATION_M3U8
         );
         player.setMediaSource(new DefaultMediaSourceFactory(http).createMediaSource(item.build()));
-        if (surface != null) player.setVideoSurfaceView(surface);
         player.prepare();
         player.play();
         status = "Opening";
     }
 
-    /** Draws the picture on {@code view} for {@code who}; the previous owner's surface is released. */
-    static void attach(Object who, SurfaceView view, Listener events) {
+    /** Draws the picture in {@code picture} (the view from {@link #createVideoView}) for {@code who}. */
+    static void attach(Object who, View picture, Listener events) {
         owner = who;
         listener = events;
-        if (player != null && surface != null && surface != view) player.clearVideoSurfaceView(surface);
-        surface = view;
-        if (player != null) player.setVideoSurfaceView(view);
+        if (picture instanceof PlayerView && picture != view) {
+            if (view != null) view.setPlayer(null);
+            view = (PlayerView) picture;
+            if (app == null) app = picture.getContext().getApplicationContext();
+        }
+        if (app != null) ensurePlayer();
+        if (view != null && view.getPlayer() != player) view.setPlayer(player);
     }
 
     /** {@code who} is leaving: stops playback only if nothing else has taken the picture over. */
@@ -254,9 +398,7 @@ final class ExoLive {
 
     static void stop() {
         generation++;
-        main.removeCallbacks(stalled);
         if (player != null) {
-            if (surface != null) player.clearVideoSurfaceView(surface);
             player.stop();
             player.clearMediaItems();
         }
@@ -264,7 +406,6 @@ final class ExoLive {
         url = null;
         owner = null;
         listener = null;
-        surface = null;
         status = "Stopped";
     }
 
@@ -296,13 +437,15 @@ final class ExoLive {
     }
 
     static String status() {
-        return status;
+        return status + (decoder.isEmpty() ? "" : " · " + decoder);
     }
+
+    // ---- Tracks ---------------------------------------------------------------------------------
 
     /** Audio tracks of the channel playing, as "Language · codec · channels". */
     static List<String> audioTracks() {
         List<String> names = new ArrayList<>();
-        for (Format format : audioFormats()) {
+        for (Format format : formats(C.TRACK_TYPE_AUDIO)) {
             String language = format.language == null ? "Unknown language" : format.language;
             String codec =
                 format.sampleMimeType == null ? "" : " · " + format.sampleMimeType.replace("audio/", "");
@@ -313,20 +456,82 @@ final class ExoLive {
     }
 
     static int selectedAudioTrack() {
+        return selected(C.TRACK_TYPE_AUDIO);
+    }
+
+    static void selectAudioTrack(int wanted) {
+        select(C.TRACK_TYPE_AUDIO, wanted);
+    }
+
+    /** Subtitle tracks, as "Language" (with a label when the stream gives one). */
+    static List<String> subtitleTracks() {
+        List<String> names = new ArrayList<>();
+        for (Format format : formats(C.TRACK_TYPE_TEXT)) {
+            String language = format.language == null ? "Unknown language" : format.language;
+            names.add(format.label == null ? language : language + " · " + format.label);
+        }
+        return names;
+    }
+
+    /** The subtitle track shown, or -1 when subtitles are off. */
+    static int selectedSubtitleTrack() {
+        if (
+            player == null ||
+            player.getTrackSelectionParameters().disabledTrackTypes.contains(C.TRACK_TYPE_TEXT)
+        ) {
+            return -1;
+        }
+        return selected(C.TRACK_TYPE_TEXT);
+    }
+
+    /** Shows subtitle track {@code wanted}, or turns subtitles off when it is -1. */
+    static void selectSubtitleTrack(int wanted) {
+        if (player == null) return;
+        if (wanted < 0) {
+            player.setTrackSelectionParameters(
+                player
+                    .getTrackSelectionParameters()
+                    .buildUpon()
+                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+                    .build()
+            );
+            return;
+        }
+        player.setTrackSelectionParameters(
+            player
+                .getTrackSelectionParameters()
+                .buildUpon()
+                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                .build()
+        );
+        select(C.TRACK_TYPE_TEXT, wanted);
+    }
+
+    private static List<Format> formats(int type) {
+        List<Format> formats = new ArrayList<>();
+        if (player == null) return formats;
+        for (Tracks.Group group : player.getCurrentTracks().getGroups()) {
+            if (group.getType() != type) continue;
+            for (int i = 0; i < group.length; i++) formats.add(group.getTrackFormat(i));
+        }
+        return formats;
+    }
+
+    private static int selected(int type) {
         if (player == null) return -1;
         int index = 0;
         for (Tracks.Group group : player.getCurrentTracks().getGroups()) {
-            if (group.getType() != C.TRACK_TYPE_AUDIO) continue;
+            if (group.getType() != type) continue;
             for (int i = 0; i < group.length; i++, index++) if (group.isTrackSelected(i)) return index;
         }
         return -1;
     }
 
-    static void selectAudioTrack(int wanted) {
+    private static void select(int type, int wanted) {
         if (player == null) return;
         int index = 0;
         for (Tracks.Group group : player.getCurrentTracks().getGroups()) {
-            if (group.getType() != C.TRACK_TYPE_AUDIO) continue;
+            if (group.getType() != type) continue;
             for (int i = 0; i < group.length; i++, index++) {
                 if (index != wanted) continue;
                 player.setTrackSelectionParameters(
@@ -339,15 +544,5 @@ final class ExoLive {
                 return;
             }
         }
-    }
-
-    private static List<Format> audioFormats() {
-        List<Format> formats = new ArrayList<>();
-        if (player == null) return formats;
-        for (Tracks.Group group : player.getCurrentTracks().getGroups()) {
-            if (group.getType() != C.TRACK_TYPE_AUDIO) continue;
-            for (int i = 0; i < group.length; i++) formats.add(group.getTrackFormat(i));
-        }
-        return formats;
     }
 }

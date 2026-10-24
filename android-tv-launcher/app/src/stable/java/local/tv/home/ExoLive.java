@@ -1,7 +1,7 @@
 package local.tv.home;
 
 import android.content.Context;
-import android.view.SurfaceView;
+import android.view.View;
 import java.util.Collections;
 import java.util.List;
 
@@ -26,11 +26,15 @@ final class ExoLive {
         return false;
     }
 
+    static View createVideoView(Context context) {
+        return new View(context);
+    }
+
     static boolean play(Context context, String locator, boolean restart) {
         return false;
     }
 
-    static void attach(Object owner, SurfaceView view, Listener listener) {}
+    static void attach(Object owner, View view, Listener listener) {}
 
     static void stopIfOwner(Object owner) {}
 
@@ -65,4 +69,18 @@ final class ExoLive {
     }
 
     static void selectAudioTrack(int index) {}
+
+    static List<String> subtitleTracks() {
+        return Collections.emptyList();
+    }
+
+    static int selectedSubtitleTrack() {
+        return -1;
+    }
+
+    static void selectSubtitleTrack(int index) {}
+
+    static String eventLog() {
+        return "";
+    }
 }
