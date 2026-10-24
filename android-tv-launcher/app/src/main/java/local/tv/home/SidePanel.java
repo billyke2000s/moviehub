@@ -198,9 +198,11 @@ final class SidePanel {
                 }
             }
         );
+        // Configure the window before attaching it. Changing layout/system-UI attributes
+        // during the initial focus handoff can leave the newly shown panel without input.
+        styleWindow(activity, dialog);
         current = dialog;
         dialog.show();
-        styleWindow(activity, dialog);
         if (focus != null) focus.requestFocus();
         return dialog;
     }
