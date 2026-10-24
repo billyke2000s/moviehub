@@ -201,6 +201,9 @@ public final class LiveBackupTest {
         assertEquals(1, count(visits, locators.get(1)));
         bodyRelease.countDown();
         await(() -> locators.get(1).equals(LivePlayer.currentUrl()) && !LivePlayer.preparingBackup());
+        // The locator is updated inside the main-thread handoff, before its Activity callback.
+        // Observe the completed UI transaction rather than sampling its intermediate fields.
+        remote.waitForIdleSync();
         assertSame("Promote the decoded player; no reopen at the cut", standby, LivePlayer.player());
         assertSame(standby, activity.player);
         assertEquals(locators.get(1), activity.getIntent().getStringExtra("url"));

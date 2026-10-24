@@ -190,7 +190,15 @@ final class SidePanel {
         dialog.getWindow().getDecorView().addOnAttachStateChangeListener(
             new View.OnAttachStateChangeListener() {
                 @Override
-                public void onViewAttachedToWindow(View view) {}
+                public void onViewAttachedToWindow(View view) {
+                    // Request input only after this DecorView and its children are attached.
+                    // Otherwise the first focus notification can precede the view's attach.
+                    view.post(() -> {
+                        if (dialog.isShowing() && !activity.isFinishing()) {
+                            dialog.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+                        }
+                    });
+                }
 
                 @Override
                 public void onViewDetachedFromWindow(View view) {
@@ -198,9 +206,12 @@ final class SidePanel {
                 }
             }
         );
+        // Configure the window before attaching it. Changing layout/system-UI attributes
+        // during the initial focus handoff can leave the newly shown panel without input.
+        styleWindow(activity, dialog);
+        dialog.getWindow().addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
         current = dialog;
         dialog.show();
-        styleWindow(activity, dialog);
         if (focus != null) focus.requestFocus();
         return dialog;
     }
