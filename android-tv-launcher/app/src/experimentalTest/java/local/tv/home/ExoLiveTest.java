@@ -33,6 +33,7 @@ public final class ExoLiveTest {
     private volatile boolean closed;
     private byte[] media;
     private final AtomicInteger opens = new AtomicInteger();
+    private final AtomicInteger slowRequests = new AtomicInteger();
     private boolean oldHttp;
 
     private String link(String path) {
@@ -102,6 +103,11 @@ public final class ExoLiveTest {
                         )
                     );
                 return;
+            }
+            if (path.equals("/slow.m3u8")) {
+                slowRequests.incrementAndGet();
+                // Longer than LiveStage's old periodic retry, shorter than the HTTP read timeout.
+                SystemClock.sleep(17000);
             }
             byte[] bytes = media;
             String mime = "video/mp2t";
@@ -224,6 +230,20 @@ public final class ExoLiveTest {
     }
 
     @Test
+    public void anExhaustedChannelTimerCannotInterruptASlowReplacement() {
+        play("/media.m3u8");
+        remote.runOnMainSync(() -> {
+            // Exhausted-source callback from the production LiveScreen contract.
+            activity.stage.liveSourceFailed();
+            activity.stage.switchTo("Slow replacement", link("/slow.m3u8"), "slow");
+        });
+        await(() -> slowRequests.get() == 1);
+        await(() -> ExoLive.isPlaying() && rendered() > 5);
+        assertEquals("A new selection gets its full startup budget", 1, slowRequests.get());
+        picturesAdvance();
+    }
+
+    @Test
     public void stoppingDuringRetryReleasesPlayerViewAndPendingCallbacks() {
         remote.runOnMainSync(() -> activity.stage.fullScreen("Broken", link("/missing.ts"), "missing"));
         await(ExoLive::retryPending);
@@ -234,6 +254,8 @@ public final class ExoLiveTest {
             assertNull(ExoLive.picture());
             assertNull(ExoLive.currentUrl());
             assertFalse(ExoLive.retryPending());
+            activity.stage.switchTo("Late queued selection", link("/media.m3u8"), "late");
+            assertNull("A background callback cannot restart playback", ExoLive.player());
         });
     }
 

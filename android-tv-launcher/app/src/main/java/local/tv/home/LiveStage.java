@@ -399,6 +399,7 @@ final class LiveStage implements LiveScreen {
 
     @Override
     public void switchTo(String newTitle, String newUrl, String newId) {
+        if (!foreground || !full) return;
         try {
             url = Playlist.networkUrl(newUrl, a.http());
         } catch (Exception e) {
