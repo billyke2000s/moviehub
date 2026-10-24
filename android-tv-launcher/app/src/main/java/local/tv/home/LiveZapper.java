@@ -725,6 +725,19 @@ final class LiveZapper {
                 event.isCanceled()
             )
         ) action.accept(colour);
+        else if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+            // A fresh press was recognised but not acted on: say so, so it is never silent.
+            Diagnostics.recovered("Colour press ignored", new IllegalStateException(String.valueOf(colour)));
+            Toast.makeText(
+                player,
+                "Colour button " +
+                    colour +
+                    " recognised but ignored (" +
+                    KeyEvent.keyCodeToString(event.getKeyCode()) +
+                    ")",
+                Toast.LENGTH_SHORT
+            ).show();
+        }
         return true;
     }
 
