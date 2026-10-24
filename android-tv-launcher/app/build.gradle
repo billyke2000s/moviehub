@@ -1,10 +1,23 @@
 plugins { id 'com.android.application'; id 'com.chaquo.python' }
+// `gradle -Pexperimental ...` builds "MovieHub Experimental": a separate app (own package, data
+// and update feed) for trying large changes on a TV. Normal builds are unchanged: package
+// local.tv.home, label MovieHub, home-screen role and the android-tv-latest feed.
+def experimental = project.hasProperty('experimental')
 android {
     namespace 'local.tv.home'
     compileSdk 35
     defaultConfig { applicationId 'local.tv.home'; minSdk 28; targetSdk 35; versionCode Integer.parseInt(System.getenv('APK_VERSION_CODE') ?: '2'); versionName System.getenv('APK_VERSION_NAME') ?: '0.2' }
     defaultConfig { ndk { abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64', 'x86' } }
     defaultConfig { testInstrumentationRunner 'local.tv.home.MovieHubTestRunner' }
+    defaultConfig {
+        if (experimental) applicationId 'local.tv.home.experimental'
+        manifestPlaceholders = [
+            appLabel: experimental ? 'MovieHub Experimental' : 'MovieHub',
+            homeCategory: experimental ? 'android.intent.category.DEFAULT' : 'android.intent.category.HOME'
+        ]
+        buildConfigField 'boolean', 'EXPERIMENTAL', experimental ? 'true' : 'false'
+    }
+    buildFeatures { buildConfig true }
     signingConfigs {
         release {
             if (System.getenv('APK_KEYSTORE')) {

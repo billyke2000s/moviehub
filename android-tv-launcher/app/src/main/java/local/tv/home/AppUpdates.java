@@ -13,8 +13,10 @@ import org.json.JSONObject;
 /** Public release feed; credentials are never sent to the update server. */
 final class AppUpdates {
 
-    static final String ROOT =
-        "https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/";
+    /** The experimental app has its own feed, so it never offers or installs the normal app. */
+    static final String ROOT = BuildConfig.EXPERIMENTAL
+        ? "https://github.com/billyke2000s/moviehub/releases/download/android-tv-experimental/"
+        : "https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/";
     static final long MAX_BYTES = 300L * 1024 * 1024;
 
     static final class Release {
