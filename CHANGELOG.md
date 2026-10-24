@@ -1,4 +1,4 @@
-## Unreleased
+## 0.53
 
 - Restore free-stream incoming speed from actual upstream relay bytes; count only the active source.
 - Rank ready VOD by quality aliases and HLS variant resolution, avoid camera recordings, and compare sampled media throughput/response time within equal quality. Keep the three-second window and buffering thresholds.
