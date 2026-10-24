@@ -1,3 +1,9 @@
+## 0.56 (24 October 2026)
+
+- Live TV: OK, and an air-mouse click on the picture, always show the same channel banner. OK no longer opens Sources after BACK or closes the banner while browsing, and ◀ no longer shows a cut-down banner.
+- Live TV briefly names any remote button MovieHub does not use, and says if a colour button was recognised but ignored, so remote buttons can be identified.
+- "Set up coloured buttons" (Live TV guide → Options) learns buttons Android has no name for and lists what each button sent. The guide's colour keys recognise the same codes as the player.
+
 ## Unreleased
 - Audit all 68 free VOD adapters, expose per-provider outcomes, and allow every scheduled provider time to run without extending the three-second initial selection.
 - Reject known free videos shorter than two minutes, recover across free services after manual selection, and retain late backups.
