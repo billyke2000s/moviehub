@@ -30,3 +30,15 @@ copies the signed `home.apk` and `update.json` from the feed (checking the APK's
 the feed) into a release named `MovieHub <version>` (tag `moviehub-v<version>`), marks it as the
 latest release, and renames the feed release "MovieHub <version> — updater feed". It builds and
 signs nothing and does not change the feed paths.
+
+## Experimental app
+
+`gradle -Pexperimental …` builds **MovieHub Experimental**: package `local.tv.home.experimental`,
+label "MovieHub Experimental", no home-screen role, and its own update feed
+(`android-tv-experimental` pre-release). It installs next to MovieHub and keeps its own data
+(channels and accounts are set up again inside it). Normal builds are unchanged.
+
+Run **Publish MovieHub Experimental** (`publish-experimental.yml`) on the branch to test, with an
+increasing version code. It uploads `moviehub-experimental.apk` (to install by hand) and
+`home.apk`/`update.json` (for the experimental app's own Update button). It never touches
+`android-tv-latest`.
