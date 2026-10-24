@@ -93,7 +93,15 @@ public class PlaybackTest {
             while ((n = input.read(buffer)) != -1) output.write(buffer, 0, n);
             transportStream = output.toByteArray();
         }
-        movie = VodTestMedia.movie(instrumentation.getTargetContext(), instrumentation.getContext());
+        try (
+            InputStream input = instrumentation.getContext().getAssets().open("vod.mp4");
+            ByteArrayOutputStream output = new ByteArrayOutputStream()
+        ) {
+            byte[] buffer = new byte[8192];
+            int n;
+            while ((n = input.read(buffer)) != -1) output.write(buffer, 0, n);
+            movie = output.toByteArray();
+        }
         wrappedTransportStream = pngSegment(transportStream);
         server = new ServerSocket(0, 8, InetAddress.getByName("127.0.0.1"));
         new Thread(() -> {
