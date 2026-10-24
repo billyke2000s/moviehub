@@ -1,4 +1,8 @@
 ## Unreleased
+- Audit all 68 free VOD adapters, expose per-provider outcomes, and allow every scheduled provider time to run without extending the three-second initial selection.
+- Reject known free videos shorter than two minutes, recover across free services after manual selection, and retain late backups.
+- Keep failed VOD native shutdown off the UI thread with retained window/engine lifetime; show selected source, Mb/s and received bytes.
+
 
 - Configure player panels before window attachment to stabilize the first input-focus handoff.
 

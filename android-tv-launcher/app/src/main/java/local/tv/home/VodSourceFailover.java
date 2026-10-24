@@ -96,6 +96,11 @@ final class VodSourceFailover {
         return true;
     }
 
+    /** Keep an already playing source out of a manual replacement attempt. */
+    void exclude(int index) {
+        failed.add(index);
+    }
+
     void onPlaying() {
         hasPlayed = true;
         bufferingSince = -1;

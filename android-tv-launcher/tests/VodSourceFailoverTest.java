@@ -62,6 +62,11 @@ public final class VodSourceFailoverTest {
         check(q.select(2, false));
         check(q.currentIndex() == 2);
         check(!q.select(-1, false));
+        q = queue();
+        check(q.select(1, false));
+        q.exclude(0);
+        check(q.failover().label.equals("C"));
+        check(q.failover() == null);
         q.setSources(
             Arrays.asList(
                 new VodSourceFailover.Source("a", "A", "p"),

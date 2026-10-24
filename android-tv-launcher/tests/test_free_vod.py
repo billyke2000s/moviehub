@@ -11,6 +11,69 @@ import moviehub_vod as vod
 from moviehub_compat import client
 
 class FreeVodTests(unittest.TestCase):
+    def test_every_provider_lookup_contract_and_individual_outcome(self):
+        import inspect
+        from unittest.mock import Mock
+        query={'imdb':'tt0063350','tmdb':10331,'title':'Night of the Living Dead',
+               'year':'1968','season':-1,'episode':-1}
+        for row in json.loads(vod.providers()):
+            module=importlib.import_module(row['module'])
+            provider=module.source()
+            for series in (False,True):
+                with self.subTest(provider=row['id'],series=series):
+                    info=dict(query,season=1 if series else -1,episode=1 if series else -1)
+                    calls={}
+                    for method,args in [('movie',('i','t','title','title',[], '2020')),
+                                        ('tvshow',('i','t','','title','title',[], '2020')),
+                                        ('episode',('show','i','t','','ep','2020-01-01','1','1')),
+                                        ('sources',('key',[])),('resolve',('url',))]:
+                        if hasattr(provider,method):
+                            inspect.signature(getattr(provider,method)).bind(*args)
+                            calls[method]=Mock(return_value=[] if method=='sources' else 'key')
+                    for name,call in calls.items():setattr(provider,name,call)
+                    with patch.object(module,'source',return_value=provider):
+                        result=json.loads(vod.query(row['id'],json.dumps(info),lambda:False))
+                    if row['name'] in ('library','filepursuit'):
+                        self.assertEqual(result['status'],'local_library' if row['name']=='library' else 'requires_api_key')
+                        calls['sources'].assert_not_called()
+                    elif not hasattr(provider,'tvshow' if series else 'movie'):
+                        self.assertEqual(result['status'],'unsupported_type')
+                        calls['sources'].assert_not_called()
+                    else:
+                        self.assertEqual(result['status'],'no_matches')
+                        calls['sources'].assert_called_once()
+                        self.assertNotIn('*',calls['sources'].call_args.args[1])
+
+    def test_short_media_rejected_without_treating_unknown_duration_as_short(self):
+        import struct
+        from moviehub_compat.media import duration_seconds
+        def mp4(seconds):
+            body=bytes(12)+struct.pack('>II',1000,int(seconds*1000))+bytes(80)
+            mvhd=struct.pack('>I4s',len(body)+8,b'mvhd')+body
+            return struct.pack('>I4s',len(mvhd)+8,b'moov')+mvhd
+        response=requests.Response();response.status_code=200
+        response.headers['Content-Type']='video/mp4'
+        with patch.object(client,'fetch',return_value=response),patch.object(client,'safe',side_effect=lambda url:url):
+            for seconds in (7,30,119.9):
+                response._content=mp4(seconds)
+                self.assertAlmostEqual(duration_seconds(response.content,'video/mp4'),seconds)
+                self.assertIsNone(vod.playable('https://media.example/error.mp4'))
+            for seconds in (120,5400):
+                response._content=mp4(seconds)
+                result=vod.playable('https://media.example/movie.mp4')
+                self.assertEqual(result['durationSeconds'],seconds)
+                self.assertEqual(result['headers']['User-Agent'],client.UserAgent)
+            response._content=b'unknown container metadata'
+            self.assertIsNotNone(vod.playable('https://media.example/movie.mp4'))
+            response.headers['Content-Type']='application/vnd.apple.mpegurl'
+            response._content=b'#EXTM3U\n#EXTINF:7,\na.ts\n#EXT-X-ENDLIST\n'
+            self.assertIsNone(vod.playable('https://media.example/error.m3u8'))
+            response._content=b'#EXTM3U\n#EXTINF:7,\na.ts\n'
+            self.assertIsNone(duration_seconds(response.content,'application/vnd.apple.mpegurl'))
+            self.assertIsNotNone(vod.playable('https://media.example/event.m3u8'))
+        self.assertIsNone(duration_seconds(b'bad bytes','video/mp4'))
+        self.assertEqual(duration_seconds(b'<MPD mediaPresentationDuration="PT1M59S">','application/dash+xml'),119)
+
     def test_probe_stops_at_the_payload_limit(self):
         response=requests.Response();response.status_code=206;response.url='https://media.example/file.mp4'
         response.headers['Content-Type']='video/mp4'

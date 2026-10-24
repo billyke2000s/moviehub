@@ -48,6 +48,11 @@ final class FreeVodScreen {
             boolean[] automatic = { AutoPlayback.enabled(activity, season) };
             Button choose = activity.button("Choose a source instead", () -> automatic[0] = false);
             activity.page.addView(choose);
+            activity.page.addView(
+                activity.button("Provider search details", () ->
+                    SidePanel.of(activity, "Provider search details").message(search.report()).show()
+                )
+            );
             final int generation = activity.generation;
             Runnable refresh = new Runnable() {
                 int count = -1;
@@ -94,10 +99,15 @@ final class FreeVodScreen {
                     boolean done = search.finished();
                     status.setText(
                         count > 0
-                            ? count + " streams found" + (done ? "" : " · searching for backups…")
+                            ? count +
+                                  " streams found · " +
+                                  search.progress() +
+                                  (done ? "" : " · searching for backups…")
                             : done
-                              ? "No playable stream found. Try again later."
-                              : "No stream yet · still searching…"
+                              ? "No playable stream found · " +
+                                search.progress() +
+                                ". See provider search details."
+                              : "No stream yet · " + search.progress() + " · still searching…"
                     );
                     // Even an immediate complete response waits for the original selection window.
                     if (!done || (automatic[0] && best == null && count > 0)) handler.postDelayed(this, 100);

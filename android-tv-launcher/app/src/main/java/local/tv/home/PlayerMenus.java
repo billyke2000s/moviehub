@@ -211,13 +211,18 @@ final class PlayerMenus {
     void chooseVodSource() {
         if (a.vod == null) return;
         var entries = a.vod.queue.sources();
-        String[] names = new String[entries.size() + 1];
+        String report = a.vod.providerReport();
+        String[] names = new String[entries.size() + (report.isEmpty() ? 1 : 2)];
+        if (!report.isEmpty()) names[names.length - 1] = "Provider search details";
         names[0] = "Automatic · switch if a source fails";
         for (int i = 0; i < entries.size(); i++) names[i + 1] =
             (i == a.vod.activeIndex() ? "▶ " : "") + entries.get(i).label;
         options("Sources", names, a.vod.automaticSources() ? 0 : a.vod.activeIndex() + 1, which -> {
             if (a.vod == null) return;
-            if (which == 0) a.vod.automatic();
+            if (which > entries.size()) SidePanel.of(a, "Provider search details")
+                .message(a.vod.providerReport())
+                .show();
+            else if (which == 0) a.vod.automatic();
             else a.vod.select(which - 1);
         });
     }

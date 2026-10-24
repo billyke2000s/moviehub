@@ -17,13 +17,14 @@ final class VodSearch implements AutoCloseable {
     private final long deadline;
     private final List<java.util.function.Consumer<SourceRepository.Source>> observers = new ArrayList<>();
     private static volatile VodSearch current;
+    private final Map<String, String> outcomes = new ConcurrentHashMap<>();
 
     VodSearch(Context context, JSONObject query, SourceRepository repo, boolean premiumize, int quality) {
         VodSearch previous = current;
         if (previous != null) previous.close();
         current = this;
         long started = SystemClock.elapsedRealtime();
-        deadline = started + 120000;
+        deadline = started + 180000;
         pending.set(premiumize ? 2 : 1);
         try {
             query.put("maxQuality", quality);
@@ -42,13 +43,23 @@ final class VodSearch implements AutoCloseable {
         // Runtime extraction and imports must never hold the UI thread.
         workers.submit(() -> {
             try {
-                for (String id : FreeVodProviders.ids(app)) {
+                List<String> ids = FreeVodProviders.ids(app);
+                for (String id : ids) outcomes.put(id, "Queued");
+                for (String id : ids) {
                     if (cancelled.get()) break;
                     pending.incrementAndGet();
                     workers.submit(() -> {
                         try {
-                            if (!expired()) FreeVodProviders.search(app, id, query, cancelled, this::found);
+                            if (expired()) outcomes.put(id, "Search ended before starting");
+                            else {
+                                outcomes.put(id, "Searching");
+                                JSONObject report = new JSONObject(
+                                    FreeVodProviders.search(app, id, query, cancelled, this::found)
+                                );
+                                outcomes.put(id, providerOutcome(report));
+                            }
                         } catch (Exception error) {
+                            outcomes.put(id, "Adapter error: " + error.getClass().getSimpleName());
                             Diagnostics.recovered("Free provider search", error);
                         } finally {
                             if (pending.decrementAndGet() == 0) workers.shutdown();
@@ -98,6 +109,60 @@ final class VodSearch implements AutoCloseable {
                 }
             });
         }
+    }
+
+    static String providerOutcome(JSONObject report) {
+        String status = report.optString("status");
+        switch (status) {
+            case "complete":
+                return report.optJSONArray("sources").length() + " playable links";
+            case "no_matches":
+                return "No matching links returned";
+            case "local_library":
+                return "Kodi library only";
+            case "requires_api_key":
+                return "Requires an API key";
+            case "unsupported_type":
+                return "Does not search this media type";
+            case "timeout":
+                return "Search timed out";
+            case "rejected_media":
+                return "Links rejected (short video or invalid media)";
+            case "resolution_failed":
+                return "Host links could not be resolved";
+            case "unsupported_host":
+                return "No supported anonymous host";
+            case "gaierror":
+                return "Domain lookup failed";
+            case "SSLError":
+                return "TLS connection failed";
+            case "ConnectTimeout":
+            case "ReadTimeout":
+            case "Timeout":
+                return "Connection timed out";
+            case "ConnectionError":
+                return "Connection failed";
+            default:
+                return status.matches("http_[0-9]{3}")
+                    ? "Website returned HTTP " + status.substring(5)
+                    : "Adapter could not complete";
+        }
+    }
+
+    String report() {
+        StringBuilder text = new StringBuilder();
+        for (String id : new TreeSet<>(outcomes.keySet())) {
+            if (text.length() > 0) text.append("\n");
+            text.append(id).append(": ").append(outcomes.get(id));
+        }
+        return text.length() == 0 ? "Loading bundled providers…" : text.toString();
+    }
+
+    String progress() {
+        int complete = 0;
+        for (String outcome : outcomes.values())
+            if (!outcome.equals("Queued") && !outcome.equals("Searching")) complete++;
+        return complete + "/" + outcomes.size() + " providers checked";
     }
 
     private boolean expired() {

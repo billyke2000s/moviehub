@@ -405,3 +405,7 @@ requests, adds an external CI availability probe and verifies packaged Python im
 ## VOD incoming-speed correction
 
 The candidate counts incoming upstream relay bytes for free HLS/media-file sources, shows an explicit waiting state instead of blank statistics, and strengthens ready-link ranking. It preserves the three-second selection window and existing failover thresholds. Local fixtures and CI validate code paths; physical-TV validation is outstanding. A startup sample does not guarantee future host performance.
+
+## Free VOD source audit and failure recovery candidate (24 October 2026)
+
+The owner reports mostly empty providers, short error clips, absent speed and crashes on switching services. All 68 module constructors and original package hashes were checked: 59 Scrubs and nine Free99, no missing active files. Confirmed code gaps: discarded provider outcomes, a global deadline shorter than the worst-case worker schedule, manual free-provider pinning, no short-duration rejection and main-thread native shutdown. The candidate addresses these gaps and shows selected source, Mb/s and cumulative incoming bytes. The three-second first choice and existing buffering thresholds remain. See docs/FREE_VOD_AUDIT.md for the per-module inventory. Local live DNS is unavailable; provider availability must be recorded from the independent GitHub audit. Android/emulator validation is pending. No physical-TV crash diagnosis or real-title availability is claimed.

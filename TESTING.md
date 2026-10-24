@@ -402,3 +402,7 @@ The decoded-backup test drains the main-thread handoff before checking the Activ
 Live-controls wait predicates and dialog snapshots execute on the main thread; the instrumentation thread receives their result through atomics. This keeps window focus checks inside Android’s UI-thread contract.
 
 Player panels request input focus after their DecorView attaches, with the initial layout already configured. The repeated colour-key test continues to require the attached view’s actual window-focus callback and successful key-driven panel replacement.
+
+## Free VOD failure and duration regressions
+
+The Python suite individually checks all 68 provider lookup contracts and explicit library/API-key exclusions, rejects 7/30/119.9-second media, accepts the 120-second boundary and unknown metadata, and preserves a matching playback User-Agent. See [inventory audit](docs/FREE_VOD_AUDIT.md). `PlaybackTest` adds real-VLC manual free-source failure through a broken host and short clip to another provider, initial short-clip rejection with a late-discovered backup, and a deliberately blocked native stop while controls and original playback remain responsive. The speed regression requires visible Mb/s and received-byte labels with a positive real relay byte count. `VodTestMedia` uses Android MediaMuxer to turn the generated 30-second fixture into real 150-second media, so duration checks are not bypassed in these tests. Full Android CI validation is required; these are fixtures, not physical-TV/provider evidence.

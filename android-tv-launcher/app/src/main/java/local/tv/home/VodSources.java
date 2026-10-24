@@ -31,6 +31,9 @@ final class VodSources {
         Runnable close = () -> {};
         java.util.function.IntFunction<EngineSources.Stream> transport = index -> null;
         boolean pinned;
+        boolean free;
+        java.util.function.BooleanSupplier searching = () -> false;
+        java.util.function.Supplier<String> report = () -> "";
         int active;
 
         Session(List<VodSourceFailover.Source> sources, Resolve resolve, boolean pinned) {
@@ -87,6 +90,11 @@ final class VodSources {
             },
             pinned
         );
+        session.free = true;
+        // Choosing a free service chooses the first attempt; a failed host can use every backup.
+        session.pinned = false;
+        session.searching = () -> !search.finished();
+        session.report = search::report;
         session.transport = index -> ordered.get(index).stream;
         session.close = search::close;
         search.observe(source -> {

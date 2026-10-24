@@ -344,3 +344,7 @@ prevent abandoned screens from starting playback. App screens remain native Java
 ## VOD incoming traffic
 
 Free HLS and media-file sources use the existing session-scoped `ProviderRelay`, including header-free URLs. Header-free DASH retains native base-URL handling and VLC statistics. It counts upstream payload reads and `StreamRate` converts active-relay deltas to Mb/s; backup prefetches have separate counters. Direct cloud playback continues using VLC statistics. `VodSearch` ranks picture quality first, then bounded transfer sample and response time; HLS manifests provide variant resolution, not a fictitious media throughput.
+
+## Free VOD diagnosis and safe replacement
+
+`VodSearch` records every module's sanitized outcome and permits 180 seconds for eight 18-second workers, while retaining the three-second first-selection window. `FreeVodProviders.search` returns the bridge outcome as well as progressive sources. `moviehub_compat.media` reads declared MP4/HLS/DASH duration from bounded probe bytes. Free videos with known duration below 120 seconds are rejected during probing and again by the active/prepared decoder. Unknown duration remains unknown; live/event playlist windows are not movie durations. `VodNative` reuses the existing off-main native-stop coordinator, retaining the player window and engine until shutdown completes. Free manual source choices allow cross-provider recovery; cloud pinning and buffering thresholds remain unchanged.
