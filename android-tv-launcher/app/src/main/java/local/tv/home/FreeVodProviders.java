@@ -76,6 +76,7 @@ public final class FreeVodProviders {
                     files,
                     headers
                 );
+                source.ranking = label + (SourceRanking.camera(item.optString("info")) ? " CAM" : "");
                 source.probeMbps = item.optDouble("probeMbps", 0);
                 source.responseMs = item.optLong("responseMs", Long.MAX_VALUE);
                 // Preserve native DASH base-URL handling; the relay rewrites HLS, not MPD templates.

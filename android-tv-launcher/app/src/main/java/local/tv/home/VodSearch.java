@@ -31,7 +31,12 @@ final class VodSearch implements AutoCloseable {
             throw new IllegalArgumentException("Invalid source quality", error);
         }
         window = new SourceWindow<>(started, source ->
-            SourceRanking.readyRank(source.title, quality, source.probeMbps, source.responseMs)
+            SourceRanking.readyRank(
+                source.ranking == null ? source.title : source.ranking,
+                quality,
+                source.probeMbps,
+                source.responseMs
+            )
         );
         Context app = context.getApplicationContext();
         // Runtime extraction and imports must never hold the UI thread.

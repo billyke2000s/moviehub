@@ -11,6 +11,24 @@ import moviehub_vod as vod
 from moviehub_compat import client
 
 class FreeVodTests(unittest.TestCase):
+    def test_probe_stops_at_the_payload_limit(self):
+        response=requests.Response();response.status_code=206;response.url='https://media.example/file.mp4'
+        response.headers['Content-Type']='video/mp4'
+        reads=[]
+        def chunks(size):
+            for n in range(3):
+                reads.append(n)
+                yield b'x'*32768
+        response.iter_content=chunks
+        response.close=lambda:None
+        session=unittest.mock.Mock()
+        session.request.return_value=response
+        client.scope(lambda:False)
+        with patch.object(client,'safe',side_effect=lambda url:url):
+            result=client.fetch(response.url,max_bytes=65536,session=session)
+        self.assertEqual(len(result.content),65536)
+        self.assertEqual(reads,[0,1])
+
     def test_manifest_resolution_and_media_transfer_sample(self):
         response=requests.Response();response.status_code=200
         response.headers['Content-Type']='application/vnd.apple.mpegurl'

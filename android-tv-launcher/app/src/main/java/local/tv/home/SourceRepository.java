@@ -18,6 +18,7 @@ final class SourceRepository {
         final JSONArray files;
         final JSONObject headers;
         EngineSources.Stream stream;
+        String ranking;
         double probeMbps;
         long responseMs = Long.MAX_VALUE;
 

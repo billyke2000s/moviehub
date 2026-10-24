@@ -69,6 +69,7 @@ def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=MAX_
                     if max_bytes == MAX_BODY: raise ValueError('Provider response limit')
                     chunks.append(chunk[:max(0,max_bytes-(size-len(chunk)))]); break
                 chunks.append(chunk)
+                if max_bytes != MAX_BODY and size >= max_bytes: break
             response._content=b''.join(chunks)
             response._content_consumed=True
             response.encoding='utf-8'

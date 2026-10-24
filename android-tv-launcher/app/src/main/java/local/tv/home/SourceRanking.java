@@ -22,12 +22,14 @@ final class SourceRanking {
         return 480;
     }
 
+    static boolean camera(String description) {
+        return word(description.toLowerCase(Locale.ROOT), "cam|camrip|hdcam|hdts|telesync|telecine|tsrip");
+    }
+
     static int rank(String description, int preferred) {
         int quality = resolution(description);
         int score = quality <= preferred ? quality : -quality;
-        if (
-            word(description.toLowerCase(Locale.ROOT), "cam|camrip|hdcam|hdts|telesync|telecine|tsrip")
-        ) score -= 10000;
+        if (camera(description)) score -= 10000;
         return score;
     }
 

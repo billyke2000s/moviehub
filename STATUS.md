@@ -404,4 +404,4 @@ requests, adds an external CI availability probe and verifies packaged Python im
 
 ## VOD incoming-speed correction
 
-The candidate counts incoming upstream relay bytes for all free sources, shows an explicit waiting state instead of blank statistics, and strengthens ready-link ranking. It preserves the three-second selection window and existing failover thresholds. Local fixtures and CI validate code paths; physical-TV validation is outstanding. A startup sample does not guarantee future host performance.
+The candidate counts incoming upstream relay bytes for free HLS/media-file sources, shows an explicit waiting state instead of blank statistics, and strengthens ready-link ranking. It preserves the three-second selection window and existing failover thresholds. Local fixtures and CI validate code paths; physical-TV validation is outstanding. A startup sample does not guarantee future host performance.
