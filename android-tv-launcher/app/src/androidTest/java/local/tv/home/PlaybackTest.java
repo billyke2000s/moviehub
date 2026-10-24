@@ -93,7 +93,7 @@ public class PlaybackTest {
             while ((n = input.read(buffer)) != -1) output.write(buffer, 0, n);
             transportStream = output.toByteArray();
         }
-        movie = VodTestMedia.movie(instrumentation.getContext());
+        movie = VodTestMedia.movie(instrumentation.getTargetContext(), instrumentation.getContext());
         wrappedTransportStream = pngSegment(transportStream);
         server = new ServerSocket(0, 8, InetAddress.getByName("127.0.0.1"));
         new Thread(() -> {
