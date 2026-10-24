@@ -11,6 +11,20 @@ import moviehub_vod as vod
 from moviehub_compat import client
 
 class FreeVodTests(unittest.TestCase):
+    def test_manifest_resolution_and_media_transfer_sample(self):
+        response=requests.Response();response.status_code=200
+        response.headers['Content-Type']='application/vnd.apple.mpegurl'
+        response._content=b'#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1000000,RESOLUTION=1280x720\na.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=4000000,RESOLUTION=1920x1080\nb.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=8000000,RESOLUTION=3840x2160\nc.m3u8\n'
+        with patch.object(client,'fetch',return_value=response),patch.object(client,'safe',side_effect=lambda url:url):
+            result=vod.playable('https://media.example/master.m3u8',1080)
+            self.assertEqual(result['verifiedQuality'],'1080p')
+            self.assertEqual(result['probeMbps'],0)
+            response.headers['Content-Type']='video/mp4';response._content=b'x'*65536
+            with patch.object(vod.time,'monotonic',side_effect=[1,1.1]):
+                result=vod.playable('https://media.example/file.mp4')
+            self.assertAlmostEqual(result['probeMbps'],5.24288,places=4)
+            self.assertEqual(result['responseMs'],100)
+
     def test_all_bundled_provider_constructors_import(self):
         rows=json.loads(vod.providers())
         self.assertEqual(len(rows),68)

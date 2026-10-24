@@ -28,6 +28,39 @@ final class ProviderRelay implements AutoCloseable {
         new ArrayBlockingQueue<>(4)
     );
     private volatile boolean closed;
+    private final java.util.concurrent.atomic.AtomicLong received =
+        new java.util.concurrent.atomic.AtomicLong();
+    private final StreamRate incoming = new StreamRate();
+
+    long incomingBytes() {
+        return received.get();
+    }
+
+    void resetIncomingRate() {
+        incoming.reset(System.nanoTime() / 1000000, received.get());
+    }
+
+    float incomingMbps() {
+        return incoming.sample(System.nanoTime() / 1000000, received.get());
+    }
+
+    private InputStream counted(InputStream input) {
+        return new FilterInputStream(input) {
+            @Override
+            public int read() throws IOException {
+                int value = in.read();
+                if (value >= 0) received.incrementAndGet();
+                return value;
+            }
+
+            @Override
+            public int read(byte[] buffer, int offset, int length) throws IOException {
+                int count = in.read(buffer, offset, length);
+                if (count > 0) received.addAndGet(count);
+                return count;
+            }
+        };
+    }
 
     interface ConnectionFactory {
         HttpURLConnection open(URI uri) throws Exception;
@@ -38,6 +71,7 @@ final class ProviderRelay implements AutoCloseable {
     final String url;
 
     ProviderRelay(EngineSources.Stream stream) throws Exception {
+        incoming.sample(System.nanoTime() / 1000000, 0);
         credentialAuthority = URI.create(stream.url).getAuthority();
         playlistSession =
             stream.playlistSession == null ? null : new PlaylistSession(stream.url, stream.playlistSession);
@@ -219,7 +253,9 @@ final class ProviderRelay implements AutoCloseable {
                 }
                 if (status != 200 && status != 206) throw new IOException("Upstream stream unavailable");
                 OutputStream out = socket.getOutputStream();
-                try (PushbackInputStream in = new PushbackInputStream(upstream.getInputStream(), 1024)) {
+                try (
+                    PushbackInputStream in = new PushbackInputStream(counted(upstream.getInputStream()), 1024)
+                ) {
                     byte[] prefix = new byte[10];
                     int n = 0,
                         sniffCount;

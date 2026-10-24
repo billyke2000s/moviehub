@@ -57,6 +57,8 @@ public final class FreeVodProvidersTest {
             );
             assertEquals(2, sources.size());
             assertEquals(SourceRepository.Cache.CACHED, sources.get(0).cache);
+            assertNotNull("Header-free sources also use counted incoming transport", sources.get(0).stream);
+            assertTrue(sources.get(0).responseMs >= 0);
             assertEquals(
                 "https://one.example/video.mp4",
                 sources.get(0).files.getJSONObject(0).getString("link")

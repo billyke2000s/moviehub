@@ -114,6 +114,11 @@ final class VodPlayback {
         if (activity.player != null && activity.player.isPlaying()) queue.onPlaying();
     }
 
+    float incomingMbps() {
+        ProviderRelay relay = relays.get(active);
+        return relay == null ? PlayerOverlay.downloadSpeed(activity.player) : relay.incomingMbps();
+    }
+
     String mediaUrl(int index, String link) throws Exception {
         EngineSources.Stream stream = session.transport.apply(index);
         if (stream == null) return link;
@@ -212,6 +217,8 @@ final class VodPlayback {
                 ProviderRelay oldRelay = relays.remove(active);
                 if (oldRelay != null) oldRelay.close();
                 active = queue.currentIndex();
+                ProviderRelay selectedRelay = relays.get(active);
+                if (selectedRelay != null) selectedRelay.resetIncomingRate();
                 session.active = active;
                 queue.onPlaying();
                 // Publish completion only after the retiring player is released and audio restored.

@@ -4,6 +4,7 @@ import importlib.resources
 import json
 import re
 import threading
+import time
 from urllib.parse import parse_qsl, urlparse
 import moviehub_compat
 from moviehub_compat import client
@@ -59,10 +60,10 @@ def query(provider_id, raw, cancelled, emit=None):
                     if not host.valid_url(): continue
                     url=host.resolve()
                 if not isinstance(url,str) or url in seen: continue
-                result=playable(url)
+                result=playable(url, info.get("maxQuality", 2160))
                 if result is None: continue
                 seen.add(url)
-                result.update({'provider':provider_id, 'providerName':urlparse(provider.base_link).hostname or record['name'], 'quality':str(item.get('quality','SD')),
+                result.update({'provider':provider_id, 'providerName':urlparse(provider.base_link).hostname or record['name'], 'quality':result.pop('verifiedQuality', None) or str(item.get('quality','SD')),
                                'info':str(item.get('info','')), 'title': title})
                 sources.append(result)
                 if emit is not None: emit.ready(json.dumps(result))
@@ -76,7 +77,7 @@ def query(provider_id, raw, cancelled, emit=None):
     except Exception as error:
         return json.dumps({'status':type(error).__name__,'sources':[]})
 
-def playable(raw):
+def playable(raw, preferred=2160):
     url, sep, suffix=raw.partition('|')
     client.safe(url)
     headers=dict(parse_qsl(suffix)) if sep else {}
@@ -84,19 +85,31 @@ def playable(raw):
     if any(k.lower() not in allowed or '\r' in v or '\n' in v for k,v in headers.items()): return None
     # A host page or expired error response must not win the three-second window.
     path=urlparse(url).path.lower()
-    response=client.fetch(url, dict(headers, Range='bytes=0-1023'), timeout=3, max_bytes=1024)
+    started=time.monotonic()
+    response=client.fetch(url, dict(headers, Range='bytes=0-65535'), timeout=3, max_bytes=65536)
+    elapsed=max(.001, time.monotonic()-started)
+    verified=None
     kind=response.headers.get('Content-Type','').lower()
     if response.status_code not in (200,206) or 'text/html' in kind: return None
     prefix=response.content.lstrip()
     if '.m3u8' in path or 'mpegurl' in kind:
         if not prefix.startswith((b'#EXTM3U', b'\xef\xbb\xbf#EXTM3U')): return None
+        heights=[int(x) for x in re.findall(rb'RESOLUTION=\d+x(\d+)', prefix)]
+        if heights:
+            allowed=[h for h in heights if h <= preferred]
+            verified=str(max(allowed) if allowed else min(heights))+'p'
     elif '.mpd' in path or 'dash+xml' in kind:
         # This VOD path has no DRM session integration.
         if b'<MPD' not in prefix or b'ContentProtection' in prefix: return None
     elif not kind.startswith(('video/','audio/')):
         known=re.search(r'\.(?:mp4|mkv|webm|avi|ts|mov|m4v)(?:$|/)',path)
         if not known or 'application/octet-stream' not in kind: return None
-    return {'url':url,'headers':headers}
+    playlist = '.m3u8' in path or '.mpd' in path or 'mpegurl' in kind or 'dash+xml' in kind
+    # A manifest's byte size says nothing about its media throughput. Only compare media samples.
+    rate=len(response.content)*8/(elapsed*1000000) if not playlist and len(response.content)>=32768 else 0
+    return {'url':url,'headers':headers,'verifiedQuality':verified,
+            'format':'dash' if '.mpd' in path or 'dash+xml' in kind else 'stream',
+            'probeMbps':rate,'responseMs':round(elapsed*1000)}
 
 # Replace the upstream HTTP fetcher with the bounded transport; retain Net's cookie and UA API.
 from resolveurl.lib.net import Net

@@ -425,7 +425,14 @@ public final class ProviderAdaptersTest {
                 .filter(s -> s.startsWith("http://"))
                 .findFirst()
                 .get();
+            long playlistBytes = relay.incomingBytes();
+            assertTrue("Count upstream manifest bytes", playlistBytes > 0);
             assertEquals("fixture-media", read(child));
+            assertEquals(
+                "Count media once, including small upstream reads",
+                13,
+                relay.incomingBytes() - playlistBytes
+            );
             assertEquals(Arrays.asList("https://provider.example", "https://provider.example"), origins);
             assertTrue(master.indexOf("8.8.8.8") < 0);
         }

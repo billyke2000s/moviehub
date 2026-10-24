@@ -47,6 +47,7 @@ final class PlayerOverlay {
         a.speed = new TextView(a);
         a.speed.setTextColor(0xccffffff);
         a.speed.setTextSize(14);
+        a.speed.setText("Receiving stream…");
         a.speed.setShadowLayer(a.dp(4), 0, a.dp(1), 0xcc000000);
         top.addView(a.speed);
         overlay.addView(top, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));

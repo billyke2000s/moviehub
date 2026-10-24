@@ -141,11 +141,11 @@ public class VlcPlaybackActivity extends Activity {
                 }
                 // A programme reminder that is due shows over the picture (checked every 15 s).
                 if (++reminderTicks % 15 == 0 && !dialogOpen) showDueReminder();
-                downloadMbps = PlayerOverlay.downloadSpeed(player);
+                downloadMbps = vod == null ? PlayerOverlay.downloadSpeed(player) : vod.incomingMbps();
                 if (downloadMbps >= 0) Timings.lastMbps = downloadMbps;
                 speed.setText(
                     downloadMbps < 0
-                        ? ""
+                        ? "Receiving stream…"
                         : String.format(Locale.ROOT, "Downloading at %.1f Mb/s", downloadMbps)
                 );
                 timeline.setEnabled(!live && player.isSeekable() && length > 0);

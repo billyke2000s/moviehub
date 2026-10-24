@@ -19,6 +19,7 @@ final class PlayerOptions {
         return Arrays.asList(
             // VOD favours a little more headroom; this can add time to startup and seeks.
             "--network-caching=" + PlaybackBuffer.VOD_MS,
+            "--stats",
             "--no-video-title-show",
             // Network files have no subtitle files beside them; do not probe for any.
             "--no-sub-autodetect-file",
