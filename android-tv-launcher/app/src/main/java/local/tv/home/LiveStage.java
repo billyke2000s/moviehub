@@ -46,6 +46,7 @@ final class LiveStage implements LiveScreen {
         public void playing() {
             liveFailed = false;
             overlayHandler.removeCallbacks(slow);
+            overlayHandler.removeCallbacks(retry);
             status.setVisibility(View.GONE);
         }
 
@@ -299,12 +300,14 @@ final class LiveStage implements LiveScreen {
     /** How long a channel may take to start before the viewer is told it may be unavailable. */
     static final long SLOW_MS = 10_000;
 
-    private final Runnable slow = () -> {
-        if (!full || liveFailed || ExoLive.isPlaying() || status.getVisibility() != View.VISIBLE) return;
+    private final Runnable slow = this::slowHint;
+
+    private void slowHint() {
+        if (!full || ExoLive.isPlaying() || status.getVisibility() != View.VISIBLE) return;
         status.setText(
-            "Still finding this channel's link…\nIt may not be available right now.\n\nBACK  guide     ▲ ▼  another channel"
+            "Still finding this channel's link…\nIt may not be available right now. Still trying.\n\nBACK  guide     ▲ ▼  another channel"
         );
-    };
+    }
 
     /** Says the channel is opening; after {@link #SLOW_MS} says it may not be available, and keeps waiting. */
     private void opening(String text) {
@@ -323,18 +326,33 @@ final class LiveStage implements LiveScreen {
         ExoLive.play(a, url, true);
     }
 
+    /** Every copy failed: keep the player open and keep trying, every {@link #RETRY_MS}. */
+    static final long RETRY_MS = 15_000;
+
+    private final Runnable retry = this::retryNow;
+
     private void showError(String reason) {
         if (!full) return;
         if (zapper != null && zapper.failover(reason)) return;
-        liveFailed = true;
         status.setText(
-            "This channel isn't working right now.\n" +
-                reason +
-                "\n\n▲ ▼  change channel     SELECT  try again     BACK  guide"
+            "Still trying this channel…\nIt may not be available right now.\n\nBACK  guide     ▲ ▼  another channel"
         );
-        status.setBackgroundColor(0xd9000000);
+        status.setBackgroundColor(0x99000000);
         status.setVisibility(View.VISIBLE);
-        if (zapper != null) zapper.showBanner();
+        overlayHandler.removeCallbacks(slow);
+        overlayHandler.removeCallbacks(retry);
+        overlayHandler.postDelayed(retry, RETRY_MS);
+    }
+
+    private void retryNow() {
+        if (!full || ExoLive.isPlaying()) return;
+        // Start again from the first copy, so every copy gets another go; or the one copy again.
+        if (zapper == null || !zapper.retryFromFirst()) {
+            ExoLive.attach(this, surface, events);
+            ExoLive.play(a, url, true);
+        }
+        overlayHandler.removeCallbacks(retry);
+        overlayHandler.postDelayed(retry, RETRY_MS);
     }
 
     // ---- LiveScreen ----------------------------------------------------------------------------
