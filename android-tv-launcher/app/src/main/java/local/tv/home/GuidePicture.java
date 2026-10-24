@@ -21,6 +21,9 @@ final class GuidePicture {
 
     /** The box the picture is shown in; a newer guide frame replaces it. */
     private FrameLayout box;
+    /** Experimental builds: the one-screen Live TV that draws the picture over the box. */
+    private MainActivity host;
+    private TextView label;
 
     /**
      * Shows the live picture in {@code holder} with the channel's number and name in
@@ -30,6 +33,8 @@ final class GuidePicture {
      */
     void show(MainActivity activity, FrameLayout holder, TextView label) {
         box = holder;
+        host = activity;
+        this.label = label;
         boolean on = activity.prefs.getBoolean(LiveTvScreen.PICTURE, true);
         holder.setVisibility(on ? View.VISIBLE : View.GONE);
         if (!on) {
@@ -130,40 +135,17 @@ final class GuidePicture {
         ) playing = false;
     }
 
-    /** Experimental builds: the shared ExoPlayer draws on a surface in this box. */
+    /** Experimental builds: the one Live TV picture is placed over this box. */
     private void attachExo(Context context) {
-        android.view.SurfaceView surface = null;
-        if (video.getChildCount() > 0 && video.getChildAt(0) instanceof android.view.SurfaceView) {
-            surface = (android.view.SurfaceView) video.getChildAt(0);
-        } else {
-            surface = new android.view.SurfaceView(context);
-            video.addView(surface, new FrameLayout.LayoutParams(-1, -1));
-        }
-        ExoLive.attach(
-            this,
-            surface,
-            new ExoLive.Listener() {
-                @Override
-                public void playing() {
-                    playing = true;
-                }
-
-                @Override
-                public void buffering(boolean buffering) {}
-
-                @Override
-                public void failed(String reason) {
-                    playing = false;
-                }
-            }
-        );
+        if (host != null && host.stage != null) host.stage.picture(box, label);
     }
 
     /** The guide closed: stops the live player unless the full screen has taken it over. */
     void stop() {
         playing = false;
-        if (ExoLive.available()) ExoLive.stopIfOwner(this);
-        else LivePlayer.stopIfOwner(this);
+        if (ExoLive.available()) {
+            if (host != null && host.stage != null && !host.stage.full()) host.stage.pictureStopped();
+        } else LivePlayer.stopIfOwner(this);
         removeVideo();
     }
 

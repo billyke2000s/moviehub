@@ -18,7 +18,7 @@ import org.json.*;
  * The single activity of the launcher. It owns shared navigation state and lifecycle and
  * delegates each screen to a feature class (see ARCHITECTURE.md for the map).
  */
-public class MainActivity extends TvActivity {
+public class MainActivity extends TvActivity implements LiveScreen.Owner {
 
     // Feature controllers. Each one builds the views for one area of the app.
     final UpdatePrompt updates = new UpdatePrompt(this);
@@ -30,6 +30,11 @@ public class MainActivity extends TvActivity {
     final CatalogueScreens catalogues = new CatalogueScreens(this);
     final CatalogueSearch catalogueSearch = new CatalogueSearch(this);
     final LiveTvScreen liveTv = new LiveTvScreen(this);
+    /**
+     * MovieHub Experimental: one screen for all of Live TV (pages, one picture, the banner), or
+     * null in normal builds, which keep separate player screens.
+     */
+    LiveStage stage;
     /** Live TV in the phone layout (see {@link DeviceMode}). */
     final PhoneLive phoneLive = new PhoneLive(this);
     final SettingsScreens settingsScreens = new SettingsScreens(this);
@@ -83,8 +88,17 @@ public class MainActivity extends TvActivity {
     }
 
     @Override
+    public LiveScreen liveScreen() {
+        return stage != null && stage.full() ? stage : null;
+    }
+
+    @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         int key = event.getKeyCode();
+        if (stage != null) {
+            stage.received(event);
+            if (stage.full() && stage.key(event)) return true;
+        }
         if (activeKeyBar != null && activeKeyBar.handle(event)) return true;
         if (liveTv.handlePageKey(event)) return true;
         if (
@@ -295,6 +309,7 @@ public class MainActivity extends TvActivity {
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
+        if (ExoLive.available()) stage = new LiveStage(this);
         tvFullscreen();
         android.content.IntentFilter changes = new android.content.IntentFilter();
         changes.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -351,6 +366,7 @@ public class MainActivity extends TvActivity {
     @Override
     public void onStart() {
         super.onStart();
+        if (stage != null) stage.started();
         handler.removeCallbacks(ticker);
         handler.post(ticker);
         updates.checkForUpdate();
@@ -394,6 +410,7 @@ public class MainActivity extends TvActivity {
     @Override
     public void onStop() {
         handler.removeCallbacks(ticker);
+        if (stage != null) stage.stopped();
         runLeaving();
         super.onStop();
     }
@@ -448,7 +465,8 @@ public class MainActivity extends TvActivity {
         page = vertical();
         page.setBackgroundColor(0xff090d14);
         page.setPadding(dp(38), dp(20), dp(38), dp(20));
-        setContentView(page);
+        if (stage != null) stage.setPage(page);
+        else setContentView(page);
         if (title != null) {
             LinearLayout head = row();
             TextView name = text(title, 24);
@@ -541,6 +559,10 @@ public class MainActivity extends TvActivity {
         } catch (Exception e) {
             Diagnostics.recovered("Saving recent playback", e);
             /* History failure must never prevent playback. */
+        }
+        if (live && stage != null) {
+            stage.fullScreen(title, safe, id);
+            return;
         }
         if (!live) {
             SeriesPlayback.restore(metadata);

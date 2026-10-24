@@ -376,12 +376,17 @@ retained guide/fullscreen output is unchanged.
 
 Builds made with `-Pexperimental` add `src/experimental/java` (the real `ExoLive`, on Media3
 ExoPlayer 1.5.1); normal builds add `src/stable/java` (a stub whose `available()` is false), so
-the normal APK contains no ExoPlayer. `LiveHost` is the engine-independent base of a full-screen
-Live TV screen (used by `SkyOverlay`, `LiveZapper` and `SidePanel`); `VlcPlaybackActivity` and
-`ExoLiveActivity` extend it, and `LiveMenus` is the set of panels the banner opens. In the
-experimental app, `MainActivity.play` opens `ExoLiveActivity` for Live TV and `GuidePicture` draws
-on its own `SurfaceView`; `ExoLive.attach` points the one ExoPlayer at the newest owner's surface
-(`setVideoSurfaceView`), so a handoff never rebuilds the decoder. Link lookup still goes through
-`LiveStream.resolve` unchanged. Recovery: behind-live-window rejoins; other errors and 15 s stalls
-reopen the channel at most twice, then `LiveZapper.failover` moves to a backup copy.
+the normal APK contains no ExoPlayer and behaves as before.
 
+In the experimental app Live TV is one screen, `LiveStage`, owned by `MainActivity`: its root holds
+the page host (every `fixedScreen` page, including the TV Guide menu and channel guide), then one
+`SurfaceView` that is only ever placed over the guide's corner box or stretched to full screen,
+then an overlay (the guide picture's label, status text, the satellite banner and a "Last button"
+readout). `MainActivity.play` for Live TV calls `LiveStage.fullScreen` instead of opening a player
+Activity, so the guide stays underneath and BACK returns to it unchanged. `MainActivity.dispatchKeyEvent`
+shows every key in the readout, then sends keys to `LiveStage.key` while full screen. The banner and
+channel changing are the same `SkyOverlay` and `LiveZapper`, through the `LiveScreen` interface
+(implemented by `LiveHost` for separate player screens and by `LiveStage`). `ExoMenus` holds the
+audio, Sources and Options panels. Link lookup still goes through `LiveStream.resolve`
+unchanged. Recovery: behind-live-window rejoins; other errors and 15 s stalls reopen the channel at
+most twice, then `LiveZapper.failover` moves to a backup copy.

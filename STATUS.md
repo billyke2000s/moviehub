@@ -454,3 +454,6 @@ Experimental app, keeping the normal app on LibVLC. First version: same guide an
 shared between the guide picture and the full screen. Audio track choice only (no subtitle
 rendering yet); no prepared standby backup. Built in CI only; not yet run on the owner's TV.
 
+exp-2 candidate: one-screen Live TV (`LiveStage`) replaces the separate ExoPlayer full-screen
+Activity. Same guide and banner code. Not yet compiled at the time of writing; not run on a TV.
+
