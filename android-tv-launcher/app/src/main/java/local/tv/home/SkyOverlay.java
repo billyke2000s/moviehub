@@ -163,7 +163,7 @@ final class SkyOverlay {
         // No coloured buttons on the remote: BACK reveals these as buttons to pick with ◀ ▶.
         TextView noColours = label(15, true, SOFT);
         content.addView(keys);
-        noColours.setText("No colour buttons? BACK, then ◀ ▶ and OK");
+        noColours.setText("No colour buttons? ◀ ▶ then OK");
         content.addView(noColours);
         hint = label(16, true, LiveTvScreen.YELLOW);
         hint.setPadding(0, a.dp(8), 0, 0);
@@ -233,18 +233,29 @@ final class SkyOverlay {
     }
 
     void hideBanner() {
+        // A hidden button must not keep the focus, or the next OK would press it.
+        if (focusedControl() >= 0) a.video.requestFocus();
         banner.animate().cancel();
         banner.setVisibility(View.GONE);
         nowTime.setVisibility(View.VISIBLE);
     }
 
-    void focusSources() {
+    /**
+     * TV layout: the banner's buttons are always drawn boxed, as after BACK, so the banner looks
+     * the same however it was opened. ◀ ▶ move between them and OK presses the highlighted one.
+     */
+    void boxControls() {
         controlsRevealed = true;
         for (View control : controls) {
+            // Focusable for the D-pad only: in touch mode (an air mouse) one click presses it.
             control.setFocusable(true);
-            control.setFocusableInTouchMode(true);
             controlOutline(control, control.hasFocus());
         }
+    }
+
+    void focusSources() {
+        boxControls();
+        for (View control : controls) control.setFocusableInTouchMode(true);
         source.requestFocus();
     }
 

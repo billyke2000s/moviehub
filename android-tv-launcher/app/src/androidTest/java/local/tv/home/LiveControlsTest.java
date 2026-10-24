@@ -502,38 +502,47 @@ public final class LiveControlsTest {
     }
 
     @Test
-    public void leftAndOkNeverSwitchToADifferentOverlay() {
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
-        remote.waitForIdleSync();
+    public void bannerAlwaysShowsBoxedButtonsAndArrowsMoveBetweenThem() {
         remote.runOnMainSync(() -> {
-            assertFalse("◀ does not open the reduced browsing layout", activity.zapper.browsing());
-            assertTrue(activity.zapper.overlay.bannerShowing());
+            activity.zapper.overlay.hideBanner();
+            assertTrue("The video keeps the focus", activity.video.hasFocus());
         });
-        // Browsing, then OK on the same channel: the full banner rather than closing it.
+        // ▶ with the banner hidden opens the same banner, with no button highlighted yet.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
-        await(activity.zapper::browsing);
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
-        remote.waitForIdleSync();
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
-            assertFalse(activity.zapper.browsing());
+            assertFalse("No reduced browsing layout", activity.zapper.browsing());
             assertTrue(activity.zapper.overlay.bannerShowing());
-            assertFalse(activity.zapper.overlay.infoShowing());
-            assertNull(SidePanel.current);
-        });
-        // With the controls revealed but none focused, OK still shows the banner.
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-        remote.waitForIdleSync();
-        remote.runOnMainSync(() -> {
-            activity.video.requestFocus();
             assertEquals(-1, activity.zapper.overlay.focusedControl());
+            for (android.view.View control : activity.zapper.overlay.controls)
+                assertNotNull("Every button is boxed", control.getBackground());
         });
+        // OK with nothing highlighted keeps the banner and opens nothing.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
-            assertNull("Unfocused OK does not open Sources", SidePanel.current);
+            assertNull(SidePanel.current);
             assertTrue(activity.zapper.overlay.bannerShowing());
+        });
+        // ▶ ▶ highlights Audio & subtitles; OK presses it.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> assertEquals(1, activity.zapper.overlay.focusedControl()));
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        remote.waitForIdleSync();
+        android.app.Dialog audio = currentPanel();
+        assertNotNull("OK presses the highlighted button", audio);
+        remote.runOnMainSync(() ->
+            assertTrue(containsText(audio.getWindow().getDecorView(), "Audio & Subtitles"))
+        );
+        remote.runOnMainSync(() -> SidePanel.current.dismiss());
+        remote.waitForIdleSync();
+        await(() -> SidePanel.current == null && !activity.dialogOpen);
+        // Hiding the banner returns the focus to the video, so the next OK cannot press a hidden button.
+        remote.runOnMainSync(() -> {
+            activity.zapper.overlay.hideBanner();
+            assertEquals(-1, activity.zapper.overlay.focusedControl());
         });
     }
 
