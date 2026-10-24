@@ -43,8 +43,7 @@ final class LiveZapper {
     static final int STALLS_PER_MINUTE = LiveBuffering.STARTS_PER_MINUTE;
     /** The banner stays this long; browsing in it a little longer. */
     static final long BANNER_MS = 5000,
-        BROWSE_MS = 8000,
-        OK_MS = 10000;
+        BROWSE_MS = 8000;
 
     private final VlcPlaybackActivity player;
     /**
@@ -72,17 +71,9 @@ final class LiveZapper {
     SkyOverlay overlay;
     private final StringBuilder typed = new StringBuilder();
     private final Runnable jump = this::jumpToTyped;
-    /**
-     * The programme information was opened by OK together with the banner, so both close
-     * together. Information opened with yellow or i stays until closed, as before.
-     */
-    private boolean okOverlay;
     private final Runnable hideBanner = () -> {
         browsing = false;
-        if (overlay == null) return;
-        overlay.hideBanner();
-        if (okOverlay) overlay.hideInfo();
-        okOverlay = false;
+        if (overlay != null) overlay.hideBanner();
     };
 
     /** Browsing other channels in the banner: which channel and which of its programmes. */
@@ -635,7 +626,6 @@ final class LiveZapper {
     }
 
     void hideInfo() {
-        okOverlay = false;
         overlay.hideInfo();
         player.overlayHandler.removeCallbacks(hideBanner);
         player.overlayHandler.postDelayed(hideBanner, BANNER_MS);
@@ -649,8 +639,8 @@ final class LiveZapper {
      * <ul>
      *   <li>▲ ▼, CH+ CH-: change channel (in the banner while browsing: other channels).
      *   <li>◀ ▶: browse what is on, without changing channel; SELECT watches the channel shown.
-     *   <li>SELECT: the full banner with programme information, every time (a revealed and
-     *       focused banner button is pressed instead). Numbers, last channel, GUIDE.
+     *   <li>SELECT: the same full banner, every time (a revealed and focused banner button is
+     *       pressed instead). Numbers, last channel, GUIDE.
      *   <li>i (or yellow): programme information. Red: audio and subtitles. Green: source.
      *       Blue (or MENU): options.
      *   <li>BACK: closes what is open; then back to the guide, whose picture carries on.
@@ -750,19 +740,14 @@ final class LiveZapper {
     void information() {
         if (!overlay.bannerShowing()) showBanner();
         showInfo();
-        okOverlay = false;
     }
 
     /**
-     * OK, or a click on the picture: the full banner with the programme information above it,
-     * every time. Both close together after {@link #OK_MS}, or with BACK.
+     * OK, or a click on the picture: always the same full channel banner (number, name, clock,
+     * sources, now and next when the channel has listings, and the colour keys).
      */
     void ok() {
         showBanner();
-        showInfo();
-        okOverlay = true;
-        player.overlayHandler.removeCallbacks(hideBanner);
-        if (!backControls) player.overlayHandler.postDelayed(hideBanner, OK_MS);
     }
 
     /** A tap on the picture (phone layout): shows the banner and its buttons, or hides them. */

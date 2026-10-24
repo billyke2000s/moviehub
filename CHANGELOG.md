@@ -33,7 +33,8 @@
 
 ## Unreleased
 
-- Live TV: OK (and an air-mouse click on the picture) always shows the full banner with the programme information above it; both close together after 10 seconds or with BACK. OK while browsing the current channel, and OK with the banner buttons revealed but none focused, show the same overlay instead of closing it or opening Sources. ◀ no longer opens the reduced browsing layout.
+- Live TV: OK (and an air-mouse click on the picture) always shows the same full channel banner. OK while browsing the current channel, and OK with the banner buttons revealed but none focused, show that banner instead of closing it or opening Sources. ◀ no longer opens the reduced browsing layout.
+- Live TV briefly names any remote button MovieHub does not use (key name and scan code), so a remote's colour buttons can be identified.
 - "Set up coloured buttons" can learn buttons Android has no key name for (by scan code), says when a button sends nothing, and lists what each button sent. The guide's colour keys now recognise the same standard and learned scan codes as the player.
 
 ## 0.51 (23 October 2026)

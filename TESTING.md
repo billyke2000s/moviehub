@@ -2,7 +2,7 @@
 
 ## Continuous series and automatic playback
 
-`VideoFilesTest` includes episode ordering, future-date handling and source-resolution ranking. `SeriesAutoplayTest` uses catalogue and source fixtures to check season transitions, updated history keys, missing pack episodes, show endings, uncertain filenames, bounded source fallback and cancellation. `LiveGuideTest` covers colour keys from header focus and Back/arrow/OK controls; `LiveControlsTest` covers all four physical colours during playback, learned scan-code colours, and OK/click/◀ always showing the same banner with programme information. These do not verify a particular physical remote or real-provider playback.
+`VideoFilesTest` includes episode ordering, future-date handling and source-resolution ranking. `SeriesAutoplayTest` uses catalogue and source fixtures to check season transitions, updated history keys, missing pack episodes, show endings, uncertain filenames, bounded source fallback and cancellation. `LiveGuideTest` covers colour keys from header focus and Back/arrow/OK controls; `LiveControlsTest` covers all four physical colours during playback, learned scan-code colours, and OK/click/◀ always showing the same banner. These do not verify a particular physical remote or real-provider playback.
 
 
 There are three layers of checks. CI runs all of them on every pull request that touches
