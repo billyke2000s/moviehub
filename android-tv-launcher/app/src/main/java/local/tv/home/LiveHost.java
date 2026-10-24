@@ -10,7 +10,7 @@ import android.widget.FrameLayout;
  * changing ({@link LiveZapper}) and player side panels need from it, independent of the playback
  * engine behind it.
  */
-abstract class LiveHost extends Activity {
+abstract class LiveHost extends Activity implements LiveScreen, LiveScreen.Owner {
 
     final Handler overlayHandler = new Handler(Looper.getMainLooper());
     /** Where the picture is drawn; focusable on Live TV so remote keys never land on hidden controls. */
@@ -22,23 +22,59 @@ abstract class LiveHost extends Activity {
     /** Live TV: this channel failed; the message is in the picture and SELECT tries again. */
     boolean liveFailed;
 
-    int dp(int n) {
+    @Override
+    public int dp(int n) {
         return (int) (n * getResources().getDisplayMetrics().density + .5f);
     }
 
-    abstract LiveMenus liveMenus();
+    @Override
+    public Activity activity() {
+        return this;
+    }
 
-    /** Plays another stream in place: the next channel, or a backup copy of this one. */
-    abstract void switchTo(String title, String newUrl, String newId);
+    @Override
+    public LiveScreen liveScreen() {
+        return this;
+    }
 
-    abstract String playbackUrl();
+    @Override
+    public Handler overlayHandler() {
+        return overlayHandler;
+    }
 
-    /** A side panel over the video closed: show the controls again. */
-    abstract void panelClosed();
+    @Override
+    public FrameLayout video() {
+        return video;
+    }
 
-    /** The current copy could not be opened; move on to a backup or say so. */
-    abstract void liveSourceFailed();
+    @Override
+    public LiveZapper zapper() {
+        return zapper;
+    }
 
-    /** Pause or carry on (phone layout's touch button). */
-    abstract void toggle();
+    @Override
+    public boolean dialogOpen() {
+        return dialogOpen;
+    }
+
+    @Override
+    public void dialogOpen(boolean open) {
+        dialogOpen = open;
+    }
+
+    @Override
+    public boolean liveFailed() {
+        return liveFailed;
+    }
+
+    /** A separate player screen leaves by closing; the guide below it is already there. */
+    @Override
+    public void leave() {
+        finish();
+    }
+
+    @Override
+    public String title() {
+        return getIntent().getStringExtra("title");
+    }
 }

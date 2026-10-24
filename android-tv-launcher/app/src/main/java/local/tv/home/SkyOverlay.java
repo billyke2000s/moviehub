@@ -36,7 +36,7 @@ final class SkyOverlay {
         GREEN = 0xff43a047,
         BLUE = 0xff1e63d6;
 
-    private final LiveHost a;
+    private final LiveScreen a;
     private final LinearLayout banner, info, pauseBar, keys;
     final LinearLayout channelStrip;
     private final TextView number, name, clock, nowTime, nowTitle, nextTime, nextTitle, about, source, hint, keyInfo;
@@ -50,9 +50,9 @@ final class SkyOverlay {
     final List<View> controls = new ArrayList<>();
     private boolean controlsRevealed;
 
-    SkyOverlay(LiveHost activity, FrameLayout root) {
+    SkyOverlay(LiveScreen activity, FrameLayout root) {
         a = activity;
-        BannerStack stack = new BannerStack(a);
+        BannerStack stack = new BannerStack(a.activity());
         FrameLayout.LayoutParams stackLayout = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
         stackLayout.setMargins(a.dp(56), 0, a.dp(56), a.dp(34));
         root.addView(stack, stackLayout);
@@ -134,7 +134,7 @@ final class SkyOverlay {
         nowRow.addView(nowTime);
         nowTitle = label(20, true, Color.WHITE);
         nowRow.addView(nowTitle, new LinearLayout.LayoutParams(0, -2, 1));
-        progress = new ProgressBar(a, null, android.R.attr.progressBarStyleHorizontal);
+        progress = new ProgressBar(a.activity(), null, android.R.attr.progressBarStyleHorizontal);
         progress.setMax(1000);
         progress.setProgressTintList(ColorStateList.valueOf(LiveTvScreen.YELLOW));
         progress.setProgressBackgroundTintList(ColorStateList.valueOf(0x55ffffff));
@@ -249,7 +249,7 @@ final class SkyOverlay {
 
     void hideBanner() {
         // A hidden button must not keep the focus, or the next OK would press it.
-        if (focusedControl() >= 0) a.video.requestFocus();
+        if (focusedControl() >= 0) a.video().requestFocus();
         banner.animate().cancel();
         banner.setVisibility(View.GONE);
         nowTime.setVisibility(View.VISIBLE);
@@ -296,9 +296,9 @@ final class SkyOverlay {
     }
 
     private void toggleInformation() {
-        if (a.zapper == null) return;
-        if (infoShowing()) a.zapper.hideInfo();
-        else a.zapper.information();
+        if (a.zapper() == null) return;
+        if (infoShowing()) a.zapper().hideInfo();
+        else a.zapper().information();
     }
 
     boolean bannerShowing() {
@@ -443,7 +443,7 @@ final class SkyOverlay {
 
     /** A rounded panel with a thin light edge; its strip and body go inside. */
     private LinearLayout panel() {
-        LinearLayout panel = new LinearLayout(a);
+        LinearLayout panel = new LinearLayout(a.activity());
         panel.setOrientation(LinearLayout.VERTICAL);
         GradientDrawable shape = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {
             PANEL_TOP,
@@ -473,14 +473,14 @@ final class SkyOverlay {
     }
 
     private LinearLayout body() {
-        LinearLayout body = new LinearLayout(a);
+        LinearLayout body = new LinearLayout(a.activity());
         body.setOrientation(LinearLayout.VERTICAL);
         body.setPadding(a.dp(18), a.dp(10), a.dp(18), a.dp(14));
         return body;
     }
 
     private LinearLayout row() {
-        LinearLayout row = new LinearLayout(a);
+        LinearLayout row = new LinearLayout(a.activity());
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         return row;
@@ -498,7 +498,7 @@ final class SkyOverlay {
         key.setFocusable(false);
         key.setClickable(true);
         key.setContentDescription(text);
-        View swatch = new View(a);
+        View swatch = new View(a.activity());
         GradientDrawable shape = new GradientDrawable();
         shape.setColor(colour);
         shape.setCornerRadius(a.dp(2));
@@ -534,7 +534,7 @@ final class SkyOverlay {
     }
 
     private TextView label(int size, boolean bold, int colour) {
-        TextView text = new TextView(a);
+        TextView text = new TextView(a.activity());
         text.setTextColor(colour);
         text.setTextSize(size);
         text.setSingleLine(true);

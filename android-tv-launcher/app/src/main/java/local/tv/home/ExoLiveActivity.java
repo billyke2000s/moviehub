@@ -189,12 +189,12 @@ public class ExoLiveActivity extends LiveHost {
     // ---- LiveHost ------------------------------------------------------------------------------
 
     @Override
-    LiveMenus liveMenus() {
+    public LiveMenus liveMenus() {
         return menus;
     }
 
     @Override
-    void switchTo(String title, String newUrl, String newId) {
+    public void switchTo(String title, String newUrl, String newId) {
         try {
             url = Playlist.networkUrl(
                 newUrl,
@@ -216,23 +216,23 @@ public class ExoLiveActivity extends LiveHost {
     }
 
     @Override
-    String playbackUrl() {
+    public String playbackUrl() {
         return url;
     }
 
     @Override
-    void panelClosed() {
+    public void panelClosed() {
         dialogOpen = false;
         if (zapper != null) zapper.showBanner();
     }
 
     @Override
-    void liveSourceFailed() {
+    public void liveSourceFailed() {
         showError("This source could not be played. Try another source or retry the connection.");
     }
 
     @Override
-    void toggle() {
+    public void toggle() {
         if (ExoLive.isPlaying()) ExoLive.pause();
         else ExoLive.resume();
     }

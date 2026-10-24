@@ -164,7 +164,7 @@ public class VlcPlaybackActivity extends LiveHost {
     };
 
     @Override
-    LiveMenus liveMenus() {
+    public LiveMenus liveMenus() {
         return menus;
     }
 
@@ -201,7 +201,7 @@ public class VlcPlaybackActivity extends LiveHost {
      * {@link LiveZapper}.
      */
     @Override
-    void switchTo(String title, String newUrl, String newId) {
+    public void switchTo(String title, String newUrl, String newId) {
         try {
             url = Playlist.networkUrl(
                 newUrl,
@@ -416,7 +416,7 @@ public class VlcPlaybackActivity extends LiveHost {
     }
 
     @Override
-    String playbackUrl() {
+    public String playbackUrl() {
         return url;
     }
 
@@ -688,7 +688,7 @@ public class VlcPlaybackActivity extends LiveHost {
 
     /** Live TV: the current copy could not be opened; moves on to a backup or says so. */
     @Override
-    void liveSourceFailed() {
+    public void liveSourceFailed() {
         showError("This source could not be played. Try another source or retry the connection.");
     }
 
@@ -737,7 +737,7 @@ public class VlcPlaybackActivity extends LiveHost {
 
     /** A side panel over the video closed: show the controls again. */
     @Override
-    void panelClosed() {
+    public void panelClosed() {
         dialogOpen = false;
         revealControls();
     }
@@ -776,7 +776,7 @@ public class VlcPlaybackActivity extends LiveHost {
     }
 
     @Override
-    void toggle() {
+    public void toggle() {
         forgetReleasedLivePlayer();
         revealControls();
         if (player == null) return;
