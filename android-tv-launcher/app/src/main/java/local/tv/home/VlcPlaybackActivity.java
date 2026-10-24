@@ -124,6 +124,7 @@ public class VlcPlaybackActivity extends Activity {
                 );
                 if (
                     !live &&
+                    (vod == null || !vod.rejectedMedia()) &&
                     !nextPromptShown &&
                     length > 0 &&
                     time > 0 &&
@@ -481,7 +482,7 @@ public class VlcPlaybackActivity extends Activity {
         try {
             if (vod != null) mediaUrl = vod.mediaUrl(vod.activeIndex(), url);
         } catch (Exception error) {
-            status.setText("Could not prepare this source's stream headers");
+            showError("Could not prepare this source's stream headers");
             return;
         }
         Media media = new Media(engine, Uri.parse(mediaUrl));
@@ -556,7 +557,7 @@ public class VlcPlaybackActivity extends Activity {
         if (!foreground) return;
         status.setText("Opening source…");
         // Live TV with backups moves on sooner than a film would, after link resolution.
-        overlayHandler.postDelayed(stalled, zapper != null ? 15000 : 45000);
+        overlayHandler.postDelayed(stalled, zapper != null || vod != null ? 15000 : 45000);
     }
 
     /** The player's events: playing, buffering, the end, and errors (which try the other format). */
@@ -607,7 +608,7 @@ public class VlcPlaybackActivity extends Activity {
                 showError("This live stream ended. Try another source or channel.");
                 return;
             }
-            if (vod != null && vod.rejectShortVideo()) return;
+            if (vod != null && vod.rejectShortVideo(true)) return;
             ended = true;
             ResumePoint.clear(this, id, titleKey);
             String episode = getIntent().getStringExtra("episodeKey");
@@ -858,7 +859,7 @@ public class VlcPlaybackActivity extends Activity {
             // Before playback starts the time is 0; keep the resume point the media opened at.
             if (time > 0) position = time;
             else if (resumeCheck > 0) position = resumeCheck;
-            if (!live) {
+            if (!live && (vod == null || !vod.rejectedMedia())) {
                 long length = player.getLength();
                 boolean completed = ended || ResumePoint.completed(position, length);
                 ResumePoint.save(this, id, titleKey, position, length, completed);

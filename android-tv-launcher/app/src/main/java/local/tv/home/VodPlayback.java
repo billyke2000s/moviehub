@@ -147,9 +147,20 @@ final class VodPlayback {
     }
 
     /** Only known, positive durations are rejected; an unknown duration is not a short film. */
-    boolean rejectShortVideo() {
+    boolean rejectedMedia() {
         if (!session.free || activity.player == null) return false;
         long duration = activity.player.getLength();
+        return rejectedShort || (duration > 0 && duration < 120000);
+    }
+
+    boolean rejectShortVideo() {
+        return rejectShortVideo(false);
+    }
+
+    boolean rejectShortVideo(boolean ended) {
+        if (!session.free || activity.player == null) return false;
+        long duration = activity.player.getLength();
+        if (duration <= 0 && ended) duration = activity.player.getTime();
         if (duration <= 0 || duration >= 120000) return false;
         if (!rejectedShort) {
             rejectedShort = true;

@@ -454,6 +454,30 @@ public class PlaybackTest {
     }
 
     @Test
+    public void leavingRejectedFreeClipPreservesExistingResumeHistory() throws Exception {
+        VodSources.Session session = new VodSources.Session(
+            java.util.Collections.singletonList(new VodSourceFailover.Source("short", "Error clip", "one")),
+            index -> {
+                throw new IOException("No backup");
+            },
+            false
+        );
+        session.free = true;
+        openVod(session, "/playback.mp4");
+        await(() -> activity.vod.rejectedMedia(), 10000);
+        var positions = activity.getSharedPreferences("positions", 0);
+        positions.edit().putLong("vod-backup-test", 600000).commit();
+        instrumentation.runOnMainSync(activity::finish);
+        await(activity::isDestroyed, 10000);
+        assertEquals(
+            "Error clips must not clear the film resume point",
+            600000,
+            positions.getLong("vod-backup-test", 0)
+        );
+        positions.edit().remove("vod-backup-test").commit();
+    }
+
+    @Test
     public void failedVodNativeStopKeepsControlsResponsiveUntilShutdownCompletes() throws Exception {
         VodSources.Session session = new VodSources.Session(
             vodEntries(),
