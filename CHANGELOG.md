@@ -1,3 +1,11 @@
+## 0.54 (24 October 2026)
+
+- Report every free provider separately: no matches, blocked connections, timeouts, unsupported hosts and missing requirements.
+- Correct the upstream extended HTTP response contract and request headers; retain the three-second best-available start while collecting backups.
+- Reject known free videos shorter than two minutes, preserve film history for rejected clips, and wait for late backups.
+- Try another free service when a manual source fails; move native shutdown off the UI thread while retaining its window and engine.
+- Show the selected source, incoming Mb/s and total received bytes.
+
 ## Unreleased
 - Audit all 68 free VOD adapters, expose per-provider outcomes, and allow every scheduled provider time to run without extending the three-second initial selection.
 - Reject known free videos shorter than two minutes, recover across free services after manual selection, and retain late backups.
