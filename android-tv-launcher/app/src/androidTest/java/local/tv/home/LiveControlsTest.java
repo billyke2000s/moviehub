@@ -502,38 +502,70 @@ public final class LiveControlsTest {
     }
 
     @Test
-    public void leftAndOkNeverSwitchToADifferentOverlay() {
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
+    public void bannerAlwaysShowsBoxedButtonsAndArrowsMoveBetweenThem() {
+        remote.runOnMainSync(() -> {
+            activity.zapper.overlay.hideBanner();
+            assertTrue("The video keeps the focus", activity.video.hasFocus());
+        });
+        // ▶ with the banner hidden opens the same banner, with no button highlighted yet.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
-            assertFalse("◀ does not open the reduced browsing layout", activity.zapper.browsing());
+            assertFalse("No reduced browsing layout", activity.zapper.browsing());
             assertTrue(activity.zapper.overlay.bannerShowing());
+            assertEquals(-1, activity.zapper.overlay.focusedControl());
+            for (android.view.View control : activity.zapper.overlay.controls)
+                assertNotNull("Every button is boxed", control.getBackground());
         });
-        // Browsing, then OK on the same channel: the full banner rather than closing it.
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
-        await(activity.zapper::browsing);
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
-        remote.waitForIdleSync();
+        // OK with nothing highlighted keeps the banner and opens nothing.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
-            assertFalse(activity.zapper.browsing());
-            assertTrue(activity.zapper.overlay.bannerShowing());
-            assertFalse(activity.zapper.overlay.infoShowing());
             assertNull(SidePanel.current);
+            assertTrue(activity.zapper.overlay.bannerShowing());
         });
-        // With the controls revealed but none focused, OK still shows the banner.
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        // ▶ ▶ highlights Audio & subtitles; OK presses it.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
         remote.waitForIdleSync();
+        remote.runOnMainSync(() -> assertEquals(1, activity.zapper.overlay.focusedControl()));
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        remote.waitForIdleSync();
+        android.app.Dialog audio = currentPanel();
+        assertNotNull("OK presses the highlighted button", audio);
+        remote.runOnMainSync(() ->
+            assertTrue(containsText(audio.getWindow().getDecorView(), "Audio & Subtitles"))
+        );
+        remote.runOnMainSync(() -> SidePanel.current.dismiss());
+        remote.waitForIdleSync();
+        await(() -> SidePanel.current == null && !activity.dialogOpen);
+        // Hiding the banner returns the focus to the video, so the next OK cannot press a hidden button.
         remote.runOnMainSync(() -> {
-            activity.video.requestFocus();
+            activity.zapper.overlay.hideBanner();
             assertEquals(-1, activity.zapper.overlay.focusedControl());
         });
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
-        remote.waitForIdleSync();
+    }
+
+    @Test
+    public void bannerNamesTheLastButtonReceived() {
+        physicalColour(KeyEvent.KEYCODE_PROG_RED);
+        await(() -> SidePanel.current != null);
         remote.runOnMainSync(() -> {
-            assertNull("Unfocused OK does not open Sources", SidePanel.current);
-            assertTrue(activity.zapper.overlay.bannerShowing());
+            assertEquals(
+                "Last button received: KEYCODE_PROG_RED · scan 0",
+                activity.zapper.overlay.lastButtonText().toString()
+            );
+            SidePanel.current.dismiss();
+        });
+        remote.waitForIdleSync();
+        await(() -> SidePanel.current == null && !activity.dialogOpen);
+        playerKey(remoteEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_UNKNOWN, 251, 0, 800));
+        remote.runOnMainSync(() -> {
+            assertEquals(
+                "Last button received: KEYCODE_UNKNOWN · scan 251",
+                activity.zapper.overlay.lastButtonText().toString()
+            );
+            assertTrue("An unused button opens the banner", activity.zapper.overlay.bannerShowing());
         });
     }
 

@@ -39,7 +39,7 @@ final class SkyOverlay {
     private final VlcPlaybackActivity a;
     private final LinearLayout banner, info, pauseBar, keys;
     final LinearLayout channelStrip;
-    private final TextView number, name, clock, nowTime, nowTitle, nextTime, nextTitle, about, source, hint;
+    private final TextView number, name, clock, nowTime, nowTitle, nextTime, nextTitle, about, source, hint, keyInfo;
     private final TextView infoTitle, infoWhen, infoAbout, infoChannel, pauseIcon, pauseText;
     private final ProgressBar progress;
     /**
@@ -163,12 +163,18 @@ final class SkyOverlay {
         // No coloured buttons on the remote: BACK reveals these as buttons to pick with ◀ ▶.
         TextView noColours = label(15, true, SOFT);
         content.addView(keys);
-        noColours.setText("No colour buttons? BACK, then ◀ ▶ and OK");
+        noColours.setText("No colour buttons? ◀ ▶ then OK");
         content.addView(noColours);
         hint = label(16, true, LiveTvScreen.YELLOW);
         hint.setPadding(0, a.dp(8), 0, 0);
         hint.setText("SELECT to watch   ▲ ▼ channels   ◀ ▶ later programmes   BACK to close");
         content.addView(hint);
+        // Which button the player last received, to identify a remote's colour-button codes.
+        keyInfo = label(14, false, SOFT);
+        keyInfo.setPadding(0, a.dp(6), 0, 0);
+        // Always present, so the banner keeps the same size before and after the first press.
+        keyInfo.setText("Last button received: none yet");
+        content.addView(keyInfo);
         banner.addView(content);
         stack.addView(banner, new ViewGroup.MarginLayoutParams(-1, -2));
 
@@ -232,19 +238,39 @@ final class SkyOverlay {
         nowTime.setVisibility(View.GONE);
     }
 
+    /** Shows which button the player last received (package-private for tests). */
+    void lastButton(String text) {
+        keyInfo.setText(text);
+    }
+
+    CharSequence lastButtonText() {
+        return keyInfo.getText();
+    }
+
     void hideBanner() {
+        // A hidden button must not keep the focus, or the next OK would press it.
+        if (focusedControl() >= 0) a.video.requestFocus();
         banner.animate().cancel();
         banner.setVisibility(View.GONE);
         nowTime.setVisibility(View.VISIBLE);
     }
 
-    void focusSources() {
+    /**
+     * TV layout: the banner's buttons are always drawn boxed, as after BACK, so the banner looks
+     * the same however it was opened. ◀ ▶ move between them and OK presses the highlighted one.
+     */
+    void boxControls() {
         controlsRevealed = true;
         for (View control : controls) {
+            // Focusable for the D-pad only: in touch mode (an air mouse) one click presses it.
             control.setFocusable(true);
-            control.setFocusableInTouchMode(true);
             controlOutline(control, control.hasFocus());
         }
+    }
+
+    void focusSources() {
+        boxControls();
+        for (View control : controls) control.setFocusableInTouchMode(true);
         source.requestFocus();
     }
 

@@ -96,6 +96,7 @@ final class LiveZapper {
     /** Builds the banner and loads the current channel's backups and listings. */
     void attach(FrameLayout root) {
         overlay = new SkyOverlay(player, root);
+        if (!touch) overlay.boxControls();
         if (touch) overlay.touchControls(
             new String[] { "▲ Ch+", "▼ Ch−", "Info", "Source", "Audio", "❚❚ ▶", "Guide" },
             new Runnable[] {
@@ -670,14 +671,13 @@ final class LiveZapper {
             }
         }
         if (key == KeyEvent.KEYCODE_DPAD_LEFT || key == KeyEvent.KEYCODE_DPAD_RIGHT) {
-            // With the controls revealed (BACK), ◀ ▶ move between the banner's buttons instead.
-            if (backControls && overlay.bannerShowing()) {
-                if (down) overlay.moveControl(key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
-            } else if (first) {
-                // ▶ browses later programmes. ◀ has nothing earlier to show, so it shows the
-                // normal banner rather than the reduced browsing layout.
-                if (key == KeyEvent.KEYCODE_DPAD_RIGHT) browse(0, 1);
-                else showBanner();
+            // ◀ ▶ move between the banner's buttons, opening the banner first when it is hidden.
+            if (!overlay.bannerShowing()) {
+                if (first) showBanner();
+            } else if (down) {
+                overlay.moveControl(key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
+                player.overlayHandler.removeCallbacks(hideBanner);
+                if (!backControls) player.overlayHandler.postDelayed(hideBanner, BANNER_MS);
             }
             return true;
         }
@@ -699,9 +699,8 @@ final class LiveZapper {
         }
         boolean handled = true;
         if (select) {
-            // OK presses a banner button only when BACK has revealed them and one has the focus.
-            // Otherwise it always shows the same full overlay.
-            if (first && (!backControls || !overlay.bannerShowing() || !overlay.pressControl())) ok();
+            // OK presses the highlighted banner button; with none highlighted it shows the banner.
+            if (first && (!overlay.bannerShowing() || !overlay.pressControl())) ok();
         } else if (key == KeyEvent.KEYCODE_INFO || key == KeyEvent.KEYCODE_MENU) {
             if (first) colour(key == KeyEvent.KEYCODE_INFO ? 'y' : 'b');
         } else if (key == KeyEvent.KEYCODE_LAST_CHANNEL) {
