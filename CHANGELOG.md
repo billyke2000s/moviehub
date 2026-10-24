@@ -33,6 +33,9 @@
 
 ## Unreleased
 
+- Live TV: OK (and an air-mouse click on the picture) always shows the full banner with the programme information above it; both close together after 10 seconds or with BACK. OK while browsing the current channel, and OK with the banner buttons revealed but none focused, show the same overlay instead of closing it or opening Sources. ◀ no longer opens the reduced browsing layout.
+- "Set up coloured buttons" can learn buttons Android has no key name for (by scan code), says when a button sends nothing, and lists what each button sent. The guide's colour keys now recognise the same standard and learned scan codes as the player.
+
 ## 0.51 (23 October 2026)
 
 - Use one visible Live TV overlay for entry, OK, picture clicks and Back; repeated OK refreshes the same banner instead of opening Options. Keep Options on the blue/Menu button and selectable control.
