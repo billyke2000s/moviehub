@@ -9,6 +9,13 @@
 - Restore free-stream incoming speed from actual upstream relay bytes; count only the active source.
 - Rank ready VOD by quality aliases and HLS variant resolution, avoid camera recordings, and compare sampled media throughput/response time within equal quality. Keep the three-second window and buffering thresholds.
 
+## 0.55 (24 October 2026)
+
+- Correct provider POST searches, default request headers and upstream movie/episode title preparation, including original and alternative titles.
+- Honor provider read timeouts within bounded background discovery while preserving the three-second initial choice and existing buffering rules.
+- Prevent the VLC shutdown surface-lifetime crash when closing films or switching to Live TV, while keeping controls responsive.
+- Retain short-error-clip rejection, recovery across free services, resume history and incoming download statistics.
+
 ## Provider compatibility correction — unreleased
 
 - Preserve bodyless POST searches used by Levidia, default request Referer/language,
