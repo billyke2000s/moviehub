@@ -172,7 +172,8 @@ final class SkyOverlay {
         // Which button the player last received, to identify a remote's colour-button codes.
         keyInfo = label(14, false, SOFT);
         keyInfo.setPadding(0, a.dp(6), 0, 0);
-        keyInfo.setVisibility(View.GONE);
+        // Always present, so the banner keeps the same size before and after the first press.
+        keyInfo.setText("Last button received: none yet");
         content.addView(keyInfo);
         banner.addView(content);
         stack.addView(banner, new ViewGroup.MarginLayoutParams(-1, -2));
@@ -240,7 +241,6 @@ final class SkyOverlay {
     /** Shows which button the player last received (package-private for tests). */
     void lastButton(String text) {
         keyInfo.setText(text);
-        keyInfo.setVisibility(View.VISIBLE);
     }
 
     CharSequence lastButtonText() {
