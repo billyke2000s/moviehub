@@ -34,6 +34,15 @@ public final class LiveControlsTest {
         assertTrue("Live controls condition timed out", condition.getAsBoolean());
     }
 
+    private void physicalColour(int key) {
+        // A real down/up pair retains its down time when focus moves to a Dialog.
+        // sendKeyDownUpSync constructs the two events independently.
+        long down = SystemClock.uptimeMillis();
+        remote.sendKeySync(new KeyEvent(down, down, KeyEvent.ACTION_DOWN, key, 0));
+        remote.sendKeySync(new KeyEvent(down, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, key, 0));
+        remote.waitForIdleSync();
+    }
+
     @Before
     public void open() throws Exception {
         Context context = remote.getTargetContext();
@@ -212,43 +221,43 @@ public final class LiveControlsTest {
 
     @Test
     public void physicalColourButtonsOpenTheirAdvertisedPlayerActions() {
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_RED);
+        physicalColour(KeyEvent.KEYCODE_PROG_RED);
         remote.waitForIdleSync();
         assertTrue("Red opens Audio & subtitles", SidePanel.current != null && SidePanel.current.isShowing());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
         remote.waitForIdleSync();
         await(() -> !activity.dialogOpen && SidePanel.current == null && activity.hasWindowFocus());
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
+        physicalColour(KeyEvent.KEYCODE_PROG_GREEN);
         remote.waitForIdleSync();
         assertTrue("Green opens Sources", SidePanel.current != null && SidePanel.current.isShowing());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
         remote.waitForIdleSync();
         await(() -> !activity.dialogOpen && SidePanel.current == null && activity.hasWindowFocus());
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_YELLOW);
+        physicalColour(KeyEvent.KEYCODE_PROG_YELLOW);
         remote.waitForIdleSync();
         assertTrue("Yellow opens information", activity.zapper.overlay.infoShowing());
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_BLUE);
+        physicalColour(KeyEvent.KEYCODE_PROG_BLUE);
         remote.waitForIdleSync();
         assertTrue("Blue opens Options", SidePanel.current != null && SidePanel.current.isShowing());
     }
 
     @Test
     public void physicalColoursKeepWorkingWhileAnotherPlayerPanelOwnsFocus() {
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_RED);
+        physicalColour(KeyEvent.KEYCODE_PROG_RED);
         await(() -> SidePanel.current != null && SidePanel.current.isShowing());
         android.app.Dialog audio = SidePanel.current;
         await(() -> audio.getWindow().getDecorView().hasWindowFocus());
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
+        physicalColour(KeyEvent.KEYCODE_PROG_GREEN);
         await(() -> SidePanel.current != null && SidePanel.current != audio);
         android.app.Dialog sources = SidePanel.current;
         assertFalse("Green closes Audio", audio.isShowing());
         await(() -> sources.getWindow().getDecorView().hasWindowFocus());
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_BLUE);
+        physicalColour(KeyEvent.KEYCODE_PROG_BLUE);
         await(() -> SidePanel.current != null && SidePanel.current != sources);
         android.app.Dialog options = SidePanel.current;
         assertFalse("Blue closes Sources", sources.isShowing());
         await(() -> options.getWindow().getDecorView().hasWindowFocus());
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_YELLOW);
+        physicalColour(KeyEvent.KEYCODE_PROG_YELLOW);
         await(() -> SidePanel.current == null && activity.zapper.overlay.infoShowing());
         assertFalse("Yellow closes Options", options.isShowing());
         assertEquals("Colour shortcuts never restart the source", 1, resolutions.get());
@@ -365,7 +374,7 @@ public final class LiveControlsTest {
                 'y',
                 LiveTvScreen.colour(prefs, KeyEvent.KEYCODE_F1)
             );
-            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
+            physicalColour(KeyEvent.KEYCODE_PROG_GREEN);
             await(() -> SidePanel.current != null && SidePanel.current.isShowing());
             remote.runOnMainSync(() ->
                 assertTrue(containsText(SidePanel.current.getWindow().getDecorView(), "Sources"))
@@ -564,7 +573,7 @@ public final class LiveControlsTest {
             () -> activity.zapper != null && activity.zapper.copies().size() == 2 && activity.hasWindowFocus()
         );
         assertEquals(android.view.View.GONE, activity.controls.getVisibility());
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
+        physicalColour(KeyEvent.KEYCODE_PROG_GREEN);
         await(() -> SidePanel.current != null && SidePanel.current.isShowing());
         assertTrue(activity.zapper.sourceText().contains("Pluto TV"));
     }

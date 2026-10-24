@@ -390,3 +390,11 @@ expressions. A separate CI probe reports public provider availability without lo
 `StreamRateTest` covers timed byte deltas, idle zero, counter resets, quality aliases, camera penalties, the resolution ceiling and equal-quality transfer comparisons. Provider adapter instrumentation counts actual upstream bytes once; the Android Python bridge verifies counted transport for header-free sources. Offline Python tests verify master-playlist resolution and sampled media rates. These small startup samples estimate readiness, not future host stability.
 
 The VOD relay regression includes real file playback/seeking and a TCP check that files retain their byte lengths and range headers without being advertised as HLS. Android extractor fixtures use public literal IP addresses so transport validation never depends on DNS for `.example` test hosts.
+
+## Player panel initial focus
+
+The live-controls physical-key regression must receive actual window focus for Audio, Sources and Options in sequence. Panel layout and system-UI attributes are configured before the window is attached, so initial focus is not followed by a second layout/visibility change. Repeated isolated emulator runs accompany the full suite for this handoff.
+
+Live-controls physical colour injection uses one down-time identity for both events and drains pending UI work before capturing a replacement dialog. Android Instrumentation’s convenience down/up helper constructs independently timed events, which can look like another press after a window-transfer cancellation. Existing window-focus and old-panel-closure assertions remain required.
+
+The decoded-backup test drains the main-thread handoff before checking the Activity reference. It still requires the same standby decoder to be promoted and the old picture to keep advancing until candidate data is released.
