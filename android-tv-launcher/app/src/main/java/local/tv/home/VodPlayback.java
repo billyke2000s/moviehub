@@ -78,7 +78,10 @@ final class VodPlayback {
             activity.dragging || activity.skips.pending() || SystemClock.elapsedRealtime() < seekUntil;
         queue.setSeeking(seeking);
         queue.setUserPaused(activity.paused);
-        if ((seeking || activity.paused) && preparing) cancelPreparation();
+        if (seeking || activity.paused) {
+            cancelPreparation();
+            return;
+        }
         rejectShortVideo();
         if (waitingForSources && !preparing) {
             waitingForSources = false;
