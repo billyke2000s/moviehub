@@ -23,17 +23,24 @@ final class LiveTvPanels {
 
     /** Teaches the guide this remote's colour keys: press red, green, yellow, then blue. */
     void learnColourKeys(int step) {
+        learnColourKeys(step, new StringBuilder());
+    }
+
+    /** {@code learned} lists what each button sent so far, shown as the set-up goes on. */
+    private void learnColourKeys(int step, StringBuilder learned) {
+        String[] names = { "RED", "GREEN", "YELLOW", "BLUE" };
         if (step >= 4) {
-            activity.toast("Coloured buttons set up");
+            activity.toast("Coloured buttons set up\n" + learned);
             guide.guide(guide.pageStart, 0);
             return;
         }
-        String[] names = { "RED", "GREEN", "YELLOW", "BLUE" };
         android.app.Dialog panel = SidePanel.of(activity, "Press the " + names[step] + " button")
             .message(
                 "Press the " +
                     names[step].toLowerCase(Locale.ROOT) +
-                    " button on your remote now. Back cancels."
+                    " button on your remote now. If nothing happens, the remote is not sending" +
+                    " that button to the TV box, so MovieHub can't use it. Back cancels." +
+                    (learned.length() == 0 ? "" : "\n\n" + learned)
             )
             .show();
         panel.setOnKeyListener((d, key, event) -> {
@@ -47,9 +54,29 @@ final class LiveTvPanels {
                 key == KeyEvent.KEYCODE_ENTER;
             if (navigation) return true;
             if (event.getAction() == KeyEvent.ACTION_UP) {
-                activity.prefs.edit().putInt(LiveTvScreen.COLOUR_PREFS[step], key).apply();
+                int scan = event.getScanCode();
+                // A button Android has no name for is told apart only by its scan code.
+                if (key == KeyEvent.KEYCODE_UNKNOWN && scan <= 0) return true;
+                android.content.SharedPreferences.Editor edit = activity.prefs.edit();
+                if (key == KeyEvent.KEYCODE_UNKNOWN) edit.putInt(
+                    LiveTvScreen.COLOUR_SCAN_PREFS[step],
+                    scan
+                ).remove(LiveTvScreen.COLOUR_PREFS[step]);
+                else edit.putInt(LiveTvScreen.COLOUR_PREFS[step], key).remove(
+                    LiveTvScreen.COLOUR_SCAN_PREFS[step]
+                );
+                edit.apply();
+                learned
+                    .append(learned.length() == 0 ? "" : "\n")
+                    .append(names[step].charAt(0))
+                    .append(names[step].substring(1).toLowerCase(Locale.ROOT))
+                    .append(": ")
+                    .append(KeyEvent.keyCodeToString(key))
+                    .append(" (scan ")
+                    .append(scan)
+                    .append(")");
                 panel.dismiss();
-                learnColourKeys(step + 1);
+                learnColourKeys(step + 1, learned);
             }
             return true;
         });
