@@ -39,7 +39,7 @@ final class SkyOverlay {
     private final LiveScreen a;
     private final LinearLayout banner, info, pauseBar, keys;
     final LinearLayout channelStrip;
-    private final TextView number, name, clock, nowTime, nowTitle, nextTime, nextTitle, about, source, hint, keyInfo;
+    private final TextView number, name, clock, nowTime, nowTitle, nextTime, nextTitle, about, source, hint;
     private final TextView infoTitle, infoWhen, infoAbout, infoChannel, pauseIcon, pauseText;
     private final ProgressBar progress;
     /**
@@ -169,12 +169,6 @@ final class SkyOverlay {
         hint.setPadding(0, a.dp(8), 0, 0);
         hint.setText("SELECT to watch   ▲ ▼ channels   ◀ ▶ later programmes   BACK to close");
         content.addView(hint);
-        // Which button the player last received, to identify a remote's colour-button codes.
-        keyInfo = label(14, false, SOFT);
-        keyInfo.setPadding(0, a.dp(6), 0, 0);
-        // Always present, so the banner keeps the same size before and after the first press.
-        keyInfo.setText("Last button received: none yet");
-        content.addView(keyInfo);
         banner.addView(content);
         stack.addView(banner, new ViewGroup.MarginLayoutParams(-1, -2));
 
@@ -238,13 +232,10 @@ final class SkyOverlay {
         nowTime.setVisibility(View.GONE);
     }
 
-    /** Shows which button the player last received (package-private for tests). */
-    void lastButton(String text) {
-        keyInfo.setText(text);
-    }
-
-    CharSequence lastButtonText() {
-        return keyInfo.getText();
+    /** Highlights banner button {@code index} (0 Sources, 1–4 the colour keys), ready for OK. */
+    void focusControl(int index) {
+        boxControls();
+        if (index >= 0 && index < controls.size()) controls.get(index).requestFocus();
     }
 
     void hideBanner() {

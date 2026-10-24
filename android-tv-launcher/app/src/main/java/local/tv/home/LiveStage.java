@@ -29,7 +29,7 @@ final class LiveStage implements LiveScreen {
     private final FrameLayout video;
     /** The one picture: Media3's PlayerView in experimental builds. */
     private final View surface;
-    private final TextView status, lastButton;
+    private final TextView status;
     private final Handler overlayHandler = new Handler(Looper.getMainLooper());
     private final LiveMenus menus = new ExoMenus(this, this::reconnect);
     private LiveZapper zapper;
@@ -86,15 +86,6 @@ final class LiveStage implements LiveScreen {
         overlay.addView(status, new FrameLayout.LayoutParams(-1, -1));
         bannerHost = new FrameLayout(a);
         overlay.addView(bannerHost, new FrameLayout.LayoutParams(-1, -1));
-        // Which button MovieHub last received, on every screen of the experimental app.
-        lastButton = new TextView(a);
-        lastButton.setTextColor(0xccffffff);
-        lastButton.setTextSize(12);
-        lastButton.setShadowLayer(a.dp(3f), 0, a.dp(1f), 0xcc000000);
-        lastButton.setText("Last button: none yet");
-        FrameLayout.LayoutParams corner = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.END);
-        corner.setMargins(0, 0, a.dp(12f), a.dp(6f));
-        overlay.addView(lastButton, corner);
     }
 
     private static FrameLayout.LayoutParams hidden() {
@@ -257,20 +248,6 @@ final class LiveStage implements LiveScreen {
         if (!full || url == null) return;
         ExoLive.attach(this, surface, events);
         if (!ExoLive.play(a, url, false)) opening("Opening channel…");
-    }
-
-    /** Shows which button arrived (every key, before anything else uses it). */
-    void received(KeyEvent event) {
-        if (event.getAction() != KeyEvent.ACTION_DOWN || event.getRepeatCount() != 0) return;
-        String text =
-            "Last button: " + KeyEvent.keyCodeToString(event.getKeyCode()) + " · scan " + event.getScanCode();
-        lastButton.setText(text);
-        if (zapper != null && zapper.overlay != null) zapper.overlay.lastButton(
-            "Last button received: " +
-                KeyEvent.keyCodeToString(event.getKeyCode()) +
-                " · scan " +
-                event.getScanCode()
-        );
     }
 
     /** Keys while watching full screen (the satellite remote, see LiveZapper.key). */

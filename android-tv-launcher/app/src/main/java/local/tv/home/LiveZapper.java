@@ -733,19 +733,6 @@ final class LiveZapper {
                 event.isCanceled()
             )
         ) action.accept(colour);
-        else if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
-            // A fresh press was recognised but not acted on: say so, so it is never silent.
-            Diagnostics.recovered("Colour press ignored", new IllegalStateException(String.valueOf(colour)));
-            Toast.makeText(
-                player.activity(),
-                "Colour button " +
-                    colour +
-                    " recognised but ignored (" +
-                    KeyEvent.keyCodeToString(event.getKeyCode()) +
-                    ")",
-                Toast.LENGTH_SHORT
-            ).show();
-        }
         return true;
     }
 
@@ -769,6 +756,12 @@ final class LiveZapper {
      */
     void ok() {
         showBanner();
+        if (touch || !overlay.bannerShowing()) return;
+        // As on the satellite box: OK brings the banner up ready to use, with Audio & subtitles
+        // highlighted; ◀ ▶ move along and OK presses. ▲ ▼ only show it briefly while zapping.
+        overlay.focusControl(1);
+        player.overlayHandler().removeCallbacks(hideBanner);
+        if (!backControls) player.overlayHandler().postDelayed(hideBanner, BROWSE_MS);
     }
 
     /** A tap on the picture (phone layout): shows the banner and its buttons, or hides them. */

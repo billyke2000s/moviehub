@@ -95,10 +95,7 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         int key = event.getKeyCode();
-        if (stage != null) {
-            stage.received(event);
-            if (stage.full() && stage.key(event)) return true;
-        }
+        if (stage != null && stage.full() && stage.key(event)) return true;
         if (activeKeyBar != null && activeKeyBar.handle(event)) return true;
         if (liveTv.handlePageKey(event)) return true;
         if (
