@@ -93,7 +93,10 @@ final class ProviderRelay implements AutoCloseable {
             headers.put(key, value);
         }
         server = new ServerSocket(0, 4, InetAddress.getByName("127.0.0.1"));
-        url = register(stream.url, true);
+        boolean manifest =
+            stream.playlistSession != null ||
+            URI.create(stream.url).getPath().toLowerCase(Locale.ROOT).endsWith(".m3u8");
+        url = register(stream.url, manifest);
         Thread accept = new Thread(() -> {
             while (!closed)
                 try {
@@ -295,6 +298,18 @@ final class ProviderRelay implements AutoCloseable {
                     if (
                         status == 206 && contentRange != null && contentRange.matches("bytes [0-9-]+/[0-9*]+")
                     ) extra = "Content-Range: " + contentRange + "\r\n";
+                    // Files retain their byte length and range support. Rewritten playlists
+                    // and stripped segments have different offsets and must not inherit them.
+                    if (!playlist && !wrappedPng && skip == 0) {
+                        long length = upstream.getContentLengthLong();
+                        if (length >= 0) extra += "Content-Length: " + length + "\r\n";
+                        if (
+                            status == 206 ||
+                            "bytes".equalsIgnoreCase(upstream.getHeaderField("Accept-Ranges"))
+                        ) {
+                            extra += "Accept-Ranges: bytes\r\n";
+                        }
+                    }
                     out.write(
                         (
                             "HTTP/1.1 " +

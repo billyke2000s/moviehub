@@ -60,11 +60,11 @@ public final class FreeVodProvidersTest {
             assertNotNull("Header-free sources also use counted incoming transport", sources.get(0).stream);
             assertTrue(sources.get(0).responseMs >= 0);
             assertEquals(
-                "https://one.example/video.mp4",
+                "https://8.8.8.8/video.mp4",
                 sources.get(0).files.getJSONObject(0).getString("link")
             );
             assertEquals(
-                "https://two.example/video.mp4",
+                "https://1.1.1.1/video.mp4",
                 sources.get(1).files.getJSONObject(0).getString("link")
             );
             assertEquals(0, AutoPlayback.pick(sources.get(0).files, -1, -1, "Fixture Film"));
