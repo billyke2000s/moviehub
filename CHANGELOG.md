@@ -33,8 +33,11 @@
 
 ## Unreleased
 
+<<<<<<< HEAD
 - MovieHub Experimental: Live TV is one screen. The TV Guide menu, channel guide and banner are drawn over one video picture that is only resized (corner box or full screen), never rebuilt or moved to another screen. A "Last button" readout shows every key MovieHub receives, on every screen.
 - MovieHub Experimental only: Live TV plays on Media3 ExoPlayer (ExoLiveActivity, ExoLive), shared by the guide picture and the full screen by pointing the same decoder at each surface. Normal builds keep LibVLC and do not contain ExoPlayer.
+=======
+>>>>>>> origin/main
 - Live TV: the banner always draws its buttons boxed, as after BACK, whether it opened from OK, a channel change or BACK. ◀ ▶ move between the buttons and OK presses the highlighted one; with none highlighted, OK shows the banner. The separate browsing layout is gone.
 - Build switch for a separate MovieHub Experimental app (own package, data and update feed) and a manual workflow to publish it. Normal builds are unchanged.
 - Live TV: OK (and an air-mouse click on the picture) always shows the same full channel banner. OK while browsing the current channel, and OK with the banner buttons revealed but none focused, show that banner instead of closing it or opening Sources. ◀ no longer opens the reduced browsing layout.
