@@ -363,7 +363,9 @@ public class VlcPlaybackActivity extends Activity {
             controls.setVisibility(View.GONE);
         }
         root.setOnClickListener(v -> {
+            // An air mouse's OK arrives as a click on the picture: same overlay as the OK key.
             if (zapper != null && zapper.touch) zapper.tapped();
+            else if (zapper != null) zapper.ok();
             else revealControls();
         });
         setContentView(root);

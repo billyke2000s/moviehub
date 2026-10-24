@@ -43,7 +43,8 @@ final class LiveZapper {
     static final int STALLS_PER_MINUTE = LiveBuffering.STARTS_PER_MINUTE;
     /** The banner stays this long; browsing in it a little longer. */
     static final long BANNER_MS = 5000,
-        BROWSE_MS = 8000;
+        BROWSE_MS = 8000,
+        OK_MS = 10000;
 
     private final VlcPlaybackActivity player;
     /**
@@ -71,9 +72,17 @@ final class LiveZapper {
     SkyOverlay overlay;
     private final StringBuilder typed = new StringBuilder();
     private final Runnable jump = this::jumpToTyped;
+    /**
+     * The programme information was opened by OK together with the banner, so both close
+     * together. Information opened with yellow or i stays until closed, as before.
+     */
+    private boolean okOverlay;
     private final Runnable hideBanner = () -> {
         browsing = false;
-        if (overlay != null) overlay.hideBanner();
+        if (overlay == null) return;
+        overlay.hideBanner();
+        if (okOverlay) overlay.hideInfo();
+        okOverlay = false;
     };
 
     /** Browsing other channels in the banner: which channel and which of its programmes. */
@@ -407,12 +416,13 @@ final class LiveZapper {
         });
     }
 
-    /** SELECT while browsing: watch the channel shown (or just close the banner on this one). */
+    /** SELECT while browsing: watch the channel shown, or show this channel's full overlay. */
     void browseSelect() {
         int position = browsePosition;
         boolean other = browseRow != null && position != own.position;
         endBrowse();
         if (other) tune(position);
+        else ok();
     }
 
     void endBrowse() {
@@ -625,6 +635,7 @@ final class LiveZapper {
     }
 
     void hideInfo() {
+        okOverlay = false;
         overlay.hideInfo();
         player.overlayHandler.removeCallbacks(hideBanner);
         player.overlayHandler.postDelayed(hideBanner, BANNER_MS);
@@ -638,7 +649,8 @@ final class LiveZapper {
      * <ul>
      *   <li>▲ ▼, CH+ CH-: change channel (in the banner while browsing: other channels).
      *   <li>◀ ▶: browse what is on, without changing channel; SELECT watches the channel shown.
-     *   <li>SELECT: reveal/refresh the same banner. Numbers, last channel, GUIDE.
+     *   <li>SELECT: the full banner with programme information, every time (a revealed and
+     *       focused banner button is pressed instead). Numbers, last channel, GUIDE.
      *   <li>i (or yellow): programme information. Red: audio and subtitles. Green: source.
      *       Blue (or MENU): options.
      *   <li>BACK: closes what is open; then back to the guide, whose picture carries on.
@@ -671,7 +683,12 @@ final class LiveZapper {
             // With the controls revealed (BACK), ◀ ▶ move between the banner's buttons instead.
             if (backControls && overlay.bannerShowing()) {
                 if (down) overlay.moveControl(key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
-            } else if (first) browse(0, key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : 0);
+            } else if (first) {
+                // ▶ browses later programmes. ◀ has nothing earlier to show, so it shows the
+                // normal banner rather than the reduced browsing layout.
+                if (key == KeyEvent.KEYCODE_DPAD_RIGHT) browse(0, 1);
+                else showBanner();
+            }
             return true;
         }
         boolean up =
@@ -692,11 +709,9 @@ final class LiveZapper {
         }
         boolean handled = true;
         if (select) {
-            if (first) {
-                if (backControls) {
-                    if (!overlay.pressControl()) player.menus.chooseSource();
-                } else showBanner();
-            }
+            // OK presses a banner button only when BACK has revealed them and one has the focus.
+            // Otherwise it always shows the same full overlay.
+            if (first && (!backControls || !overlay.bannerShowing() || !overlay.pressControl())) ok();
         } else if (key == KeyEvent.KEYCODE_INFO || key == KeyEvent.KEYCODE_MENU) {
             if (first) colour(key == KeyEvent.KEYCODE_INFO ? 'y' : 'b');
         } else if (key == KeyEvent.KEYCODE_LAST_CHANNEL) {
@@ -735,6 +750,19 @@ final class LiveZapper {
     void information() {
         if (!overlay.bannerShowing()) showBanner();
         showInfo();
+        okOverlay = false;
+    }
+
+    /**
+     * OK, or a click on the picture: the full banner with the programme information above it,
+     * every time. Both close together after {@link #OK_MS}, or with BACK.
+     */
+    void ok() {
+        showBanner();
+        showInfo();
+        okOverlay = true;
+        player.overlayHandler.removeCallbacks(hideBanner);
+        if (!backControls) player.overlayHandler.postDelayed(hideBanner, OK_MS);
     }
 
     /** A tap on the picture (phone layout): shows the banner and its buttons, or hides them. */
