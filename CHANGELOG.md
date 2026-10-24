@@ -1,3 +1,8 @@
+## 0.57 (24 October 2026)
+
+- Live TV: the banner always looks the same, with its buttons boxed, whether it opened from OK, a channel change or BACK. ◀ ▶ move between the buttons and OK presses the highlighted one; the separate browsing layout is gone.
+- The banner shows the last button the player received ("Last button received: …") to identify remote buttons, and keeps the same size before and after the first press.
+
 ## Unreleased
 - Audit all 68 free VOD adapters, expose per-provider outcomes, and allow every scheduled provider time to run without extending the three-second initial selection.
 - Reject known free videos shorter than two minutes, recover across free services after manual selection, and retain late backups.
