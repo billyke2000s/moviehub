@@ -243,16 +243,10 @@ jobs:
           arch: x86_64
           profile: tv_1080p
           disable-animations: true
-          script: gradle -p android-tv-launcher --no-daemon -Pexperimental connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=local.tv.home.ExoLiveTest lintDebug lintRelease
+          script: bash android-tv-launcher/tests/run-experimental-tests.sh
       - name: List failed experimental tests
         if: failure()
         run: python3 android-tv-launcher/tests/report-test-failures.py android-tv-launcher/app/build/outputs/androidTest-results
-      - name: Collect experimental screenshots and crash evidence
-        if: always()
-        run: |
-          mkdir -p android-tv-launcher/app/build/reports/experimental
-          adb logcat -d -b crash > android-tv-launcher/app/build/reports/experimental/crash.log || true
-          adb pull /sdcard/Download/moviehub-test-screenshots/ android-tv-launcher/app/build/reports/experimental/ || true
       - name: Upload experimental reports
         if: always()
         uses: actions/upload-artifact@v6
