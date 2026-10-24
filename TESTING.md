@@ -400,3 +400,5 @@ Live-controls physical colour injection uses one down-time identity for both eve
 The decoded-backup test drains the main-thread handoff before checking the Activity reference. It still requires the same standby decoder to be promoted and the old picture to keep advancing until candidate data is released.
 
 Live-controls wait predicates and dialog snapshots execute on the main thread; the instrumentation thread receives their result through atomics. This keeps window focus checks inside Android’s UI-thread contract.
+
+Player panels request input focus after their DecorView attaches, with the initial layout already configured. The repeated colour-key test continues to require the attached view’s actual window-focus callback and successful key-driven panel replacement.
