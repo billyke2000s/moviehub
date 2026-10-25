@@ -29,6 +29,14 @@ final class EpgLookup {
         if (own.isEmpty() && nativeId) return new ArrayList<>();
         if (!own.isEmpty() && !normal(own).equals(normal(country))) return new ArrayList<>();
         List<String> out = new ArrayList<>();
+        if (!nativeId && epg != null && epg.contains("@")) {
+            String variant = EpgMatch.key(epg.substring(epg.indexOf('@') + 1));
+            if (!variant.isEmpty()) {
+                // @HD is a quality note; @Scotland/@Spain identifies a different service.
+                add(out, EpgMatch.key(epg.substring(0, epg.indexOf('@'))) + variant);
+                return out;
+            }
+        }
         if (!nativeId) add(out, EpgMatch.key(epg));
         add(out, EpgMatch.key(name));
         add(out, EpgMatch.key(identity.key));

@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Keep explicit XMLTV regional suffixes such as `@Scotland` separate from national listings; quality suffixes such as `@HD` still share a schedule.
+
 - Move all built-in programme fetching to one daily server-generated `Moviehub-epg/epg.xml.gz`. The TV conditionally downloads, validates and streams it into SQLite in the background; failed or invalid refreshes keep usable cached listings.
 - Remove separate built-in XMLTV, Pluto/Plex/Samsung guide requests and catalogue programme imports. Keep exact provider identities and country/name fallback; extend the window to yesterday through seven days ahead.
 - Expose distinct advertised supported ZLive resolver routes with server labels, stable source identities and approved headers. Decode PNG/WebP/raw/gzip TS carriers without requiring a playlist-token session. Exhausted ZLive attempts stop with manual recovery; existing buffering and refusal cooldowns remain.

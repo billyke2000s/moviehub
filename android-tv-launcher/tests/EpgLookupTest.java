@@ -80,6 +80,18 @@ public class EpgLookupTest {
             EpgLookup.keys("", "Example +1", "General", "free", "uk").contains("example+1"),
             "timeshift stays separate"
         );
+        check(
+            EpgLookup.keys("BBCOne.uk@Scotland", "BBC One", "UK", "free", "uk").contains("bbconescotland"),
+            "explicit regional suffix is retained"
+        );
+        check(
+            !EpgLookup.keys("BBCOne.uk@Scotland", "BBC One", "UK", "free", "uk").contains("bbcone"),
+            "regional channel cannot borrow national programmes"
+        );
+        check(
+            EpgLookup.keys("BBCOne.uk@HD", "BBC One", "UK", "free", "uk").contains("bbcone"),
+            "quality suffix still matches"
+        );
         System.out.println(checks + " XMLTV lookup checks passed");
     }
 }
