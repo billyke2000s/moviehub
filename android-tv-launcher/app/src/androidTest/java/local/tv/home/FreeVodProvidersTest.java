@@ -85,8 +85,8 @@ public final class FreeVodProvidersTest {
 
     @Test
     public void packagedPythonImportsEveryProviderAndHostResolverWithoutKodi() throws Exception {
-        // 63 websites, 26 of them retired as dead (moviehub_vod.RETIRED_SITES).
-        assertEquals(37, FreeVodProviders.ids(context).size());
+        // Seven domains excluded on DNS/parking/HTTP 410 evidence; Levidia stays searchable.
+        assertEquals(56, FreeVodProviders.ids(context).size());
         assertEquals(68, FreeVodProviders.validate(context));
     }
 

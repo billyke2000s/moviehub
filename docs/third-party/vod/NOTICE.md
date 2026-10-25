@@ -41,3 +41,7 @@ that its domain is live, that every title matches, or that it can stream on a pa
 
 Additional hardening: website-fed decoders use a bounded literal/arithmetic interpreter;
 Python eval/exec calls were removed. Direct urllib host requests use the bounded transport.
+
+Maintained patches (25 October 2026): both Levidia adapters skip yearless search entries and tolerate missing optional session-cookie markup. Free99 also accepts an empty initial cookie jar and preserves equals signs in cookie values. Inventory SHA-256 values identify the original upstream files, not these adapted files. Original attribution remains in each module.
+
+The Scrubs Levidia active path also delegates Wootly links to the bundled host resolver instead of its historical inline resolver and a second resolution.

@@ -135,7 +135,8 @@ class source:
             r = list(zip(DOM(r, 'a', ret='href'), DOM(r, 'a')))
             r = [(url, client_utils.remove_tags(html)) for url, html in r]
             # get the year from the html and add it to the tuple
-            r = [(url, re.sub(r'\(\d{4}\)', '', html), re.findall(r'\((\d{4})\)', html)[0]) for url, html in r]
+            r = [(url, re.sub(r'\(\d{4}\)', '', html), re.findall(r'\((\d{4})\)', html)[0])
+                 for url, html in r if re.search(r'\(\d{4}\)', html)]
             # clean up
             r = [(url, html.strip(), year) for url, html, year in r]
             r = [(i[0], i[1], i[2]) for i in r if len(i[0]) > 0 and len(i[1]) > 0 and len(i[2]) > 0]
@@ -181,8 +182,10 @@ class source:
                 r14 = DOM(r12, 'a', attrs={'class': 'xxx xflv'}, ret='href')
             result_links = list(zip(r13, r14))
             cook2 = self.sess.cookies.get_dict()
-            ck, ck2 = re.findall(r"""_3chk\(['"](.+?)['"],['"](.+?)['"]""", response_content, re.DOTALL)[0]
-            cook2[ck] = ck2   # add the _3chk property to the cookie dictionary
+            match = re.findall(r"""_3chk\(['"](.+?)['"],['"](.+?)['"]""", response_content, re.DOTALL)
+            if match:
+                ck, ck2 = match[0]
+                cook2[ck] = ck2
             headers = {
                 'User-Agent': self.UAx,
                 'Host': 'www.levidia.ch',
@@ -207,27 +210,19 @@ class source:
                 try:
                     response = self.sess.get(link, headers=headers, cookies=cook2, verify=None)
                     link = response.url
-                    if 'wootly' in link.lower():
-                        try:
-                            self.sess.close()
-                            link = self.wootly(link)
-                            vurls.append((link, host))
-                        except:
-                            pass
-                    else:
-                        vurls.append((link, host))
+                    # Use the bundled current host resolver, not this add-on's old
+                    # inline Wootly /prime and qdf protocol followed by a second resolve.
+                    link = re.sub(r"^(https?://)web\.wootly\.ch/e/.*/([^/]+)$",
+                                  r"\1www.wootly.ch/?v=\2", link)
+                    vurls.append((link, host))
                 except:
                     pass
             for link, host in vurls:
                 try:
-                    if 'wootly' in host.lower():
-                        source = {'source': 'wootly.ch', 'quality': 'SD', 'info': '', 'url': link, 'direct': False}
+                    if link.count('//') > 1:
+                        link = re.sub(r'(?<!:)//', '/', link)
+                    for source in scrape_sources.process(hostDict, link):
                         self.results.append(source)
-                    else:
-                        if link.count('//') > 1:
-                            link = re.sub(r'(?<!:)//', '/', link)
-                        for source in scrape_sources.process(hostDict, link):
-                            self.results.append(source)
                 except:
                     pass
             return self.results

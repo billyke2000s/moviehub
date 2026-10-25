@@ -57,7 +57,8 @@ class source:
             url = self.base_link + self.search_link % cleantitle.get_utf8(title)
             #log_utils.log('search_url: '+repr(url))
             self.cookie = client.request(self.base_link, headers=self.headers, output='cookie', timeout='10')
-            cookie_dict = {cookie.split('=')[0]: cookie.split('=')[1] for cookie in self.cookie.split('; ')}
+            # A first visit can legitimately set no cookies; values may contain '='.
+            cookie_dict = dict(cookie.split('=', 1) for cookie in self.cookie.split('; ') if '=' in cookie)
             r = client.request(url, headers=self.headers, cookie=self.cookie)
             r = DOM(r, 'div ', attrs={'class': 'mainlink'})
             #log_utils.log('r1: '+repr(r))
@@ -65,7 +66,8 @@ class source:
             #log_utils.log('r2: '+repr(r))
             r = [(url, client_utils.remove_tags(html)) for url, html in r]
             #log_utils.log('r3: '+repr(r))
-            r = [(url, re.sub(r'\(\d{4}\)', '', html), re.findall(r'\((\d{4})\)', html)[0]) for url, html in r]
+            r = [(url, re.sub(r'\(\d{4}\)', '', html), re.findall(r'\((\d{4})\)', html)[0])
+                 for url, html in r if re.search(r'\(\d{4}\)', html)]
             #log_utils.log('r4: '+repr(r))
             r = [(i[0], i[1], i[2]) for i in r if len(i[0]) > 0 and len(i[1]) > 0 and len(i[2]) > 0]
             #log_utils.log('r5: '+repr(r))
@@ -109,12 +111,11 @@ class source:
             result_links = DOM(r, 'a', attrs={'target': '_blank'}, ret='href')
             #log_utils.log('result_links: ' + repr(result_links))
             #log_utils.log('len(result_links): ' + repr(len(result_links)))
-            gg = cookie_dict
             response_content = resp1.content.decode(encoding='utf-8', errors='strict')
             match = re.findall(r"_3chk\(['\"](.+?)['\"],['\"](.+?)['\"]\)", response_content, re.DOTALL)
-            ck, ck2 = match[0] if match else (None, None)
-            gg[ck] = ck2
-            cookie_dict[ck] = ck2
+            if match:
+                ck, ck2 = match[0]
+                cookie_dict[ck] = ck2
             # replace the Cookies in the header
             new_cookies = '; '.join([f"{k}={v}" for k, v in cookie_dict.items()])
             self.headers["Cookie"] = new_cookies

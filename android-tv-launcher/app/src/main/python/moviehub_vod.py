@@ -20,15 +20,13 @@ _HOSTS = sorted({d.lower() for cls in resolveurl.relevant_resolvers(include_univ
 def providers():
     return json.dumps(_RECORDS)
 
-# Websites found dead on 25 October 2026: every one of three checks from a GitHub runner, minutes
-# apart, failed (no DNS record, broken TLS certificate, Cloudflare 521/522, or no connection). They are
-# skipped when searching but stay bundled, so provenance checks against the original add-ons still pass.
+# Exclude only domains with concrete retirement evidence (NXDOMAIN, parking or HTTP 410).
+# A TLS error, timeout, 403 or temporary origin failure is not evidence of permanent closure.
+# On 25 October 2026, 19 of the previous 26 exclusions were restored, including Levidia:
+# its scraper's www address works even though the bare domain failed the old check.
 RETIRED_SITES = frozenset({
-    '123-movies.golf', '123moviestv.me', '1movies.la', '9pm.to', 'cinebox.cc', 'couchtuner.show',
-    'dopebox.to', 'ev01.to', 'filmxy.online', 'flixhq.to', 'flixwave.me', 'goojara.life',
-    'hdbest.net', 'hdtoday.cc', 'levidia.ch', 'm4ufree.se', 'movies2watch.tv', 'movies4fun.net',
-    'mp4hydra.top', 'projectfreetv.lol', 'putlocker.gives', 'sflixz.watch', 'soap2dayz.top',
-    'streamlord.com', 'watchug.com', 'www1.movie4u.live',
+    '123-movies.golf', 'dopebox.to', 'flixwave.me', 'm4ufree.se',
+    'projectfreetv.lol', 'putlocker.gives', 'soap2dayz.top',
 })
 
 def search_providers(include_retired=False):
@@ -86,7 +84,11 @@ def query_site(provider_id, raw, cancelled, emit=None):
                              unsupportedHosts=report.get('unsupportedHosts', 0)))
         # Do not hit the same website twice when the first adapter already supplied playable links.
         if results: break
-    status = 'complete' if results else (attempts[-1]['status'] if attempts else 'unsupported_type')
+    # A fallback with no matches cannot erase a real extraction/host failure from
+    # the other adapter. The full per-adapter attempts remain in diagnostics.
+    status = 'complete' if results else next(
+        (a['status'] for a in attempts if a['status'] not in ('no_matches', 'unsupported_type')),
+        attempts[-1]['status'] if attempts else 'unsupported_type')
     return json.dumps(dict(status=status, sources=results, attempts=attempts,
         extracted=sum(a['extracted'] for a in attempts), rejected=sum(a['rejected'] for a in attempts),
         resolutionErrors=sum(a['resolutionErrors'] for a in attempts),
@@ -165,9 +167,15 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
                 if not item.get('direct', False):
                     host=resolveurl.HostedMediaFile(url=url, include_universal=False, include_popups=False)
                     if not host.valid_url():
-                        unsupported += 1
-                        continue
-                    url=host.resolve()
+                        # Some upstream scrapers (including Scrubs' Wootly path) have
+                        # already resolved a file but still label it direct=False.
+                        # Verify its actual media response instead of resolving it twice.
+                        path = urlparse(url.partition('|')[0]).path
+                        if not re.search(r'\.(?:mp4|mkv|webm|avi|ts|mov|m4v|m3u8|mpd)$', path, re.I):
+                            unsupported += 1
+                            continue
+                    else:
+                        url=host.resolve()
                 if not isinstance(url,str) or url in seen: continue
                 stage = "media"
                 result=playable(url, info.get("maxQuality", 2160))

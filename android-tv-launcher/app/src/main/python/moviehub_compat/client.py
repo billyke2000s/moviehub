@@ -36,6 +36,17 @@ def safe(url):
     return url
 
 def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=MAX_BODY, session=None, method=None):
+    headers = dict(headers or dnt_headers)
+    # Some desktop add-ons explicitly request Brotli/Zstandard, but the Android
+    # requests runtime may not contain those optional decoders. Negotiate only
+    # encodings that this runtime can decode instead of feeding compressed bytes
+    # to the scraper's HTML/JSON parser.
+    supported = {value.strip() for value in requests.utils.DEFAULT_ACCEPT_ENCODING.split(',')}
+    for key, value in headers.items():
+        if key.lower() == 'accept-encoding' and value is not None:
+            encodings = [part.strip() for part in value.split(',')
+                         if part.split(';')[0].strip() in supported | {'identity'}]
+            headers[key] = ', '.join(encodings) or 'identity'
     try:
         current = safe(url)
     except Exception as error:
@@ -56,14 +67,21 @@ def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=MAX_
                 target = requests.compat.urljoin(current, response.headers['Location'])
                 safe(target)
                 if urlparse(target).netloc != urlparse(current).netloc:
-                    headers={k:v for k,v in (headers or {}).items() if k.lower() not in ('cookie','authorization')}
+                    # Let requests generate Host for the destination. A scraper's explicit
+                    # Host for its own site must not follow a redirect to an external host.
+                    headers={k:v for k,v in (headers or {}).items()
+                             if k.lower() not in ('cookie','authorization','host')}
+                    # None masks Session-level defaults during requests' header merge.
+                    for key in session.headers:
+                        if key.lower() in ('cookie', 'authorization', 'host'):
+                            headers[key] = None
                 if response.status_code == 303 or response.status_code in (301,302) and method == 'POST':
                     method, data = 'GET', None
                 response.close()
                 current=target
                 continue
             chunks=[]; size=0
-            for chunk in response.iter_content(32768):
+            for chunk in response.iter_content(32768) if max_bytes else ():
                 check(); size+=len(chunk)
                 if size>max_bytes:
                     if max_bytes == MAX_BODY: raise ValueError('Provider response limit')
@@ -109,12 +127,17 @@ def request(url, close=True, redirect=True, error=False, verify=True, post=None,
     if output=='file_size':
         # Kodi's client returns the size from the headers without downloading the file; fetching
         # the body here would hit the response limit on any real film (ValueError).
-        result=fetch(raw,out,post,timeout,redirect,max_bytes=1)
+        result=fetch(raw,out,post,timeout,redirect,max_bytes=0)
         if result.status_code>=400: return 0
         total=(result.headers.get('Content-Range') or '').rpartition('/')[2]
         length=total if total.isdigit() else result.headers.get('Content-Length','')
         return int(length) if str(length).isdigit() else 0
-    result=fetch(raw,out,post,timeout,redirect)
+    # Redirect/header/cookie lookup must not download the destination video. Several
+    # scrapers resolve directly to full files, which exceeded MAX_BODY before this.
+    if output in ('geturl', 'headers', 'cookie'):
+        result=fetch(raw,out,post,timeout,redirect,max_bytes=0)
+    else:
+        result=fetch(raw,out,post,timeout,redirect)
     if output=='cookie': return '; '.join(k+'='+v for k,v in result.cookies.items())
     if output=='geturl': return result.url
     if output=='headers': return result.headers
