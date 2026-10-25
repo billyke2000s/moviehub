@@ -18,6 +18,41 @@ public final class FreeVodProvidersTest {
     private final Context context = ApplicationProvider.getApplicationContext();
 
     @Test
+    public void resumeRefreshesMovieAndExactEpisodeMetadataWithoutSavedStreamUrl() throws Exception {
+        JSONObject old = new JSONObject()
+            .put("tmdbId", 12)
+            .put("id", "old-file")
+            .put("title", "Old display title")
+            .put("url", "https://expired.example/movie.mp4");
+        java.util.List<String> paths = new java.util.ArrayList<>();
+        VodResume.Metadata fixture = path -> {
+            paths.add(path);
+            if (path.contains("/episode/")) return new JSONObject()
+                .put("name", "Episode title")
+                .put("air_date", "2020-01-02");
+            return new JSONObject()
+                .put("id", 12)
+                .put("title", "Fresh film")
+                .put("name", "Fresh series")
+                .put("first_air_date", "2020-01-01")
+                .put("external_ids", new JSONObject().put("imdb_id", "tt1234567"));
+        };
+        JSONObject film = VodResume.refresh(old, fixture);
+        assertEquals("movie/12?append_to_response=external_ids,alternative_titles", paths.get(0));
+        assertEquals("Fresh film", film.getString("title"));
+        assertFalse(film.has("url"));
+        paths.clear();
+        old.put("season", 2).put("episode", 3).put("episodeKey", "12:2:3");
+        JSONObject episode = VodResume.refresh(old, fixture);
+        assertEquals("tv/12?append_to_response=external_ids,alternative_titles", paths.get(0));
+        assertEquals("tv/12/season/2/episode/3", paths.get(1));
+        assertEquals("12:2:3", episode.getString("episodeKey"));
+        assertEquals("Episode title", episode.getString("episodeTitle"));
+        assertEquals("2020-01-02", episode.getString("air_date"));
+        assertFalse(episode.has("url"));
+    }
+
+    @Test
     public void movieAndSeriesAliasesRetainOriginalAndAlternativeTitles() throws Exception {
         JSONObject movie = new JSONObject()
             .put("original_title", "Original Film")
@@ -50,7 +85,7 @@ public final class FreeVodProvidersTest {
 
     @Test
     public void packagedPythonImportsEveryProviderAndHostResolverWithoutKodi() throws Exception {
-        assertEquals(68, FreeVodProviders.ids(context).size());
+        assertEquals(63, FreeVodProviders.ids(context).size());
         assertEquals(68, FreeVodProviders.validate(context));
     }
 

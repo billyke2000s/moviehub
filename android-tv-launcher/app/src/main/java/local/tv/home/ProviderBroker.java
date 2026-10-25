@@ -82,7 +82,7 @@ final class ProviderBroker {
                     );
                 case "zlive":
                 case "dlhd":
-                    return true; // Public HTTPS GET only; no app credentials, LAN or POST capability.
+                    return true; // Public HTTPS only; the transport separately bounds ZLive session POST.
                 case "stirr":
                     return host.equals("stirr.com") && u.getPath().startsWith("/api/");
                 case "tcl":
@@ -266,6 +266,8 @@ final class ProviderBroker {
             String domain = c.getSharedPreferences("ui", 0).getString("engineZliveDomain", "");
             if (!domain.isEmpty()) row.put("domain", domain);
         }
+        final String zliveBase =
+            "https://iptv." + (row == null ? "zlive.st" : row.optString("domain", "zlive.st"));
         Executor engine = (script, op, payload) -> ProviderBridge.call(c, script, op, payload);
         Transport transport = request -> {
             String target = request.getString("url");
@@ -305,15 +307,22 @@ final class ProviderBroker {
                 String key = keys.next();
                 headers.put(key, h.getString(key));
             }
+            boolean sessionPost =
+                id.equals("zlive") &&
+                request.getString("method").equals("POST") &&
+                target.equals(zliveBase + "/resolve") &&
+                request.getString("body").length() <= 16384;
             if (
-                (id.equals("dlhd") || id.equals("zlive")) && !request.getString("method").equals("GET")
-            ) throw new IOException("Read-only provider capability");
+                (id.equals("dlhd") || id.equals("zlive")) &&
+                !request.getString("method").equals("GET") &&
+                !sessionPost
+            ) throw new IOException("Provider method capability rejected");
             return http.exchange(
                 request.getString("url"),
                 request.getString("method"),
                 headers,
                 request.getString("body"),
-                url -> allowed(id, url),
+                url -> allowed(id, url) && (!sessionPost || url.equals(target)),
                 request.optString("redirect").equals("manual")
             );
         };

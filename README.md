@@ -221,3 +221,7 @@ The experimental integration downloads only [the finished compressed guide](http
 Downloads use conditional requests and a six-hour check interval inside the existing background channel refresh, with cached data on failure. Channel changes query local SQLite. Private accounts, URLs and favourites stay on the device. The current integration has no separately configured private XMLTV URL feature; it does not publish private account data.
 
 ZLive exposes each distinct advertised, supported public resolver route with its server label. Browser-only protected choices cannot be promised to work in an external player. Current live investigation found a missing public catalogue (404) and a refused legacy media request (403); wrapped-segment and source-selection fixtures do not prove real-device ZLive playback.
+
+### Experimental provider repairs
+
+MovieHub searches distinct movie/series websites, retaining alternate Kodi scrapers as fallbacks without counting the same website twice. Available links are grouped under their website. Resume refreshes movie/episode metadata and searches for a current link before restoring progress. ZLive uses its current public ticket-and-POST player API and the source labels actually advertised in its catalogue. Provider availability depends on the website, host and location; bundled module counts do not establish playback availability.

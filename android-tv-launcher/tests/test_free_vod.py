@@ -11,6 +11,56 @@ import moviehub_vod as vod
 from moviehub_compat import client
 
 class FreeVodTests(unittest.TestCase):
+    def test_search_inventory_counts_websites_without_losing_bundled_adapters(self):
+        rows = json.loads(vod.search_providers())
+        self.assertEqual(len(rows), 63)
+        self.assertEqual(len({r['site'] for r in rows}), 63)
+        self.assertEqual(sum(len(r['adapters']) for r in rows), 66)
+        self.assertFalse(any('library' in r['id'] or 'filepursuit' in r['id'] for r in rows))
+        levidia = next(r for r in rows if r['site'] == 'levidia.ch')
+        self.assertEqual(levidia['adapters'], ['free99:levidia_ch', 'scrubs:levidia_ch'])
+        self.assertTrue(levidia['movies'] and levidia['series'])
+        self.assertEqual(vod.validate(), 68)
+
+    def test_same_site_uses_alternate_adapter_only_after_primary_has_no_links(self):
+        from unittest.mock import Mock
+        class Emit:
+            def __init__(self): self.items=[]
+            def ready(self,value): self.items.append(json.loads(value))
+        emit=Emit()
+        item=dict(url='https://media.example/movie.mp4',headers={},provider='scrubs:levidia_ch')
+        def query(adapter, raw, cancelled, callback, deadline):
+            if adapter.startswith('scrubs:'): callback.ready(json.dumps(item))
+            return json.dumps(dict(status='complete' if adapter.startswith('scrubs:') else 'no_matches',sources=[]))
+        with patch.object(vod,'query',side_effect=query) as call:
+            result=json.loads(vod.query_site('free99:levidia_ch',json.dumps({'season':-1}),lambda:False,emit))
+        self.assertEqual(call.call_count,2)
+        self.assertEqual(result['status'],'complete')
+        self.assertEqual(emit.items[0]['providerName'],'levidia.ch')
+        self.assertEqual(emit.items[0]['provider'],'free99:levidia_ch')
+        self.assertEqual(emit.items[0]['adapter'],'scrubs:levidia_ch')
+
+    def test_media_redirect_preserves_final_host_cookie_without_leaking_original_credentials(self):
+        response=requests.Response();response.status_code=200
+        response.url='https://cdn.example/final.mp4';response._content=b'ftyp'
+        response.headers['Content-Type']='video/mp4'
+        response.cookies.set('cdn','issued',domain='cdn.example',path='/')
+        response.cookies.set('other','private',domain='other.example',path='/')
+        with patch.object(client,'safe',side_effect=lambda url:url),patch.object(client,'fetch',return_value=response) as fetch:
+            result=vod.playable('https://original.example/film.mp4|Cookie=old%3Dprivate&Authorization=private')
+        self.assertEqual(result['url'],response.url)
+        self.assertEqual(result['headers']['Cookie'],'cdn=issued')
+        self.assertNotIn('Authorization',result['headers'])
+        self.assertEqual(fetch.call_args.kwargs['timeout'],8)
+
+    def test_requests_session_uses_browser_identity_and_encodes_query_lists(self):
+        from moviehub_compat import http_requests
+        with patch.object(client,'fetch') as fetch:
+            with http_requests.Session() as session:
+                session.get('https://site.example/search',params={'id':['one','two']})
+            self.assertEqual(fetch.call_args.args[1]['User-Agent'],client.UserAgent)
+            self.assertEqual(fetch.call_args.args[0],'https://site.example/search?id=one&id=two')
+
     def test_provider_requested_read_timeout_is_honored_within_search_budget(self):
         response=requests.Response();response.status_code=200;response.url='https://site.example/path'
         response._content=b'ok';response._content_consumed=True
@@ -274,7 +324,8 @@ class FreeVodTests(unittest.TestCase):
 
     def test_cancelled_search_emits_nothing(self):
         result=json.loads(vod.query('free99:my4hydra_top',json.dumps({'http':False}),lambda:True))
-        self.assertEqual(result,{'status':'timeout','sources':[]})
+        self.assertEqual(result['status'],'timeout')
+        self.assertEqual(result['sources'],[])
 
     def test_private_and_plain_http_targets_rejected(self):
         client.scope(lambda:False)

@@ -1,5 +1,14 @@
 ## Unreleased
 
+### Experimental exp13 provider follow-up
+
+- Use ZLive's current public catalogue and ticket/POST playback protocol; preserve source labels, raw IDs, transport checks and refusal cooldowns.
+- Group duplicate Kodi adapters under one movie/series website and group its links in the picker.
+- Refresh sources when resuming a movie/episode, preserve progress and deduplicate playback history by title.
+- Give host resolution a separate bounded budget, preserve final-media cookies safely and use browser request identity consistently.
+- Verify official Kodi package provenance and audit movie/episode provider outcomes separately.
+
+
 - Free channels is now its own Settings tab (between Accounts and Appearance) instead of a crowded side panel under Accounts plus a separate "Provider engine" page; Accounts holds only logins. Sections: Refresh and "Turn all on" at the top; Public channel lists (country, and whether to keep them with a TV provider); Free services (Pluto TV, FreeLiveSports and every provider-engine service, each on/off with its channel count); Advanced (hide US-only services, Masqueradarr, ZLive address, service updates). The old panel wrongly said the list choice controlled all free channels; it only ever controlled the public lists. No preference keys or meanings changed. Rebuilding the page keeps the remote on the card just used.
 - TV guide and Home: a failed background load now shows one small card floating over the bottom of the screen (it hides itself after 12 seconds) instead of a full-width box added below the guide, which pushed the guide up and squashed its rows. Scrolling screens are unchanged.
 - Keep explicit XMLTV regional suffixes such as `@Scotland` separate from national listings; quality suffixes such as `@HD` still share a schedule.

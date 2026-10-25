@@ -90,7 +90,7 @@ final class ZliveSources {
             if (added == 0) {
                 JSONObject row = new JSONObject(channel.toString());
                 row.remove("sources");
-                row.put("resolverSlug", base).put(
+                row.put("resolverSlug", channel.optString("resolverSlug", base)).put(
                     "sourceLabel",
                     sources != null && sources.length() > 0 ? "Website-selected" : "Primary"
                 );

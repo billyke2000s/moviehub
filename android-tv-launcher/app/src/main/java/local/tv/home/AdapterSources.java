@@ -246,7 +246,17 @@ final class AdapterSources {
         if (id.equals("zlive")) {
             JSONObject hint = ZliveSources.hint(c, ProviderPackages.module(c, id), wanted);
             if (hint != null) return hint;
-            if (!wanted.contains(ZliveSources.VARIANT)) return new JSONObject().put("channelId", wanted);
+            // Refresh catalogue metadata after a protocol/module update. Old stored IDs omitted auto-/evt-.
+            JSONArray current = catalogue(c, id, http);
+            for (int i = 0; i < current.length(); i++) {
+                JSONObject candidate = current.getJSONObject(i);
+                String key = candidate.getString("channelId");
+                if (
+                    wanted.equals(key) ||
+                    wanted.equals(key.replaceFirst("^auto-", "").replaceFirst("^evt-", ""))
+                ) return candidate;
+            }
+            throw new IOException("ZLive channel no longer advertised");
         }
         // These upstream resolvers accept the provider's own channel id; no catalogue hop is needed.
         // Plex is not one: it plays by a compound id whose server prefix changes, so its (cached)
