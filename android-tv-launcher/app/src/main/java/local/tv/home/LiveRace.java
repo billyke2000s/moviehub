@@ -43,6 +43,7 @@ final class LiveRace {
     private final Map<Integer, NativeHttp> requests = new HashMap<>();
     private final Map<Integer, Future<?>> tasks = new HashMap<>();
     private final Runnable windowClosed = this::choose;
+    private final Runnable tieEnded = this::choose;
     private boolean cancelled,
         choosing = true;
     private int current = -1;
@@ -70,6 +71,7 @@ final class LiveRace {
 
     void start() {
         launch();
+        main.postDelayed(tieEnded, Math.max(0, plan.tieEnds() - SystemClock.elapsedRealtime()));
         main.postDelayed(windowClosed, Math.max(0, plan.windowEnds() - SystemClock.elapsedRealtime()));
     }
 

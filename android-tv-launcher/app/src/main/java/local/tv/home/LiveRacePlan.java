@@ -18,6 +18,12 @@ final class LiveRacePlan {
     static final int PARALLEL = 3;
     /** The longest the first choice waits for a better copy, as films do (SourceWindow). */
     static final long WINDOW_MS = SourceWindow.WAIT_MS;
+    /**
+     * Plain stream addresses need no lookup, so several copies "arrive" within milliseconds in
+     * whatever order their threads run. The first choice waits this long for a copy ahead in
+     * priority order, so equal copies are not chosen by thread timing.
+     */
+    static final long TIE_MS = 250;
 
     private static final int WAITING = 0,
         RESOLVING = 1,
@@ -90,6 +96,9 @@ final class LiveRacePlan {
             state[i] == READY && (best < 0 || quality[i] > quality[best])
         ) best = i;
         if (best < 0) return -1;
+        if (!picked && now - started < TIE_MS) {
+            for (int i = 0; i < best; i++) if (state[i] == WAITING || state[i] == RESOLVING) return -1;
+        }
         if (!picked && now - started < WINDOW_MS) {
             for (int i = 0; i < order.length; i++) if (
                 (state[i] == WAITING || state[i] == RESOLVING) && quality[i] > quality[best]
@@ -108,6 +117,10 @@ final class LiveRacePlan {
 
     long windowEnds() {
         return started + WINDOW_MS;
+    }
+
+    long tieEnds() {
+        return started + TIE_MS;
     }
 
     private int at(int copy) {

@@ -49,15 +49,32 @@ public final class LiveRacePlanTest {
         same(Arrays.asList(5, 6, 7), sd.launch());
         sd.resolved(7);
         sd.resolved(6);
-        // Nothing better than SD is pending, so no wait even inside the window; 6 is ahead of 7.
-        same(6, sd.pick(5));
+        // Nothing better than SD is pending, but 5 is ahead of both and still being looked up:
+        // wait out the short tie window for it, then play 6, which is ahead of 7.
+        same(-1, sd.pick(5));
+        same(6, sd.pick(LiveRacePlan.TIE_MS));
         sd.failed(5);
         same(Arrays.asList(8), sd.launch());
-        same(7, sd.pick(6));
+        same(7, sd.pick(LiveRacePlan.TIE_MS + 1));
         sd.failed(7);
         sd.failed(8);
         same(false, sd.remaining());
         same(-1, sd.pick(100000));
+
+        // Equal copies that arrive within milliseconds are not chosen by thread timing: inside the
+        // short tie window, a later copy waits for one ahead of it that is still being looked up…
+        LiveRacePlan tie = new LiveRacePlan(new int[] { 0, 1, 2 }, new int[] { 480, 480, 480 }, 0);
+        same(Arrays.asList(0, 1, 2), tie.launch());
+        tie.resolved(2);
+        same(-1, tie.pick(5));
+        tie.resolved(0);
+        same(0, tie.pick(6));
+        // …but never longer than the tie window, when the earlier copy is a slow lookup.
+        LiveRacePlan slowFirst = new LiveRacePlan(new int[] { 0, 1 }, new int[] { 480, 480 }, 0);
+        slowFirst.launch();
+        slowFirst.resolved(1);
+        same(-1, slowFirst.pick(LiveRacePlan.TIE_MS - 1));
+        same(1, slowFirst.pick(LiveRacePlan.TIE_MS));
 
         // Nothing found yet: nothing to play.
         LiveRacePlan none = new LiveRacePlan(new int[] { 1, 2 }, new int[] { 720, 480 }, 0);
