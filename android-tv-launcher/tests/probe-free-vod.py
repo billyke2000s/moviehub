@@ -10,7 +10,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'app/src/main/pytho
 import moviehub_vod as vod
 
 parser=argparse.ArgumentParser()
-parser.add_argument('--series', action='store_true')
+media = parser.add_mutually_exclusive_group()
+media.add_argument('--series', action='store_true')
+media.add_argument('--movie', nargs=4, metavar=('TITLE', 'YEAR', 'IMDB', 'TMDB'),
+                   help='Probe another film using its complete catalogue identity')
 parser.add_argument('--include-retired', action='store_true',
                     help='Audit excluded adapters too, without changing app discovery')
 parser.add_argument('--provider', action='append', default=[],
@@ -21,6 +24,11 @@ info = {'imdb':'tt0063350','tmdb':10331,'title':'Night of the Living Dead',
 if args.series:
     info.update(imdb='tt0060028', tmdb=253, title='Star Trek', year='1966', season=1, episode=1,
                 premiered='1966-09-08', episodeTitle='The Man Trap')
+if args.movie:
+    title, year, imdb, tmdb = args.movie
+    if not year.isdigit() or not tmdb.isdigit() or not imdb.startswith('tt'):
+        parser.error('--movie requires numeric YEAR/TMDB and an IMDb tt identifier')
+    info.update(title=title, year=year, imdb=imdb, tmdb=int(tmdb))
 query=json.dumps(info)
 started = time.monotonic()
 results = []

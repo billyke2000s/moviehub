@@ -119,6 +119,18 @@ class FreeVodTests(unittest.TestCase):
                 if output=='file_size': self.assertEqual(result,2000000000)
                 if output=='geturl': self.assertEqual(result,response.url)
 
+    def test_scrapers_only_negotiate_compression_the_runtime_can_decode(self):
+        response=requests.Response();response.status_code=200;response.url='https://site.example/'
+        response._content=b'ok';response._content_consumed=True
+        original={'Accept-Encoding':'gzip, deflate, br, zstd'}
+        client.scope(lambda:False)
+        with patch.object(client,'safe',side_effect=lambda url:url), \
+             patch.object(requests.utils,'DEFAULT_ACCEPT_ENCODING','gzip, deflate'), \
+             patch.object(requests.Session,'request',return_value=response) as request:
+            client.fetch(response.url,headers=original)
+            self.assertEqual(request.call_args.kwargs['headers']['Accept-Encoding'],'gzip, deflate')
+        self.assertEqual(original['Accept-Encoding'],'gzip, deflate, br, zstd')
+
     def test_free99_levidia_with_no_landing_cookie_and_a_yearless_search_result(self):
         from moviehub_free99 import scrape_sources
         query={'imdb':'tt1234567','tmdb':12,'title':'Fixture Film','year':'2020','season':-1,'episode':-1}

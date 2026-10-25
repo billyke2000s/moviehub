@@ -27,8 +27,17 @@ jobs:
                   args=()
                   if [ "${{ matrix.media }}" = series ]; then args+=(--series); fi
                   python android-tv-launcher/tests/probe-free-vod.py "${args[@]}" | tee provider-audit.jsonl
+            - name: Check a recent film with the repaired and previously productive scrapers
+              if: matrix.media == 'movies'
+              run: |
+                  python android-tv-launcher/tests/probe-free-vod.py \
+                    --provider free99:levidia_ch --provider free99:fzmovies_live \
+                    --provider free99:anymovies_co \
+                    --movie "Inception" 2010 tt1375666 27205 | tee focused-movie-audit.jsonl
             - uses: actions/upload-artifact@v6
               if: always()
               with:
                   name: free-vod-provider-audit-${{ matrix.media }}
-                  path: provider-audit.jsonl
+                  path: |
+                      provider-audit.jsonl
+                      focused-movie-audit.jsonl

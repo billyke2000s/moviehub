@@ -36,6 +36,17 @@ def safe(url):
     return url
 
 def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=MAX_BODY, session=None, method=None):
+    headers = dict(headers or dnt_headers)
+    # Some desktop add-ons explicitly request Brotli/Zstandard, but the Android
+    # requests runtime may not contain those optional decoders. Negotiate only
+    # encodings that this runtime can decode instead of feeding compressed bytes
+    # to the scraper's HTML/JSON parser.
+    supported = {value.strip() for value in requests.utils.DEFAULT_ACCEPT_ENCODING.split(',')}
+    for key, value in headers.items():
+        if key.lower() == 'accept-encoding' and value is not None:
+            encodings = [part.strip() for part in value.split(',')
+                         if part.split(';')[0].strip() in supported | {'identity'}]
+            headers[key] = ', '.join(encodings) or 'identity'
     try:
         current = safe(url)
     except Exception as error:
