@@ -513,6 +513,12 @@ final class LiveTvScreen {
             typeDigit(key - KeyEvent.KEYCODE_0);
             return true;
         }
+        // OK while typing a number goes there at once, instead of opening the highlighted row.
+        if ((key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER) && typed.length() > 0) {
+            selectUpPending = true;
+            jumpToTyped();
+            return true;
+        }
         if (isPageUp(key)) {
             turnPage(-1, row);
             return true;
@@ -606,14 +612,44 @@ final class LiveTvScreen {
 
     private final StringBuilder typed = new StringBuilder();
     private final Runnable jump = this::jumpToTyped;
+    /**
+     * How long after the last digit the typed number is used; OK uses it at once. 1.5 s: the owner
+     * found a longer wait too slow once the number on screen updated as typed.
+     */
+    static final long TYPE_MS = 1500;
+    /**
+     * One message for the number being typed, replaced on each digit. A new long toast per digit
+     * queued up ("Channel 1", then "Channel 10"…), so the screen lagged behind the typing.
+     */
+    private android.widget.Toast typing;
+    private boolean selectUpPending;
 
     /** Number keys go straight to a channel, as on a satellite box: "151" opens channel 151. */
     private void typeDigit(int digit) {
         if (typed.length() >= 6) typed.setLength(0);
         typed.append(digit);
-        activity.toast("Channel " + typed);
+        if (typing != null) typing.cancel();
+        typing = android.widget.Toast.makeText(
+            activity,
+            "Channel " + typed + "–",
+            android.widget.Toast.LENGTH_SHORT
+        );
+        typing.show();
         activity.handler.removeCallbacks(jump);
-        activity.handler.postDelayed(jump, 1500);
+        activity.handler.postDelayed(jump, TYPE_MS);
+    }
+
+    /** The number being typed, or "" (package-private for tests). */
+    String typedNumber() {
+        return typed.toString();
+    }
+
+    /** The release of an OK that jumped to a typed number: consumed, so it does not also open a row. */
+    boolean consumeSelectUp(int key) {
+        boolean select = key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER;
+        if (!selectUpPending || !select) return false;
+        selectUpPending = false;
+        return true;
     }
 
     /**
@@ -621,6 +657,9 @@ final class LiveTvScreen {
      * all channels, and a number no channel has goes to the nearest one above it.
      */
     private void jumpToTyped() {
+        activity.handler.removeCallbacks(jump);
+        if (typing != null) typing.cancel();
+        typing = null;
         if (typed.length() == 0) return;
         int number = Integer.parseInt(typed.toString());
         typed.setLength(0);

@@ -152,6 +152,31 @@ public class LiveGuideTest {
     }
 
     @Test
+    public void okJumpsToATypedNumberAtOnceWithoutOpeningTheHighlightedChannel() {
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await(
+            "first page",
+            () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
+        );
+        long started = SystemClock.uptimeMillis();
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_2);
+        remote.runOnMainSync(() -> assertEquals("112", activity.liveTv.typedNumber()));
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        await("OK jumps to 112", () -> focused().startsWith("112  Channel 11"));
+        assertTrue(
+            "OK used the number before the digit wait ran out",
+            SystemClock.uptimeMillis() - started < LiveTvScreen.TYPE_MS + 1500
+        );
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            assertEquals("", activity.liveTv.typedNumber());
+            assertTrue("The OK did not also open the highlighted channel", activity.hasWindowFocus());
+        });
+    }
+
+    @Test
     public void typedNumbersProgrammeInfoAndTheParentalLock() {
         remote.runOnMainSync(() -> activity.liveTv.live());
         await(
