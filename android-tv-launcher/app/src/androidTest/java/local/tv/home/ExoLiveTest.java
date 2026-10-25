@@ -452,6 +452,177 @@ public final class ExoLiveTest {
         picturesAdvance();
     }
 
+    // ---- Guide and channel behaviour through the real guide (ported from the VLC-era PlaybackTest) --
+
+    private String oldFree, oldLast;
+
+    /** Channels named {@code names[i]} at {@code paths[i]}; one writer per source so equal names become copies. */
+    private void channels(String[][] rows) {
+        Context context = remote.getTargetContext();
+        android.content.SharedPreferences prefs = context.getSharedPreferences("ui", 0);
+        oldFree = prefs.getString(FreeChannels.PREF, null);
+        oldLast = prefs.getString(LiveTvScreen.LAST_CHANNEL, null);
+        prefs.edit().putString(FreeChannels.PREF, "off").commit();
+        ChannelDatabase db = ChannelDatabase.get(context);
+        for (String[] row : rows) {
+            ChannelDatabase.Writer writer = db.writer(row[0], () -> {}, n -> {});
+            try {
+                writer.accept(new Playlist.Channel(row[1], link(row[2]), "General", "", row[3]));
+                writer.commit();
+            } finally {
+                writer.abort();
+            }
+        }
+    }
+
+    private void restoreChannelPrefs() {
+        android.content.SharedPreferences.Editor edit = remote
+            .getTargetContext()
+            .getSharedPreferences("ui", 0)
+            .edit();
+        if (oldFree == null) edit.remove(FreeChannels.PREF);
+        else edit.putString(FreeChannels.PREF, oldFree);
+        if (oldLast == null) edit.remove(LiveTvScreen.LAST_CHANNEL);
+        else edit.putString(LiveTvScreen.LAST_CHANNEL, oldLast);
+        edit.commit();
+        ChannelDatabase.get(remote.getTargetContext()).clear();
+    }
+
+    private void openGuide(int cells) {
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await(() -> activity.liveTv.cells.size() == cells);
+    }
+
+    /** Whether a visible text view under {@code view} contains {@code text}. */
+    private static boolean shows(View view, String text) {
+        if (view.getVisibility() != View.VISIBLE) return false;
+        if (
+            view instanceof android.widget.TextView &&
+            ((android.widget.TextView) view).getText().toString().contains(text)
+        ) return true;
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) if (shows(group.getChildAt(i), text)) return true;
+        }
+        return false;
+    }
+
+    private int cell(String name) {
+        int[] found = { -1 };
+        remote.runOnMainSync(() -> {
+            for (int i = 0; i < activity.liveTv.cells.size(); i++) if (
+                ((android.widget.TextView) activity.liveTv.cells.get(i)).getText().toString().contains(name)
+            ) found[0] = i;
+        });
+        assertTrue(name + " listed", found[0] >= 0);
+        return found[0];
+    }
+
+    @Test
+    public void theGuidePlaysTheLastChannelInItsCorner() {
+        try {
+            channels(new String[][] { { "picture-test", "Alpha", "/a.m3u8", "" } });
+            remote
+                .getTargetContext()
+                .getSharedPreferences("ui", 0)
+                .edit()
+                .putString(LiveTvScreen.LAST_CHANNEL, ChannelQuery.key(link("/a.m3u8")))
+                .commit();
+            openGuide(1);
+            await(() -> ExoLive.isPlaying() && rendered() > 5 && !activity.stage.full());
+            remote.runOnMainSync(() -> assertEquals(link("/a.m3u8"), ExoLive.currentUrl()));
+            visibleVideo();
+            UiEvidence.capture("guide-picture");
+        } finally {
+            restoreChannelPrefs();
+        }
+    }
+
+    @Test
+    public void aBrokenChannelSaysSoInThePictureAndTheRemoteMovesOn() {
+        try {
+            channels(new String[][] {
+                { "broken-test", "Alpha", "/a.m3u8", "" },
+                { "broken-test-2", "Broken", "/missing.ts", "" },
+            });
+            openGuide(2);
+            int broken = cell("Broken");
+            remote.runOnMainSync(() -> activity.liveTv.cells.get(broken).performClick());
+            // ExoPlayer keeps retrying a channel with no other copy and says so in the picture.
+            await(
+                () ->
+                    activity.stage.full() &&
+                    shows(activity.getWindow().getDecorView(), "Still trying this channel")
+            );
+            remote.runOnMainSync(() -> assertFalse(ExoLive.isPlaying()));
+            // The failure is shown in the picture, with no panel in the way.
+            remote.runOnMainSync(() ->
+                assertFalse(
+                    "No Can't play panel over Live TV",
+                    SidePanel.current != null && SidePanel.current.isShowing()
+                )
+            );
+            UiEvidence.capture("live-channel-not-working");
+            // The remote goes straight on to the other channel.
+            remote.sendKeyDownUpSync(broken == 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+            await(() -> ExoLive.isPlaying() && rendered() > 5);
+            remote.runOnMainSync(() -> assertEquals(link("/a.m3u8"), ExoLive.currentUrl()));
+        } finally {
+            restoreChannelPrefs();
+        }
+    }
+
+    @Test
+    public void aManualBackupSurvivesGuideAndFullScreenWithoutReopening() {
+        try {
+            String name = "Sky Sports Main Event UK",
+                epg = "SkySportsMainEvent.uk";
+            channels(new String[][] {
+                { "m3u", name, "/main.m3u8", epg },
+                { "free", name, "/backup.m3u8", epg },
+            });
+            openGuide(1);
+            remote.runOnMainSync(() -> activity.liveTv.cells.get(0).performClick());
+            await(() -> activity.stage.full() && ExoLive.isPlaying() && rendered() > 5);
+            await(() -> activity.stage.zapper() != null && activity.stage.zapper().copies().size() == 2);
+            String[] chosen = { null };
+            remote.runOnMainSync(() -> {
+                LiveZapper zapper = activity.stage.zapper();
+                // Choose whichever copy is not playing (copies are ordered by source).
+                boolean onBackup = link("/backup.m3u8").equals(ExoLive.currentUrl());
+                String wanted = onBackup ? "m3u" : "free";
+                chosen[0] = link(onBackup ? "/main.m3u8" : "/backup.m3u8");
+                int other = -1;
+                for (int i = 0; i < zapper.copies().size(); i++) if (
+                    wanted.equals(zapper.copies().get(i).source)
+                ) other = i;
+                assertTrue("The other copy is listed", other >= 0);
+                zapper.useCopy(other, false);
+            });
+            await(() -> ExoLive.isPlaying() && rendered() > 5 && chosen[0].equals(ExoLive.currentUrl()));
+            await(() -> !activity.stage.zapper().automaticSources());
+            int requests = opens.get();
+            ExoPlayer[] original = { null };
+            remote.runOnMainSync(() -> original[0] = ExoLive.player());
+            for (int trip = 0; trip < 2; trip++) {
+                remote.runOnMainSync(() -> activity.stage.leave());
+                picturesAdvance();
+                remote.runOnMainSync(() -> activity.liveTv.cells.get(0).performClick());
+                await(() -> activity.stage.full());
+                picturesAdvance();
+                remote.runOnMainSync(() -> {
+                    assertEquals("The chosen copy carries on", chosen[0], ExoLive.currentUrl());
+                    assertSame("The same player survives", original[0], ExoLive.player());
+                    assertFalse("Manual mode is kept", activity.stage.zapper().automaticSources());
+                });
+            }
+            assertEquals("Guide and full screen never reopen the chosen copy", requests, opens.get());
+            UiEvidence.capture("live-manual-backup");
+        } finally {
+            restoreChannelPrefs();
+        }
+    }
+
     @After
     public void cleanup() throws Exception {
         remote.runOnMainSync(() -> {

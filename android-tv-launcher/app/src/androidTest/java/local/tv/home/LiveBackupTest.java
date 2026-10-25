@@ -328,6 +328,9 @@ public final class LiveBackupTest {
     }
 
     @Test
+    @Ignore(
+        "VLC muted-backup handoff from the guide; since 0.58 the guide uses ExoPlayer, which races sources instead (LiveRace) and prepares no standby player"
+    )
     public void handoffCancelsPreparationAndTheGuideCanPromoteItsOwnBackup() throws Exception {
         remote.runOnMainSync(activity::finish);
         await(activity::isDestroyed);

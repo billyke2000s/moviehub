@@ -426,7 +426,7 @@ regression and its correction require a new full emulator result.
 ## ExoPlayer Live TV and the test app
 
 `ExoLiveTest` and `DlhdStartupTest` are ordinary device tests (in `src/androidTest`), so the normal
-`device-tests` job runs them. CI's `apk` job also compiles the MovieHub Experimental test app
+`device-tests` job runs them. When ExoPlayer became the Live TV engine (0.58), seven VLC-era tests that drove Live TV through the guide stopped applying. They are kept but skipped with `@Ignore` naming their replacement: `ExoLiveTest` now covers the guide's corner picture, a broken channel's on-screen message and moving on with the remote, and a manual backup surviving guide/full-screen trips without reopening; `PhoneModeTest` checks touch controls on the ExoPlayer full screen. Not ported: counting native re-resolutions on handover (ExoPlayer only resolves on open, and the round-trip test asserts no reopen) and VLC's muted standby backup (ExoPlayer races sources instead). VLC Live TV tests that open `VlcPlaybackActivity` directly still run and pass, but that path is no longer how the app plays Live TV. CI's `apk` job also compiles the MovieHub Experimental test app
 (`-Pexperimental assembleDebug`) and checks its package name, and `experimental-device-tests` runs the two
 suites again inside that build. `ExoLiveTest` exercises Media3 itself on the TV emulator: decoded frame progress and nonblank
 screenshots through two guide/fullscreen round trips without new stream requests; 404 retry

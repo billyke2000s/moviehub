@@ -759,11 +759,17 @@ public class PlaybackTest {
     }
 
     @Test
+    @Ignore(
+        "VLC-era guide/full-screen handover; since 0.58 Live TV uses ExoPlayer: see ExoLiveTest.guideFullScreenAndBackKeepTheSamePlayerAndConnection"
+    )
     public void liveTvMovesBetweenTheGuideAndFullScreenWithoutReconnecting() throws Exception {
         handover(false);
     }
 
     @Test
+    @Ignore(
+        "VLC-era handover (LivePlayer.testResolver); ExoPlayer resolves only on open and ExoLiveTest.guideFullScreenAndBackKeepTheSamePlayerAndConnection asserts no reopen. No ExoPlayer test counts native resolutions yet"
+    )
     public void nativeResolvedLiveTvHandsOverWithoutResolvingAgain() throws Exception {
         handover(true);
     }
@@ -773,6 +779,7 @@ public class PlaybackTest {
     }
 
     @Test
+    @Ignore("VLC-era; see ExoLiveTest.aManualBackupSurvivesGuideAndFullScreenWithoutReopening")
     public void aManualBackupSurvivesGuideAndFullScreenWithoutReopening() throws Exception {
         handover(false, true);
     }
@@ -910,6 +917,9 @@ public class PlaybackTest {
     }
 
     @Test
+    @Ignore(
+        "VLC-era guide-menu handover; see ExoLiveTest.guideFullScreenAndBackKeepTheSamePlayerAndConnection"
+    )
     public void liveTvMovesBetweenTheGuideAndFullScreenWithoutReconnectingFromTheGuideMenu()
         throws Exception {
         instrumentation.runOnMainSync(activity::finish);
@@ -1001,6 +1011,7 @@ public class PlaybackTest {
     }
 
     @Test
+    @Ignore("VLC-era; see ExoLiveTest.aBrokenChannelSaysSoInThePictureAndTheRemoteMovesOn")
     public void aBrokenChannelSaysSoInThePictureAndTheRemoteMovesOn() throws Exception {
         instrumentation.runOnMainSync(activity::finish);
         instrumentation.waitForIdleSync();
@@ -1081,6 +1092,7 @@ public class PlaybackTest {
     }
 
     @Test
+    @Ignore("VLC-era; see ExoLiveTest.theGuidePlaysTheLastChannelInItsCorner")
     public void theGuidePlaysTheLastChannelInItsCorner() throws Exception {
         instrumentation.runOnMainSync(activity::finish);
         instrumentation.waitForIdleSync();
