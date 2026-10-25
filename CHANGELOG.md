@@ -1,3 +1,7 @@
+## Unreleased
+
+- Films and series: skipping ahead on a slow source no longer makes the player look for another link. After a jump it waits until playback has moved on (up to 30 seconds) before treating buffering as a broken stream; before, it waited only 5 seconds.
+
 ## 1.0.1 (25 October 2026)
 
 - Films and series: stop searching 26 free websites that are gone (failed three checks on 25 October 2026), so searches finish sooner. Their scrapers stay bundled.
