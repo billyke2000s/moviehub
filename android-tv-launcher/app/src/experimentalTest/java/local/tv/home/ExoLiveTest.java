@@ -270,6 +270,37 @@ public final class ExoLiveTest {
     }
 
     @Test
+    public void aFailingSourceWithAnotherWaitingMovesOnInsteadOfReopening() {
+        AtomicInteger failures = new AtomicInteger();
+        remote.runOnMainSync(() ->
+            ExoLive.attach(
+                this,
+                ExoLive.createVideoView(activity),
+                new ExoLive.Listener() {
+                    public void playing() {}
+
+                    public void buffering(boolean buffering) {}
+
+                    public void failed(String reason) {
+                        failures.incrementAndGet();
+                    }
+
+                    public boolean hasAlternative() {
+                        return true;
+                    }
+                }
+            )
+        );
+        remote.runOnMainSync(() -> ExoLive.play(activity, link("/missing.ts"), true));
+        await(() -> failures.get() == 1);
+        SystemClock.sleep(1300);
+        remote.runOnMainSync(() -> {
+            assertFalse("No reopen of the failed source while another waits", ExoLive.retryPending());
+            assertEquals("Reported once, so the owner moves to the next source once", 1, failures.get());
+        });
+    }
+
+    @Test
     public void stoppingDuringRetryReleasesPlayerViewAndPendingCallbacks() {
         remote.runOnMainSync(() -> activity.stage.fullScreen("Broken", link("/missing.ts"), "missing"));
         await(ExoLive::retryPending);

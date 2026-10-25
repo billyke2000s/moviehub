@@ -46,6 +46,7 @@ final class LiveStage implements LiveScreen {
         @Override
         public void playing() {
             liveFailed = false;
+            overlayHandler.removeCallbacks(startupDeadline);
             overlayHandler.removeCallbacks(slow);
             overlayHandler.removeCallbacks(retry);
             status.setVisibility(View.GONE);
@@ -62,6 +63,11 @@ final class LiveStage implements LiveScreen {
         @Override
         public void failed(String reason) {
             if (full) showError(reason);
+        }
+
+        @Override
+        public boolean hasAlternative() {
+            return full && foreground && zapper != null && zapper.hasUntriedCopy();
         }
     };
 
@@ -312,6 +318,20 @@ final class LiveStage implements LiveScreen {
         status.setVisibility(View.VISIBLE);
         overlayHandler.removeCallbacks(slow);
         overlayHandler.postDelayed(slow, SLOW_MS);
+        // With another source to try, this one gets START_MS to show a picture, as in the
+        // standard player. With none, it keeps waiting: a slow link is better than no channel.
+        overlayHandler.removeCallbacks(startupDeadline);
+        if (events.hasAlternative()) overlayHandler.postDelayed(startupDeadline, START_MS);
+    }
+
+    /** How long a source may take to show a picture before the next source is tried. */
+    static final long START_MS = 15_000;
+
+    private final Runnable startupDeadline = this::startupMissed;
+
+    private void startupMissed() {
+        if (!full || !foreground || ExoLive.isPlaying()) return;
+        showError("This source did not start within " + START_MS / 1000 + " seconds");
     }
 
     private void reconnect() {

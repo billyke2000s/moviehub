@@ -482,3 +482,7 @@ catalogue's gridKeys is inferred, not yet seen on a device.
 
 `LiveGuideTest.tenChannelsPerPageNumberedFrom101AndPagedWithTheRemote` checks the title line reads
 "ALL CHANNELS   25 channels" for its 25-channel fixture (the whole list, not the page).
+
+`ExoLiveTest.aFailingSourceWithAnotherWaitingMovesOnInsteadOfReopening` checks that an erroring source
+is reported once and not reopened when the listener has another source. The 15-second startup
+deadline (`LiveStage.START_MS`) has no device test; it uses the same failover path.

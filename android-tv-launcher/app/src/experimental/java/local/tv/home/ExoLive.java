@@ -59,6 +59,14 @@ final class ExoLive {
         void buffering(boolean buffering);
 
         void failed(String reason);
+
+        /**
+         * Whether another source of this channel is waiting to be tried. A failing source then
+         * moves on at once instead of being reopened, as the standard player does.
+         */
+        default boolean hasAlternative() {
+            return false;
+        }
     }
 
     /** Reopens per channel before the owner is told it failed. */
@@ -307,6 +315,15 @@ final class ExoLive {
     /** Reopens the channel (a fresh link lookup), or tells the owner after {@link #MAX_REOPENS}. */
     private static void reopen(String reason) {
         if (url == null) return;
+        // Another copy is waiting: go to it now. Reopening a failed source (a fresh lookup each
+        // time) before trying the others kept the picture black for a long time.
+        if (listener != null && listener.hasAlternative()) {
+            if (AdapterSources.locator(url)) AdapterSources.failed(url);
+            status = "Failed: " + reason;
+            event("Moving to another source (" + reasonShort(reason) + ")");
+            listener.failed(reason);
+            return;
+        }
         if (reopens >= MAX_REOPENS) {
             status = "Failed: " + reason;
             if (listener != null) listener.failed(reason);

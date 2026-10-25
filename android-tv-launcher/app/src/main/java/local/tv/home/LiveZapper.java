@@ -496,6 +496,18 @@ final class LiveZapper {
         return false;
     }
 
+    /** Whether {@link #failover} has a copy left to move to (no side effects). */
+    boolean hasUntriedCopy() {
+        if (!automaticSources || copies.size() <= 1) return false;
+        for (int offset = 1; offset < copies.size(); offset++) {
+            int next = (copy + offset) % copies.size();
+            if (
+                !attemptedCopies.contains(next) && !LivePlayer.attemptedSources.contains(copies.get(next).key)
+            ) return true;
+        }
+        return false;
+    }
+
     /**
      * Try again after every copy failed (SELECT): starts from the first copy again, so all of them
      * get another chance in order. Returns false when the channel has one copy only.
