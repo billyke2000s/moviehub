@@ -1,27 +1,20 @@
 name: ZLive diagnose
-# Diagnostic only: replays ZLive's public player steps for one channel. Never blocks a build.
+# Diagnostic only. Never blocks a build.
 on:
     push:
         branches: [diag/zlive-boomerang]
+        paths: [".github/workflows/zlive-diagnose.yml", "provider-engine/tools/zlive-*"]
     workflow_dispatch:
 permissions:
-    contents: read
+    contents: write
 jobs:
     diagnose:
         runs-on: ubuntu-latest
         timeout-minutes: 8
         steps:
             - uses: actions/checkout@v5
-            - uses: actions/setup-node@v5
-              with:
-                  node-version: "22"
-            - name: media
-              run: bash provider-engine/tools/zlive-media.sh boomerang-uk
-            - name: code 0
-              run: node provider-engine/tools/zlive-bundle.mjs 0
-            - name: code 1
-              run: node provider-engine/tools/zlive-bundle.mjs 1
-            - name: code 2
-              run: node provider-engine/tools/zlive-bundle.mjs 2
-            - name: code 3
-              run: node provider-engine/tools/zlive-bundle.mjs 3
+            - run: mkdir -p diag-out && bash provider-engine/tools/zlive-fetch.sh
+            - run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git add diag-out && git commit -m "Diagnostic output (encrypted)" && git push
