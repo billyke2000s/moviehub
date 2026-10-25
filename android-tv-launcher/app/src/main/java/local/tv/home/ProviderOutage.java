@@ -6,41 +6,37 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The guide's one line about providers that failed to refresh, grouped by why, for example
- * "Unavailable now — geo-locked: LG Channels (US), Local Now (US) · timed out: Plex (saved
- * channels kept)". Reasons come only from {@link ProviderFailure}'s fixed summaries, never from
- * provider text.
+ * The guide's one line about providers that failed to refresh, grouped by the actual failure,
+ * for example "Unavailable now — HTTP 403: LG Channels (US only), Roku Channel (US only) · timed
+ * out: Plex (saved channels kept)". It never guesses why a service failed: a service that is down
+ * for a day and one that refuses a country look the same from here. What is known about a service's
+ * region is part of its name instead ("US only"), from research, not from its failures. Reasons
+ * come only from {@link ProviderFailure}'s fixed summaries, never from provider text.
  */
 final class ProviderOutage {
 
-    /** Settings → Provider engine: switch off providers that keep failing as geo-locked. Off by default. */
-    static final String AUTO_OFF = "autoOffGeoLocked";
-    /** Refreshes in a row a provider must be geo-locked before the option switches it off. */
-    static final int AUTO_OFF_AFTER = 2;
+    /** Settings → Provider engine: hide the services known to be US-only. Off by default. */
+    static final String HIDE_US_ONLY = "hideUsOnlyProviders";
+
+    /**
+     * Services known to be available only in the US (October 2026): LG Channels' public guide
+     * service and Roku Channel are supported for the US only by FastChannels, and Local Now's own
+     * adapter refuses outside the US. Their labels say "US only".
+     */
+    static final java.util.Set<String> US_ONLY = new java.util.HashSet<>(
+        java.util.Arrays.asList("lg", "roku", "localnow")
+    );
 
     private ProviderOutage() {}
 
-    static boolean geoLocked(String reason) {
-        return reason.equals("geo-locked") || reason.equals("likely geo-locked");
+    /** Whether a provider is hidden: only when the viewer chose to hide US-only services. */
+    static boolean hidden(boolean hideUsOnly, String id) {
+        return hideUsOnly && US_ONLY.contains(id);
     }
 
-    /** Whether to switch a provider off: only with the option on, after enough geo-locked refreshes. */
-    static boolean turnOff(boolean optionOn, int geoLockedInARow) {
-        return optionOn && geoLockedInARow >= AUTO_OFF_AFTER;
-    }
-
-    /**
-     * Why {@code label} failed, from its {@link ProviderFailure#describe} summary. HTTP 403 and 451
-     * are how these services refuse a viewer outside their country. A region-tagged service (its
-     * label names a country) that gave up without an HTTP error usually got the service's
-     * "not in your country" page instead of a catalogue, so that is called likely, not certain.
-     */
-    static String reason(String label, String failure) {
+    /** The failure as the guide shows it, from its {@link ProviderFailure#describe} summary. */
+    static String reason(String failure) {
         String f = failure == null ? "" : failure;
-        if (f.equals("Provider returned HTTP 403") || f.equals("Provider returned HTTP 451")) {
-            return "geo-locked";
-        }
-        if (f.startsWith("Provider error (") && regional(label)) return "likely geo-locked";
         if (
             f.equals("Connection timed out") ||
             f.equals("Provider refresh timed out") ||
@@ -54,23 +50,12 @@ final class ProviderOutage {
         return word ? Character.toLowerCase(text.charAt(0)) + text.substring(1) : text;
     }
 
-    /** True when the label names the country the service is for, as "LG Channels (US)" does. */
-    static boolean regional(String label) {
-        return (
-            label != null &&
-            (label.contains("(US") ||
-                label.contains("(UK)") ||
-                label.contains("(GB)") ||
-                label.contains("Canada)"))
-        );
-    }
-
     /** {@code failed} holds {label, failure summary} pairs in refresh order; "" when empty. */
     static String summary(List<String[]> failed) {
         if (failed.isEmpty()) return "";
         Map<String, List<String>> byReason = new LinkedHashMap<>();
         for (String[] item : failed) {
-            byReason.computeIfAbsent(reason(item[0], item[1]), k -> new ArrayList<>()).add(item[0]);
+            byReason.computeIfAbsent(reason(item[1]), k -> new ArrayList<>()).add(item[0]);
         }
         List<String> groups = new ArrayList<>();
         for (Map.Entry<String, List<String>> group : byReason.entrySet()) {

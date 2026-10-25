@@ -199,8 +199,10 @@ puts it first in the description. Settings cards use minimum height plus wrap-co
 fits row height while retaining horizontal ellipsis.
 
 `ProviderOutage` turns those fixed summaries into the guide's one "Unavailable now" line, grouped by
-reason: HTTP 403/451 is "geo-locked"; a script failure without an HTTP refusal from a service whose
-label names a country is "likely geo-locked"; timeouts are "timed out". Plex plays by
+actual failure (timed out, HTTP status, DNS…). It never infers geo-blocking: a service down for a
+day looks the same as one refusing a country. Known US-only services (`ProviderOutage.US_ONLY`: LG,
+Roku, Local Now) say "US only" in their labels, and the opt-in `HIDE_US_ONLY` setting makes
+`AdapterSources.enabled` skip exactly those. Plex plays by
 the compound channel id from its catalogue row (`row.id`), so it does not skip the catalogue on a cold
 resolve. DistroTV and Vidaa were removed in October 2026: both services' API hosts no longer resolve. `PlexGuide` adds Plex listings after
 a Plex refresh: Plex's catalogue has none and its own guide is one request per channel per day, so it

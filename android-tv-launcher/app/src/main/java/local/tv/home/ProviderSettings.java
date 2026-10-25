@@ -101,18 +101,18 @@ final class ProviderSettings {
                 activity.toast("Provider refresh queued");
             }
         );
-        boolean autoOff = activity.prefs.getBoolean(ProviderOutage.AUTO_OFF, false);
+        boolean hideUsOnly = activity.prefs.getBoolean(ProviderOutage.HIDE_US_ONLY, false);
         settings.settingCard(
             body,
-            "Turn off geo-locked providers",
-            "Switches a provider off when it is geo-locked on " +
-                ProviderOutage.AUTO_OFF_AFTER +
-                " refreshes in a row, so its warning stops. Leave off if you watch from the provider's own country.",
-            autoOff ? "On" : "Off",
-            autoOff,
-            autoOff ? "Turn off" : "Turn on",
+            "Hide US-only providers",
+            "Hides the services marked \"US only\" (they do not work outside the US). Leave off if you watch from the US.",
+            hideUsOnly ? "On" : "Off",
+            hideUsOnly,
+            hideUsOnly ? "Show them" : "Hide them",
             () -> {
-                activity.prefs.edit().putBoolean(ProviderOutage.AUTO_OFF, !autoOff).apply();
+                activity.prefs.edit().putBoolean(ProviderOutage.HIDE_US_ONLY, !hideUsOnly).apply();
+                AdapterSources.invalidate();
+                ChannelSync.refreshNow(activity);
                 show();
             }
         );
@@ -127,7 +127,9 @@ final class ProviderSettings {
                     : status.getInt(id + "Count", 0) +
                       " channels · " +
                       java.text.DateFormat.getDateTimeInstance().format(new java.util.Date(refreshed));
-            if (status.contains(id + "Error")) detail =
+            if (ProviderOutage.hidden(hideUsOnly, id)) detail =
+                "Hidden by \"Hide US-only providers\".\n" + detail;
+            else if (status.contains(id + "Error")) detail =
                 "Last refresh failed: " +
                 status.getString(id + "Error", "") +
                 ". Saved channels kept.\n" +
