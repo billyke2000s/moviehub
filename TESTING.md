@@ -509,3 +509,8 @@ GBBC2300003ZQ) was inspected offline; it was not checked against the adapter's l
 `LiveGuideTest.okJumpsToATypedNumberAtOnceWithoutOpeningTheHighlightedChannel` types 112 and OK: the guide
 lands on 112 before the digit wait runs out and the OK's release does not open the old row; the guide's own
 number box shows "112–" while typing and is gone after the jump.
+
+`EpgMatchTest` also covers UKTV's renamed channels (U&Dave, U&Gold, the Freeview id UAndDrama) and the
+trailing "UK" word in names. The Sky London HD guide was inspected offline (377 channels, 75,677
+programmes; Sky Atlantic, Sky Witness, Comedy Central, U&Dave/U&Gold present; Sky Sports and Sky Cinema
+absent). Its 45 MB file is served gzip-compressed at about 5.3 MB.

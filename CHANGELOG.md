@@ -1,4 +1,8 @@
 ## Unreleased
+- Sky UK programme guide (London HD region, Sky's own schedules for ~380 channels, seven days) as the
+  second guide after Freeview: Sky Atlantic, Sky Witness, Comedy Central, UKTV and other pay channels.
+- Guide matching: UKTV's renamed channels ("U&Dave", "U&Gold"…) answer to the old names playlists use,
+  and a trailing "UK" word in a channel name ("Gold UK", "ITV 1 UK") is ignored.
 - Typing a channel number: the guide draws the number itself, Sky style (yellow "12–" in a blue box
   beside Options), updating as you type, instead of queueing an Android toast per digit (which lagged
   behind the typing and looked different on every box). OK jumps to the number at once. The wait after

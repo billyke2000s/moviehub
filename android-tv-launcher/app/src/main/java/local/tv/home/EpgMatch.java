@@ -19,6 +19,18 @@ final class EpgMatch {
         Arrays.asList("hd", "uhd", "fhd", "sd", "4k", "hq", "sdi", "1080p", "720p", "576p", "480p", "360p")
     );
 
+    /** UKTV channels by their old names, which the "U&" names in the guides stand for. */
+    private static final List<String> UKTV = Arrays.asList(
+        "dave",
+        "davejavu",
+        "gold",
+        "drama",
+        "alibi",
+        "eden",
+        "yesterday",
+        "w"
+    );
+
     private EpgMatch() {}
 
     /**
@@ -30,6 +42,11 @@ final class EpgMatch {
     static String national(String key) {
         if (key == null || key.contains("radio")) return "";
         if (key.equals("5")) return "channel5";
+        // UKTV renamed its channels in 2024 ("U&Dave"); playlists still say "Dave". The guide's
+        // name gives "udave", its Freeview id "uanddave".
+        for (String uktv : UKTV) {
+            if (key.equals("u" + uktv) || key.equals("uand" + uktv)) return uktv;
+        }
         if (key.endsWith("london") && key.length() > "london".length()) {
             return key.substring(0, key.length() - "london".length());
         }
@@ -44,10 +61,12 @@ final class EpgMatch {
         if (at >= 0) text = text.substring(0, at); // iptv-org feed suffix: "bbcone.uk@hd"
         text = text.replaceAll("\\([^)]*\\)|\\[[^]]*]", " ");
         text = text.replaceAll("\\.[a-z]{2}$", ""); // country suffix: ".uk"
-        StringBuilder out = new StringBuilder();
+        List<String> tokens = new ArrayList<>();
         for (String token : text.split("[^a-z0-9+]+"))
-            if (!token.isEmpty() && !QUALITY.contains(token)) out.append(token);
-        return out.toString();
+            if (!token.isEmpty() && !QUALITY.contains(token)) tokens.add(token);
+        // A trailing "UK" word in a name ("Gold UK", "ITV 1 UK") is a country note, not the channel.
+        if (tokens.size() > 1 && tokens.get(tokens.size() - 1).equals("uk")) tokens.remove(tokens.size() - 1);
+        return String.join("", tokens);
     }
 
     /** The country of an id like "BBCOne.uk@HD" ("uk"), or "" when it has none. */

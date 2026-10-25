@@ -57,7 +57,16 @@ public class EpgMatchTest {
             EpgMatch.key("BBC One Ⓖ").equals(EpgMatch.national(EpgMatch.key("BBC One London HD"))),
             "playlist name meets alias"
         );
-        System.out.println("26 programme-guide matching checks passed");
+        // UKTV's "U&" names answer to the old names playlists use.
+        check(EpgMatch.national(EpgMatch.key("U&Dave HD")).equals("dave"), "U&Dave is Dave");
+        check(EpgMatch.national(EpgMatch.key("U&Gold")).equals("gold"), "U&Gold is Gold");
+        check(EpgMatch.national(EpgMatch.key("UAndDrama.uk")).equals("drama"), "Freeview id UAndDrama");
+        check(EpgMatch.national(EpgMatch.key("U&W")).equals("w"), "U&W is W");
+        check(EpgMatch.key("Gold UK").equals("gold"), "a trailing UK word is dropped");
+        check(EpgMatch.key("ITV 1 UK").equals("itv1"), "ITV 1 UK is ITV1");
+        check(EpgMatch.key("UK").equals("uk"), "UK alone stays");
+        check(EpgMatch.national(EpgMatch.key("Universal")).isEmpty(), "a word starting with u is not UKTV");
+        System.out.println("34 programme-guide matching checks passed");
     }
 
     private static boolean sameTime(String text) {

@@ -30,6 +30,14 @@ final class EpgImporter {
      */
     static final String FREEVIEW_GUIDE =
         "https://raw.githubusercontent.com/dp247/Freeview-EPG/master/epg.xml";
+    /**
+     * Sky UK, London HD region (github.com/Permanently/sky-epg-xmltv): Sky's own schedules for
+     * about 380 channels, seven days, rebuilt daily. Covers the pay channels Freeview lacks (Sky
+     * Atlantic, Sky Witness, Comedy Central, UKTV). Built from Sky's undocumented guide service by
+     * a community project, so it may stop; the other guides are unaffected when it does.
+     */
+    static final String SKY_GUIDE =
+        "https://raw.githubusercontent.com/Permanently/sky-epg-xmltv/main/guides/london_hd.xml";
     static final String IE_GUIDE = "https://epgshare01.online/epgshare01/epg_ripper_IE1.xml.gz";
     static final String US_GUIDE = "https://epgshare01.online/epgshare01/epg_ripper_US1.xml.gz";
 
@@ -38,23 +46,26 @@ final class EpgImporter {
         java.util.Arrays.asList("uk", "gb", "ie", "us")
     );
 
-    /** One downloadable guide, the country its channels belong to, and whether London means national. */
+    /**
+     * One downloadable guide, the country its channels belong to, and whether its channel names
+     * also answer to the names playlists use (EpgMatch.national: London feeds, "5", UKTV's "U&").
+     */
     static final class Guide {
 
         final String url, country;
-        final boolean londonIsNational;
+        final boolean aliases;
 
-        Guide(String url, String country, boolean londonIsNational) {
+        Guide(String url, String country, boolean aliases) {
             this.url = url;
             this.country = country;
-            this.londonIsNational = londonIsNational;
+            this.aliases = aliases;
         }
     }
 
     /**
      * The guides, best first: a channel key taken by one guide is not looked up in later ones, so
-     * Freeview wins for UK free-to-air channels, epgshare01 UK fills the rest, then Ireland and the
-     * US. Tests replace {@link #guideUrl}: "" downloads nothing, another address only that one.
+     * Freeview wins for UK free-to-air channels, Sky covers the pay channels, epgshare01 UK fills
+     * the rest (Sky Sports, Sky Cinema…), then Ireland and the US. Tests replace {@link #guideUrl}: "" downloads nothing, another address only that one.
      */
     /** Tests: these guides instead, read through {@link #testOpener}. */
     static volatile Guide[] testGuides;
@@ -67,6 +78,7 @@ final class EpgImporter {
         if (!only.equals(UK_GUIDE)) return new Guide[] { new Guide(only, COUNTRY, false) };
         return new Guide[] {
             new Guide(FREEVIEW_GUIDE, COUNTRY, true),
+            new Guide(SKY_GUIDE, COUNTRY, true),
             new Guide(UK_GUIDE, COUNTRY, false),
             new Guide(IE_GUIDE, "ie", false),
             new Guide(US_GUIDE, "us", false),
@@ -174,7 +186,7 @@ final class EpgImporter {
                         }
                     },
                     null,
-                    guide.londonIsNational
+                    guide.aliases
                 );
                 claimed.addAll(taken);
                 result.channels += one.channels;
@@ -238,7 +250,7 @@ final class EpgImporter {
         return parse(in, wanted, from, to, sink, idKey, false);
     }
 
-    /** As above; {@code londonIsNational} also matches a guide's London channels by their national name. */
+    /** As above; {@code aliases} also matches channels by the names playlists use (EpgMatch.national). */
     static Result parse(
         InputStream in,
         Set<String> wanted,
@@ -246,7 +258,7 @@ final class EpgImporter {
         long to,
         Sink sink,
         java.util.function.UnaryOperator<String> idKey,
-        boolean londonIsNational
+        boolean aliases
     ) throws Exception {
         XmlPullParser parser = android.util.Xml.newPullParser();
         parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
@@ -327,7 +339,7 @@ final class EpgImporter {
                     else {
                         for (String candidate : names) addKey(keys, EpgMatch.key(candidate), wanted);
                         addKey(keys, EpgMatch.key(channelId), wanted);
-                        if (londonIsNational) {
+                        if (aliases) {
                             for (String candidate : names)
                                 addKey(keys, EpgMatch.national(EpgMatch.key(candidate)), wanted);
                             addKey(keys, EpgMatch.national(EpgMatch.key(channelId)), wanted);
