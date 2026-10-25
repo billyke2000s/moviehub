@@ -165,6 +165,22 @@ public final class DlhdStartupTest {
     }
 
     @Test
+    public void anIndependentProviderRevisionReceivesItsWholePage() throws Exception {
+        JSONObject request = new JSONObject()
+            .put("url", "https://mirror.example/stream/stream-42.php")
+            .put("method", "GET")
+            .put("headers", new JSONObject())
+            .put("body", "");
+        String page = "other parser needs this markup <iframe src=\"https://player.example/42\"></iframe>";
+        ProviderBroker.Transport network = q -> new JSONObject().put("status", 200).put("text", page);
+        DlhdPageCache.requestAt("same-module", request, network, 1, true);
+        assertEquals(
+            page,
+            DlhdPageCache.requestAt("same-module", request, network, 2, false).getString("text")
+        );
+    }
+
+    @Test
     public void cacheRejectsTokensFailuresCredentialsAndOldOrDifferentModules() throws Exception {
         AtomicInteger requests = new AtomicInteger();
         ProviderBroker.Transport network = q -> {

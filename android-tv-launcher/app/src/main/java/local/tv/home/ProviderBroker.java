@@ -337,7 +337,8 @@ final class ProviderBroker {
         if (BuildConfig.EXPERIMENTAL && id.equals("dlhd") && operation.equals("resolve")) {
             Transport network = transport;
             String fingerprint = ProviderCodec.call("sha256", module);
-            Transport cached = request -> DlhdPageCache.request(fingerprint, request, network);
+            boolean knownParser = module.equals(ProviderPackages.builtinModule(c, id));
+            Transport cached = request -> DlhdPageCache.request(fingerprint, request, network, knownParser);
             return ProviderSessionBridge.run(c, module, row, cached, http);
         }
         return run(module, operation, row, engine, transport, http);

@@ -84,13 +84,32 @@ final class DlhdPageCache {
 
     static JSONObject request(String module, JSONObject request, ProviderBroker.Transport network)
         throws Exception {
-        return requestAt(module, request, network, System.nanoTime() / 1_000_000);
+        return request(module, request, network, true);
+    }
+
+    static JSONObject request(
+        String module,
+        JSONObject request,
+        ProviderBroker.Transport network,
+        boolean compactPages
+    ) throws Exception {
+        return requestAt(module, request, network, System.nanoTime() / 1_000_000, compactPages);
     }
 
     static JSONObject requestAt(String module, JSONObject request, ProviderBroker.Transport network, long now)
         throws Exception {
+        return requestAt(module, request, network, now, true);
+    }
+
+    static JSONObject requestAt(
+        String module,
+        JSONObject request,
+        ProviderBroker.Transport network,
+        long now,
+        boolean compactPages
+    ) throws Exception {
         if (!eligible(request)) return network.request(request);
-        String key = module + "\n" + request.toString();
+        String key = module + "\n" + compactPages + "\n" + request.toString();
         synchronized (pages) {
             Entry entry = pages.get(key);
             if (entry != null && now >= entry.at && now - entry.at < TTL_MS) return new JSONObject(
@@ -98,7 +117,8 @@ final class DlhdPageCache {
             );
             if (entry != null) bytes -= pages.remove(key).response.length() * 2;
         }
-        JSONObject response = compact(network.request(request));
+        JSONObject response = network.request(request);
+        if (compactPages) response = compact(response);
         String body = response.optString("text");
         // A challenge, redirect or empty page is never remembered as a usable player page.
         if (

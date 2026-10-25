@@ -424,3 +424,7 @@ Public mirror responses are compacted to the exact iframe, premium-player URL an
 patterns consumed by the upstream parser, avoiding repeated parsing of unrelated page markup.
 Pages declaring the token protocol are retained verbatim. The bundled parser is exercised
 through a 500 KB fixture page and locator-preservation checks.
+
+Markup compaction is enabled only for the exact bundled transform. Independently downloaded
+provider revisions receive whole pages, with separate cache entries, so parser updates cannot
+lose inputs that a new parser needs.
