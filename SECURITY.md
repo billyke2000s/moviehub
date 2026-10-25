@@ -32,6 +32,9 @@ MovieHub stores provider accounts and installs its own updates, so these rules m
 - Bearer tokens are only sent over HTTPS, and only to the host the request started on (`Network`).
   Redirects to another host or to HTTP drop the token.
 - Downloads are size-bounded.
+- With Plex turned on, Plex programme listings are downloaded from `i.mjh.nz/Plex/` (public XMLTV,
+  gb then us; at most 20 MB compressed). The guide is data only: it adds programme text to channels
+  already in the catalogue, matched by exact channel id, and never adds channels or stream addresses.
 - The speed test in Troubleshooting downloads test data from `speed.cloudflare.com` (at most
   50 MB or 10 seconds). It runs only when the viewer presses "Run speed test" and sends nothing
   about the viewer or their accounts. The "Internet" connection check asks the same host for

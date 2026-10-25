@@ -136,6 +136,21 @@ final class EpgImporter {
      * in {@code wanted}, and their programmes overlapping [from, to).
      */
     static Result parse(InputStream in, Set<String> wanted, long from, long to, Sink sink) throws Exception {
+        return parse(in, wanted, from, to, sink, null);
+    }
+
+    /**
+     * As above, but when {@code idKey} is given a channel matches only by {@code idKey(channel id)}
+     * (no display names): for a provider's own guide, whose ids identify its channels exactly.
+     */
+    static Result parse(
+        InputStream in,
+        Set<String> wanted,
+        long from,
+        long to,
+        Sink sink,
+        java.util.function.UnaryOperator<String> idKey
+    ) throws Exception {
         XmlPullParser parser = android.util.Xml.newPullParser();
         parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
         parser.setInput(in, null);
@@ -211,8 +226,11 @@ final class EpgImporter {
                 String name = parser.getName();
                 if ("channel".equals(name) && channelId != null) {
                     List<String> keys = new ArrayList<>();
-                    for (String candidate : names) addKey(keys, EpgMatch.key(candidate), wanted);
-                    addKey(keys, EpgMatch.key(channelId), wanted);
+                    if (idKey != null) addKey(keys, idKey.apply(channelId), wanted);
+                    else {
+                        for (String candidate : names) addKey(keys, EpgMatch.key(candidate), wanted);
+                        addKey(keys, EpgMatch.key(channelId), wanted);
+                    }
                     for (String key : keys) sink.match(key, channelId);
                     if (!keys.isEmpty()) {
                         kept.put(channelId, true);

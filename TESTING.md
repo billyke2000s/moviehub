@@ -471,3 +471,9 @@ come from the stream and were not checked on a TV.
 likely geo-locked only for region-labelled services, timed out, HTTP status). `runtime-check.mjs`
 checks that LG Channels asks for country US. The Plex play fix was verified only by the live probe
 (two of three sampled channels opened and played from GitHub's US runner), not on a UK connection.
+
+`ProviderEngineDeviceTest.plexListingsMatchByStableIdAndFallBackToTheUsGuide` feeds fixture XMLTV to
+`PlexGuide`: channels match by the id after the dash (with a different server prefix), unrelated
+channels are ignored, the US file is read only when the UK file covers under half the lineup. The real
+gb.xml (368 channels, all `<24 hex>-<24 hex>` ids) was inspected offline; that its ids equal the
+catalogue's gridKeys is inferred, not yet seen on a device.

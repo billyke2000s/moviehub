@@ -1,4 +1,7 @@
 ## Unreleased
+- Plex programme listings: Plex channels now show what is on, from the daily public XMLTV files at
+  i.mjh.nz/Plex (UK file first, US file when the UK one covers under half the channels). Channels
+  match by Plex's own channel id, not by name.
 - Live TV: the source name in the banner's title strip is now plain text ("Source: Auto ·
   provider · 1 of 2"), not a second Sources button; the green key is the one Source button.
   BACK highlights the green key; OK highlights Audio & subtitles as before.

@@ -128,6 +128,101 @@ public final class ProviderEngineDeviceTest {
         } catch (IllegalArgumentException expected) {}
     }
 
+    private static String xmltvTime(long millis) {
+        java.text.SimpleDateFormat f = new java.text.SimpleDateFormat(
+            "yyyyMMddHHmmss Z",
+            java.util.Locale.ROOT
+        );
+        f.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+        return f.format(new java.util.Date(millis));
+    }
+
+    private static String plexGuide(long now, String... ids) {
+        StringBuilder xml = new StringBuilder("<?xml version=\"1.0\"?><tv>");
+        for (String id : ids)
+            xml.append("<channel id=\"").append(id).append("\"><display-name>X</display-name></channel>");
+        for (String id : ids)
+            xml.append("<programme channel=\"")
+                .append(id)
+                .append("\" start=\"")
+                .append(xmltvTime(now - 600_000))
+                .append("\" stop=\"")
+                .append(xmltvTime(now + 3_000_000))
+                .append("\"><title>Show on ")
+                .append(id.substring(id.lastIndexOf('-') + 1))
+                .append("</title></programme>");
+        return xml.append("</tv>").toString();
+    }
+
+    @Test
+    public void plexListingsMatchByStableIdAndFallBackToTheUsGuide() throws Exception {
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        String source = AdapterSources.source("plex");
+        long now = System.currentTimeMillis();
+        java.util.List<String> asked = new java.util.ArrayList<>();
+        try {
+            ChannelDatabase.Writer channels = db.writer(source, () -> {}, n -> {});
+            try {
+                for (String id : new String[] { "aaa111", "bbb222" })
+                    channels.accept(
+                        new Playlist.Channel(
+                            "Plex " + id,
+                            AdapterSources.locator("plex", id),
+                            "Movies",
+                            "",
+                            source + ":" + id
+                        )
+                    );
+                channels.commit();
+            } finally {
+                channels.abort();
+            }
+            JSONArray rows = new JSONArray()
+                .put(new JSONObject().put("channelId", "aaa111").put("name", "Plex aaa111"))
+                .put(new JSONObject().put("channelId", "bbb222").put("name", "Plex bbb222"));
+            // The UK file has neither channel (plus an unrelated one); the US file has both, under a
+            // different server prefix than the catalogue would use.
+            PlexGuide.opener = region -> {
+                asked.add(region);
+                String xml = region.equals("gb")
+                    ? plexGuide(now, "srv-zzz999")
+                    : plexGuide(now, "usserver-aaa111", "usserver-bbb222", "usserver-ccc333");
+                return new java.io.ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
+            };
+            assertEquals(2, PlexGuide.refresh(db, rows, () -> {}));
+            assertEquals(java.util.Arrays.asList("gb", "us"), asked);
+            for (String id : new String[] { "aaa111", "bbb222" }) {
+                ChannelDatabase.Row row = db.byKey(ChannelQuery.key(AdapterSources.locator("plex", id)));
+                assertNotNull(row);
+                assertEquals(
+                    "Show on " + id,
+                    db.programmes(row, "uk", now - 60_000, now + 60_000).get(0).title
+                );
+            }
+            // A UK file covering the lineup is enough: the US file is not downloaded.
+            asked.clear();
+            PlexGuide.opener = region -> {
+                asked.add(region);
+                return new java.io.ByteArrayInputStream(
+                    plexGuide(now, "gbserver-aaa111", "gbserver-bbb222").getBytes(StandardCharsets.UTF_8)
+                );
+            };
+            assertEquals(2, PlexGuide.refresh(db, rows, () -> {}));
+            assertEquals(java.util.Collections.singletonList("gb"), asked);
+            assertEquals("bbb222", PlexGuide.stableId("64305451fc3be5947773c339-bbb222"));
+        } finally {
+            PlexGuide.opener = null;
+            db.clear();
+            ChannelDatabase.GuideWriter guide = db.new GuideWriter(source + ":");
+            try {
+                guide.commit();
+            } finally {
+                guide.finish();
+            }
+        }
+    }
+
     @Test
     public void realBridgeRefreshPreservesStableChannelsFavouritesAndIndependentGuides() throws Exception {
         ChannelDatabase db = ChannelDatabase.get(context);
