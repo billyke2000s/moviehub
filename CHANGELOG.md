@@ -1,4 +1,4 @@
-## Unreleased
+## 1.0.1 (25 October 2026)
 
 - Films and series: stop searching 26 free websites that are gone (failed three checks on 25 October 2026), so searches finish sooner. Their scrapers stay bundled.
 
