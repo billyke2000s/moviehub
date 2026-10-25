@@ -155,7 +155,6 @@ public final class ProviderAdaptersTest {
             "stirr",
             "xumo",
             "roku",
-            "plex",
             "dlhd",
             "tubi",
             "samsung",

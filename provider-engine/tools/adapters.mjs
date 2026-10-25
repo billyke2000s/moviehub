@@ -49,7 +49,10 @@ export const adapters = {
     },
     plex: {
         catalogue: "exports.fetchPlexRows()",
-        resolve: "exports.resolvePlexMaster(row.channelId)",
+        // The manifest path needs the COMPOUND id (row.id, "<server prefix>-<gridKey>"), not the
+        // stable gridKey in row.channelId: Plex answers 404 for the gridKey alone. The prefix
+        // changes when Plex moves servers, so it comes from the (cached) catalogue row each time.
+        resolve: "exports.resolvePlexMaster(row.id||row.channelId)",
         headers: "exports.PLEX_STREAM_HEADERS",
     },
 };
