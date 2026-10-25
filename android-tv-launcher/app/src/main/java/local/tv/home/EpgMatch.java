@@ -21,6 +21,21 @@ final class EpgMatch {
 
     private EpgMatch() {}
 
+    /**
+     * For a regional guide (Freeview), the national key a regional channel also answers to, or "":
+     * the London feeds stand for the national channel ("bbconelondon" is "bbcone"), as online
+     * streams of these channels usually carry London, and Freeview's "5 HD" is Channel 5. Radio
+     * stations are left alone ("BBC Radio London" is not "BBC Radio").
+     */
+    static String national(String key) {
+        if (key == null || key.contains("radio")) return "";
+        if (key.equals("5")) return "channel5";
+        if (key.endsWith("london") && key.length() > "london".length()) {
+            return key.substring(0, key.length() - "london".length());
+        }
+        return "";
+    }
+
     /** The plain key for a channel name or guide id, or "" when nothing is left. */
     static String key(String value) {
         if (value == null) return "";

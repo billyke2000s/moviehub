@@ -493,3 +493,11 @@ copy is pending, no waiting after a failure, and exhaustion. `ExoLiveTest.aDeadC
 OneWithoutWaitingForTheSlowOne` plays a three-copy fixture channel (404, working, slow) and checks the
 working copy plays through the race and the slow one is never opened. Real provider lookups, quality
 names and the eight-second deadline are not exercised by fixtures.
+
+`EpgMatchTest` (core) checks Freeview's London-is-national aliases (BBC One/ITV1/Channel 4 London, "5"
+as Channel 5, radio and other regions left alone). `EpgImporterTest.guidesInPriorityOrderLondonIsNational
+AndCountriesStayApart` imports three fixture guides: Freeview beats the later UK guide, a channel only the
+second guide has is filled from it, Irish channels use the Irish guide, and a German channel gets no UK
+listings. `oneFailingGuideKeepsTheOthers` checks a failed download does not lose the rest. The real
+files' coverage was inspected offline (Freeview: 284 channels, 47,787 programmes); epgshare01's IE and
+US files were not downloadable from the workspace and are untested beyond Free-TV listing them.

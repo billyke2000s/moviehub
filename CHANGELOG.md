@@ -1,4 +1,8 @@
 ## Unreleased
+- More programme guides, best first: Freeview EPG (UK free-to-air, broadcasters' data, seven days,
+  London feeds also answer to the national names), then epgshare01 UK, Ireland and US. A channel taken
+  by an earlier guide is not looked up in later ones; one guide failing keeps the others. Irish and US
+  channels use their own country's guide; channels of other countries still get none.
 - Experimental Live TV source race: when a channel has several copies, up to three are looked up at
   once. The first choice waits up to three seconds only while a better-quality copy (by its name:
   HD, 1080p…) is still being looked up; otherwise the best found plays at once. Copies found but not
