@@ -15,10 +15,10 @@ jobs:
               with:
                   python-version: "3.11"
             - run: python -m pip install requests==2.32.5 six==1.17.0
-            - run: python diag/recheck.py
+            - run: python diag/trace.py scrubs:watchserieshd_stream,scrubs:upmovies_net,scrubs:winnoise_com,scrubs:series9mx_pro,scrubs:moviesnipipay_me,scrubs:myflixer_it,scrubs:goojara_club,scrubs:pressplay_top,scrubs:tvids_net,scrubs:okmov_to,scrubs:vumoo_mx,scrubs:gdriveplayer_us,scrubs:iwaatch_com,free99:fzmovies_live,free99:stagatv_com,free99:anymovies_co,scrubs:anymovies_co
             - run: |
                   openssl rand 32 > k.bin
-                  openssl enc -aes-256-cbc -pbkdf2 -in recheck.json -out diag/out.enc -pass file:k.bin
+                  openssl enc -aes-256-cbc -pbkdf2 -in trace.json -out diag/out.enc -pass file:k.bin
                   openssl pkeyutl -encrypt -pubin -inkey diag/diag-pub.pem -in k.bin -out diag/out.k
                   rm -f k.bin
                   git config user.name "github-actions[bot]"
