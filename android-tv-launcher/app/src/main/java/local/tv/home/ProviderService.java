@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 import org.json.JSONObject;
 
 /** A disposable isolated UID: no app accounts, databases, files or INTERNET permission. */
-public final class ProviderService extends Service {
+public class ProviderService extends Service {
 
     static final String DESCRIPTOR = "local.tv.home.provider.v1";
     static final int EVALUATE = IBinder.FIRST_CALL_TRANSACTION;

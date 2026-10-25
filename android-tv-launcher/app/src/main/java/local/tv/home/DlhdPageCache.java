@@ -2,6 +2,7 @@ package local.tv.home;
 
 import java.net.URI;
 import java.util.LinkedHashMap;
+import java.util.regex.*;
 import org.json.JSONObject;
 
 /** Short-lived public mirror pages only. Never caches embeds, tokens, playlists or media. */
@@ -42,7 +43,8 @@ final class DlhdPageCache {
                 !request.optString("body").isEmpty()
             ) return false;
             JSONObject headers = request.getJSONObject("headers");
-            for (String key : headers.keySet()) {
+            for (java.util.Iterator<String> keys = headers.keys(); keys.hasNext(); ) {
+                String key = keys.next();
                 if (key.equalsIgnoreCase("Cookie") || key.equalsIgnoreCase("Authorization")) return false;
             }
             return (
@@ -56,6 +58,28 @@ final class DlhdPageCache {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /** Preserve exactly the literal inputs used by upstream findEmbedUrls/listPlayerPages. */
+    static JSONObject compact(JSONObject response) throws Exception {
+        String body = response.optString("text");
+        if (response.optInt("status") != 200 || body.contains("/api/playlist-token")) return response;
+        StringBuilder useful = new StringBuilder();
+        String[] patterns = {
+            "https?://[^\"'\\s)]+/premiumtv/[a-z0-9]+\\.php\\?id=\\d+",
+            "<iframe[^>]*\\bsrc=[\"'][^\"']+[\"']",
+            "data-url=[\"'][^\"']*?(/[a-z]+/stream-\\d+\\.php)[\"']",
+        };
+        for (String pattern : patterns) {
+            Matcher matches = Pattern.compile(pattern, Pattern.CASE_INSENSITIVE).matcher(body);
+            while (matches.find()) {
+                useful.append(matches.group());
+                if (pattern.startsWith("<iframe")) useful.append('>');
+                useful.append('\n');
+            }
+        }
+        if (useful.length() == 0 || useful.length() >= body.length()) return response;
+        return new JSONObject(response.toString()).put("text", useful.toString());
     }
 
     static JSONObject request(String module, JSONObject request, ProviderBroker.Transport network)
@@ -74,7 +98,7 @@ final class DlhdPageCache {
             );
             if (entry != null) bytes -= pages.remove(key).response.length() * 2;
         }
-        JSONObject response = network.request(request);
+        JSONObject response = compact(network.request(request));
         String body = response.optString("text");
         // A challenge, redirect or empty page is never remembered as a usable player page.
         if (

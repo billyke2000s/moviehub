@@ -47,7 +47,12 @@ public final class DlhdStartupTest {
         ProviderBroker.Transport transport = request ->
             DlhdPageCache.request("fixture-version", request, q -> {
                 requests.incrementAndGet();
-                return answer(q);
+                JSONObject response = answer(q);
+                if (q.getString("url").contains("stream-42.php")) response.put(
+                    "text",
+                    new String(new char[500000]).replace('\0', 'x') + response.getString("text")
+                );
+                return response;
             });
         int bindings = ProviderSessionBridge.bindings.get();
         for (int n = 0; n < 2; n++) {
@@ -143,11 +148,35 @@ public final class DlhdStartupTest {
     }
 
     @Test
+    public void mirrorCompactionPreservesEveryUpstreamLocatorPattern() throws Exception {
+        String html =
+            new String(new char[500000]).replace('\0', 'x') +
+            "<iframe src=\"//player.example/embed/42\"></iframe>" +
+            "data-url='https://mirror.example/plus/stream-42.php' " +
+            "https://player.example/premiumtv/daddy4.php?id=42";
+        JSONObject response = new JSONObject().put("status", 200).put("text", html);
+        String compact = DlhdPageCache.compact(response).getString("text");
+        assertTrue(compact.length() < 500);
+        assertTrue(compact.contains("//player.example/embed/42"));
+        assertTrue(compact.contains("/plus/stream-42.php"));
+        assertTrue(compact.contains("/premiumtv/daddy4.php?id=42"));
+        response.put("text", html + "/api/playlist-token");
+        assertEquals(response.getString("text"), DlhdPageCache.compact(response).getString("text"));
+    }
+
+    @Test
     public void cacheRejectsTokensFailuresCredentialsAndOldOrDifferentModules() throws Exception {
         AtomicInteger requests = new AtomicInteger();
         ProviderBroker.Transport network = q -> {
             requests.incrementAndGet();
-            return answer(q);
+            JSONObject response = answer(q);
+            if (q.getString("url").contains("stream-42.php")) {
+                response.put(
+                    "text",
+                    new String(new char[500000]).replace('\0', 'x') + response.getString("text")
+                );
+            }
+            return response;
         };
         JSONObject page = new JSONObject()
             .put("url", "https://mirror.example/stream/stream-42.php")

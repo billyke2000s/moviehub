@@ -419,3 +419,8 @@ is unchanged. These changes are gated by the experimental build.
 An exhausted DaddyLive resolver reports to source failover immediately, rather than repeating
 the entire unsuccessful walk through ExoLive's two reconnects. Available sources still use
 the existing automatic/manual policy; established-stream retry behaviour remains separate.
+
+Public mirror responses are compacted to the exact iframe, premium-player URL and data-url
+patterns consumed by the upstream parser, avoiding repeated parsing of unrelated page markup.
+Pages declaring the token protocol are retained verbatim. The bundled parser is exercised
+through a 500 KB fixture page and locator-preservation checks.
