@@ -9,7 +9,7 @@
 - Verify official Kodi package provenance and audit movie/episode provider outcomes separately.
 - Starting a ZLive channel no longer downloads the channel list first; old saved IDs are matched against the list already in memory. A cancelled or season-less website search now stops cleanly instead of failing.
 
-
+- MovieHub Experimental: add ExoPlayer's DASH module. Playing a channel whose stream is DASH (.mpd) crashed the app with ClassNotFoundException for DashMediaSource$Factory (found by the 2 GB memory probe on channel 101).
 - Free channels is now its own Settings tab (between Accounts and Appearance) instead of a crowded side panel under Accounts plus a separate "Provider engine" page; Accounts holds only logins. Sections: Refresh and "Turn all on" at the top; Public channel lists (country, and whether to keep them with a TV provider); Free services (Pluto TV, FreeLiveSports and every provider-engine service, each on/off with its channel count); Advanced (hide US-only services, Masqueradarr, ZLive address, service updates). The old panel wrongly said the list choice controlled all free channels; it only ever controlled the public lists. No preference keys or meanings changed. Rebuilding the page keeps the remote on the card just used.
 - TV guide and Home: a failed background load now shows one small card floating over the bottom of the screen (it hides itself after 12 seconds) instead of a full-width box added below the guide, which pushed the guide up and squashed its rows. Scrolling screens are unchanged.
 - Keep explicit XMLTV regional suffixes such as `@Scotland` separate from national listings; quality suffixes such as `@HD` still share a schedule.
