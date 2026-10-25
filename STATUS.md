@@ -466,3 +466,12 @@ on stop. A dedicated experimental emulator suite now covers actual Media3 playba
 continuity, 404 retry cancellation, lifecycle and HLS tracks. Results must be checked on the
 final CI commit before publishing exp-4. No physical-TV or real-provider success is claimed.
 Frozen-picture detection remains diagnostic, preserving the experimental comparison behaviour.
+
+## Experimental DaddyLive startup candidate (25 October 2026)
+
+Desktop probes of the previous implementation took 18–20 seconds before playback. The timed
+probe spent about five seconds in interpreter execution and eleven seconds in four network
+requests; these are not TV timings. This candidate reuses one isolated process and compiled
+code per lookup, caches public mirror pages briefly, counts failed network time, bounds fast
+lookups and advances failed selected players. Local fixtures and CI must validate the final
+commit before publishing the next experimental version. Physical-TV latency remains unverified.

@@ -399,3 +399,23 @@ frame polling. LiveStage cancels screen timers in the background and on each new
 a full-screen return creates a fresh player. Destroying MainActivity disposes the stage.
 Exhausted-channel retries wait for the new attempt to fail before starting another cycle.
 Freeze observations remain diagnostic, with no automatic repair.
+
+### Experimental DaddyLive startup
+
+ProviderBroker routes experimental DaddyLive resolution through ProviderSessionBridge and a
+separate non-exported isolated FastProviderService. One binding lasts for the selected lookup,
+not one continuation; unbinding still kills the entire heap at completion/cancellation. Every
+step has a fresh safe Rhino scope. A two-entry compiled-code cache exists only in that isolated
+process. Legacy providers keep the per-step disposable service. Fast lookup has a 25-second
+network deadline, clipped socket timeouts and failed-request clock accounting. Socket timeout
+is distinguishable from cancellation, allowing alternate-player lookup within the budget.
+
+DlhdPageCache keeps at most eight public mirror pages and four MiB for 30 seconds, keyed by
+module fingerprint and exact request. It never caches embeds, tokens, playlists, media or
+authenticated requests. A failed selected player clears these page hints and is retired through
+AdapterSources.failed before ExoLive reopens it. Ordinary HLS parsing/behind-live-window handling
+is unchanged. These changes are gated by the experimental build.
+
+An exhausted DaddyLive resolver reports to source failover immediately, rather than repeating
+the entire unsuccessful walk through ExoLive's two reconnects. Available sources still use
+the existing automatic/manual policy; established-stream retry behaviour remains separate.

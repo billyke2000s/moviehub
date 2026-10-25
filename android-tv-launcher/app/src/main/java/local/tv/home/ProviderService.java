@@ -30,7 +30,8 @@ public final class ProviderService extends Service {
                 String result = ProviderScript.evaluate(
                     request.getString("source"),
                     request.getString("operation"),
-                    request.getString("payload")
+                    request.getString("payload"),
+                    reuseCompiledCode()
                 );
                 out.write(result.getBytes(StandardCharsets.UTF_8));
                 reply.writeNoException();
@@ -72,6 +73,10 @@ public final class ProviderService extends Service {
             out.write(buffer, 0, n);
         }
         return out.toString(StandardCharsets.UTF_8.name());
+    }
+
+    protected boolean reuseCompiledCode() {
+        return false;
     }
 
     @Override

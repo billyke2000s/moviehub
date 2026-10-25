@@ -10,23 +10,51 @@ final class ProviderScript {
     /** The whole script input (provider responses included). Plex's catalogue is about 9 MB. */
     static final int MAX_BYTES = 16 * 1024 * 1024;
 
+    // Compiled code only: every invocation still receives fresh globals and capabilities.
+    private static final java.util.LinkedHashMap<String, Script> compiled = new java.util.LinkedHashMap<>();
+    private static int compilations;
+
     private ProviderScript() {}
 
+    static synchronized int compilations() {
+        return compilations;
+    }
+
+    private static synchronized Script compiled(Context cx, String source) {
+        Script script = compiled.get(source);
+        if (script == null) {
+            script = cx.compileString(source, "provider", 1, null);
+            if (compiled.size() >= 2) compiled.remove(compiled.keySet().iterator().next());
+            compiled.put(source, script);
+            compilations++;
+        }
+        return script;
+    }
+
     static String evaluate(String source, String operation, String payload) throws IOException {
+        return evaluate(source, operation, payload, false);
+    }
+
+    static String evaluate(String source, String operation, String payload, boolean reuseCode)
+        throws IOException {
         // Binder threads may have a boot-only context loader. Rhino's ServiceLoader then misses
         // its RegExp implementation, although it is packaged in the same APK.
         Thread thread = Thread.currentThread();
         ClassLoader previous = thread.getContextClassLoader();
         try {
             thread.setContextClassLoader(ProviderScript.class.getClassLoader());
-            return evaluateWithLoader(source, operation, payload);
+            return evaluateWithLoader(source, operation, payload, reuseCode);
         } finally {
             thread.setContextClassLoader(previous);
         }
     }
 
-    private static String evaluateWithLoader(String source, String operation, String payload)
-        throws IOException {
+    private static String evaluateWithLoader(
+        String source,
+        String operation,
+        String payload,
+        boolean reuseCode
+    ) throws IOException {
         if (source.length() > 256 * 1024 || payload.length() > MAX_BYTES) throw new IOException(
             "Provider limit"
         );
@@ -163,7 +191,8 @@ final class ProviderScript {
                         }
                     }
                 );
-                cx.evaluateString(scope, source, "provider", 1, null);
+                if (reuseCode) compiled(cx, source).exec(cx, scope);
+                else cx.evaluateString(scope, source, "provider", 1, null);
                 Object callable = ScriptableObject.getProperty(scope, "invoke");
                 if (!(callable instanceof Function)) throw new IllegalArgumentException(
                     "Missing provider interface"

@@ -18,3 +18,7 @@ if [ ! -f "$json" ]; then
 fi
 javac -cp "$json" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderUrls,ProviderSegments,ProviderRelay,StreamRate,PlaylistSession,ProviderPngSegments}.java android-tv-launcher/tests/{ProviderRelayProbe,ProviderRelayTransportTest}.java
 java -Xmx96m -cp "$json:build/provider-tests" local.tv.home.ProviderRelayTransportTest
+
+# Fast experimental lookups reuse compiled code, never the script's globals or Java capabilities.
+javac -cp "$rhino:$json:build/provider-tests" -d build/provider-tests android-tv-launcher/tests/ProviderScriptFastTest.java
+java -Xmx96m -cp "$rhino:$json:build/provider-tests" local.tv.home.ProviderScriptFastTest

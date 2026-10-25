@@ -379,6 +379,8 @@ function fetch(url, init) {
     if (__restoring && JSON.stringify(req) !== JSON.stringify(response.request)) __historyInvalid = true;
     if (JSON.stringify(req) !== JSON.stringify(response.request))
         throw new Error("Non deterministic request");
+    // Fast lookups count failed network time too; legacy replays retain their old clock contract.
+    if (__input.fastResolve) __clock = response.completedAt || __clock;
     if (response.error) return Promise.reject(new Error("Provider transport failed"));
     __clock = response.completedAt || __clock;
     var r = response.response;

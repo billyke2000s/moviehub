@@ -209,3 +209,10 @@ MovieHub Experimental uses Media3 for Live TV and has a separate emulator playba
 It tests shared guide/fullscreen video, channel retries, audio/subtitles and player cleanup.
 Experimental builds use their own app data and update feed. Physical-TV/provider behaviour
 still needs verification; recorded picture freezes do not trigger automatic repair.
+
+### Faster experimental DaddyLive startup
+
+Experimental DaddyLive lookups use one disposable isolated process per channel lookup, reuse
+compiled provider code with fresh script globals, and briefly cache public mirror pages.
+Tokens, player embeds and media remain fresh. Failed players advance rather than being
+selected repeatedly. Provider/network response time can still affect startup.

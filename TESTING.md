@@ -450,3 +450,13 @@ These local HTTP fixtures establish decoder and lifecycle behaviour, not real-pr
 physical-TV compatibility. Freeze detection remains diagnostic; this release does not add an
 automatic picture-repair algorithm.
 
+
+### Experimental DaddyLive startup regression suite
+
+DlhdStartupTest runs real isolated Binder calls with bundled DaddyLive transforms and fixture
+HTTP: one process binding per complete lookup, fewer warm-page requests, fresh script globals,
+expired/cancelled lookups, socket-timeout continuation, cache expiry/module separation and
+exclusion of tokens, credentials and failures. It runs alongside ExoLiveTest in the dedicated
+experimental emulator job. ProviderScriptFastTest uses actual Rhino on the JVM to verify one
+compile across steps, fresh globals, no Java access, failed-request clock accounting and the
+unchanged legacy replay contract. Fixtures do not establish physical-TV startup latency.

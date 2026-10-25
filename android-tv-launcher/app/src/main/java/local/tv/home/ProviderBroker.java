@@ -173,12 +173,26 @@ final class ProviderBroker {
         NativeHttp http,
         JSONObject journal
     ) throws Exception {
+        return run(module, operation, row, engine, transport, http, journal, false);
+    }
+
+    static Object run(
+        String module,
+        String operation,
+        JSONObject row,
+        Executor engine,
+        Transport transport,
+        NativeHttp http,
+        JSONObject journal,
+        boolean fast
+    ) throws Exception {
         JSONArray responses = new JSONArray();
         JSONObject input = new JSONObject()
             .put("now", System.currentTimeMillis())
             .put("seed", seed())
             .put("row", row == null ? new JSONObject() : row)
             .put("responses", responses);
+        if (fast) input.put("fastResolve", true);
         if (journal != null) {
             input.put("history", journal.getJSONArray("history"));
             journal.put("responses", responses).put("at", input.getLong("now"));
@@ -213,7 +227,11 @@ final class ProviderBroker {
                     JSONObject response = transport.request(request);
                     record.put("response", response);
                 } catch (InterruptedIOException e) {
-                    throw e;
+                    // A per-hop socket timeout is not cancellation. Fast DaddyLive can try its
+                    // next player while the whole lookup still has time left.
+                    http.check();
+                    if (!fast || !(e instanceof SocketTimeoutException)) throw e;
+                    record.put("error", true).put("failure", ProviderFailure.describe(e));
                 } catch (Exception e) {
                     http.check();
                     record.put("error", true).put("failure", ProviderFailure.describe(e));
@@ -316,6 +334,12 @@ final class ProviderBroker {
             transport,
             http
         );
+        if (BuildConfig.EXPERIMENTAL && id.equals("dlhd") && operation.equals("resolve")) {
+            Transport network = transport;
+            String fingerprint = ProviderCodec.call("sha256", module);
+            Transport cached = request -> DlhdPageCache.request(fingerprint, request, network);
+            return ProviderSessionBridge.run(c, module, row, cached, http);
+        }
         return run(module, operation, row, engine, transport, http);
     }
 }
