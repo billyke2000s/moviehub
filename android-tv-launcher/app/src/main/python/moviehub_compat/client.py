@@ -106,6 +106,14 @@ def request(url, close=True, redirect=True, error=False, verify=True, post=None,
     if XHR: out['X-Requested-With']='XMLHttpRequest'
     raw, sep, suffix=url.partition('|')
     if sep: out.update(dict(parse_qsl(suffix)))
+    if output=='file_size':
+        # Kodi's client returns the size from the headers without downloading the file; fetching
+        # the body here would hit the response limit on any real film (ValueError).
+        result=fetch(raw,out,post,timeout,redirect,max_bytes=1)
+        if result.status_code>=400: return 0
+        total=(result.headers.get('Content-Range') or '').rpartition('/')[2]
+        length=total if total.isdigit() else result.headers.get('Content-Length','')
+        return int(length) if str(length).isdigit() else 0
     result=fetch(raw,out,post,timeout,redirect)
     if output=='cookie': return '; '.join(k+'='+v for k,v in result.cookies.items())
     if output=='geturl': return result.url

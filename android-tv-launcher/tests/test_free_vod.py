@@ -272,6 +272,45 @@ class FreeVodTests(unittest.TestCase):
         self.assertEqual(len(result.content),65536)
         self.assertEqual(reads,[0,1])
 
+    def test_a_scraper_cannot_change_the_headers_every_scraper_shares(self):
+        shared = dict(client.dnt_headers)
+        module = importlib.import_module(vod._MODULES['free99:stagatv_com']['module'])
+        original = module.source.sources
+        def leaky(self, url, hosts):
+            # What stagatv, seriesloaded and naijavault do: edit self.headers in place.
+            self.headers.update({'Host': 'loadedfiles.org', 'Referer': 'https://m.stagatv.com'})
+            return []
+        info = json.dumps({'imdb':'tt0063350','tmdb':10331,'title':'Night of the Living Dead',
+                           'year':'1968','season':-1,'episode':-1})
+        with patch.object(module.source, 'sources', leaky):
+            vod.query('free99:stagatv_com', info, lambda: False)
+        self.assertIs(module.source.sources, original)
+        self.assertEqual(client.dnt_headers, shared)
+
+    def test_file_size_reads_headers_without_downloading_the_film(self):
+        # fzmovies' resolve() asks for output='file_size'; the whole film used to be fetched.
+        response=requests.Response();response.status_code=200;response.url='https://files.example/film.mp4'
+        response.headers['Content-Length']='503371211'
+        reads=[]
+        def chunks(size):
+            for n in range(20):
+                reads.append(n)
+                yield b'x'*32768
+        response.iter_content=chunks
+        response.close=lambda:None
+        session=unittest.mock.Mock()
+        session.request.return_value=response
+        client.scope(lambda:False)
+        with patch.object(client,'safe',side_effect=lambda url:url), \
+             patch.object(client.requests,'Session',return_value=session):
+            self.assertEqual(client.request(response.url,output='file_size'),503371211)
+            self.assertEqual(reads,[0])
+            response.status_code=206;response.headers['Content-Range']='bytes 0-0/700000000'
+            reads.clear()
+            self.assertEqual(client.request(response.url,output='file_size'),700000000)
+            response.status_code=404
+            self.assertEqual(client.request(response.url,output='file_size'),0)
+
     def test_manifest_resolution_and_media_transfer_sample(self):
         response=requests.Response();response.status_code=200
         response.headers['Content-Type']='application/vnd.apple.mpegurl'
