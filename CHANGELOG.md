@@ -1,4 +1,6 @@
 ## Unreleased
+- Fix built-in channels showing no programme information despite matching XMLTV listings: prefer native schedules, then country-matched name/identity fallback; keep country maps separate.
+- Empty, stale or malformed guides no longer block later guides. Populate saved/base channels before slow optional provider catalogues and update the visible guide as listings commit.
 - After an app update, channels and programme guides refresh once (on the next home or Live TV visit),
   so new guide sources and fixes apply straight away instead of up to 12 hours later.
 - Fix: channels refreshed on almost every home or Live TV visit (after a 10-minute gap) whenever any

@@ -518,3 +518,7 @@ absent). Its 45 MB file is served gzip-compressed at about 5.3 MB.
 `ChannelImporterTest.importsBothXtreamFormatsAndM3uAndKeepsFailedRefresh` also checks a finished refresh
 records the app version (`refreshedVersion`) and `ChannelSync.updatedSinceRefresh` treats another or
 unknown version as updated.
+
+## XMLTV fallback regression (25 October 2026)
+
+`EpgLookupTest` checks provider-name lookup, country prefixes/aliases, fixed provider country, GB/UK equivalence, timeshifts and refusal to borrow UK listings for unknown native countries. `EpgImporterTest` imports a Sky-shaped XMLTV fixture for a built-in provider channel, verifies missing/expired native fallback and native priority, separates equally named US/UK channels, and verifies stale/malformed priority guides cannot claim keys or leak partial programmes. Existing native/XMLTV coexistence tests remain. Core checks run locally; full Android build/lint and both emulator suites must pass on the final PR commit. Live feed availability and the owner’s physical TV remain separate checks.

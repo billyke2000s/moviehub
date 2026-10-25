@@ -115,6 +115,11 @@ final class EpgImporter {
 
     private EpgImporter() {}
 
+    /** Detect newly imported channel identities without downloading every guide twice per refresh. */
+    static Set<String> wantedSnapshot(ChannelDatabase db) {
+        return db.guideSnapshot();
+    }
+
     /**
      * Downloads the guides and stores them in one transaction. Returns how many channels and
      * programmes matched. A guide that fails is skipped; only when every guide fails does this
@@ -136,7 +141,7 @@ final class EpgImporter {
             cancel.check();
             Guide guide = guides[g];
             Set<String> wanted = new java.util.HashSet<>(db.guideKeys(guide.country));
-            wanted.removeAll(claimed);
+            wanted.removeIf(key -> claimed.contains(EpgLookup.scope(guide.country, key)));
             if (wanted.isEmpty()) continue;
             // Each guide's channel ids are kept apart, so two guides with "E4.uk" never mix.
             String tag = "g" + g + ":";
@@ -152,16 +157,17 @@ final class EpgImporter {
                 in.reset();
                 if (gzip) in = new GZIPInputStream(in, 64 * 1024);
                 long now = System.currentTimeMillis();
-                Set<String> taken = new java.util.HashSet<>();
-                Result one = parse(
+                List<String[]> candidates = new ArrayList<>();
+                List<Object[]> listings = new ArrayList<>();
+                Set<String> withListings = new java.util.HashSet<>();
+                parse(
                     in,
                     wanted,
                     now - BEHIND_MS,
                     now + AHEAD_MS,
                     new Sink() {
                         public void match(String key, String channel) {
-                            // The first channel to claim a key keeps it (no random pick later).
-                            if (taken.add(key)) matches.add(new String[] { key, tag + channel });
+                            candidates.add(new String[] { key, channel });
                         }
 
                         public void programme(
@@ -174,7 +180,8 @@ final class EpgImporter {
                             String flags
                         ) throws Exception {
                             cancel.check();
-                            programmes.add(new Object[] {
+                            withListings.add(channel);
+                            listings.add(new Object[] {
                                 tag + channel,
                                 start,
                                 stop,
@@ -188,9 +195,23 @@ final class EpgImporter {
                     null,
                     guide.aliases
                 );
-                claimed.addAll(taken);
-                result.channels += one.channels;
-                result.programmes += one.programmes;
+                // A name in a channel catalogue is not evidence of usable listings. Only claim
+                // keys after a complete parse, for channels with programmes in our time window.
+                // A stale/empty/failed first guide must leave later guides free to fill the gap.
+                Set<String> selected = new java.util.HashSet<>();
+                for (String[] match : candidates) {
+                    String scoped = EpgLookup.scope(guide.country, match[0]);
+                    if (withListings.contains(match[1]) && claimed.add(scoped)) {
+                        matches.add(new String[] { scoped, tag + match[1] });
+                        selected.add(tag + match[1]);
+                    }
+                }
+                for (Object[] listing : listings)
+                    if (selected.contains((String) listing[0])) {
+                        programmes.add(listing);
+                        result.programmes++;
+                    }
+                result.channels += selected.size();
             } catch (Exception e) {
                 cancel.check();
                 Diagnostics.recovered("Programme guide " + java.net.URI.create(guide.url).getHost(), e);

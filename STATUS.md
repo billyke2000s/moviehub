@@ -501,3 +501,7 @@ no service failed. With any provider failing (e.g. US-only services from the UK)
 every home or Live TV visit more than 10 minutes after the last attempt started a full refresh. The
 interval now also counts `lastFinished` (any completed refresh), and an app update refreshes once.
 Found by reading the code after the owner said refreshes "take a while"; not measured on the TV.
+
+## Experimental EPG matching correction (25 October 2026)
+
+Confirmed exp-9 imported XMLTV by plain channel name but queried built-in channels only by provider id, leaving valid schedules unused. Country-scoped XMLTV fallback now follows exact native lookups, and stale/empty/malformed priority guides no longer claim keys. Saved/base channels receive XMLTV before optional provider catalogues; new channel identities trigger a follow-up, without a second download for unchanged identities. The TV guide observes committed guide revisions during the import. Core regression checks pass locally; Android CI is pending. Freeview/Sky/Plex/Samsung feeds were reachable from the workspace; epgshare01 UK returned 403 here, which does not establish the owner’s TV response. No physical-TV verification claimed.

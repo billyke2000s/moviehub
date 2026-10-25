@@ -646,11 +646,30 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     // ---- Programme guide --------------------------------------------------------------------
+    private final java.util.concurrent.atomic.AtomicLong guideRevision =
+        new java.util.concurrent.atomic.AtomicLong();
+
+    long guideRevision() {
+        return guideRevision.get();
+    }
+
+    /** Cheap identity snapshot; adding a backup of an existing channel needs no XMLTV re-download. */
+    Set<String> guideSnapshot() {
+        Set<String> keys = new HashSet<>();
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT DISTINCT dkey FROM channels", null)) {
+            while (c.moveToNext()) keys.add(c.getString(0));
+        }
+        return keys;
+    }
+
     /** Every plain key the saved channels can be found under in a guide for {@code country}. */
     Set<String> guideKeys(String country) {
         Set<String> keys = new HashSet<>();
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT epg,name FROM channels", null)) {
-            while (c.moveToNext()) keys.addAll(EpgMatch.keys(c.getString(0), c.getString(1), country));
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT epg,name,grp,source FROM channels", null)) {
+            while (c.moveToNext())
+                keys.addAll(
+                    EpgLookup.keys(c.getString(0), c.getString(1), c.getString(2), c.getString(3), country)
+                );
         }
         return keys;
     }
@@ -665,6 +684,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
         private final SQLiteDatabase db = getWritableDatabase();
         private final SQLiteStatement map, programme;
+        private boolean committed;
         int programmes;
 
         GuideWriter() {
@@ -726,6 +746,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
         void commit() {
             db.setTransactionSuccessful();
+            committed = true;
         }
 
         /** Ends the transaction; without commit() nothing changes. */
@@ -733,6 +754,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             map.close();
             programme.close();
             db.endTransaction();
+            if (committed) guideRevision.incrementAndGet();
         }
     }
 
@@ -752,28 +774,33 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     List<Programme> programmes(Row row, String country, long from, long to, int limit) {
-        List<Programme> out = new ArrayList<>();
-        // Native listings already belong to a provider/region identity. Do not apply the
-        // UK XMLTV country filter, or match a similarly named foreign channel's guide.
-        List<String> keys =
+        // Exact provider listings always win when they overlap this window. If absent, a
+        // country-confirmed channel may use XMLTV by name; never attach another country's guide.
+        List<String> keys = new ArrayList<>();
+        if (
             row.epg.startsWith("enginefls:") ||
             knownEngineGuide(row.epg.substring(0, row.epg.indexOf(':') + 1)) ||
             row.epg.matches("pluto:[0-9a-f]{24}\\.[a-z]{2}")
-                ? Collections.singletonList(EpgMatch.key(row.epg))
-                : EpgMatch.keys(row.epg, row.name, guideCountry(row.epg, country));
-        if (keys.isEmpty()) return out;
-        StringBuilder in = new StringBuilder();
-        List<String> args = new ArrayList<>(keys);
-        for (int i = 0; i < keys.size(); i++) in.append(i == 0 ? "?" : ",?");
-        args.add(String.valueOf(to));
-        args.add(String.valueOf(from));
+        ) keys.add(EpgMatch.key(row.epg));
+        String own = EpgLookup.country(row.epg, row.name, row.group, row.source, country);
+        for (String key : EpgLookup.keys(row.epg, row.name, row.group, row.source, own))
+            keys.add(EpgLookup.scope(own, key));
+        for (String key : keys) {
+            List<Programme> found = programmes(key, from, to, limit);
+            if (!found.isEmpty()) return found;
+        }
+        return new ArrayList<>();
+    }
+
+    private List<Programme> programmes(String key, long from, long to, int limit) {
+        List<Programme> out = new ArrayList<>();
         try (
             Cursor c = getReadableDatabase().rawQuery(
-                "SELECT start,stop,title,descr,category,flags FROM programmes WHERE channel=(SELECT channel FROM epg_map WHERE chkey IN (" +
-                    in +
-                    ") LIMIT 1) AND start<? AND stop>? ORDER BY start LIMIT " +
-                    limit,
-                args.toArray(new String[0])
+                "SELECT DISTINCT p.start,p.stop,p.title,p.descr,p.category,p.flags FROM epg_map m " +
+                    "JOIN programmes p ON p.channel=m.channel WHERE m.chkey=? AND p.start<? AND p.stop>? " +
+                    "ORDER BY p.start LIMIT " +
+                    Math.max(1, limit),
+                new String[] { key, String.valueOf(to), String.valueOf(from) }
             )
         ) {
             while (c.moveToNext())
