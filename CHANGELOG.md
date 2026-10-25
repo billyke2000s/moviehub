@@ -1,7 +1,8 @@
 ## Unreleased
 
 - Restore Levidia and 18 other websites excluded on inconclusive checks. Keep seven domains excluded on DNS, parking or HTTP 410 evidence.
-- Repair Levidia searches with empty landing cookies, yearless results and optional session markup.
+- Repair Levidia searches with empty landing cookies, yearless results and optional session markup; resolve Wootly hosts once with the bundled resolver.
+- Preserve host failures in diagnostics when another adapter returns no matches.
 - Stop metadata lookups reading whole videos, discard stale Host headers on redirects, and validate already-resolved files mislabeled as indirect links.
 
 ## 1.0.2 (25 October 2026)

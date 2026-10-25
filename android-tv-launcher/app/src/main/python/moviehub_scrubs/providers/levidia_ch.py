@@ -210,27 +210,19 @@ class source:
                 try:
                     response = self.sess.get(link, headers=headers, cookies=cook2, verify=None)
                     link = response.url
-                    if 'wootly' in link.lower():
-                        try:
-                            self.sess.close()
-                            link = self.wootly(link)
-                            vurls.append((link, host))
-                        except:
-                            pass
-                    else:
-                        vurls.append((link, host))
+                    # Use the bundled current host resolver, not this add-on's old
+                    # inline Wootly /prime and qdf protocol followed by a second resolve.
+                    link = re.sub(r"^(https?://)web\.wootly\.ch/e/.*/([^/]+)$",
+                                  r"\1www.wootly.ch/?v=\2", link)
+                    vurls.append((link, host))
                 except:
                     pass
             for link, host in vurls:
                 try:
-                    if 'wootly' in host.lower():
-                        source = {'source': 'wootly.ch', 'quality': 'SD', 'info': '', 'url': link, 'direct': False}
+                    if link.count('//') > 1:
+                        link = re.sub(r'(?<!:)//', '/', link)
+                    for source in scrape_sources.process(hostDict, link):
                         self.results.append(source)
-                    else:
-                        if link.count('//') > 1:
-                            link = re.sub(r'(?<!:)//', '/', link)
-                        for source in scrape_sources.process(hostDict, link):
-                            self.results.append(source)
                 except:
                     pass
             return self.results

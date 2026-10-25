@@ -531,3 +531,5 @@ The first Android run of this PR failed two device tests (`ProviderAdaptersTest.
 ## VOD retirement and transport recovery
 
 The Python suite checks Levidia remains in ordinary discovery, empty landing cookies, yearless results, cross-site Host/credential removal, and zero body reads for file-size, redirect, header and cookie lookups. Existing duration, cancellation, TLS/public-address, redirect-cookie and all-adapter contracts remain required. The public probe supports `--include-retired` and repeated `--provider` filters; failures are observations for the selected title and network, not proof of closure. Current inventory: 56 searchable websites, 59 adapters, 68 modules bundled.
+
+Additional recovery regressions check Scrubs Levidia delegates Wootly once and an empty fallback does not hide a host timeout. Offline tests forbid live HTTP from upstream constructors. Local suite: 30 Python tests.

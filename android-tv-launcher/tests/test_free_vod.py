@@ -56,6 +56,15 @@ class FreeVodTests(unittest.TestCase):
         self.assertEqual(emit.items[0]['provider'],'free99:levidia_ch')
         self.assertEqual(emit.items[0]['adapter'],'scrubs:levidia_ch')
 
+    def test_empty_fallback_cannot_hide_a_host_failure(self):
+        reports=[dict(status='ConnectTimeout',sources=[],extracted=1,resolutionErrors=1),
+                 dict(status='no_matches',sources=[])]
+        with patch.object(vod,'query',side_effect=[json.dumps(r) for r in reports]):
+            result=json.loads(vod.query_site('free99:levidia_ch',json.dumps({'season':-1}),lambda:False))
+        self.assertEqual(result['status'],'ConnectTimeout')
+        self.assertEqual(result['extracted'],1)
+        self.assertEqual(result['resolutionErrors'],1)
+
     def test_media_redirect_preserves_final_host_cookie_without_leaking_original_credentials(self):
         response=requests.Response();response.status_code=200
         response.url='https://cdn.example/final.mp4';response._content=b'ftyp'
@@ -197,6 +206,38 @@ class FreeVodTests(unittest.TestCase):
         self.assertEqual(result['status'],'complete')
         self.assertEqual(len(result['sources']),1)
         self.assertEqual([method for method,url in calls],['GET','POST','GET','GET','GET'])
+
+    def test_scrubs_levidia_uses_the_current_wootly_resolver(self):
+        from moviehub_scrubs import scrape_sources
+        from moviehub_scrubs.providers import levidia_ch
+        provider=levidia_ch.source()
+        provider.wootly=unittest.mock.Mock(side_effect=AssertionError("old inline resolver used"))
+        query={'imdb':'tt1234567','tmdb':12,'title':'Fixture Film','year':'2020','season':-1,'episode':-1}
+        calls=[]
+        def request(session, method, url, **kwargs):
+            calls.append((method,url))
+            response=requests.Response();response.status_code=200;response.url=url
+            response.headers['Content-Type']='text/html'
+            if 'search.php' in url:
+                self.assertEqual(method,'POST')
+                response._content=b'<div class="mainlink"><a href="movie.php?id=1">Fixture Film (2020)</a></div>'
+            elif 'movie.php' in url:
+                response._content=b"<li class=\"xxx0\"><span class=\"kiri xxx1\">Wootly</span><a class=\"xxx xflv\" href=\"https://host.example/embed\">Play</a></li><script>_3chk('session','fixture')</script>"
+            elif 'host.example' in url:
+                response.url="https://www.wootly.ch/?v=FIXTURE";response._content=b'host'
+            elif 'media.example' in url:
+                response.headers['Content-Type']='video/mp4';response._content=b'ftyp'
+            else:
+                response._content=b''
+            response._content_consumed=True
+            return response
+        item={'url':'https://media.example/film.mp4','direct':True,'quality':'HD','source':'fixture'}
+        with patch.object(levidia_ch,'source',return_value=provider),patch.object(requests.Session,'request',autospec=True,side_effect=request), patch.object(client,'safe',side_effect=lambda url:url), patch.object(scrape_sources,'process',return_value=[item]):
+            result=json.loads(vod.query('scrubs:levidia_ch',json.dumps(query),lambda:False))
+        self.assertEqual(result['status'],'complete')
+        self.assertEqual(len(result['sources']),1)
+        self.assertEqual([method for method,url in calls],['GET','POST','GET','GET','GET'])
+        provider.wootly.assert_not_called()
 
     def test_post_redirect_method_and_cookie_contract(self):
         from moviehub_compat import http_requests

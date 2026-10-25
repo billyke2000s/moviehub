@@ -84,7 +84,11 @@ def query_site(provider_id, raw, cancelled, emit=None):
                              unsupportedHosts=report.get('unsupportedHosts', 0)))
         # Do not hit the same website twice when the first adapter already supplied playable links.
         if results: break
-    status = 'complete' if results else (attempts[-1]['status'] if attempts else 'unsupported_type')
+    # A fallback with no matches cannot erase a real extraction/host failure from
+    # the other adapter. The full per-adapter attempts remain in diagnostics.
+    status = 'complete' if results else next(
+        (a['status'] for a in attempts if a['status'] not in ('no_matches', 'unsupported_type')),
+        attempts[-1]['status'] if attempts else 'unsupported_type')
     return json.dumps(dict(status=status, sources=results, attempts=attempts,
         extracted=sum(a['extracted'] for a in attempts), rejected=sum(a['rejected'] for a in attempts),
         resolutionErrors=sum(a['resolutionErrors'] for a in attempts),
