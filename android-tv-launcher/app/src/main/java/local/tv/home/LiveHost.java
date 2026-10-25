@@ -77,4 +77,9 @@ abstract class LiveHost extends Activity implements LiveScreen, LiveScreen.Owner
     public String title() {
         return getIntent().getStringExtra("title");
     }
+
+    @Override
+    public String videoDetails() {
+        return LivePlayer.videoDetails();
+    }
 }

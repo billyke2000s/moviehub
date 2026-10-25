@@ -398,6 +398,11 @@ final class LiveStage implements LiveScreen {
     }
 
     @Override
+    public String videoDetails() {
+        return ExoLive.videoDetails();
+    }
+
+    @Override
     public void switchTo(String newTitle, String newUrl, String newId) {
         if (!foreground || !full) return;
         try {

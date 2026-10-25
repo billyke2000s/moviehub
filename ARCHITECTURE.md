@@ -131,7 +131,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `LiveZapper` | Live TV while watching: the satellite remote's keys, channel up/down, number entry, last channel, browsing other channels in the banner, the PIN lock, and backup copies with automatic switching. |
 | `SkyFont` | The Live TV typeface (Hind, OFL, in `assets/fonts`), with the system font as a fallback. |
 | `SafetyNotice` | The first-start "Staying safe" notice (also in Settings → System) about scam messages in streams. |
-| `SkyOverlay` | The full-screen Live TV overlay in the classic satellite-box style: banner, programme information panel and pause bar. |
+| `SkyOverlay` | The full-screen Live TV overlay in the classic satellite-box style: banner, programme information panel (with a picture/source line) and pause bar. |
+| `VideoDetails` | Formats the picture playing (size, 1080p/720p name, frame rate, codec, bitrate) for the information panel; `LivePlayer.videoDetails` (VLC) and `ExoLive.videoDetails` (experimental) feed it through `LiveScreen.videoDetails`. |
 | `PlayerMenus` | The player's side panels: audio, subtitles, video track, speed, picture size, subtitle timing, sleep timer. |
 
 ## Where data is stored
@@ -243,7 +244,7 @@ audio). Swapping the surface in place raced the old surface's teardown on the em
 the existing bounded source retry/failure path. Paused and hidden playback are excluded.
 Troubleshooting shows fixed recovery descriptions and counts, with no URLs or tokens.
 
-LiveZapper owns the per-channel Automatic/manual source policy and two-step Back interaction. PlayerMenus lists Automatic followed by saved copies; SkyOverlay exposes a focusable Sources action. Listing copies is a local database operation; only the selected copy goes through LivePlayer resolution. Automatic failover visits the remaining saved copies once and stops.
+LiveZapper owns the per-channel Automatic/manual source policy and two-step Back interaction. PlayerMenus lists Automatic followed by saved copies; The source name in SkyOverlay's title strip is text only; the green Source key opens the list. Listing copies is a local database operation; only the selected copy goes through LivePlayer resolution. Automatic failover visits the remaining saved copies once and stops.
 
 `provider-engine/tools/freeshot.js` parses the FreeShot related-channel directory and follows only the selected UK sports channel’s two literal iframe links. ProviderBroker permits only FreeShot directory/embed and WideIPTV player paths. PlaylistSession supports the fixed WideIPTV anonymous JSON renewal endpoint, scoped to one discovered BlueTier origin/channel path; ProviderRelay posts renewal bodies and rewrites tokens without exposing them to VLC. Zero-to-end range requests fetch and decode the complete wrapped segment rather than applying decoded offsets to its PNG container.
 
@@ -326,7 +327,7 @@ The live overlay measures the channel banner before optional pause/information p
 
 ## One live overlay and shared colour input
 
-Live TV does not attach PlayerOverlay film controls. PlayerOverlay creates only unattached bookkeeping widgets for shared playback state; SkyOverlay is the sole visible live controls view. Entry calls LiveZapper.showBanner; OK and picture click call LiveZapper.ok, which shows that same banner. On a TV its buttons are always boxed (`SkyOverlay.boxControls`); ◀ ▶ move between them and OK presses the highlighted one. Back focuses Sources. Unused buttons in the live player are named in a short toast (`VlcPlaybackActivity.showUnusedButton`). Colour set-up stores key codes, or scan codes for buttons Android reports as KEYCODE_UNKNOWN (`LiveTvScreen.COLOUR_SCAN_PREFS`); KeyBar and the player share `LiveTvScreen.colour(prefs, event)`. Options remains an explicit blue/Menu/selected-button action. Activity and SidePanel route colours through one session-owned ColourPress before native-player access, recognizing the first delivered press, standalone release or complete multiple event while suppressing duplicates across changing windows. Unknown translated keys can use Android TV Generic.kl’s standard colour scan identities (398–401); known non-colour keys are never overridden.
+Live TV does not attach PlayerOverlay film controls. PlayerOverlay creates only unattached bookkeeping widgets for shared playback state; SkyOverlay is the sole visible live controls view. Entry calls LiveZapper.showBanner; OK and picture click call LiveZapper.ok, which shows that same banner. On a TV its buttons are always boxed (`SkyOverlay.boxControls`); ◀ ▶ move between them and OK presses the highlighted one. Back focuses the green Source key (`SkyOverlay.SOURCE_KEY`). Unused buttons in the live player are named in a short toast (`VlcPlaybackActivity.showUnusedButton`). Colour set-up stores key codes, or scan codes for buttons Android reports as KEYCODE_UNKNOWN (`LiveTvScreen.COLOUR_SCAN_PREFS`); KeyBar and the player share `LiveTvScreen.colour(prefs, event)`. Options remains an explicit blue/Menu/selected-button action. Activity and SidePanel route colours through one session-owned ColourPress before native-player access, recognizing the first delivered press, standalone release or complete multiple event while suppressing duplicates across changing windows. Unknown translated keys can use Android TV Generic.kl’s standard colour scan identities (398–401); known non-colour keys are never overridden.
 
 ## Progressive free VOD discovery
 
