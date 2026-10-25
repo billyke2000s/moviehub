@@ -108,6 +108,10 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
         utils = importlib.import_module('moviehub_'+record['family']+'.source_utils')
         utils._seen.websites = set()
         provider = importlib.import_module(record['module']).source()
+        # Several original scrapers keep client.dnt_headers itself as self.headers and then add
+        # their own Origin/Referer/Host to it, which leaked into every later scraper's requests.
+        if getattr(provider, 'headers', None) is client.dnt_headers:
+            provider.headers = dict(client.dnt_headers)
         imdb, tmdb = info.get('imdb', ''), str(info.get('tmdb', ''))
         title, year = info.get('title', ''), str(info.get('year', ''))
         # Use each add-on's title preparation before constructing its lookup key.
