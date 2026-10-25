@@ -257,6 +257,10 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
             return;
         }
         clearLoading(target);
+        if (target == page && floatsOverPage()) {
+            floatingError(why, settings, () -> async(job, done));
+            return;
+        }
         LinearLayout holder = vertical();
         target.addView(holder, new LinearLayout.LayoutParams(-1, -2));
         emptyState(
@@ -271,6 +275,66 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
                       async(job, done);
                   }
         );
+    }
+
+    /** Tag of the small error card floated over a fixed screen, so a new one replaces it. */
+    static final String FLOATING_ERROR = "floatingError";
+    /** How long the floating error card stays before it hides itself. */
+    static final long FLOATING_ERROR_MS = 12_000;
+
+    /**
+     * Fixed screens (the TV guide, Home) fill the screen exactly, so a card added to the page
+     * would push their content up and squash it. Scrolling pages have room for one.
+     */
+    boolean floatsOverPage() {
+        return (
+            page != null &&
+            page.getParent() instanceof FrameLayout &&
+            !(page.getParent() instanceof ScrollView)
+        );
+    }
+
+    /**
+     * A small error card over the bottom of a fixed screen. It never changes the page's layout,
+     * replaces any card already showing, and hides itself after {@link #FLOATING_ERROR_MS}.
+     */
+    void floatingError(ErrorMessages.Explanation why, boolean settings, Runnable retry) {
+        FrameLayout host = (FrameLayout) page.getParent();
+        View old = host.findViewWithTag(FLOATING_ERROR);
+        if (old != null) host.removeView(old);
+        LinearLayout card = row();
+        card.setTag(FLOATING_ERROR);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setPadding(dp(18), dp(10), dp(12), dp(10));
+        card.setBackground(box(0xee131c2a));
+        card.setElevation(dp(8));
+        LinearLayout words = vertical();
+        TextView title = text(why.title, 17);
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        words.addView(title);
+        words.addView(muted(why.detail, 13));
+        card.addView(words, new LinearLayout.LayoutParams(0, -2, 1));
+        Runnable hide = () -> host.removeView(card);
+        Button action = button(settings ? "Open Settings" : "Try again", () -> {
+            hide.run();
+            if (settings) settingsScreens.settings();
+            else retry.run();
+        });
+        action.setTextSize(14);
+        LinearLayout.LayoutParams actionLayout = new LinearLayout.LayoutParams(-2, dp(36));
+        actionLayout.leftMargin = dp(12);
+        card.addView(action, actionLayout);
+        FrameLayout.LayoutParams place = new FrameLayout.LayoutParams(
+            dp(520),
+            -2,
+            Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
+        );
+        place.bottomMargin = dp(24);
+        host.addView(card, place);
+        handler.postDelayed(() -> {
+            // Leave it if the remote is on its button; it goes when the button is used.
+            if (card.getParent() == host && !action.hasFocus()) hide.run();
+        }, FLOATING_ERROR_MS);
     }
 
     private TextView findLoading(ViewGroup parent) {

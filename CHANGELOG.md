@@ -1,5 +1,6 @@
 ## Unreleased
 
+- TV guide and Home: a failed background load now shows one small card floating over the bottom of the screen (it hides itself after 12 seconds) instead of a full-width box added below the guide, which pushed the guide up and squashed its rows. Scrolling screens are unchanged.
 - Keep explicit XMLTV regional suffixes such as `@Scotland` separate from national listings; quality suffixes such as `@HD` still share a schedule.
 
 - Move all built-in programme fetching to one daily server-generated `Moviehub-epg/epg.xml.gz`. The TV conditionally downloads, validates and streams it into SQLite in the background; failed or invalid refreshes keep usable cached listings.

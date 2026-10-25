@@ -80,6 +80,46 @@ public class LiveGuideTest {
         return focus instanceof TextView ? ((TextView) focus).getText().toString() : String.valueOf(focus);
     }
 
+    /** A failed load on the guide floats one small card over it; the grid keeps its full size. */
+    @Test
+    public void failedLoadOnGuideFloatsSmallCardWithoutShrinkingGrid() {
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await("ten guide rows", () -> activity.liveTv.cells.size() == 10);
+        remote.waitForIdleSync();
+        int[] before = new int[2];
+        remote.runOnMainSync(() -> {
+            before[0] = activity.liveTv.frame.grid.getHeight();
+            before[1] = activity.page.getChildCount();
+        });
+        assertTrue("Grid laid out", before[0] > 0);
+        for (int i = 0; i < 2; i++) remote.runOnMainSync(() ->
+            activity.async(
+                () -> {
+                    throw new IllegalStateException("Channel no longer exists");
+                },
+                result -> {}
+            )
+        );
+        await(
+            "floating error card",
+            () -> ((ViewGroup) activity.page.getParent()).findViewWithTag(MainActivity.FLOATING_ERROR) != null
+        );
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            ViewGroup host = (ViewGroup) activity.page.getParent();
+            int cards = 0;
+            for (int i = 0; i < host.getChildCount(); i++) if (
+                MainActivity.FLOATING_ERROR.equals(host.getChildAt(i).getTag())
+            ) cards++;
+            assertEquals("One card, not stacked", 1, cards);
+            assertEquals("Nothing added to the guide page", before[1], activity.page.getChildCount());
+            assertEquals("Grid keeps its height", before[0], activity.liveTv.frame.grid.getHeight());
+            View card = host.findViewWithTag(MainActivity.FLOATING_ERROR);
+            assertTrue("Card is small", card.getHeight() < host.getHeight() / 4);
+        });
+        UiEvidence.capture("live-guide-floating-error");
+    }
+
     @Test
     public void labelsFitShortGuideRowsInsteadOfBeingCutInHalf() {
         remote.runOnMainSync(() -> activity.liveTv.live());
