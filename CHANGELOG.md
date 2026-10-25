@@ -1,3 +1,7 @@
+## Unreleased
+
+- Films and series: stop searching 26 free websites that are gone (failed three checks on 25 October 2026), so searches finish sooner. Their scrapers stay bundled.
+
 ## 1.0 (25 October 2026)
 
 MovieHub 1.0: everything tested in MovieHub Experimental, up to exp-15, is now part of MovieHub.

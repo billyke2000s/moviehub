@@ -85,7 +85,8 @@ public final class FreeVodProvidersTest {
 
     @Test
     public void packagedPythonImportsEveryProviderAndHostResolverWithoutKodi() throws Exception {
-        assertEquals(63, FreeVodProviders.ids(context).size());
+        // 63 websites, 26 of them retired as dead (moviehub_vod.RETIRED_SITES).
+        assertEquals(37, FreeVodProviders.ids(context).size());
         assertEquals(68, FreeVodProviders.validate(context));
     }
 

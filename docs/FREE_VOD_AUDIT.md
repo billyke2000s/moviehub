@@ -142,3 +142,18 @@ the final commit. No physical-TV or Guardians playback success is claimed.
 Provider-request read timeouts now honor explicit upstream values within the remaining
 search budget, with an eight-second connection cap. A regression checks a 20-second read
 request and clipping to a five-second remaining budget; cancellation remains bounded.
+
+## Dead-site retirement (25 October 2026)
+
+From a GitHub runner (United States), 26 of the 63 websites failed three checks a few minutes apart:
+broken TLS certificate (9), no DNS record or refused connection (6), Cloudflare 521/522 because the origin is
+down (8), or connection timeout (3). They are listed in
+`moviehub_vod.RETIRED_SITES`, skipped by `search_providers()`, and still bundled and validated so provenance
+checks against Scrubs 5.1.42 and Free99 2.0.1 keep passing. Both upstream packages are unchanged: Scrubs' repository
+was last updated in October 2024 and Free99 in May 2026.
+
+Of the 37 remaining sites, in the first run 14 answered HTTP 403 (bot protection), 14 were reachable but returned
+no links for "The Dark Knight" or "Night of the Living Dead", 3 had broken search pages, and only bnwmovies.com
+returned playable links (for the 1968 film). The other 5 failed the first run but answered in the re-check, so
+they stay; their searches were not repeated. Retirement makes searches faster; it does not add results. A site that comes
+back can be removed from the list.
