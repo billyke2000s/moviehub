@@ -45,7 +45,7 @@ final class LiveZapper {
     static final long BANNER_MS = 5000,
         BROWSE_MS = 8000;
 
-    private final VlcPlaybackActivity player;
+    private final LiveScreen player;
     /**
      * This player's own copy of the guide's list, so a later guide visit or test clearing the
      * shared one is safe. Replaced by all channels when a typed number is not in the list.
@@ -86,11 +86,11 @@ final class LiveZapper {
     /** Phone layout: the banner has touch buttons and a tap on the picture shows or hides it. */
     final boolean touch;
 
-    LiveZapper(VlcPlaybackActivity player, Session session) {
+    LiveZapper(LiveScreen player, Session session) {
         this.player = player;
-        touch = DeviceMode.phone(player);
+        touch = DeviceMode.phone(player.activity());
         own = session;
-        db = ChannelDatabase.get(player);
+        db = ChannelDatabase.get(player.activity());
     }
 
     /** Builds the banner and loads the current channel's backups and listings. */
@@ -106,10 +106,10 @@ final class LiveZapper {
                     if (overlay.infoShowing()) hideInfo();
                     else showInfo();
                 },
-                player.menus::chooseSource,
-                player.menus::audioAndSubtitles,
+                player.liveMenus()::chooseSource,
+                player.liveMenus()::audioAndSubtitles,
                 player::toggle,
-                player::finish,
+                player::leave,
             }
         );
         showBanner();
@@ -131,14 +131,14 @@ final class LiveZapper {
     /** The provider of the copy playing now (for example "FreeShot"), or "" before one is known. */
     String sourceProvider() {
         if (copy < 0 || copy >= copies.size()) return "";
-        return AdapterSources.sourceName(copies.get(copy).source);
+        return AdapterSources.sourceName(copies.get(copy));
     }
 
     /** The banner's source text: the mode, the provider playing now, and which copy it is. */
     String sourceText() {
         String provider = sourceProvider();
         return (
-            "Sources · " +
+            "Source: " +
             (automaticSources ? "Auto · " : "Manual · ") +
             (provider.isEmpty() ? "" : provider + " · ") +
             sourceLabel()
@@ -162,7 +162,7 @@ final class LiveZapper {
         }
         automaticSources = enabled;
         rememberSources();
-        if (enabled && player.liveFailed && !copies.isEmpty()) useCopy(0, true);
+        if (enabled && player.liveFailed() && !copies.isEmpty()) useCopy(0, true);
         else showBanner();
     }
 
@@ -197,10 +197,10 @@ final class LiveZapper {
         if (typed.length() >= 6) typed.setLength(0);
         typed.append(digit);
         overlay.typing(typed.toString());
-        player.overlayHandler.removeCallbacks(hideBanner);
-        player.overlayHandler.postDelayed(hideBanner, BANNER_MS);
-        player.overlayHandler.removeCallbacks(jump);
-        player.overlayHandler.postDelayed(jump, 1500);
+        player.overlayHandler().removeCallbacks(hideBanner);
+        player.overlayHandler().postDelayed(hideBanner, BANNER_MS);
+        player.overlayHandler().removeCallbacks(jump);
+        player.overlayHandler().postDelayed(jump, LiveTvScreen.TYPE_MS);
     }
 
     /**
@@ -221,8 +221,8 @@ final class LiveZapper {
             }
             int found = here;
             Session list = target;
-            player.runOnUiThread(() -> {
-                if (player.isFinishing()) return;
+            player.activity().runOnUiThread(() -> {
+                if (player.activity().isFinishing()) return;
                 if (list != own) {
                     previousPosition = -1; // positions in the old list mean nothing in the new one
                     own = list;
@@ -240,8 +240,8 @@ final class LiveZapper {
             ChannelDatabase.Row row = db.byKey(key);
             if (row == null) return;
             int position = Math.max(0, db.position("all", "", s.favourites, row.number, true));
-            player.runOnUiThread(() -> {
-                if (player.isFinishing()) return;
+            player.activity().runOnUiThread(() -> {
+                if (player.activity().isFinishing()) return;
                 own = new Session("all", "", s.favourites, own.position);
                 previousPosition = -1;
                 load(position, true, false);
@@ -266,7 +266,9 @@ final class LiveZapper {
         int ticket = ++request;
         Session s = own;
         String launchKey = current ? ChannelQuery.key(player.playbackUrl()) : null;
-        String activeUrl = current ? LivePlayer.currentUrl() : null;
+        // The copy playing is the one the engine reports or, before it reports one, the one this
+        // screen was opened with. Never assume the first copy (that mislabelled the source).
+        String activeUrl = current ? playingUrl() : null;
         String activeKey = activeUrl == null ? null : ChannelQuery.key(activeUrl);
         boolean activeAutomatic = LivePlayer.automaticSources;
         Set<String> activeAttempts = new HashSet<>(LivePlayer.attemptedSources);
@@ -304,8 +306,8 @@ final class LiveZapper {
                 final boolean automatic = !carried || activeAutomatic;
                 String url = play ? db.url(found.get(0).id, found.get(0).key) : null;
                 List<ChannelDatabase.Programme> on = listing(row);
-                player.runOnUiThread(() -> {
-                    if (ticket != request || player.isFinishing()) return;
+                player.activity().runOnUiThread(() -> {
+                    if (ticket != request || player.activity().isFinishing()) return;
                     Runnable apply = () -> {
                         if (!current) previousPosition = s.position;
                         own = list;
@@ -328,15 +330,15 @@ final class LiveZapper {
                         }
                         if (current) sourceReplaced();
                         rememberSources();
-                        LivePlayer.backups(player, copies);
+                        LivePlayer.backups(player.activity(), copies);
                         showBanner(row, on);
                         // A native resolver can fail before this initial database read finishes.
-                        if (current && player.liveFailed) failover("This source is unavailable");
+                        if (current && player.liveFailed()) failover("This source is unavailable");
                     };
-                    if (play && ParentalLock.locked(player, row)) {
-                        player.dialogOpen = true;
+                    if (play && ParentalLock.locked(player.activity(), row)) {
+                        player.dialogOpen(true);
                         ParentalLock.check(
-                            player,
+                            player.activity(),
                             row.number + " " + row.name,
                             () -> {
                                 player.panelClosed();
@@ -355,7 +357,8 @@ final class LiveZapper {
     /** The guide's picture shows the last channel watched. */
     private void remember(ChannelDatabase.Row row) {
         player
-            .getSharedPreferences("ui", VlcPlaybackActivity.MODE_PRIVATE)
+            .activity()
+            .getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
             .edit()
             .putString(LiveTvScreen.LAST_CHANNEL, row.key)
             .apply();
@@ -395,8 +398,8 @@ final class LiveZapper {
                 if (rows.isEmpty()) return;
                 ChannelDatabase.Row row = rows.get(0);
                 List<ChannelDatabase.Programme> on = listing(row);
-                player.runOnUiThread(() -> {
-                    if (ticket != request || player.isFinishing() || !browsing) return;
+                player.activity().runOnUiThread(() -> {
+                    if (ticket != request || player.activity().isFinishing() || !browsing) return;
                     browsePosition = position;
                     browseRow = row;
                     browseProgramme = Math.min(programme, Math.max(0, on.size() - 1));
@@ -443,14 +446,14 @@ final class LiveZapper {
         worker.execute(() -> {
             try {
                 String url = db.url(row.id, row.key);
-                player.runOnUiThread(() -> {
-                    if (ticket != request || player.isFinishing() || list != copies) return;
+                player.activity().runOnUiThread(() -> {
+                    if (ticket != request || player.activity().isFinishing() || list != copies) return;
                     copy = index;
                     switching = false;
                     player.switchTo(row.name, url, row.key);
                     rememberSources();
                     if (automatic) Toast.makeText(
-                        player,
+                        player.activity(),
                         "Trying another source (" + (index + 1) + " of " + copies.size() + ")",
                         Toast.LENGTH_SHORT
                     ).show();
@@ -460,8 +463,8 @@ final class LiveZapper {
                 Diagnostics.recovered("Switching to a backup", e);
                 // This copy cannot be opened (its row changed under a refresh): count it as
                 // failed and go on to the next, or say the channel is not working.
-                player.runOnUiThread(() -> {
-                    if (ticket != request || player.isFinishing() || list != copies) return;
+                player.activity().runOnUiThread(() -> {
+                    if (ticket != request || player.activity().isFinishing() || list != copies) return;
                     copy = index;
                     switching = false;
                     player.liveSourceFailed();
@@ -494,6 +497,53 @@ final class LiveZapper {
     }
 
     /**
+     * The copies a source race may try: the one asked for, then every copy not yet tried this
+     * time. Empty when the viewer chose a copy themselves or the channel has one copy only.
+     */
+    int[] raceCandidates() {
+        if (!automaticSources || copies.size() <= 1 || copy < 0 || copy >= copies.size()) return new int[0];
+        List<Integer> out = new ArrayList<>();
+        out.add(copy);
+        for (int i = 0; i < copies.size(); i++) if (
+            i != copy &&
+            !attemptedCopies.contains(i) &&
+            !LivePlayer.attemptedSources.contains(copies.get(i).key)
+        ) out.add(i);
+        if (out.size() <= 1) return new int[0];
+        int[] result = new int[out.size()];
+        for (int i = 0; i < result.length; i++) result[i] = out.get(i);
+        return result;
+    }
+
+    /** The source race is playing copy {@code index}: the banner and source list follow it. */
+    void raceSelected(int index) {
+        if (index < 0 || index >= copies.size()) return;
+        attemptedCopies.add(index);
+        if (index != copy) {
+            copy = index;
+            showBanner();
+        }
+        rememberSources();
+    }
+
+    /** Copies the source race tried without success: failover will not try them again. */
+    void raceFailed(int[] indices) {
+        for (int index : indices) attemptedCopies.add(index);
+    }
+
+    /** Whether {@link #failover} has a copy left to move to (no side effects). */
+    boolean hasUntriedCopy() {
+        if (!automaticSources || copies.size() <= 1) return false;
+        for (int offset = 1; offset < copies.size(); offset++) {
+            int next = (copy + offset) % copies.size();
+            if (
+                !attemptedCopies.contains(next) && !LivePlayer.attemptedSources.contains(copies.get(next).key)
+            ) return true;
+        }
+        return false;
+    }
+
+    /**
      * Try again after every copy failed (SELECT): starts from the first copy again, so all of them
      * get another chance in order. Returns false when the channel has one copy only.
      */
@@ -505,9 +555,15 @@ final class LiveZapper {
         return true;
     }
 
+    /** The link playing now: the live engine's, else the one this screen was opened with. */
+    private String playingUrl() {
+        String engine = ExoLive.available() ? ExoLive.currentUrl() : LivePlayer.currentUrl();
+        return engine != null ? engine : player.playbackUrl();
+    }
+
     /** Promotion changed the shared player, without calling switchTo or resolving again. */
     void sourceReplaced() {
-        String current = LivePlayer.currentUrl();
+        String current = playingUrl();
         if (current == null) return;
         String key = ChannelQuery.key(current);
         for (int i = 0; i < copies.size(); i++) {
@@ -520,8 +576,8 @@ final class LiveZapper {
     }
 
     void close() {
-        player.overlayHandler.removeCallbacks(jump);
-        player.overlayHandler.removeCallbacks(hideBanner);
+        player.overlayHandler().removeCallbacks(jump);
+        player.overlayHandler().removeCallbacks(hideBanner);
         worker.shutdownNow();
     }
 
@@ -540,7 +596,7 @@ final class LiveZapper {
         else {
             overlay.banner(
                 "",
-                player.getIntent().getStringExtra("title"),
+                player.title(),
                 "No programme information",
                 "",
                 "",
@@ -550,8 +606,8 @@ final class LiveZapper {
                 sourceText(),
                 false
             );
-            player.overlayHandler.removeCallbacks(hideBanner);
-            if (!backControls) player.overlayHandler.postDelayed(hideBanner, BANNER_MS);
+            player.overlayHandler().removeCallbacks(hideBanner);
+            if (!backControls) player.overlayHandler().postDelayed(hideBanner, BANNER_MS);
         }
     }
 
@@ -595,15 +651,16 @@ final class LiveZapper {
             browse
         );
         if (overlay.infoShowing()) showInfo();
-        player.overlayHandler.removeCallbacks(hideBanner);
-        if (!backControls) player.overlayHandler.postDelayed(hideBanner, browse ? BROWSE_MS : BANNER_MS);
+        player.overlayHandler().removeCallbacks(hideBanner);
+        if (!backControls) player.overlayHandler().postDelayed(hideBanner, browse ? BROWSE_MS : BANNER_MS);
     }
 
     /** The "i" panel: the programme the banner shows, in full. Shown until closed. */
     void showInfo() {
-        player.overlayHandler.removeCallbacks(hideBanner);
+        player.overlayHandler().removeCallbacks(hideBanner);
+        refreshPicture();
         if (shownRow == null) {
-            overlay.info("", player.getIntent().getStringExtra("title"), "", "No programme information");
+            overlay.info("", player.title(), "", "No programme information");
             return;
         }
         ChannelDatabase.Programme item = shownProgramme;
@@ -626,10 +683,27 @@ final class LiveZapper {
         );
     }
 
+    /**
+     * Keeps the panel's picture line current while it is open: the first frame, a quality change
+     * or a new source can arrive after it opened.
+     */
+    private final Runnable pictureTick = () -> {
+        if (overlay.infoShowing()) refreshPicture();
+    };
+
+    private void refreshPicture() {
+        player.overlayHandler().removeCallbacks(pictureTick);
+        overlay.infoPicture(player.videoDetails(), sourceText());
+        player.overlayHandler().postDelayed(pictureTick, PICTURE_REFRESH_MS);
+    }
+
+    static final int PICTURE_REFRESH_MS = 2000;
+
     void hideInfo() {
+        player.overlayHandler().removeCallbacks(pictureTick);
         overlay.hideInfo();
-        player.overlayHandler.removeCallbacks(hideBanner);
-        player.overlayHandler.postDelayed(hideBanner, BANNER_MS);
+        player.overlayHandler().removeCallbacks(hideBanner);
+        player.overlayHandler().postDelayed(hideBanner, BANNER_MS);
     }
 
     // ---- Remote keys ----------------------------------------------------------------------------
@@ -676,8 +750,8 @@ final class LiveZapper {
                 if (first) showBanner();
             } else if (down) {
                 overlay.moveControl(key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
-                player.overlayHandler.removeCallbacks(hideBanner);
-                if (!backControls) player.overlayHandler.postDelayed(hideBanner, BANNER_MS);
+                player.overlayHandler().removeCallbacks(hideBanner);
+                if (!backControls) player.overlayHandler().postDelayed(hideBanner, BANNER_MS);
             }
             return true;
         }
@@ -699,21 +773,25 @@ final class LiveZapper {
         }
         boolean handled = true;
         if (select) {
-            // OK presses the highlighted banner button; with none highlighted it shows the banner.
-            if (first && (!overlay.bannerShowing() || !overlay.pressControl())) ok();
+            // OK while typing a number goes there at once (as on Sky); otherwise it presses the
+            // highlighted banner button, or with none highlighted shows the banner.
+            if (first && typed.length() > 0) {
+                player.overlayHandler().removeCallbacks(jump);
+                jumpToTyped();
+            } else if (first && (!overlay.bannerShowing() || !overlay.pressControl())) ok();
         } else if (key == KeyEvent.KEYCODE_INFO || key == KeyEvent.KEYCODE_MENU) {
             if (first) colour(key == KeyEvent.KEYCODE_INFO ? 'y' : 'b');
         } else if (key == KeyEvent.KEYCODE_LAST_CHANNEL) {
             if (first) lastChannel();
         } else if (key == KeyEvent.KEYCODE_GUIDE) {
-            if (first) player.finish();
+            if (first) player.leave();
         } else handled = false;
         return handled;
     }
 
     /** One input path for Activity and Dialog windows, before any native-player access. */
     boolean colourKey(KeyEvent event, java.util.function.Consumer<Character> action) {
-        char colour = LiveTvScreen.colour(player.getSharedPreferences("ui", 0), event);
+        char colour = LiveTvScreen.colour(player.activity().getSharedPreferences("ui", 0), event);
         if (colour == 0) return false;
         if (
             colourPress.accept(
@@ -724,26 +802,13 @@ final class LiveZapper {
                 event.isCanceled()
             )
         ) action.accept(colour);
-        else if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
-            // A fresh press was recognised but not acted on: say so, so it is never silent.
-            Diagnostics.recovered("Colour press ignored", new IllegalStateException(String.valueOf(colour)));
-            Toast.makeText(
-                player,
-                "Colour button " +
-                    colour +
-                    " recognised but ignored (" +
-                    KeyEvent.keyCodeToString(event.getKeyCode()) +
-                    ")",
-                Toast.LENGTH_SHORT
-            ).show();
-        }
         return true;
     }
 
     void colour(char colour) {
-        if (colour == 'r') player.menus.audioAndSubtitles();
-        else if (colour == 'g') player.menus.chooseSource();
-        else if (colour == 'b') player.menus.liveOptions();
+        if (colour == 'r') player.liveMenus().audioAndSubtitles();
+        else if (colour == 'g') player.liveMenus().chooseSource();
+        else if (colour == 'b') player.liveMenus().liveOptions();
         else if (overlay.infoShowing()) hideInfo();
         else information();
     }
@@ -760,6 +825,12 @@ final class LiveZapper {
      */
     void ok() {
         showBanner();
+        if (touch || !overlay.bannerShowing()) return;
+        // As on the satellite box: OK brings the banner up ready to use, with Audio & subtitles
+        // highlighted; ◀ ▶ move along and OK presses. ▲ ▼ only show it briefly while zapping.
+        overlay.focusControl(0);
+        player.overlayHandler().removeCallbacks(hideBanner);
+        if (!backControls) player.overlayHandler().postDelayed(hideBanner, BROWSE_MS);
     }
 
     /** A tap on the picture (phone layout): shows the banner and its buttons, or hides them. */
@@ -774,7 +845,7 @@ final class LiveZapper {
     private void back() {
         if (overlay.infoShowing()) hideInfo();
         else if (browsing) endBrowse();
-        else if (backControls) player.finish();
+        else if (backControls) player.leave();
         else {
             backControls = true;
             showBanner();

@@ -4,16 +4,15 @@
 
 `VideoFilesTest` includes episode ordering, future-date handling and source-resolution ranking. `SeriesAutoplayTest` uses catalogue and source fixtures to check season transitions, updated history keys, missing pack episodes, show endings, uncertain filenames, bounded source fallback and cancellation. `LiveGuideTest` covers colour keys from header focus and Back/arrow/OK controls; `LiveControlsTest` covers all four physical colours during playback, learned scan-code colours, and OK/click/◀ always showing the same banner. These do not verify a particular physical remote or real-provider playback.
 
-
 There are three layers of checks. CI runs all of them on every pull request that touches
 `android-tv-launcher/` (workflow: `.github/workflows/android-launcher.yml`).
 
-| Layer | Where | Needs | Runs in CI step |
-| --- | --- | --- | --- |
-| Core checks (540) | `android-tv-launcher/tests/` | Only a JDK | "Verify playlist, network, channel search and episode rules" |
-| Build and lint | Gradle | Android SDK 35 | "Build APK and run Android lint" |
-| Device tests (instrumentation) | `android-tv-launcher/app/src/androidTest/` | Android emulator | `device-tests` job |
-| Signing compatibility | release build vs published APK | signing secrets (same-repo PRs only) | `signed-compatibility` job |
+| Layer                          | Where                                      | Needs                                | Runs in CI step                                              |
+| ------------------------------ | ------------------------------------------ | ------------------------------------ | ------------------------------------------------------------ |
+| Core checks (540)              | `android-tv-launcher/tests/`               | Only a JDK                           | "Verify playlist, network, channel search and episode rules" |
+| Build and lint                 | Gradle                                     | Android SDK 35                       | "Build APK and run Android lint"                             |
+| Device tests (instrumentation) | `android-tv-launcher/app/src/androidTest/` | Android emulator                     | `device-tests` job                                           |
+| Signing compatibility          | release build vs published APK             | signing secrets (same-repo PRs only) | `signed-compatibility` job                                   |
 
 ## Core checks (fast, run these locally)
 
@@ -69,20 +68,20 @@ artifact.
 Until 17 October 2026 the device tests failed at random, even on unchanged code. Running the full
 suite 8 times in parallel on CI found three causes:
 
-| Cause | Kind | Fix |
-| --- | --- | --- |
+| Cause                                                                                                        | Kind                                         | Fix                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Quick D-pad presses moved focus to a poster just past the edge; a layout then recycled it and focus was lost | **App bug** (users could lose the selection) | Poster rows and grids keep half a screen laid out beyond each edge, and refocus the same title if focus is still lost (`PosterFeed`) |
-| A Back press sent while a dialog was closing reached no window and was dropped | Test timing | `TvNavigationTest.back()` waits for window focus before the next key |
-| Controls were looked up once, immediately after a screen change | Test timing | `TvNavigationTest.select()` waits up to 5 s |
+| A Back press sent while a dialog was closing reached no window and was dropped                               | Test timing                                  | `TvNavigationTest.back()` waits for window focus before the next key                                                                 |
+| Controls were looked up once, immediately after a screen change                                              | Test timing                                  | `TvNavigationTest.select()` waits up to 5 s                                                                                          |
 
 Results of 8 parallel runs of the whole suite:
 
-| Code | Passed |
-| --- | --- |
-| Before the fixes | 3 / 8 |
-| After the focus fix | 4 / 8 |
-| After keeping off-edge posters laid out | 6 / 8 |
-| After the Back fix | **8 / 8** |
+| Code                                    | Passed    |
+| --------------------------------------- | --------- |
+| Before the fixes                        | 3 / 8     |
+| After the focus fix                     | 4 / 8     |
+| After keeping off-edge posters laid out | 6 / 8     |
+| After the Back fix                      | **8 / 8** |
 
 On 19 October 2026 a further cause was found (named by the improved failure reporter):
 `LivePlayer.stop()` in `PlaybackTest.cleanup` released the shared live player while a closing
@@ -103,14 +102,14 @@ grid opened from the rows returns to the same row.
 
 ### Other feature tests (October 2026)
 
-| Test | Covers |
-| --- | --- |
-| `ForYouTest` | For you ranking (shared recommendations rise, seeds and played movies hidden), trending fallback, caching until signals change, old seed migration. Fixture TMDB responses. |
-| `AllAppsTest` | Apps screen: Android shortcuts and Recently used shown, search box not focused on entry, search filters by name, hide and Show hidden. Uses the emulator's installed apps. |
-| `SidePanelTest` | Side panel focuses and ticks the current choice and runs it after closing; `ErrorMessages` explanations never include provider text. |
-| `DiagnosticsTest` | Timings and private error details; Troubleshooting retains the Settings sidebar, Back returns to System, and other tabs remain usable. |
-| `SecretsTest` | Encrypted on disk, cached reads, replace and remove. |
-| `ArtworkDiskCacheTest` | Artwork disk cache: hit, miss, least-recently-used trimming, oversized files skipped. |
+| Test                   | Covers                                                                                                                                                                      |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForYouTest`           | For you ranking (shared recommendations rise, seeds and played movies hidden), trending fallback, caching until signals change, old seed migration. Fixture TMDB responses. |
+| `AllAppsTest`          | Apps screen: Android shortcuts and Recently used shown, search box not focused on entry, search filters by name, hide and Show hidden. Uses the emulator's installed apps.  |
+| `SidePanelTest`        | Side panel focuses and ticks the current choice and runs it after closing; `ErrorMessages` explanations never include provider text.                                        |
+| `DiagnosticsTest`      | Timings and private error details; Troubleshooting retains the Settings sidebar, Back returns to System, and other tabs remain usable.                                      |
+| `SecretsTest`          | Encrypted on disk, cached reads, replace and remove.                                                                                                                        |
+| `ArtworkDiskCacheTest` | Artwork disk cache: hit, miss, least-recently-used trimming, oversized files skipped.                                                                                       |
 
 ## Tests call app code directly
 
@@ -122,14 +121,14 @@ member package-private instead.
 
 ### Channel copies and automatic backups (October 2026)
 
-| Test | Covers |
-| --- | --- |
-| `ChannelIdentityTest` (core) | Same channel across lists and providers ("Sky Sports F1 (720p)", "… UK", "… HD", "Sky Sports Formula 1"); kept apart: other countries, +1, regions, UHD, similar networks; provider categories into the guide sections (whole words, so "TF1" is not sport). Also run over the real Free-TV and iptv-org UK/US/IE lists (20 October 2026): five new merges, all the same channel. |
-| `ChannelDatabaseTest.providerCopiesJoinTheSameChannelAndSharedSections` | A provider copy becomes a backup of the free-list copy, keeps number 407, appears in Sports, no provider group. |
-| `ChannelDatabaseTest.versionEightKeysAreRecomputedKeepingFavouritesAndLocks` | Version 8 → 9 upgrade re-keys saved channels; favourites and channel locks kept. |
-| `PlaybackTest.skySportsF1FailsOverToAnotherProvidersCopy` | **The reported problem**: the free-list copy fails (404), the provider copy plays; "isn't working" is not shown. |
-| `PlaybackTest.failoverTriesEachCopyInTurnUntilOnePlays` | Two failing copies, the third plays. |
-| `PlaybackTest.whenEveryCopyFailsTheChannelSaysSoWithoutRetryingForever` | Every copy tried once, then the message; no further requests. |
+| Test                                                                         | Covers                                                                                                                                                                                                                                                                                                                                                                            |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ChannelIdentityTest` (core)                                                 | Same channel across lists and providers ("Sky Sports F1 (720p)", "… UK", "… HD", "Sky Sports Formula 1"); kept apart: other countries, +1, regions, UHD, similar networks; provider categories into the guide sections (whole words, so "TF1" is not sport). Also run over the real Free-TV and iptv-org UK/US/IE lists (20 October 2026): five new merges, all the same channel. |
+| `ChannelDatabaseTest.providerCopiesJoinTheSameChannelAndSharedSections`      | A provider copy becomes a backup of the free-list copy, keeps number 407, appears in Sports, no provider group.                                                                                                                                                                                                                                                                   |
+| `ChannelDatabaseTest.versionEightKeysAreRecomputedKeepingFavouritesAndLocks` | Version 8 → 9 upgrade re-keys saved channels; favourites and channel locks kept.                                                                                                                                                                                                                                                                                                  |
+| `PlaybackTest.skySportsF1FailsOverToAnotherProvidersCopy`                    | **The reported problem**: the free-list copy fails (404), the provider copy plays; "isn't working" is not shown.                                                                                                                                                                                                                                                                  |
+| `PlaybackTest.failoverTriesEachCopyInTurnUntilOnePlays`                      | Two failing copies, the third plays.                                                                                                                                                                                                                                                                                                                                              |
+| `PlaybackTest.whenEveryCopyFailsTheChannelSaysSoWithoutRetryingForever`      | Every copy tried once, then the message; no further requests.                                                                                                                                                                                                                                                                                                                     |
 
 These use local fixture streams. They do not show that a real provider's stream plays on the TV.
 
@@ -261,7 +260,7 @@ Only documentation follows this tested application revision.
 
 ## Reviewed PR regression coverage (22 October 2026)
 
-Run `bash android-tv-launcher/tests/run-core-tests.sh`; regular CI and publishing call this same script. The local run passed 664 checks in 13 suites, using Eclipse JDT 3.32 targeting Java 17 because this workspace has a JRE but no javac. GitHub CI still verifies javac, APK builds, lint, emulator behavior, and signing.
+Run `bash android-tv-launcher/tests/run-core-tests.sh`; regular CI and publishing call this same script. A local run on 25 October 2026 (OpenJDK 21 `javac`) passed 903 checks in 26 suites; the suite list is in the script. GitHub CI still verifies javac, APK builds, lint, emulator behavior, and signing.
 
 `VodSourceFailoverTest` covers startup exclusion, threshold boundaries, seeking/pause exclusion, provider pinning, duplicates and exhaustion. PlaybackTest adds actual-VLC fixtures for repeated-buffering replacement through a failed candidate, preserving the old stream while resolving, cancellation on pause and late results, and exhausted alternatives without loops. These tests do not establish dual-decoder support on the target TV or live Premiumize availability.
 
@@ -342,12 +341,9 @@ provider sources or account credentials are used. Local core validation passed; 
 build/lint, full emulator and signing validation are pending on the PR. Concurrent hardware
 decoder support, actual TV memory limits and live-feed timing require physical-device checks.
 
-
 ## Live TV control consistency
 
 `LiveControlsTest` now opens its live fixture without the static guide session. It covers physical colours, real Activity recreation with cleared static context, saved guide snapshot independence, a learned green button using a numeric key, and visible unclipped controls with long source/channel names. Existing Back/arrow/OK tests remain. These fixtures do not verify the owner’s physical remote. Local core checks pass (733); Android CI is pending.
-
-
 
 `LiveControlsTest.physicalColoursKeepWorkingWhileAnotherPlayerPanelOwnsFocus` sends red, green, blue and yellow without manually dismissing intermediate dialogs. `completeHeaderSurvivesProgrammeUpdatesAndBackControls` checks full-height channel-strip labels, not only footer buttons, after typing and programme updates; it saves `live-complete-channel-header.png`. These use fixtures, not the physical remote.
 
@@ -359,11 +355,9 @@ The alternating-resolution HLS fixture contains explicit timestamp discontinuiti
 
 0.49 validation checkpoint: source f2e37666b297cb225a458ef9df9101fe0b01d87f passed CI run 39985039245: all 166 TV emulator tests, zero failures/skips, build/lint and signing/updater compatibility. Provider CI also passed. Local core checks: 753. HLS transition evidence: 320 decoded video frames, 547 played audio buffers, one resolver call. Screenshots confirm the moving fixture output and complete channel header. This is fixture/emulator evidence, not a physical TV or live Pluto test.
 
-
 ## Consistent live banner and standard colours
 
 LiveControlsTest now checks actions on key-down before any release, repeats/releases across replacement dialog windows, conflicting saved colour aliases, and a constrained viewport with information/pause panels visible. Earlier tests only sent complete down/up pairs with normal mappings and ample layout space. New tests must pass Android CI; they do not establish behaviour on the owner’s physical remote.
-
 
 ## One live overlay and shared colour input
 
@@ -407,7 +401,6 @@ Player panels request input focus after their DecorView attaches, with the initi
 
 The Python suite individually checks all 68 provider lookup contracts and explicit library/API-key exclusions, rejects 7/30/119.9-second media, accepts the 120-second boundary and unknown metadata, and preserves a matching playback User-Agent. See [inventory audit](docs/FREE_VOD_AUDIT.md). `PlaybackTest` adds real-VLC manual free-source failure through a broken host and short clip to another provider, initial short-clip rejection with a late-discovered backup, and a deliberately blocked native stop while controls and original playback remain responsive. The speed regression requires visible Mb/s and received-byte labels with a positive real relay byte count. The checked-in `vod.mp4` fixture is real 150-second H.264/AAC media, generated from the original fixture with FFmpeg and fully decoded locally. Duration checks stay active; short-video regressions still use the original 30-second fixture. See the test-assets README for the reproduction command. Full Android CI validation is required; these are fixtures, not physical-TV/provider evidence.
 
-
 ## Provider compatibility regressions
 
 The 17 Python tests include the actual Scrubs Levidia lookup from landing page through
@@ -421,7 +414,6 @@ Provider-request read timeouts now honor explicit upstream values within the rem
 search budget, with an eight-second connection cap. A regression checks a 20-second read
 request and clipping to a five-second remaining budget; cancellation remains bounded.
 
-
 ## VOD Activity destruction regression
 
 PlaybackTest.finishingFilmRetainsDetachedTextureUntilNativeStopCompletes plays real VLC
@@ -430,3 +422,108 @@ SurfaceTexture remains unreleased. Unblocking stop must release it. The full sui
 retains the film-to-native-Live-TV cancellation test that exposed the EGL crash.
 The previous final run failed after 121 passes with SIGSEGV in EGL swapBuffers; this
 regression and its correction require a new full emulator result.
+
+## ExoPlayer Live TV and the test app
+
+`ExoLiveTest` and `DlhdStartupTest` are ordinary device tests (in `src/androidTest`), so the normal
+`device-tests` job runs them. When ExoPlayer became the Live TV engine (0.58), seven VLC-era tests that drove Live TV through the guide stopped applying. They are kept but skipped with `@Ignore` naming their replacement: `ExoLiveTest` now covers the guide's corner picture, a broken channel's on-screen message and moving on with the remote, and a manual backup surviving guide/full-screen trips without reopening; `PhoneModeTest` checks touch controls on the ExoPlayer full screen. Not ported: counting native re-resolutions on handover (ExoPlayer only resolves on open, and the round-trip test asserts no reopen) and VLC's muted standby backup (ExoPlayer races sources instead). VLC Live TV tests that open `VlcPlaybackActivity` directly still run and pass, but that path is no longer how the app plays Live TV. CI's `apk` job also compiles the MovieHub Experimental test app
+(`-Pexperimental assembleDebug`) and checks its package name, and `experimental-device-tests` runs the two
+suites again inside that build. `ExoLiveTest` exercises Media3 itself on the TV emulator: decoded frame progress and nonblank
+screenshots through two guide/fullscreen round trips without new stream requests; 404 retry
+cancellation on channel change and stop; pause/resume; foreground restart and Activity
+destruction; HLS audio/subtitle selection and remote banner entry. Experimental lint also runs.
+
+Run that suite on a running emulator with:
+
+```sh
+gradle -p android-tv-launcher connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=local.tv.home.ExoLiveTest
+```
+
+These local HTTP fixtures establish decoder and lifecycle behaviour, not real-provider or
+physical-TV compatibility. Freeze detection remains diagnostic; this release does not add an
+automatic picture-repair algorithm.
+
+### Experimental DaddyLive startup regression suite
+
+DlhdStartupTest runs real isolated Binder calls with bundled DaddyLive transforms and fixture
+HTTP: one process binding per complete lookup, fewer warm-page requests, fresh script globals,
+expired/cancelled lookups, socket-timeout continuation, cache expiry/module separation and
+exclusion of tokens, credentials and failures. It runs alongside ExoLiveTest in the dedicated
+experimental emulator job. ProviderScriptFastTest uses actual Rhino on the JVM to verify one
+compile across steps, fresh globals, no Java access, failed-request clock accounting and the
+unchanged legacy replay contract. Fixtures do not establish physical-TV startup latency.
+
+`VideoDetailsTest` (core) checks the information panel's picture line: size and quality name
+(including wide film frames), whole and fractional frame rates, codec names from Media3 MIME types
+and VLC codes, bitrates, and that nothing is shown before the first frame. `LiveControlsTest` checks
+that the source name is not a button (four colour keys only), that BACK highlights the green Source
+key, and that the information panel shows "Picture:" and the source. Fixtures only: the real values
+come from the stream and were not checked on a TV.
+`ProviderOutageTest` (core) checks the grouped "Unavailable now" line shows real failures only (HTTP 403
+and script errors are never called geo-locked) and that "Hide US-only providers" hides only LG, Roku
+and Local Now. `runtime-check.mjs`
+checks that LG Channels asks for country US. The Plex play fix was verified only by the live probe
+(two of three sampled channels opened and played from GitHub's US runner), not on a UK connection.
+
+`ProviderEngineDeviceTest.plexListingsMatchByStableIdAndFallBackToTheUsGuide` feeds fixture XMLTV to
+`ProviderGuide` (Plex spec): channels match by the id after the dash (with a different server prefix), unrelated
+channels are ignored, the US file is read only when the UK file covers under half the lineup. The real
+gb.xml (368 channels, all `<24 hex>-<24 hex>` ids) was inspected offline; that its ids equal the
+catalogue's gridKeys is inferred, not yet seen on a device.
+
+`LiveGuideTest.tenChannelsPerPageNumberedFrom101AndPagedWithTheRemote` checks the title line reads
+"ALL CHANNELS 25 channels" for its 25-channel fixture (the whole list, not the page).
+
+`ExoLiveTest.aFailingSourceWithAnotherWaitingMovesOnInsteadOfReopening` checks that an erroring source
+is reported once and not reopened when the listener has another source. The 15-second startup
+deadline (`LiveStage.START_MS`) has no device test; it uses the same failover path.
+
+`LiveRacePlanTest` (core, 17 checks) covers the source race rules: priority by quality then copy order,
+at most three lookups and standbys together, waiting inside the three-second window only while a better
+copy is pending, no waiting after a failure, and exhaustion. `ExoLiveTest.aDeadCopyHandsOverToAWorking
+OneWithoutWaitingForTheSlowOne` plays a three-copy fixture channel (404, working, slow) and checks the
+working copy plays through the race and the slow one is never opened. Real provider lookups, quality
+names and the eight-second deadline are not exercised by fixtures.
+
+`EpgMatchTest` (core) checks Freeview's London-is-national aliases (BBC One/ITV1/Channel 4 London, "5"
+as Channel 5, radio and other regions left alone). `EpgImporterTest.guidesInPriorityOrderLondonIsNational
+AndCountriesStayApart` imports three fixture guides: Freeview beats the later UK guide, a channel only the
+second guide has is filled from it, Irish channels use the Irish guide, and a German channel gets no UK
+listings. `oneFailingGuideKeepsTheOthers` checks a failed download does not lose the rest. The real
+files' coverage was inspected offline (Freeview: 284 channels, 47,787 programmes); epgshare01's IE and
+US files were not downloadable from the workspace and are untested beyond Free-TV listing them.
+
+`ProviderEngineDeviceTest.samsungListingsMatchTheStoredChannelIdsUnchanged` checks the Samsung spec reads
+only the gb file and matches ids unchanged. The live gb.xml (273 channels, 2,550 programmes, ids such as
+GBBC2300003ZQ) was inspected offline; it was not checked against the adapter's live catalogue.
+
+`LiveGuideTest.okJumpsToATypedNumberAtOnceWithoutOpeningTheHighlightedChannel` types 112 and OK: the guide
+lands on 112 before the digit wait runs out and the OK's release does not open the old row; the guide's own
+number box shows "112–" while typing and is gone after the jump.
+
+`EpgMatchTest` also covers UKTV's renamed channels (U&Dave, U&Gold, the Freeview id UAndDrama) and the
+trailing "UK" word in names. The Sky London HD guide was inspected offline (377 channels, 75,677
+programmes; Sky Atlantic, Sky Witness, Comedy Central, U&Dave/U&Gold present; Sky Sports and Sky Cinema
+absent). Its 45 MB file is served gzip-compressed at about 5.3 MB.
+
+`ChannelImporterTest.importsBothXtreamFormatsAndM3uAndKeepsFailedRefresh` also checks a finished refresh
+records the app version (`refreshedVersion`) and `ChannelSync.updatedSinceRefresh` treats another or
+unknown version as updated.
+
+## XMLTV fallback regression (25 October 2026)
+
+`EpgLookupTest` checks provider-name lookup, country prefixes/aliases, fixed provider country, GB/UK equivalence, timeshifts and refusal to borrow UK listings for unknown native countries. `EpgImporterTest` imports a Sky-shaped XMLTV fixture for a built-in provider channel, verifies missing/expired native fallback and native priority, separates equally named US/UK channels, and verifies stale/malformed priority guides cannot claim keys or leak partial programmes. A Freeview-shaped Gold Radio fixture cannot hide Sky’s U&Gold television listings. Existing native/XMLTV coexistence tests remain. Core checks run locally; full Android build/lint and both emulator suites must pass on the final PR commit. Live feed availability and the owner’s physical TV remain separate checks.
+
+## Combined guide and ZLive regression checks
+
+`CombinedEpgTest` uses loopback HTTP, real gzip/XML and SQLite to check conditional 304s, a single guide URL, native/name priority, future-only fallback and retention after malformed, empty, stale or failed updates. `ZliveSourcesTest` checks distinct labelled routes, duplicate rejection, old primary identity, permitted headers, unsupported website options and module-bound hints. Experimental `ExoLiveTest` checks exhausted ZLive failure/recovery with loopback media. Core provider tests validate fragmented PNG/WebP/raw/gzip carriers and the real TCP relay without a playlist-token session. None establishes live provider playback or a physical TV result.
+
+The generator has independent Python/Node merge, cache, expiry, DST, priority, invalid-XML and coverage-drop tests. Its GitHub run and published reports establish server publication; review exact per-run source failures rather than assuming every configured source succeeds.
+
+## Experimental exp13 provider repair checks
+
+The Python suite covers distinct website inventory (63 sites, 66 searchable adapters; all 68 bundled modules still validate), alternate-adapter fallback, final-host cookie scope, cross-origin credential removal and browser identity/query-list handling. `verify-vod-upstream.py` compares current official Scrubs/Free99 package versions, active provider inventory and original hashes. The on-demand audit runs movie and episode queries separately, records extraction/resolution/media outcomes and never logs source URLs or credentials. Results establish only those titles from the runner's location.
+
+The actual JVM provider runtime encrypts a fixture session POST which Node independently decrypts and verifies, including raw channel IDs, ticket/AAD, timestamp, reuse and refusal suppression. Android fixtures check the current session round trip, encrypted contact history and fresh movie/exact-episode resume metadata. Build/lint and emulator outcomes must be read on the PR's final commit.
+
+The first Android run of this PR failed two device tests (`ProviderAdaptersTest.coldResolversAvoidCatalogueAndTclHintsAreEncryptedAndCompact` and `FreeVodProvidersTest.javaCancellationReachesPackagedPythonBeforeAnyProviderRequest`), failing again on rerun. Both were code faults, fixed in a follow-up commit; `test_cancelled_website_search_stops_before_reading_title_fields` reproduces the second offline.

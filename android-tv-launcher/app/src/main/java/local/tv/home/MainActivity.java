@@ -18,7 +18,7 @@ import org.json.*;
  * The single activity of the launcher. It owns shared navigation state and lifecycle and
  * delegates each screen to a feature class (see ARCHITECTURE.md for the map).
  */
-public class MainActivity extends TvActivity {
+public class MainActivity extends TvActivity implements LiveScreen.Owner {
 
     // Feature controllers. Each one builds the views for one area of the app.
     final UpdatePrompt updates = new UpdatePrompt(this);
@@ -30,6 +30,11 @@ public class MainActivity extends TvActivity {
     final CatalogueScreens catalogues = new CatalogueScreens(this);
     final CatalogueSearch catalogueSearch = new CatalogueSearch(this);
     final LiveTvScreen liveTv = new LiveTvScreen(this);
+    /**
+     * One screen for all of Live TV (pages, one picture, the banner), or
+     * null in normal builds, which keep separate player screens.
+     */
+    LiveStage stage;
     /** Live TV in the phone layout (see {@link DeviceMode}). */
     final PhoneLive phoneLive = new PhoneLive(this);
     final SettingsScreens settingsScreens = new SettingsScreens(this);
@@ -83,8 +88,14 @@ public class MainActivity extends TvActivity {
     }
 
     @Override
+    public LiveScreen liveScreen() {
+        return stage != null && stage.full() ? stage : null;
+    }
+
+    @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         int key = event.getKeyCode();
+        if (stage != null && stage.full() && stage.key(event)) return true;
         if (activeKeyBar != null && activeKeyBar.handle(event)) return true;
         if (liveTv.handlePageKey(event)) return true;
         if (
@@ -246,6 +257,10 @@ public class MainActivity extends TvActivity {
             return;
         }
         clearLoading(target);
+        if (target == page && floatsOverPage()) {
+            floatingError(why, settings, () -> async(job, done));
+            return;
+        }
         LinearLayout holder = vertical();
         target.addView(holder, new LinearLayout.LayoutParams(-1, -2));
         emptyState(
@@ -260,6 +275,66 @@ public class MainActivity extends TvActivity {
                       async(job, done);
                   }
         );
+    }
+
+    /** Tag of the small error card floated over a fixed screen, so a new one replaces it. */
+    static final String FLOATING_ERROR = "floatingError";
+    /** How long the floating error card stays before it hides itself. */
+    static final long FLOATING_ERROR_MS = 12_000;
+
+    /**
+     * Fixed screens (the TV guide, Home) fill the screen exactly, so a card added to the page
+     * would push their content up and squash it. Scrolling pages have room for one.
+     */
+    boolean floatsOverPage() {
+        return (
+            page != null &&
+            page.getParent() instanceof FrameLayout &&
+            !(page.getParent() instanceof ScrollView)
+        );
+    }
+
+    /**
+     * A small error card over the bottom of a fixed screen. It never changes the page's layout,
+     * replaces any card already showing, and hides itself after {@link #FLOATING_ERROR_MS}.
+     */
+    void floatingError(ErrorMessages.Explanation why, boolean settings, Runnable retry) {
+        FrameLayout host = (FrameLayout) page.getParent();
+        View old = host.findViewWithTag(FLOATING_ERROR);
+        if (old != null) host.removeView(old);
+        LinearLayout card = row();
+        card.setTag(FLOATING_ERROR);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setPadding(dp(18), dp(10), dp(12), dp(10));
+        card.setBackground(box(0xee131c2a));
+        card.setElevation(dp(8));
+        LinearLayout words = vertical();
+        TextView title = text(why.title, 17);
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        words.addView(title);
+        words.addView(muted(why.detail, 13));
+        card.addView(words, new LinearLayout.LayoutParams(0, -2, 1));
+        Runnable hide = () -> host.removeView(card);
+        Button action = button(settings ? "Open Settings" : "Try again", () -> {
+            hide.run();
+            if (settings) settingsScreens.settings();
+            else retry.run();
+        });
+        action.setTextSize(14);
+        LinearLayout.LayoutParams actionLayout = new LinearLayout.LayoutParams(-2, dp(36));
+        actionLayout.leftMargin = dp(12);
+        card.addView(action, actionLayout);
+        FrameLayout.LayoutParams place = new FrameLayout.LayoutParams(
+            dp(520),
+            -2,
+            Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
+        );
+        place.bottomMargin = dp(24);
+        host.addView(card, place);
+        handler.postDelayed(() -> {
+            // Leave it if the remote is on its button; it goes when the button is used.
+            if (card.getParent() == host && !action.hasFocus()) hide.run();
+        }, FLOATING_ERROR_MS);
     }
 
     private TextView findLoading(ViewGroup parent) {
@@ -295,6 +370,7 @@ public class MainActivity extends TvActivity {
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
+        if (ExoLive.available()) stage = new LiveStage(this);
         tvFullscreen();
         android.content.IntentFilter changes = new android.content.IntentFilter();
         changes.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -351,6 +427,7 @@ public class MainActivity extends TvActivity {
     @Override
     public void onStart() {
         super.onStart();
+        if (stage != null) stage.started();
         handler.removeCallbacks(ticker);
         handler.post(ticker);
         updates.checkForUpdate();
@@ -384,7 +461,7 @@ public class MainActivity extends TvActivity {
         } else if (dock.refreshAppsOnResume) {
             dock.refreshAppsOnResume = false;
             appsScreen.refresh();
-        } else if (resumeRefresh != null) {
+        } else if (resumeRefresh != null && (stage == null || !stage.full())) {
             Runnable refresh = resumeRefresh;
             resumeRefresh = null;
             refresh.run();
@@ -394,12 +471,14 @@ public class MainActivity extends TvActivity {
     @Override
     public void onStop() {
         handler.removeCallbacks(ticker);
+        if (stage != null) stage.stopped();
         runLeaving();
         super.onStop();
     }
 
     @Override
     public void onDestroy() {
+        if (stage != null) stage.destroyed();
         SidePanel.closeFor(this);
         try {
             unregisterReceiver(packageChanges);
@@ -448,7 +527,8 @@ public class MainActivity extends TvActivity {
         page = vertical();
         page.setBackgroundColor(0xff090d14);
         page.setPadding(dp(38), dp(20), dp(38), dp(20));
-        setContentView(page);
+        if (stage != null) stage.setPage(page);
+        else setContentView(page);
         if (title != null) {
             LinearLayout head = row();
             TextView name = text(title, 24);
@@ -483,9 +563,14 @@ public class MainActivity extends TvActivity {
                 JSONArray previous = new JSONArray(stored.isEmpty() ? "[]" : stored),
                     recent = new JSONArray();
                 recent.put(record);
-                for (int i = 0; i < previous.length() && recent.length() < 50; i++) if (
-                    !id.equals(previous.getJSONObject(i).optString("id"))
-                ) recent.put(previous.getJSONObject(i));
+                String titleKey = ResumePoint.titleKey(record);
+                for (int i = 0; i < previous.length() && recent.length() < 50; i++) {
+                    JSONObject old = previous.getJSONObject(i);
+                    if (
+                        !id.equals(old.optString("id")) &&
+                        (titleKey == null || !titleKey.equals(ResumePoint.titleKey(old)))
+                    ) recent.put(old);
+                }
                 secrets.put("recentPlayback", recent.toString());
             } catch (Exception e) {
                 Diagnostics.recovered("Saving recent playback", e);
@@ -531,6 +616,10 @@ public class MainActivity extends TvActivity {
                     "name",
                     "imdb_id",
                     "external_ids",
+                    "release_date",
+                    "first_air_date",
+                    "original_title",
+                    "original_name",
                 })
                     if (metadata.has(key)) record.put(key, metadata.get(key));
             }
@@ -541,6 +630,10 @@ public class MainActivity extends TvActivity {
         } catch (Exception e) {
             Diagnostics.recovered("Saving recent playback", e);
             /* History failure must never prevent playback. */
+        }
+        if (live && stage != null) {
+            stage.fullScreen(title, safe, id);
+            return;
         }
         if (!live) {
             SeriesPlayback.restore(metadata);

@@ -25,21 +25,10 @@ export const adapters = {
         resolve: "exports.fillUrlMacros(row.streamUrl)",
         headers: "exports.WHALE_HEADERS",
     },
-    distro: {
-        catalogue: "exports.fetchDistroRows()",
-        resolve: "exports.fillStreamMacros(row.streamUrl)",
-        headers: "exports.DISTRO_STREAM_HEADERS",
-    },
     vizio: {
         catalogue:
             "exports.fetchVizioCatalog().then(function(rows){return rows.filter(exports.isSurfacedRow);})",
         resolve: "exports.expandMacros(row.streamUrl)",
-        headers: "{'User-Agent':exports.UA}",
-    },
-    vidaa: {
-        catalogue:
-            "exports.fetchVidaaRows().then(function(rows){return rows.filter(exports.isSurfacedRow);})",
-        resolve: "row.streamUrl",
         headers: "{'User-Agent':exports.UA}",
     },
     roku: {
@@ -49,7 +38,10 @@ export const adapters = {
     },
     plex: {
         catalogue: "exports.fetchPlexRows()",
-        resolve: "exports.resolvePlexMaster(row.channelId)",
+        // The manifest path needs the COMPOUND id (row.id, "<server prefix>-<gridKey>"), not the
+        // stable gridKey in row.channelId: Plex answers 404 for the gridKey alone. The prefix
+        // changes when Plex moves servers, so it comes from the (cached) catalogue row each time.
+        resolve: "exports.resolvePlexMaster(row.id||row.channelId)",
         headers: "exports.PLEX_STREAM_HEADERS",
     },
 };

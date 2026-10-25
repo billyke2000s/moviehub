@@ -20,6 +20,60 @@ _HOSTS = sorted({d.lower() for cls in resolveurl.relevant_resolvers(include_univ
 def providers():
     return json.dumps(_RECORDS)
 
+def search_providers():
+    """One public website per entry; alternate addon adapters remain fallbacks."""
+    groups = {}
+    for record in sorted(_RECORDS, key=lambda r: (r['family'] != 'free99', r['id'])):
+        if record['name'] in ('library', 'filepursuit'): continue
+        site = record['site']
+        group = groups.setdefault(site, dict(id=record['id'], family=record['family'],
+            name=site, site=site, adapters=[], movies=False, series=False))
+        group['adapters'].append(record['id'])
+        group['movies'] |= record['movies']
+        group['series'] |= record['series']
+    return json.dumps(list(groups.values()))
+
+
+def query_site(provider_id, raw, cancelled, emit=None):
+    group = next(r for r in json.loads(search_providers()) if r['id'] == provider_id)
+    deadline = time.monotonic() + 45
+    info = json.loads(raw)
+    cancel = cancelled.get if hasattr(cancelled, "get") else cancelled
+    # Stop before any adapter or provider request when Java has already cancelled the search.
+    if cancel():
+        return json.dumps(dict(status='timeout', sources=[], attempts=[]))
+    # Treat a missing season as a film rather than failing the whole website search.
+    is_movie = info.get('season', -1) < 0
+    results, attempts, seen = [], [], set()
+    class Emit:
+        def ready(self, value):
+            item = json.loads(value)
+            key = (item['url'], json.dumps(item['headers'], sort_keys=True))
+            if key in seen: return
+            seen.add(key)
+            item['adapter'] = item['provider']
+            item['provider'] = group['id']
+            item['providerName'] = group['site']
+            results.append(item)
+            if emit is not None: emit.ready(json.dumps(item))
+    for adapter in group['adapters']:
+        record = _MODULES[adapter]
+        if not record['movies' if is_movie else 'series']: continue
+        if time.monotonic() >= deadline: break
+        report = json.loads(query(adapter, raw, cancelled, Emit(), deadline))
+        attempts.append(dict(adapter=adapter, status=report['status'], stage=report.get('stage', ''),
+                             extracted=report.get('extracted', 0), rejected=report.get('rejected', 0),
+                             resolutionErrors=report.get('resolutionErrors', 0),
+                             unsupportedHosts=report.get('unsupportedHosts', 0)))
+        # Do not hit the same website twice when the first adapter already supplied playable links.
+        if results: break
+    status = 'complete' if results else (attempts[-1]['status'] if attempts else 'unsupported_type')
+    return json.dumps(dict(status=status, sources=results, attempts=attempts,
+        extracted=sum(a['extracted'] for a in attempts), rejected=sum(a['rejected'] for a in attempts),
+        resolutionErrors=sum(a['resolutionErrors'] for a in attempts),
+        unsupportedHosts=sum(a['unsupportedHosts'] for a in attempts)))
+
+
 def validate():
     """Import and instantiate every bundled adapter without contacting a provider."""
     for record in _RECORDS:
@@ -27,13 +81,16 @@ def validate():
     return len(_RECORDS)
 
 
-def query(provider_id, raw, cancelled, emit=None):
-    client.scope(cancelled.get if hasattr(cancelled, "get") else cancelled, timeout=30, http=json.loads(raw).get('http', False))
+def query(provider_id, raw, cancelled, emit=None, deadline=None):
+    deadline = deadline or time.monotonic() + 45
+    cancel = cancelled.get if hasattr(cancelled, "get") else cancelled
+    client.scope(cancel, timeout=max(.1, min(30, deadline-time.monotonic())), http=json.loads(raw).get('http', False))
     info = json.loads(raw)
     record = _MODULES[provider_id]
     # Kodi's local library is not an Internet provider. Its module remains bundled for provenance.
     if record['name'] == 'library': return json.dumps({'status': 'local_library', 'sources': []})
     if record['name'] == 'filepursuit': return json.dumps({'status': 'requires_api_key', 'sources': []})
+    stage = "lookup"
     try:
         client.check()
         utils = importlib.import_module('moviehub_'+record['family']+'.source_utils')
@@ -66,16 +123,21 @@ def query(provider_id, raw, cancelled, emit=None):
             key = provider.tvshow(imdb, tmdb, '', title, localtitle, aliases, year)
             key = provider.episode(key, imdb, tmdb, '', info.get('episodeTitle',''), info.get('premiered',''),
                                    season, episode)
+        stage = "extraction"
         candidates = provider.sources(key, list(_HOSTS)) or []
         client.check()
         extracted = len(candidates)
         rejected = 0
         errors = 0
         unsupported = 0
-        sources=[]; seen=set()
-        for item in candidates[:40]:
-            client.check()
+        lookup_failure = client.failure()
+        # Discovery cannot consume the separate, bounded host/media resolution budget.
+        client.scope(cancel, timeout=max(.1, min(15, deadline-time.monotonic())), http=info.get('http', False))
+        sources=[]; seen=set(); timed_out=False
+        for item in candidates[:200]:
             try:
+                client.check()
+                stage = "resolution"
                 url=provider.resolve(item['url'])
                 if not item.get('direct', False):
                     host=resolveurl.HostedMediaFile(url=url, include_universal=False, include_popups=False)
@@ -84,6 +146,7 @@ def query(provider_id, raw, cancelled, emit=None):
                         continue
                     url=host.resolve()
                 if not isinstance(url,str) or url in seen: continue
+                stage = "media"
                 result=playable(url, info.get("maxQuality", 2160))
                 if result is None:
                     rejected += 1
@@ -94,19 +157,21 @@ def query(provider_id, raw, cancelled, emit=None):
                 sources.append(result)
                 if emit is not None: emit.ready(json.dumps(result))
             except client.Cancelled:
+                timed_out = True
                 break
             except Exception:
                 errors += 1
                 continue
-        status = ('complete' if sources else client.failure() or
+        status = ('complete' if sources else 'timeout' if timed_out else client.failure() or lookup_failure or
                   ('rejected_media' if rejected else 'resolution_failed' if errors else
                    'unsupported_host' if unsupported else 'no_matches'))
         return json.dumps({'status':status,'sources':sources,'extracted':extracted,
-                           'rejected':rejected,'resolutionErrors':errors,'unsupportedHosts':unsupported})
+                           'rejected':rejected,'resolutionErrors':errors,'unsupportedHosts':unsupported,
+                           'stage':stage,'candidateLimitReached':len(candidates)>200})
     except client.Cancelled:
-        return json.dumps({'status':'timeout','sources':[]})
+        return json.dumps({'status':'timeout','sources':[],'stage':stage})
     except Exception as error:
-        return json.dumps({'status':type(error).__name__,'sources':[]})
+        return json.dumps({'status':type(error).__name__,'sources':[],'stage':stage})
 
 def playable(raw, preferred=2160):
     url, sep, suffix=raw.partition('|')
@@ -119,7 +184,22 @@ def playable(raw, preferred=2160):
     # A host page or expired error response must not win the three-second window.
     path=urlparse(url).path.lower()
     started=time.monotonic()
-    response=client.fetch(url, dict(headers, Range='bytes=0-65535'), timeout=3, max_bytes=65536)
+    response=client.fetch(url, dict(headers, Range='bytes=0-65535'), timeout=8, max_bytes=65536)
+    # Keep cookies issued by the media host, scoped to the final URL after redirects.
+    final_url = response.url or url
+    client.safe(final_url)
+    if urlparse(final_url).netloc != urlparse(url).netloc:
+        headers = {k:v for k,v in headers.items() if k.lower() not in ('cookie','authorization')}
+        original_headers = {k:v for k,v in original_headers.items() if k.lower() not in ('cookie','authorization')}
+    cookie = client.requests.cookies.get_cookie_header(response.cookies,
+        client.requests.Request('GET', final_url).prepare())
+    if cookie:
+        existing = next((v for k,v in headers.items() if k.lower() == 'cookie'), '')
+        headers = {k:v for k,v in headers.items() if k.lower() != 'cookie'}
+        headers['Cookie'] = '; '.join(v for v in (existing, cookie) if v)
+        original_headers['Cookie'] = headers['Cookie']
+    url = final_url
+    path = urlparse(url).path.lower()
     elapsed=max(.001, time.monotonic()-started)
     verified=None
     kind=response.headers.get('Content-Type','').lower()

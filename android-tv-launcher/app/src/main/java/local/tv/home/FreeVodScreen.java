@@ -58,7 +58,7 @@ final class FreeVodScreen {
             final int generation = activity.generation;
             Runnable refresh = new Runnable() {
                 int count = -1;
-                final Set<String> displayed = new HashSet<>();
+                final Map<String, Button> displayed = new LinkedHashMap<>();
                 boolean handedOff;
 
                 public void run() {
@@ -78,31 +78,69 @@ final class FreeVodScreen {
                     if (count != found.size()) {
                         count = found.size();
 
-                        for (var source : found) {
-                            if (!displayed.add(source.uri)) continue;
-                            Button row = activity.button(source.title, () -> {
-                                handedOff = true;
-                                play(
-                                    source,
-                                    search,
-                                    repo,
-                                    metadata,
-                                    imdb,
-                                    season,
-                                    episode,
-                                    title,
-                                    kind,
-                                    true
-                                );
-                            });
-                            results.addView(row);
+                        Map<String, List<SourceRepository.Source>> groups = new LinkedHashMap<>();
+                        for (var source : found)
+                            groups
+                                .computeIfAbsent(SourcesScreen.provider(source.title), key ->
+                                    new ArrayList<>()
+                                )
+                                .add(source);
+                        for (var group : groups.entrySet()) {
+                            String provider = group.getKey();
+                            Button row = displayed.get(provider);
+                            if (row == null) {
+                                row = activity.button(provider, () -> {
+                                    automatic[0] = false;
+                                    List<SourceRepository.Source> choices = new ArrayList<>();
+                                    for (var source : search.snapshot())
+                                        if (
+                                            provider.equals(SourcesScreen.provider(source.title))
+                                        ) choices.add(source);
+                                    SidePanel panel = SidePanel.of(activity, provider);
+                                    for (int i = 0; i < choices.size(); i++) {
+                                        var source = choices.get(i);
+                                        String host = java.net.URI.create(
+                                            source.files.optJSONObject(0).optString("link")
+                                        ).getHost();
+                                        panel.option(
+                                            SourcesScreen.quality(source.title) +
+                                                " · " +
+                                                host +
+                                                " · Link " +
+                                                (i + 1),
+                                            () -> {
+                                                handedOff = true;
+                                                play(
+                                                    source,
+                                                    search,
+                                                    repo,
+                                                    metadata,
+                                                    imdb,
+                                                    season,
+                                                    episode,
+                                                    title,
+                                                    kind,
+                                                    true
+                                                );
+                                            }
+                                        );
+                                    }
+                                    panel.show();
+                                });
+                                displayed.put(provider, row);
+                                results.addView(row);
+                            }
+                            int links = group.getValue().size();
+                            row.setText(provider + " · " + links + (links == 1 ? " link" : " links"));
                         }
                     }
                     boolean done = search.finished();
                     status.setText(
                         count > 0
-                            ? count +
-                                  " streams found · " +
+                            ? displayed.size() +
+                                  " websites · " +
+                                  count +
+                                  " links found · " +
                                   search.progress() +
                                   (done ? "" : " · searching for backups…")
                             : done

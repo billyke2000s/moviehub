@@ -128,8 +128,159 @@ public final class ProviderEngineDeviceTest {
         } catch (IllegalArgumentException expected) {}
     }
 
+    private static String xmltvTime(long millis) {
+        java.text.SimpleDateFormat f = new java.text.SimpleDateFormat(
+            "yyyyMMddHHmmss Z",
+            java.util.Locale.ROOT
+        );
+        f.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+        return f.format(new java.util.Date(millis));
+    }
+
+    private static String plexGuide(long now, String... ids) {
+        StringBuilder xml = new StringBuilder("<?xml version=\"1.0\"?><tv>");
+        for (String id : ids)
+            xml.append("<channel id=\"").append(id).append("\"><display-name>X</display-name></channel>");
+        for (String id : ids)
+            xml.append("<programme channel=\"")
+                .append(id)
+                .append("\" start=\"")
+                .append(xmltvTime(now - 600_000))
+                .append("\" stop=\"")
+                .append(xmltvTime(now + 3_000_000))
+                .append("\"><title>Show on ")
+                .append(id.substring(id.lastIndexOf('-') + 1))
+                .append("</title></programme>");
+        return xml.append("</tv>").toString();
+    }
+
     @Test
-    public void realBridgeRefreshPreservesStableChannelsFavouritesAndIndependentGuides() throws Exception {
+    public void plexListingsMatchByStableIdAndFallBackToTheUsGuide() throws Exception {
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        String source = AdapterSources.source("plex");
+        long now = System.currentTimeMillis();
+        java.util.List<String> asked = new java.util.ArrayList<>();
+        try {
+            ChannelDatabase.Writer channels = db.writer(source, () -> {}, n -> {});
+            try {
+                for (String id : new String[] { "aaa111", "bbb222" })
+                    channels.accept(
+                        new Playlist.Channel(
+                            "Plex " + id,
+                            AdapterSources.locator("plex", id),
+                            "Movies",
+                            "",
+                            source + ":" + id
+                        )
+                    );
+                channels.commit();
+            } finally {
+                channels.abort();
+            }
+            JSONArray rows = new JSONArray()
+                .put(new JSONObject().put("channelId", "aaa111").put("name", "Plex aaa111"))
+                .put(new JSONObject().put("channelId", "bbb222").put("name", "Plex bbb222"));
+            // The UK file has neither channel (plus an unrelated one); the US file has both, under a
+            // different server prefix than the catalogue would use.
+            ProviderGuide.opener = region -> {
+                asked.add(region);
+                String xml = region.equals("gb")
+                    ? plexGuide(now, "srv-zzz999")
+                    : plexGuide(now, "usserver-aaa111", "usserver-bbb222", "usserver-ccc333");
+                return new java.io.ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
+            };
+            assertEquals(2, ProviderGuide.refresh(ProviderGuide.PLEX, db, rows, () -> {}));
+            assertEquals(java.util.Arrays.asList("gb", "us"), asked);
+            for (String id : new String[] { "aaa111", "bbb222" }) {
+                ChannelDatabase.Row row = db.byKey(ChannelQuery.key(AdapterSources.locator("plex", id)));
+                assertNotNull(row);
+                assertEquals(
+                    "Show on " + id,
+                    db.programmes(row, "uk", now - 60_000, now + 60_000).get(0).title
+                );
+            }
+            // A UK file covering the lineup is enough: the US file is not downloaded.
+            asked.clear();
+            ProviderGuide.opener = region -> {
+                asked.add(region);
+                return new java.io.ByteArrayInputStream(
+                    plexGuide(now, "gbserver-aaa111", "gbserver-bbb222").getBytes(StandardCharsets.UTF_8)
+                );
+            };
+            assertEquals(2, ProviderGuide.refresh(ProviderGuide.PLEX, db, rows, () -> {}));
+            assertEquals(java.util.Collections.singletonList("gb"), asked);
+            assertEquals("bbb222", ProviderGuide.stableId("64305451fc3be5947773c339-bbb222"));
+        } finally {
+            ProviderGuide.opener = null;
+            db.clear();
+            ChannelDatabase.GuideWriter guide = db.new GuideWriter(source + ":");
+            try {
+                guide.commit();
+            } finally {
+                guide.finish();
+            }
+        }
+    }
+
+    @Test
+    public void samsungListingsMatchTheStoredChannelIdsUnchanged() throws Exception {
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        String source = AdapterSources.source("samsung");
+        long now = System.currentTimeMillis();
+        try {
+            ChannelDatabase.Writer channels = db.writer(source, () -> {}, n -> {});
+            try {
+                channels.accept(
+                    new Playlist.Channel(
+                        "Samsung fixture",
+                        AdapterSources.locator("samsung", "GBBC2300003ZQ"),
+                        "Entertainment",
+                        "",
+                        source + ":GBBC2300003ZQ"
+                    )
+                );
+                channels.commit();
+            } finally {
+                channels.abort();
+            }
+            assertSame(ProviderGuide.SAMSUNG, ProviderGuide.forProvider("samsung"));
+            assertNull(
+                "A provider with its own listings needs no separate guide",
+                ProviderGuide.forProvider("tubi")
+            );
+            ProviderGuide.opener = region -> {
+                assertEquals("gb", region);
+                return new java.io.ByteArrayInputStream(
+                    plexGuide(now, "GBBC2300003ZQ", "GBXX0000000AA").getBytes(StandardCharsets.UTF_8)
+                );
+            };
+            JSONArray rows = new JSONArray().put(
+                new JSONObject().put("channelId", "GBBC2300003ZQ").put("name", "S")
+            );
+            assertEquals(1, ProviderGuide.refresh(ProviderGuide.SAMSUNG, db, rows, () -> {}));
+            ChannelDatabase.Row row = db.byKey(
+                ChannelQuery.key(AdapterSources.locator("samsung", "GBBC2300003ZQ"))
+            );
+            assertEquals(
+                "Show on GBBC2300003ZQ",
+                db.programmes(row, "uk", now - 60_000, now + 60_000).get(0).title
+            );
+        } finally {
+            ProviderGuide.opener = null;
+            db.clear();
+            ChannelDatabase.GuideWriter guide = db.new GuideWriter(source + ":");
+            try {
+                guide.commit();
+            } finally {
+                guide.finish();
+            }
+        }
+    }
+
+    @Test
+    public void realBridgeRefreshPreservesStableChannelsFavouritesAndUsesCombinedGuide() throws Exception {
         ChannelDatabase db = ChannelDatabase.get(context);
         db.clear();
         EngineSources.testCatalogue =
@@ -141,16 +292,41 @@ public final class ProviderEngineDeviceTest {
             assertNotNull(row);
             assertEquals(EngineSources.ROOT + "sport", db.url(row.id, row.key));
             assertEquals(1, db.browse("favourites", "", java.util.Collections.singleton(key), 0, 10).size());
-            // Separate XMLTV refresh must retain the JS provider's programme mapping.
-            ChannelDatabase.GuideWriter xml = db.new GuideWriter(false);
-            try {
-                xml.match("xmlfixture", "xmltv");
-                xml.programme("xmltv", 1, 100, "Other", "", "", "");
-                xml.commit();
-            } finally {
-                xml.finish();
+            long now = System.currentTimeMillis();
+            assertTrue(
+                "Catalogue import must not write a second built-in guide",
+                db.programmes(row, "uk", now, now + 3600000).isEmpty()
+            );
+            java.io.File file = new java.io.File(context.getCacheDir(), "fls-combined-fixture.gz");
+            java.text.SimpleDateFormat format = new java.text.SimpleDateFormat(
+                "yyyyMMddHHmmss Z",
+                java.util.Locale.ROOT
+            );
+            String xml =
+                "<tv><channel id=\"enginefls:sport\"><display-name>Sport</display-name></channel><programme channel=\"enginefls:sport\" start=\"" +
+                format.format(new java.util.Date(now - 60000)) +
+                "\" stop=\"" +
+                format.format(new java.util.Date(now + 3600000)) +
+                "\"><title>Live Sport</title></programme></tv>";
+            try (
+                java.util.zip.GZIPOutputStream output = new java.util.zip.GZIPOutputStream(
+                    new java.io.FileOutputStream(file)
+                )
+            ) {
+                output.write(xml.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             }
-            assertEquals("Live Sport", db.programmes(row, "uk", 1792368000000L, 1792371600000L).get(0).title);
+            try {
+                assertEquals(1, CombinedEpg.install(file, db, () -> {}).channels);
+                assertEquals("Live Sport", db.programmes(row, "uk", now, now + 3600000).get(0).title);
+                assertEquals(1, EngineSources.refresh(context, db, () -> {}));
+                assertEquals(
+                    "Channel catalogue refresh retains the combined schedule",
+                    "Live Sport",
+                    db.programmes(row, "uk", now, now + 3600000).get(0).title
+                );
+            } finally {
+                file.delete();
+            }
             EngineSources.testCatalogue = "[]";
             try {
                 EngineSources.refresh(context, db, () -> {});

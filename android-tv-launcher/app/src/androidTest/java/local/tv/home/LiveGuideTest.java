@@ -80,6 +80,46 @@ public class LiveGuideTest {
         return focus instanceof TextView ? ((TextView) focus).getText().toString() : String.valueOf(focus);
     }
 
+    /** A failed load on the guide floats one small card over it; the grid keeps its full size. */
+    @Test
+    public void failedLoadOnGuideFloatsSmallCardWithoutShrinkingGrid() {
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await("ten guide rows", () -> activity.liveTv.cells.size() == 10);
+        remote.waitForIdleSync();
+        int[] before = new int[2];
+        remote.runOnMainSync(() -> {
+            before[0] = activity.liveTv.frame.grid.getHeight();
+            before[1] = activity.page.getChildCount();
+        });
+        assertTrue("Grid laid out", before[0] > 0);
+        for (int i = 0; i < 2; i++) remote.runOnMainSync(() ->
+            activity.async(
+                () -> {
+                    throw new IllegalStateException("Channel no longer exists");
+                },
+                result -> {}
+            )
+        );
+        await(
+            "floating error card",
+            () -> ((ViewGroup) activity.page.getParent()).findViewWithTag(MainActivity.FLOATING_ERROR) != null
+        );
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            ViewGroup host = (ViewGroup) activity.page.getParent();
+            int cards = 0;
+            for (int i = 0; i < host.getChildCount(); i++) if (
+                MainActivity.FLOATING_ERROR.equals(host.getChildAt(i).getTag())
+            ) cards++;
+            assertEquals("One card, not stacked", 1, cards);
+            assertEquals("Nothing added to the guide page", before[1], activity.page.getChildCount());
+            assertEquals("Grid keeps its height", before[0], activity.liveTv.frame.grid.getHeight());
+            View card = host.findViewWithTag(MainActivity.FLOATING_ERROR);
+            assertTrue("Card is small", card.getHeight() < host.getHeight() / 4);
+        });
+        UiEvidence.capture("live-guide-floating-error");
+    }
+
     @Test
     public void labelsFitShortGuideRowsInsteadOfBeingCutInHalf() {
         remote.runOnMainSync(() -> activity.liveTv.live());
@@ -136,6 +176,12 @@ public class LiveGuideTest {
         );
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN); // green: page down
         await("page down", () -> activity.liveTv.pageStart == 20 && activity.liveTv.cells.size() == 5);
+        // The whole list's size sits on the title line, not just this page's rows.
+        remote.runOnMainSync(() ->
+            assertEquals("ALL CHANNELS   25 channels", activity.liveTv.frame.titleText())
+        );
+        assertEquals("1 channel", GuideFrame.titleCount(1));
+        assertEquals("11,000 channels", GuideFrame.titleCount(11000));
         await("on the first row of the last page", () -> focused().startsWith("121  Channel 20"));
         // Up from the top row turns back a page and lands on its last row.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
@@ -143,6 +189,39 @@ public class LiveGuideTest {
             "back up to the previous page, last row",
             () -> activity.liveTv.pageStart == 10 && focused().startsWith("120  Channel 19")
         );
+    }
+
+    @Test
+    public void okJumpsToATypedNumberAtOnceWithoutOpeningTheHighlightedChannel() {
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await(
+            "first page",
+            () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
+        );
+        long started = SystemClock.uptimeMillis();
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_2);
+        remote.runOnMainSync(() -> {
+            assertEquals("112", activity.liveTv.typedNumber());
+            assertEquals("The guide draws the number as typed", "112–", activity.liveTv.frame.numberShown());
+        });
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        await("OK jumps to 112", () -> focused().startsWith("112  Channel 11"));
+        assertTrue(
+            "OK used the number before the digit wait ran out",
+            SystemClock.uptimeMillis() - started < LiveTvScreen.TYPE_MS + 1500
+        );
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            assertEquals("", activity.liveTv.typedNumber());
+            assertEquals(
+                "The number box goes once the guide has jumped",
+                "",
+                activity.liveTv.frame.numberShown()
+            );
+            assertTrue("The OK did not also open the highlighted channel", activity.hasWindowFocus());
+        });
     }
 
     @Test

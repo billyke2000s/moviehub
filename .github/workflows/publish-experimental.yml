@@ -26,6 +26,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
@@ -48,24 +51,28 @@ jobs:
           python - <<'PY'
           import base64,json,os,pathlib,subprocess
           code=int(os.environ['APK_VERSION_CODE'])
-          if not 2 < code < 2100000000: raise SystemExit('Version code must be an integer above 2')
+          if not 2 < code < 2100000000: print('::error title=Version code::must be an integer above 2'); raise SystemExit(1)
           for key in ['APK_KEYSTORE_BASE64','APK_STORE_PASSWORD','APK_KEY_ALIAS','APK_KEY_PASSWORD']:
-              if not os.environ.get(key): raise SystemExit('Configure the APK signing secrets before publishing')
+              if not os.environ.get(key): print('::error title=Signing::Configure the APK signing secrets before publishing'); raise SystemExit(1)
           existing=subprocess.run(['gh','release','view','android-tv-experimental','--json','tagName'],capture_output=True)
           if existing.returncode==0:
               subprocess.run(['gh','release','download','android-tv-experimental','--pattern','update.json','--dir',os.environ['RUNNER_TEMP']],check=True)
               previous=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'update.json').read_text())
-              if code<=previous['versionCode']: raise SystemExit('Version code must increase')
+              if code<=previous['versionCode']: print('::error title=Version code::must increase'); raise SystemExit(1)
           key=pathlib.Path(os.environ['RUNNER_TEMP'])/'launcher-signing.jks'
           key.write_bytes(base64.b64decode(os.environ['APK_KEYSTORE_BASE64'],validate=True));key.chmod(0o600)
           PY
           export APK_KEYSTORE="$RUNNER_TEMP/launcher-signing.jks"
-          gradle -p android-tv-launcher --no-daemon -Pexperimental assembleRelease
+          # Report build errors as annotations, which are readable without the full log.
+          if ! gradle -p android-tv-launcher --no-daemon -Pexperimental assembleRelease > "$RUNNER_TEMP/build.log" 2>&1; then
+            grep -E "error:|FAILED|What went wrong|Error:|Lint found" -A3 "$RUNNER_TEMP/build.log" | head -40 > "$RUNNER_TEMP/errors.txt" || true
+            python3 -c "import sys;t=open(sys.argv[1]).read()[-3500:] or open(sys.argv[2]).read()[-3500:];print('::error title=Experimental build failed::'+t.replace('%','%25').replace('\r','').replace('\n','%0A'))" "$RUNNER_TEMP/errors.txt" "$RUNNER_TEMP/build.log"
+            exit 1
+          fi
           APK=android-tv-launcher/app/build/outputs/apk/release/app-release.apk
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify "$APK"
-          badging=$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -1)
-          echo "$badging"
-          echo "$badging" | grep -q "name='local.tv.home.experimental'" || { echo 'Not the experimental package'; exit 1; }
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" > "$RUNNER_TEMP/badging.txt"
+          grep -q "package: name='local.tv.home.experimental'" "$RUNNER_TEMP/badging.txt" || { echo "::error title=Wrong package::$(head -c 300 "$RUNNER_TEMP/badging.txt")"; exit 1; }
           mkdir -p release-files
           cp "$APK" release-files/moviehub-experimental.apk
           # Same file under the name the in-app updater downloads.

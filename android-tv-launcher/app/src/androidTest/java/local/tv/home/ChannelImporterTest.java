@@ -119,6 +119,18 @@ public class ChannelImporterTest {
         }
         secrets.put("m3u", root + "/list.m3u");
         assertTrue(ChannelImporter.run(context, () -> {}));
+        // A finished refresh records this app version, so the next update refreshes once.
+        assertEquals(
+            BuildConfig.VERSION_CODE,
+            context.getSharedPreferences("channelImport", 0).getInt("refreshedVersion", -1)
+        );
+        assertTrue(
+            "A finished refresh is recorded even if a source failed",
+            context.getSharedPreferences("channelImport", 0).getLong("lastFinished", 0) > 0
+        );
+        assertFalse(ChannelSync.updatedSinceRefresh(BuildConfig.VERSION_CODE, BuildConfig.VERSION_CODE));
+        assertTrue(ChannelSync.updatedSinceRefresh(BuildConfig.VERSION_CODE - 1, BuildConfig.VERSION_CODE));
+        assertTrue("A version never recorded counts as updated", ChannelSync.updatedSinceRefresh(-1, 7));
         assertEquals(2, db.count());
         broken = true;
         assertFalse(ChannelImporter.run(context, () -> {}));
@@ -193,7 +205,7 @@ public class ChannelImporterTest {
 
     @After
     public void cleanup() throws Exception {
-        EpgImporter.guideUrl = EpgImporter.UK_GUIDE;
+        EpgImporter.guideUrl = EpgImporter.COMBINED_GUIDE;
         SharedPreferences.Editor restore = context.getSharedPreferences("ui", 0).edit();
         if (oldFree == null) restore.remove(FreeChannels.PREF);
         else restore.putString(FreeChannels.PREF, oldFree);

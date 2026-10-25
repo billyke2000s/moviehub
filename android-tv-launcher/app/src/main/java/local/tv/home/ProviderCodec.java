@@ -16,6 +16,25 @@ final class ProviderCodec {
         if (input.length() > ProviderScript.MAX_BYTES) throw new IOException("Codec input limit");
         byte[] bytes = input.getBytes(StandardCharsets.ISO_8859_1);
         switch (operation) {
+            case "aesGcmEncrypt":
+                String[] fields = input.split("\\n", -1);
+                if (fields.length != 4) throw new IOException("Invalid AES-GCM fields");
+                byte[][] decoded = new byte[4][];
+                for (int i = 0; i < 4; i++) decoded[i] = Base64.getDecoder().decode(fields[i]);
+                if (
+                    decoded[0].length != 32 ||
+                    decoded[1].length != 12 ||
+                    decoded[2].length > 8192 ||
+                    decoded[3].length > 8192
+                ) throw new IOException("Invalid AES-GCM bounds");
+                javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding");
+                cipher.init(
+                    javax.crypto.Cipher.ENCRYPT_MODE,
+                    new javax.crypto.spec.SecretKeySpec(decoded[0], "AES"),
+                    new javax.crypto.spec.GCMParameterSpec(128, decoded[1])
+                );
+                cipher.updateAAD(decoded[2]);
+                return new String(cipher.doFinal(decoded[3]), StandardCharsets.ISO_8859_1);
             case "ipFamily":
                 try {
                     literal(input);

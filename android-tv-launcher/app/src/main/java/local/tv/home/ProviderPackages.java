@@ -48,9 +48,10 @@ final class ProviderPackages {
             !pkg.getString("upstream").matches("[a-f0-9]{40}")
         ) throw new IOException("Incompatible provider package");
         JSONObject modules = pkg.getJSONObject("modules");
-        if (!modules.has("freelivesports") || modules.length() > 17) throw new IOException(
-            "Missing provider baseline"
-        );
+        // freelivesports plus at most one module per supported provider.
+        if (
+            !modules.has("freelivesports") || modules.length() > ProviderBroker.IDS.length + 1
+        ) throw new IOException("Missing provider baseline");
         for (java.util.Iterator<String> keys = modules.keys(); keys.hasNext(); ) {
             String id = keys.next();
             if (
@@ -90,9 +91,23 @@ final class ProviderPackages {
     }
 
     static String module(Context c, String id) throws Exception {
-        JSONObject modules = current(c).getJSONObject("modules");
+        JSONObject pkg = current(c);
+        JSONObject modules = pkg.getJSONObject("modules");
+        // Older signed packages discard advertised ZLive source routes. Keep the APK's
+        // compatible implementation until a signed update explicitly supports this schema.
+        JSONObject capabilities = pkg.optJSONObject("capabilities");
+        if (
+            id.equals("zlive") && (capabilities == null || capabilities.optInt("zliveSources") < 1)
+        ) return builtinModule(c, id);
         if (modules.has(id)) return modules.getString(id);
         // Older signed runtime-1 packages cannot remove the newer APK's built-in capabilities.
+        return validate(asset(c, "builtin.json").getBytes(StandardCharsets.UTF_8))
+            .getJSONObject("modules")
+            .getString(id);
+    }
+
+    /** Parser-specific optimizations apply only to the exact APK-bundled transform. */
+    static String builtinModule(Context c, String id) throws Exception {
         return validate(asset(c, "builtin.json").getBytes(StandardCharsets.UTF_8))
             .getJSONObject("modules")
             .getString(id);

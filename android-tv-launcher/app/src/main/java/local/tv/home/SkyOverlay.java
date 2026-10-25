@@ -36,23 +36,23 @@ final class SkyOverlay {
         GREEN = 0xff43a047,
         BLUE = 0xff1e63d6;
 
-    private final VlcPlaybackActivity a;
+    private final LiveScreen a;
     private final LinearLayout banner, info, pauseBar, keys;
     final LinearLayout channelStrip;
-    private final TextView number, name, clock, nowTime, nowTitle, nextTime, nextTitle, about, source, hint, keyInfo;
-    private final TextView infoTitle, infoWhen, infoAbout, infoChannel, pauseIcon, pauseText;
+    private final TextView number, name, clock, nowTime, nowTitle, nextTime, nextTitle, about, source, hint;
+    private final TextView infoTitle, infoWhen, infoAbout, infoChannel, infoPicture, pauseIcon, pauseText;
     private final ProgressBar progress;
     /**
-     * The banner's buttons, left to right: Sources, then the four colour keys. Each works with a
-     * tap, and with ◀ ▶ and SELECT once BACK has revealed the controls, so a remote without
-     * coloured buttons can still reach them (package-private for tests).
+     * The banner's buttons, left to right: the four colour keys. Each works with a tap, and with
+     * ◀ ▶ and SELECT, so a remote without coloured buttons can still reach them. The source name
+     * in the title strip is text, not a button (package-private for tests).
      */
     final List<View> controls = new ArrayList<>();
     private boolean controlsRevealed;
 
-    SkyOverlay(VlcPlaybackActivity activity, FrameLayout root) {
+    SkyOverlay(LiveScreen activity, FrameLayout root) {
         a = activity;
-        BannerStack stack = new BannerStack(a);
+        BannerStack stack = new BannerStack(a.activity());
         FrameLayout.LayoutParams stackLayout = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
         stackLayout.setMargins(a.dp(56), 0, a.dp(56), a.dp(34));
         root.addView(stack, stackLayout);
@@ -77,6 +77,12 @@ final class SkyOverlay {
         infoAbout.setLineSpacing(0, 1.15f);
         infoAbout.setPadding(0, a.dp(8), 0, 0);
         infoBody.addView(infoAbout);
+        // What is actually playing: picture size, frame rate, codec, bitrate, and the source.
+        infoPicture = label(15, false, SOFT);
+        infoPicture.setSingleLine(false);
+        infoPicture.setMaxLines(2);
+        infoPicture.setPadding(0, a.dp(10), 0, 0);
+        infoBody.addView(infoPicture);
         info.addView(infoBody);
         stack.addView(info, spaced());
 
@@ -102,30 +108,17 @@ final class SkyOverlay {
         title.addView(number);
         name = label(24, true, Color.WHITE);
         title.addView(name, new LinearLayout.LayoutParams(0, -2, 1));
-        source = label(15, false, Color.WHITE);
-        source.setPadding(a.dp(12), a.dp(12), a.dp(16), a.dp(12));
-        source.setMinHeight(a.dp(48));
+        // Which source is playing: information only. The green key is the one Source button.
+        source = label(15, false, SOFT);
+        source.setPadding(a.dp(12), 0, a.dp(16), 0);
         source.setMaxWidth(a.dp(300));
         source.setFocusable(false);
-        source.setContentDescription("Sources");
-        source.setOnClickListener(v -> a.menus.chooseSource());
-        source.setOnFocusChangeListener((v, focused) -> {
-            source.setTextColor(focused ? LiveTvScreen.YELLOW : Color.WHITE);
-            controlOutline(v, focused);
-        });
+        source.setClickable(false);
         title.addView(source);
-        controls.add(source);
         clock = label(20, true, Color.WHITE);
         title.addView(clock);
-        // Reserve an actual header row, not only a suggested minimum. Grow with system text
-        // size, including the source button's vertical padding.
-        int stripHeight = Math.max(
-            a.dp(64),
-            Math.max(
-                (int) Math.ceil(number.getTextSize() * 1.5f) + a.dp(16),
-                (int) Math.ceil(source.getTextSize() * 1.5f) + a.dp(40)
-            )
-        );
+        // Reserve an actual header row, not only a suggested minimum. Grow with system text size.
+        int stripHeight = Math.max(a.dp(64), (int) Math.ceil(number.getTextSize() * 1.5f) + a.dp(16));
         banner.addView(title, new LinearLayout.LayoutParams(-1, stripHeight));
         LinearLayout content = body();
         LinearLayout nowRow = row();
@@ -134,7 +127,7 @@ final class SkyOverlay {
         nowRow.addView(nowTime);
         nowTitle = label(20, true, Color.WHITE);
         nowRow.addView(nowTitle, new LinearLayout.LayoutParams(0, -2, 1));
-        progress = new ProgressBar(a, null, android.R.attr.progressBarStyleHorizontal);
+        progress = new ProgressBar(a.activity(), null, android.R.attr.progressBarStyleHorizontal);
         progress.setMax(1000);
         progress.setProgressTintList(ColorStateList.valueOf(LiveTvScreen.YELLOW));
         progress.setProgressBackgroundTintList(ColorStateList.valueOf(0x55ffffff));
@@ -156,10 +149,10 @@ final class SkyOverlay {
         content.addView(about);
         keys = row();
         keys.setPadding(0, a.dp(10), 0, 0);
-        colourKey(RED, "Audio & subtitles", () -> a.menus.audioAndSubtitles());
-        colourKey(GREEN, "Source", () -> a.menus.chooseSource());
+        colourKey(RED, "Audio & subtitles", () -> a.liveMenus().audioAndSubtitles());
+        colourKey(GREEN, "Source", () -> a.liveMenus().chooseSource());
         colourKey(LiveTvScreen.YELLOW, "Information", this::toggleInformation);
-        colourKey(BLUE, "Options", () -> a.menus.liveOptions());
+        colourKey(BLUE, "Options", () -> a.liveMenus().liveOptions());
         // No coloured buttons on the remote: BACK reveals these as buttons to pick with ◀ ▶.
         TextView noColours = label(15, true, SOFT);
         content.addView(keys);
@@ -169,12 +162,6 @@ final class SkyOverlay {
         hint.setPadding(0, a.dp(8), 0, 0);
         hint.setText("SELECT to watch   ▲ ▼ channels   ◀ ▶ later programmes   BACK to close");
         content.addView(hint);
-        // Which button the player last received, to identify a remote's colour-button codes.
-        keyInfo = label(14, false, SOFT);
-        keyInfo.setPadding(0, a.dp(6), 0, 0);
-        // Always present, so the banner keeps the same size before and after the first press.
-        keyInfo.setText("Last button received: none yet");
-        content.addView(keyInfo);
         banner.addView(content);
         stack.addView(banner, new ViewGroup.MarginLayoutParams(-1, -2));
 
@@ -238,18 +225,15 @@ final class SkyOverlay {
         nowTime.setVisibility(View.GONE);
     }
 
-    /** Shows which button the player last received (package-private for tests). */
-    void lastButton(String text) {
-        keyInfo.setText(text);
-    }
-
-    CharSequence lastButtonText() {
-        return keyInfo.getText();
+    /** Highlights banner button {@code index} (0 red, 1 green, 2 yellow, 3 blue), ready for OK. */
+    void focusControl(int index) {
+        boxControls();
+        if (index >= 0 && index < controls.size()) controls.get(index).requestFocus();
     }
 
     void hideBanner() {
         // A hidden button must not keep the focus, or the next OK would press it.
-        if (focusedControl() >= 0) a.video.requestFocus();
+        if (focusedControl() >= 0) a.video().requestFocus();
         banner.animate().cancel();
         banner.setVisibility(View.GONE);
         nowTime.setVisibility(View.VISIBLE);
@@ -268,11 +252,15 @@ final class SkyOverlay {
         }
     }
 
+    /** BACK: highlights the green Source key, the one way to change source from the banner. */
     void focusSources() {
         boxControls();
         for (View control : controls) control.setFocusableInTouchMode(true);
-        source.requestFocus();
+        controls.get(SOURCE_KEY).requestFocus();
     }
+
+    /** The green Source key's place in {@link #controls}. */
+    static final int SOURCE_KEY = 1;
 
     /** ◀ ▶ while the controls are revealed: the next or previous button, stopping at the ends. */
     void moveControl(int direction) {
@@ -296,9 +284,9 @@ final class SkyOverlay {
     }
 
     private void toggleInformation() {
-        if (a.zapper == null) return;
-        if (infoShowing()) a.zapper.hideInfo();
-        else a.zapper.information();
+        if (a.zapper() == null) return;
+        if (infoShowing()) a.zapper().hideInfo();
+        else a.zapper().information();
     }
 
     boolean bannerShowing() {
@@ -342,6 +330,17 @@ final class SkyOverlay {
         infoWhen.setText(when);
         infoAbout.setText(description.isEmpty() ? "No description for this programme." : description);
         info.setVisibility(View.VISIBLE);
+    }
+
+    /** The information panel's picture line: {@code video} from the player, then the source. */
+    void infoPicture(String video, String sourceText) {
+        String picture = "Picture: " + (video.isEmpty() ? "waiting for the first frame" : video);
+        infoPicture.setText(sourceText.isEmpty() ? picture : picture + "\n" + sourceText);
+    }
+
+    /** The picture line as shown (package-private for tests). */
+    String infoPictureText() {
+        return infoPicture.getText().toString();
     }
 
     void hideInfo() {
@@ -443,7 +442,7 @@ final class SkyOverlay {
 
     /** A rounded panel with a thin light edge; its strip and body go inside. */
     private LinearLayout panel() {
-        LinearLayout panel = new LinearLayout(a);
+        LinearLayout panel = new LinearLayout(a.activity());
         panel.setOrientation(LinearLayout.VERTICAL);
         GradientDrawable shape = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {
             PANEL_TOP,
@@ -473,14 +472,14 @@ final class SkyOverlay {
     }
 
     private LinearLayout body() {
-        LinearLayout body = new LinearLayout(a);
+        LinearLayout body = new LinearLayout(a.activity());
         body.setOrientation(LinearLayout.VERTICAL);
         body.setPadding(a.dp(18), a.dp(10), a.dp(18), a.dp(14));
         return body;
     }
 
     private LinearLayout row() {
-        LinearLayout row = new LinearLayout(a);
+        LinearLayout row = new LinearLayout(a.activity());
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         return row;
@@ -498,7 +497,7 @@ final class SkyOverlay {
         key.setFocusable(false);
         key.setClickable(true);
         key.setContentDescription(text);
-        View swatch = new View(a);
+        View swatch = new View(a.activity());
         GradientDrawable shape = new GradientDrawable();
         shape.setColor(colour);
         shape.setCornerRadius(a.dp(2));
@@ -534,7 +533,7 @@ final class SkyOverlay {
     }
 
     private TextView label(int size, boolean bold, int colour) {
-        TextView text = new TextView(a);
+        TextView text = new TextView(a.activity());
         text.setTextColor(colour);
         text.setTextSize(size);
         text.setSingleLine(true);

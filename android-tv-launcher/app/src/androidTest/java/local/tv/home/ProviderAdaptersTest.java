@@ -141,11 +141,11 @@ public final class ProviderAdaptersTest {
     @Test
     public void upstreamChannelIdsRoundTripWithoutChangingFavourites() throws Exception {
         String id = "US:channel/compound+id";
-        String url = AdapterSources.locator("vidaa", id);
+        String url = AdapterSources.locator("lg", id);
         assertTrue(EngineSources.locator(url));
-        assertEquals("vidaa", AdapterSources.provider(url));
+        assertEquals("lg", AdapterSources.provider(url));
         assertEquals(id, AdapterSources.channel(url));
-        assertEquals(url, AdapterSources.locator("vidaa", id));
+        assertEquals(url, AdapterSources.locator("lg", id));
         assertFalse(AdapterSources.locator("https://native.moviehub.invalid/engine/untrusted/a"));
     }
 
@@ -155,7 +155,6 @@ public final class ProviderAdaptersTest {
             "stirr",
             "xumo",
             "roku",
-            "plex",
             "dlhd",
             "tubi",
             "samsung",
@@ -280,7 +279,7 @@ public final class ProviderAdaptersTest {
     }
 
     @Test
-    public void zliveOriginalResolverReusesEncryptedHistoryAcrossIsolatedCalls() throws Exception {
+    public void zliveSessionProtocolReusesEncryptedHistoryAcrossIsolatedCalls() throws Exception {
         String module = ProviderPackages.module(context, "zlive");
         AtomicInteger contacts = new AtomicInteger();
         long expiry = System.currentTimeMillis() / 1000 + 9000;
@@ -294,24 +293,19 @@ public final class ProviderAdaptersTest {
             contacts.incrementAndGet();
             String target = request.getString("url");
             JSONObject response = new JSONObject().put("url", target).put("headers", new JSONObject());
-            if (target.startsWith("https://provider-dns.invalid/")) return response
-                .put("status", 200)
-                .put("text", "[{\"address\":\"8.8.8.8\",\"family\":4}]");
-            assertEquals("manual", request.getString("redirect"));
+            if (target.endsWith("/session/ticket")) {
+                assertEquals("GET", request.getString("method"));
+                return response.put("status", 200).put("text", "{\"w\":\"fixture-ticket\"}");
+            }
+            assertEquals("https://iptv.zlive.st/resolve", target);
+            assertEquals("POST", request.getString("method"));
+            JSONObject body = new JSONObject(request.getString("body"));
+            assertEquals("fixture-ticket", body.getString("e"));
+            assertEquals(12, java.util.Base64.getDecoder().decode(body.getString("b")).length);
+            assertEquals(16, java.util.Base64.getDecoder().decode(body.getString("c")).length);
             return response
-                .put("status", 302)
-                .put("text", "")
-                .put(
-                    "headers",
-                    new JSONObject()
-                        .put("location", location)
-                        .put(
-                            "date",
-                            java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.format(
-                                java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC)
-                            )
-                        )
-                );
+                .put("status", 200)
+                .put("text", new JSONObject().put("location", location).toString());
         };
         ProviderBroker.Executor engine = (source, op, payload) ->
             ProviderBridge.call(context, source, op, payload);

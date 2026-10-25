@@ -7,6 +7,11 @@ on:
         branches: [feature/standalone-provider-engine]
         paths: ['provider-engine/tools/live-probe*.mjs', '.github/workflows/provider-live-probe.yml']
     workflow_dispatch:
+        inputs:
+            providers:
+                description: "Provider ids to probe, separated by spaces (empty probes all)"
+                required: false
+                default: ""
 permissions:
     contents: read
 jobs:
@@ -33,13 +38,19 @@ jobs:
                   mkdir -p build/provider-tests
                   javac -cp "$RUNNER_TEMP/rhino.jar" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderCodec,ProviderSignature,ProviderUrls,ProviderSegments}.java android-tv-launcher/tests/ProviderProbeCli.java
             - name: Probe providers
-              run: RHINO_JAR="$RUNNER_TEMP/rhino.jar" node provider-engine/tools/live-probe.mjs
+              env:
+                  PROVIDERS: ${{ inputs.providers }}
+              # Word splitting of PROVIDERS is intended: one argument per id.
+              run: RHINO_JAR="$RUNNER_TEMP/rhino.jar" node provider-engine/tools/live-probe.mjs $PROVIDERS
             - name: Report providers 1-8
               if: always()
               run: node provider-engine/tools/live-probe-report.mjs 0 8
             - name: Report providers 9-16
               if: always()
               run: node provider-engine/tools/live-probe-report.mjs 8 16
+            - name: Report providers 17-24
+              if: always()
+              run: node provider-engine/tools/live-probe-report.mjs 16 24
             - name: Upload results
               if: always()
               uses: actions/upload-artifact@v6

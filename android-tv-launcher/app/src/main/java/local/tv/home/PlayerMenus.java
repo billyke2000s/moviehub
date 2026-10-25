@@ -11,7 +11,7 @@ import org.videolan.libvlc.MediaPlayer;
  * The player's side panels: audio and subtitle tracks, video track, playback speed, picture size,
  * subtitle timing and the sleep timer. Split out of {@link VlcPlaybackActivity}.
  */
-final class PlayerMenus {
+final class PlayerMenus implements LiveMenus {
 
     private final VlcPlaybackActivity a;
 
@@ -26,7 +26,8 @@ final class PlayerMenus {
     }
 
     /** One panel for both, as streaming apps do: pick which one to change. */
-    void audioAndSubtitles() {
+    @Override
+    public void audioAndSubtitles() {
         a.dialogOpen = true;
         SidePanel.of(a, "Audio & Subtitles")
             .option("Audio", () -> tracks(false))
@@ -100,7 +101,8 @@ final class PlayerMenus {
      * Live TV's Options (the blue key, MENU, or the focused Options button): there are no on-screen controls, so
      * pause and audio and subtitles are here too.
      */
-    void liveOptions() {
+    @Override
+    public void liveOptions() {
         options(true);
     }
 
@@ -227,7 +229,8 @@ final class PlayerMenus {
         });
     }
 
-    void chooseSource() {
+    @Override
+    public void chooseSource() {
         java.util.List<ChannelDatabase.Row> copies = a.zapper.copies();
         String[] names = new String[copies.size() + 1];
         String playing = a.zapper.sourceProvider();
@@ -236,7 +239,7 @@ final class PlayerMenus {
             (a.zapper.automaticSources() && !playing.isEmpty() ? "now " + playing + " · " : "") +
             "switch if a source fails";
         for (int i = 0; i < copies.size(); i++) {
-            String provider = AdapterSources.sourceName(copies.get(i).source);
+            String provider = AdapterSources.sourceName(copies.get(i));
             names[i + 1] =
                 (i == a.zapper.selectedCopy() ? "▶ " : "") +
                 "Source " +

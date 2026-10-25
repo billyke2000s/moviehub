@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.*;
 import org.json.*;
 
-/** Encrypted event replay retains ZLive's original cache/refusal/decoy state across disposable VMs. */
+/** Encrypted contact history retains ZLive session reuse and refusal cooldowns across disposable VMs. */
 final class ProviderSessions {
 
     static final String KEY = "engineZliveReplayState";
@@ -45,12 +45,32 @@ final class ProviderSessions {
                 if (age >= 0 && age < 3L * 3600_000) history.put(event);
             }
         }
-        if (!hash.equals(saved.optString("module")) && history.length() > 0) throw new IOException(
-            "Provider update cooldown: previous contact history retained"
-        );
-        JSONObject journal = new JSONObject().put("history", history),
+        if (!hash.equals(saved.optString("module")) && history.length() > 0) {
+            // Protocol updates must not replay old requests, nor erase a recent upstream refusal.
+            long refusalUntil = 0;
+            for (int i = 0; i < history.length(); i++) {
+                JSONObject event = history.getJSONObject(i);
+                JSONArray responses = event.getJSONArray("responses");
+                for (int j = 0; j < responses.length(); j++) {
+                    JSONObject record = responses.getJSONObject(j);
+                    JSONObject response = record.optJSONObject("response");
+                    int status = response == null ? 0 : response.optInt("status");
+                    if (status == 401 || status == 403 || status == 429) refusalUntil = Math.max(
+                        refusalUntil,
+                        record.optLong("completedAt", event.getLong("at")) + 3600_000
+                    );
+                }
+            }
+            if (now < refusalUntil) throw new IOException(
+                "Provider update retains upstream refusal cooldown"
+            );
+            history = new JSONArray();
+        }
+        final JSONArray contactHistory = history;
+        JSONObject journal = new JSONObject().put("history", contactHistory),
             input = new JSONObject(row.toString());
         input.put("fresh", fresh.remove(row.getString("channelId")));
+        String resolverSlug = row.optString("resolverSlug", row.getString("channelId"));
         JSONObject envelope = new JSONObject().put("module", hash).put("history", history);
         boolean[] capped = { false },
             contacted = { false };
@@ -62,7 +82,7 @@ final class ProviderSessions {
                 input,
                 engine,
                 request -> {
-                    if (history.length() >= 128) {
+                    if (contactHistory.length() >= 128) {
                         capped[0] = true;
                         throw new IOException("Provider contact budget reached");
                     }
@@ -74,9 +94,9 @@ final class ProviderSessions {
                 journal
             );
             JSONArray responses = journal.getJSONArray("responses");
-            if (responses.length() > 0 && !capped[0]) history.put(
+            if (responses.length() > 0 && !capped[0]) contactHistory.put(
                 new JSONObject()
-                    .put("slug", row.getString("channelId"))
+                    .put("slug", resolverSlug)
                     .put("fresh", input.getBoolean("fresh"))
                     .put("at", journal.getLong("at"))
                     .put("responses", responses)
@@ -85,9 +105,9 @@ final class ProviderSessions {
         } catch (Exception error) {
             boolean cancelled =
                 error instanceof java.io.InterruptedIOException || Thread.currentThread().isInterrupted();
-            if (cancelled && contacted[0] && history.length() < 128) history.put(
+            if (cancelled && contacted[0] && contactHistory.length() < 128) contactHistory.put(
                 new JSONObject()
-                    .put("slug", row.getString("channelId"))
+                    .put("slug", resolverSlug)
                     .put("fresh", input.getBoolean("fresh"))
                     .put("at", journal.getLong("at"))
                     .put("responses", journal.getJSONArray("responses"))

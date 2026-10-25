@@ -45,7 +45,28 @@ public class EpgMatchTest {
             all &= sameTime(text);
         }
         check(all, "2000 random times");
-        System.out.println("18 programme-guide matching checks passed");
+        // Freeview's regional London feeds stand for the national channels.
+        check(EpgMatch.national(EpgMatch.key("BBC One London HD")).equals("bbcone"), "BBC One London");
+        check(EpgMatch.national(EpgMatch.key("ITV1 London HD")).equals("itv1"), "ITV1 London");
+        check(EpgMatch.national(EpgMatch.key("Channel 4 London HD")).equals("channel4"), "Channel 4 London");
+        check(EpgMatch.national(EpgMatch.key("5 HD")).equals("channel5"), "5 HD is Channel 5");
+        check(EpgMatch.national(EpgMatch.key("BBC Radio London")).isEmpty(), "radio left alone");
+        check(EpgMatch.national(EpgMatch.key("BBC One East HD")).isEmpty(), "other regions stay regional");
+        check(EpgMatch.national(EpgMatch.key("London")).isEmpty(), "London alone is not a channel");
+        check(
+            EpgMatch.key("BBC One Ⓖ").equals(EpgMatch.national(EpgMatch.key("BBC One London HD"))),
+            "playlist name meets alias"
+        );
+        // UKTV's "U&" names answer to the old names playlists use.
+        check(EpgMatch.national(EpgMatch.key("U&Dave HD")).equals("dave"), "U&Dave is Dave");
+        check(EpgMatch.national(EpgMatch.key("U&Gold")).equals("gold"), "U&Gold is Gold");
+        check(EpgMatch.national(EpgMatch.key("UAndDrama.uk")).equals("drama"), "Freeview id UAndDrama");
+        check(EpgMatch.national(EpgMatch.key("U&W")).equals("w"), "U&W is W");
+        check(EpgMatch.key("Gold UK").equals("gold"), "a trailing UK word is dropped");
+        check(EpgMatch.key("ITV 1 UK").equals("itv1"), "ITV 1 UK is ITV1");
+        check(EpgMatch.key("UK").equals("uk"), "UK alone stays");
+        check(EpgMatch.national(EpgMatch.key("Universal")).isEmpty(), "a word starting with u is not UKTV");
+        System.out.println("34 programme-guide matching checks passed");
     }
 
     private static boolean sameTime(String text) {

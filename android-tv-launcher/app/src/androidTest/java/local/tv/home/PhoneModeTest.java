@@ -104,26 +104,18 @@ public class PhoneModeTest {
         await("phone Live TV", () -> DeviceMode.phone(context) && activity.phoneLive.items.size() == 3);
         UiEvidence.capture("phone-live-tv");
 
-        // Tap a channel: the player opens with the touch buttons on its banner.
-        Instrumentation.ActivityMonitor monitor = remote.addMonitor(
-            VlcPlaybackActivity.class.getName(),
-            null,
-            false
+        // Tap a channel: Live TV goes full screen with the touch buttons on its banner.
+        remote.runOnMainSync(() -> activity.phoneLive.watchForTest(1));
+        await(
+            "touch controls",
+            () ->
+                activity.stage != null &&
+                activity.stage.full() &&
+                activity.stage.zapper() != null &&
+                activity.stage.zapper().touch &&
+                activity.stage.zapper().position() == 1
         );
-        try {
-            remote.runOnMainSync(() -> activity.phoneLive.watchForTest(1));
-            VlcPlaybackActivity player = (VlcPlaybackActivity) remote.waitForMonitorWithTimeout(
-                monitor,
-                15000
-            );
-            assertNotNull("The player opened", player);
-            await(
-                "touch controls",
-                () -> player.zapper != null && player.zapper.touch && player.zapper.position() == 1
-            );
-            remote.runOnMainSync(player::finish);
-        } finally {
-            remote.removeMonitor(monitor);
-        }
+        UiEvidence.capture("phone-live-full-screen");
+        remote.runOnMainSync(() -> activity.stage.leave());
     }
 }

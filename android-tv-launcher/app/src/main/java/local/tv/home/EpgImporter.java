@@ -21,14 +21,47 @@ import org.xmlpull.v1.XmlPullParser;
  */
 final class EpgImporter {
 
-    /** Free UK guide (epgshare01, rebuilt daily). Matching is by plain channel key; see EpgMatch. */
-    static final String UK_GUIDE = "https://epgshare01.online/epgshare01/epg_ripper_UK1.xml.gz";
+    /** The only built-in guide URL fetched by production code. */
+    static final String COMBINED_GUIDE = CombinedEpg.URL;
+
+    /** Countries with a downloaded guide (the "gb" ids of some lists are the UK). */
+    static final Set<String> GUIDE_COUNTRIES = new java.util.HashSet<>(
+        java.util.Arrays.asList("uk", "gb", "ie", "us")
+    );
+
+    /**
+     * One downloadable guide, the country its channels belong to, and whether its channel names
+     * also answer to the names playlists use (EpgMatch.national: London feeds, "5", UKTV's "U&").
+     */
+    static final class Guide {
+
+        final String url, country;
+        final boolean aliases;
+
+        Guide(String url, String country, boolean aliases) {
+            this.url = url;
+            this.country = country;
+            this.aliases = aliases;
+        }
+    }
+
+    /** Injected fixture guides only; production always uses CombinedEpg. */
+    static volatile Guide[] testGuides;
+    static volatile java.util.function.Function<String, InputStream> testOpener;
+
+    static Guide[] guides() {
+        if (testGuides != null) return testGuides;
+        String only = guideUrl;
+        if (only.isEmpty()) return new Guide[0];
+        return new Guide[] { new Guide(only, COUNTRY, false) };
+    }
+
     static final String COUNTRY = "uk";
     /** The guide downloaded; tests set "" to skip the download. */
-    static volatile String guideUrl = UK_GUIDE;
+    static volatile String guideUrl = COMBINED_GUIDE;
     /** Programmes kept: from two hours ago to this far ahead. */
-    static final long AHEAD_MS = 26L * 60 * 60 * 1000,
-        BEHIND_MS = 2L * 60 * 60 * 1000;
+    static final long AHEAD_MS = 7L * 24 * 60 * 60 * 1000,
+        BEHIND_MS = 24L * 60 * 60 * 1000;
     static final long MAX_BYTES = 300L * 1024 * 1024;
 
     /** Where parsed guide data goes. */
@@ -53,56 +86,114 @@ final class EpgImporter {
 
     private EpgImporter() {}
 
-    /** Downloads and stores the guide. Returns how many channels and programmes matched. */
+    /** Detect newly imported channel identities without downloading every guide twice per refresh. */
+    static Set<String> wantedSnapshot(ChannelDatabase db) {
+        return db.guideSnapshot();
+    }
+
+    /**
+     * Downloads the guides and stores them in one transaction. Returns how many channels and
+     * programmes matched. A guide that fails is skipped; only when every guide fails does this
+     * throw, and then the previous listings stay.
+     */
     static Result run(Context context, ChannelDatabase db, ChannelDatabase.Cancel cancel) throws Exception {
-        Set<String> wanted = db.guideKeys(COUNTRY);
+        if (
+            testGuides == null && testOpener == null && guideUrl.equals(COMBINED_GUIDE)
+        ) return CombinedEpg.refresh(context, db, cancel);
         Result result = new Result();
-        if (wanted.isEmpty() || guideUrl.isEmpty()) return result;
+        Guide[] guides = guides();
+        if (guides.length == 0) return result;
         long started = Timings.start();
         // Collected in memory first (a day of listings is small), then written in one short
-        // transaction, so the database is never held while the guide downloads.
+        // transaction, so the database is never held while the guides download.
         List<String[]> matches = new ArrayList<>();
         List<Object[]> programmes = new ArrayList<>();
-        try (InputStream raw = Network.open(guideUrl, null, MAX_BYTES, false)) {
-            InputStream in = new BufferedInputStream(raw, 64 * 1024);
-            in.mark(2);
-            boolean gzip = in.read() == 0x1f && in.read() == 0x8b;
-            in.reset();
-            if (gzip) in = new GZIPInputStream(in, 64 * 1024);
-            long now = System.currentTimeMillis();
-            result = parse(
-                in,
-                wanted,
-                now - BEHIND_MS,
-                now + AHEAD_MS,
-                new Sink() {
-                    public void match(String key, String channel) {
-                        matches.add(new String[] { key, channel });
-                    }
+        Set<String> claimed = new java.util.HashSet<>();
+        Exception failure = null;
+        int failed = 0;
+        for (int g = 0; g < guides.length; g++) {
+            cancel.check();
+            Guide guide = guides[g];
+            Set<String> wanted = new java.util.HashSet<>(db.guideKeys(guide.country));
+            wanted.removeIf(key -> claimed.contains(EpgLookup.scope(guide.country, key)));
+            if (wanted.isEmpty()) continue;
+            // Each guide's channel ids are kept apart, so two guides with "E4.uk" never mix.
+            String tag = "g" + g + ":";
+            java.util.function.Function<String, InputStream> opener = testOpener;
+            try (
+                InputStream raw = opener != null
+                    ? opener.apply(guide.url)
+                    : Network.open(guide.url, null, MAX_BYTES, false)
+            ) {
+                InputStream in = new BufferedInputStream(raw, 64 * 1024);
+                in.mark(2);
+                boolean gzip = in.read() == 0x1f && in.read() == 0x8b;
+                in.reset();
+                if (gzip) in = new GZIPInputStream(in, 64 * 1024);
+                long now = System.currentTimeMillis();
+                List<String[]> candidates = new ArrayList<>();
+                List<Object[]> listings = new ArrayList<>();
+                Set<String> withListings = new java.util.HashSet<>();
+                parse(
+                    in,
+                    wanted,
+                    now - BEHIND_MS,
+                    now + AHEAD_MS,
+                    new Sink() {
+                        public void match(String key, String channel) {
+                            candidates.add(new String[] { key, channel });
+                        }
 
-                    public void programme(
-                        String channel,
-                        long start,
-                        long stop,
-                        String title,
-                        String description,
-                        String category,
-                        String flags
-                    ) throws Exception {
-                        cancel.check();
-                        programmes.add(new Object[] {
-                            channel,
-                            start,
-                            stop,
-                            title,
-                            description,
-                            category,
-                            flags,
-                        });
+                        public void programme(
+                            String channel,
+                            long start,
+                            long stop,
+                            String title,
+                            String description,
+                            String category,
+                            String flags
+                        ) throws Exception {
+                            cancel.check();
+                            withListings.add(channel);
+                            listings.add(new Object[] {
+                                tag + channel,
+                                start,
+                                stop,
+                                title,
+                                description,
+                                category,
+                                flags,
+                            });
+                        }
+                    },
+                    null,
+                    guide.aliases
+                );
+                // A name in a channel catalogue is not evidence of usable listings. Only claim
+                // keys after a complete parse, for channels with programmes in our time window.
+                // A stale/empty/failed first guide must leave later guides free to fill the gap.
+                Set<String> selected = new java.util.HashSet<>();
+                for (String[] match : candidates) {
+                    String scoped = EpgLookup.scope(guide.country, match[0]);
+                    if (withListings.contains(match[1]) && claimed.add(scoped)) {
+                        matches.add(new String[] { scoped, tag + match[1] });
+                        selected.add(tag + match[1]);
                     }
                 }
-            );
+                for (Object[] listing : listings)
+                    if (selected.contains((String) listing[0])) {
+                        programmes.add(listing);
+                        result.programmes++;
+                    }
+                result.channels += selected.size();
+            } catch (Exception e) {
+                cancel.check();
+                Diagnostics.recovered("Programme guide " + java.net.URI.create(guide.url).getHost(), e);
+                failure = e;
+                failed++;
+            }
         }
+        if (failed == guides.length && failure != null) throw failure;
         // An empty or unreadable guide keeps the previous listings.
         if (result.programmes > 0) {
             ChannelDatabase.GuideWriter writer = db.new GuideWriter();
@@ -136,6 +227,34 @@ final class EpgImporter {
      * in {@code wanted}, and their programmes overlapping [from, to).
      */
     static Result parse(InputStream in, Set<String> wanted, long from, long to, Sink sink) throws Exception {
+        return parse(in, wanted, from, to, sink, null);
+    }
+
+    /**
+     * As above, but when {@code idKey} is given a channel matches only by {@code idKey(channel id)}
+     * (no display names): for a provider's own guide, whose ids identify its channels exactly.
+     */
+    static Result parse(
+        InputStream in,
+        Set<String> wanted,
+        long from,
+        long to,
+        Sink sink,
+        java.util.function.UnaryOperator<String> idKey
+    ) throws Exception {
+        return parse(in, wanted, from, to, sink, idKey, false);
+    }
+
+    /** As above; {@code aliases} also matches channels by the names playlists use (EpgMatch.national). */
+    static Result parse(
+        InputStream in,
+        Set<String> wanted,
+        long from,
+        long to,
+        Sink sink,
+        java.util.function.UnaryOperator<String> idKey,
+        boolean aliases
+    ) throws Exception {
         XmlPullParser parser = android.util.Xml.newPullParser();
         parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
         parser.setInput(in, null);
@@ -211,8 +330,21 @@ final class EpgImporter {
                 String name = parser.getName();
                 if ("channel".equals(name) && channelId != null) {
                     List<String> keys = new ArrayList<>();
-                    for (String candidate : names) addKey(keys, EpgMatch.key(candidate), wanted);
-                    addKey(keys, EpgMatch.key(channelId), wanted);
+                    if (idKey != null) addKey(keys, idKey.apply(channelId), wanted);
+                    else {
+                        for (String candidate : names)
+                            addKey(keys, EpgMatch.guideNameKey(channelId, candidate), wanted);
+                        addKey(keys, EpgMatch.key(channelId), wanted);
+                        if (aliases) {
+                            for (String candidate : names)
+                                addKey(
+                                    keys,
+                                    EpgMatch.national(EpgMatch.guideNameKey(channelId, candidate)),
+                                    wanted
+                                );
+                            addKey(keys, EpgMatch.national(EpgMatch.key(channelId)), wanted);
+                        }
+                    }
                     for (String key : keys) sink.match(key, channelId);
                     if (!keys.isEmpty()) {
                         kept.put(channelId, true);

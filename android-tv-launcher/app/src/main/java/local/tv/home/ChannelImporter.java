@@ -129,6 +129,17 @@ final class ChannelImporter {
                         problems.add(free.name + ": " + describe(e));
                     }
                 }
+                // Populate the saved/base channels before optional catalogues can spend minutes
+                // timing out. Native provider guides remain independent and retain priority.
+                Set<String> guideKeys = EpgImporter.wantedSnapshot(db);
+                boolean optionalSources = EngineSources.enabled(context, providerConnected);
+                for (String id : ProviderBroker.IDS)
+                    optionalSources |= AdapterSources.enabled(context, id, providerConnected);
+                if ((anySource || optionalSources) && !guideKeys.isEmpty()) guideNote = refreshGuide(
+                    context,
+                    db,
+                    cancel
+                );
                 try {
                     ProviderUpdates.check(context, false);
                 } catch (Exception e) {
@@ -145,9 +156,10 @@ final class ChannelImporter {
                         problems.add("FreeLiveSports unavailable; cached channels kept.");
                     }
                 }
-                // Providers that failed this time, named once in one line: a list of one line per
-                // provider pushed the guide's channel rows off the screen.
-                List<String> unavailable = new ArrayList<>();
+                // Providers that failed this time, named once in one line grouped by the actual failure
+                // (timed out, HTTP 403…): one line per provider pushed the guide's rows off the screen.
+                List<String[]> unavailable = new ArrayList<>();
+                android.content.SharedPreferences engine = context.getSharedPreferences("providerEngine", 0);
                 for (String id : ProviderBroker.IDS)
                     if (AdapterSources.enabled(context, id, providerConnected)) {
                         configured.add(AdapterSources.source(id));
@@ -158,17 +170,18 @@ final class ChannelImporter {
                         } catch (Exception e) {
                             cancel.check();
                             Diagnostics.recovered("Provider refresh " + id, e);
-                            context
-                                .getSharedPreferences("providerEngine", 0)
+                            String failure = ProviderFailure.describe(e);
+                            engine
                                 .edit()
-                                .putString(id + "Error", ProviderFailure.describe(e))
+                                .putString(id + "Error", failure)
                                 .apply();
-                            unavailable.add(AdapterSources.sourceName(AdapterSources.source(id)));
+                            unavailable.add(new String[] {
+                                AdapterSources.sourceName(AdapterSources.source(id)),
+                                failure,
+                            });
                         }
                     }
-                if (!unavailable.isEmpty()) problems.add(
-                    "Unavailable now: " + String.join(", ", unavailable) + " (saved channels kept)"
-                );
+                if (!unavailable.isEmpty()) problems.add(ProviderOutage.summary(unavailable));
                 cancel.check();
                 // Failed sources are still configured and keep their last good rows. Disabled
                 // sources must disappear even when a different provider is offline.
@@ -177,26 +190,9 @@ final class ChannelImporter {
                 if (total == 0 && !problems.isEmpty()) configured.add("legacy");
                 db.removeSourcesExcept(configured);
                 // The free programme guide; a failure here never counts against the channels.
-                if (anySource && db.count() > 0) try {
-                    EpgImporter.Result guide = EpgImporter.run(context, db, cancel);
-                    guideNote =
-                        guide.programmes > 0
-                            ? String.format(
-                                  Locale.getDefault(),
-                                  " · programme guide for %,d channels",
-                                  guide.channels
-                              )
-                            : " · no programme guide matched";
-                } catch (Exception e) {
-                    Diagnostics.recovered("Programme guide", e);
-                    guideNote = " · programme guide unavailable";
-                }
-                if (configured.contains("nativepluto")) try {
-                    NativeSources.guide(db, cancel);
-                } catch (Exception e) {
-                    cancel.check();
-                    Diagnostics.recovered("Pluto programme guide", e);
-                }
+                if (
+                    anySource && db.count() > 0 && !guideKeys.equals(EpgImporter.wantedSnapshot(db))
+                ) guideNote = refreshGuide(context, db, cancel);
             } catch (Exception e) {
                 problems.add(describe(e));
             } finally {
@@ -212,8 +208,28 @@ final class ChannelImporter {
                 .putString("message", message)
                 .putLong("lastAttempt", System.currentTimeMillis());
             if (anySource && problems.isEmpty()) edit.putLong("lastSuccess", System.currentTimeMillis());
+            // The app version that last finished a refresh, whatever its outcome: after an update,
+            // ChannelSync refreshes once so new guide sources and fixes apply straight away.
+            if (anySource) edit.putInt("refreshedVersion", BuildConfig.VERSION_CODE).putLong(
+                "lastFinished",
+                System.currentTimeMillis()
+            );
             edit.apply();
             return problems.isEmpty();
+        }
+    }
+
+    private static String refreshGuide(Context context, ChannelDatabase db, ChannelDatabase.Cancel cancel)
+        throws Exception {
+        try {
+            EpgImporter.Result guide = EpgImporter.run(context, db, cancel);
+            return guide.programmes > 0
+                ? String.format(Locale.getDefault(), " · programme guide for %,d channels", guide.channels)
+                : " · no programme guide matched";
+        } catch (Exception e) {
+            cancel.check();
+            Diagnostics.recovered("Programme guide", e);
+            return " · programme guide unavailable";
         }
     }
 

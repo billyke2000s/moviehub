@@ -144,23 +144,33 @@ public final class LiveControlsTest {
         remote.runOnMainSync(() ->
             assertEquals(
                 "Auto mode names the provider playing now",
-                "Sources · Auto · Pluto TV · 1 of 2",
+                "Source: Auto · Pluto TV · 1 of 2",
                 activity.zapper.sourceText()
             )
         );
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         remote.waitForIdleSync();
-        assertEquals("BACK focuses Sources", 0, activity.zapper.overlay.focusedControl());
-        for (int i = 0; i < 3; i++) remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        assertEquals(
+            "BACK focuses the green Source key",
+            SkyOverlay.SOURCE_KEY,
+            activity.zapper.overlay.focusedControl()
+        );
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
         remote.waitForIdleSync();
-        assertEquals("▶ moves along to Information", 3, activity.zapper.overlay.focusedControl());
+        assertEquals("▶ moves along to Information", 2, activity.zapper.overlay.focusedControl());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         remote.waitForIdleSync();
         assertTrue("SELECT presses Information", activity.zapper.overlay.infoShowing());
+        remote.runOnMainSync(() -> {
+            String picture = activity.zapper.overlay.infoPictureText();
+            assertTrue("Information names the picture", picture.startsWith("Picture: "));
+            assertTrue("Information names the source", picture.contains("Source: Auto · Pluto TV"));
+            assertEquals("Only the four colour keys are buttons", 4, activity.zapper.overlay.controls.size());
+        });
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
         remote.waitForIdleSync();
-        assertEquals("▶ stops at Options, the last button", 4, activity.zapper.overlay.focusedControl());
+        assertEquals("▶ stops at Options, the last button", 3, activity.zapper.overlay.focusedControl());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         remote.waitForIdleSync();
         assertNotNull(SidePanel.current);
@@ -290,7 +300,7 @@ public final class LiveControlsTest {
                 "Next 2.39pm",
                 "A long programme description that wraps onto two lines while the channel header stays visible.",
                 600,
-                "Sources · Auto · Pluto TV · 1 of 3",
+                "Source: Auto · Pluto TV · 1 of 3",
                 false
             );
             activity.zapper.overlay.focusSources();
@@ -418,7 +428,7 @@ public final class LiveControlsTest {
                 "",
                 "",
                 -1,
-                "Sources · Auto · FreeShot (UK sports) · 2 of 3",
+                "Source: Auto · FreeShot (UK sports) · 2 of 3",
                 false
             );
             overlay[0].info(
@@ -444,10 +454,7 @@ public final class LiveControlsTest {
                     visible.height()
                 );
                 for (android.view.View control : overlay[0].controls) {
-                    assertTrue(
-                        "Source and colour buttons remain visible",
-                        control.getGlobalVisibleRect(visible)
-                    );
+                    assertTrue("Colour buttons remain visible", control.getGlobalVisibleRect(visible));
                     assertEquals(control.getHeight(), visible.height());
                 }
             });
@@ -469,13 +476,23 @@ public final class LiveControlsTest {
         remote.runOnMainSync(() ->
             assertTrue(activity.zapper.overlay.channelStrip.getGlobalVisibleRect(initial))
         );
-        for (int i = 0; i < 3; i++) {
-            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
-            remote.waitForIdleSync();
-            assertNull("OK refreshes the banner rather than opening Options", SidePanel.current);
-            assertTrue(activity.zapper.overlay.bannerShowing());
-            assertFalse("OK shows only the banner", activity.zapper.overlay.infoShowing());
-        }
+        // Sky-style: OK brings the banner up with Audio & subtitles highlighted; OK again presses it.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        remote.waitForIdleSync();
+        assertNull("The first OK opens no panel", SidePanel.current);
+        assertTrue(activity.zapper.overlay.bannerShowing());
+        assertFalse("OK shows only the banner", activity.zapper.overlay.infoShowing());
+        remote.runOnMainSync(() -> assertEquals(0, activity.zapper.overlay.focusedControl()));
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        remote.waitForIdleSync();
+        android.app.Dialog pressed = currentPanel();
+        assertNotNull("The second OK presses the highlighted button", pressed);
+        remote.runOnMainSync(() -> {
+            assertTrue(containsText(pressed.getWindow().getDecorView(), "Audio & Subtitles"));
+            SidePanel.current.dismiss();
+        });
+        remote.waitForIdleSync();
+        await(() -> SidePanel.current == null && !activity.dialogOpen);
         remote.runOnMainSync(() -> {
             activity.zapper.overlay.hideBanner();
             ((android.view.View) activity.video.getParent()).performClick();
@@ -492,7 +509,7 @@ public final class LiveControlsTest {
             assertEquals("Every reveal retains the complete header layout", initial, after);
             assertEquals(
                 "Back only enables focus on the existing controls",
-                0,
+                SkyOverlay.SOURCE_KEY,
                 activity.zapper.overlay.focusedControl()
             );
             assertNull(SidePanel.current);
@@ -517,18 +534,14 @@ public final class LiveControlsTest {
             for (android.view.View control : activity.zapper.overlay.controls)
                 assertNotNull("Every button is boxed", control.getBackground());
         });
-        // OK with nothing highlighted keeps the banner and opens nothing.
+        // OK with nothing highlighted highlights Audio & subtitles and opens nothing yet.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
             assertNull(SidePanel.current);
             assertTrue(activity.zapper.overlay.bannerShowing());
+            assertEquals(0, activity.zapper.overlay.focusedControl());
         });
-        // ▶ ▶ highlights Audio & subtitles; OK presses it.
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
-        remote.waitForIdleSync();
-        remote.runOnMainSync(() -> assertEquals(1, activity.zapper.overlay.focusedControl()));
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         remote.waitForIdleSync();
         android.app.Dialog audio = currentPanel();
@@ -543,29 +556,6 @@ public final class LiveControlsTest {
         remote.runOnMainSync(() -> {
             activity.zapper.overlay.hideBanner();
             assertEquals(-1, activity.zapper.overlay.focusedControl());
-        });
-    }
-
-    @Test
-    public void bannerNamesTheLastButtonReceived() {
-        physicalColour(KeyEvent.KEYCODE_PROG_RED);
-        await(() -> SidePanel.current != null);
-        remote.runOnMainSync(() -> {
-            assertEquals(
-                "Last button received: KEYCODE_PROG_RED · scan 0",
-                activity.zapper.overlay.lastButtonText().toString()
-            );
-            SidePanel.current.dismiss();
-        });
-        remote.waitForIdleSync();
-        await(() -> SidePanel.current == null && !activity.dialogOpen);
-        playerKey(remoteEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_UNKNOWN, 251, 0, 800));
-        remote.runOnMainSync(() -> {
-            assertEquals(
-                "Last button received: KEYCODE_UNKNOWN · scan 251",
-                activity.zapper.overlay.lastButtonText().toString()
-            );
-            assertTrue("An unused button opens the banner", activity.zapper.overlay.bannerShowing());
         });
     }
 
@@ -726,7 +716,7 @@ public final class LiveControlsTest {
                 "Next 13:00",
                 "Description",
                 500,
-                "Sources · Auto · A provider with a very long name · 10 of 100",
+                "Source: Auto · A provider with a very long name · 10 of 100",
                 false
             )
         );
@@ -736,7 +726,7 @@ public final class LiveControlsTest {
             activity.getWindow().getDecorView().getGlobalVisibleRect(screen);
             for (android.view.View control : activity.zapper.overlay.controls) {
                 android.graphics.Rect visible = new android.graphics.Rect();
-                assertTrue("Every colour/source control is visible", control.getGlobalVisibleRect(visible));
+                assertTrue("Every colour control is visible", control.getGlobalVisibleRect(visible));
                 assertEquals("Control is not clipped horizontally", control.getWidth(), visible.width());
                 assertTrue("Control stays inside the display", screen.contains(visible));
             }

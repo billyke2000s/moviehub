@@ -1,8 +1,102 @@
+## 0.58 (25 October 2026)
+
+Everything tested in MovieHub Experimental, up to exp-15, is now part of MovieHub.
+
+- Live TV plays through a new player (ExoPlayer): one screen for the guide, picture and banner, and support for DASH channels.
+- Several sources for a channel are tried at once and the best is played; a source with no picture after 15 seconds moves on to the next.
+- Programme guides from one daily combined guide, including Sky UK, Freeview, Ireland, US and Samsung TV Plus, with UKTV's new channel names.
+- Typed channel numbers update as you type, show Sky-style in the guide, and OK jumps at once. The guide title shows the channel count.
+- ZLive channels work again. Plex plays again and has programme listings; DistroTV and Vidaa, which no longer work, are removed.
+- Free channels has its own Settings tab; US-only services are labelled and can be hidden.
+- Films and series: each website is listed once with its links grouped, and Resume finds a fresh link while keeping your place.
+- A failed background load shows a small card instead of squashing the guide. Channels refresh once after an update.
+
 ## Unreleased
+
+- Documentation: corrected build requirements (Gradle 9.6.0, AGP 9.4.1, Python 3.11, Node 22), described the MovieHub Experimental app, replaced stale ZLive "404 / no playback" notes, refreshed STATUS (released versions, branch situation, open PRs, files over 700 lines, next steps), test counts and four undocumented classes.
+- ZLive: send the browser fetch headers (`sec-fetch-*`, client hints, Accept) on catalogue, ticket and resolve requests. Without them ZLive returns a looping "refresh the site" decoy stream instead of the channel (seen on exp-14).
+
+### Experimental exp13 provider follow-up
+
+- Use ZLive's current public catalogue and ticket/POST playback protocol; preserve source labels, raw IDs, transport checks and refusal cooldowns.
+- Group duplicate Kodi adapters under one movie/series website and group its links in the picker.
+- Refresh sources when resuming a movie/episode, preserve progress and deduplicate playback history by title.
+- Give host resolution a separate bounded budget, preserve final-media cookies safely and use browser request identity consistently.
+- Verify official Kodi package provenance and audit movie/episode provider outcomes separately.
+- Starting a ZLive channel no longer downloads the channel list first; old saved IDs are matched against the list already in memory. A cancelled or season-less website search now stops cleanly instead of failing.
+
+- MovieHub Experimental: add ExoPlayer's DASH module. Playing a channel whose stream is DASH (.mpd) crashed the app with ClassNotFoundException for DashMediaSource$Factory (found by the 2 GB memory probe on channel 101).
+- Free channels is now its own Settings tab (between Accounts and Appearance) instead of a crowded side panel under Accounts plus a separate "Provider engine" page; Accounts holds only logins. Sections: Refresh and "Turn all on" at the top; Public channel lists (country, and whether to keep them with a TV provider); Free services (Pluto TV, FreeLiveSports and every provider-engine service, each on/off with its channel count); Advanced (hide US-only services, Masqueradarr, ZLive address, service updates). The old panel wrongly said the list choice controlled all free channels; it only ever controlled the public lists. No preference keys or meanings changed. Rebuilding the page keeps the remote on the card just used.
+- TV guide and Home: a failed background load now shows one small card floating over the bottom of the screen (it hides itself after 12 seconds) instead of a full-width box added below the guide, which pushed the guide up and squashed its rows. Scrolling screens are unchanged.
+- Keep explicit XMLTV regional suffixes such as `@Scotland` separate from national listings; quality suffixes such as `@HD` still share a schedule.
+
+- Move all built-in programme fetching to one daily server-generated `Moviehub-epg/epg.xml.gz`. The TV conditionally downloads, validates and streams it into SQLite in the background; failed or invalid refreshes keep usable cached listings.
+- Remove separate built-in XMLTV, Pluto/Plex/Samsung guide requests and catalogue programme imports. Keep exact provider identities and country/name fallback; extend the window to yesterday through seven days ahead.
+- Expose distinct advertised supported ZLive resolver routes with server labels, stable source identities and approved headers. Decode PNG/WebP/raw/gzip TS carriers without requiring a playlist-token session. Exhausted ZLive attempts stop with manual recovery; existing buffering and refusal cooldowns remain.
+- Live ZLive catalogue currently returns 404 and a legacy playback probe returned 403. Fixture checks cannot establish live playback or a complete current server inventory.
+
+- Keep ambiguous radio display names (Freeview’s Gold Radio displayed as “Gold”) from claiming a television channel’s guide.
+- Fix built-in channels showing no programme information despite matching XMLTV listings: prefer native schedules, then country-matched name/identity fallback; keep country maps separate.
+- Empty, stale or malformed guides no longer block later guides. Populate saved/base channels before slow optional provider catalogues and update the visible guide as listings commit.
+- After an app update, channels and programme guides refresh once (on the next home or Live TV visit),
+  so new guide sources and fixes apply straight away instead of up to 12 hours later.
+- Fix: channels refreshed on almost every home or Live TV visit (after a 10-minute gap) whenever any
+  service failed, e.g. a US-only service from the UK. A refresh that finishes now counts for the 12-hour
+  schedule even when some services failed.
+- Sky UK programme guide (London HD region, Sky's own schedules for ~380 channels, seven days) as the
+  second guide after Freeview: Sky Atlantic, Sky Witness, Comedy Central, UKTV and other pay channels.
+- Guide matching: UKTV's renamed channels ("U&Dave", "U&Gold"…) answer to the old names playlists use,
+  and a trailing "UK" word in a channel name ("Gold UK", "ITV 1 UK") is ignored.
+- Typing a channel number: the guide draws the number itself, Sky style (yellow "12–" in a blue box
+  beside Options), updating as you type, instead of queueing an Android toast per digit (which lagged
+  behind the typing and looked different on every box). OK jumps to the number at once. The wait after
+  the last digit stays 1.5 seconds.
+- Samsung TV Plus (GB) channels show listings, from i.mjh.nz/SamsungTVPlus/gb.xml.gz, matched by
+  Samsung's own channel ids. They showed none before: the adapter drops the catalogue's listings.
+- More programme guides, best first: Freeview EPG (UK free-to-air, broadcasters' data, seven days,
+  London feeds also answer to the national names), then epgshare01 UK, Ireland and US. A channel taken
+  by an earlier guide is not looked up in later ones; one guide failing keeps the others. Irish and US
+  channels use their own country's guide; channels of other countries still get none.
+- Experimental Live TV source race: when a channel has several copies, up to three are looked up at
+  once. The first choice waits up to three seconds only while a better-quality copy (by its name:
+  HD, 1080p…) is still being looked up; otherwise the best found plays at once. Copies found but not
+  playing wait as standbys, so a copy that errors or shows no picture within eight seconds hands
+  over without a new lookup. Unused links are closed. Choosing a source yourself plays that one only.
+- Experimental Live TV: a source that shows no picture within 15 seconds moves on to the channel's
+  next source, as the standard player does, and a source that errors moves on at once instead of
+  being reopened twice first. With no other source, it keeps waiting and retrying as before.
+- Live TV guide: the list's channel count sits on the title line, e.g. "ALL CHANNELS 11,000 channels"
+  or "SPORTS 240 channels" (copies of one channel count once, as in the rows).
+- Settings → Provider engine → "Hide US-only providers" (off by default): hides LG Channels, Roku
+  Channel and Local Now, the services known to work only in the US. Nothing is ever switched off
+  because it failed.
+- Plex programme listings: Plex channels now show what is on, from the daily public XMLTV files at
+  i.mjh.nz/Plex (UK file first, US file when the UK one covers under half the channels). Channels
+  match by Plex's own channel id, not by name.
+- Live TV: the source name in the banner's title strip is now plain text ("Source: Auto ·
+  provider · 1 of 2"), not a second Sources button; the green key is the one Source button.
+  BACK highlights the green key; OK highlights Audio & subtitles as before.
+- Live TV information panel: a "Picture" line with size, quality name, frame rate, codec and
+  bitrate (for example "1920×1080 (1080p) · 50 fps · H.264 · 4.8 Mb/s"), plus the source,
+  refreshed every two seconds while open. Both the VLC and the experimental ExoPlayer builds.
+- Plex channels play again: the play request used the stable channel id, which Plex answers with
+  404; it now uses the compound id from the catalogue row (live probe: 0 of 3 sampled channels
+  opened before, 2 of 3 played after).
+- Removed DistroTV and Vidaa: both services' API hosts no longer exist (DistroTV has shut down;
+  Vidaa moved to a new signed backend). Their saved channels are cleared on the next refresh. The
+  remaining US-only services are labelled, e.g. LG Channels (US).
+- The guide's "Unavailable now" line groups failed providers by their actual failure, for example
+  "HTTP 403: LG Channels (US only) · timed out: Plex" (`ProviderOutage`). It never guesses that a
+  service is geo-locked; known US-only services say so in their name.
+- The live provider probe can be run for chosen providers only.
+- Experimental DaddyLive: reuse one isolated lookup process/compiled code, briefly cache public
+  mirror pages, enforce lookup deadlines and advance failed players without retrying the same one.
+- Experimental: cancel stale channel retries/resolution and release the Media3 player/view on stop.
+- Experimental: retain the latest OK/banner changes and add a dedicated ExoPlayer emulator suite
+  for guide/fullscreen video, failed sources, screen lifetime and audio/subtitle tracks.
 - Audit all 68 free VOD adapters, expose per-provider outcomes, and allow every scheduled provider time to run without extending the three-second initial selection.
 - Reject known free videos shorter than two minutes, recover across free services after manual selection, and retain late backups.
 - Keep failed VOD native shutdown off the UI thread with retained window/engine lifetime; show selected source, Mb/s and received bytes.
-
 
 - Configure player panels before window attachment to stabilize the first input-focus handoff.
 
@@ -28,11 +122,13 @@
 
 # Changelog
 
-
-
-
 ## Unreleased
 
+- Live TV: OK brings the banner up ready to use, as on the satellite box, with Audio & subtitles highlighted; ◀ ▶ move along and OK presses. ▲ ▼ still show it only briefly while zapping. Removed the temporary button diagnostics (Last button lines, Button not used and recognised-but-ignored messages).
+- MovieHub Experimental: the Live TV picture is Media3's PlayerView (correct picture shape, subtitles in Audio & subtitles); Options → Player event log records the decoder, video formats, quality switches, dropped frames, errors and any picture stall (records only, never repairs). The custom stall timer is removed; a failing channel keeps being retried.
+- MovieHub Experimental: Live TV is one screen. The TV Guide menu, channel guide and banner are drawn over one video picture that is only resized (corner box or full screen), never rebuilt or moved to another screen. A "Last button" readout shows every key MovieHub receives, on every screen.
+- MovieHub Experimental only: Live TV plays on Media3 ExoPlayer (ExoLiveActivity, ExoLive), shared by the guide picture and the full screen by pointing the same decoder at each surface. Normal builds keep LibVLC and do not contain ExoPlayer.
+- Live TV: the banner's Sources label names the copy actually playing when full screen opens, instead of assuming the first copy before the player reports its link.
 - Live TV: the banner always draws its buttons boxed, as after BACK, whether it opened from OK, a channel change or BACK. ◀ ▶ move between the buttons and OK presses the highlighted one; with none highlighted, OK shows the banner. The separate browsing layout is gone.
 - Build switch for a separate MovieHub Experimental app (own package, data and update feed) and a manual workflow to publish it. Normal builds are unchanged.
 - Live TV: OK (and an air-mouse click on the picture) always shows the same full channel banner. OK while browsing the current channel, and OK with the banner buttons revealed but none focused, show that banner instead of closing it or opening Sources. ◀ no longer opens the reduced browsing layout.
@@ -62,7 +158,6 @@
 
 - Always use the Live TV banner and colour-key actions on live launches, including restored activities without a static guide session. Save each player’s guide context and match the initial listings to its actual channel.
 - Apply learned colour buttons before number/channel shortcuts. Keep source text and all four colour controls inside the banner width.
-
 
 ## 0.47 (23 October 2026)
 
@@ -103,12 +198,10 @@
 - Settings → Playback adds separate automatic-play switches for films and series, plus a preferred maximum resolution (1080p by default). Try up to five ready-to-play sources and fall back to manual selection if no clear file match is found; never silently queue transfers.
 - Route guide colour keys regardless of focus. Back reveals outlined, arrow/OK-accessible colour controls; the next Back uses the existing navigation action. Fullscreen colour controls also gain visible outlines. Standard colour keys, F1–F4 and learned mappings remain supported.
 
-
 ## 0.42
 
 - Movie torrent file lists now put **Recommended movie** first, with video labels and file sizes. Other files remain visible but cannot launch playback. Exact episode selection is unchanged.
 - Expanded video filename recognition and local title/size ranking exclude samples, trailers and extras. No file downloads or extra provider calls are needed for ranking.
-
 
 ## 0.41
 
@@ -175,7 +268,6 @@
 - Add provider, renewal/scoping and segment regression checks. Desktop samples decoded for five channels;
   physical TV and sustained playback are not yet verified.
 
-
 ## Unreleased — experimental standalone provider engine
 
 - Live probe on real services (20 October 2026) found MovieHub itself blocking providers: Samsung TV Plus now redirects through github.com (not allowed), and Tubi's guide (3.7 MB) and Plex's catalogue (3.1 MB) were over the 3 MB response limit. Allowed that redirect and raised the limits to 6 MB per response and 15 MB per operation, with a 16 MB script input cap (Tubi totals 7.5 MB, Plex 8.7 MB). A catalogue step may now take 10 s in the interpreter (3 s before) for slower TV boxes. Samsung redirects to Amagi's CDN are allowed. DaddyLive's stream servers answer 403 (referrer/signature gate) and ZLive's catalogue 404: provider-side, not changed.
@@ -188,7 +280,6 @@
 - Add isolated local JavaScript execution of the historical FreeLiveSports TypeScript leaf, stable SQLite channels, inline EPG and resolve-on-play.
 - Add opt-in provider settings, signed package validation, atomic rollback and gated upstream update CI.
 - Document private upstream access, missing signing setup and provider/runtime limitations; no production release.
-
 
 Versions are published to TVs through the in-app updater (`android-tv-latest` release). Each
 version below was built from the listed `main` commit. Earlier history is in the git log.
@@ -446,7 +537,7 @@ Live TV now has the rest of what the old satellite boxes did:
 ## 0.21 (18 Oct 2026)
 
 - Live TV works without a TV provider: the full public iptv-org channel list is loaded the first
-  time you open Live TV. Settings → Accounts → Free channels can switch to one country, keep the
+  time you open Live TV. Settings → Free channels can switch to one country, keep the
   full list even with a provider, or turn it off. Some free streams may not work, and some need
   Allow HTTP.
 - Live TV redesigned as a classic satellite TV guide: a blue full-screen grid of ten channels per
@@ -607,7 +698,6 @@ continuity checks.
 Provider-request read timeouts now honor explicit upstream values within the remaining
 search budget, with an eight-second connection cap. A regression checks a 20-second read
 request and clipping to a five-second remaining budget; cancellation remains bounded.
-
 
 - Keep detached VOD SurfaceTextures alive until asynchronous native shutdown completes,
   including Activity destruction while switching to Live TV. Retain non-blocking controls

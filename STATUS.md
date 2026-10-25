@@ -4,19 +4,29 @@
 
 New settings keep manual source selection as the default. Next-episode metadata is prefetched while watching; season transitions use catalogue episodes and air dates. Missing-pack episodes follow the selected manual/automatic mode. Guide colour shortcuts are handled independently of focused widgets, with Back revealing accessible controls. Physical TV, remote and real-account validation remain outstanding.
 
-
-Last updated: 20 October 2026.
+Last updated: 25 October 2026 (0.58 promotes the experimental line into MovieHub).
 
 ## Where things stand
 
-- **Latest in-app update:** the public [updater manifest](https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/update.json)
-  is authoritative for `versionName` and `versionCode`. Compare it with the numbered GitHub release;
-  merging code does not itself publish an update. The baseline verified before this work was 0.38.
-- **Code structure:** feature classes per area, see [ARCHITECTURE.md](ARCHITECTURE.md).
-  `CatalogueScreens` was split (filter sheets in `CatalogueOptions`) and the Live TV guide's
-  panels are in `LiveTvPanels`. `LiveTvScreen` is about 710 lines; split it further (for example
-  colour keys and number entry) before it grows.
-- **CI on `main` before this integration:** APK build passed; the latest device run had 132 passes and one failure (Green opens Sources). The latest publish attempt failed. See the integration PR for subsequent validation.
+- **Released versions.** Normal MovieHub: **0.57** (`android-tv-latest`, version code 57, published
+  24 October 2026). MovieHub Experimental: **exp-15** (`android-tv-experimental`, version code 19,
+  25 October 2026). The public `update.json` files are authoritative; merging code publishes nothing.
+- **0.58 (in progress, 25 October 2026).** The experimental line becomes normal MovieHub: ExoPlayer Live
+  TV and the fast provider process are now in every build, and `-Pexperimental` only changes the test
+  app's identity. Until 0.58 is published, the lines below describe the state before it.
+- **Two lines of work.** 0.57 was published from a one-off `release/moviehub-*` branch; `main` (last merge
+  #120, 24 October) is three commits past that source and unreleased. All later work lives on
+  `release/experimental-epg-exp11` (the name is historical; it now carries exp-15), about 70 commits
+  ahead of `main` and never merged back. Experimental builds are published from that branch.
+- **ZLive works on the TV (exp-15, 25 October 2026).** See "Correction" at the end of this file. Only
+  the owner's spot check is behind this, not every channel or long sessions.
+- **Code structure:** feature classes per area, see [ARCHITECTURE.md](ARCHITECTURE.md). Seven files are
+  over the 700-line limit in AGENTS.md and should each be split in a behaviour-free commit:
+  `VlcPlaybackActivity` (908), `LiveZapper` (855), `LiveTvScreen` (770), `LivePlayer` (743),
+  `ChannelDatabase` (731); `SettingsScreens` (694) and `MainActivity` (659) are close.
+- **CI.** The experimental branch's last merged PRs (#143, #144, #145) passed every check, including
+  device tests. One playback device test (`vodRepeatedBufferingPreparesBackupsWithoutStoppingCurrentPlayback`)
+  failed once and passed on rerun of the same commit; watch for it recurring.
 
 ## Known issues
 
@@ -48,17 +58,17 @@ Last updated: 20 October 2026.
    lock with playback, so running them in parallel would delay starting a channel), and the
    programme guide is fetched only after all of them. Not measured on the X905X5M box.
 
-6. **Relayed sports streams use a 4 s buffer** (`LivePlayer.RELAYED_CACHING_MS`) and the relay
+7. **Relayed sports streams use a 4 s buffer** (`LivePlayer.RELAYED_CACHING_MS`) and the relay
    retries a timed-out provider once. Whether this removes the short pauses seen on the owner's
    phone (21 October 2026) is not yet confirmed on a phone or the TV box.
 
-6. **Live TV now draws through a SurfaceView** (21 October 2026), replacing the shared
+8. **Live TV now draws through a SurfaceView** (21 October 2026), replacing the shared
    TextureView after the owner saw full-screen lag and a still picture over playing sound. Moves
    between the mini picture and full screen keep the stream but may blink. Emulator tests only;
    not yet checked on a phone or the X905X5M box. Earlier notes below about the retained
    SurfaceTexture describe the replaced design.
 
-7. **Phone layout covers Live TV only.** Films, series, My List and settings still open in the TV
+9. **Phone layout covers Live TV only.** Films, series, My List and settings still open in the TV
    layout. MainActivity now handles rotation itself (configChanges), so screens are not rebuilt
    when a phone turns.
 
@@ -88,24 +98,25 @@ Last updated: 20 October 2026.
 
 ## Open pull requests and branches
 
-- **Dependabot:** #3 (`actions/checkout`) is superseded by checkout@v5 in CI and can be closed.
-  #13 (LibVLC 3.7.7) fails the APK build and lint step, both in Dependabot's run and when retried
-  on the 0.15 branch; the CI log was not readable from the assistant's environment, so the cause is not
-  known yet. LibVLC stays on 3.7.0. #12 (AGP 9): see above.
-- Branches that are merged or no longer needed can be deleted on GitHub (the assistant's proxy
-  cannot delete branches): `ci/device-test-control`, `ci/flaky-measure`, `refactor/readable-structure`,
-  `fix/flaky-device-tests`, `feature/launcher-shim`, and every `feature/*` or `fix/*` branch whose
-  pull request is merged.
+- **#121–#140 are already inside the experimental branch** (checked 25 October 2026: none has a commit
+  the branch lacks). They are a stacked chain, most based on one another, and none reached `main`.
+  They can be closed as superseded, or the experimental branch merged to `main` as one reviewed PR when
+  it is ready to become a normal release.
+- Dependabot #3, #12 and #13 mentioned in earlier notes are closed; LibVLC stays on 3.7.0.
+- Branches that are merged or no longer needed can be deleted on GitHub: `ci/device-test-control`,
+  `ci/flaky-measure`, `refactor/readable-structure`, `fix/flaky-device-tests`, `feature/launcher-shim`,
+  and every `feature/*` or `fix/*` branch whose pull request is merged. `diag/zlive-boomerang` holds the
+  25 October ZLive diagnostics (decoy matrix, headless-browser recording); it only runs when started by hand.
 - `release/moviehub-*` branches are one-off publish jobs and are intentionally not merged.
 
 ## Suggested next steps
 
-1. Check 0.15 on the box: For you, the Apps screen and banners, side panels, Sources, Series and
-   the player controls.
-2. Optional: a TMDB account sign-in so My List syncs to a TMDB watchlist and TMDB's personal
-   recommendations can be mixed into For you.
-3. Check Live TV on the box with a large channel list (the full free list): guide pages, channel
-   up/down and typing numbers should feel quicker. Diagnostics has no guide timing yet.
+1. Decide how the experimental line returns to normal MovieHub: one PR from
+   `release/experimental-epg-exp11` to `main`, then close #121–#140.
+2. Split the files over 700 lines (above) before adding more to them.
+3. Check more ZLive channels and a long session on the TV; add ZLive playback (not only the catalogue)
+   to the live probe, using the decoy check from the diagnostics.
+4. Optional: a TMDB account sign-in so My List syncs to a TMDB watchlist.
 
 ## Native free-TV work (19 October 2026)
 
@@ -154,14 +165,14 @@ unchanged. Cause not found; watch for a repeat.
 app's own interpreter, allow-lists and limits, then decodes samples with ffmpeg. Run 39361949935,
 after raising the limits:
 
-| Provider | Catalogue | Sample playback | Fault |
-| --- | --- | --- | --- |
-| STIRR, TCL, Xumo, LG, Whale, Vizio, Roku, Tubi, FreeLiveSports, Local Now | works | plays | — |
-| Samsung TV Plus (GB) | 252 channels | some play; some GB streams fail from a US runner | probably region |
-| Plex | 692 channels | stream 404 | provider |
-| DaddyLive | 899 channels (45 Sky Sports) | original probe: 403; missing token step identified below | incomplete integration |
-| DistroTV, Vidaa | host does not resolve (ENOTFOUND) | — | provider |
-| ZLive | catalogue 404 | — | provider |
+| Provider                                                                  | Catalogue                         | Sample playback                                          | Fault                  |
+| ------------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------------- | ---------------------- |
+| STIRR, TCL, Xumo, LG, Whale, Vizio, Roku, Tubi, FreeLiveSports, Local Now | works                             | plays                                                    | —                      |
+| Samsung TV Plus (GB)                                                      | 252 channels                      | some play; some GB streams fail from a US runner         | probably region        |
+| Plex                                                                      | 692 channels                      | stream 404                                               | provider               |
+| DaddyLive                                                                 | 899 channels (45 Sky Sports)      | original probe: 403; missing token step identified below | incomplete integration |
+| DistroTV, Vidaa                                                           | host does not resolve (ENOTFOUND) | —                                                        | provider               |
+| ZLive                                                                     | catalogue 404                     | —                                                        | provider               |
 
 Before the fixes, Samsung (GitHub redirect not allowed), Tubi and Plex (over the 3/4 MB limits)
 failed inside MovieHub. Not checked on the TV box: catalogue steps there are slower (Plex's slowest
@@ -242,7 +253,7 @@ Sources defaults to Automatic. A manual choice pins that source; restoring Autom
 unvisited copies once, including earlier copies, then stops. The menu reads saved database rows;
 only a selected source or needed failover is resolved.
 
-FreeShot (UK sports) is available as an opt-in source in Settings → Provider engine. It imports
+FreeShot (UK sports) is available as an opt-in source in Settings → Free channels. It imports
 the public related-channel directory in one request, follows only the chosen channel's literal
 embed/player links, normalizes relative/whitespace-containing iframe addresses, and uses the
 native player. Fetched page scripts and adverts never execute. Anonymous tokens renew at the
@@ -359,12 +370,9 @@ fixtures. A low-memory signal skips additional allocation. Different provider de
 programme-time alignment is not promised. Local core checks pass (733); Android CI is pending.
 No physical-TV or real-provider concurrent-decoder test is claimed.
 
-
 ## Live TV control consistency
 
 The owner reports colour keys still failing and inconsistent live-player controls. Confirmed code paths allowed live launches without the static guide session to use film controls, learned number/channel codes to be consumed before colour handling, and a fixed-width banner row to overflow. The candidate always builds live controls, persists per-player guide context, matches initial metadata to the launch channel, prioritizes learned colours and bounds banner content. Core checks pass (733); Android CI is pending. Physical remote behaviour and the precise appearance seen on the owner’s TV remain unverified.
-
-
 
 ## Live header and menu-owned remote keys
 
@@ -376,14 +384,11 @@ The 0.49 recovery source passed all 166 Android TV emulator tests (no skips), 75
 
 Three short buffering notifications can still prepare an alternate source. A same-source reconnect requires prolonged buffering (eight seconds) or stalled video progress; ordinary HLS period notifications do not consume the reconnect budget.
 
-
 ## Consistent live banner and standard colours
 
 The owner supplied new photographs after 0.49: a full banner on some channels and a collapsed strip on others, with colour shortcuts still failing. The next candidate restores first-down colour handling, prevents saved aliases from overriding standard colour identities, reserves explicit scaled header height and measures the banner before optional panels. The constrained-layout case and input edge cases have new regressions. 753 core checks pass locally; Android CI is pending. The exact physical-TV failure remains unconfirmed; no claim that the owner must inspect remote codes or configure standard buttons.
 
-
 0.50 validation: all 169 Android tests passed without skips in CI run 40006802520, along with builds/lint/signing and provider checks. Inspected normal and constrained banner screenshots; header and all four controls are visible. Core validation: 753 checks. Physical-TV behaviour still requires confirmation.
-
 
 ## One live overlay and shared colour input
 
@@ -412,7 +417,6 @@ The owner reports mostly empty providers, short error clips, absent speed and cr
 
 Additional confirmed compatibility defect: the bounded HTTP adapter returned an HTTP status integer in place of request headers in `output="extended"`. The actual WatchSeries provider then passed that integer as headers and swallowed the resulting exception. The adapter now returns the original five fields (body, request headers, response headers, cookies, final URL), without an extra cookie request. Default scrapePage Referer/protocol-relative handling and redirect cookie accumulation also match the upstream contract. A fixture drives the real WatchSeries provider through search, page and host lookup.
 
-
 ## Provider request/title compatibility correction (24 October 2026)
 
 Reproduced and fixed bodyless POST becoming GET in the requests adapter, affecting the
@@ -427,7 +431,6 @@ Provider-request read timeouts now honor explicit upstream values within the rem
 search budget, with an eight-second connection cap. A regression checks a 20-second read
 request and clipping to a five-second remaining budget; cancellation remains bounded.
 
-
 ## EGL crash during film-to-Live-TV transition
 
 Provider revision 202ecee passed Android build/lint/signing, core/Python/provider checks,
@@ -438,7 +441,6 @@ use retainable TextureViews; VodSurface owns detached textures until native stop
 detachViews finish. A blocked-stop/Activity-destruction regression verifies this lifetime.
 Full new Android validation is pending; no physical-device fix is claimed.
 
-
 ## One OK overlay and learnable unnamed colour buttons (24 October 2026)
 
 The owner wants OK to always show the most detailed overlay, and reports that the coloured buttons of a universal/air-mouse remote do nothing (colour set-up never used). Confirmed code paths that showed different overlays: OK after BACK opened Sources when no button was focused; OK while browsing the current channel closed the banner; ◀ opened the reduced browsing layout; an air-mouse click showed the banner without information. These now show the same full banner (owner's photo confirmed banner only, no separate information panel). The live player also names unused buttons in a toast, to identify what the owner's MX3-style air-mouse remote sends; the owner reports its colour buttons work in other apps, and the colour mapping itself is unchanged since 22 October. Confirmed colour gap: buttons arriving as KEYCODE_UNKNOWN (other than the standard 398–401 scan codes) could not be learned, because set-up stored only the key code (0). Set-up now stores scan codes and shows what was received. Whether this remote sends its colour buttons to Android at all is unknown; running "Set up coloured buttons" (Live TV guide → Options) will show it. Core checks pass locally; Android build/device tests run in CI only (no SDK in the workspace). Not tested on the owner's TV or remote.
@@ -447,3 +449,74 @@ The owner wants OK to always show the most detailed overlay, and reports that th
 
 Owner photographs on 0.56 showed the banner with unboxed buttons (OK/channel change), with boxed buttons (after BACK, the look the owner wants) and once with the channel header strip missing. The banner now always boxes its buttons and ◀ ▶ move between them; the browsing layout is removed. The missing header strip is still unexplained: the strip has a fixed reserved height, and no app code hides it or draws over it. Its trigger on the owner's TV is unknown.
 
+## Experimental ExoPlayer Live TV (24 October 2026)
+
+At the owner's request, Live TV on Media3 ExoPlayer is being built as a separate MovieHub
+Experimental app, keeping the normal app on LibVLC. First version: same guide and banner, ExoPlayer
+shared between the guide picture and the full screen. Audio track choice only (no subtitle
+rendering yet); no prepared standby backup. Built in CI only; not yet run on the owner's TV.
+
+exp-2 candidate: one-screen Live TV (`LiveStage`) replaces the separate ExoPlayer full-screen
+Activity. Same guide and banner code. Not yet compiled at the time of writing; not run on a TV.
+
+## Experimental release follow-up (25 October 2026)
+
+The published exp-3 predates the latest OK/banner changes. This candidate cancels stale engine
+and screen retries, cancels abandoned resolution, and releases the static Media3 player/view
+on stop. A dedicated experimental emulator suite now covers actual Media3 playback, picture
+continuity, 404 retry cancellation, lifecycle and HLS tracks. Results must be checked on the
+final CI commit before publishing exp-4. No physical-TV or real-provider success is claimed.
+Frozen-picture detection remains diagnostic, preserving the experimental comparison behaviour.
+
+## Experimental DaddyLive startup candidate (25 October 2026)
+
+Desktop probes of the previous implementation took 18–20 seconds before playback. The timed
+probe spent about five seconds in interpreter execution and eleven seconds in four network
+requests; these are not TV timings. This candidate reuses one isolated process and compiled
+code per lookup, caches public mirror pages briefly, counts failed network time, bounds fast
+lookups and advances failed selected players. Local fixtures and CI must validate the final
+commit before publishing the next experimental version. Physical-TV latency remains unverified.
+
+## Provider corrections (25 October 2026)
+
+- **Plex** (listed above as "stream 404 · provider") was a MovieHub fault: the play request used the
+  stable channel id instead of the compound id Plex requires. Fixed; the live probe then played 2 of
+  3 sampled channels from GitHub's US runner (the third opened but the probe's own output step
+  failed). Not yet confirmed on a UK connection or the owner's TV.
+- **DistroTV and Vidaa removed.** Their hosts still do not resolve; FastChannels retired DistroTV on
+  10 September 2026 ("upstream shut down"), and Vidaa's replacement backend needs an app signing
+  secret and OAuth taken from Hisense's APK, which was judged too fragile to adopt.
+- **UK region copies were tried and dropped.** LG's API answered HTTP 500 for country GB; FastChannels
+  also supports LG, Roku, Tubi and TCL for the US (and Canada for TCL) only.
+- From the UK, LG Channels (US), Local Now (US) and Roku Channel are expected to fail (they work from
+  the US runner). They are labelled "US only" from research; the guide shows each failure as it is
+  (e.g. HTTP 403) and never guesses geo-blocking. An earlier exp-6 build did guess ("likely
+  geo-locked") and offered to switch providers off after two such failures; the owner pointed out
+  that a service down for a day would be mislabelled, so that was replaced by an opt-in "Hide
+  US-only providers" setting that applies only to the known US-only list.
+
+## Refresh schedule correction (25 October 2026)
+
+`ChannelSync.refreshIfStale` measured the 12-hour interval from `lastSuccess`, which is written only when
+no service failed. With any provider failing (e.g. US-only services from the UK) it was never written, so
+every home or Live TV visit more than 10 minutes after the last attempt started a full refresh. The
+interval now also counts `lastFinished` (any completed refresh), and an app update refreshes once.
+Found by reading the code after the owner said refreshes "take a while"; not measured on the TV.
+
+## Experimental EPG matching correction (25 October 2026)
+
+Confirmed exp-9 imported XMLTV by plain channel name but queried built-in channels only by provider id, leaving valid schedules unused. Country-scoped XMLTV fallback now follows exact native lookups, and stale/empty/malformed priority guides no longer claim keys. Saved/base channels receive XMLTV before optional provider catalogues; new channel identities trigger a follow-up, without a second download for unchanged identities. The TV guide observes committed guide revisions during the import. Core regression checks pass locally; Android CI is pending. Freeview/Sky/Plex/Samsung feeds were reachable from the workspace; epgshare01 UK returned 403 here, which does not establish the owner’s TV response. No physical-TV verification claimed.
+
+## Experimental EPG and ZLive integration
+
+The public `Moviehub-epg` repository now generates and atomically publishes one compressed guide at 04:37 UTC daily. Its generated coverage report is the current authority for measured coverage and failures. The app integration removes separate built-in feed fetching and inline EPG writes, retaining cached SQLite data during failed refreshes. This work is on an experimental feature branch; see its PR checks and rolling experimental release manifest for build status.
+
+ZLive's current public player supports additional media carriers; the app relay now handles these without a token-session requirement. Supported advertised source routes receive individual labels and stable ids. Live investigation found `cast.zlive.st/channels.json` returning 404 and legacy media returning 403. Complete current server discovery and successful external playback remain unverified; no access-control bypass was implemented. Physical TV validation remains outstanding.
+
+## Experimental exp13 provider repair candidate (25 October 2026)
+
+Based on published exp13 source `4fb8552`, despite its branch retaining the exp11 name. Current official packages remain Scrubs 5.1.42 and Free99 2.0.1; original active-provider hashes/inventories match. Anonymous search counts 63 distinct websites rather than 68 modules, keeps fallback scrapers and groups links by website. Resume refreshes movie/episode metadata and provider results while retaining progress. Separate discovery/resolution budgets and media-cookie/identity corrections address local integration limits. Dead sites, unsupported hosts, refusals and title gaps are not declared fixed.
+
+ZLive's public catalogue moved to `iptv.zlive.st/channels.json`; the current player uses `/session/ticket` and encrypted POST `/resolve`. A host probe using this flow obtained a valid HLS playlist and decoded a real MPEG-TS segment containing 1280x720 H.264 video and AAC audio. This is one channel/segment, not a physical-TV or long-session result. The observed catalogue listed one source per channel; labelled advertised source routes remain supported without inventing unavailable alternatives. Full final-commit Android CI and per-website audit outcomes are recorded on the repair PR.
+
+**Correction (25 October 2026):** exp-14 played ZLive's decoy, a looping "refresh the site" clip, on the owner's TV. The ticket/AES-GCM protocol was correct (it decrypts the real web player's requests); ZLive chooses the decoy when API requests lack browser fetch metadata. A request matrix from GitHub runners got the decoy (`route.transcode.cfd`, ~85 KB chunks, huge discontinuity sequence) with the old headers or with client hints alone, and the real stream (`hello.transcode.cfd`, ~3 MB Full HD chunks) once `sec-fetch-*` and Accept headers were added. The earlier "decoded 720p segment" probe result above was very likely the decoy. Fixed in #145 and published as exp-15; the owner confirmed ZLive channels play on the TV the same day.

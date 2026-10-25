@@ -4,6 +4,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -50,6 +51,10 @@ final class GuideFrame {
         YELLOW = 0xfffecf5b,
         BLUE = 0xff0025c9;
     private TextView when, listTitle, dayLabel;
+    /** The channel number being typed, drawn by the guide itself (no Android toast). */
+    private TextView numberBox;
+    /** Channels in the list shown, or -1 before its first page loads. */
+    private int shownCount = -1;
     private final List<TextView> slotLabels = new ArrayList<>();
 
     GuideFrame(MainActivity activity, LiveTvScreen guide) {
@@ -78,6 +83,23 @@ final class GuideFrame {
         status.setEllipsize(android.text.TextUtils.TruncateAt.END);
         titles.addView(status);
         header.addView(titles, new LinearLayout.LayoutParams(0, -2, 1));
+        // The number being typed, Sky style: yellow digits on the blue title strip, beside Options.
+        numberBox = text("", 28, true);
+        numberBox.setTextColor(LiveTvScreen.YELLOW);
+        numberBox.setGravity(Gravity.CENTER);
+        numberBox.setMinWidth(activity.dp(110));
+        numberBox.setPadding(activity.dp(16), activity.dp(4), activity.dp(16), activity.dp(4));
+        GradientDrawable strip = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {
+            SkyOverlay.STRIP_TOP,
+            SkyOverlay.STRIP_BOTTOM,
+        });
+        strip.setCornerRadius(activity.dp(6));
+        strip.setStroke(activity.dp(2), SkyOverlay.EDGE);
+        numberBox.setBackground(strip);
+        numberBox.setVisibility(View.GONE);
+        LinearLayout.LayoutParams numberLayout = new LinearLayout.LayoutParams(-2, activity.dp(48));
+        numberLayout.rightMargin = activity.dp(16);
+        header.addView(numberBox, numberLayout);
         optionsButton = activity.button("Options", guide.panels::options);
         optionsButton.setOnKeyListener((v, key, event) -> {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
@@ -147,7 +169,7 @@ final class GuideFrame {
     /** Updates the clock, the list's name, the day and the time slots for {@code start}. */
     void update(long start) {
         when.setText(LiveTvScreen.clock(new Date()));
-        listTitle.setText(guide.listName().toUpperCase(Locale.ROOT));
+        showTitle();
         boolean today = new SimpleDateFormat("yyyyMMdd", Locale.UK)
             .format(new Date(start))
             .equals(new SimpleDateFormat("yyyyMMdd", Locale.UK).format(new Date()));
@@ -155,6 +177,55 @@ final class GuideFrame {
         for (int i = 0; i < slotLabels.size(); i++) slotLabels
             .get(i)
             .setText(LiveTvScreen.clockTime(new Date(start + i * LiveTvScreen.HALF_HOUR)));
+    }
+
+    /** Shows the channel number being typed ("12–"), or hides the box for "". */
+    void showNumber(String digits) {
+        if (numberBox == null) return;
+        if (digits.isEmpty()) {
+            numberBox.setVisibility(View.GONE);
+            return;
+        }
+        numberBox.setText(digits + "–");
+        numberBox.setVisibility(View.VISIBLE);
+    }
+
+    /** The number box's text, or "" when hidden (package-private for tests). */
+    String numberShown() {
+        return numberBox == null || numberBox.getVisibility() != View.VISIBLE
+            ? ""
+            : numberBox.getText().toString();
+    }
+
+    /** The number of channels in the list shown; drawn after its name, on the same line. */
+    void listCount(int count) {
+        shownCount = count;
+        showTitle();
+    }
+
+    /** "ALL CHANNELS  11,000 channels": the name large, the count smaller and softer beside it. */
+    private void showTitle() {
+        String name = guide.listName().toUpperCase(Locale.ROOT);
+        if (shownCount < 0) {
+            listTitle.setText(name);
+            return;
+        }
+        String count = titleCount(shownCount);
+        android.text.SpannableString title = new android.text.SpannableString(name + "   " + count);
+        int at = name.length() + 3;
+        title.setSpan(new android.text.style.RelativeSizeSpan(0.6f), at, title.length(), 0);
+        title.setSpan(new android.text.style.ForegroundColorSpan(0xffc9d3ff), at, title.length(), 0);
+        listTitle.setText(title);
+    }
+
+    /** The header's title as shown (package-private for tests). */
+    String titleText() {
+        return listTitle.getText().toString();
+    }
+
+    /** "1 channel", "11,000 channels" (package-private for tests). */
+    static String titleCount(int count) {
+        return String.format(Locale.UK, "%,d %s", count, count == 1 ? "channel" : "channels");
     }
 
     /** Up from the top row, or nothing in the grid: the Options button. */

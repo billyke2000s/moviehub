@@ -31,6 +31,7 @@ final class AdapterSources {
         }
         if (url.startsWith(ROOT + "tcl/")) staleTclHints = true;
         if (!url.startsWith(ROOT + "dlhd/")) return;
+        DlhdPageCache.clear();
         PlayerMemo memo = players.get(url);
         if (memo != null && memo.good > 0) {
             memo.burnt.add(memo.good);
@@ -68,17 +69,15 @@ final class AdapterSources {
         "STIRR",
         "TCL TV+",
         "Xumo Play",
-        "LG Channels",
+        "LG Channels (US only)",
         "Whale TV+",
-        "DistroTV",
         "Vizio WatchFree+",
-        "Vidaa",
-        "Roku Channel",
+        "Roku Channel (US only)",
         "Plex",
         "DaddyLive",
         "Tubi",
         "Samsung TV Plus (GB)",
-        "Local Now (US)",
+        "Local Now (US only)",
         "ZLive",
         "FreeShot (UK sports)",
     };
@@ -118,6 +117,11 @@ final class AdapterSources {
         }
     }
 
+    static String sourceName(ChannelDatabase.Row row) {
+        String provider = sourceName(row.source);
+        return row.sourceLabel.isEmpty() ? provider : provider + " · " + row.sourceLabel;
+    }
+
     private AdapterSources() {}
 
     static String source(String id) {
@@ -134,7 +138,9 @@ final class AdapterSources {
      * account or "only without a TV provider" no longer hides a provider the viewer turned on.
      */
     static boolean enabled(Context c, String id, boolean connected) {
-        return c.getSharedPreferences("ui", 0).getBoolean(pref(id), false);
+        android.content.SharedPreferences ui = c.getSharedPreferences("ui", 0);
+        if (ProviderOutage.hidden(ui.getBoolean(ProviderOutage.HIDE_US_ONLY, false), id)) return false;
+        return ui.getBoolean(pref(id), false);
     }
 
     static synchronized void invalidate() {
@@ -177,8 +183,8 @@ final class AdapterSources {
         );
     }
 
-    private static JSONArray catalogue(Context c, String id, NativeHttp http) throws Exception {
-        String module = ProviderPackages.module(c, id);
+    /** The in-memory catalogue for the current module, or null. Never contacts the provider. */
+    private static JSONArray cachedCatalogue(String id, String module) {
         synchronized (AdapterSources.class) {
             if (
                 cache.containsKey(id) &&
@@ -186,9 +192,17 @@ final class AdapterSources {
                 module.equals(versions.get(id))
             ) return cache.get(id);
         }
+        return null;
+    }
+
+    private static JSONArray catalogue(Context c, String id, NativeHttp http) throws Exception {
+        String module = ProviderPackages.module(c, id);
+        JSONArray cached = cachedCatalogue(id, module);
+        if (cached != null) return cached;
         Object value = ProviderBroker.call(c, id, "catalogue", null, http);
         if (!(value instanceof JSONArray)) throw new IOException("Invalid catalogue result");
         JSONArray rows = (JSONArray) value;
+        if (id.equals("zlive")) rows = ZliveSources.expand(rows);
         if (rows.length() == 0 || rows.length() > 5000) throw new IOException("Invalid catalogue size");
         Set<String> seen = new HashSet<>();
         for (int i = 0; i < rows.length(); i++) {
@@ -206,6 +220,7 @@ final class AdapterSources {
         } catch (Exception e) {
             Diagnostics.recovered("Saving TCL resolver hints", e);
         }
+        if (id.equals("zlive")) ZliveSources.save(c, module, rows);
         synchronized (AdapterSources.class) {
             cache.put(id, rows);
             expiry.put(id, System.currentTimeMillis() + 600_000);
@@ -235,18 +250,35 @@ final class AdapterSources {
 
     static JSONObject resolverRow(Context c, String id, String wanted, NativeHttp http) throws Exception {
         http.check();
+        if (id.equals("zlive")) {
+            JSONObject hint = ZliveSources.hint(c, ProviderPackages.module(c, id), wanted);
+            if (hint != null) return hint;
+            // Old stored IDs omitted auto-/evt-. Match them against a catalogue already in memory,
+            // but never download the catalogue just to start a channel (cold starts stay fast).
+            JSONArray current = cachedCatalogue(id, ProviderPackages.module(c, id));
+            if (current != null) for (int i = 0; i < current.length(); i++) {
+                JSONObject candidate = current.getJSONObject(i);
+                String key = candidate.getString("channelId");
+                if (
+                    wanted.equals(key) ||
+                    wanted.equals(key.replaceFirst("^auto-", "").replaceFirst("^evt-", ""))
+                ) return candidate;
+            }
+            // The resolver passes the raw channel ID unchanged; source variants need their row.
+            if (!wanted.contains(ZliveSources.VARIANT)) return new JSONObject().put("channelId", wanted);
+        }
         // These upstream resolvers accept the provider's own channel id; no catalogue hop is needed.
+        // Plex is not one: it plays by a compound id whose server prefix changes, so its (cached)
+        // catalogue row is looked up.
         if (
             Arrays.asList(
                 "stirr",
                 "xumo",
                 "roku",
-                "plex",
                 "dlhd",
                 "tubi",
                 "samsung",
                 "localnow",
-                "zlive",
                 "freeshot"
             ).contains(id)
         ) return new JSONObject().put("channelId", wanted);
@@ -289,6 +321,14 @@ final class AdapterSources {
             id.equals("dlhd") ? playerRow(url, row) : row,
             http
         );
+        if (id.equals("zlive")) {
+            resolved.put("segmentContainers", true);
+            JSONObject supplied = row.optJSONObject("sourceHeaders");
+            if (supplied != null) for (Iterator<String> keys = supplied.keys(); keys.hasNext(); ) {
+                String key = keys.next();
+                resolved.getJSONObject("headers").put(key, supplied.getString(key));
+            }
+        }
         EngineSources.Stream stream = new EngineSources.Stream(resolved);
         if (id.equals("dlhd")) rememberPlayer(url, resolved.optInt("playerIndex", 0));
         return stream;
@@ -323,7 +363,8 @@ final class AdapterSources {
                         locator(id, channel),
                         guideCategory(row.optString("category", ""), row.getString("name")),
                         logo,
-                        source(id) + ":" + channel
+                        source(id) + ":" + row.optString("guideChannelId", channel),
+                        row.optString("sourceLabel", "")
                     )
                 );
             }
@@ -332,12 +373,7 @@ final class AdapterSources {
         } finally {
             writer.abort();
         }
-        try {
-            guide(id, db, rows, cancel);
-        } catch (Exception e) {
-            cancel.check();
-            Diagnostics.recovered("Provider inline guide", e);
-        }
+        // Programme data comes only from the cached combined guide.
         c.getSharedPreferences("providerEngine", 0)
             .edit()
             .putInt(id + "Count", rows.length())
@@ -345,44 +381,5 @@ final class AdapterSources {
             .remove(id + "Error")
             .apply();
         return rows.length();
-    }
-
-    private static void guide(String id, ChannelDatabase db, JSONArray rows, ChannelDatabase.Cancel cancel)
-        throws Exception {
-        ChannelDatabase.GuideWriter writer = db.new GuideWriter(source(id) + ":");
-        try {
-            for (int i = 0; i < rows.length(); i++) {
-                JSONObject row = rows.getJSONObject(i);
-                String key = source(id) + ":" + row.getString("channelId");
-                writer.match(EpgMatch.key(key), key);
-                JSONArray programs = row.optJSONArray("programs");
-                if (programs == null) continue;
-                for (int j = 0; j < programs.length(); j++) {
-                    cancel.check();
-                    JSONObject p = programs.getJSONObject(j);
-                    long start, end;
-                    try {
-                        start = java.time.Instant.parse(p.getString("start")).toEpochMilli();
-                        end = java.time.Instant.parse(p.getString("end")).toEpochMilli();
-                    } catch (Exception e) {
-                        continue;
-                    }
-                    if (end <= start) continue;
-                    if (writer.programmes >= 50000) throw new IOException("Guide limit");
-                    writer.programme(
-                        key,
-                        start,
-                        end,
-                        p.optString("title"),
-                        p.optString("desc"),
-                        p.optString("genre"),
-                        ""
-                    );
-                }
-            }
-            if (writer.programmes > 0) writer.commit();
-        } finally {
-            writer.finish();
-        }
     }
 }

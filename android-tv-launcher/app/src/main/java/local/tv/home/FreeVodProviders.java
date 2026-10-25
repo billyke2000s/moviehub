@@ -20,16 +20,20 @@ public final class FreeVodProviders {
     }
 
     static List<String> ids(Context context) throws Exception {
-        JSONArray rows = new JSONArray(runtime(context).callAttr("providers").toString());
+        JSONArray rows = new JSONArray(runtime(context).callAttr("search_providers").toString());
         List<String> result = new ArrayList<>();
-        // Direct-link providers first, but every bundled provider is scheduled.
-        for (String family : new String[] { "free99", "scrubs" }) {
-            for (int i = 0; i < rows.length(); i++) {
-                JSONObject row = rows.getJSONObject(i);
-                if (family.equals(row.getString("family"))) result.add(row.getString("id"));
-            }
-        }
+        for (int i = 0; i < rows.length(); i++) result.add(rows.getJSONObject(i).getString("id"));
         return result;
+    }
+
+    static List<String> ids(Context context, boolean series) throws Exception {
+        JSONArray rows = new JSONArray(runtime(context).callAttr("search_providers").toString());
+        List<String> ids = new ArrayList<>();
+        for (int i = 0; i < rows.length(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            if (row.optBoolean(series ? "series" : "movies")) ids.add(row.getString("id"));
+        }
+        return ids;
     }
 
     static int validate(Context context) {
@@ -87,6 +91,6 @@ public final class FreeVodProviders {
                 Diagnostics.recovered("Free source result", error);
             }
         };
-        return runtime(context).callAttr("query", id, query.toString(), cancelled, callback).toString();
+        return runtime(context).callAttr("query_site", id, query.toString(), cancelled, callback).toString();
     }
 }

@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 import org.json.JSONObject;
 
 /** A disposable isolated UID: no app accounts, databases, files or INTERNET permission. */
-public final class ProviderService extends Service {
+public class ProviderService extends Service {
 
     static final String DESCRIPTOR = "local.tv.home.provider.v1";
     static final int EVALUATE = IBinder.FIRST_CALL_TRANSACTION;
@@ -30,7 +30,8 @@ public final class ProviderService extends Service {
                 String result = ProviderScript.evaluate(
                     request.getString("source"),
                     request.getString("operation"),
-                    request.getString("payload")
+                    request.getString("payload"),
+                    reuseCompiledCode()
                 );
                 out.write(result.getBytes(StandardCharsets.UTF_8));
                 reply.writeNoException();
@@ -72,6 +73,10 @@ public final class ProviderService extends Service {
             out.write(buffer, 0, n);
         }
         return out.toString(StandardCharsets.UTF_8.name());
+    }
+
+    protected boolean reuseCompiledCode() {
+        return false;
     }
 
     @Override

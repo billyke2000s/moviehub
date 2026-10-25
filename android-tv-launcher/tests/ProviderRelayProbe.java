@@ -32,12 +32,14 @@ final class EngineSources {
         final String url;
         final JSONObject headers;
         final JSONObject playlistSession;
+        final boolean segmentContainers;
 
         Stream(JSONObject value) {
             url = value.getString("url");
             headers =
                 value.optJSONObject("headers") == null ? new JSONObject() : value.getJSONObject("headers");
             playlistSession = value.optJSONObject("playlistSession");
+            segmentContainers = value.optBoolean("segmentContainers", false);
         }
     }
 }

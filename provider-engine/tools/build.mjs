@@ -47,6 +47,7 @@ function invoke(operation, payload) {
 `;
 const pkg = {
     runtime: 2,
+    capabilities: { zliveSources: 1 },
     version: Number(process.env.PROVIDER_VERSION || "1"),
     upstream: process.env.UPSTREAM_SHA || "3b860294ecb4a9ebca8819adfc061162fbbb7f99",
     modules: { freelivesports: prelude + compiled.outputText + wrapper },
@@ -253,47 +254,7 @@ function __run(operation,row){
  throw new Error('Unsupported operation');
 }
 `;
-const zliveFiles = ["config", "resolver", "dynamicAllow", "domain", "ssrf"];
-const zliveFactories = zliveFiles
-    .map(
-        (name) =>
-            `${JSON.stringify("./" + name + ".js")}:function(exports,require){${compileLeaf("upstream/modules/zlive/" + name + ".ts")}\n;return exports;}`,
-    )
-    .join(",");
-pkg.modules.zlive =
-    compatibility +
-    `
-var __provider='zlive',exports,__baseRequire=require,__zResolver,__zCode;
-function __load(){
- var factories={${zliveFactories}},cache={};
- require=function(id){
-  if(id==='../_fast/dynamicAllow.js')id='./dynamicAllow.js';
-  if(id==='../../core/domain.js')id='./domain.js';
-  if(id==='../../core/ssrf.js')id='./ssrf.js';
-  if(id==='../../../logs/tier.js')return {logMilestone:function(){},logTrace:function(){}};
-  if(!factories[id])return __baseRequire(id);
-  if(!cache[id]){cache[id]={};cache[id]=factories[id](cache[id],require);}return cache[id];
- };
- exports=require('./config.js');__zCode=require('./resolver.js');
- __zResolver=__zCode.createZliveResolver({fetch:fetch,now:function(){return Date.now();},lookup:function(host){return fetch('https://provider-dns.invalid/'+encodeURIComponent(host)).then(function(r){return r.json();});}});
-}
-function __run(operation,row){
- if(row.domain)exports.setDomain(row.domain);
- if(operation==='catalogue')return fetch(exports.getCatalogUrl(),{headers:{'User-Agent':exports.UA}}).then(function(r){if(!r.ok)throw new Error('ZLive catalogue unavailable');return r.json();}).then(function(body){var rows=exports.parseCatalog(body);if(!rows)throw new Error('Invalid ZLive catalogue');var seen=Object.create(null);return rows.map(function(r){var id=exports.slugOf(r.id);if(!id||exports.isDuplicateSlug(id)||Object.hasOwn(seen,id))return null;seen[id]=true;return {channelId:id,name:r.name||id,category:exports.groupOf(r.sport)};}).filter(function(r){return !!r;});});
- if(operation==='resolve'){
-  var history=__input.history||[],current=__input.responses,start=__clock;
-  function resolve(i){
-   if(i<history.length){var event=history[i];__input.responses=event.responses;__ordinal=0;__clock=event.at;__pending=[];__restoring=true;__restoreCancelled=!!event.cancelled;__historyInvalid=false;
-    return __zResolver.resolve(event.slug,{fresh:!!event.fresh}).catch(function(){}).then(function(){if(__pending.length||__historyInvalid)throw new Error('Incompatible provider history');return resolve(i+1);});
-   }
-   __input.responses=current;__ordinal=0;__clock=start;__pending=[];__restoring=false;
-   return __zResolver.resolve(row.channelId,{fresh:!!row.fresh}).then(function(r){return {url:r.masterUrl,expiresAtMs:r.expiresAtMs||0,headers:{'User-Agent':exports.UA},userAgent:exports.UA,referer:''};},function(e){return {failure:e.errorClass||'shape'};});
-  }
-  return resolve(0);
- }
- throw new Error('Unsupported operation');
-}
-`;
+pkg.modules.zlive = compatibility + readFileSync(root + "tools/zlive.js", "utf8");
 pkg.modules.freeshot = compatibility + readFileSync(root + "tools/freeshot.js", "utf8");
 pkg.sourceSha256 = createHash("sha256").update(JSON.stringify(pkg.modules)).digest("hex");
 pkg.sources = Object.fromEntries(

@@ -15,9 +15,7 @@ final class ProviderBroker {
         "xumo",
         "lg",
         "whale",
-        "distro",
         "vizio",
-        "vidaa",
         "roku",
         "plex",
         "dlhd",
@@ -84,7 +82,7 @@ final class ProviderBroker {
                     );
                 case "zlive":
                 case "dlhd":
-                    return true; // Public HTTPS GET only; no app credentials, LAN or POST capability.
+                    return true; // Public HTTPS only; the transport separately bounds ZLive session POST.
                 case "stirr":
                     return host.equals("stirr.com") && u.getPath().startsWith("/api/");
                 case "tcl":
@@ -95,18 +93,11 @@ final class ProviderBroker {
                     return host.equals("api.lgchannels.com") && u.getPath().startsWith("/api/v1.0/");
                 case "whale":
                     return host.equals("rlaxx.zeasn.tv") && u.getPath().startsWith("/livetv/api/");
-                case "distro":
-                    return (
-                        host.equals("tv.jsrdn.com") &&
-                        (u.getPath().startsWith("/tv_v5/") || u.getPath().startsWith("/epg/"))
-                    );
                 case "vizio":
                     return (
                         host.equals("watchfreeplus-epg-prod.smartcasttv.com") &&
                         u.getPath().startsWith("/api/")
                     );
-                case "vidaa":
-                    return host.equals("vtvapp-ovp.vidaahub.com") || host.endsWith(".vidaahub.com");
                 case "roku":
                     return host.equals("therokuchannel.roku.com") || host.equals("content.sr.roku.com");
                 case "plex":
@@ -173,12 +164,26 @@ final class ProviderBroker {
         NativeHttp http,
         JSONObject journal
     ) throws Exception {
+        return run(module, operation, row, engine, transport, http, journal, false);
+    }
+
+    static Object run(
+        String module,
+        String operation,
+        JSONObject row,
+        Executor engine,
+        Transport transport,
+        NativeHttp http,
+        JSONObject journal,
+        boolean fast
+    ) throws Exception {
         JSONArray responses = new JSONArray();
         JSONObject input = new JSONObject()
             .put("now", System.currentTimeMillis())
             .put("seed", seed())
             .put("row", row == null ? new JSONObject() : row)
             .put("responses", responses);
+        if (fast) input.put("fastResolve", true);
         if (journal != null) {
             input.put("history", journal.getJSONArray("history"));
             journal.put("responses", responses).put("at", input.getLong("now"));
@@ -213,7 +218,11 @@ final class ProviderBroker {
                     JSONObject response = transport.request(request);
                     record.put("response", response);
                 } catch (InterruptedIOException e) {
-                    throw e;
+                    // A per-hop socket timeout is not cancellation. Fast DaddyLive can try its
+                    // next player while the whole lookup still has time left.
+                    http.check();
+                    if (!fast || !(e instanceof SocketTimeoutException)) throw e;
+                    record.put("error", true).put("failure", ProviderFailure.describe(e));
                 } catch (Exception e) {
                     http.check();
                     record.put("error", true).put("failure", ProviderFailure.describe(e));
@@ -257,6 +266,8 @@ final class ProviderBroker {
             String domain = c.getSharedPreferences("ui", 0).getString("engineZliveDomain", "");
             if (!domain.isEmpty()) row.put("domain", domain);
         }
+        final String zliveBase =
+            "https://iptv." + (row == null ? "zlive.st" : row.optString("domain", "zlive.st"));
         Executor engine = (script, op, payload) -> ProviderBridge.call(c, script, op, payload);
         Transport transport = request -> {
             String target = request.getString("url");
@@ -296,15 +307,22 @@ final class ProviderBroker {
                 String key = keys.next();
                 headers.put(key, h.getString(key));
             }
+            boolean sessionPost =
+                id.equals("zlive") &&
+                request.getString("method").equals("POST") &&
+                target.equals(zliveBase + "/resolve") &&
+                request.getString("body").length() <= 16384;
             if (
-                (id.equals("dlhd") || id.equals("zlive")) && !request.getString("method").equals("GET")
-            ) throw new IOException("Read-only provider capability");
+                (id.equals("dlhd") || id.equals("zlive")) &&
+                !request.getString("method").equals("GET") &&
+                !sessionPost
+            ) throw new IOException("Provider method capability rejected");
             return http.exchange(
                 request.getString("url"),
                 request.getString("method"),
                 headers,
                 request.getString("body"),
-                url -> allowed(id, url),
+                url -> allowed(id, url) && (!sessionPost || url.equals(target)),
                 request.optString("redirect").equals("manual")
             );
         };
@@ -316,6 +334,13 @@ final class ProviderBroker {
             transport,
             http
         );
+        if (id.equals("dlhd") && operation.equals("resolve")) {
+            Transport network = transport;
+            String fingerprint = ProviderCodec.call("sha256", module);
+            boolean knownParser = module.equals(ProviderPackages.builtinModule(c, id));
+            Transport cached = request -> DlhdPageCache.request(fingerprint, request, network, knownParser);
+            return ProviderSessionBridge.run(c, module, row, cached, http);
+        }
         return run(module, operation, row, engine, transport, http);
     }
 }

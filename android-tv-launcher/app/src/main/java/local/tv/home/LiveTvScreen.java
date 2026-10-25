@@ -79,9 +79,10 @@ final class LiveTvScreen {
     /** How far the time slots have moved on from now (multiples of half an hour). */
     long windowOffset;
     /** The slots go up to a day ahead, as far as the programme guide reaches. */
-    static final long MAX_OFFSET = 24L * 60 * 60 * 1000,
+    static final long MAX_OFFSET = 7L * 24 * 60 * 60 * 1000,
         HALF_HOUR = 30L * 60 * 1000;
     private int loadTicket;
+    private long displayedGuideRevision;
 
     LiveTvScreen(MainActivity activity) {
         this.activity = activity;
@@ -264,6 +265,7 @@ final class LiveTvScreen {
         long windowStart = windowStart();
         activity.async(
             () -> {
+                long revision = channelsDb().guideRevision();
                 // The rows shown, and one more to tell whether another page follows.
                 List<ChannelDatabase.Row> rows = channelsDb().browse(
                     listFilter,
@@ -282,10 +284,13 @@ final class LiveTvScreen {
                         windowStart + WINDOW_MS
                     )
                 );
-                return new Object[] { rows, listings };
+                // How many channels the whole list has, for the count beside its name.
+                int total = channelsDb().listCount(listFilter, listSearch, favouriteKeys());
+                return new Object[] { rows, listings, total, revision };
             },
             result -> {
                 if (ticket != loadTicket) return; // a later page was asked for meanwhile
+                displayedGuideRevision = (Long) result[3];
                 pageLoading = false;
                 if (pendingPageDirection != 0) {
                     int direction = pendingPageDirection,
@@ -305,6 +310,7 @@ final class LiveTvScreen {
                     List<ChannelDatabase.Programme>
                 >) result[1];
                 grid.removeAllViews();
+                frame.listCount((Integer) result[2]);
                 showStatus(frame.status);
                 cells.clear();
                 rows.clear();
@@ -389,7 +395,7 @@ final class LiveTvScreen {
     private void play(ChannelDatabase.Row channel, int position) {
         String listFilter = filter,
             listSearch = search;
-        String activeUrl = LivePlayer.currentUrl();
+        String activeUrl = ExoLive.available() ? ExoLive.currentUrl() : LivePlayer.currentUrl();
         String activeKey = activeUrl == null ? null : ChannelQuery.key(activeUrl);
         activity.async(
             () -> {
@@ -510,6 +516,12 @@ final class LiveTvScreen {
             typeDigit(key - KeyEvent.KEYCODE_0);
             return true;
         }
+        // OK while typing a number goes there at once, instead of opening the highlighted row.
+        if ((key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER) && typed.length() > 0) {
+            selectUpPending = true;
+            jumpToTyped();
+            return true;
+        }
         if (isPageUp(key)) {
             turnPage(-1, row);
             return true;
@@ -603,14 +615,35 @@ final class LiveTvScreen {
 
     private final StringBuilder typed = new StringBuilder();
     private final Runnable jump = this::jumpToTyped;
+    /**
+     * How long after the last digit the typed number is used; OK uses it at once. 1.5 s: the owner
+     * found a longer wait too slow once the number on screen updated as typed.
+     */
+    static final long TYPE_MS = 1500;
+    private boolean selectUpPending;
 
     /** Number keys go straight to a channel, as on a satellite box: "151" opens channel 151. */
     private void typeDigit(int digit) {
         if (typed.length() >= 6) typed.setLength(0);
         typed.append(digit);
-        activity.toast("Channel " + typed);
+        // Drawn by the guide (GuideFrame.showNumber), so it looks the same on every box. Android
+        // toasts differed between boxes, and a new one per digit queued behind the typing.
+        frame.showNumber(typed.toString());
         activity.handler.removeCallbacks(jump);
-        activity.handler.postDelayed(jump, 1500);
+        activity.handler.postDelayed(jump, TYPE_MS);
+    }
+
+    /** The number being typed, or "" (package-private for tests). */
+    String typedNumber() {
+        return typed.toString();
+    }
+
+    /** The release of an OK that jumped to a typed number: consumed, so it does not also open a row. */
+    boolean consumeSelectUp(int key) {
+        boolean select = key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER;
+        if (!selectUpPending || !select) return false;
+        selectUpPending = false;
+        return true;
     }
 
     /**
@@ -618,6 +651,8 @@ final class LiveTvScreen {
      * all channels, and a number no channel has goes to the nearest one above it.
      */
     private void jumpToTyped() {
+        activity.handler.removeCallbacks(jump);
+        frame.showNumber("");
         if (typed.length() == 0) return;
         int number = Integer.parseInt(typed.toString());
         typed.setLength(0);
@@ -668,6 +703,11 @@ final class LiveTvScreen {
                     ) return;
                     ChannelImporter.Status latest = ChannelImporter.status(activity);
                     if (latest.running || latest.queued) {
+                        if (channelsDb().guideRevision() != displayedGuideRevision) {
+                            // Listings may finish well before the slow optional catalogues.
+                            guide(pageStart, focusedRow());
+                            return;
+                        }
                         status.setText(
                             latest.running
                                 ? String.format(
