@@ -73,6 +73,45 @@ public class SettingsStyleTest {
         }
     }
 
+    /** Free channels: one page with plain sections, a card per service, and focus kept on rebuild. */
+    @Test
+    public void freeChannelsIsOnePageWithSectionsAndACardPerService() {
+        // Its own sidebar tab, not a card under Accounts.
+        remote.runOnMainSync(() -> activity.settingsScreens.settings());
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            View button = find(activity.getWindow().getDecorView(), FreeChannelsPage.TAB);
+            assertNotNull("Free channels tab", button);
+            while (!button.hasOnClickListeners()) button = (View) button.getParent();
+            button.performClick();
+        });
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            View decor = activity.getWindow().getDecorView();
+            for (String heading : new String[] { "Public channel lists", "Free services", "Advanced" })
+                assertNotNull("Section " + heading, find(decor, heading));
+            for (String card : new String[] {
+                "Refresh channels",
+                "Channel lists",
+                "Pluto TV",
+                "FreeLiveSports",
+            })
+                assertNotNull("Card " + card, find(decor, card));
+            for (String label : AdapterSources.LABELS) assertNotNull("Service " + label, find(decor, label));
+            for (String gone : new String[] { "Local provider engine", "Runtime 2" })
+                assertNull("Engine jargon removed: " + gone, find(decor, gone));
+        });
+        UiEvidence.capture("settings-free-channels");
+        remote.runOnMainSync(() -> new FreeChannelsPage(activity).show("Pluto TV"));
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            View focus = activity.getCurrentFocus();
+            assertTrue("A card button has the focus", focus instanceof Button);
+            ViewGroup card = (ViewGroup) focus.getParent();
+            assertNotNull("Focus stays on the Pluto TV card", find(card, "Pluto TV"));
+        });
+    }
+
     @Test
     public void everyTabUsesTheAccountCardStyle() {
         remote.runOnMainSync(() -> activity.settingsScreens.settings());

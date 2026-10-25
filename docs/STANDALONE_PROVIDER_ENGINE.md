@@ -1,7 +1,7 @@
 # Standalone provider engine — experimental Android port
 
 This draft ports the available historical Masqueradarr provider code to Android. It uses no home
-server. It is opt-in under Settings → Accounts → Free channels → Local provider engine. Main and
+server. It is opt-in under Settings → Free channels → Free services. Main and
 production releases are unchanged. Existing native Pluto, IPTV/M3U/Xtream and VOD remain intact.
 
 ## Source provenance and compatibility

@@ -76,7 +76,13 @@ final class SettingsScreens {
         scroll.addView(body);
         layout.addView(scroll, new LinearLayout.LayoutParams(0, -1, 1));
         List<Button> choices = new ArrayList<>();
-        for (String tab : new String[] { "Accounts", "Appearance", "Playback", "System" }) {
+        for (String tab : new String[] {
+            "Accounts",
+            FreeChannelsPage.TAB,
+            "Appearance",
+            "Playback",
+            "System",
+        }) {
             Button choice = activity.navigationButton(tab, () -> {});
             choices.add(choice);
             LinearLayout.LayoutParams navParams = new LinearLayout.LayoutParams(-1, activity.dp(44));
@@ -188,7 +194,7 @@ final class SettingsScreens {
     }
 
     /** Section heading at the top of a Settings tab. */
-    private void heading(LinearLayout body, String text) {
+    void heading(LinearLayout body, String text) {
         body.addView(activity.compactText(text, 23));
     }
 
@@ -526,9 +532,10 @@ final class SettingsScreens {
             heading(body, "Your connections");
             accountCard(body, "Xtream", "Live channels from your TV provider");
             accountCard(body, "M3U playlist", "Your own IPTV playlist");
-            freeChannelsCard(body);
             accountCard(body, "TMDB", "Movie and series discovery, details and artwork");
             accountCard(body, "Premiumize", "Playback sources and your cloud library");
+        } else if (tab.equals(FreeChannelsPage.TAB)) {
+            new FreeChannelsPage(activity).fill(body, null);
         } else if (tab.equals("Appearance")) {
             heading(body, "Look and feel");
             toggle(body, "Featured row", "Artwork and a poster shelf on Home", "featured", true);
@@ -683,59 +690,5 @@ final class SettingsScreens {
             );
         }
         activity.settingsStyle(body);
-    }
-
-    /** Free public channels from iptv-org for Live TV, by country. */
-    private void freeChannelsCard(LinearLayout body) {
-        String current = FreeChannels.choice(activity);
-        TextView[] shown = new TextView[1];
-        shown[0] = settingCard(
-            body,
-            "Free channels",
-            "Native Pluto TV and public channel lists, without a TV provider",
-            FreeChannels.label(current),
-            !current.equals("off"),
-            "Change",
-            () -> {
-                String[] names = new String[FreeChannels.CHOICES.length];
-                int selected = 0;
-                for (int i = 0; i < names.length; i++) {
-                    names[i] = FreeChannels.CHOICES[i][1];
-                    if (FreeChannels.CHOICES[i][0].equals(FreeChannels.choice(activity))) selected = i;
-                }
-                SidePanel.of(activity, "Free channels")
-                    .option(
-                        "Pluto TV · " + (activity.prefs.getBoolean(NativeSources.PLUTO, true) ? "On" : "Off"),
-                        () -> {
-                            boolean enabled = activity.prefs.getBoolean(NativeSources.PLUTO, true);
-                            activity.prefs.edit().putBoolean(NativeSources.PLUTO, !enabled).apply();
-                            ChannelSync.refreshNow(activity);
-                        }
-                    )
-                    .option("Local provider engine", () -> new ProviderSettings(activity).show())
-                    .option("Refresh channels", () -> ChannelSync.refreshNow(activity))
-                    .option(
-                        activity.secrets.has("masqueradarr")
-                            ? "Masqueradarr · Connected / manage"
-                            : "Masqueradarr · Configure",
-                        () -> accountScreen("Masqueradarr")
-                    )
-                    .message(
-                        "Pluto TV loads channels for your location and resolves streams when you play. " +
-                            "Last catalogue: " +
-                            activity.getSharedPreferences("channelImport", 0).getInt("nativePlutoCount", 0) +
-                            " channels. Public lists add other free channels. Regional restrictions apply. " +
-                            "The choices below control all automatic free channels; your accounts stay separate."
-                    )
-                    .choices(names, selected, which -> {
-                        String value = FreeChannels.CHOICES[which][0];
-                        activity.prefs.edit().putString(FreeChannels.PREF, value).apply();
-                        shown[0].setText(FreeChannels.label(value));
-                        statusColour(shown[0], !value.equals("off"));
-                        ChannelSync.refreshNow(activity);
-                    })
-                    .show();
-            }
-        );
     }
 }

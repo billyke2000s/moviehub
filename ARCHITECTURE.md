@@ -101,6 +101,7 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `LiveVideoOutput`             | Where the session's one live player draws: VLC's standard `VLCVideoLayout` (SurfaceView), moved between the guide's mini picture and the full screen without reopening the stream.                                                                                                                                  |
 | `PlayerOptions`               | LibVLC engine options, one list for films and one for Live TV, so a change to one never reaches the other.                                                                                                                                                                                                          |
 | `SettingsScreens`             | Settings tabs, account setup (TMDB, Premiumize, Xtream, M3U), languages, toggles.                                                                                                                                                                                                                                   |
+| `FreeChannelsPage`            | The Settings → Free channels tab: public lists, every free service on/off with channel counts, and Advanced (US-only, Masqueradarr, ZLive address, service updates). `ProviderSettings` keeps only the first-start question.                                                                                     |
 | `ForYou`                      | The Home "For you" shelf: blends TMDB recommendations for up to six titles you played, saved or opened, ranked and cached on the box.                                                                                                                                                                               |
 | `UpdatePrompt`                | Checks the public release feed and offers a verified update. See [android-tv-launcher/UPDATES.md](android-tv-launcher/UPDATES.md).                                                                                                                                                                                  |
 
@@ -193,8 +194,8 @@ other providers retain their existing paths; fullscreen/mini-player share the sa
 
 `ProviderFailure` classifies fixed diagnostic summaries and HTTP status codes without copying exception
 messages. `ProviderBroker` retains safe transport failure categories across replay and wraps failed script
-steps with the observed HTTP/network cause. `ChannelImporter` stores the summary; `ProviderSettings`
-puts it first in the description. Settings cards use minimum height plus wrap-content. Guide label sizing
+steps with the observed HTTP/network cause. `ChannelImporter` stores the summary; `FreeChannelsPage`
+puts it first in the service's description. Settings cards use minimum height plus wrap-content. Guide label sizing
 fits row height while retaining horizontal ellipsis.
 
 `ChannelSync.refreshIfStale` also refreshes once when the app version that last finished an import (`refreshedVersion`, recorded whatever the outcome, since `lastSuccess` needs no failures at all) differs from the running one. `ProviderOutage` turns those fixed summaries into the guide's one "Unavailable now" line, grouped by
