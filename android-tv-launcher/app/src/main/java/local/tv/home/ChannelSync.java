@@ -59,11 +59,24 @@ final class ChannelSync {
         // Failed regional services must not trigger a new full import on every guide visit.
         long attempted = context.getSharedPreferences("channelImport", 0).getLong("lastAttempt", 0);
         if (System.currentTimeMillis() - attempted < TimeUnit.MINUTES.toMillis(10)) return;
+        boolean updated = updatedSinceRefresh(
+            context.getSharedPreferences("channelImport", 0).getInt("refreshedVersion", -1),
+            BuildConfig.VERSION_CODE
+        );
         if (
             !status.running &&
             !status.queued &&
-            System.currentTimeMillis() - last > TimeUnit.HOURS.toMillis(REFRESH_HOURS)
+            (updated || System.currentTimeMillis() - last > TimeUnit.HOURS.toMillis(REFRESH_HOURS))
         ) refreshNow(context);
+    }
+
+    /**
+     * Whether this app version has not finished a refresh yet: an update brings new guide
+     * sources and fixes, which apply only once channels are refreshed. Unknown (-1) counts as
+     * updated, so the first version that records it refreshes once too.
+     */
+    static boolean updatedSinceRefresh(int refreshedVersion, int currentVersion) {
+        return refreshedVersion != currentVersion;
     }
 
     public static final class Job extends Worker {

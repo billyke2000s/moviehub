@@ -214,6 +214,9 @@ final class ChannelImporter {
                 .putString("message", message)
                 .putLong("lastAttempt", System.currentTimeMillis());
             if (anySource && problems.isEmpty()) edit.putLong("lastSuccess", System.currentTimeMillis());
+            // The app version that last finished a refresh, whatever its outcome: after an update,
+            // ChannelSync refreshes once so new guide sources and fixes apply straight away.
+            if (anySource) edit.putInt("refreshedVersion", BuildConfig.VERSION_CODE);
             edit.apply();
             return problems.isEmpty();
         }
