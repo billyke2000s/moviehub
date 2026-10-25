@@ -241,7 +241,7 @@ Sources defaults to Automatic. A manual choice pins that source; restoring Autom
 unvisited copies once, including earlier copies, then stops. The menu reads saved database rows;
 only a selected source or needed failover is resolved.
 
-FreeShot (UK sports) is available as an opt-in source in Settings → Provider engine. It imports
+FreeShot (UK sports) is available as an opt-in source in Settings → Accounts → Free channels. It imports
 the public related-channel directory in one request, follows only the chosen channel's literal
 embed/player links, normalizes relative/whitespace-containing iframe addresses, and uses the
 native player. Fetched page scripts and adverts never execute. Anonymous tokens renew at the

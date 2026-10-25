@@ -188,7 +188,7 @@ final class SettingsScreens {
     }
 
     /** Section heading at the top of a Settings tab. */
-    private void heading(LinearLayout body, String text) {
+    void heading(LinearLayout body, String text) {
         body.addView(activity.compactText(text, 23));
     }
 
@@ -685,57 +685,18 @@ final class SettingsScreens {
         activity.settingsStyle(body);
     }
 
-    /** Free public channels from iptv-org for Live TV, by country. */
+    /** Free channels in Accounts: how many free services are on; everything else is on its page. */
     private void freeChannelsCard(LinearLayout body) {
-        String current = FreeChannels.choice(activity);
-        TextView[] shown = new TextView[1];
-        shown[0] = settingCard(
+        int on = FreeChannelsPage.servicesOn(activity.prefs);
+        String lists = FreeChannelsPage.regionLabel(FreeChannels.choice(activity));
+        settingCard(
             body,
             "Free channels",
-            "Native Pluto TV and public channel lists, without a TV provider",
-            FreeChannels.label(current),
-            !current.equals("off"),
-            "Change",
-            () -> {
-                String[] names = new String[FreeChannels.CHOICES.length];
-                int selected = 0;
-                for (int i = 0; i < names.length; i++) {
-                    names[i] = FreeChannels.CHOICES[i][1];
-                    if (FreeChannels.CHOICES[i][0].equals(FreeChannels.choice(activity))) selected = i;
-                }
-                SidePanel.of(activity, "Free channels")
-                    .option(
-                        "Pluto TV · " + (activity.prefs.getBoolean(NativeSources.PLUTO, true) ? "On" : "Off"),
-                        () -> {
-                            boolean enabled = activity.prefs.getBoolean(NativeSources.PLUTO, true);
-                            activity.prefs.edit().putBoolean(NativeSources.PLUTO, !enabled).apply();
-                            ChannelSync.refreshNow(activity);
-                        }
-                    )
-                    .option("Local provider engine", () -> new ProviderSettings(activity).show())
-                    .option("Refresh channels", () -> ChannelSync.refreshNow(activity))
-                    .option(
-                        activity.secrets.has("masqueradarr")
-                            ? "Masqueradarr · Connected / manage"
-                            : "Masqueradarr · Configure",
-                        () -> accountScreen("Masqueradarr")
-                    )
-                    .message(
-                        "Pluto TV loads channels for your location and resolves streams when you play. " +
-                            "Last catalogue: " +
-                            activity.getSharedPreferences("channelImport", 0).getInt("nativePlutoCount", 0) +
-                            " channels. Public lists add other free channels. Regional restrictions apply. " +
-                            "The choices below control all automatic free channels; your accounts stay separate."
-                    )
-                    .choices(names, selected, which -> {
-                        String value = FreeChannels.CHOICES[which][0];
-                        activity.prefs.edit().putString(FreeChannels.PREF, value).apply();
-                        shown[0].setText(FreeChannels.label(value));
-                        statusColour(shown[0], !value.equals("off"));
-                        ChannelSync.refreshNow(activity);
-                    })
-                    .show();
-            }
+            "Pluto TV, Samsung TV Plus, public channel lists and other free services",
+            on + " services on · lists: " + lists,
+            on > 0 || !FreeChannels.choice(activity).equals("off"),
+            "Open",
+            () -> new FreeChannelsPage(activity).show()
         );
     }
 }
