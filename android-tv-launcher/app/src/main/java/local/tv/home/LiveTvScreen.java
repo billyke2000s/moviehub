@@ -617,24 +617,15 @@ final class LiveTvScreen {
      * found a longer wait too slow once the number on screen updated as typed.
      */
     static final long TYPE_MS = 1500;
-    /**
-     * One message for the number being typed, replaced on each digit. A new long toast per digit
-     * queued up ("Channel 1", then "Channel 10"…), so the screen lagged behind the typing.
-     */
-    private android.widget.Toast typing;
     private boolean selectUpPending;
 
     /** Number keys go straight to a channel, as on a satellite box: "151" opens channel 151. */
     private void typeDigit(int digit) {
         if (typed.length() >= 6) typed.setLength(0);
         typed.append(digit);
-        if (typing != null) typing.cancel();
-        typing = android.widget.Toast.makeText(
-            activity,
-            "Channel " + typed + "–",
-            android.widget.Toast.LENGTH_SHORT
-        );
-        typing.show();
+        // Drawn by the guide (GuideFrame.showNumber), so it looks the same on every box. Android
+        // toasts differed between boxes, and a new one per digit queued behind the typing.
+        frame.showNumber(typed.toString());
         activity.handler.removeCallbacks(jump);
         activity.handler.postDelayed(jump, TYPE_MS);
     }
@@ -658,8 +649,7 @@ final class LiveTvScreen {
      */
     private void jumpToTyped() {
         activity.handler.removeCallbacks(jump);
-        if (typing != null) typing.cancel();
-        typing = null;
+        frame.showNumber("");
         if (typed.length() == 0) return;
         int number = Integer.parseInt(typed.toString());
         typed.setLength(0);
