@@ -23,6 +23,8 @@ android {
     sourceSets {
         main { java.srcDirs += experimental ? 'src/experimental/java' : 'src/stable/java' }
         if (experimental) androidTest { java.srcDirs += 'src/experimentalTest/java' }
+        // -PmemoryProbe adds the 2 GB memory probe (memory-probe.yml); normal test runs never include it.
+        if (project.hasProperty('memoryProbe')) androidTest { java.srcDirs += 'src/memoryProbe/java' }
     }
     signingConfigs {
         release {

@@ -518,3 +518,13 @@ unknown version as updated.
 `CombinedEpgTest` uses loopback HTTP, real gzip/XML and SQLite to check conditional 304s, a single guide URL, native/name priority, future-only fallback and retention after malformed, empty, stale or failed updates. `ZliveSourcesTest` checks distinct labelled routes, duplicate rejection, old primary identity, permitted headers, unsupported website options and module-bound hints. Experimental `ExoLiveTest` checks exhausted ZLive failure/recovery with loopback media. Core provider tests validate fragmented PNG/WebP/raw/gzip carriers and the real TCP relay without a playlist-token session. None establishes live provider playback or a physical TV result.
 
 The generator has independent Python/Node merge, cache, expiry, DST, priority, invalid-XML and coverage-drop tests. Its GitHub run and published reports establish server publication; review exact per-run source failures rather than assuming every configured source succeeds.
+
+## Memory probe (2 GB)
+
+`memory-probe.yml` runs `MemoryProbeTest` (built only with `-PmemoryProbe -Pexperimental`, so normal
+device tests never include it) on an Android TV emulator with 2 GB of RAM. It turns on every free
+service, runs a full live channel refresh, pages the guide and watches the first channel, while
+`run-memory-probe.sh` samples MovieHub's processes (PSS) and the device's available memory every
+5 seconds. `summarise-memory-probe.py` reports peaks per phase as job annotations and the job
+summary. It is diagnostic: live services may fail from a CI runner, the emulator is x86_64 rather
+than an ARM box, and it fails only if MovieHub stops running.
