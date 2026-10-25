@@ -496,11 +496,6 @@ final class LiveZapper {
         return false;
     }
 
-    /** The channel's copies, in the guide's order (for LiveRace). */
-    List<ChannelDatabase.Row> copies() {
-        return copies;
-    }
-
     /**
      * The copies a source race may try: the one asked for, then every copy not yet tried this
      * time. Empty when the viewer chose a copy themselves or the channel has one copy only.
