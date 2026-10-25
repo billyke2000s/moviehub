@@ -162,7 +162,10 @@ public class LiveGuideTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_2);
-        remote.runOnMainSync(() -> assertEquals("112", activity.liveTv.typedNumber()));
+        remote.runOnMainSync(() -> {
+            assertEquals("112", activity.liveTv.typedNumber());
+            assertEquals("The guide draws the number as typed", "112–", activity.liveTv.frame.numberShown());
+        });
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         await("OK jumps to 112", () -> focused().startsWith("112  Channel 11"));
         assertTrue(
@@ -172,6 +175,11 @@ public class LiveGuideTest {
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
             assertEquals("", activity.liveTv.typedNumber());
+            assertEquals(
+                "The number box goes once the guide has jumped",
+                "",
+                activity.liveTv.frame.numberShown()
+            );
             assertTrue("The OK did not also open the highlighted channel", activity.hasWindowFocus());
         });
     }

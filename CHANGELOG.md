@@ -1,7 +1,8 @@
 ## Unreleased
-- Typing a channel number: the guide shows one "Channel 12–" message that updates as you type, instead
-  of queueing a long toast per digit (which lagged behind the typing), and OK jumps to the number at
-  once. The wait after the last digit stays 1.5 seconds.
+- Typing a channel number: the guide draws the number itself, Sky style (yellow "12–" in a blue box
+  beside Options), updating as you type, instead of queueing an Android toast per digit (which lagged
+  behind the typing and looked different on every box). OK jumps to the number at once. The wait after
+  the last digit stays 1.5 seconds.
 - Samsung TV Plus (GB) channels show listings, from i.mjh.nz/SamsungTVPlus/gb.xml.gz, matched by
   Samsung's own channel ids. They showed none before: the adapter drops the catalogue's listings.
 - More programme guides, best first: Freeview EPG (UK free-to-air, broadcasters' data, seven days,

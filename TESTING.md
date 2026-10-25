@@ -507,4 +507,5 @@ only the gb file and matches ids unchanged. The live gb.xml (273 channels, 2,550
 GBBC2300003ZQ) was inspected offline; it was not checked against the adapter's live catalogue.
 
 `LiveGuideTest.okJumpsToATypedNumberAtOnceWithoutOpeningTheHighlightedChannel` types 112 and OK: the guide
-lands on 112 before the digit wait runs out and the OK's release does not open the old row.
+lands on 112 before the digit wait runs out and the OK's release does not open the old row; the guide's own
+number box shows "112–" while typing and is gone after the jump.
