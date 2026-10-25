@@ -47,6 +47,7 @@ function invoke(operation, payload) {
 `;
 const pkg = {
     runtime: 2,
+    capabilities: { zliveSources: 1 },
     version: Number(process.env.PROVIDER_VERSION || "1"),
     upstream: process.env.UPSTREAM_SHA || "3b860294ecb4a9ebca8819adfc061162fbbb7f99",
     modules: { freelivesports: prelude + compiled.outputText + wrapper },
@@ -279,7 +280,7 @@ function __load(){
 }
 function __run(operation,row){
  if(row.domain)exports.setDomain(row.domain);
- if(operation==='catalogue')return fetch(exports.getCatalogUrl(),{headers:{'User-Agent':exports.UA}}).then(function(r){if(!r.ok)throw new Error('ZLive catalogue unavailable');return r.json();}).then(function(body){var rows=exports.parseCatalog(body);if(!rows)throw new Error('Invalid ZLive catalogue');var seen=Object.create(null);return rows.map(function(r){var id=exports.slugOf(r.id);if(!id||exports.isDuplicateSlug(id)||Object.hasOwn(seen,id))return null;seen[id]=true;return {channelId:id,name:r.name||id,category:exports.groupOf(r.sport)};}).filter(function(r){return !!r;});});
+ if(operation==='catalogue')return fetch(exports.getCatalogUrl(),{headers:{'User-Agent':exports.UA}}).then(function(r){if(!r.ok)throw new Error('ZLive catalogue unavailable');return r.json();}).then(function(body){var rows=exports.parseCatalog(body);if(!rows)throw new Error('Invalid ZLive catalogue');var seen=Object.create(null);return rows.map(function(r){var id=exports.slugOf(r.id);if(!id||exports.isDuplicateSlug(id)||Object.hasOwn(seen,id))return null;seen[id]=true;return {channelId:id,name:r.name||id,category:exports.groupOf(r.sport),sources:r.sources||[],region:r.region||''};}).filter(function(r){return !!r;});});
  if(operation==='resolve'){
   var history=__input.history||[],current=__input.responses,start=__clock;
   function resolve(i){
@@ -287,7 +288,7 @@ function __run(operation,row){
     return __zResolver.resolve(event.slug,{fresh:!!event.fresh}).catch(function(){}).then(function(){if(__pending.length||__historyInvalid)throw new Error('Incompatible provider history');return resolve(i+1);});
    }
    __input.responses=current;__ordinal=0;__clock=start;__pending=[];__restoring=false;
-   return __zResolver.resolve(row.channelId,{fresh:!!row.fresh}).then(function(r){return {url:r.masterUrl,expiresAtMs:r.expiresAtMs||0,headers:{'User-Agent':exports.UA},userAgent:exports.UA,referer:''};},function(e){return {failure:e.errorClass||'shape'};});
+   return __zResolver.resolve(row.resolverSlug||row.channelId,{fresh:!!row.fresh}).then(function(r){return {url:r.masterUrl,expiresAtMs:r.expiresAtMs||0,headers:{'User-Agent':exports.UA},userAgent:exports.UA,referer:''};},function(e){return {failure:e.errorClass||'shape'};});
   }
   return resolve(0);
  }

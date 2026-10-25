@@ -167,7 +167,7 @@ final class ProviderPngSegments {
         return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
     }
 
-    private static void writeTs(InputStream in, OutputStream out) throws IOException {
+    static void writeTs(InputStream in, OutputStream out) throws IOException {
         byte[] head = new byte[5 * 188];
         new DataInputStream(in).readFully(head);
         for (int i = 0; i < 5; i++) if (head[i * 188] != 0x47) throw new IOException("Invalid TS payload");

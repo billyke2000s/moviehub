@@ -31,6 +31,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         final String section;
         /** Which list or provider this copy came from ("free", "enginedlhd" …); "" when unknown. */
         final String source;
+        final String sourceLabel;
 
         Row(
             long id,
@@ -58,8 +59,25 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             String section,
             String source
         ) {
+            this(id, name, group, logo, key, epg, dkey, number, section, source, "");
+        }
+
+        Row(
+            long id,
+            String name,
+            String group,
+            String logo,
+            String key,
+            String epg,
+            String dkey,
+            int number,
+            String section,
+            String source,
+            String sourceLabel
+        ) {
             this.id = id;
             this.source = source == null ? "" : source;
+            this.sourceLabel = sourceLabel == null ? "" : sourceLabel;
             this.number = number;
             this.section = section == null ? "" : section;
             this.name = name;
@@ -130,7 +148,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     private ChannelDatabase(Context context) {
-        super(context, "channels-v2.db", null, 9);
+        super(context, "channels-v2.db", null, 10);
         this.context = context;
         secrets = new Secrets(context);
         setWriteAheadLoggingEnabled(true);
@@ -213,7 +231,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
                 );
                 db.delete("channels", "source=?", new String[] { source });
                 insert = db.compileStatement(
-                    "INSERT INTO channels(source,position,name,grp,logo,epg,key,url,dkey) VALUES(?,?,?,?,?,?,?,?,?)"
+                    "INSERT INTO channels(source,position,name,grp,logo,epg,key,url,dkey,source_label) VALUES(?,?,?,?,?,?,?,?,?,?)"
                 );
                 search = db.compileStatement("INSERT INTO channel_search(docid,name,grp) VALUES(?,?,?)");
             } catch (Exception e) {
@@ -246,6 +264,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             insert.bindString(7, ChannelQuery.key(c.url));
             insert.bindBlob(8, blob);
             insert.bindString(9, duplicateKey(c.epgId, name, group, source));
+            insert.bindString(10, c.sourceLabel);
             long id = insert.executeInsert();
             search.clearBindings();
             search.bindLong(1, id);
@@ -320,7 +339,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     // ---- Queries --------------------------------------------------------------------------
-    private static final String COLUMNS = "_id,name,grp,logo,key,epg,dkey,number,section,source";
+    private static final String COLUMNS = "_id,name,grp,logo,key,epg,dkey,number,section,source,source_label";
     /**
      * Accounts first, then native Pluto, Free-TV and other public lists, then the experimental
      * provider engine's channels; playlist order within each. A provider copy of a channel that a
@@ -399,7 +418,8 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             c.getString(6),
             c.getInt(7),
             c.getString(8),
-            c.getString(9)
+            c.getString(9),
+            c.getString(10)
         );
     }
 
@@ -662,6 +682,29 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         return keys;
     }
 
+    /** Canonical ids published by Moviehub-epg → the local exact/native or scoped lookup key. */
+    Map<String, String> combinedGuideKeys() {
+        Map<String, String> keys = new HashMap<>();
+        try (Cursor rows = getReadableDatabase().rawQuery("SELECT epg,name,grp,source FROM channels", null)) {
+            while (rows.moveToNext()) {
+                String epg = rows.getString(0),
+                    name = rows.getString(1),
+                    group = rows.getString(2),
+                    source = rows.getString(3);
+                if (epg.startsWith("engine") || epg.startsWith("pluto:")) {
+                    String canonical = epg.replaceAll("\\.gb$", ".uk");
+                    keys.put(canonical, EpgMatch.key(epg));
+                }
+                String own = EpgLookup.country(epg, name, group, source, "uk");
+                for (String key : EpgLookup.keys(epg, name, group, source, own)) {
+                    String scoped = EpgLookup.scope(own, key);
+                    keys.put(scoped, scoped);
+                }
+            }
+        }
+        return keys;
+    }
+
     /** Every plain key the saved channels can be found under in a guide for {@code country}. */
     Set<String> guideKeys(String country) {
         Set<String> keys = new HashSet<>();
@@ -685,6 +728,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         private final SQLiteDatabase db = getWritableDatabase();
         private final SQLiteStatement map, programme;
         private boolean committed;
+        private final boolean complete;
         int programmes;
 
         GuideWriter() {
@@ -697,6 +741,12 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         }
 
         GuideWriter(String prefix) {
+            this(prefix, false);
+        }
+
+        /** The combined public guide replaces all retired built-in/native mappings atomically. */
+        GuideWriter(String prefix, boolean complete) {
+            this.complete = complete;
             if (
                 prefix != null &&
                 !prefix.equals("nativepluto:") &&
@@ -706,10 +756,24 @@ final class ChannelDatabase extends SQLiteOpenHelper {
                 throw new IllegalArgumentException("Unknown native guide");
             }
             db.beginTransactionNonExclusive();
-            String where =
-                prefix == null
-                    ? "channel NOT LIKE 'nativepluto:%' AND channel NOT LIKE 'engine%:%'"
-                    : "channel LIKE '" + prefix + "%'";
+            if (complete) {
+                db.execSQL("DROP TABLE IF EXISTS temp.combined_old_map");
+                db.execSQL("DROP TABLE IF EXISTS temp.combined_old_programmes");
+                db.execSQL("DROP TABLE IF EXISTS temp.combined_retained_map");
+                db.execSQL("CREATE TEMP TABLE combined_old_map AS SELECT * FROM epg_map");
+                db.execSQL(
+                    "CREATE TEMP TABLE combined_old_programmes AS SELECT * FROM programmes WHERE stop>? AND start<?",
+                    new Object[] {
+                        System.currentTimeMillis() - EpgImporter.BEHIND_MS,
+                        System.currentTimeMillis() + EpgImporter.AHEAD_MS,
+                    }
+                );
+            }
+            String where = complete
+                ? null
+                : prefix == null
+                  ? "channel NOT LIKE 'nativepluto:%' AND channel NOT LIKE 'engine%:%'"
+                  : "channel LIKE '" + prefix + "%'";
             db.delete("programmes", where, null);
             db.delete("epg_map", where, null);
             map = db.compileStatement("INSERT INTO epg_map(chkey,channel) VALUES(?,?)");
@@ -749,10 +813,35 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             committed = true;
         }
 
+        /** A cloud source may fail while the TV still has usable native/private cached listings. */
+        void retainMissing() {
+            if (!complete) throw new IllegalStateException("Only a complete guide can retain missing keys");
+            db.execSQL(
+                "CREATE TEMP TABLE combined_retained_map AS SELECT DISTINCT old.chkey,old.channel FROM combined_old_map old " +
+                    "WHERE NOT EXISTS (SELECT 1 FROM epg_map fresh JOIN programmes p ON p.channel=fresh.channel " +
+                    "WHERE fresh.chkey=old.chkey AND p.stop>? AND p.start<?)",
+                new Object[] { System.currentTimeMillis(), System.currentTimeMillis() + EpgImporter.AHEAD_MS }
+            );
+            db.execSQL(
+                "INSERT INTO epg_map SELECT old.chkey,old.channel FROM combined_retained_map old " +
+                    "WHERE NOT EXISTS (SELECT 1 FROM epg_map m WHERE m.chkey=old.chkey AND m.channel=old.channel)"
+            );
+            db.execSQL(
+                "INSERT INTO programmes SELECT old.* FROM combined_old_programmes old " +
+                    "WHERE old.channel IN (SELECT channel FROM combined_retained_map) AND NOT EXISTS " +
+                    "(SELECT 1 FROM programmes fresh WHERE fresh.channel=old.channel AND fresh.start<old.stop AND fresh.stop>old.start)"
+            );
+        }
+
         /** Ends the transaction; without commit() nothing changes. */
         void finish() {
             map.close();
             programme.close();
+            if (complete) {
+                db.execSQL("DROP TABLE IF EXISTS temp.combined_old_map");
+                db.execSQL("DROP TABLE IF EXISTS temp.combined_old_programmes");
+                db.execSQL("DROP TABLE IF EXISTS temp.combined_retained_map");
+            }
             db.endTransaction();
             if (committed) guideRevision.incrementAndGet();
         }
@@ -785,11 +874,15 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         String own = EpgLookup.country(row.epg, row.name, row.group, row.source, country);
         for (String key : EpgLookup.keys(row.epg, row.name, row.group, row.source, own))
             keys.add(EpgLookup.scope(own, key));
+        List<Programme> upcoming = null;
         for (String key : keys) {
             List<Programme> found = programmes(key, from, to, limit);
-            if (!found.isEmpty()) return found;
+            if (found.isEmpty()) continue;
+            for (Programme programme : found)
+                if (programme.start <= from && programme.stop > from) return found;
+            if (upcoming == null) upcoming = found;
         }
-        return new ArrayList<>();
+        return upcoming == null ? new ArrayList<>() : upcoming;
     }
 
     private List<Programme> programmes(String key, long from, long to, int limit) {

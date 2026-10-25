@@ -79,7 +79,7 @@ final class ExoMenus implements LiveMenus {
             (zapper.automaticSources() && !playing.isEmpty() ? "now " + playing + " · " : "") +
             "switch if a source fails";
         for (int i = 0; i < copies.size(); i++) {
-            String provider = AdapterSources.sourceName(copies.get(i).source);
+            String provider = AdapterSources.sourceName(copies.get(i));
             names[i + 1] =
                 (i == zapper.selectedCopy() ? "▶ " : "") +
                 "Source " +

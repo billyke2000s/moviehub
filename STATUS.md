@@ -4,8 +4,7 @@
 
 New settings keep manual source selection as the default. Next-episode metadata is prefetched while watching; season transitions use catalogue episodes and air dates. Missing-pack episodes follow the selected manual/automatic mode. Guide colour shortcuts are handled independently of focused widgets, with Back revealing accessible controls. Physical TV, remote and real-account validation remain outstanding.
 
-
-Last updated: 20 October 2026.
+Last updated: 25 October 2026.
 
 ## Where things stand
 
@@ -48,17 +47,17 @@ Last updated: 20 October 2026.
    lock with playback, so running them in parallel would delay starting a channel), and the
    programme guide is fetched only after all of them. Not measured on the X905X5M box.
 
-6. **Relayed sports streams use a 4 s buffer** (`LivePlayer.RELAYED_CACHING_MS`) and the relay
+7. **Relayed sports streams use a 4 s buffer** (`LivePlayer.RELAYED_CACHING_MS`) and the relay
    retries a timed-out provider once. Whether this removes the short pauses seen on the owner's
    phone (21 October 2026) is not yet confirmed on a phone or the TV box.
 
-6. **Live TV now draws through a SurfaceView** (21 October 2026), replacing the shared
+8. **Live TV now draws through a SurfaceView** (21 October 2026), replacing the shared
    TextureView after the owner saw full-screen lag and a still picture over playing sound. Moves
    between the mini picture and full screen keep the stream but may blink. Emulator tests only;
    not yet checked on a phone or the X905X5M box. Earlier notes below about the retained
    SurfaceTexture describe the replaced design.
 
-7. **Phone layout covers Live TV only.** Films, series, My List and settings still open in the TV
+9. **Phone layout covers Live TV only.** Films, series, My List and settings still open in the TV
    layout. MainActivity now handles rotation itself (configChanges), so screens are not rebuilt
    when a phone turns.
 
@@ -154,14 +153,14 @@ unchanged. Cause not found; watch for a repeat.
 app's own interpreter, allow-lists and limits, then decodes samples with ffmpeg. Run 39361949935,
 after raising the limits:
 
-| Provider | Catalogue | Sample playback | Fault |
-| --- | --- | --- | --- |
-| STIRR, TCL, Xumo, LG, Whale, Vizio, Roku, Tubi, FreeLiveSports, Local Now | works | plays | — |
-| Samsung TV Plus (GB) | 252 channels | some play; some GB streams fail from a US runner | probably region |
-| Plex | 692 channels | stream 404 | provider |
-| DaddyLive | 899 channels (45 Sky Sports) | original probe: 403; missing token step identified below | incomplete integration |
-| DistroTV, Vidaa | host does not resolve (ENOTFOUND) | — | provider |
-| ZLive | catalogue 404 | — | provider |
+| Provider                                                                  | Catalogue                         | Sample playback                                          | Fault                  |
+| ------------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------------- | ---------------------- |
+| STIRR, TCL, Xumo, LG, Whale, Vizio, Roku, Tubi, FreeLiveSports, Local Now | works                             | plays                                                    | —                      |
+| Samsung TV Plus (GB)                                                      | 252 channels                      | some play; some GB streams fail from a US runner         | probably region        |
+| Plex                                                                      | 692 channels                      | stream 404                                               | provider               |
+| DaddyLive                                                                 | 899 channels (45 Sky Sports)      | original probe: 403; missing token step identified below | incomplete integration |
+| DistroTV, Vidaa                                                           | host does not resolve (ENOTFOUND) | —                                                        | provider               |
+| ZLive                                                                     | catalogue 404                     | —                                                        | provider               |
 
 Before the fixes, Samsung (GitHub redirect not allowed), Tubi and Plex (over the 3/4 MB limits)
 failed inside MovieHub. Not checked on the TV box: catalogue steps there are slower (Plex's slowest
@@ -359,12 +358,9 @@ fixtures. A low-memory signal skips additional allocation. Different provider de
 programme-time alignment is not promised. Local core checks pass (733); Android CI is pending.
 No physical-TV or real-provider concurrent-decoder test is claimed.
 
-
 ## Live TV control consistency
 
 The owner reports colour keys still failing and inconsistent live-player controls. Confirmed code paths allowed live launches without the static guide session to use film controls, learned number/channel codes to be consumed before colour handling, and a fixed-width banner row to overflow. The candidate always builds live controls, persists per-player guide context, matches initial metadata to the launch channel, prioritizes learned colours and bounds banner content. Core checks pass (733); Android CI is pending. Physical remote behaviour and the precise appearance seen on the owner’s TV remain unverified.
-
-
 
 ## Live header and menu-owned remote keys
 
@@ -376,14 +372,11 @@ The 0.49 recovery source passed all 166 Android TV emulator tests (no skips), 75
 
 Three short buffering notifications can still prepare an alternate source. A same-source reconnect requires prolonged buffering (eight seconds) or stalled video progress; ordinary HLS period notifications do not consume the reconnect budget.
 
-
 ## Consistent live banner and standard colours
 
 The owner supplied new photographs after 0.49: a full banner on some channels and a collapsed strip on others, with colour shortcuts still failing. The next candidate restores first-down colour handling, prevents saved aliases from overriding standard colour identities, reserves explicit scaled header height and measures the banner before optional panels. The constrained-layout case and input edge cases have new regressions. 753 core checks pass locally; Android CI is pending. The exact physical-TV failure remains unconfirmed; no claim that the owner must inspect remote codes or configure standard buttons.
 
-
 0.50 validation: all 169 Android tests passed without skips in CI run 40006802520, along with builds/lint/signing and provider checks. Inspected normal and constrained banner screenshots; header and all four controls are visible. Core validation: 753 checks. Physical-TV behaviour still requires confirmation.
-
 
 ## One live overlay and shared colour input
 
@@ -412,7 +405,6 @@ The owner reports mostly empty providers, short error clips, absent speed and cr
 
 Additional confirmed compatibility defect: the bounded HTTP adapter returned an HTTP status integer in place of request headers in `output="extended"`. The actual WatchSeries provider then passed that integer as headers and swallowed the resulting exception. The adapter now returns the original five fields (body, request headers, response headers, cookies, final URL), without an extra cookie request. Default scrapePage Referer/protocol-relative handling and redirect cookie accumulation also match the upstream contract. A fixture drives the real WatchSeries provider through search, page and host lookup.
 
-
 ## Provider request/title compatibility correction (24 October 2026)
 
 Reproduced and fixed bodyless POST becoming GET in the requests adapter, affecting the
@@ -427,7 +419,6 @@ Provider-request read timeouts now honor explicit upstream values within the rem
 search budget, with an eight-second connection cap. A regression checks a 20-second read
 request and clipping to a five-second remaining budget; cancellation remains bounded.
 
-
 ## EGL crash during film-to-Live-TV transition
 
 Provider revision 202ecee passed Android build/lint/signing, core/Python/provider checks,
@@ -437,7 +428,6 @@ but could not prevent Android from destroying its SurfaceView buffer queue. Film
 use retainable TextureViews; VodSurface owns detached textures until native stop and
 detachViews finish. A blocked-stop/Activity-destruction regression verifies this lifetime.
 Full new Android validation is pending; no physical-device fix is claimed.
-
 
 ## One OK overlay and learnable unnamed colour buttons (24 October 2026)
 
@@ -456,7 +446,6 @@ rendering yet); no prepared standby backup. Built in CI only; not yet run on the
 
 exp-2 candidate: one-screen Live TV (`LiveStage`) replaces the separate ExoPlayer full-screen
 Activity. Same guide and banner code. Not yet compiled at the time of writing; not run on a TV.
-
 
 ## Experimental release follow-up (25 October 2026)
 
@@ -505,3 +494,9 @@ Found by reading the code after the owner said refreshes "take a while"; not mea
 ## Experimental EPG matching correction (25 October 2026)
 
 Confirmed exp-9 imported XMLTV by plain channel name but queried built-in channels only by provider id, leaving valid schedules unused. Country-scoped XMLTV fallback now follows exact native lookups, and stale/empty/malformed priority guides no longer claim keys. Saved/base channels receive XMLTV before optional provider catalogues; new channel identities trigger a follow-up, without a second download for unchanged identities. The TV guide observes committed guide revisions during the import. Core regression checks pass locally; Android CI is pending. Freeview/Sky/Plex/Samsung feeds were reachable from the workspace; epgshare01 UK returned 403 here, which does not establish the owner’s TV response. No physical-TV verification claimed.
+
+## Experimental EPG and ZLive integration
+
+The public `Moviehub-epg` repository now generates and atomically publishes one compressed guide at 04:37 UTC daily. Its generated coverage report is the current authority for measured coverage and failures. The app integration removes separate built-in feed fetching and inline EPG writes, retaining cached SQLite data during failed refreshes. This work is on an experimental feature branch; see its PR checks and rolling experimental release manifest for build status.
+
+ZLive's current public player supports additional media carriers; the app relay now handles these without a token-session requirement. Supported advertised source routes receive individual labels and stable ids. Live investigation found `cast.zlive.st/channels.json` returning 404 and legacy media returning 403. Complete current server discovery and successful external playback remain unverified; no access-control bypass was implemented. Physical TV validation remains outstanding.

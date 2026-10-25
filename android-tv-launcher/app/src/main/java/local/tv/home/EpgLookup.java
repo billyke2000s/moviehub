@@ -33,7 +33,12 @@ final class EpgLookup {
         add(out, EpgMatch.key(name));
         add(out, EpgMatch.key(identity.key));
         // Match U&Dave/old Dave names in both directions, without losing regional identities.
-        for (String key : new ArrayList<>(out)) add(out, EpgMatch.national(key));
+        for (String key : new ArrayList<>(out)) {
+            add(out, EpgMatch.national(key));
+            if (key.equals("bbc1")) add(out, "bbcone");
+            if (key.equals("bbc2")) add(out, "bbctwo");
+            if (key.equals("skysportspremiereleague")) add(out, "skysportspremierleague");
+        }
         return out;
     }
 

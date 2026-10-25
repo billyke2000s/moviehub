@@ -17,6 +17,7 @@ final class ProviderRelay implements AutoCloseable {
     private final Map<String, String> headers;
     private final String credentialAuthority;
     private final PlaylistSession playlistSession;
+    private final boolean segmentContainers;
     private final Set<HttpURLConnection> active = ConcurrentHashMap.newKeySet();
     private final Set<Socket> clients = ConcurrentHashMap.newKeySet();
     // Four, so a slow segment download never holds up the playlist refresh behind it.
@@ -75,6 +76,7 @@ final class ProviderRelay implements AutoCloseable {
         credentialAuthority = URI.create(stream.url).getAuthority();
         playlistSession =
             stream.playlistSession == null ? null : new PlaylistSession(stream.url, stream.playlistSession);
+        segmentContainers = stream.segmentContainers || playlistSession != null;
         headers = new LinkedHashMap<>();
         for (Iterator<String> keys = stream.headers.keys(); keys.hasNext(); ) {
             String key = keys.next(),
@@ -117,7 +119,7 @@ final class ProviderRelay implements AutoCloseable {
     }
 
     static boolean needed(EngineSources.Stream stream) {
-        if (stream.playlistSession != null) return true;
+        if (stream.playlistSession != null || stream.segmentContainers) return true;
         for (Iterator<String> keys = stream.headers.keys(); keys.hasNext(); ) {
             String key = keys.next();
             if (
@@ -216,7 +218,7 @@ final class ProviderRelay implements AutoCloseable {
                 upstream = open(requestUri);
                 // A zero-to-end request asks for the whole decoded entity. Never apply that
                 // range to the PNG container, whose offsets differ from the transport stream.
-                boolean wholeEntity = playlistSession != null && "bytes=0-".equals(range);
+                boolean wholeEntity = segmentContainers && "bytes=0-".equals(range);
                 if (range != null && !wholeEntity) upstream.setRequestProperty("Range", range);
                 int status;
                 try {
@@ -259,7 +261,7 @@ final class ProviderRelay implements AutoCloseable {
                 try (
                     PushbackInputStream in = new PushbackInputStream(counted(upstream.getInputStream()), 1024)
                 ) {
-                    byte[] prefix = new byte[10];
+                    byte[] prefix = new byte[16];
                     int n = 0,
                         sniffCount;
                     while (n < prefix.length && (sniffCount = in.read(prefix, n, prefix.length - n)) != -1)
@@ -268,14 +270,15 @@ final class ProviderRelay implements AutoCloseable {
                     String signature = new String(prefix, 0, n, StandardCharsets.UTF_8);
                     boolean playlist =
                         signature.startsWith("#EXTM3U") || signature.startsWith("\uFEFF#EXTM3U");
-                    boolean wrappedPng = playlistSession != null && ProviderPngSegments.matches(prefix, n);
-                    if (wrappedPng && range != null && !wholeEntity) throw new IOException(
+                    boolean wrappedContainer =
+                        segmentContainers && ProviderContainerSegments.matches(prefix, n);
+                    if (wrappedContainer && range != null && !wholeEntity) throw new IOException(
                         "Wrapped segment ranges unsupported"
                     );
                     byte[] head = new byte[ProviderSegments.HEAD];
                     int held = 0,
                         skip = 0;
-                    if (!playlist && !wrappedPng && range == null) {
+                    if (!playlist && !wrappedContainer && range == null) {
                         while (held < head.length) {
                             int count = in.read(head, held, head.length - held);
                             if (count < 0) break;
@@ -288,7 +291,7 @@ final class ProviderRelay implements AutoCloseable {
                     }
                     String type = playlist
                         ? "application/vnd.apple.mpegurl"
-                        : wrappedPng || skip > 0 || (held > 0 && head[0] == 0x47)
+                        : wrappedContainer || skip > 0 || (held > 0 && head[0] == 0x47)
                           ? "video/mp2t"
                           : upstream.getContentType();
                     if (type == null || type.contains("\r") || type.contains("\n")) type =
@@ -300,7 +303,7 @@ final class ProviderRelay implements AutoCloseable {
                     ) extra = "Content-Range: " + contentRange + "\r\n";
                     // Files retain their byte length and range support. Rewritten playlists
                     // and stripped segments have different offsets and must not inherit them.
-                    if (!playlist && !wrappedPng && skip == 0) {
+                    if (!playlist && !wrappedContainer && skip == 0) {
                         long length = upstream.getContentLengthLong();
                         if (length >= 0) extra += "Content-Length: " + length + "\r\n";
                         if (
@@ -334,8 +337,8 @@ final class ProviderRelay implements AutoCloseable {
                                 StandardCharsets.UTF_8
                             )
                         );
-                    } else if (wrappedPng) {
-                        ProviderPngSegments.write(in, out);
+                    } else if (wrappedContainer) {
+                        ProviderContainerSegments.write(in, out);
                     } else {
                         if (held > skip) out.write(head, skip, held - skip);
                         byte[] buf = new byte[32768];

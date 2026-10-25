@@ -131,7 +131,7 @@ final class LiveZapper {
     /** The provider of the copy playing now (for example "FreeShot"), or "" before one is known. */
     String sourceProvider() {
         if (copy < 0 || copy >= copies.size()) return "";
-        return AdapterSources.sourceName(copies.get(copy).source);
+        return AdapterSources.sourceName(copies.get(copy));
     }
 
     /** The banner's source text: the mode, the provider playing now, and which copy it is. */

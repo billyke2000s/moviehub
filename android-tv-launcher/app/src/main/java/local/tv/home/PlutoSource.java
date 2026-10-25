@@ -173,24 +173,4 @@ final class PlutoSource {
     }
 
     /** A day of listings in batches of 20 channels, from the same regional session. */
-    static JSONArray guide(List<Playlist.Channel> channels, int offset, Http http) throws Exception {
-        Session session = session(http);
-        StringBuilder ids = new StringBuilder();
-        for (int i = offset; i < Math.min(channels.size(), offset + 20); i++) {
-            if (ids.length() > 0) ids.append(',');
-            ids.append(channelId(channels.get(i).url));
-        }
-        String start = java.time.Instant.now().truncatedTo(java.time.temporal.ChronoUnit.HOURS).toString();
-        return new JSONObject(
-            http.get(
-                session.channels +
-                    "/v2/guide/timelines?channelIds=" +
-                    Network.q(ids.toString()) +
-                    "&start=" +
-                    Network.q(start) +
-                    "&duration=1440",
-                session.token
-            )
-        ).getJSONArray("data");
-    }
 }

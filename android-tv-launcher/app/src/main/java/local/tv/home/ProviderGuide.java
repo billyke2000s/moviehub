@@ -41,23 +41,13 @@ final class ProviderGuide {
      * MovieHub stores. The UK file first; the US one for a viewer whose Plex lineup is American
      * (Plex chooses the lineup from where the viewer is).
      */
-    static final Spec PLEX = new Spec(
-        "plex",
-        "https://i.mjh.nz/Plex/",
-        new String[] { "gb", "us" },
-        ProviderGuide::stableId
-    );
+    static final Spec PLEX = new Spec("plex", "", new String[] { "gb", "us" }, ProviderGuide::stableId);
 
     /**
      * Samsung TV Plus (GB): the adapter drops the catalogue's inline listings, and the guide ids
      * are the channel ids MovieHub stores ("GBBC2300003ZQ"), so they match unchanged.
      */
-    static final Spec SAMSUNG = new Spec(
-        "samsung",
-        "https://i.mjh.nz/SamsungTVPlus/",
-        new String[] { "gb" },
-        id -> id
-    );
+    static final Spec SAMSUNG = new Spec("samsung", "", new String[] { "gb" }, id -> id);
 
     /** The guide for a provider, or null when its catalogue brings its own listings or none exist. */
     static Spec forProvider(String id) {
@@ -126,7 +116,7 @@ final class ProviderGuide {
     private static InputStream open(Spec spec, String region) throws Exception {
         Opener test = opener;
         if (test != null) return test.open(region);
-        return Network.open(spec.base + region + ".xml.gz", null, MAX_BYTES, false);
+        throw new java.io.IOException("Per-provider guide downloads are retired; use CombinedEpg");
     }
 
     /** Reads one XMLTV file (gzipped or not), keeping programmes from two hours ago to a day ahead. */

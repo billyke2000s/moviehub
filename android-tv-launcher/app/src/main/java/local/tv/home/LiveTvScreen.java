@@ -79,7 +79,7 @@ final class LiveTvScreen {
     /** How far the time slots have moved on from now (multiples of half an hour). */
     long windowOffset;
     /** The slots go up to a day ahead, as far as the programme guide reaches. */
-    static final long MAX_OFFSET = 24L * 60 * 60 * 1000,
+    static final long MAX_OFFSET = 7L * 24 * 60 * 60 * 1000,
         HALF_HOUR = 30L * 60 * 1000;
     private int loadTicket;
     private long displayedGuideRevision;

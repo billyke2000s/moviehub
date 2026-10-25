@@ -71,7 +71,7 @@ public final class ProviderRelayTransportTest {
             new JSONObject()
                 .put("url", "https://8.8.8.8/channel/segment.png")
                 .put("headers", new JSONObject())
-                .put("playlistSession", session)
+                .put("segmentContainers", true)
         );
         try (ProviderRelay relay = new ProviderRelay(stream)) {
             URI address = URI.create(relay.url);

@@ -386,7 +386,10 @@ final class LiveStage implements LiveScreen {
         // standard player. With none, it keeps waiting: a slow link is better than no channel.
         overlayHandler.removeCallbacks(startupDeadline);
         // A race arms its own, shorter deadline once a copy actually starts.
-        if (race == null && events.hasAlternative()) overlayHandler.postDelayed(startupDeadline, START_MS);
+        if (race == null && (events.hasAlternative() || zliveSource())) overlayHandler.postDelayed(
+            startupDeadline,
+            events.hasAlternative() ? START_MS : 60_000
+        );
     }
 
     /** How long a source may take to show a picture before the next source is tried. */
@@ -396,7 +399,17 @@ final class LiveStage implements LiveScreen {
 
     private void startupMissed() {
         if (!full || !foreground || ExoLive.isPlaying()) return;
-        showError("This source did not start within " + START_MS / 1000 + " seconds");
+        showError("This source did not start within its startup time limit");
+    }
+
+    private boolean zliveSource() {
+        if (zapper != null) {
+            int selected = zapper.selectedCopy();
+            if (selected >= 0 && selected < zapper.copies().size()) return AdapterSources.source(
+                "zlive"
+            ).equals(zapper.copies().get(selected).source);
+        }
+        return url != null && url.contains("/engine/zlive/");
     }
 
     private void reconnect() {
@@ -425,6 +438,19 @@ final class LiveStage implements LiveScreen {
             endRace(true);
         }
         if (zapper != null && zapper.failover(reason)) return;
+        if (zliveSource()) {
+            liveFailed = true;
+            overlayHandler.removeCallbacks(slow);
+            overlayHandler.removeCallbacks(retry);
+            overlayHandler.removeCallbacks(startupDeadline);
+            ExoLive.stopIfOwner(this);
+            status.setText(
+                "This source is unavailable. Choose another source or reconnect.\n\nBACK  guide     ▲ ▼  another channel"
+            );
+            status.setBackgroundColor(0x99000000);
+            status.setVisibility(View.VISIBLE);
+            return;
+        }
         status.setText(
             "Still trying this channel…\nIt may not be available right now.\n\nBACK  guide     ▲ ▼  another channel"
         );

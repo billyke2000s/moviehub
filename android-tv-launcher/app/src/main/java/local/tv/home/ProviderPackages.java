@@ -91,7 +91,14 @@ final class ProviderPackages {
     }
 
     static String module(Context c, String id) throws Exception {
-        JSONObject modules = current(c).getJSONObject("modules");
+        JSONObject pkg = current(c);
+        JSONObject modules = pkg.getJSONObject("modules");
+        // Older signed packages discard advertised ZLive source routes. Keep the APK's
+        // compatible implementation until a signed update explicitly supports this schema.
+        JSONObject capabilities = pkg.optJSONObject("capabilities");
+        if (
+            id.equals("zlive") && (capabilities == null || capabilities.optInt("zliveSources") < 1)
+        ) return builtinModule(c, id);
         if (modules.has(id)) return modules.getString(id);
         // Older signed runtime-1 packages cannot remove the newer APK's built-in capabilities.
         return validate(asset(c, "builtin.json").getBytes(StandardCharsets.UTF_8))

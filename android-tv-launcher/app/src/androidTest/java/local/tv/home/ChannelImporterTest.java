@@ -205,7 +205,7 @@ public class ChannelImporterTest {
 
     @After
     public void cleanup() throws Exception {
-        EpgImporter.guideUrl = EpgImporter.UK_GUIDE;
+        EpgImporter.guideUrl = EpgImporter.COMBINED_GUIDE;
         SharedPreferences.Editor restore = context.getSharedPreferences("ui", 0).edit();
         if (oldFree == null) restore.remove(FreeChannels.PREF);
         else restore.putString(FreeChannels.PREF, oldFree);

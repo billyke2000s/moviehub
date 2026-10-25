@@ -193,12 +193,6 @@ final class ChannelImporter {
                 if (
                     anySource && db.count() > 0 && !guideKeys.equals(EpgImporter.wantedSnapshot(db))
                 ) guideNote = refreshGuide(context, db, cancel);
-                if (configured.contains("nativepluto")) try {
-                    NativeSources.guide(db, cancel);
-                } catch (Exception e) {
-                    cancel.check();
-                    Diagnostics.recovered("Pluto programme guide", e);
-                }
             } catch (Exception e) {
                 problems.add(describe(e));
             } finally {

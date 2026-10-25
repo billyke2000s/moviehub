@@ -300,6 +300,43 @@ public final class ExoLiveTest {
         });
     }
 
+    @Test
+    public void unavailableZliveStopsAndAllowsManualReconnectWithoutEndlessRetries() throws Exception {
+        ChannelDatabase db = ChannelDatabase.get(remote.getTargetContext());
+        ChannelDatabase.Writer writer = db.writer("enginezlive", () -> {}, n -> {});
+        try {
+            writer.accept(
+                new Playlist.Channel(
+                    "Unavailable ZLive UK",
+                    link("/missing.ts"),
+                    "UK",
+                    "",
+                    "enginezlive:fixture.uk",
+                    "Fixture server"
+                )
+            );
+            writer.commit();
+        } finally {
+            writer.abort();
+        }
+        remote.runOnMainSync(() ->
+            activity.stage.fullScreen("Unavailable ZLive UK", link("/missing.ts"), "fixture")
+        );
+        await(() -> activity.stage.liveFailed());
+        remote.runOnMainSync(() -> {
+            assertFalse("No automatic reopen after sources are exhausted", ExoLive.retryPending());
+            assertTrue(activity.stage.full());
+            assertTrue(activity.stage.zapper().sourceProvider().contains("Fixture server"));
+        });
+        SystemClock.sleep(LiveStage.RETRY_MS + 500);
+        remote.runOnMainSync(() -> {
+            assertTrue("Failure stays bounded", activity.stage.liveFailed());
+            assertFalse(ExoLive.retryPending());
+            activity.stage.switchTo("Working channel", link("/media.m3u8"), "working");
+        });
+        await(() -> ExoLive.isPlaying() && rendered() > 5);
+    }
+
     /** One channel, three copies from three lists, in guide order: dead, working, slow. */
     private void raceChannel() throws Exception {
         ChannelDatabase db = ChannelDatabase.get(

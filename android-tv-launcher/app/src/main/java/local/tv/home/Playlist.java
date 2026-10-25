@@ -9,14 +9,19 @@ public final class Playlist {
 
     public static final class Channel {
 
-        public final String name, url, group, logo, epgId;
+        public final String name, url, group, logo, epgId, sourceLabel;
 
         public Channel(String name, String url, String group, String logo, String epgId) {
+            this(name, url, group, logo, epgId, "");
+        }
+
+        public Channel(String name, String url, String group, String logo, String epgId, String sourceLabel) {
             this.name = name;
             this.url = url;
             this.group = group;
             this.logo = logo;
             this.epgId = epgId;
+            this.sourceLabel = sourceLabel == null ? "" : sourceLabel;
         }
     }
 

@@ -21,25 +21,8 @@ import org.xmlpull.v1.XmlPullParser;
  */
 final class EpgImporter {
 
-    /** Free UK guide (epgshare01, rebuilt daily). Matching is by plain channel key; see EpgMatch. */
-    static final String UK_GUIDE = "https://epgshare01.online/epgshare01/epg_ripper_UK1.xml.gz";
-    /**
-     * UK free-to-air guide from the broadcasters' own data (github.com/dp247/Freeview-EPG): seven
-     * days, rebuilt every twelve hours, regional channels; its London feeds also answer to the
-     * national names (EpgMatch.national).
-     */
-    static final String FREEVIEW_GUIDE =
-        "https://raw.githubusercontent.com/dp247/Freeview-EPG/master/epg.xml";
-    /**
-     * Sky UK, London HD region (github.com/Permanently/sky-epg-xmltv): Sky's own schedules for
-     * about 380 channels, seven days, rebuilt daily. Covers the pay channels Freeview lacks (Sky
-     * Atlantic, Sky Witness, Comedy Central, UKTV). Built from Sky's undocumented guide service by
-     * a community project, so it may stop; the other guides are unaffected when it does.
-     */
-    static final String SKY_GUIDE =
-        "https://raw.githubusercontent.com/Permanently/sky-epg-xmltv/main/guides/london_hd.xml";
-    static final String IE_GUIDE = "https://epgshare01.online/epgshare01/epg_ripper_IE1.xml.gz";
-    static final String US_GUIDE = "https://epgshare01.online/epgshare01/epg_ripper_US1.xml.gz";
+    /** The only built-in guide URL fetched by production code. */
+    static final String COMBINED_GUIDE = CombinedEpg.URL;
 
     /** Countries with a downloaded guide (the "gb" ids of some lists are the UK). */
     static final Set<String> GUIDE_COUNTRIES = new java.util.HashSet<>(
@@ -62,12 +45,7 @@ final class EpgImporter {
         }
     }
 
-    /**
-     * The guides, best first: a channel key taken by one guide is not looked up in later ones, so
-     * Freeview wins for UK free-to-air channels, Sky covers the pay channels, epgshare01 UK fills
-     * the rest (Sky Sports, Sky Cinema…), then Ireland and the US. Tests replace {@link #guideUrl}: "" downloads nothing, another address only that one.
-     */
-    /** Tests: these guides instead, read through {@link #testOpener}. */
+    /** Injected fixture guides only; production always uses CombinedEpg. */
     static volatile Guide[] testGuides;
     static volatile java.util.function.Function<String, InputStream> testOpener;
 
@@ -75,22 +53,15 @@ final class EpgImporter {
         if (testGuides != null) return testGuides;
         String only = guideUrl;
         if (only.isEmpty()) return new Guide[0];
-        if (!only.equals(UK_GUIDE)) return new Guide[] { new Guide(only, COUNTRY, false) };
-        return new Guide[] {
-            new Guide(FREEVIEW_GUIDE, COUNTRY, true),
-            new Guide(SKY_GUIDE, COUNTRY, true),
-            new Guide(UK_GUIDE, COUNTRY, false),
-            new Guide(IE_GUIDE, "ie", false),
-            new Guide(US_GUIDE, "us", false),
-        };
+        return new Guide[] { new Guide(only, COUNTRY, false) };
     }
 
     static final String COUNTRY = "uk";
     /** The guide downloaded; tests set "" to skip the download. */
-    static volatile String guideUrl = UK_GUIDE;
+    static volatile String guideUrl = COMBINED_GUIDE;
     /** Programmes kept: from two hours ago to this far ahead. */
-    static final long AHEAD_MS = 26L * 60 * 60 * 1000,
-        BEHIND_MS = 2L * 60 * 60 * 1000;
+    static final long AHEAD_MS = 7L * 24 * 60 * 60 * 1000,
+        BEHIND_MS = 24L * 60 * 60 * 1000;
     static final long MAX_BYTES = 300L * 1024 * 1024;
 
     /** Where parsed guide data goes. */
@@ -126,6 +97,9 @@ final class EpgImporter {
      * throw, and then the previous listings stay.
      */
     static Result run(Context context, ChannelDatabase db, ChannelDatabase.Cancel cancel) throws Exception {
+        if (
+            testGuides == null && testOpener == null && guideUrl.equals(COMBINED_GUIDE)
+        ) return CombinedEpg.refresh(context, db, cancel);
         Result result = new Result();
         Guide[] guides = guides();
         if (guides.length == 0) return result;
