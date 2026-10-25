@@ -1,0 +1,152 @@
+name: Publish verified MovieHub Experimental exp-5
+# Builds the separate "MovieHub Experimental" app (package local.tv.home.experimental) from the
+# chosen branch and publishes it to the android-tv-experimental pre-release. It never touches the
+# android-tv-latest feed that normal MovieHub installs update from.
+on:
+  push:
+    branches: [release/experimental-exp5]
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: publish-experimental
+  cancel-in-progress: false
+jobs:
+  experimental:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: '9.6.0'
+      - name: Require passing playback validation on the exact candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=6ad7c2e1f74da6e83394cca5816b0869df44bb27&event=pull_request" > "$RUNNER_TEMP/checks.json"
+          python - <<'PYCODE'
+          import json,os,pathlib
+          runs=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'checks.json').read_text())['workflow_runs']
+          for name in ['Build Android TV launcher APK','Standalone provider engine']:
+              found=[r for r in runs if r['name']==name]
+              if not found or found[0]['conclusion']!='success': raise SystemExit('Required CI has not passed: '+name)
+          PYCODE
+      - name: Verify core rules
+        run: bash android-tv-launcher/tests/run-core-tests.sh
+      - name: Build signed experimental APK and manifest
+        env:
+          APK_KEYSTORE_BASE64: ${{ secrets.APK_KEYSTORE_BASE64 }}
+          APK_STORE_PASSWORD: ${{ secrets.APK_STORE_PASSWORD }}
+          APK_KEY_ALIAS: ${{ secrets.APK_KEY_ALIAS }}
+          APK_KEY_PASSWORD: ${{ secrets.APK_KEY_PASSWORD }}
+          APK_VERSION_CODE: '9'
+          APK_VERSION_NAME: 'exp-5'
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64,json,os,pathlib,subprocess
+          code=int(os.environ['APK_VERSION_CODE'])
+          if not 2 < code < 2100000000: print('::error title=Version code::must be an integer above 2'); raise SystemExit(1)
+          for key in ['APK_KEYSTORE_BASE64','APK_STORE_PASSWORD','APK_KEY_ALIAS','APK_KEY_PASSWORD']:
+              if not os.environ.get(key): print('::error title=Signing::Configure the APK signing secrets before publishing'); raise SystemExit(1)
+          existing=subprocess.run(['gh','release','view','android-tv-experimental','--json','tagName'],capture_output=True)
+          if existing.returncode==0:
+              subprocess.run(['gh','release','download','android-tv-experimental','--pattern','update.json','--dir',os.environ['RUNNER_TEMP']],check=True)
+              previous=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'update.json').read_text())
+              if code<=previous['versionCode']: print('::error title=Version code::must increase'); raise SystemExit(1)
+          key=pathlib.Path(os.environ['RUNNER_TEMP'])/'launcher-signing.jks'
+          key.write_bytes(base64.b64decode(os.environ['APK_KEYSTORE_BASE64'],validate=True));key.chmod(0o600)
+          PY
+          export APK_KEYSTORE="$RUNNER_TEMP/launcher-signing.jks"
+          # Report build errors as annotations, which are readable without the full log.
+          if ! gradle -p android-tv-launcher --no-daemon -Pexperimental assembleRelease lintRelease > "$RUNNER_TEMP/build.log" 2>&1; then
+            grep -E "error:|FAILED|What went wrong|Error:|Lint found" -A3 "$RUNNER_TEMP/build.log" | head -40 > "$RUNNER_TEMP/errors.txt" || true
+            python3 -c "import sys;t=open(sys.argv[1]).read()[-3500:] or open(sys.argv[2]).read()[-3500:];print('::error title=Experimental build failed::'+t.replace('%','%25').replace('\r','').replace('\n','%0A'))" "$RUNNER_TEMP/errors.txt" "$RUNNER_TEMP/build.log"
+            exit 1
+          fi
+          APK=android-tv-launcher/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" > "$RUNNER_TEMP/badging.txt"
+          grep -q "package: name='local.tv.home.experimental'" "$RUNNER_TEMP/badging.txt" || { echo "::error title=Wrong package::$(head -c 300 "$RUNNER_TEMP/badging.txt")"; exit 1; }
+          mkdir -p release-files
+          cp "$APK" release-files/moviehub-experimental.apk
+          # Same file under the name the in-app updater downloads.
+          cp "$APK" release-files/home.apk
+          python - <<'PY'
+          import hashlib,json,os,pathlib
+          apk=pathlib.Path('release-files/home.apk')
+          data=dict(packageName='local.tv.home.experimental',versionCode=int(os.environ['APK_VERSION_CODE']),versionName=os.environ['APK_VERSION_NAME'],sha256=hashlib.sha256(apk.read_bytes()).hexdigest(),notes='Faster DaddyLive lookups: one isolated process per lookup, compiled-code reuse, brief public-page caching, corrected timeout accounting and immediate failover after an exhausted lookup.')
+          pathlib.Path('release-files/update.json').write_text(json.dumps(data))
+          PY
+      - name: Verify compatibility with the installed experimental release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/previous-experimental"
+          gh release download android-tv-experimental --pattern home.apk --pattern update.json --dir "$RUNNER_TEMP/previous-experimental"
+          python - <<'PYCODE'
+          import hashlib,json,os,pathlib,re,subprocess
+          previous=pathlib.Path(os.environ['RUNNER_TEMP'])/'previous-experimental'
+          manifest=json.loads((previous/'update.json').read_text())
+          old=previous/'home.apk';new=pathlib.Path('release-files/home.apk')
+          assert hashlib.sha256(old.read_bytes()).hexdigest()==manifest['sha256']
+          tools=pathlib.Path(os.environ['ANDROID_HOME'])/'build-tools/35.0.0'
+          def certs(apk):
+              out=subprocess.check_output([str(tools/'apksigner'),'verify','--print-certs',str(apk)],text=True)
+              return set(re.findall(r'Signer #\d+ certificate SHA-256 digest: ([0-9a-f]+)',out))
+          assert certs(old) and certs(old)==certs(new), 'Signing certificate changed'
+          out=subprocess.check_output([str(tools/'aapt'),'dump','badging',str(new)],text=True)
+          assert "name='local.tv.home.experimental' versionCode='9' versionName='exp-5'" in out
+          assert manifest['versionCode']<9
+          assert new.read_bytes()==pathlib.Path('release-files/moviehub-experimental.apk').read_bytes()
+          PYCODE
+      - name: Publish experimental assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view android-tv-experimental >/dev/null 2>&1; then
+            gh release create android-tv-experimental --target "$GITHUB_SHA" --prerelease --latest=false --title 'MovieHub Experimental' --notes 'Separate test app (local.tv.home.experimental). Install moviehub-experimental.apk; it does not replace MovieHub.'
+          fi
+          gh release upload android-tv-experimental release-files/moviehub-experimental.apk release-files/home.apk --clobber
+          gh release upload android-tv-experimental release-files/update.json --clobber
+          cat > "$RUNNER_TEMP/experimental-notes.md" <<'NOTES'
+          Separate experimental app (local.tv.home.experimental), version exp-5 (code 9).
+
+          - Reuse one isolated process and compiled code for the selected DaddyLive lookup.
+          - Briefly cache public mirror pages; tokens, embeds, playlists and media stay fresh.
+          - Count failed network time, clip socket timeouts and advance failed players.
+          - Hand exhausted lookups to source failover without repeating the full search.
+
+          Validated with isolated Binder/cache/deadline fixtures and the existing ExoPlayer and regression suites. Provider/network response times still affect startup; physical-TV startup latency is unverified.
+          NOTES
+          gh release edit android-tv-experimental --title "MovieHub Experimental exp-5" --notes-file "$RUNNER_TEMP/experimental-notes.md" --prerelease --latest=false
+      - name: Verify published updater assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/published-experimental"
+          gh release download android-tv-experimental --pattern home.apk --pattern update.json --dir "$RUNNER_TEMP/published-experimental"
+          python - <<'PYCODE'
+          import hashlib,json,os,pathlib
+          published=pathlib.Path(os.environ['RUNNER_TEMP'])/'published-experimental'
+          feed=json.loads((published/'update.json').read_text())
+          assert feed['versionCode']==9 and feed['versionName']=='exp-5'
+          assert feed['packageName']=='local.tv.home.experimental'
+          assert hashlib.sha256((published/'home.apk').read_bytes()).hexdigest()==feed['sha256']
+          assert (published/'home.apk').read_bytes()==pathlib.Path('release-files/home.apk').read_bytes()
+          PYCODE
+      - name: Remove temporary signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/launcher-signing.jks"
