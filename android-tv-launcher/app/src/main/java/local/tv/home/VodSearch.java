@@ -24,8 +24,8 @@ final class VodSearch implements AutoCloseable {
         if (previous != null) previous.close();
         current = this;
         long started = SystemClock.elapsedRealtime();
-        // Nine batches of eight providers, each with a 30-second budget, plus startup headroom.
-        deadline = started + 300000;
+        // One entry per website; discovery and host resolution have separate bounded budgets.
+        deadline = started + 420000;
         pending.set(premiumize ? 2 : 1);
         try {
             query.put("maxQuality", quality);
@@ -44,7 +44,7 @@ final class VodSearch implements AutoCloseable {
         // Runtime extraction and imports must never hold the UI thread.
         workers.submit(() -> {
             try {
-                List<String> ids = FreeVodProviders.ids(app);
+                List<String> ids = FreeVodProviders.ids(app, query.optInt("season", -1) >= 0);
                 for (String id : ids) outcomes.put(id, "Queued");
                 for (String id : ids) {
                     if (cancelled.get()) break;

@@ -183,8 +183,8 @@ final class AdapterSources {
         );
     }
 
-    private static JSONArray catalogue(Context c, String id, NativeHttp http) throws Exception {
-        String module = ProviderPackages.module(c, id);
+    /** The in-memory catalogue for the current module, or null. Never contacts the provider. */
+    private static JSONArray cachedCatalogue(String id, String module) {
         synchronized (AdapterSources.class) {
             if (
                 cache.containsKey(id) &&
@@ -192,6 +192,13 @@ final class AdapterSources {
                 module.equals(versions.get(id))
             ) return cache.get(id);
         }
+        return null;
+    }
+
+    private static JSONArray catalogue(Context c, String id, NativeHttp http) throws Exception {
+        String module = ProviderPackages.module(c, id);
+        JSONArray cached = cachedCatalogue(id, module);
+        if (cached != null) return cached;
         Object value = ProviderBroker.call(c, id, "catalogue", null, http);
         if (!(value instanceof JSONArray)) throw new IOException("Invalid catalogue result");
         JSONArray rows = (JSONArray) value;
@@ -246,6 +253,18 @@ final class AdapterSources {
         if (id.equals("zlive")) {
             JSONObject hint = ZliveSources.hint(c, ProviderPackages.module(c, id), wanted);
             if (hint != null) return hint;
+            // Old stored IDs omitted auto-/evt-. Match them against a catalogue already in memory,
+            // but never download the catalogue just to start a channel (cold starts stay fast).
+            JSONArray current = cachedCatalogue(id, ProviderPackages.module(c, id));
+            if (current != null) for (int i = 0; i < current.length(); i++) {
+                JSONObject candidate = current.getJSONObject(i);
+                String key = candidate.getString("channelId");
+                if (
+                    wanted.equals(key) ||
+                    wanted.equals(key.replaceFirst("^auto-", "").replaceFirst("^evt-", ""))
+                ) return candidate;
+            }
+            // The resolver passes the raw channel ID unchanged; source variants need their row.
             if (!wanted.contains(ZliveSources.VARIANT)) return new JSONObject().put("channelId", wanted);
         }
         // These upstream resolvers accept the provider's own channel id; no catalogue hop is needed.

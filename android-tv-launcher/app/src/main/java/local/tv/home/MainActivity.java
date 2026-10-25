@@ -563,9 +563,14 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
                 JSONArray previous = new JSONArray(stored.isEmpty() ? "[]" : stored),
                     recent = new JSONArray();
                 recent.put(record);
-                for (int i = 0; i < previous.length() && recent.length() < 50; i++) if (
-                    !id.equals(previous.getJSONObject(i).optString("id"))
-                ) recent.put(previous.getJSONObject(i));
+                String titleKey = ResumePoint.titleKey(record);
+                for (int i = 0; i < previous.length() && recent.length() < 50; i++) {
+                    JSONObject old = previous.getJSONObject(i);
+                    if (
+                        !id.equals(old.optString("id")) &&
+                        (titleKey == null || !titleKey.equals(ResumePoint.titleKey(old)))
+                    ) recent.put(old);
+                }
                 secrets.put("recentPlayback", recent.toString());
             } catch (Exception e) {
                 Diagnostics.recovered("Saving recent playback", e);
@@ -611,6 +616,10 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
                     "name",
                     "imdb_id",
                     "external_ids",
+                    "release_date",
+                    "first_air_date",
+                    "original_title",
+                    "original_name",
                 })
                     if (metadata.has(key)) record.put(key, metadata.get(key));
             }

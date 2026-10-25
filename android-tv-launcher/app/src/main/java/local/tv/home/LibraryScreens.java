@@ -232,16 +232,15 @@ final class LibraryScreens {
                 card.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
                 card.addView(activity.rowText("▶  Resume   ⋯", 15, false, 1));
                 activity.styleListRow(card, false);
-                card.setOnClickListener(v -> activity.play(title, url, key, false, item));
+                card.setOnClickListener(v -> VodResume.start(activity, item, false));
                 Runnable more = () ->
                     SidePanel.of(activity, title)
-                        .option("Resume", () -> activity.play(title, url, key, false, item))
+                        .option("Resume", () -> VodResume.start(activity, item, false))
                         .option("Start over", () -> {
-                            positions.edit().remove(key).apply();
-                            activity.play(title, url, key, false, item);
+                            VodResume.start(activity, item, true);
                         })
                         .option("Remove from Continue watching", () -> {
-                            positions.edit().remove(key).apply();
+                            ResumePoint.clear(activity, key, ResumePoint.titleKey(item));
                             continueWatching();
                         })
                         .show();

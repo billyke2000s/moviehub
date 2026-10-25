@@ -92,15 +92,7 @@ final class TitleDetails {
         Button resume =
             recent == null
                 ? null
-                : action(actions, "▶  Resume", true, () ->
-                      activity.play(
-                          recent.optString("title", title),
-                          recent.optString("url"),
-                          recent.optString("id"),
-                          false,
-                          recent
-                      )
-                  );
+                : action(actions, "▶  Resume", true, () -> VodResume.start(activity, recent, false));
         Button play = action(
             actions,
             type.equals("tv") ? "Episodes" : AutoPlayback.enabled(activity, -1) ? "▶  Play" : "Find sources",
