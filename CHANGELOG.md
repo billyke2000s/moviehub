@@ -1,4 +1,6 @@
 ## Unreleased
+- Samsung TV Plus (GB) channels show listings, from i.mjh.nz/SamsungTVPlus/gb.xml.gz, matched by
+  Samsung's own channel ids. They showed none before: the adapter drops the catalogue's listings.
 - More programme guides, best first: Freeview EPG (UK free-to-air, broadcasters' data, seven days,
   London feeds also answer to the national names), then epgshare01 UK, Ireland and US. A channel taken
   by an earlier guide is not looked up in later ones; one guide failing keeps the others. Irish and US

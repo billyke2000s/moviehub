@@ -501,3 +501,7 @@ second guide has is filled from it, Irish channels use the Irish guide, and a Ge
 listings. `oneFailingGuideKeepsTheOthers` checks a failed download does not lose the rest. The real
 files' coverage was inspected offline (Freeview: 284 channels, 47,787 programmes); epgshare01's IE and
 US files were not downloadable from the workspace and are untested beyond Free-TV listing them.
+
+`ProviderEngineDeviceTest.samsungListingsMatchTheStoredChannelIdsUnchanged` checks the Samsung spec reads
+only the gb file and matches ids unchanged. The live gb.xml (273 channels, 2,550 programmes, ids such as
+GBBC2300003ZQ) was inspected offline; it was not checked against the adapter's live catalogue.

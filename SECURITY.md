@@ -35,6 +35,7 @@ MovieHub stores provider accounts and installs its own updates, so these rules m
 - Programme guides are downloaded from `raw.githubusercontent.com/dp247/Freeview-EPG` and
   `epgshare01.online` (UK, Ireland, US): public XMLTV, data only, size-bounded, matched to channels
   already in the list. They never add channels or stream addresses.
+- With Samsung TV Plus turned on, its listings come from `i.mjh.nz/SamsungTVPlus/gb.xml.gz` the same way.
 - With Plex turned on, Plex programme listings are downloaded from `i.mjh.nz/Plex/` (public XMLTV,
   gb then us; at most 20 MB compressed). The guide is data only: it adds programme text to channels
   already in the catalogue, matched by exact channel id, and never adds channels or stream addresses.

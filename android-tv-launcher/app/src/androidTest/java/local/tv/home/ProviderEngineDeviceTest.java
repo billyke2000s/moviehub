@@ -224,6 +224,62 @@ public final class ProviderEngineDeviceTest {
     }
 
     @Test
+    public void samsungListingsMatchTheStoredChannelIdsUnchanged() throws Exception {
+        ChannelDatabase db = ChannelDatabase.get(context);
+        db.clear();
+        String source = AdapterSources.source("samsung");
+        long now = System.currentTimeMillis();
+        try {
+            ChannelDatabase.Writer channels = db.writer(source, () -> {}, n -> {});
+            try {
+                channels.accept(
+                    new Playlist.Channel(
+                        "Samsung fixture",
+                        AdapterSources.locator("samsung", "GBBC2300003ZQ"),
+                        "Entertainment",
+                        "",
+                        source + ":GBBC2300003ZQ"
+                    )
+                );
+                channels.commit();
+            } finally {
+                channels.abort();
+            }
+            assertSame(ProviderGuide.SAMSUNG, ProviderGuide.forProvider("samsung"));
+            assertNull(
+                "A provider with its own listings needs no separate guide",
+                ProviderGuide.forProvider("tubi")
+            );
+            ProviderGuide.opener = region -> {
+                assertEquals("gb", region);
+                return new java.io.ByteArrayInputStream(
+                    plexGuide(now, "GBBC2300003ZQ", "GBXX0000000AA").getBytes(StandardCharsets.UTF_8)
+                );
+            };
+            JSONArray rows = new JSONArray().put(
+                new JSONObject().put("channelId", "GBBC2300003ZQ").put("name", "S")
+            );
+            assertEquals(1, ProviderGuide.refresh(ProviderGuide.SAMSUNG, db, rows, () -> {}));
+            ChannelDatabase.Row row = db.byKey(
+                ChannelQuery.key(AdapterSources.locator("samsung", "GBBC2300003ZQ"))
+            );
+            assertEquals(
+                "Show on GBBC2300003ZQ",
+                db.programmes(row, "uk", now - 60_000, now + 60_000).get(0).title
+            );
+        } finally {
+            ProviderGuide.opener = null;
+            db.clear();
+            ChannelDatabase.GuideWriter guide = db.new GuideWriter(source + ":");
+            try {
+                guide.commit();
+            } finally {
+                guide.finish();
+            }
+        }
+    }
+
+    @Test
     public void realBridgeRefreshPreservesStableChannelsFavouritesAndIndependentGuides() throws Exception {
         ChannelDatabase db = ChannelDatabase.get(context);
         db.clear();

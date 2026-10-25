@@ -48,9 +48,22 @@ final class ProviderGuide {
         ProviderGuide::stableId
     );
 
+    /**
+     * Samsung TV Plus (GB): the adapter drops the catalogue's inline listings, and the guide ids
+     * are the channel ids MovieHub stores ("GBBC2300003ZQ"), so they match unchanged.
+     */
+    static final Spec SAMSUNG = new Spec(
+        "samsung",
+        "https://i.mjh.nz/SamsungTVPlus/",
+        new String[] { "gb" },
+        id -> id
+    );
+
     /** The guide for a provider, or null when its catalogue brings its own listings or none exist. */
     static Spec forProvider(String id) {
-        return id.equals("plex") ? PLEX : null;
+        if (id.equals("plex")) return PLEX;
+        if (id.equals("samsung")) return SAMSUNG;
+        return null;
     }
 
     /** Compressed download limit; the US file is about 2 MB. */
