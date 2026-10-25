@@ -120,7 +120,9 @@ final class GuideRows {
             return true;
         });
         cell.setOnKeyListener((v, key, event) -> {
-            if (event.getAction() != KeyEvent.ACTION_DOWN) return guide.isGuideKey(key);
+            if (event.getAction() != KeyEvent.ACTION_DOWN) return (
+                guide.consumeSelectUp(key) || guide.isGuideKey(key)
+            );
             if (key == KeyEvent.KEYCODE_DPAD_RIGHT) {
                 if (!cells.isEmpty()) focus(cells, 0);
                 return true;
@@ -165,7 +167,9 @@ final class GuideRows {
                 return true;
             });
             item.setOnKeyListener((v, key, event) -> {
-                if (event.getAction() != KeyEvent.ACTION_DOWN) return guide.isGuideKey(key);
+                if (event.getAction() != KeyEvent.ACTION_DOWN) return (
+                    guide.consumeSelectUp(key) || guide.isGuideKey(key)
+                );
                 if (key == KeyEvent.KEYCODE_DPAD_RIGHT) {
                     if (index + 1 < cells.size()) {
                         guide.cursorTime = ((Slot) cells.get(index + 1).getTag()).from;

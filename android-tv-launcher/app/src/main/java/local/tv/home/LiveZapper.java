@@ -200,7 +200,7 @@ final class LiveZapper {
         player.overlayHandler().removeCallbacks(hideBanner);
         player.overlayHandler().postDelayed(hideBanner, BANNER_MS);
         player.overlayHandler().removeCallbacks(jump);
-        player.overlayHandler().postDelayed(jump, 1500);
+        player.overlayHandler().postDelayed(jump, LiveTvScreen.TYPE_MS);
     }
 
     /**
@@ -773,8 +773,12 @@ final class LiveZapper {
         }
         boolean handled = true;
         if (select) {
-            // OK presses the highlighted banner button; with none highlighted it shows the banner.
-            if (first && (!overlay.bannerShowing() || !overlay.pressControl())) ok();
+            // OK while typing a number goes there at once (as on Sky); otherwise it presses the
+            // highlighted banner button, or with none highlighted shows the banner.
+            if (first && typed.length() > 0) {
+                player.overlayHandler().removeCallbacks(jump);
+                jumpToTyped();
+            } else if (first && (!overlay.bannerShowing() || !overlay.pressControl())) ok();
         } else if (key == KeyEvent.KEYCODE_INFO || key == KeyEvent.KEYCODE_MENU) {
             if (first) colour(key == KeyEvent.KEYCODE_INFO ? 'y' : 'b');
         } else if (key == KeyEvent.KEYCODE_LAST_CHANNEL) {
