@@ -322,6 +322,20 @@ final class LivePlayer {
         return player;
     }
 
+    /** The picture playing, for the information panel, or "" when there is none yet. */
+    static String videoDetails() {
+        MediaPlayer playing = player;
+        if (playing == null || LiveNative.busy(playing)) return "";
+        try {
+            var track = playing.getCurrentVideoTrack();
+            if (track == null) return "";
+            float fps = track.frameRateDen > 0 ? (float) track.frameRateNum / track.frameRateDen : 0;
+            return VideoDetails.describe(track.width, track.height, fps, track.codec, track.bitrate);
+        } catch (RuntimeException e) {
+            return "";
+        }
+    }
+
     /** A stream is playing or opening, so a new view can take it over without reconnecting. */
     static boolean active() {
         return player != null && (alive || (!LiveNative.busy(player) && player.isPlaying()));

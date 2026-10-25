@@ -86,6 +86,9 @@ final class ExoLive {
     /** Rendered-frame count at the last check, to notice the picture stopping while sound plays. */
     private static int lastRendered = -1,
         stillSeconds;
+    /** Frames actually drawn per second, from the last one-second check; 0 when unknown. */
+    private static float drawnFps;
+    private static long lastCheckAt;
     private static final Runnable watch = new Runnable() {
         @Override
         public void run() {
@@ -263,12 +266,20 @@ final class ExoLive {
         if (player == null || !player.isPlaying()) {
             lastRendered = -1;
             stillSeconds = 0;
+            drawnFps = 0;
             return;
         }
         DecoderCounters counters = player.getVideoDecoderCounters();
         if (counters == null) return;
         counters.ensureUpdated();
         int rendered = counters.renderedOutputBufferCount;
+        long now = SystemClock.elapsedRealtime();
+        long elapsed = now - lastCheckAt;
+        // Only a steady one-second sample counts; a restart or a late check is not measured.
+        if (lastRendered >= 0 && rendered >= lastRendered && elapsed >= 500 && elapsed <= 3000) {
+            drawnFps = (1000f * (rendered - lastRendered)) / elapsed;
+        }
+        lastCheckAt = now;
         if (rendered == lastRendered) {
             stillSeconds++;
             if (stillSeconds == 3) event("Picture stopped advancing while sound plays");
@@ -450,6 +461,7 @@ final class ExoLive {
         }
         lastRendered = -1;
         stillSeconds = 0;
+        drawnFps = 0;
         reopens = 0;
         hlsRetried = false;
         decoder = "";
@@ -498,6 +510,22 @@ final class ExoLive {
 
     static String currentUrl() {
         return active() ? url : null;
+    }
+
+    /**
+     * The picture playing, for the information panel: size, frame rate, codec and bitrate, or ""
+     * before the first video frame. The frame rate is the one measured on screen when known, as
+     * many live streams do not state theirs.
+     */
+    static String videoDetails() {
+        if (player == null) return "";
+        Format format = player.getVideoFormat();
+        if (format == null) return "";
+        // The stream's own rate when it states one; otherwise the rate measured on screen.
+        float fps = format.frameRate > 0 ? format.frameRate : Math.round(drawnFps);
+        int bitrate = format.bitrate > 0 ? format.bitrate : format.averageBitrate;
+        String codec = format.sampleMimeType != null ? format.sampleMimeType : format.codecs;
+        return VideoDetails.describe(format.width, format.height, fps, codec, bitrate);
     }
 
     static String status() {

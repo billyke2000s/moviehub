@@ -52,4 +52,7 @@ interface LiveScreen {
 
     /** The channel title the screen was opened with. */
     String title();
+
+    /** The picture playing (size, frame rate, codec, bitrate), or "" before the first frame. */
+    String videoDetails();
 }

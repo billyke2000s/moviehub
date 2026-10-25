@@ -460,3 +460,10 @@ exclusion of tokens, credentials and failures. It runs alongside ExoLiveTest in 
 experimental emulator job. ProviderScriptFastTest uses actual Rhino on the JVM to verify one
 compile across steps, fresh globals, no Java access, failed-request clock accounting and the
 unchanged legacy replay contract. Fixtures do not establish physical-TV startup latency.
+
+`VideoDetailsTest` (core) checks the information panel's picture line: size and quality name
+(including wide film frames), whole and fractional frame rates, codec names from Media3 MIME types
+and VLC codes, bitrates, and that nothing is shown before the first frame. `LiveControlsTest` checks
+that the source name is not a button (four colour keys only), that BACK highlights the green Source
+key, and that the information panel shows "Picture:" and the source. Fixtures only: the real values
+come from the stream and were not checked on a TV.

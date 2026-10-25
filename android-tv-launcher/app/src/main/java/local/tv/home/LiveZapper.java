@@ -138,7 +138,7 @@ final class LiveZapper {
     String sourceText() {
         String provider = sourceProvider();
         return (
-            "Sources · " +
+            "Source: " +
             (automaticSources ? "Auto · " : "Manual · ") +
             (provider.isEmpty() ? "" : provider + " · ") +
             sourceLabel()
@@ -611,6 +611,7 @@ final class LiveZapper {
     /** The "i" panel: the programme the banner shows, in full. Shown until closed. */
     void showInfo() {
         player.overlayHandler().removeCallbacks(hideBanner);
+        refreshPicture();
         if (shownRow == null) {
             overlay.info("", player.title(), "", "No programme information");
             return;
@@ -635,7 +636,24 @@ final class LiveZapper {
         );
     }
 
+    /**
+     * Keeps the panel's picture line current while it is open: the first frame, a quality change
+     * or a new source can arrive after it opened.
+     */
+    private final Runnable pictureTick = () -> {
+        if (overlay.infoShowing()) refreshPicture();
+    };
+
+    private void refreshPicture() {
+        player.overlayHandler().removeCallbacks(pictureTick);
+        overlay.infoPicture(player.videoDetails(), sourceText());
+        player.overlayHandler().postDelayed(pictureTick, PICTURE_REFRESH_MS);
+    }
+
+    static final int PICTURE_REFRESH_MS = 2000;
+
     void hideInfo() {
+        player.overlayHandler().removeCallbacks(pictureTick);
         overlay.hideInfo();
         player.overlayHandler().removeCallbacks(hideBanner);
         player.overlayHandler().postDelayed(hideBanner, BANNER_MS);
@@ -759,7 +777,7 @@ final class LiveZapper {
         if (touch || !overlay.bannerShowing()) return;
         // As on the satellite box: OK brings the banner up ready to use, with Audio & subtitles
         // highlighted; ◀ ▶ move along and OK presses. ▲ ▼ only show it briefly while zapping.
-        overlay.focusControl(1);
+        overlay.focusControl(0);
         player.overlayHandler().removeCallbacks(hideBanner);
         if (!backControls) player.overlayHandler().postDelayed(hideBanner, BROWSE_MS);
     }

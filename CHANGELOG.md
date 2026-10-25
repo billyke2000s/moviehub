@@ -1,4 +1,10 @@
 ## Unreleased
+- Live TV: the source name in the banner's title strip is now plain text ("Source: Auto ·
+  provider · 1 of 2"), not a second Sources button; the green key is the one Source button.
+  BACK highlights the green key; OK highlights Audio & subtitles as before.
+- Live TV information panel: a "Picture" line with size, quality name, frame rate, codec and
+  bitrate (for example "1920×1080 (1080p) · 50 fps · H.264 · 4.8 Mb/s"), plus the source,
+  refreshed every two seconds while open. Both the VLC and the experimental ExoPlayer builds.
 - Experimental DaddyLive: reuse one isolated lookup process/compiled code, briefly cache public
   mirror pages, enforce lookup deadlines and advance failed players without retrying the same one.
 - Experimental: cancel stale channel retries/resolution and release the Media3 player/view on stop.

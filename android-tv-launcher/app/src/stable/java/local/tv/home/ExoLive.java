@@ -56,6 +56,10 @@ final class ExoLive {
         return null;
     }
 
+    static String videoDetails() {
+        return "";
+    }
+
     static String status() {
         return "ExoPlayer is not in this build";
     }

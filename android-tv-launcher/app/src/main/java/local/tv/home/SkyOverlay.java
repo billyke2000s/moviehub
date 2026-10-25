@@ -40,12 +40,12 @@ final class SkyOverlay {
     private final LinearLayout banner, info, pauseBar, keys;
     final LinearLayout channelStrip;
     private final TextView number, name, clock, nowTime, nowTitle, nextTime, nextTitle, about, source, hint;
-    private final TextView infoTitle, infoWhen, infoAbout, infoChannel, pauseIcon, pauseText;
+    private final TextView infoTitle, infoWhen, infoAbout, infoChannel, infoPicture, pauseIcon, pauseText;
     private final ProgressBar progress;
     /**
-     * The banner's buttons, left to right: Sources, then the four colour keys. Each works with a
-     * tap, and with ◀ ▶ and SELECT once BACK has revealed the controls, so a remote without
-     * coloured buttons can still reach them (package-private for tests).
+     * The banner's buttons, left to right: the four colour keys. Each works with a tap, and with
+     * ◀ ▶ and SELECT, so a remote without coloured buttons can still reach them. The source name
+     * in the title strip is text, not a button (package-private for tests).
      */
     final List<View> controls = new ArrayList<>();
     private boolean controlsRevealed;
@@ -77,6 +77,12 @@ final class SkyOverlay {
         infoAbout.setLineSpacing(0, 1.15f);
         infoAbout.setPadding(0, a.dp(8), 0, 0);
         infoBody.addView(infoAbout);
+        // What is actually playing: picture size, frame rate, codec, bitrate, and the source.
+        infoPicture = label(15, false, SOFT);
+        infoPicture.setSingleLine(false);
+        infoPicture.setMaxLines(2);
+        infoPicture.setPadding(0, a.dp(10), 0, 0);
+        infoBody.addView(infoPicture);
         info.addView(infoBody);
         stack.addView(info, spaced());
 
@@ -102,30 +108,17 @@ final class SkyOverlay {
         title.addView(number);
         name = label(24, true, Color.WHITE);
         title.addView(name, new LinearLayout.LayoutParams(0, -2, 1));
-        source = label(15, false, Color.WHITE);
-        source.setPadding(a.dp(12), a.dp(12), a.dp(16), a.dp(12));
-        source.setMinHeight(a.dp(48));
+        // Which source is playing: information only. The green key is the one Source button.
+        source = label(15, false, SOFT);
+        source.setPadding(a.dp(12), 0, a.dp(16), 0);
         source.setMaxWidth(a.dp(300));
         source.setFocusable(false);
-        source.setContentDescription("Sources");
-        source.setOnClickListener(v -> a.liveMenus().chooseSource());
-        source.setOnFocusChangeListener((v, focused) -> {
-            source.setTextColor(focused ? LiveTvScreen.YELLOW : Color.WHITE);
-            controlOutline(v, focused);
-        });
+        source.setClickable(false);
         title.addView(source);
-        controls.add(source);
         clock = label(20, true, Color.WHITE);
         title.addView(clock);
-        // Reserve an actual header row, not only a suggested minimum. Grow with system text
-        // size, including the source button's vertical padding.
-        int stripHeight = Math.max(
-            a.dp(64),
-            Math.max(
-                (int) Math.ceil(number.getTextSize() * 1.5f) + a.dp(16),
-                (int) Math.ceil(source.getTextSize() * 1.5f) + a.dp(40)
-            )
-        );
+        // Reserve an actual header row, not only a suggested minimum. Grow with system text size.
+        int stripHeight = Math.max(a.dp(64), (int) Math.ceil(number.getTextSize() * 1.5f) + a.dp(16));
         banner.addView(title, new LinearLayout.LayoutParams(-1, stripHeight));
         LinearLayout content = body();
         LinearLayout nowRow = row();
@@ -232,7 +225,7 @@ final class SkyOverlay {
         nowTime.setVisibility(View.GONE);
     }
 
-    /** Highlights banner button {@code index} (0 Sources, 1–4 the colour keys), ready for OK. */
+    /** Highlights banner button {@code index} (0 red, 1 green, 2 yellow, 3 blue), ready for OK. */
     void focusControl(int index) {
         boxControls();
         if (index >= 0 && index < controls.size()) controls.get(index).requestFocus();
@@ -259,11 +252,15 @@ final class SkyOverlay {
         }
     }
 
+    /** BACK: highlights the green Source key, the one way to change source from the banner. */
     void focusSources() {
         boxControls();
         for (View control : controls) control.setFocusableInTouchMode(true);
-        source.requestFocus();
+        controls.get(SOURCE_KEY).requestFocus();
     }
+
+    /** The green Source key's place in {@link #controls}. */
+    static final int SOURCE_KEY = 1;
 
     /** ◀ ▶ while the controls are revealed: the next or previous button, stopping at the ends. */
     void moveControl(int direction) {
@@ -333,6 +330,17 @@ final class SkyOverlay {
         infoWhen.setText(when);
         infoAbout.setText(description.isEmpty() ? "No description for this programme." : description);
         info.setVisibility(View.VISIBLE);
+    }
+
+    /** The information panel's picture line: {@code video} from the player, then the source. */
+    void infoPicture(String video, String sourceText) {
+        String picture = "Picture: " + (video.isEmpty() ? "waiting for the first frame" : video);
+        infoPicture.setText(sourceText.isEmpty() ? picture : picture + "\n" + sourceText);
+    }
+
+    /** The picture line as shown (package-private for tests). */
+    String infoPictureText() {
+        return infoPicture.getText().toString();
     }
 
     void hideInfo() {
