@@ -457,7 +457,7 @@ public final class ExoLiveTest {
     private String oldFree, oldLast;
 
     /** Channels named {@code names[i]} at {@code paths[i]}; one writer per source so equal names become copies. */
-    private void channels(String[][] rows) {
+    private void channels(String[][] rows) throws Exception {
         Context context = remote.getTargetContext();
         android.content.SharedPreferences prefs = context.getSharedPreferences("ui", 0);
         oldFree = prefs.getString(FreeChannels.PREF, null);
@@ -519,7 +519,7 @@ public final class ExoLiveTest {
     }
 
     @Test
-    public void theGuidePlaysTheLastChannelInItsCorner() {
+    public void theGuidePlaysTheLastChannelInItsCorner() throws Exception {
         try {
             channels(new String[][] { { "picture-test", "Alpha", "/a.m3u8", "" } });
             remote
@@ -539,7 +539,7 @@ public final class ExoLiveTest {
     }
 
     @Test
-    public void aBrokenChannelSaysSoInThePictureAndTheRemoteMovesOn() {
+    public void aBrokenChannelSaysSoInThePictureAndTheRemoteMovesOn() throws Exception {
         try {
             channels(new String[][] {
                 { "broken-test", "Alpha", "/a.m3u8", "" },
@@ -573,7 +573,7 @@ public final class ExoLiveTest {
     }
 
     @Test
-    public void aManualBackupSurvivesGuideAndFullScreenWithoutReopening() {
+    public void aManualBackupSurvivesGuideAndFullScreenWithoutReopening() throws Exception {
         try {
             String name = "Sky Sports Main Event UK",
                 epg = "SkySportsMainEvent.uk";
