@@ -341,8 +341,8 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     // ---- Queries --------------------------------------------------------------------------
     private static final String COLUMNS = "_id,name,grp,logo,key,epg,dkey,number,section,source,source_label";
     /**
-     * Accounts first, then native Pluto, Free-TV and other public lists, then the experimental
-     * provider engine's channels; playlist order within each. A provider copy of a channel that a
+     * Accounts first, then native Pluto, Free-TV and other public lists, then the provider
+     * engine's channels; playlist order within each. A provider copy of a channel that a
      * list already has is its backup.
      */
     static final String ORDER =

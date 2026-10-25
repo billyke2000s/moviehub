@@ -1,3 +1,16 @@
+## 0.58 (25 October 2026)
+
+Everything tested in MovieHub Experimental, up to exp-15, is now part of MovieHub.
+
+- Live TV plays through a new player (ExoPlayer): one screen for the guide, picture and banner, and support for DASH channels.
+- Several sources for a channel are tried at once and the best is played; a source with no picture after 15 seconds moves on to the next.
+- Programme guides from one daily combined guide, including Sky UK, Freeview, Ireland, US and Samsung TV Plus, with UKTV's new channel names.
+- Typed channel numbers update as you type, show Sky-style in the guide, and OK jumps at once. The guide title shows the channel count.
+- ZLive channels work again. Plex plays again and has programme listings; DistroTV and Vidaa, which no longer work, are removed.
+- Free channels has its own Settings tab; US-only services are labelled and can be hidden.
+- Films and series: each website is listed once with its links grouped, and Resume finds a fresh link while keeping your place.
+- A failed background load shows a small card instead of squashing the guide. Channels refresh once after an update.
+
 ## Unreleased
 
 - Documentation: corrected build requirements (Gradle 9.6.0, AGP 9.4.1, Python 3.11, Node 22), described the MovieHub Experimental app, replaced stale ZLive "404 / no playback" notes, refreshed STATUS (released versions, branch situation, open PRs, files over 700 lines, next steps), test counts and four undocumented classes.

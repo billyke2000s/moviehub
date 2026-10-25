@@ -423,11 +423,12 @@ retains the film-to-native-Live-TV cancellation test that exposed the EGL crash.
 The previous final run failed after 121 passes with SIGSEGV in EGL swapBuffers; this
 regression and its correction require a new full emulator result.
 
-## Experimental app
+## ExoPlayer Live TV and the test app
 
-CI's `apk` job also compiles MovieHub Experimental (`-Pexperimental assembleDebug`) and checks its
-package name. The separate `experimental-device-tests` job builds with `-Pexperimental` and runs
-`ExoLiveTest` on the TV emulator against Media3 itself: decoded frame progress and nonblank
+`ExoLiveTest` and `DlhdStartupTest` are ordinary device tests (in `src/androidTest`), so the normal
+`device-tests` job runs them. CI's `apk` job also compiles the MovieHub Experimental test app
+(`-Pexperimental assembleDebug`) and checks its package name, and `experimental-device-tests` runs the two
+suites again inside that build. `ExoLiveTest` exercises Media3 itself on the TV emulator: decoded frame progress and nonblank
 screenshots through two guide/fullscreen round trips without new stream requests; 404 retry
 cancellation on channel change and stop; pause/resume; foreground restart and Activity
 destruction; HLS audio/subtitle selection and remote banner entry. Experimental lint also runs.
@@ -435,7 +436,7 @@ destruction; HLS audio/subtitle selection and remote banner entry. Experimental 
 Run that suite on a running emulator with:
 
 ```sh
-gradle -p android-tv-launcher -Pexperimental connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=local.tv.home.ExoLiveTest
+gradle -p android-tv-launcher connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=local.tv.home.ExoLiveTest
 ```
 
 These local HTTP fixtures establish decoder and lifecycle behaviour, not real-provider or

@@ -1,7 +1,8 @@
 plugins { id 'com.android.application'; id 'com.chaquo.python' }
-// `gradle -Pexperimental ...` builds "MovieHub Experimental": a separate app (own package, data
-// and update feed) for trying large changes on a TV. Normal builds are unchanged: package
-// local.tv.home, label MovieHub, home-screen role and the android-tv-latest feed.
+// Every build has the same features (ExoPlayer Live TV, the fast provider process).
+// `gradle -Pexperimental ...` only changes the app's identity, to "MovieHub Experimental": its own
+// package, data, launcher role and update feed, so a test build installs beside normal MovieHub.
+// Normal builds: package local.tv.home, label MovieHub, home-screen role, android-tv-latest feed.
 def experimental = project.hasProperty('experimental')
 android {
     namespace 'local.tv.home'
@@ -12,18 +13,12 @@ android {
     defaultConfig {
         if (experimental) applicationId 'local.tv.home.experimental'
         manifestPlaceholders = [
-            fastProviderEnabled: experimental ? 'true' : 'false',
             appLabel: experimental ? 'MovieHub Experimental' : 'MovieHub',
             homeCategory: experimental ? 'android.intent.category.DEFAULT' : 'android.intent.category.HOME'
         ]
         buildConfigField 'boolean', 'EXPERIMENTAL', experimental ? 'true' : 'false'
     }
     buildFeatures { buildConfig true }
-    // The Live TV engine: ExoPlayer only in the experimental build, a stub otherwise (see ExoLive).
-    sourceSets {
-        main { java.srcDirs += experimental ? 'src/experimental/java' : 'src/stable/java' }
-        if (experimental) androidTest { java.srcDirs += 'src/experimentalTest/java' }
-    }
     signingConfigs {
         release {
             if (System.getenv('APK_KEYSTORE')) {
@@ -38,13 +33,12 @@ android {
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 dependencies {
-    if (experimental) {
-        implementation 'androidx.media3:media3-exoplayer:1.5.1'
-        implementation 'androidx.media3:media3-exoplayer-hls:1.5.1'
-        // DASH (.mpd) channels: without it ExoPlayer cannot load DashMediaSource and the app crashes.
-        implementation 'androidx.media3:media3-exoplayer-dash:1.5.1'
-        implementation 'androidx.media3:media3-ui:1.5.1'
-    }
+    // Live TV engine.
+    implementation 'androidx.media3:media3-exoplayer:1.5.1'
+    implementation 'androidx.media3:media3-exoplayer-hls:1.5.1'
+    // DASH (.mpd) channels: without it ExoPlayer cannot load DashMediaSource and the app crashes.
+    implementation 'androidx.media3:media3-exoplayer-dash:1.5.1'
+    implementation 'androidx.media3:media3-ui:1.5.1'
     implementation 'org.mozilla:rhino:1.9.1'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'

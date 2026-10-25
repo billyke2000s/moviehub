@@ -392,13 +392,16 @@ After native stop returns, detachViews closes VLC's output and the retained text
 released. An unsuccessful native join keeps the window/engine quarantined. Live TV's
 retained guide/fullscreen output is unchanged.
 
-## Experimental ExoPlayer Live TV
+## ExoPlayer Live TV
 
-Builds made with `-Pexperimental` add `src/experimental/java` (the real `ExoLive`, on Media3
-ExoPlayer 1.5.1); normal builds add `src/stable/java` (a stub whose `available()` is false), so
-the normal APK contains no ExoPlayer and behaves as before.
+Live TV plays through `ExoLive`, on Media3 ExoPlayer 1.5.1 (HLS and DASH). Until 0.58 this was only in
+the separate experimental build, with a stub in normal builds; it is now the one Live TV engine.
+`ExoLive.available()` is now always true, so `MainActivity` always builds `LiveStage`, and the
+`ExoLive.available() ? … : LivePlayer…` branches always take the ExoPlayer side. The LibVLC live classes
+(`LivePlayer`, `LiveVideoOutput` and related) remain in the code; whether any path still reaches them
+has not been audited. Films and series still play through LibVLC.
 
-In the experimental app Live TV is one screen, `LiveStage`, owned by `MainActivity`: its root holds
+Live TV is one screen, `LiveStage`, owned by `MainActivity`: its root holds
 the page host (every `fixedScreen` page, including the TV Guide menu and channel guide), then one
 `SurfaceView` that is only ever placed over the guide's corner box or stretched to full screen,
 then an overlay (the guide picture's label, status text and the satellite banner). `MainActivity.play` for Live TV calls `LiveStage.fullScreen` instead of opening a player
@@ -434,7 +437,7 @@ DlhdPageCache keeps at most eight public mirror pages and four MiB for 30 second
 module fingerprint and exact request. It never caches embeds, tokens, playlists, media or
 authenticated requests. A failed selected player clears these page hints and is retired through
 AdapterSources.failed before ExoLive reopens it. Ordinary HLS parsing/behind-live-window handling
-is unchanged. These changes are gated by the experimental build.
+is unchanged.
 
 An exhausted DaddyLive resolver reports to source failover immediately, rather than repeating
 the entire unsuccessful walk through ExoLive's two reconnects. Available sources still use

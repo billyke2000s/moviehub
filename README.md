@@ -30,9 +30,9 @@ MovieHub is an Android TV launcher and streaming application that combines film 
 - **Films and series:** TMDB-powered discovery, watch history and source selection.
 - **Live TV:** Public channel directories, M3U and Xtream integration, and a unified channel guide. Programme listings come from one daily combined public guide, preferring exact provider identities with country-matched XMLTV fallback where available.
 - **Sources:** Optional Torrentio, MediaFusion, Comet and Premiumize integrations with automatic or manual selection.
-- **Playback:** VLC-based playback with stream recovery and source switching.
+- **Playback:** ExoPlayer (Media3) for Live TV and VLC for films and series, with stream recovery and source switching.
 - **Launcher:** Remote-friendly navigation and access to installed Android TV applications.
-- **MovieHub Experimental:** a separate test app (its own package, installed alongside MovieHub) with ExoPlayer Live TV and newer provider work, published to its own [pre-release](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-experimental). Normal MovieHub installs never update from it.
+- **Test builds:** large changes can be tried first in MovieHub Experimental, a separate copy of the app (its own package, installed alongside MovieHub) with its own [pre-release](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-experimental) feed. Normal MovieHub installs never update from it.
 
 MovieHub is an independent application and does not provide streaming subscriptions or host content. Some provider integrations remain experimental; see [project status](#project-status).
 
@@ -201,12 +201,12 @@ titles, preserve session request methods and cookies, and continue collecting ba
 three-second initial selection. Remote availability varies; provider details distinguish network,
 HTTP, host-resolution and no-match outcomes.
 
-### Experimental playback validation
+### Live TV playback validation
 
-MovieHub Experimental uses Media3 for Live TV and has a separate emulator playback suite.
-It tests shared guide/fullscreen video, channel retries, audio/subtitles and player cleanup.
-Experimental builds use their own app data and update feed. Physical-TV/provider behaviour
-still needs verification; recorded picture freezes do not trigger automatic repair.
+Since 0.58 Live TV plays through Media3 ExoPlayer, which was tried first in MovieHub Experimental
+(up to exp-15). `ExoLiveTest` covers shared guide/fullscreen video, channel retries,
+audio/subtitles and player cleanup on the emulator. Physical-TV/provider behaviour still needs
+verification; recorded picture freezes do not trigger automatic repair.
 
 ### Faster experimental DaddyLive startup
 

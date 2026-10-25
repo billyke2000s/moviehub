@@ -21,7 +21,7 @@ final class GuidePicture {
 
     /** The box the picture is shown in; a newer guide frame replaces it. */
     private FrameLayout box;
-    /** Experimental builds: the one-screen Live TV that draws the picture over the box. */
+    /** The one-screen Live TV that draws the picture over the box. */
     private MainActivity host;
     private TextView label;
 
@@ -99,7 +99,7 @@ final class GuidePicture {
 
     @SuppressWarnings("unchecked")
     private void configureBackups(Context context, Object[] result) {
-        if (ExoLive.available()) return; // the experimental engine prepares no standby player
+        if (ExoLive.available()) return; // the ExoPlayer engine prepares no standby player
         LivePlayer.backups(context, (java.util.List<ChannelDatabase.Row>) result[2]);
     }
 
@@ -135,7 +135,7 @@ final class GuidePicture {
         ) playing = false;
     }
 
-    /** Experimental builds: the one Live TV picture is placed over this box. */
+    /** The one Live TV picture is placed over this box. */
     private void attachExo(Context context) {
         if (host != null && host.stage != null) host.stage.picture(box, label);
     }

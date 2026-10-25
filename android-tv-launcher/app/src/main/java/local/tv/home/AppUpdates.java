@@ -13,7 +13,7 @@ import org.json.JSONObject;
 /** Public release feed; credentials are never sent to the update server. */
 final class AppUpdates {
 
-    /** The experimental app has its own feed, so it never offers or installs the normal app. */
+    /** A separate test build (-Pexperimental) has its own feed, so it never offers or installs the normal app. */
     static final String ROOT = BuildConfig.EXPERIMENTAL
         ? "https://github.com/billyke2000s/moviehub/releases/download/android-tv-experimental/"
         : "https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/";

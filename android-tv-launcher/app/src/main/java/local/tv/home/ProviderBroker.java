@@ -334,7 +334,7 @@ final class ProviderBroker {
             transport,
             http
         );
-        if (BuildConfig.EXPERIMENTAL && id.equals("dlhd") && operation.equals("resolve")) {
+        if (id.equals("dlhd") && operation.equals("resolve")) {
             Transport network = transport;
             String fingerprint = ProviderCodec.call("sha256", module);
             boolean knownParser = module.equals(ProviderPackages.builtinModule(c, id));

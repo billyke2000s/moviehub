@@ -3,7 +3,7 @@ package local.tv.home;
 import android.widget.Toast;
 import java.util.List;
 
-/** The Live TV side panels when the experimental {@link ExoLive} player is playing. */
+/** The Live TV side panels when the {@link ExoLive} player is playing. */
 final class ExoMenus implements LiveMenus {
 
     private final LiveScreen screen;

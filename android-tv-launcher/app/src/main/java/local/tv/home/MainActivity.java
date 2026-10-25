@@ -31,7 +31,7 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
     final CatalogueSearch catalogueSearch = new CatalogueSearch(this);
     final LiveTvScreen liveTv = new LiveTvScreen(this);
     /**
-     * MovieHub Experimental: one screen for all of Live TV (pages, one picture, the banner), or
+     * One screen for all of Live TV (pages, one picture, the banner), or
      * null in normal builds, which keep separate player screens.
      */
     LiveStage stage;

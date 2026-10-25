@@ -36,7 +36,8 @@ signs nothing and does not change the feed paths.
 `gradle -Pexperimental …` builds **MovieHub Experimental**: package `local.tv.home.experimental`,
 label "MovieHub Experimental", no home-screen role, and its own update feed
 (`android-tv-experimental` pre-release). It installs next to MovieHub and keeps its own data
-(channels and accounts are set up again inside it). Normal builds are unchanged.
+(channels and accounts are set up again inside it). Since 0.58 it has the same features as MovieHub;
+only its identity differs, so it is for trying a risky change on the TV before it reaches MovieHub.
 
 Run **Publish MovieHub Experimental** (`publish-experimental.yml`) on the branch to test, with an
 increasing version code. It uploads `moviehub-experimental.apk` (to install by hand) and

@@ -12,7 +12,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 /**
- * MovieHub Experimental: one screen for all of Live TV. MovieHub's pages (the TV Guide menu, the
+ * One screen for all of Live TV. MovieHub's pages (the TV Guide menu, the
  * channel guide, and every other screen) are shown in {@link #pageHost}; above them is one video
  * picture that is never rebuilt or moved to another screen, only placed over the guide's corner
  * box or stretched to full screen; above that, the satellite banner while watching full screen.
@@ -27,7 +27,7 @@ final class LiveStage implements LiveScreen {
     private final MainActivity a;
     private final FrameLayout root, pageHost, overlay, bannerHost;
     private final FrameLayout video;
-    /** The one picture: Media3's PlayerView in experimental builds. */
+    /** The one picture: Media3's PlayerView. */
     private final View surface;
     private final TextView status;
     private final Handler overlayHandler = new Handler(Looper.getMainLooper());

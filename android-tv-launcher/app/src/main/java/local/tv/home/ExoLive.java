@@ -38,7 +38,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
- * Experimental builds: the one Live TV player, on Media3 ExoPlayer, drawn by Media3's own
+ * The one Live TV player, on Media3 ExoPlayer, drawn by Media3's own
  * {@link PlayerView} (the standard Android TV picture: correct shape, subtitles, surface lifecycle).
  * There is one view for all of Live TV ({@link LiveStage}); it is resized, never handed over.
  *
@@ -530,7 +530,7 @@ final class ExoLive {
         }
     }
 
-    /** Package-private playback evidence for the experimental instrumentation suite. */
+    /** Package-private playback evidence for the ExoLiveTest instrumentation suite. */
     static ExoPlayer player() {
         return player;
     }

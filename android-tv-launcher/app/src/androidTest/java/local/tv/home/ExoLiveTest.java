@@ -49,13 +49,14 @@ public final class ExoLiveTest {
             SystemClock.sleep(25);
         } while (SystemClock.elapsedRealtime() < until);
         UiEvidence.capture("experimental-timeout");
-        fail("Experimental player timed out; focus=" + (activity != null && activity.hasWindowFocus()));
+        fail("Live TV player timed out; focus=" + (activity != null && activity.hasWindowFocus()));
     }
 
     @Before
     public void prepare() throws Exception {
         Context context = remote.getTargetContext();
-        assertEquals("local.tv.home.experimental", context.getPackageName());
+        // Runs in both MovieHub and the separate -Pexperimental test app.
+        assertTrue(context.getPackageName().startsWith("local.tv.home"));
         oldHttp = context.getSharedPreferences("ui", 0).getBoolean("http", false);
         oldAutoUpdates = context.getSharedPreferences("ui", 0).getBoolean("autoUpdates", true);
         context.getSharedPreferences("ui", 0).edit().putBoolean("autoUpdates", false).commit();
@@ -431,7 +432,7 @@ public final class ExoLiveTest {
     }
 
     @Test
-    public void audioSubtitlesAndRemoteBannerUseTheExperimentalPlayer() {
+    public void audioSubtitlesAndRemoteBannerUseTheExoPlayer() {
         play("/master.m3u8");
         await(() -> !ExoLive.audioTracks().isEmpty() && !ExoLive.subtitleTracks().isEmpty());
         remote.runOnMainSync(() -> {

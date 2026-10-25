@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.ReentrantLock;
 import org.json.JSONObject;
 
-/** One disposable isolated process for a complete experimental DaddyLive lookup. */
+/** One disposable isolated process for a complete DaddyLive lookup. */
 final class ProviderSessionBridge implements ProviderBroker.Executor, AutoCloseable {
 
     private static final ReentrantLock lock = new ReentrantLock();
