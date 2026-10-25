@@ -350,6 +350,7 @@ final class AdapterSources {
             .putInt(id + "Count", rows.length())
             .putLong(id + "Refresh", System.currentTimeMillis())
             .remove(id + "Error")
+            .remove(id + "GeoLocked")
             .apply();
         return rows.length();
     }
