@@ -11,6 +11,15 @@ import moviehub_vod as vod
 from moviehub_compat import client
 
 class FreeVodTests(unittest.TestCase):
+    def setUp(self):
+        # Upstream constructors sometimes fetch their homepage. Offline regressions must
+        # never depend on its availability; individual transport fixtures override this.
+        def offline_request(session, method, url, **kwargs):
+            raise AssertionError('Unexpected live HTTP request in an offline regression')
+        transport = patch.object(requests.Session, 'request', new=offline_request)
+        transport.start()
+        self.addCleanup(transport.stop)
+
     def test_search_inventory_counts_websites_without_losing_bundled_adapters(self):
         everything = json.loads(vod.search_providers(include_retired=True))
         self.assertEqual(len(everything), 63)
