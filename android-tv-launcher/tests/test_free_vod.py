@@ -327,6 +327,12 @@ class FreeVodTests(unittest.TestCase):
         self.assertEqual(result['status'],'timeout')
         self.assertEqual(result['sources'],[])
 
+    def test_cancelled_website_search_stops_before_reading_title_fields(self):
+        # Mirrors the device test: Java cancels before any title field (even season) is sent.
+        result=json.loads(vod.query_site('free99:my4hydra_top',json.dumps({'http':False}),lambda:True))
+        self.assertEqual(result['status'],'timeout')
+        self.assertEqual(result['sources'],[])
+
     def test_private_and_plain_http_targets_rejected(self):
         client.scope(lambda:False)
         for url in ['file:///tmp/video.mp4','http://example.com/video.mp4','https://127.0.0.1/video.mp4','https://user:pass@example.com/video.mp4']:

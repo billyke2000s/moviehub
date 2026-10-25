@@ -38,6 +38,12 @@ def query_site(provider_id, raw, cancelled, emit=None):
     group = next(r for r in json.loads(search_providers()) if r['id'] == provider_id)
     deadline = time.monotonic() + 45
     info = json.loads(raw)
+    cancel = cancelled.get if hasattr(cancelled, "get") else cancelled
+    # Stop before any adapter or provider request when Java has already cancelled the search.
+    if cancel():
+        return json.dumps(dict(status='timeout', sources=[], attempts=[]))
+    # Treat a missing season as a film rather than failing the whole website search.
+    is_movie = info.get('season', -1) < 0
     results, attempts, seen = [], [], set()
     class Emit:
         def ready(self, value):
@@ -52,7 +58,7 @@ def query_site(provider_id, raw, cancelled, emit=None):
             if emit is not None: emit.ready(json.dumps(item))
     for adapter in group['adapters']:
         record = _MODULES[adapter]
-        if not record['movies' if info['season'] < 0 else 'series']: continue
+        if not record['movies' if is_movie else 'series']: continue
         if time.monotonic() >= deadline: break
         report = json.loads(query(adapter, raw, cancelled, Emit(), deadline))
         attempts.append(dict(adapter=adapter, status=report['status'], stage=report.get('stage', ''),

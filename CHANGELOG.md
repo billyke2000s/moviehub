@@ -7,6 +7,7 @@
 - Refresh sources when resuming a movie/episode, preserve progress and deduplicate playback history by title.
 - Give host resolution a separate bounded budget, preserve final-media cookies safely and use browser request identity consistently.
 - Verify official Kodi package provenance and audit movie/episode provider outcomes separately.
+- Starting a ZLive channel no longer downloads the channel list first; old saved IDs are matched against the list already in memory. A cancelled or season-less website search now stops cleanly instead of failing.
 
 
 - Free channels is now its own Settings tab (between Accounts and Appearance) instead of a crowded side panel under Accounts plus a separate "Provider engine" page; Accounts holds only logins. Sections: Refresh and "Turn all on" at the top; Public channel lists (country, and whether to keep them with a TV provider); Free services (Pluto TV, FreeLiveSports and every provider-engine service, each on/off with its channel count); Advanced (hide US-only services, Masqueradarr, ZLive address, service updates). The old panel wrongly said the list choice controlled all free channels; it only ever controlled the public lists. No preference keys or meanings changed. Rebuilding the page keeps the remote on the card just used.
