@@ -17,14 +17,14 @@ class FreeVodTests(unittest.TestCase):
         self.assertEqual(len({r['site'] for r in everything}), 63)
         self.assertEqual(sum(len(r['adapters']) for r in everything), 66)
         rows = json.loads(vod.search_providers())
-        # 26 websites found dead on 25 October 2026 are skipped when searching.
-        self.assertEqual(len(vod.RETIRED_SITES), 26)
-        self.assertEqual(len(rows), 37)
-        self.assertEqual(sum(len(r['adapters']) for r in rows), 39)
+        # Only seven domains with DNS/parking/HTTP 410 evidence remain excluded.
+        self.assertEqual(len(vod.RETIRED_SITES), 7)
+        self.assertEqual(len(rows), 56)
+        self.assertEqual(sum(len(r['adapters']) for r in rows), 59)
         self.assertFalse(any(r['site'] in vod.RETIRED_SITES for r in rows))
         self.assertTrue(vod.RETIRED_SITES <= {r['site'] for r in everything})
         self.assertFalse(any('library' in r['id'] or 'filepursuit' in r['id'] for r in everything))
-        levidia = next(r for r in everything if r['site'] == 'levidia.ch')
+        levidia = next(r for r in rows if r['site'] == 'levidia.ch')
         self.assertEqual(levidia['adapters'], ['free99:levidia_ch', 'scrubs:levidia_ch'])
         self.assertTrue(levidia['movies'] and levidia['series'])
         self.assertEqual(vod.validate(), 68)
@@ -67,6 +67,86 @@ class FreeVodTests(unittest.TestCase):
                 session.get('https://site.example/search',params={'id':['one','two']})
             self.assertEqual(fetch.call_args.args[1]['User-Agent'],client.UserAgent)
             self.assertEqual(fetch.call_args.args[0],'https://site.example/search?id=one&id=two')
+
+    def test_cross_site_redirect_drops_the_old_host_and_credentials(self):
+        first=requests.Response();first.status_code=302;first.url='https://site.example/out'
+        first.headers['Location']='https://host.example/embed';first._content=b''
+        second=requests.Response();second.status_code=200;second.url='https://host.example/embed'
+        second._content=b'ok'
+        first._content_consumed=True;second._content_consumed=True
+        client.scope(lambda:False)
+        with patch.object(client,'safe',side_effect=lambda url:url), \
+             patch.object(requests.Session,'request',side_effect=[first,second]) as request:
+            client.fetch(first.url,headers={'Host':'site.example','Cookie':'private=1',
+                                          'Authorization':'private','Referer':first.url})
+        headers=request.call_args_list[1].kwargs['headers']
+        self.assertNotIn('Host',headers)
+        self.assertNotIn('Cookie',headers)
+        self.assertNotIn('Authorization',headers)
+        self.assertEqual(headers['Referer'],first.url)
+
+    def test_metadata_requests_never_read_a_video_body(self):
+        for output in ('headers','geturl','cookie','file_size'):
+            with self.subTest(output=output):
+                response=requests.Response();response.status_code=200
+                response.url='https://media.example/large.mp4'
+                response.headers['Content-Length']='2000000000'
+                response.iter_content=unittest.mock.Mock(side_effect=AssertionError('body downloaded'))
+                response.close=lambda:None
+                client.scope(lambda:False)
+                with patch.object(client,'safe',side_effect=lambda url:url), \
+                     patch.object(requests.Session,'request',return_value=response):
+                    result=client.request(response.url,output=output)
+                response.iter_content.assert_not_called()
+                if output=='file_size': self.assertEqual(result,2000000000)
+                if output=='geturl': self.assertEqual(result,response.url)
+
+    def test_free99_levidia_with_no_landing_cookie_and_a_yearless_search_result(self):
+        from moviehub_free99 import scrape_sources
+        query={'imdb':'tt1234567','tmdb':12,'title':'Fixture Film','year':'2020','season':-1,'episode':-1}
+        def request(session,method,url,**kwargs):
+            response=requests.Response();response.status_code=200;response.url=url
+            response.headers['Content-Type']='text/html'
+            if 'search.php' in url:
+                response._content=(b'<div class="mainlink"><a href="bad.php">Other item without year</a></div>'
+                                   b'<div class="mainlink"><a href="movie.php?id=1">Fixture Film (2020)</a></div>')
+            elif 'movie.php' in url:
+                response._content=b'<a target="_blank" href="https://host.example/embed">Play</a>'
+            elif 'media.example' in url:
+                response.headers['Content-Type']='video/mp4';response._content=b'ftyp'
+            else: response._content=b''
+            response._content_consumed=True
+            return response
+        item={'url':'https://media.example/film.mp4','direct':True,'quality':'HD','source':'fixture'}
+        with patch.object(requests.Session,'request',autospec=True,side_effect=request), \
+             patch.object(client,'safe',side_effect=lambda url:url), \
+             patch.object(scrape_sources,'process',return_value=[item]) as process:
+            result=json.loads(vod.query('free99:levidia_ch',json.dumps(query),lambda:False))
+        self.assertEqual(result['status'],'complete')
+        self.assertEqual(len(result['sources']),1)
+        process.assert_called_once()
+
+    def test_resolved_files_mislabeled_indirect_still_require_valid_media(self):
+        from unittest.mock import Mock
+        module=importlib.import_module(vod._MODULES['scrubs:levidia_ch']['module'])
+        query={'imdb':'tt1234567','tmdb':12,'title':'Fixture Film','year':'2020','season':-1,'episode':-1}
+        provider=Mock()
+        provider.base_link='https://site.example'
+        provider.sources.return_value=[{'url':'https://media.example/film.mp4','direct':False}]
+        provider.resolve.side_effect=lambda url:url
+        resolver=Mock();resolver.valid_url.return_value=False
+        response=requests.Response();response.status_code=200;response.url='https://media.example/film.mp4'
+        response._content=b'ftyp';response.headers['Content-Type']='video/mp4'
+        with patch.object(module,'source',return_value=provider), \
+             patch.object(vod.resolveurl,'HostedMediaFile',return_value=resolver), \
+             patch.object(client,'safe',side_effect=lambda url:url), \
+             patch.object(client,'fetch',return_value=response):
+            result=json.loads(vod.query('scrubs:levidia_ch',json.dumps(query),lambda:False))
+            self.assertEqual(result['status'],'complete')
+            resolver.resolve.assert_not_called()
+            response.headers['Content-Type']='text/html';response._content=b'<html>Error</html>'
+            result=json.loads(vod.query('scrubs:levidia_ch',json.dumps(query),lambda:False))
+            self.assertEqual(result['status'],'rejected_media')
 
     def test_provider_requested_read_timeout_is_honored_within_search_budget(self):
         response=requests.Response();response.status_code=200;response.url='https://site.example/path'
@@ -304,7 +384,7 @@ class FreeVodTests(unittest.TestCase):
         with patch.object(client,'safe',side_effect=lambda url:url), \
              patch.object(client.requests,'Session',return_value=session):
             self.assertEqual(client.request(response.url,output='file_size'),503371211)
-            self.assertEqual(reads,[0])
+            self.assertEqual(reads,[])
             response.status_code=206;response.headers['Content-Range']='bytes 0-0/700000000'
             reads.clear()
             self.assertEqual(client.request(response.url,output='file_size'),700000000)

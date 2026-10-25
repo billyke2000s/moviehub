@@ -11,6 +11,10 @@ import moviehub_vod as vod
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--series', action='store_true')
+parser.add_argument('--include-retired', action='store_true',
+                    help='Audit excluded adapters too, without changing app discovery')
+parser.add_argument('--provider', action='append', default=[],
+                    help='Audit a website id (repeat to select several)')
 args=parser.parse_args()
 info = {'imdb':'tt0063350','tmdb':10331,'title':'Night of the Living Dead',
                    'year':'1968','season':-1,'episode':-1,'http':False}
@@ -31,8 +35,13 @@ def probe(row):
     except BaseException as error:
         return {'provider':row['id'], 'status':type(error).__name__, 'streams':0}
 
+rows = json.loads(vod.search_providers(include_retired=args.include_retired))
+if args.provider:
+    unknown = set(args.provider) - {row['id'] for row in rows}
+    if unknown: parser.error('Unknown or excluded website id: ' + ', '.join(sorted(unknown)))
+    rows = [row for row in rows if row['id'] in args.provider]
 with concurrent.futures.ThreadPoolExecutor(max_workers=8) as workers:
-    pending = [workers.submit(probe,row) for row in json.loads(vod.search_providers()) if row['series' if args.series else 'movies']]
+    pending = [workers.submit(probe,row) for row in rows if row['series' if args.series else 'movies']]
     for future in concurrent.futures.as_completed(pending):
         result=future.result()
         results.append(result)

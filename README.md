@@ -226,3 +226,7 @@ ZLive exposes each distinct advertised, supported public resolver route with its
 ### Experimental provider repairs
 
 MovieHub searches distinct movie/series websites, retaining alternate Kodi scrapers as fallbacks without counting the same website twice. Available links are grouped under their website. Resume refreshes movie/episode metadata and searches for a current link before restoring progress. ZLive uses its current public ticket-and-POST player API and the source labels actually advertised in its catalogue. Provider availability depends on the website, host and location; bundled module counts do not establish playback availability.
+
+### Movie and series discovery recovery
+
+Levidia and 18 other websites excluded on inconclusive reachability checks are searchable again. Seven domains remain excluded on DNS, parking or HTTP 410 evidence. Scraper metadata lookups stop after response headers, redirects discard an obsolete Host header, and Levidia tolerates an empty initial cookie jar and yearless search entries. Availability is reported per search; this does not promise that every remote website or host plays.

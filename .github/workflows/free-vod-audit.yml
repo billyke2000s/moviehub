@@ -1,7 +1,7 @@
 name: Free VOD provider audit
 on:
     push:
-        branches: [fix/free-vod-reliability, fix/experimental-zlive-vod]
+        branches: [fix/free-vod-reliability, fix/experimental-zlive-vod, fix/vod-provider-recovery]
     workflow_dispatch:
 permissions:
     contents: read

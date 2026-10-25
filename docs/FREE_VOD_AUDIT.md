@@ -157,3 +157,11 @@ no links for "The Dark Knight" or "Night of the Living Dead", 3 had broken searc
 returned playable links (for the 1968 film). The other 5 failed the first run but answered in the re-check, so
 they stay; their searches were not repeated. Retirement makes searches faster; it does not add results. A site that comes
 back can be removed from the list.
+
+## Correction to the 25 October retirement decision
+
+The old homepage recheck used bare domains rather than every scraper’s exact base URL. Levidia’s `https://www.levidia.ch` homepage and search both return real catalogue content, so its exclusion was incorrect. Restore 19 websites, keeping only seven with NXDOMAIN, parked-domain or HTTP 410 evidence excluded. Timeouts, TLS errors, 403 and temporary 521/522 failures do not establish permanent closure. Current searchable inventory: 56 websites and 59 adapters; 68 modules remain bundled.
+
+The review made 82 direct homepage/search/alternate requests across all 26 excluded providers, plus public DNS checks. Four names returned NXDOMAIN (123-movies.golf, dopebox.to, projectfreetv.lol, soap2dayz.top); flixwave.me served a sale page; m4ufree.se and putlocker.gives returned HTTP 410 during checks. Other failures remain inconclusive. Parked alternate domains were not adopted. Levidia search reachability does not establish media playback.
+
+Further compatibility fixes: metadata-only operations no longer read full media responses; cross-site redirects remove obsolete Host headers; Levidia tolerates no initial cookie, cookie values containing equals signs, missing optional markup and yearless results. Resolved file URLs mislabeled indirect are verified as media rather than discarded for lacking a second host resolver. Original-package hashes continue to identify provenance; the maintained Levidia edits are documented in the third-party notice.

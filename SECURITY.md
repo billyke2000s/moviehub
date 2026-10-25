@@ -214,3 +214,7 @@ The client fixed guide URL rejects redirects, bounds compressed/expanded data, r
 The ZLive public client protocol uses tickets and AES-GCM request envelopes. The published client constant is protocol material, not an account credential. Ticket and stream-location history remains encrypted on device; diagnostics omit it. The broker restricts session POSTs and their redirects to the exact configured ZLive `/resolve` endpoint; public-address and HTTPS checks still apply to all responses and playback targets. Refusals are not bypassed via alternate routes. A protocol update retains recent refusal cooldowns.
 
 Movie media probes remove Cookie/Authorization on cross-origin redirects and scope newly issued cookies to the final media host. Title-based Resume rediscovers sources instead of persisting required playback credentials or trusting an expired URL. Plain HTTP remains opt-in; TLS verification and interactive-host exclusions remain active.
+
+## VOD transport recovery
+
+Header-only metadata operations use the same TLS/public-address/redirect/cancellation checks and close the response without reading its body. Cross-authority redirects discard explicit Host and credential headers. Recognised media file paths mislabeled indirect are accepted only after the existing response and short-video checks. No TLS bypass, bot-challenge bypass, remote-code execution or new source domains are introduced.
