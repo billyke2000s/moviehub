@@ -76,7 +76,13 @@ final class SettingsScreens {
         scroll.addView(body);
         layout.addView(scroll, new LinearLayout.LayoutParams(0, -1, 1));
         List<Button> choices = new ArrayList<>();
-        for (String tab : new String[] { "Accounts", "Appearance", "Playback", "System" }) {
+        for (String tab : new String[] {
+            "Accounts",
+            FreeChannelsPage.TAB,
+            "Appearance",
+            "Playback",
+            "System",
+        }) {
             Button choice = activity.navigationButton(tab, () -> {});
             choices.add(choice);
             LinearLayout.LayoutParams navParams = new LinearLayout.LayoutParams(-1, activity.dp(44));
@@ -526,9 +532,10 @@ final class SettingsScreens {
             heading(body, "Your connections");
             accountCard(body, "Xtream", "Live channels from your TV provider");
             accountCard(body, "M3U playlist", "Your own IPTV playlist");
-            freeChannelsCard(body);
             accountCard(body, "TMDB", "Movie and series discovery, details and artwork");
             accountCard(body, "Premiumize", "Playback sources and your cloud library");
+        } else if (tab.equals(FreeChannelsPage.TAB)) {
+            new FreeChannelsPage(activity).fill(body, null);
         } else if (tab.equals("Appearance")) {
             heading(body, "Look and feel");
             toggle(body, "Featured row", "Artwork and a poster shelf on Home", "featured", true);
@@ -683,20 +690,5 @@ final class SettingsScreens {
             );
         }
         activity.settingsStyle(body);
-    }
-
-    /** Free channels in Accounts: how many free services are on; everything else is on its page. */
-    private void freeChannelsCard(LinearLayout body) {
-        int on = FreeChannelsPage.servicesOn(activity.prefs);
-        String lists = FreeChannelsPage.regionLabel(FreeChannels.choice(activity));
-        settingCard(
-            body,
-            "Free channels",
-            "Pluto TV, Samsung TV Plus, public channel lists and other free services",
-            on + " services on · lists: " + lists,
-            on > 0 || !FreeChannels.choice(activity).equals("off"),
-            "Open",
-            () -> new FreeChannelsPage(activity).show()
-        );
     }
 }

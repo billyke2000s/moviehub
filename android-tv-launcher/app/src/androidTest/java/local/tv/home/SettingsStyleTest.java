@@ -76,7 +76,15 @@ public class SettingsStyleTest {
     /** Free channels: one page with plain sections, a card per service, and focus kept on rebuild. */
     @Test
     public void freeChannelsIsOnePageWithSectionsAndACardPerService() {
-        remote.runOnMainSync(() -> new FreeChannelsPage(activity).show());
+        // Its own sidebar tab, not a card under Accounts.
+        remote.runOnMainSync(() -> activity.settingsScreens.settings());
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            View button = find(activity.getWindow().getDecorView(), FreeChannelsPage.TAB);
+            assertNotNull("Free channels tab", button);
+            while (!button.hasOnClickListeners()) button = (View) button.getParent();
+            button.performClick();
+        });
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
             View decor = activity.getWindow().getDecorView();

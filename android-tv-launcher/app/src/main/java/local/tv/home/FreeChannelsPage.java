@@ -10,7 +10,7 @@ import java.text.DateFormat;
 import java.util.Date;
 
 /**
- * Settings → Accounts → Free channels: every free source on one page, in three plain sections.
+ * Settings → Free channels (its own sidebar tab): every free source in one place, in plain sections.
  *
  * <ul>
  *   <li>Public channel lists (Free-TV and iptv-org): which country, and whether they stay when a TV
@@ -33,6 +33,9 @@ final class FreeChannelsPage {
     }
 
     /** The countries offered for the public lists, as FreeChannels preference values. */
+    /** The Settings sidebar tab this page fills. */
+    static final String TAB = "Free channels";
+
     static final String[][] REGIONS = {
         { "off", "Off" },
         { "uk", "United Kingdom" },
@@ -67,15 +70,23 @@ final class FreeChannelsPage {
         return 2 + ProviderBroker.IDS.length;
     }
 
+    /** Opens Settings on the Free channels tab. */
     void show() {
         show(null);
     }
 
-    /** Builds the page; {@code focusTitle} puts the remote back on that card's button. */
+    /** Opens Settings on the Free channels tab; {@code focusTitle} puts the remote on that card. */
     void show(String focusTitle) {
-        LinearLayout body = settings.settingsLayout("Free channels", settings::settings, "Accounts");
+        LinearLayout body = settings.settingsLayout("Settings", activity.homeScreen::home, TAB);
+        fill(body, focusTitle);
+    }
+
+    /** The Free channels tab's cards, in {@code body} (the Settings tab area). */
+    void fill(LinearLayout body, String focusTitle) {
+        body.removeAllViews();
         SharedPreferences prefs = activity.prefs;
         Button[] focus = new Button[1];
+        settings.heading(body, "Free live TV");
 
         // At the top: what is on, and the two things people do most.
         ChannelImporter.Status sync = ChannelImporter.status(activity);

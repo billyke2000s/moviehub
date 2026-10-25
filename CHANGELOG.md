@@ -1,6 +1,6 @@
 ## Unreleased
 
-- Settings → Accounts → Free channels is now one page instead of a crowded side panel plus a separate "Provider engine" page. Sections: Refresh and "Turn all on" at the top; Public channel lists (country, and whether to keep them with a TV provider); Free services (Pluto TV, FreeLiveSports and every provider-engine service, each on/off with its channel count); Advanced (hide US-only services, Masqueradarr, ZLive address, service updates). The old panel wrongly said the list choice controlled all free channels; it only ever controlled the public lists. No preference keys or meanings changed. Rebuilding the page keeps the remote on the card just used.
+- Free channels is now its own Settings tab (between Accounts and Appearance) instead of a crowded side panel under Accounts plus a separate "Provider engine" page; Accounts holds only logins. Sections: Refresh and "Turn all on" at the top; Public channel lists (country, and whether to keep them with a TV provider); Free services (Pluto TV, FreeLiveSports and every provider-engine service, each on/off with its channel count); Advanced (hide US-only services, Masqueradarr, ZLive address, service updates). The old panel wrongly said the list choice controlled all free channels; it only ever controlled the public lists. No preference keys or meanings changed. Rebuilding the page keeps the remote on the card just used.
 - TV guide and Home: a failed background load now shows one small card floating over the bottom of the screen (it hides itself after 12 seconds) instead of a full-width box added below the guide, which pushed the guide up and squashed its rows. Scrolling screens are unchanged.
 - Keep explicit XMLTV regional suffixes such as `@Scotland` separate from national listings; quality suffixes such as `@HD` still share a schedule.
 
@@ -511,7 +511,7 @@ Live TV now has the rest of what the old satellite boxes did:
 ## 0.21 (18 Oct 2026)
 
 - Live TV works without a TV provider: the full public iptv-org channel list is loaded the first
-  time you open Live TV. Settings → Accounts → Free channels can switch to one country, keep the
+  time you open Live TV. Settings → Free channels can switch to one country, keep the
   full list even with a provider, or turn it off. Some free streams may not work, and some need
   Allow HTTP.
 - Live TV redesigned as a classic satellite TV guide: a blue full-screen grid of ten channels per

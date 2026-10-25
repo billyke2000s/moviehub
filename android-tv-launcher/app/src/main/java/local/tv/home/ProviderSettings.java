@@ -24,7 +24,7 @@ final class ProviderSettings {
                     "Pluto TV, Tubi, Xumo and other free services. They run inside the app, with no " +
                     "server. They join your guide sections and act as backups when a channel fails.\n\n" +
                     "Some services may not work in your region. You can turn each one off in " +
-                    "Settings → Accounts → Free channels."
+                    "Settings → Free channels."
             )
             .action("Turn them all on", () -> {
                 enableAll(activity);
