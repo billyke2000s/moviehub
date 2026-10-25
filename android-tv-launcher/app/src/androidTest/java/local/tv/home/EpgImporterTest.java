@@ -61,7 +61,7 @@ public class EpgImporterTest {
         for (int i = 0; i < idsAndNames.length; i += 2) xml.append("<channel id=\"")
             .append(idsAndNames[i])
             .append("\"><display-name>")
-            .append(idsAndNames[i + 1])
+            .append(idsAndNames[i + 1].replace("&", "&amp;").replace("<", "&lt;"))
             .append("</display-name></channel>");
         for (int i = 0; i < idsAndNames.length; i += 2) xml.append("<programme start=\"")
             .append(stamp(now - 600_000))
