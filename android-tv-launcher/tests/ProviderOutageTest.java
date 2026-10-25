@@ -44,6 +44,12 @@ public final class ProviderOutageTest {
                 "Local Now (US) · timed out: Plex (saved channels kept)",
             ProviderOutage.summary(failed)
         );
+        // Switching off is opt-in and needs geo-locked refreshes in a row.
+        same("true", String.valueOf(ProviderOutage.geoLocked("likely geo-locked")));
+        same("false", String.valueOf(ProviderOutage.geoLocked("timed out")));
+        same("false", String.valueOf(ProviderOutage.turnOff(false, 5)));
+        same("false", String.valueOf(ProviderOutage.turnOff(true, 1)));
+        same("true", String.valueOf(ProviderOutage.turnOff(true, ProviderOutage.AUTO_OFF_AFTER)));
         System.out.println(checks + " provider outage checks passed");
     }
 }

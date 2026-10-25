@@ -477,3 +477,6 @@ checks that LG Channels asks for country US. The Plex play fix was verified only
 channels are ignored, the US file is read only when the UK file covers under half the lineup. The real
 gb.xml (368 channels, all `<24 hex>-<24 hex>` ids) was inspected offline; that its ids equal the
 catalogue's gridKeys is inferred, not yet seen on a device.
+
+`ProviderOutageTest` also covers the optional geo-lock switch-off: never with the option off, and only
+after `AUTO_OFF_AFTER` (2) geo-locked refreshes in a row.

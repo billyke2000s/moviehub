@@ -13,7 +13,21 @@ import java.util.Map;
  */
 final class ProviderOutage {
 
+    /** Settings → Provider engine: switch off providers that keep failing as geo-locked. Off by default. */
+    static final String AUTO_OFF = "autoOffGeoLocked";
+    /** Refreshes in a row a provider must be geo-locked before the option switches it off. */
+    static final int AUTO_OFF_AFTER = 2;
+
     private ProviderOutage() {}
+
+    static boolean geoLocked(String reason) {
+        return reason.equals("geo-locked") || reason.equals("likely geo-locked");
+    }
+
+    /** Whether to switch a provider off: only with the option on, after enough geo-locked refreshes. */
+    static boolean turnOff(boolean optionOn, int geoLockedInARow) {
+        return optionOn && geoLockedInARow >= AUTO_OFF_AFTER;
+    }
 
     /**
      * Why {@code label} failed, from its {@link ProviderFailure#describe} summary. HTTP 403 and 451

@@ -101,6 +101,21 @@ final class ProviderSettings {
                 activity.toast("Provider refresh queued");
             }
         );
+        boolean autoOff = activity.prefs.getBoolean(ProviderOutage.AUTO_OFF, false);
+        settings.settingCard(
+            body,
+            "Turn off geo-locked providers",
+            "Switches a provider off when it is geo-locked on " +
+                ProviderOutage.AUTO_OFF_AFTER +
+                " refreshes in a row, so its warning stops. Leave off if you watch from the provider's own country.",
+            autoOff ? "On" : "Off",
+            autoOff,
+            autoOff ? "Turn off" : "Turn on",
+            () -> {
+                activity.prefs.edit().putBoolean(ProviderOutage.AUTO_OFF, !autoOff).apply();
+                show();
+            }
+        );
         for (int i = 0; i < ProviderBroker.IDS.length; i++) {
             String id = ProviderBroker.IDS[i],
                 label = AdapterSources.LABELS[i];

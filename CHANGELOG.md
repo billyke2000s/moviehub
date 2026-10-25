@@ -1,4 +1,6 @@
 ## Unreleased
+- Settings → Provider engine → "Turn off geo-locked providers" (off by default): when on, a provider
+  that is geo-locked on two refreshes in a row is switched off and the guide says so once.
 - Plex programme listings: Plex channels now show what is on, from the daily public XMLTV files at
   i.mjh.nz/Plex (UK file first, US file when the UK one covers under half the channels). Channels
   match by Plex's own channel id, not by name.
