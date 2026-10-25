@@ -46,9 +46,16 @@ def search_providers(include_retired=False):
     return json.dumps(list(groups.values()))
 
 
+# No per-website time limit beyond the whole search: a slow site (fzmovies needs about a dozen page
+# loads) used to be cut off after 30 s of discovery and 15 s of host resolution before it found
+# anything. Links reach the player as they arrive, so a slow site never delays playback; the app's
+# whole search (VodSearch, 420 s) cancels any site still running, and every request keeps its own
+# timeout, so a hung connection is still dropped.
+SITE_BUDGET_S = 400
+
 def query_site(provider_id, raw, cancelled, emit=None):
     group = next(r for r in json.loads(search_providers(include_retired=True)) if r['id'] == provider_id)
-    deadline = time.monotonic() + 45
+    deadline = time.monotonic() + SITE_BUDGET_S
     info = json.loads(raw)
     cancel = cancelled.get if hasattr(cancelled, "get") else cancelled
     # Stop before any adapter or provider request when Java has already cancelled the search.
@@ -94,9 +101,9 @@ def validate():
 
 
 def query(provider_id, raw, cancelled, emit=None, deadline=None):
-    deadline = deadline or time.monotonic() + 45
+    deadline = deadline or time.monotonic() + SITE_BUDGET_S
     cancel = cancelled.get if hasattr(cancelled, "get") else cancelled
-    client.scope(cancel, timeout=max(.1, min(30, deadline-time.monotonic())), http=json.loads(raw).get('http', False))
+    client.scope(cancel, timeout=max(.1, deadline-time.monotonic()), http=json.loads(raw).get('http', False))
     info = json.loads(raw)
     record = _MODULES[provider_id]
     # Kodi's local library is not an Internet provider. Its module remains bundled for provenance.
@@ -147,8 +154,8 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
         errors = 0
         unsupported = 0
         lookup_failure = client.failure()
-        # Discovery cannot consume the separate, bounded host/media resolution budget.
-        client.scope(cancel, timeout=max(.1, min(15, deadline-time.monotonic())), http=info.get('http', False))
+        # Host/media resolution gets a fresh scope with whatever remains of the site's budget.
+        client.scope(cancel, timeout=max(.1, deadline-time.monotonic()), http=info.get('http', False))
         sources=[]; seen=set(); timed_out=False
         for item in candidates[:200]:
             try:

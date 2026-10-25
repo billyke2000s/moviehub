@@ -1,3 +1,9 @@
+## Unreleased
+
+- Films and series: a slow website keeps searching until the whole search ends instead of being cut off after 30 seconds, so sites like fzmovies can return links. Links still reach the player as they arrive.
+- Films and series: one website's search no longer changes the headers the next website is sent (stagatv, seriesloaded and naijavault leaked their Referer and even Host into later searches).
+- Films and series: checking a file's size no longer downloads the whole film (fzmovies failed on every film because of this).
+
 ## 1.0.1 (25 October 2026)
 
 - Films and series: stop searching 26 free websites that are gone (failed three checks on 25 October 2026), so searches finish sooner. Their scrapers stay bundled.
