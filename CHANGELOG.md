@@ -1,8 +1,9 @@
 ## Unreleased
 - Live TV guide: the list's channel count sits on the title line, e.g. "ALL CHANNELS   11,000 channels"
   or "SPORTS   240 channels" (copies of one channel count once, as in the rows).
-- Settings → Provider engine → "Turn off geo-locked providers" (off by default): when on, a provider
-  that is geo-locked on two refreshes in a row is switched off and the guide says so once.
+- Settings → Provider engine → "Hide US-only providers" (off by default): hides LG Channels, Roku
+  Channel and Local Now, the services known to work only in the US. Nothing is ever switched off
+  because it failed.
 - Plex programme listings: Plex channels now show what is on, from the daily public XMLTV files at
   i.mjh.nz/Plex (UK file first, US file when the UK one covers under half the channels). Channels
   match by Plex's own channel id, not by name.
@@ -18,8 +19,9 @@
 - Removed DistroTV and Vidaa: both services' API hosts no longer exist (DistroTV has shut down;
   Vidaa moved to a new signed backend). Their saved channels are cleared on the next refresh. The
   remaining US-only services are labelled, e.g. LG Channels (US).
-- The guide's "Unavailable now" line groups failed providers by reason, for example
-  "geo-locked: LG Channels (US), Local Now (US) · timed out: Plex" (`ProviderOutage`).
+- The guide's "Unavailable now" line groups failed providers by their actual failure, for example
+  "HTTP 403: LG Channels (US only) · timed out: Plex" (`ProviderOutage`). It never guesses that a
+  service is geo-locked; known US-only services say so in their name.
 - The live provider probe can be run for chosen providers only.
 - Experimental DaddyLive: reuse one isolated lookup process/compiled code, briefly cache public
   mirror pages, enforce lookup deadlines and advance failed players without retrying the same one.

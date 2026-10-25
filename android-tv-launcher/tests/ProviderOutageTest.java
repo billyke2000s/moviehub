@@ -17,39 +17,37 @@ public final class ProviderOutageTest {
     }
 
     public static void main(String[] args) {
-        same("geo-locked", ProviderOutage.reason("LG Channels (US)", "Provider returned HTTP 403"));
-        same("geo-locked", ProviderOutage.reason("Plex", "Provider returned HTTP 451"));
-        same("likely geo-locked", ProviderOutage.reason("Local Now (US)", "Provider error (EcmaError)"));
-        same(
-            "likely geo-locked",
-            ProviderOutage.reason("Samsung TV Plus (GB)", "Provider error (JavaScriptException)")
-        );
-        same("likely geo-locked", ProviderOutage.reason("LG Channels (UK)", "Provider error (EcmaError)"));
-        // A service with no country in its name is not called geo-locked without an HTTP refusal.
-        same("error (EcmaError)", ProviderOutage.reason("ZLive", "Provider error (EcmaError)"));
-        same("timed out", ProviderOutage.reason("Plex", "Connection timed out"));
-        same("timed out", ProviderOutage.reason("Roku Channel", "Provider refresh timed out"));
-        same("HTTP 500", ProviderOutage.reason("Roku Channel", "Provider returned HTTP 500"));
-        same("DNS lookup failed", ProviderOutage.reason("Plex", "DNS lookup failed"));
-        same("failed", ProviderOutage.reason("Plex", ""));
+        // The real failure only: a 403 or a script error is never called geo-locked, because a
+        // service that is down for a day looks the same as one refusing a country.
+        same("HTTP 403", ProviderOutage.reason("Provider returned HTTP 403"));
+        same("HTTP 451", ProviderOutage.reason("Provider returned HTTP 451"));
+        same("error (EcmaError)", ProviderOutage.reason("Provider error (EcmaError)"));
+        same("timed out", ProviderOutage.reason("Connection timed out"));
+        same("timed out", ProviderOutage.reason("Provider refresh timed out"));
+        same("HTTP 500", ProviderOutage.reason("Provider returned HTTP 500"));
+        same("DNS lookup failed", ProviderOutage.reason("DNS lookup failed"));
+        same("connection failed", ProviderOutage.reason("Connection failed"));
+        same("failed", ProviderOutage.reason(""));
         same("", ProviderOutage.summary(new ArrayList<>()));
 
         List<String[]> failed = new ArrayList<>();
-        failed.add(new String[] { "LG Channels (US)", "Provider returned HTTP 403" });
-        failed.add(new String[] { "Local Now (US)", "Provider error (EcmaError)" });
+        failed.add(new String[] { "LG Channels (US only)", "Provider returned HTTP 403" });
         failed.add(new String[] { "Plex", "Connection timed out" });
-        failed.add(new String[] { "Roku Channel", "Provider returned HTTP 403" });
+        failed.add(new String[] { "Roku Channel (US only)", "Provider returned HTTP 403" });
         same(
-            "Unavailable now — geo-locked: LG Channels (US), Roku Channel · likely geo-locked: " +
-                "Local Now (US) · timed out: Plex (saved channels kept)",
+            "Unavailable now — HTTP 403: LG Channels (US only), Roku Channel (US only) · " +
+                "timed out: Plex (saved channels kept)",
             ProviderOutage.summary(failed)
         );
-        // Switching off is opt-in and needs geo-locked refreshes in a row.
-        same("true", String.valueOf(ProviderOutage.geoLocked("likely geo-locked")));
-        same("false", String.valueOf(ProviderOutage.geoLocked("timed out")));
-        same("false", String.valueOf(ProviderOutage.turnOff(false, 5)));
-        same("false", String.valueOf(ProviderOutage.turnOff(true, 1)));
-        same("true", String.valueOf(ProviderOutage.turnOff(true, ProviderOutage.AUTO_OFF_AFTER)));
+
+        // Hiding is the viewer's choice and applies only to services known to be US-only,
+        // whatever their refreshes did.
+        same("false", String.valueOf(ProviderOutage.hidden(false, "lg")));
+        same("true", String.valueOf(ProviderOutage.hidden(true, "lg")));
+        same("true", String.valueOf(ProviderOutage.hidden(true, "localnow")));
+        same("true", String.valueOf(ProviderOutage.hidden(true, "roku")));
+        same("false", String.valueOf(ProviderOutage.hidden(true, "plex")));
+        same("false", String.valueOf(ProviderOutage.hidden(true, "samsung")));
         System.out.println(checks + " provider outage checks passed");
     }
 }

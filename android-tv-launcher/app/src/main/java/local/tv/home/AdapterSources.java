@@ -69,15 +69,15 @@ final class AdapterSources {
         "STIRR",
         "TCL TV+",
         "Xumo Play",
-        "LG Channels (US)",
+        "LG Channels (US only)",
         "Whale TV+",
         "Vizio WatchFree+",
-        "Roku Channel",
+        "Roku Channel (US only)",
         "Plex",
         "DaddyLive",
         "Tubi",
         "Samsung TV Plus (GB)",
-        "Local Now (US)",
+        "Local Now (US only)",
         "ZLive",
         "FreeShot (UK sports)",
     };
@@ -133,7 +133,9 @@ final class AdapterSources {
      * account or "only without a TV provider" no longer hides a provider the viewer turned on.
      */
     static boolean enabled(Context c, String id, boolean connected) {
-        return c.getSharedPreferences("ui", 0).getBoolean(pref(id), false);
+        android.content.SharedPreferences ui = c.getSharedPreferences("ui", 0);
+        if (ProviderOutage.hidden(ui.getBoolean(ProviderOutage.HIDE_US_ONLY, false), id)) return false;
+        return ui.getBoolean(pref(id), false);
     }
 
     static synchronized void invalidate() {
@@ -350,7 +352,6 @@ final class AdapterSources {
             .putInt(id + "Count", rows.length())
             .putLong(id + "Refresh", System.currentTimeMillis())
             .remove(id + "Error")
-            .remove(id + "GeoLocked")
             .apply();
         return rows.length();
     }

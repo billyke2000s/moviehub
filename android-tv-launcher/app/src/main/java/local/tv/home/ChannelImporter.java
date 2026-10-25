@@ -145,11 +145,9 @@ final class ChannelImporter {
                         problems.add("FreeLiveSports unavailable; cached channels kept.");
                     }
                 }
-                // Providers that failed this time, named once in one line grouped by why (geo-locked,
-                // timed out…): a list of one line per provider pushed the guide's rows off the screen.
+                // Providers that failed this time, named once in one line grouped by the actual failure
+                // (timed out, HTTP 403…): one line per provider pushed the guide's rows off the screen.
                 List<String[]> unavailable = new ArrayList<>();
-                List<String> turnedOff = new ArrayList<>();
-                android.content.SharedPreferences ui = context.getSharedPreferences("ui", 0);
                 android.content.SharedPreferences engine = context.getSharedPreferences("providerEngine", 0);
                 for (String id : ProviderBroker.IDS)
                     if (AdapterSources.enabled(context, id, providerConnected)) {
@@ -162,34 +160,17 @@ final class ChannelImporter {
                             cancel.check();
                             Diagnostics.recovered("Provider refresh " + id, e);
                             String failure = ProviderFailure.describe(e);
-                            String label = AdapterSources.sourceName(AdapterSources.source(id));
-                            // Geo-locked refreshes in a row; any other outcome starts the count again.
-                            int geoLocked = ProviderOutage.geoLocked(ProviderOutage.reason(label, failure))
-                                ? engine.getInt(id + "GeoLocked", 0) + 1
-                                : 0;
                             engine
                                 .edit()
                                 .putString(id + "Error", failure)
-                                .putInt(id + "GeoLocked", geoLocked)
                                 .apply();
-                            unavailable.add(new String[] { label, failure });
-                            if (
-                                ProviderOutage.turnOff(
-                                    ui.getBoolean(ProviderOutage.AUTO_OFF, false),
-                                    geoLocked
-                                )
-                            ) {
-                                ui.edit().putBoolean(AdapterSources.pref(id), false).apply();
-                                turnedOff.add(label);
-                            }
+                            unavailable.add(new String[] {
+                                AdapterSources.sourceName(AdapterSources.source(id)),
+                                failure,
+                            });
                         }
                     }
                 if (!unavailable.isEmpty()) problems.add(ProviderOutage.summary(unavailable));
-                if (!turnedOff.isEmpty()) problems.add(
-                    "Turned off as geo-locked here: " +
-                        String.join(", ", turnedOff) +
-                        " (Settings → Provider engine to turn back on)"
-                );
                 cancel.check();
                 // Failed sources are still configured and keep their last good rows. Disabled
                 // sources must disappear even when a different provider is offline.

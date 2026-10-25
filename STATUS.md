@@ -488,5 +488,8 @@ commit before publishing the next experimental version. Physical-TV latency rema
 - **UK region copies were tried and dropped.** LG's API answered HTTP 500 for country GB; FastChannels
   also supports LG, Roku, Tubi and TCL for the US (and Canada for TCL) only.
 - From the UK, LG Channels (US), Local Now (US) and Roku Channel are expected to fail (they work from
-  the US runner). The guide now says "geo-locked" for HTTP 403/451 and "likely geo-locked" for a
-  region-labelled service failing without an HTTP refusal.
+  the US runner). They are labelled "US only" from research; the guide shows each failure as it is
+  (e.g. HTTP 403) and never guesses geo-blocking. An earlier exp-6 build did guess ("likely
+  geo-locked") and offered to switch providers off after two such failures; the owner pointed out
+  that a service down for a day would be mislabelled, so that was replaced by an opt-in "Hide
+  US-only providers" setting that applies only to the known US-only list.
