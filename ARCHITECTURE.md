@@ -198,7 +198,7 @@ steps with the observed HTTP/network cause. `ChannelImporter` stores the summary
 puts it first in the description. Settings cards use minimum height plus wrap-content. Guide label sizing
 fits row height while retaining horizontal ellipsis.
 
-`ProviderOutage` turns those fixed summaries into the guide's one "Unavailable now" line, grouped by
+`ChannelSync.refreshIfStale` also refreshes once when the app version that last finished an import (`refreshedVersion`, recorded whatever the outcome, since `lastSuccess` needs no failures at all) differs from the running one. `ProviderOutage` turns those fixed summaries into the guide's one "Unavailable now" line, grouped by
 actual failure (timed out, HTTP status, DNS…). It never infers geo-blocking: a service down for a
 day looks the same as one refusing a country. Known US-only services (`ProviderOutage.US_ONLY`: LG,
 Roku, Local Now) say "US only" in their labels, and the opt-in `HIDE_US_ONLY` setting makes

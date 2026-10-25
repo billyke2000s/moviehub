@@ -514,3 +514,7 @@ number box shows "112–" while typing and is gone after the jump.
 trailing "UK" word in names. The Sky London HD guide was inspected offline (377 channels, 75,677
 programmes; Sky Atlantic, Sky Witness, Comedy Central, U&Dave/U&Gold present; Sky Sports and Sky Cinema
 absent). Its 45 MB file is served gzip-compressed at about 5.3 MB.
+
+`ChannelImporterTest.importsBothXtreamFormatsAndM3uAndKeepsFailedRefresh` also checks a finished refresh
+records the app version (`refreshedVersion`) and `ChannelSync.updatedSinceRefresh` treats another or
+unknown version as updated.

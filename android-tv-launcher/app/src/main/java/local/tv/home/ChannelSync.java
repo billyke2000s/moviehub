@@ -55,15 +55,34 @@ final class ChannelSync {
         boolean provider = secrets.has("m3u") || secrets.has("xtream") || secrets.has("masqueradarr");
         if (!provider && (!liveTvOpened || FreeChannels.playlist(context, false).isEmpty())) return;
         ChannelImporter.Status status = ChannelImporter.status(context);
-        long last = status.lastSuccess;
+        // A refresh that finished counts, even when some services failed: lastSuccess needs no
+        // failures at all, so with a US-only service failing from the UK it was never set, and
+        // every home or Live TV visit started a new full refresh.
+        long last = Math.max(
+            status.lastSuccess,
+            context.getSharedPreferences("channelImport", 0).getLong("lastFinished", 0)
+        );
         // Failed regional services must not trigger a new full import on every guide visit.
         long attempted = context.getSharedPreferences("channelImport", 0).getLong("lastAttempt", 0);
         if (System.currentTimeMillis() - attempted < TimeUnit.MINUTES.toMillis(10)) return;
+        boolean updated = updatedSinceRefresh(
+            context.getSharedPreferences("channelImport", 0).getInt("refreshedVersion", -1),
+            BuildConfig.VERSION_CODE
+        );
         if (
             !status.running &&
             !status.queued &&
-            System.currentTimeMillis() - last > TimeUnit.HOURS.toMillis(REFRESH_HOURS)
+            (updated || System.currentTimeMillis() - last > TimeUnit.HOURS.toMillis(REFRESH_HOURS))
         ) refreshNow(context);
+    }
+
+    /**
+     * Whether this app version has not finished a refresh yet: an update brings new guide
+     * sources and fixes, which apply only once channels are refreshed. Unknown (-1) counts as
+     * updated, so the first version that records it refreshes once too.
+     */
+    static boolean updatedSinceRefresh(int refreshedVersion, int currentVersion) {
+        return refreshedVersion != currentVersion;
     }
 
     public static final class Job extends Worker {
