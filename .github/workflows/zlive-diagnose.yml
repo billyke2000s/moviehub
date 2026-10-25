@@ -1,0 +1,23 @@
+name: ZLive diagnose
+# Diagnostic only: replays ZLive's public player steps for one channel. Never blocks a build.
+on:
+    push:
+        branches: [diag/zlive-boomerang]
+    workflow_dispatch:
+        inputs:
+            channel:
+                description: "ZLive channel id"
+                required: false
+                default: "boomerang-uk"
+permissions:
+    contents: read
+jobs:
+    diagnose:
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/setup-node@v5
+              with:
+                  node-version: "22"
+            - run: node provider-engine/tools/zlive-diagnose.mjs "${{ inputs.channel || 'boomerang-uk' }}"
