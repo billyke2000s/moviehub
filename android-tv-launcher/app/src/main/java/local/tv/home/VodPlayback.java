@@ -29,7 +29,18 @@ final class VodPlayback {
     private VodSources.Resolved resolved;
     private int ticket, active;
     private boolean preparing, closed, playing, waitingForSources, rejectedShort;
-    private long deadline, target, seekUntil, lastCatchup;
+    private long deadline,
+        target,
+        seekUntil,
+        seekTarget = -1,
+        lastCatchup;
+    /**
+     * A jump in a film is not a broken stream: slow websites can take well over five seconds to
+     * deliver the new position. Buffering counts as a stall again only once playback has moved this
+     * far past the jump's target, or after {@link #SEEK_SETTLE_MAX_MS}.
+     */
+    static final long SEEK_ADVANCE_MS = 2000,
+        SEEK_SETTLE_MAX_MS = 30_000;
     private final Runnable check = this::check;
 
     VodPlayback(VlcPlaybackActivity activity, VodSources.Session session) {
@@ -61,11 +72,22 @@ final class VodPlayback {
         queue.onPlaying();
     }
 
+    /** Whether a jump is still settling (see {@link #SEEK_ADVANCE_MS}). */
+    private boolean seekingNow() {
+        if (activity.dragging || activity.skips.pending()) return true;
+        long now = SystemClock.elapsedRealtime();
+        if (now >= seekUntil) return false;
+        long time = activity.player == null ? -1 : activity.player.getTime();
+        if (seekTarget >= 0 && time >= seekTarget + SEEK_ADVANCE_MS) {
+            seekUntil = 0;
+            return false;
+        }
+        return true;
+    }
+
     void onBuffering(boolean buffering) {
         queue.setUserPaused(activity.paused);
-        queue.setSeeking(
-            activity.dragging || activity.skips.pending() || SystemClock.elapsedRealtime() < seekUntil
-        );
+        queue.setSeeking(seekingNow());
         if (buffering) {
             if (queue.onBufferingStarted(SystemClock.elapsedRealtime())) failover();
         } else queue.onBufferingEnded();
@@ -74,8 +96,7 @@ final class VodPlayback {
     void tick() {
         if (closed) return;
         queue.appendSources(session.sources);
-        boolean seeking =
-            activity.dragging || activity.skips.pending() || SystemClock.elapsedRealtime() < seekUntil;
+        boolean seeking = seekingNow();
         queue.setSeeking(seeking);
         queue.setUserPaused(activity.paused);
         if (seeking || activity.paused) {
@@ -90,8 +111,10 @@ final class VodPlayback {
         if (!preparing && queue.isStalled(SystemClock.elapsedRealtime())) failover();
     }
 
-    void seeking() {
-        seekUntil = SystemClock.elapsedRealtime() + 5000;
+    /** A jump is waiting or starting; {@code target} is where it lands, or -1 while still choosing. */
+    void seeking(long target) {
+        seekUntil = SystemClock.elapsedRealtime() + SEEK_SETTLE_MAX_MS;
+        seekTarget = target;
         queue.setSeeking(true);
         cancelPreparation();
     }

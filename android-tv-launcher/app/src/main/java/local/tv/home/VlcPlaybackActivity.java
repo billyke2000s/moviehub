@@ -81,7 +81,7 @@ public class VlcPlaybackActivity extends LiveHost {
     final Runnable applySkip = () -> {
         forgetReleasedLivePlayer();
         long target = skips.take();
-        if (target >= 0 && vod != null) vod.seeking();
+        if (target >= 0 && vod != null) vod.seeking(target);
         if (target >= 0 && player != null && player.isSeekable()) player.setTime(target);
     };
     private boolean nextPromptShown, nextCancelled;
@@ -578,9 +578,11 @@ public class VlcPlaybackActivity extends LiveHost {
             resumeCheck = 0;
             if (target > 0) overlayHandler.postDelayed(() -> {
                 forgetReleasedLivePlayer();
-                if (player != null && player.isSeekable() && player.getTime() < target - 5000) player.setTime(
-                    target
-                );
+                if (player != null && player.isSeekable() && player.getTime() < target - 5000) {
+                    // The jump to the resume point is a seek too, not a stall.
+                    if (vod != null) vod.seeking(target);
+                    player.setTime(target);
+                }
             }, 1500);
             showPlaying(true);
             revealControls();
@@ -783,7 +785,7 @@ public class VlcPlaybackActivity extends LiveHost {
 
     /** Shows a waiting film jump on the controls and jumps once the presses stop. */
     void showSkipTarget(long target, long length) {
-        if (vod != null) vod.seeking();
+        if (vod != null) vod.seeking(-1);
         if (length > 0) {
             timeline.setProgress((int) Math.min(1000, (target * 1000) / length));
             timeLeft.setText(PlayerOverlay.timeLeft(Math.max(0, length - target)));
