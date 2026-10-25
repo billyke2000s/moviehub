@@ -1,4 +1,7 @@
 ## Unreleased
+- Experimental Live TV: a source that shows no picture within 15 seconds moves on to the channel's
+  next source, as the standard player does, and a source that errors moves on at once instead of
+  being reopened twice first. With no other source, it keeps waiting and retrying as before.
 - Live TV guide: the list's channel count sits on the title line, e.g. "ALL CHANNELS   11,000 channels"
   or "SPORTS   240 channels" (copies of one channel count once, as in the rows).
 - Settings → Provider engine → "Hide US-only providers" (off by default): hides LG Channels, Roku

@@ -18,6 +18,14 @@ final class ExoLive {
         void buffering(boolean buffering);
 
         void failed(String reason);
+
+        /**
+         * Whether another source of this channel is waiting to be tried. A failing source then
+         * moves on at once instead of being reopened, as the standard player does.
+         */
+        default boolean hasAlternative() {
+            return false;
+        }
     }
 
     private ExoLive() {}
