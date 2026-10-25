@@ -23,19 +23,7 @@ try {
         .replace(/\r\n/g, "\n");
     if (licenseText !== auditedLicense) throw new Error("Upstream licence requires compatibility review");
     const files = new Map([["freelivesports.ts", "freelivesports/config.ts"]]);
-    for (const id of [
-        "stirr",
-        "tcl",
-        "xumo",
-        "lg",
-        "whale",
-        "distro",
-        "vizio",
-        "vidaa",
-        "samsung",
-        "roku",
-        "plex",
-    ])
+    for (const id of ["stirr", "tcl", "xumo", "lg", "whale", "vizio", "samsung", "roku", "plex"])
         files.set(`modules/${id}/config.ts`, `${id}/config.ts`);
     files.set("modules/roku/categorize.ts", "roku/categorize.ts");
     files.set("modules/samsung/adapter.ts", "../adapters/samsung.ts");

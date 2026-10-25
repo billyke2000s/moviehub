@@ -69,11 +69,9 @@ final class AdapterSources {
         "STIRR",
         "TCL TV+",
         "Xumo Play",
-        "LG Channels",
+        "LG Channels (US)",
         "Whale TV+",
-        "DistroTV",
         "Vizio WatchFree+",
-        "Vidaa",
         "Roku Channel",
         "Plex",
         "DaddyLive",
@@ -237,12 +235,13 @@ final class AdapterSources {
     static JSONObject resolverRow(Context c, String id, String wanted, NativeHttp http) throws Exception {
         http.check();
         // These upstream resolvers accept the provider's own channel id; no catalogue hop is needed.
+        // Plex is not one: it plays by a compound id whose server prefix changes, so its (cached)
+        // catalogue row is looked up.
         if (
             Arrays.asList(
                 "stirr",
                 "xumo",
                 "roku",
-                "plex",
                 "dlhd",
                 "tubi",
                 "samsung",

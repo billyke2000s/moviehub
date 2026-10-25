@@ -5,6 +5,15 @@
 - Live TV information panel: a "Picture" line with size, quality name, frame rate, codec and
   bitrate (for example "1920×1080 (1080p) · 50 fps · H.264 · 4.8 Mb/s"), plus the source,
   refreshed every two seconds while open. Both the VLC and the experimental ExoPlayer builds.
+- Plex channels play again: the play request used the stable channel id, which Plex answers with
+  404; it now uses the compound id from the catalogue row (live probe: 0 of 3 sampled channels
+  opened before, 2 of 3 played after).
+- Removed DistroTV and Vidaa: both services' API hosts no longer exist (DistroTV has shut down;
+  Vidaa moved to a new signed backend). Their saved channels are cleared on the next refresh. The
+  remaining US-only services are labelled, e.g. LG Channels (US).
+- The guide's "Unavailable now" line groups failed providers by reason, for example
+  "geo-locked: LG Channels (US), Local Now (US) · timed out: Plex" (`ProviderOutage`).
+- The live provider probe can be run for chosen providers only.
 - Experimental DaddyLive: reuse one isolated lookup process/compiled code, briefly cache public
   mirror pages, enforce lookup deadlines and advance failed players without retrying the same one.
 - Experimental: cancel stale channel retries/resolution and release the Media3 player/view on stop.

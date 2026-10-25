@@ -111,6 +111,20 @@ const lgPayload = {
 const lg = drive("lg", "catalogue", null, () => deflateSync(JSON.stringify(lgPayload)).toString("base64"));
 assert.equal(lg[0].programs[0].title, "Live");
 checks++;
+// LG Channels is served for the US: the web client asks with that country.
+function firstRequests(id) {
+    const input = { now: 1792440000000, seed: "fixture-seed-123", responses: [], row: {}, history: [] };
+    const r = call(id, "catalogue", input);
+    assert.ok(!r.done && r.requests.length > 0, id + " makes a request");
+    return r.requests;
+}
+function header(request, name) {
+    const headers = request.headers || {};
+    const key = Object.keys(headers).find((k) => k.toLowerCase() === name);
+    return key ? headers[key] : undefined;
+}
+assert.equal(header(firstRequests("lg")[0], "x-device-country"), "US");
+checks++;
 const vizio = drive("vizio", "catalogue", null, () => ({
     channels: [
         { channelId: "one", channelName: "One", channelUrls: ["https://media.example/a.m3u8"] },

@@ -467,3 +467,7 @@ and VLC codes, bitrates, and that nothing is shown before the first frame. `Live
 that the source name is not a button (four colour keys only), that BACK highlights the green Source
 key, and that the information panel shows "Picture:" and the source. Fixtures only: the real values
 come from the stream and were not checked on a TV.
+`ProviderOutageTest` (core) checks the grouped "Unavailable now" line and its reasons (geo-locked,
+likely geo-locked only for region-labelled services, timed out, HTTP status). `runtime-check.mjs`
+checks that LG Channels asks for country US. The Plex play fix was verified only by the live probe
+(two of three sampled channels opened and played from GitHub's US runner), not on a UK connection.
