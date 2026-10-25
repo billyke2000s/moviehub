@@ -741,6 +741,16 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         return programmes(row, country, from, to, 12);
     }
 
+    /**
+     * The guide country a channel's listings come from: its own when MovieHub downloads a guide
+     * for it (an Irish "RTEOne.ie" uses the Irish guide), else {@code fallback}. A channel of
+     * another country therefore still gets no listings, rather than a same-named UK channel's.
+     */
+    static String guideCountry(String epgId, String fallback) {
+        String own = EpgMatch.country(epgId);
+        return EpgImporter.GUIDE_COUNTRIES.contains(own) ? own : fallback;
+    }
+
     List<Programme> programmes(Row row, String country, long from, long to, int limit) {
         List<Programme> out = new ArrayList<>();
         // Native listings already belong to a provider/region identity. Do not apply the
@@ -750,7 +760,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             knownEngineGuide(row.epg.substring(0, row.epg.indexOf(':') + 1)) ||
             row.epg.matches("pluto:[0-9a-f]{24}\\.[a-z]{2}")
                 ? Collections.singletonList(EpgMatch.key(row.epg))
-                : EpgMatch.keys(row.epg, row.name, country);
+                : EpgMatch.keys(row.epg, row.name, guideCountry(row.epg, country));
         if (keys.isEmpty()) return out;
         StringBuilder in = new StringBuilder();
         List<String> args = new ArrayList<>(keys);

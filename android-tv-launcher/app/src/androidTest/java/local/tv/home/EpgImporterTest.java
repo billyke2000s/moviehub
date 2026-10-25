@@ -44,7 +44,129 @@ public class EpgImporterTest {
 
     @After
     public void cleanup() {
+        EpgImporter.testGuides = null;
+        EpgImporter.testOpener = null;
         db.clear();
+    }
+
+    private static String stamp(long millis) {
+        java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("yyyyMMddHHmmss Z", Locale.ROOT);
+        f.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return f.format(new Date(millis));
+    }
+
+    /** A guide with one programme (titled "{title} on {id}") on each channel id/name pair. */
+    private static String guide(long now, String title, String... idsAndNames) {
+        StringBuilder xml = new StringBuilder("<?xml version=\"1.0\"?><tv>");
+        for (int i = 0; i < idsAndNames.length; i += 2) xml.append("<channel id=\"")
+            .append(idsAndNames[i])
+            .append("\"><display-name>")
+            .append(idsAndNames[i + 1])
+            .append("</display-name></channel>");
+        for (int i = 0; i < idsAndNames.length; i += 2) xml.append("<programme start=\"")
+            .append(stamp(now - 600_000))
+            .append("\" stop=\"")
+            .append(stamp(now + 3_000_000))
+            .append("\" channel=\"")
+            .append(idsAndNames[i])
+            .append("\"><title>")
+            .append(title)
+            .append(" on ")
+            .append(idsAndNames[i])
+            .append("</title></programme>");
+        return xml.append("</tv>").toString();
+    }
+
+    private String nowOn(String key, long now) {
+        ChannelDatabase.Row row = db.byKey(ChannelQuery.key(key));
+        assertNotNull(key, row);
+        List<ChannelDatabase.Programme> on = db.programmes(
+            row,
+            EpgImporter.COUNTRY,
+            now - 60_000,
+            now + 60_000
+        );
+        return on.isEmpty() ? "" : on.get(0).title;
+    }
+
+    @Test
+    public void guidesInPriorityOrderLondonIsNationalAndCountriesStayApart() throws Exception {
+        db.clear();
+        ChannelDatabase.Writer writer = db.writer("epg-test", () -> {}, n -> {});
+        try {
+            String[][] channels = {
+                { "BBC One Ⓖ", "https://example.test/a", "BBCOne.uk" },
+                { "E4", "https://example.test/b", "E4.uk" },
+                { "Dave", "https://example.test/c", "Dave.uk" },
+                { "RTÉ One", "https://example.test/d", "RTEOne.ie" },
+                { "Eurosport 1", "https://example.test/e", "Eurosport1.de" },
+            };
+            for (String[] c : channels) writer.accept(new Playlist.Channel(c[0], c[1], "General", "", c[2]));
+            writer.commit();
+        } finally {
+            writer.abort();
+        }
+        long now = System.currentTimeMillis();
+        Map<String, String> files = new HashMap<>();
+        files.put(
+            "freeview",
+            guide(now, "Freeview", "BBCOneLondonHD.uk", "BBC One London HD", "E4.uk", "E4")
+        );
+        files.put(
+            "uk",
+            guide(
+                now,
+                "UK1",
+                "BBCOne.uk",
+                "BBC One",
+                "E4.uk",
+                "E4",
+                "Dave.uk",
+                "Dave",
+                "Eurosport1.uk",
+                "Eurosport 1"
+            )
+        );
+        files.put("ie", guide(now, "IE1", "RTEOne.ie", "RTÉ One"));
+        EpgImporter.testGuides = new EpgImporter.Guide[] {
+            new EpgImporter.Guide("https://guides.test/freeview", "uk", true),
+            new EpgImporter.Guide("https://guides.test/uk", "uk", false),
+            new EpgImporter.Guide("https://guides.test/ie", "ie", false),
+        };
+        EpgImporter.testOpener = url ->
+            new ByteArrayInputStream(
+                files.get(url.substring(url.lastIndexOf('/') + 1)).getBytes(StandardCharsets.UTF_8)
+            );
+        EpgImporter.Result result = EpgImporter.run(context, db, () -> {});
+        assertTrue(result.programmes >= 4);
+        // The London feed stands for the national BBC One, and Freeview beats the later UK guide.
+        assertEquals("Freeview on BBCOneLondonHD.uk", nowOn("https://example.test/a", now));
+        assertEquals("Freeview on E4.uk", nowOn("https://example.test/b", now));
+        // A channel only the second guide has is filled from it.
+        assertEquals("UK1 on Dave.uk", nowOn("https://example.test/c", now));
+        // An Irish channel uses the Irish guide.
+        assertEquals("IE1 on RTEOne.ie", nowOn("https://example.test/d", now));
+        // A channel of a country with no guide still gets none (not the UK Eurosport's listings).
+        assertEquals("", nowOn("https://example.test/e", now));
+    }
+
+    @Test
+    public void oneFailingGuideKeepsTheOthers() throws Exception {
+        long now = System.currentTimeMillis();
+        EpgImporter.testGuides = new EpgImporter.Guide[] {
+            new EpgImporter.Guide("https://guides.test/broken", "uk", true),
+            new EpgImporter.Guide("https://guides.test/uk", "uk", false),
+        };
+        EpgImporter.testOpener = url -> {
+            if (url.endsWith("broken")) throw new java.io.UncheckedIOException(
+                new java.io.IOException("down")
+            );
+            return new ByteArrayInputStream(
+                guide(now, "UK1", "BBC.One.HD.uk", "BBC One HD").getBytes(StandardCharsets.UTF_8)
+            );
+        };
+        assertEquals(1, EpgImporter.run(context, db, () -> {}).channels);
+        assertEquals("UK1 on BBC.One.HD.uk", nowOn("https://example.test/1.m3u8", now));
     }
 
     static String xmltv(String start, String stop) {

@@ -340,12 +340,13 @@ final class AdapterSources {
             cancel.check();
             Diagnostics.recovered("Provider inline guide", e);
         }
-        // Plex's catalogue has no listings; they come from a separate daily XMLTV file.
-        if (id.equals("plex")) try {
-            PlexGuide.refresh(db, rows, cancel);
+        // Providers whose catalogue has no listings get them from a separate daily XMLTV file.
+        ProviderGuide.Spec listings = ProviderGuide.forProvider(id);
+        if (listings != null) try {
+            ProviderGuide.refresh(listings, db, rows, cancel);
         } catch (Exception e) {
             cancel.check();
-            Diagnostics.recovered("Plex programme guide", e);
+            Diagnostics.recovered("Provider programme guide " + id, e);
         }
         c.getSharedPreferences("providerEngine", 0)
             .edit()

@@ -211,7 +211,10 @@ Experimental Live TV moves to the
 next source after `LiveStage.START_MS` (15 s) without a picture, or at once on an error, whenever
 `LiveZapper.hasUntriedCopy()`; with no other copy it keeps the old reopen-and-wait behaviour. Plex plays by
 the compound channel id from its catalogue row (`row.id`), so it does not skip the catalogue on a cold
-resolve. DistroTV and Vidaa were removed in October 2026: both services' API hosts no longer resolve. `PlexGuide` adds Plex listings after
+resolve. DistroTV and Vidaa were removed in October 2026: both services' API hosts no longer resolve. `EpgImporter.guides()` lists the XMLTV guides in priority order (Freeview with
+`EpgMatch.national` London aliases, epgshare01 UK, IE, US); keys claimed by an earlier guide are not
+looked up later, each guide's channel ids are tagged `g<n>:` so two guides never mix, and
+`ChannelDatabase.guideCountry` lets channels of a guide country use their own country's guide. `ProviderGuide` (spec per provider) adds Plex listings after
 a Plex refresh: Plex's catalogue has none and its own guide is one request per channel per day, so it
 reads i.mjh.nz/Plex/{gb,us}.xml.gz through `EpgImporter.parse` with an id rule (the stable id after
 the last dash of the compound XMLTV id), writing through the provider's own `GuideWriter` prefix.

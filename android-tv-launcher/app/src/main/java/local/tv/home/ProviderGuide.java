@@ -12,23 +12,63 @@ import java.util.zip.GZIPInputStream;
 import org.json.JSONArray;
 
 /**
- * Programme listings for Plex channels. Plex's catalogue has no listings, and its own guide is
- * one request per channel per day (about 700 a refresh), so the listings come instead from the
- * public XMLTV files at i.mjh.nz/Plex, rebuilt daily from Plex's guide. Their channel ids are
- * Plex's compound "&lt;server&gt;-&lt;channel&gt;" ids; the part after the last dash is the
- * stable id MovieHub stores, so channels match exactly, never by name.
+ * Programme listings for providers whose catalogue carries none, from the public per-region XMLTV
+ * files at i.mjh.nz (rebuilt daily from each provider's own guide). Channels match by the
+ * provider's own channel id, never by name. {@link Spec} says, per provider, where the files are,
+ * which regions to try and how a guide id becomes MovieHub's stored id.
  */
-final class PlexGuide {
+final class ProviderGuide {
 
-    static final String BASE = "https://i.mjh.nz/Plex/";
+    /** One provider's guide files. */
+    static final class Spec {
+
+        final String provider, base;
+        /** Tried in order; the next only when the last covered under half the channels. */
+        final String[] regions;
+        final java.util.function.UnaryOperator<String> idKey;
+
+        Spec(String provider, String base, String[] regions, java.util.function.UnaryOperator<String> idKey) {
+            this.provider = provider;
+            this.base = base;
+            this.regions = regions;
+            this.idKey = idKey;
+        }
+    }
+
     /**
-     * The UK file first; the US one when the UK file covers under half the channels (a viewer
-     * whose Plex lineup is American). Plex chooses the lineup from where the viewer is.
+     * Plex: its own guide is one request per channel per day (about 700 a refresh). The ids are
+     * compound "&lt;server&gt;-&lt;channel&gt;"; the part after the last dash is the stable id
+     * MovieHub stores. The UK file first; the US one for a viewer whose Plex lineup is American
+     * (Plex chooses the lineup from where the viewer is).
      */
-    static final String[] REGIONS = { "gb", "us" };
+    static final Spec PLEX = new Spec(
+        "plex",
+        "https://i.mjh.nz/Plex/",
+        new String[] { "gb", "us" },
+        ProviderGuide::stableId
+    );
+
+    /**
+     * Samsung TV Plus (GB): the adapter drops the catalogue's inline listings, and the guide ids
+     * are the channel ids MovieHub stores ("GBBC2300003ZQ"), so they match unchanged.
+     */
+    static final Spec SAMSUNG = new Spec(
+        "samsung",
+        "https://i.mjh.nz/SamsungTVPlus/",
+        new String[] { "gb" },
+        id -> id
+    );
+
+    /** The guide for a provider, or null when its catalogue brings its own listings or none exist. */
+    static Spec forProvider(String id) {
+        if (id.equals("plex")) return PLEX;
+        if (id.equals("samsung")) return SAMSUNG;
+        return null;
+    }
+
     /** Compressed download limit; the US file is about 2 MB. */
     static final long MAX_BYTES = 20L * 1024 * 1024;
-    /** Tests replace the download; null downloads from {@link #BASE}. */
+    /** Tests replace the download; null downloads from the spec's base address. */
     static volatile Opener opener;
 
     interface Opener {
@@ -42,7 +82,7 @@ final class PlexGuide {
         final List<Object[]> programmes = new ArrayList<>();
     }
 
-    private PlexGuide() {}
+    private ProviderGuide() {}
 
     /** The stable channel id in a compound Plex id: "abc-123" is "123". */
     static String stableId(String compound) {
@@ -51,11 +91,12 @@ final class PlexGuide {
     }
 
     /**
-     * Downloads listings for the Plex catalogue {@code rows} and stores them. Returns how many
-     * channels got listings. A failed or empty download keeps the previous listings.
+     * Downloads listings for the provider's catalogue {@code rows} and stores them. Returns how
+     * many channels got listings. A failed or empty download keeps the previous listings.
      */
-    static int refresh(ChannelDatabase db, JSONArray rows, ChannelDatabase.Cancel cancel) throws Exception {
-        String prefix = AdapterSources.source("plex") + ":";
+    static int refresh(Spec spec, ChannelDatabase db, JSONArray rows, ChannelDatabase.Cancel cancel)
+        throws Exception {
+        String prefix = AdapterSources.source(spec.provider) + ":";
         Set<String> wanted = new HashSet<>();
         for (int i = 0; i < rows.length(); i++) {
             wanted.add(prefix + rows.getJSONObject(i).getString("channelId"));
@@ -63,10 +104,10 @@ final class PlexGuide {
         if (wanted.isEmpty()) return 0;
         Listings best = null;
         Exception failure = null;
-        for (String region : REGIONS) {
+        for (String region : spec.regions) {
             cancel.check();
-            try (InputStream in = open(region)) {
-                Listings found = read(in, wanted, prefix, System.currentTimeMillis(), cancel);
+            try (InputStream in = open(spec, region)) {
+                Listings found = read(spec, in, wanted, prefix, System.currentTimeMillis(), cancel);
                 if (best == null || found.channels.size() > best.channels.size()) best = found;
                 if (found.channels.size() * 2 >= wanted.size()) break;
             } catch (Exception e) {
@@ -82,14 +123,15 @@ final class PlexGuide {
         return best.channels.size();
     }
 
-    private static InputStream open(String region) throws Exception {
+    private static InputStream open(Spec spec, String region) throws Exception {
         Opener test = opener;
         if (test != null) return test.open(region);
-        return Network.open(BASE + region + ".xml.gz", null, MAX_BYTES, false);
+        return Network.open(spec.base + region + ".xml.gz", null, MAX_BYTES, false);
     }
 
     /** Reads one XMLTV file (gzipped or not), keeping programmes from two hours ago to a day ahead. */
     static Listings read(
+        Spec spec,
         InputStream raw,
         Set<String> wanted,
         String prefix,
@@ -138,12 +180,12 @@ final class PlexGuide {
                     });
                 }
             },
-            id -> prefix + stableId(id)
+            id -> prefix + spec.idKey.apply(id)
         );
         return out;
     }
 
-    /** Replaces the Plex listings in one transaction, as the provider's own inline guide does. */
+    /** Replaces the provider's listings in one transaction, as its own inline guide would. */
     static void write(ChannelDatabase db, String prefix, Listings listings) throws Exception {
         ChannelDatabase.GuideWriter writer = db.new GuideWriter(prefix);
         try {
