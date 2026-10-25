@@ -183,14 +183,14 @@ public final class ProviderEngineDeviceTest {
                 .put(new JSONObject().put("channelId", "bbb222").put("name", "Plex bbb222"));
             // The UK file has neither channel (plus an unrelated one); the US file has both, under a
             // different server prefix than the catalogue would use.
-            PlexGuide.opener = region -> {
+            ProviderGuide.opener = region -> {
                 asked.add(region);
                 String xml = region.equals("gb")
                     ? plexGuide(now, "srv-zzz999")
                     : plexGuide(now, "usserver-aaa111", "usserver-bbb222", "usserver-ccc333");
                 return new java.io.ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
             };
-            assertEquals(2, PlexGuide.refresh(db, rows, () -> {}));
+            assertEquals(2, ProviderGuide.refresh(ProviderGuide.PLEX, db, rows, () -> {}));
             assertEquals(java.util.Arrays.asList("gb", "us"), asked);
             for (String id : new String[] { "aaa111", "bbb222" }) {
                 ChannelDatabase.Row row = db.byKey(ChannelQuery.key(AdapterSources.locator("plex", id)));
@@ -202,17 +202,17 @@ public final class ProviderEngineDeviceTest {
             }
             // A UK file covering the lineup is enough: the US file is not downloaded.
             asked.clear();
-            PlexGuide.opener = region -> {
+            ProviderGuide.opener = region -> {
                 asked.add(region);
                 return new java.io.ByteArrayInputStream(
                     plexGuide(now, "gbserver-aaa111", "gbserver-bbb222").getBytes(StandardCharsets.UTF_8)
                 );
             };
-            assertEquals(2, PlexGuide.refresh(db, rows, () -> {}));
+            assertEquals(2, ProviderGuide.refresh(ProviderGuide.PLEX, db, rows, () -> {}));
             assertEquals(java.util.Collections.singletonList("gb"), asked);
-            assertEquals("bbb222", PlexGuide.stableId("64305451fc3be5947773c339-bbb222"));
+            assertEquals("bbb222", ProviderGuide.stableId("64305451fc3be5947773c339-bbb222"));
         } finally {
-            PlexGuide.opener = null;
+            ProviderGuide.opener = null;
             db.clear();
             ChannelDatabase.GuideWriter guide = db.new GuideWriter(source + ":");
             try {
