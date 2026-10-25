@@ -3,9 +3,17 @@
 ## Requirements
 
 - JDK 17
-- Android SDK 35 (platform `android-35`, build-tools `35.0.0`)
-- Gradle 8.10.2 (the project has no Gradle wrapper; CI installs this version)
+- Android SDK 35 (platform `android-35`, build-tools `35.0.0` and `36.0.0`)
+- Gradle 9.6.0 with Android Gradle plugin 9.4.1 (the project has no Gradle wrapper; CI installs this version)
+- Python 3.11 on the build machine (Chaquopy 17.1.0 packages the free film/series providers into the APK)
+- Node 22 for the provider engine (`npm ci --ignore-scripts --prefix provider-engine`)
 - An Android TV emulator or device for device tests (CI uses API 28, `tv_1080p` profile)
+
+Two apps build from the same source. The normal build is MovieHub (`local.tv.home`); adding
+`-Pexperimental` builds the separate MovieHub Experimental app (`local.tv.home.experimental`), which
+adds `src/experimental/java` (ExoPlayer Live TV) in place of `src/stable/java`. Experimental builds are
+published by `publish-experimental.yml` to the `android-tv-experimental` pre-release and never touch the
+normal update feed.
 
 ## Build
 

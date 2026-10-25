@@ -260,7 +260,7 @@ Only documentation follows this tested application revision.
 
 ## Reviewed PR regression coverage (22 October 2026)
 
-Run `bash android-tv-launcher/tests/run-core-tests.sh`; regular CI and publishing call this same script. The local run passed 664 checks in 13 suites, using Eclipse JDT 3.32 targeting Java 17 because this workspace has a JRE but no javac. GitHub CI still verifies javac, APK builds, lint, emulator behavior, and signing.
+Run `bash android-tv-launcher/tests/run-core-tests.sh`; regular CI and publishing call this same script. A local run on 25 October 2026 (OpenJDK 21 `javac`) passed 903 checks in 26 suites; the suite list is in the script. GitHub CI still verifies javac, APK builds, lint, emulator behavior, and signing.
 
 `VodSourceFailoverTest` covers startup exclusion, threshold boundaries, seeking/pause exclusion, provider pinning, duplicates and exhaustion. PlaybackTest adds actual-VLC fixtures for repeated-buffering replacement through a failed candidate, preserving the old stream while resolving, cancellation on pause and late results, and exhausted alternatives without loops. These tests do not establish dual-decoder support on the target TV or live Premiumize availability.
 

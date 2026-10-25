@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Documentation: corrected build requirements (Gradle 9.6.0, AGP 9.4.1, Python 3.11, Node 22), described the MovieHub Experimental app, replaced stale ZLive "404 / no playback" notes, refreshed STATUS (released versions, branch situation, open PRs, files over 700 lines, next steps), test counts and four undocumented classes.
 - ZLive: send the browser fetch headers (`sec-fetch-*`, client hints, Accept) on catalogue, ticket and resolve requests. Without them ZLive returns a looping "refresh the site" decoy stream instead of the channel (seen on exp-14).
 
 ### Experimental exp13 provider follow-up

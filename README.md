@@ -32,6 +32,7 @@ MovieHub is an Android TV launcher and streaming application that combines film 
 - **Sources:** Optional Torrentio, MediaFusion, Comet and Premiumize integrations with automatic or manual selection.
 - **Playback:** VLC-based playback with stream recovery and source switching.
 - **Launcher:** Remote-friendly navigation and access to installed Android TV applications.
+- **MovieHub Experimental:** a separate test app (its own package, installed alongside MovieHub) with ExoPlayer Live TV and newer provider work, published to its own [pre-release](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-experimental). Normal MovieHub installs never update from it.
 
 MovieHub is an independent application and does not provide streaming subscriptions or host content. Some provider integrations remain experimental; see [project status](#project-status).
 
@@ -56,7 +57,7 @@ Enter this code in the **Downloader** app on an Android TV device, or download t
 
 ## Build from source
 
-**Requirements:** JDK 17 · Android SDK 35 · Gradle 8.10.2
+**Requirements:** JDK 17 · Android SDK 35 (build-tools 35 and 36) · Gradle 9.6.0 · Python 3.11 · Node 22
 
 ```bash
 gradle -p android-tv-launcher assembleDebug lintDebug
@@ -96,7 +97,7 @@ Live TV guide/player, with no home server. This is incomplete: current upstream 
 an inaccessible private submodule, and signed remote updates require maintainer key setup.
 See [implementation, provider status and tests](docs/STANDALONE_PROVIDER_ENGINE.md).
 
-Experimental Runtime 2 in draft PR #83 adapts additional historical Masqueradarr provider code locally on
+Experimental Runtime 2 (PR #83, merged 22 October 2026) adapts additional historical Masqueradarr provider code locally on
 Android, including DaddyLive's resolver and Tubi's signing flow. This is unfinished development, not a
 production release or a claim that every provider/channel plays. [Architecture, status and evidence](docs/STANDALONE_PROVIDER_ENGINE.md).
 
@@ -220,7 +221,7 @@ The experimental integration downloads only [the finished compressed guide](http
 
 Downloads use conditional requests and a six-hour check interval inside the existing background channel refresh, with cached data on failure. Channel changes query local SQLite. Private accounts, URLs and favourites stay on the device. The current integration has no separately configured private XMLTV URL feature; it does not publish private account data.
 
-ZLive exposes each distinct advertised, supported public resolver route with its server label. Browser-only protected choices cannot be promised to work in an external player. Current live investigation found a missing public catalogue (404) and a refused legacy media request (403); wrapped-segment and source-selection fixtures do not prove real-device ZLive playback.
+ZLive exposes each distinct advertised, supported public resolver route with its server label. Browser-only protected choices cannot be promised to work in an external player. ZLive serves a looping "refresh the site" decoy unless its API requests carry browser fetch headers; with them, MovieHub Experimental exp-15 played ZLive channels on the owner's TV (25 October 2026). Other ZLive channels and long sessions are not individually verified.
 
 ### Experimental provider repairs
 
