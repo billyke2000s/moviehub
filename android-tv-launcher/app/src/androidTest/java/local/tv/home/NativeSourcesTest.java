@@ -186,7 +186,7 @@ public class NativeSourcesTest {
             ChannelDatabase.GuideWriter writer = db.new GuideWriter(nativeGuide);
             try {
                 String channel = nativeGuide ? "nativepluto:" + ID : "xmltv";
-                writer.match(nativeGuide ? EpgMatch.key(epg) : "example", channel);
+                writer.match(nativeGuide ? EpgMatch.key(epg) : EpgLookup.scope("uk", "example"), channel);
                 writer.programme(
                     channel,
                     1,

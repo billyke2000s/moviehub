@@ -82,6 +82,7 @@ final class LiveTvScreen {
     static final long MAX_OFFSET = 24L * 60 * 60 * 1000,
         HALF_HOUR = 30L * 60 * 1000;
     private int loadTicket;
+    private long displayedGuideRevision;
 
     LiveTvScreen(MainActivity activity) {
         this.activity = activity;
@@ -264,6 +265,7 @@ final class LiveTvScreen {
         long windowStart = windowStart();
         activity.async(
             () -> {
+                long revision = channelsDb().guideRevision();
                 // The rows shown, and one more to tell whether another page follows.
                 List<ChannelDatabase.Row> rows = channelsDb().browse(
                     listFilter,
@@ -284,10 +286,11 @@ final class LiveTvScreen {
                 );
                 // How many channels the whole list has, for the count beside its name.
                 int total = channelsDb().listCount(listFilter, listSearch, favouriteKeys());
-                return new Object[] { rows, listings, total };
+                return new Object[] { rows, listings, total, revision };
             },
             result -> {
                 if (ticket != loadTicket) return; // a later page was asked for meanwhile
+                displayedGuideRevision = (Long) result[3];
                 pageLoading = false;
                 if (pendingPageDirection != 0) {
                     int direction = pendingPageDirection,
@@ -700,6 +703,11 @@ final class LiveTvScreen {
                     ) return;
                     ChannelImporter.Status latest = ChannelImporter.status(activity);
                     if (latest.running || latest.queued) {
+                        if (channelsDb().guideRevision() != displayedGuideRevision) {
+                            // Listings may finish well before the slow optional catalogues.
+                            guide(pageStart, focusedRow());
+                            return;
+                        }
                         status.setText(
                             latest.running
                                 ? String.format(

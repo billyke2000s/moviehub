@@ -28,7 +28,7 @@ MovieHub is an Android TV launcher and streaming application that combines film 
 ### Features
 
 - **Films and series:** TMDB-powered discovery, watch history and source selection.
-- **Live TV:** Public channel directories, M3U and Xtream integration, and a unified channel guide.
+- **Live TV:** Public channel directories, M3U and Xtream integration, and a unified channel guide. Programme listings prefer the provider’s own schedule, with country-matched XMLTV fallback where available.
 - **Sources:** Optional Torrentio, MediaFusion, Comet and Premiumize integrations with automatic or manual selection.
 - **Playback:** VLC-based playback with stream recovery and source switching.
 - **Launcher:** Remote-friendly navigation and access to installed Android TV applications.

@@ -201,3 +201,7 @@ is disabled in normal builds. Only compiled code is reused; script scopes are fr
 continuation and the entire process is killed on lookup completion or timeout. Host HTTP still
 passes the existing public-HTTPS capability checks. Public mirror-page caching is memory-only,
 bounded and short-lived; authenticated requests, embeds, tokens and media are excluded.
+
+### Country-scoped EPG fallback
+
+XMLTV fallback uses channel identity and country, never stream URLs or account credentials. Provider-native listings retain priority. Unknown native countries cannot borrow UK schedules, and maps for different countries use distinct keys. Guide transactions publish only after successful parsing; failed guides cannot leak partial listings. Network/download limits and credential handling are unchanged.

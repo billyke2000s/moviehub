@@ -129,6 +129,17 @@ final class ChannelImporter {
                         problems.add(free.name + ": " + describe(e));
                     }
                 }
+                // Populate the saved/base channels before optional catalogues can spend minutes
+                // timing out. Native provider guides remain independent and retain priority.
+                Set<String> guideKeys = EpgImporter.wantedSnapshot(db);
+                boolean optionalSources = EngineSources.enabled(context, providerConnected);
+                for (String id : ProviderBroker.IDS)
+                    optionalSources |= AdapterSources.enabled(context, id, providerConnected);
+                if ((anySource || optionalSources) && !guideKeys.isEmpty()) guideNote = refreshGuide(
+                    context,
+                    db,
+                    cancel
+                );
                 try {
                     ProviderUpdates.check(context, false);
                 } catch (Exception e) {
@@ -179,20 +190,9 @@ final class ChannelImporter {
                 if (total == 0 && !problems.isEmpty()) configured.add("legacy");
                 db.removeSourcesExcept(configured);
                 // The free programme guide; a failure here never counts against the channels.
-                if (anySource && db.count() > 0) try {
-                    EpgImporter.Result guide = EpgImporter.run(context, db, cancel);
-                    guideNote =
-                        guide.programmes > 0
-                            ? String.format(
-                                  Locale.getDefault(),
-                                  " · programme guide for %,d channels",
-                                  guide.channels
-                              )
-                            : " · no programme guide matched";
-                } catch (Exception e) {
-                    Diagnostics.recovered("Programme guide", e);
-                    guideNote = " · programme guide unavailable";
-                }
+                if (
+                    anySource && db.count() > 0 && !guideKeys.equals(EpgImporter.wantedSnapshot(db))
+                ) guideNote = refreshGuide(context, db, cancel);
                 if (configured.contains("nativepluto")) try {
                     NativeSources.guide(db, cancel);
                 } catch (Exception e) {
@@ -222,6 +222,20 @@ final class ChannelImporter {
             );
             edit.apply();
             return problems.isEmpty();
+        }
+    }
+
+    private static String refreshGuide(Context context, ChannelDatabase db, ChannelDatabase.Cancel cancel)
+        throws Exception {
+        try {
+            EpgImporter.Result guide = EpgImporter.run(context, db, cancel);
+            return guide.programmes > 0
+                ? String.format(Locale.getDefault(), " · programme guide for %,d channels", guide.channels)
+                : " · no programme guide matched";
+        } catch (Exception e) {
+            cancel.check();
+            Diagnostics.recovered("Programme guide", e);
+            return " · programme guide unavailable";
         }
     }
 

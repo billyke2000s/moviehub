@@ -46,6 +46,14 @@ public class EpgImporterTest {
     public void cleanup() {
         EpgImporter.testGuides = null;
         EpgImporter.testOpener = null;
+        // clear() removes channels, but deliberately retains independently refreshed native
+        // schedules. Remove this class's exact-native fixture so coexistence tests start clean.
+        ChannelDatabase.GuideWriter nativeFixture = db.new GuideWriter("enginedlhd:");
+        try {
+            nativeFixture.commit();
+        } finally {
+            nativeFixture.finish();
+        }
         db.clear();
     }
 
@@ -61,7 +69,7 @@ public class EpgImporterTest {
         for (int i = 0; i < idsAndNames.length; i += 2) xml.append("<channel id=\"")
             .append(idsAndNames[i])
             .append("\"><display-name>")
-            .append(idsAndNames[i + 1])
+            .append(idsAndNames[i + 1].replace("&", "&amp;").replace("<", "&lt;"))
             .append("</display-name></channel>");
         for (int i = 0; i < idsAndNames.length; i += 2) xml.append("<programme start=\"")
             .append(stamp(now - 600_000))
@@ -189,6 +197,121 @@ public class EpgImporterTest {
         );
     }
 
+    private void channel(String source, String name, String epg, String country, String url)
+        throws Exception {
+        ChannelDatabase.Writer writer = db.writer(source, () -> {}, n -> {});
+        try {
+            writer.accept(new Playlist.Channel(name, url, country, "", epg));
+            writer.commit();
+        } finally {
+            writer.abort();
+        }
+    }
+
+    private void files(Map<String, String> files, EpgImporter.Guide... guides) {
+        EpgImporter.testGuides = guides;
+        EpgImporter.testOpener = url ->
+            new ByteArrayInputStream(files.get(url).getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void builtInChannelUsesXmltvWhenNativeGuideHasNoCurrentListing() throws Exception {
+        db.clear();
+        long now = System.currentTimeMillis();
+        String url = "https://example.test/provider";
+        channel("enginedlhd", "Sky Witness HD", "enginedlhd:fixture", "United Kingdom", url);
+        files(
+            Collections.singletonMap("sky", guide(now, "Sky", "2201.sky.uk", "Sky Witness")),
+            new EpgImporter.Guide("sky", "uk", true)
+        );
+        assertEquals(1, EpgImporter.run(context, db, () -> {}).channels);
+        assertEquals("Sky on 2201.sky.uk", nowOn(url, now));
+        ChannelDatabase.GuideWriter nativeGuide = db.new GuideWriter("enginedlhd:");
+        try {
+            nativeGuide.match(EpgMatch.key("enginedlhd:fixture"), "enginedlhd:fixture");
+            nativeGuide.programme("enginedlhd:fixture", 1, 100, "Expired native", "", "", "");
+            nativeGuide.commit();
+        } finally {
+            nativeGuide.finish();
+        }
+        assertEquals("An expired native mapping must not hide XMLTV", "Sky on 2201.sky.uk", nowOn(url, now));
+        nativeGuide = db.new GuideWriter("enginedlhd:");
+        try {
+            nativeGuide.match(EpgMatch.key("enginedlhd:fixture"), "enginedlhd:fixture");
+            nativeGuide.programme("enginedlhd:fixture", now - 1000, now + 3600000, "Native", "", "", "");
+            nativeGuide.commit();
+        } finally {
+            nativeGuide.finish();
+        }
+        // Another XMLTV refresh preserves native data, and a usable native listing wins.
+        EpgImporter.run(context, db, () -> {});
+        assertEquals("Native", nowOn(url, now));
+    }
+
+    @Test
+    public void sameNameChannelsUseSeparateCountryGuidesAndUnknownNativeDoesNotBorrow() throws Exception {
+        db.clear();
+        long now = System.currentTimeMillis();
+        channel("m3u", "Example", "Example.uk", "General", "https://example.test/uk");
+        channel("engineplex", "Example", "engineplex:usfixture", "United States", "https://example.test/us");
+        channel("enginezlive", "Example", "enginezlive:unknown", "General", "https://example.test/unknown");
+        files(
+            new HashMap<String, String>() {
+                {
+                    put("uk", guide(now, "UK", "Example.uk", "Example"));
+                    put("us", guide(now, "US", "Example.us", "Example"));
+                }
+            },
+            new EpgImporter.Guide("uk", "uk", false),
+            new EpgImporter.Guide("us", "us", false)
+        );
+        assertEquals(2, EpgImporter.run(context, db, () -> {}).channels);
+        assertEquals("UK on Example.uk", nowOn("https://example.test/uk", now));
+        assertEquals("US on Example.us", nowOn("https://example.test/us", now));
+        assertEquals("", nowOn("https://example.test/unknown", now));
+    }
+
+    @Test
+    public void emptyAndMalformedFirstGuidesDoNotClaimKeysFromWorkingFallback() throws Exception {
+        db.clear();
+        long now = System.currentTimeMillis();
+        channel("m3u", "BBC One", "BBCOne.uk", "General", "https://example.test/bbc");
+        Map<String, String> data = new HashMap<>();
+        String current = guide(now, "Current", "BBCOne.uk", "BBC One");
+        data.put("empty", guide(now - 7 * 86400000L, "Expired", "BBCOne.uk", "BBC One"));
+        data.put("broken", current.replace("</tv>", "<broken>"));
+        data.put("working", current);
+        files(
+            data,
+            new EpgImporter.Guide("empty", "uk", false),
+            new EpgImporter.Guide("broken", "uk", false),
+            new EpgImporter.Guide("working", "uk", false)
+        );
+        assertEquals(1, EpgImporter.run(context, db, () -> {}).channels);
+        assertEquals("Current on BBCOne.uk", nowOn("https://example.test/bbc", now));
+        try (
+            android.database.Cursor count = db
+                .getReadableDatabase()
+                .rawQuery("SELECT COUNT(*) FROM programmes", null)
+        ) {
+            assertTrue(count.moveToFirst());
+            assertEquals("No partial guide data leaked", 1, count.getInt(0));
+        }
+    }
+
+    @Test
+    public void radioDisplayNameDoesNotClaimTheTvChannelsFallback() throws Exception {
+        db.clear();
+        long now = System.currentTimeMillis();
+        channel("m3u", "Gold UK", "Gold.uk", "General", "https://example.test/gold");
+        Map<String, String> data = new HashMap<>();
+        data.put("freeview", guide(now, "Radio", "GoldRadio.uk", "Gold"));
+        data.put("sky", guide(now, "TV", "2304.sky.uk", "U&Gold"));
+        files(data, new EpgImporter.Guide("freeview", "uk", true), new EpgImporter.Guide("sky", "uk", true));
+        EpgImporter.run(context, db, () -> {});
+        assertEquals("TV on 2304.sky.uk", nowOn("https://example.test/gold", now));
+    }
+
     @Test
     public void matchesChannelsAcrossNamingStylesAndKeepsOnlyCurrentProgrammes() throws Exception {
         java.text.SimpleDateFormat format = new java.text.SimpleDateFormat("yyyyMMddHHmmss Z", Locale.ROOT);
@@ -230,7 +353,7 @@ public class EpgImporterTest {
 
         ChannelDatabase.GuideWriter writer = db.new GuideWriter();
         try {
-            for (String[] m : matches) writer.match(m[0], m[1]);
+            for (String[] m : matches) writer.match(EpgLookup.scope("uk", m[0]), m[1]);
             for (Object[] p : programmes)
                 writer.programme(
                     (String) p[0],

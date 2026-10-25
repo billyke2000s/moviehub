@@ -117,11 +117,11 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `ChannelDatabase`, `ChannelStore`, `ChannelQuery` | On-device SQLite channel database, paging and search. All channels, sections and countries are read from each channel's preferred copy (`main=1`, indexed); favourites, groups and searches group the copies. |
 | `ChannelSchema` | The channel database's tables, indexes and version upgrades (version 8 adds `main`; version 9 recomputes duplicate keys). |
 | `ChannelIdentity`, `ChannelCategory` | Which copies are the same channel across lists and providers (country + plain name, quality and country tags dropped, +1/regions/UHD kept apart), and the guide section for a provider channel (plain Java). |
-| `EpgImporter`, `EpgMatch` | The free UK XMLTV programme guide (epgshare01): streamed, matched to saved channels by a plain name key (programmes on other channels skipped unread), the next day kept in the channel database with titles, descriptions and categories. `EpgMatch` also reads XMLTV times (plain Java). |
+| `EpgImporter`, `EpgMatch`, `EpgLookup` | The free UK XMLTV programme guide (epgshare01): streamed, matched to saved channels by a plain name key (programmes on other channels skipped unread), the next day kept in the channel database with titles, descriptions and categories. `EpgMatch` also reads XMLTV times (plain Java). |
 | `SkyNumbers`, `GuideOrder`, `ChannelNumbers` | UK satellite channel numbers and sections (`SkyNumbers`, a fixed table matched by name); the whole guide's layout: UK blocks by section, regions in the 800s, radio in the 900s, other countries from 1001 (`GuideOrder`, plain Java); applied to the saved channels after every import (`ChannelNumbers`). |
 | `Reminders`, `ParentalLock` | Programme reminders (kept in preferences, shown while the app is open) and the Live TV PIN lock (a salted hash of the PIN, locked channels and sections). |
 | `FreeChannels` | Which free lists Live TV imports (Free-TV, then iptv-org by country, all, or off); "automatic" (the full list) only without a provider, imported when Live TV is first opened. New TV channel lists go in `FreeChannels.EXTRA` (see AGENTS.md, Adding sources). |
-| `ChannelImporter`, `ChannelSync` | Background channel import (WorkManager), refreshed every 12 hours. Order: accounts, native Pluto, free lists, then FreeLiveSports and the optional providers (which can take minutes each), then the XMLTV guide. Each source commits on its own, so its channels appear as it finishes. |
+| `ChannelImporter`, `ChannelSync` | Background channel import (WorkManager), refreshed every 12 hours. Order: accounts, native Pluto, free lists, then FreeLiveSports and the optional providers (which can take minutes each), with XMLTV populated before optional providers and fetched again only if channel identities changed. Each source commits on its own, so its channels appear as it finishes. |
 | `Secrets` | Account details encrypted with an Android Keystore key; the key and read values are cached in memory. |
 | `VideoFiles` | Chooses the right file in a multi-file release: the film beside extras, or the episode in a season pack (exact matches can play straight away; likely ones are only marked "Suggested episode"). Plain Java. |
 | `SkipQueue` | Combines quick film skips and seek-bar moves into one jump, 750 ms after the last (plain Java). |
@@ -450,3 +450,7 @@ through a 500 KB fixture page and locator-preservation checks.
 Markup compaction is enabled only for the exact bundled transform. Independently downloaded
 provider revisions receive whole pages, with separate cache entries, so parser updates cannot
 lose inputs that a new parser needs.
+
+## Country-scoped programme lookup
+
+`EpgLookup` uses the same channel identity/country rules as channel grouping. Provider-native listings win when usable; otherwise a channel with known country may use that country’s XMLTV keys. Unknown native countries cannot borrow the default UK schedule. XMLTV maps are country-scoped, so equally named US/UK channels never collide. A guide claims keys only after fully parsing usable listings, keeping empty/stale/failed guides from hiding fallback data. `GuideWriter` advances an in-memory revision after commit; the TV guide reloads its current page when that revision changes during a channel import.
