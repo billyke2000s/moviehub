@@ -1,4 +1,6 @@
 ## Unreleased
+- Experimental DaddyLive: reuse one isolated lookup process/compiled code, briefly cache public
+  mirror pages, enforce lookup deadlines and advance failed players without retrying the same one.
 - Experimental: cancel stale channel retries/resolution and release the Media3 player/view on stop.
 - Experimental: retain the latest OK/banner changes and add a dedicated ExoPlayer emulator suite
   for guide/fullscreen video, failed sources, screen lifetime and audio/subtitle tracks.

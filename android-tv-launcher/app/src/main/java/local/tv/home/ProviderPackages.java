@@ -98,6 +98,13 @@ final class ProviderPackages {
             .getString(id);
     }
 
+    /** Parser-specific optimizations apply only to the exact APK-bundled transform. */
+    static String builtinModule(Context c, String id) throws Exception {
+        return validate(asset(c, "builtin.json").getBytes(StandardCharsets.UTF_8))
+            .getJSONObject("modules")
+            .getString(id);
+    }
+
     private static void write(AtomicFile file, byte[] bytes) throws IOException {
         FileOutputStream out = file.startWrite();
         try {

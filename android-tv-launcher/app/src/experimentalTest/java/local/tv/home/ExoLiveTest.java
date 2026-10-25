@@ -247,6 +247,29 @@ public final class ExoLiveTest {
     }
 
     @Test
+    public void exhaustedDaddyLiveLookupReportsFailureWithoutRepeatingTheWalk() {
+        AtomicInteger failures = new AtomicInteger();
+        remote.runOnMainSync(() -> {
+            ExoLive.attach(
+                this,
+                ExoLive.createVideoView(activity),
+                new ExoLive.Listener() {
+                    public void playing() {}
+
+                    public void buffering(boolean buffering) {}
+
+                    public void failed(String reason) {
+                        failures.incrementAndGet();
+                    }
+                }
+            );
+            ExoLive.resolutionFailed(AdapterSources.locator("dlhd", "42"));
+            assertEquals(1, failures.get());
+            assertFalse("An exhausted lookup must reach source failover immediately", ExoLive.retryPending());
+        });
+    }
+
+    @Test
     public void stoppingDuringRetryReleasesPlayerViewAndPendingCallbacks() {
         remote.runOnMainSync(() -> activity.stage.fullScreen("Broken", link("/missing.ts"), "missing"));
         await(ExoLive::retryPending);
@@ -326,7 +349,13 @@ public final class ExoLiveTest {
         remote.waitForIdleSync();
         closed = true;
         if (server != null) server.close();
-        remote.getTargetContext().getSharedPreferences("ui", 0).edit().putBoolean("http", oldHttp).commit();
+        remote
+            .getTargetContext()
+            .getSharedPreferences("ui", 0)
+            .edit()
+            .putBoolean("http", oldHttp)
+            .putBoolean("autoUpdates", oldAutoUpdates)
+            .commit();
         LiveZapper.session = null;
     }
 }

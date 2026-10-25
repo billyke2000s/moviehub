@@ -11,6 +11,13 @@ final class NativeHttp implements PlutoSource.Http {
     private volatile HttpURLConnection connection;
     private volatile boolean cancelled;
     ChannelDatabase.Cancel externalCancel;
+    long deadlineNanos = Long.MAX_VALUE;
+
+    private int remainingTimeout() throws InterruptedIOException {
+        check();
+        if (deadlineNanos == Long.MAX_VALUE) return 8000;
+        return (int) Math.max(1, Math.min(8000, (deadlineNanos - System.nanoTime()) / 1000000));
+    }
 
     interface ExchangeConnections {
         HttpURLConnection open(URI target) throws Exception;
@@ -33,6 +40,7 @@ final class NativeHttp implements PlutoSource.Http {
             throw new InterruptedIOException("Cancelled");
         }
 
+        if (System.nanoTime() >= deadlineNanos) throw new InterruptedIOException("Provider deadline");
         if (cancelled || Thread.currentThread().isInterrupted()) throw new InterruptedIOException(
             "Cancelled"
         );
@@ -51,8 +59,8 @@ final class NativeHttp implements PlutoSource.Http {
             check();
             HttpURLConnection c = (HttpURLConnection) current.toURL().openConnection();
             connection = c;
-            c.setConnectTimeout(8000);
-            c.setReadTimeout(8000);
+            c.setConnectTimeout(remainingTimeout());
+            c.setReadTimeout(remainingTimeout());
             c.setInstanceFollowRedirects(false);
             c.setRequestProperty("Accept", "application/json");
             c.setRequestProperty("User-Agent", PlutoSource.USER_AGENT);
@@ -135,8 +143,8 @@ final class NativeHttp implements PlutoSource.Http {
                     : testExchangeConnections.open(current);
             connection = c;
             try {
-                c.setConnectTimeout(8000);
-                c.setReadTimeout(8000);
+                c.setConnectTimeout(remainingTimeout());
+                c.setReadTimeout(remainingTimeout());
                 c.setInstanceFollowRedirects(false);
                 c.setRequestMethod(method);
                 c.setRequestProperty("Accept-Encoding", "gzip");

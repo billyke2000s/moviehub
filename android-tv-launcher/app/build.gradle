@@ -12,6 +12,7 @@ android {
     defaultConfig {
         if (experimental) applicationId 'local.tv.home.experimental'
         manifestPlaceholders = [
+            fastProviderEnabled: experimental ? 'true' : 'false',
             appLabel: experimental ? 'MovieHub Experimental' : 'MovieHub',
             homeCategory: experimental ? 'android.intent.category.DEFAULT' : 'android.intent.category.HOME'
         ]

@@ -186,3 +186,11 @@ Leaving experimental playback cancels pending network resolution/retries and rel
 player and Activity-backed view. Late resolver results cannot adopt a relay after cancellation.
 The experimental instrumentation suite uses only loopback fixture media and contains no
 provider credentials. Experimental releases retain their separate package and update feed.
+
+### Experimental lookup lifetime
+
+FastProviderService remains an isolated, non-exported UID without app data/network access. It
+is disabled in normal builds. Only compiled code is reused; script scopes are fresh on every
+continuation and the entire process is killed on lookup completion or timeout. Host HTTP still
+passes the existing public-HTTPS capability checks. Public mirror-page caching is memory-only,
+bounded and short-lived; authenticated requests, embeds, tokens and media are excluded.

@@ -31,6 +31,7 @@ final class AdapterSources {
         }
         if (url.startsWith(ROOT + "tcl/")) staleTclHints = true;
         if (!url.startsWith(ROOT + "dlhd/")) return;
+        if (BuildConfig.EXPERIMENTAL) DlhdPageCache.clear();
         PlayerMemo memo = players.get(url);
         if (memo != null && memo.good > 0) {
             memo.burnt.add(memo.good);

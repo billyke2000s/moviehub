@@ -302,6 +302,8 @@ final class ExoLive {
             return;
         }
         reopens++;
+        // Retire the selected upstream player, rather than preferring the same failed one again.
+        if (AdapterSources.locator(url)) AdapterSources.failed(url);
         status = "Reopening (" + reopens + " of " + MAX_REOPENS + ")";
         event("Reopening the channel (" + reasonShort(reason) + ")");
         cancelReopen();
@@ -365,10 +367,20 @@ final class ExoLive {
                 main.post(() -> {
                     if (ticket != generation) return;
                     event("Link not found after " + (SystemClock.elapsedRealtime() - started) / 1000 + " s");
-                    reopen("This channel's address could not be found");
+                    resolutionFailed(locator);
                 });
             }
         });
+    }
+
+    /** A complete DaddyLive walk already exhausted its candidates; do not repeat it three times. */
+    static void resolutionFailed(String locator) {
+        String reason = "This channel's address could not be found";
+        if (locator.startsWith(AdapterSources.ROOT + "dlhd/")) {
+            AdapterSources.failed(locator);
+            status = "Failed: " + reason;
+            if (listener != null) listener.failed(reason);
+        } else reopen(reason);
     }
 
     private static void start(
