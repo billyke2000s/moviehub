@@ -4,16 +4,16 @@
 
 New settings keep manual source selection as the default. Next-episode metadata is prefetched while watching; season transitions use catalogue episodes and air dates. Missing-pack episodes follow the selected manual/automatic mode. Guide colour shortcuts are handled independently of focused widgets, with Back revealing accessible controls. Physical TV, remote and real-account validation remain outstanding.
 
-Last updated: 25 October 2026 (0.58 promotes the experimental line into MovieHub).
+Last updated: 25 October 2026 (1.0 promotes the experimental line into MovieHub).
 
 ## Where things stand
 
 - **Released versions.** Normal MovieHub: **0.57** (`android-tv-latest`, version code 57, published
   24 October 2026). MovieHub Experimental: **exp-15** (`android-tv-experimental`, version code 19,
   25 October 2026). The public `update.json` files are authoritative; merging code publishes nothing.
-- **0.58 (in progress, 25 October 2026).** The experimental line becomes normal MovieHub: ExoPlayer Live
+- **1.0 (in progress, 25 October 2026).** The experimental line becomes normal MovieHub: ExoPlayer Live
   TV and the fast provider process are now in every build, and `-Pexperimental` only changes the test
-  app's identity. Until 0.58 is published, the lines below describe the state before it.
+  app's identity. Until 1.0 is published, the lines below describe the state before it.
 - **Two lines of work.** 0.57 was published from a one-off `release/moviehub-*` branch; `main` (last merge
   #120, 24 October) is three commits past that source and unreleased. All later work lives on
   `release/experimental-epg-exp11` (the name is historical; it now carries exp-15), about 70 commits

@@ -394,7 +394,7 @@ retained guide/fullscreen output is unchanged.
 
 ## ExoPlayer Live TV
 
-Live TV plays through `ExoLive`, on Media3 ExoPlayer 1.5.1 (HLS and DASH). Until 0.58 this was only in
+Live TV plays through `ExoLive`, on Media3 ExoPlayer 1.5.1 (HLS and DASH). Until 1.0 this was only in
 the separate experimental build, with a stub in normal builds; it is now the one Live TV engine.
 `ExoLive.available()` is now always true, so `MainActivity` always builds `LiveStage`, and the
 `ExoLive.available() ? … : LivePlayer…` branches always take the ExoPlayer side. The LibVLC live classes

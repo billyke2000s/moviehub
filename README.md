@@ -203,7 +203,7 @@ HTTP, host-resolution and no-match outcomes.
 
 ### Live TV playback validation
 
-Since 0.58 Live TV plays through Media3 ExoPlayer, which was tried first in MovieHub Experimental
+Since 1.0 Live TV plays through Media3 ExoPlayer, which was tried first in MovieHub Experimental
 (up to exp-15). `ExoLiveTest` covers shared guide/fullscreen video, channel retries,
 audio/subtitles and player cleanup on the emulator. Physical-TV/provider behaviour still needs
 verification; recorded picture freezes do not trigger automatic repair.
