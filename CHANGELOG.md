@@ -1,5 +1,7 @@
 ## Unreleased
 
+- ZLive: send the browser fetch headers (`sec-fetch-*`, client hints, Accept) on catalogue, ticket and resolve requests. Without them ZLive returns a looping "refresh the site" decoy stream instead of the channel (seen on exp-14).
+
 ### Experimental exp13 provider follow-up
 
 - Use ZLive's current public catalogue and ticket/POST playback protocol; preserve source labels, raw IDs, transport checks and refusal cooldowns.
