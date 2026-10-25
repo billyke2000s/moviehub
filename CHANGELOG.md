@@ -1,4 +1,6 @@
 ## Unreleased
+- Live TV guide: the list's channel count sits on the title line, e.g. "ALL CHANNELS   11,000 channels"
+  or "SPORTS   240 channels" (copies of one channel count once, as in the rows).
 - Settings → Provider engine → "Turn off geo-locked providers" (off by default): when on, a provider
   that is geo-locked on two refreshes in a row is switched off and the guide says so once.
 - Plex programme listings: Plex channels now show what is on, from the daily public XMLTV files at

@@ -136,6 +136,12 @@ public class LiveGuideTest {
         );
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN); // green: page down
         await("page down", () -> activity.liveTv.pageStart == 20 && activity.liveTv.cells.size() == 5);
+        // The whole list's size sits on the title line, not just this page's rows.
+        remote.runOnMainSync(() ->
+            assertEquals("ALL CHANNELS   25 channels", activity.liveTv.frame.titleText())
+        );
+        assertEquals("1 channel", GuideFrame.titleCount(1));
+        assertEquals("11,000 channels", GuideFrame.titleCount(11000));
         await("on the first row of the last page", () -> focused().startsWith("121  Channel 20"));
         // Up from the top row turns back a page and lands on its last row.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);

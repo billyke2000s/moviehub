@@ -282,7 +282,9 @@ final class LiveTvScreen {
                         windowStart + WINDOW_MS
                     )
                 );
-                return new Object[] { rows, listings };
+                // How many channels the whole list has, for the count beside its name.
+                int total = channelsDb().listCount(listFilter, listSearch, favouriteKeys());
+                return new Object[] { rows, listings, total };
             },
             result -> {
                 if (ticket != loadTicket) return; // a later page was asked for meanwhile
@@ -305,6 +307,7 @@ final class LiveTvScreen {
                     List<ChannelDatabase.Programme>
                 >) result[1];
                 grid.removeAllViews();
+                frame.listCount((Integer) result[2]);
                 showStatus(frame.status);
                 cells.clear();
                 rows.clear();

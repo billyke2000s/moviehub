@@ -480,3 +480,6 @@ catalogue's gridKeys is inferred, not yet seen on a device.
 
 `ProviderOutageTest` also covers the optional geo-lock switch-off: never with the option off, and only
 after `AUTO_OFF_AFTER` (2) geo-locked refreshes in a row.
+
+`LiveGuideTest.tenChannelsPerPageNumberedFrom101AndPagedWithTheRemote` checks the title line reads
+"ALL CHANNELS   25 channels" for its 25-channel fixture (the whole list, not the page).

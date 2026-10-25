@@ -502,6 +502,27 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         return total == 0 ? -1 : Math.min(before, total - 1);
     }
 
+    /**
+     * How many channels a guide list shows: copies of one channel count once, as in the guide's
+     * rows. For the count beside the list's name.
+     */
+    synchronized int listCount(String filter, String text, Set<String> keys) {
+        List<String> args = new ArrayList<>();
+        String where = where(filter, text, keys, args);
+        if (where == null) return 0;
+        String rows = sharedByCopies(filter, text)
+            ? "SELECT 1 FROM channels WHERE main=1 AND " + where
+            : "SELECT 1 FROM channels WHERE " + where + " GROUP BY " + GROUP;
+        try (
+            Cursor c = getReadableDatabase().rawQuery(
+                "SELECT COUNT(*) FROM (" + rows + ")",
+                args.toArray(new String[0])
+            )
+        ) {
+            return c.moveToFirst() ? c.getInt(0) : 0;
+        }
+    }
+
     /** The channel with this stream key (its preferred copy's number and section), or null. */
     Row byKey(String key) {
         try (

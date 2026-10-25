@@ -50,6 +50,8 @@ final class GuideFrame {
         YELLOW = 0xfffecf5b,
         BLUE = 0xff0025c9;
     private TextView when, listTitle, dayLabel;
+    /** Channels in the list shown, or -1 before its first page loads. */
+    private int shownCount = -1;
     private final List<TextView> slotLabels = new ArrayList<>();
 
     GuideFrame(MainActivity activity, LiveTvScreen guide) {
@@ -147,7 +149,7 @@ final class GuideFrame {
     /** Updates the clock, the list's name, the day and the time slots for {@code start}. */
     void update(long start) {
         when.setText(LiveTvScreen.clock(new Date()));
-        listTitle.setText(guide.listName().toUpperCase(Locale.ROOT));
+        showTitle();
         boolean today = new SimpleDateFormat("yyyyMMdd", Locale.UK)
             .format(new Date(start))
             .equals(new SimpleDateFormat("yyyyMMdd", Locale.UK).format(new Date()));
@@ -155,6 +157,37 @@ final class GuideFrame {
         for (int i = 0; i < slotLabels.size(); i++) slotLabels
             .get(i)
             .setText(LiveTvScreen.clockTime(new Date(start + i * LiveTvScreen.HALF_HOUR)));
+    }
+
+    /** The number of channels in the list shown; drawn after its name, on the same line. */
+    void listCount(int count) {
+        shownCount = count;
+        showTitle();
+    }
+
+    /** "ALL CHANNELS  11,000 channels": the name large, the count smaller and softer beside it. */
+    private void showTitle() {
+        String name = guide.listName().toUpperCase(Locale.ROOT);
+        if (shownCount < 0) {
+            listTitle.setText(name);
+            return;
+        }
+        String count = titleCount(shownCount);
+        android.text.SpannableString title = new android.text.SpannableString(name + "   " + count);
+        int at = name.length() + 3;
+        title.setSpan(new android.text.style.RelativeSizeSpan(0.6f), at, title.length(), 0);
+        title.setSpan(new android.text.style.ForegroundColorSpan(0xffc9d3ff), at, title.length(), 0);
+        listTitle.setText(title);
+    }
+
+    /** The header's title as shown (package-private for tests). */
+    String titleText() {
+        return listTitle.getText().toString();
+    }
+
+    /** "1 channel", "11,000 channels" (package-private for tests). */
+    static String titleCount(int count) {
+        return String.format(Locale.UK, "%,d %s", count, count == 1 ? "channel" : "channels");
     }
 
     /** Up from the top row, or nothing in the grid: the Options button. */
