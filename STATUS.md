@@ -475,3 +475,18 @@ requests; these are not TV timings. This candidate reuses one isolated process a
 code per lookup, caches public mirror pages briefly, counts failed network time, bounds fast
 lookups and advances failed selected players. Local fixtures and CI must validate the final
 commit before publishing the next experimental version. Physical-TV latency remains unverified.
+
+## Provider corrections (25 October 2026)
+
+- **Plex** (listed above as "stream 404 · provider") was a MovieHub fault: the play request used the
+  stable channel id instead of the compound id Plex requires. Fixed; the live probe then played 2 of
+  3 sampled channels from GitHub's US runner (the third opened but the probe's own output step
+  failed). Not yet confirmed on a UK connection or the owner's TV.
+- **DistroTV and Vidaa removed.** Their hosts still do not resolve; FastChannels retired DistroTV on
+  10 September 2026 ("upstream shut down"), and Vidaa's replacement backend needs an app signing
+  secret and OAuth taken from Hisense's APK, which was judged too fragile to adopt.
+- **UK region copies were tried and dropped.** LG's API answered HTTP 500 for country GB; FastChannels
+  also supports LG, Roku, Tubi and TCL for the US (and Canada for TCL) only.
+- From the UK, LG Channels (US), Local Now (US) and Roku Channel are expected to fail (they work from
+  the US runner). The guide now says "geo-locked" for HTTP 403/451 and "likely geo-locked" for a
+  region-labelled service failing without an HTTP refusal.

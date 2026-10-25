@@ -22,7 +22,7 @@ public final class ProviderOutageTest {
         same("likely geo-locked", ProviderOutage.reason("Local Now (US)", "Provider error (EcmaError)"));
         same(
             "likely geo-locked",
-            ProviderOutage.reason("Vidaa (US/Canada)", "Provider error (JavaScriptException)")
+            ProviderOutage.reason("Samsung TV Plus (GB)", "Provider error (JavaScriptException)")
         );
         same("likely geo-locked", ProviderOutage.reason("LG Channels (UK)", "Provider error (EcmaError)"));
         // A service with no country in its name is not called geo-locked without an HTTP refusal.
@@ -36,12 +36,12 @@ public final class ProviderOutageTest {
 
         List<String[]> failed = new ArrayList<>();
         failed.add(new String[] { "LG Channels (US)", "Provider returned HTTP 403" });
-        failed.add(new String[] { "DistroTV (US)", "Provider error (EcmaError)" });
+        failed.add(new String[] { "Local Now (US)", "Provider error (EcmaError)" });
         failed.add(new String[] { "Plex", "Connection timed out" });
-        failed.add(new String[] { "Local Now (US)", "Provider returned HTTP 403" });
+        failed.add(new String[] { "Roku Channel", "Provider returned HTTP 403" });
         same(
-            "Unavailable now — geo-locked: LG Channels (US), Local Now (US) · likely geo-locked: " +
-                "DistroTV (US) · timed out: Plex (saved channels kept)",
+            "Unavailable now — geo-locked: LG Channels (US), Roku Channel · likely geo-locked: " +
+                "Local Now (US) · timed out: Plex (saved channels kept)",
             ProviderOutage.summary(failed)
         );
         System.out.println(checks + " provider outage checks passed");

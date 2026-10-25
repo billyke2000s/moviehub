@@ -77,18 +77,11 @@ function allowed(provider, url) {
         case "xumo":
             return host === "valencia-app-mds.xumo.com" && path.startsWith("/v2/");
         case "lg":
-        case "lguk":
             return host === "api.lgchannels.com" && path.startsWith("/api/v1.0/");
         case "whale":
             return host === "rlaxx.zeasn.tv" && path.startsWith("/livetv/api/");
-        case "distro":
-        case "distrouk":
-            return host === "tv.jsrdn.com" && (path.startsWith("/tv_v5/") || path.startsWith("/epg/"));
         case "vizio":
             return host === "watchfreeplus-epg-prod.smartcasttv.com" && path.startsWith("/api/");
-        case "vidaa":
-        case "vidaauk":
-            return host === "vtvapp-ovp.vidaahub.com" || host.endsWith(".vidaahub.com");
         case "roku":
             return host === "therokuchannel.roku.com" || host === "content.sr.roku.com";
         case "plex":

@@ -141,11 +141,11 @@ public final class ProviderAdaptersTest {
     @Test
     public void upstreamChannelIdsRoundTripWithoutChangingFavourites() throws Exception {
         String id = "US:channel/compound+id";
-        String url = AdapterSources.locator("vidaa", id);
+        String url = AdapterSources.locator("lg", id);
         assertTrue(EngineSources.locator(url));
-        assertEquals("vidaa", AdapterSources.provider(url));
+        assertEquals("lg", AdapterSources.provider(url));
         assertEquals(id, AdapterSources.channel(url));
-        assertEquals(url, AdapterSources.locator("vidaa", id));
+        assertEquals(url, AdapterSources.locator("lg", id));
         assertFalse(AdapterSources.locator("https://native.moviehub.invalid/engine/untrusted/a"));
     }
 

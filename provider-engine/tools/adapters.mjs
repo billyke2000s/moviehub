@@ -25,21 +25,10 @@ export const adapters = {
         resolve: "exports.fillUrlMacros(row.streamUrl)",
         headers: "exports.WHALE_HEADERS",
     },
-    distro: {
-        catalogue: "exports.fetchDistroRows()",
-        resolve: "exports.fillStreamMacros(row.streamUrl)",
-        headers: "exports.DISTRO_STREAM_HEADERS",
-    },
     vizio: {
         catalogue:
             "exports.fetchVizioCatalog().then(function(rows){return rows.filter(exports.isSurfacedRow);})",
         resolve: "exports.expandMacros(row.streamUrl)",
-        headers: "{'User-Agent':exports.UA}",
-    },
-    vidaa: {
-        catalogue:
-            "exports.fetchVidaaRows().then(function(rows){return rows.filter(exports.isSurfacedRow);})",
-        resolve: "row.streamUrl",
         headers: "{'User-Agent':exports.UA}",
     },
     roku: {
@@ -55,18 +44,4 @@ export const adapters = {
         resolve: "exports.resolvePlexMaster(row.id||row.channelId)",
         headers: "exports.PLEX_STREAM_HEADERS",
     },
-};
-
-// Regional copies: the same audited adapter with only its region changed, so each region is its
-// own channel source, Settings switch and failure line. `env` is set on the module's process.env
-// before the adapter loads; `replace` swaps one exact line of its source (the build fails if the
-// line is missing, so an upstream change cannot silently drop the region).
-export const variants = {
-    lguk: {
-        base: "lg",
-        replace: ["export const LG_COUNTRY = 'US';", "export const LG_COUNTRY = 'GB';"],
-    },
-    // GB plus jsrdn's worldwide feed (QQ); the adapter keeps whichever answer, failing only if both do.
-    distrouk: { base: "distro", env: { DISTRO_GEO: "GB QQ" } },
-    vidaauk: { base: "vidaa", env: { VIDAA_GEO: "gb" } },
 };

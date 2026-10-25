@@ -77,9 +77,9 @@ a server is inherently necessary.
 | Tubi | Legacy programming API or signed anonymous-device bootstrap → per-play manifest | Anonymous signing/session and regional live availability need verification; DRM is not bypassed |
 | Xumo Play | Three-hop broadcast resolution, market guide | Not ported; current market/device interface not verified |
 | LG Channels | HLS macros expanded at play | Actual-GB web schedule probe returned 500; no foreign-country override used |
-| DistroTV | VAST macros and tvg-id guide | Known historical getfeed endpoint returned 503 with generic and Android-compatible User-Agents; no usable feed verified |
+| DistroTV (removed Oct 2026) | VAST macros and tvg-id guide | Known historical getfeed endpoint returned 503 with generic and Android-compatible User-Agents; no usable feed verified |
 | Vizio WatchFree+ | Direct channelUrls master and airings API | Public catalogue returned 465 entries, not playback verification. Official mobile service requires a free VIZIO account in the US; not enabled for UK users |
-| Vidaa | Catalogue-time macros and uid guide | Historical flow requires device/domain/tenant configuration and macro expansion; no verified intended generic Android client flow |
+| Vidaa (removed Oct 2026) | Catalogue-time macros and uid guide | Historical flow requires device/domain/tenant configuration and macro expansion; no verified intended generic Android client flow |
 | STIRR / TCL / Whale / Free Live Sports | Play API or macros, source-specific guide | Not ported; no independently verified native interface in this change |
 | dulo / DaddyLive | Captured authenticated session / multi-hop scrape | Not ported; no account capture or access-control workarounds added |
 
