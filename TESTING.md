@@ -486,3 +486,10 @@ catalogue's gridKeys is inferred, not yet seen on a device.
 `ExoLiveTest.aFailingSourceWithAnotherWaitingMovesOnInsteadOfReopening` checks that an erroring source
 is reported once and not reopened when the listener has another source. The 15-second startup
 deadline (`LiveStage.START_MS`) has no device test; it uses the same failover path.
+
+`LiveRacePlanTest` (core, 17 checks) covers the source race rules: priority by quality then copy order,
+at most three lookups and standbys together, waiting inside the three-second window only while a better
+copy is pending, no waiting after a failure, and exhaustion. `ExoLiveTest.aDeadCopyHandsOverToAWorking
+OneWithoutWaitingForTheSlowOne` plays a three-copy fixture channel (404, working, slow) and checks the
+working copy plays through the race and the slow one is never opened. Real provider lookups, quality
+names and the eight-second deadline are not exercised by fixtures.

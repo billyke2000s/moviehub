@@ -202,7 +202,12 @@ fits row height while retaining horizontal ellipsis.
 actual failure (timed out, HTTP status, DNS…). It never infers geo-blocking: a service down for a
 day looks the same as one refusing a country. Known US-only services (`ProviderOutage.US_ONLY`: LG,
 Roku, Local Now) say "US only" in their labels, and the opt-in `HIDE_US_ONLY` setting makes
-`AdapterSources.enabled` skip exactly those. Experimental Live TV moves to the
+`AdapterSources.enabled` skip exactly those. `LiveRace` (rules in `LiveRacePlan`, core-tested) runs when an experimental channel with several
+copies starts with automatic sources: at most three lookups and unused standbys together, quality
+from `SourceRanking.resolution(name)` with the guide's copy order as tiebreak, a three-second first
+window only while a better copy is pending, then `ExoLive.playResolved` with the found link. Failures
+go to `LiveRace.next()` (the best standby, else the next lookup) before the zapper's failover.
+Experimental Live TV moves to the
 next source after `LiveStage.START_MS` (15 s) without a picture, or at once on an error, whenever
 `LiveZapper.hasUntriedCopy()`; with no other copy it keeps the old reopen-and-wait behaviour. Plex plays by
 the compound channel id from its catalogue row (`row.id`), so it does not skip the catalogue on a cold

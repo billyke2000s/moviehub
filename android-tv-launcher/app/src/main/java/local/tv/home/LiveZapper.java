@@ -496,6 +496,41 @@ final class LiveZapper {
         return false;
     }
 
+    /**
+     * The copies a source race may try: the one asked for, then every copy not yet tried this
+     * time. Empty when the viewer chose a copy themselves or the channel has one copy only.
+     */
+    int[] raceCandidates() {
+        if (!automaticSources || copies.size() <= 1 || copy < 0 || copy >= copies.size()) return new int[0];
+        List<Integer> out = new ArrayList<>();
+        out.add(copy);
+        for (int i = 0; i < copies.size(); i++) if (
+            i != copy &&
+            !attemptedCopies.contains(i) &&
+            !LivePlayer.attemptedSources.contains(copies.get(i).key)
+        ) out.add(i);
+        if (out.size() <= 1) return new int[0];
+        int[] result = new int[out.size()];
+        for (int i = 0; i < result.length; i++) result[i] = out.get(i);
+        return result;
+    }
+
+    /** The source race is playing copy {@code index}: the banner and source list follow it. */
+    void raceSelected(int index) {
+        if (index < 0 || index >= copies.size()) return;
+        attemptedCopies.add(index);
+        if (index != copy) {
+            copy = index;
+            showBanner();
+        }
+        rememberSources();
+    }
+
+    /** Copies the source race tried without success: failover will not try them again. */
+    void raceFailed(int[] indices) {
+        for (int index : indices) attemptedCopies.add(index);
+    }
+
     /** Whether {@link #failover} has a copy left to move to (no side effects). */
     boolean hasUntriedCopy() {
         if (!automaticSources || copies.size() <= 1) return false;

@@ -1,4 +1,9 @@
 ## Unreleased
+- Experimental Live TV source race: when a channel has several copies, up to three are looked up at
+  once. The first choice waits up to three seconds only while a better-quality copy (by its name:
+  HD, 1080p…) is still being looked up; otherwise the best found plays at once. Copies found but not
+  playing wait as standbys, so a copy that errors or shows no picture within eight seconds hands
+  over without a new lookup. Unused links are closed. Choosing a source yourself plays that one only.
 - Experimental Live TV: a source that shows no picture within 15 seconds moves on to the channel's
   next source, as the standard player does, and a source that errors moves on at once instead of
   being reopened twice first. With no other source, it keeps waiting and retrying as before.
