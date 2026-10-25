@@ -20,21 +20,29 @@ _HOSTS = sorted({d.lower() for cls in resolveurl.relevant_resolvers(include_univ
 def providers():
     return json.dumps(_RECORDS)
 
-# Exclude only domains with concrete retirement evidence (NXDOMAIN, parking or HTTP 410).
-# A TLS error, timeout, 403 or temporary origin failure is not evidence of permanent closure.
-# On 25 October 2026, 19 of the previous 26 exclusions were restored, including Levidia:
-# its scraper's www address works even though the bare domain failed the old check.
+# Domains with concrete retirement evidence (NXDOMAIN, parking or HTTP 410).
 RETIRED_SITES = frozenset({
     '123-movies.golf', 'dopebox.to', 'flixwave.me', 'm4ufree.se',
     'projectfreetv.lol', 'putlocker.gives', 'soap2dayz.top',
 })
 
+# Previously excluded sites need positive catalogue/search evidence before restoration.
+# Inconclusive failures do not prove closure, but they do not justify enabling a site.
+# Of the 19 restored on 25 October, only Levidia passed that verification; the other
+# 18 remain bundled and explicitly auditable, but are disabled in ordinary discovery.
+UNVERIFIED_SITES = frozenset({
+    '123moviestv.me', '1movies.la', '9pm.to', 'cinebox.cc', 'couchtuner.show',
+    'ev01.to', 'filmxy.online', 'flixhq.to', 'goojara.life', 'hdbest.net',
+    'hdtoday.cc', 'movies2watch.tv', 'movies4fun.net', 'mp4hydra.top',
+    'sflixz.watch', 'streamlord.com', 'watchug.com', 'www1.movie4u.live',
+})
+
 def search_providers(include_retired=False):
-    """One public website per entry; alternate addon adapters remain fallbacks."""
+    """One website per entry; include_retired also exposes unverified sites for audits."""
     groups = {}
     for record in sorted(_RECORDS, key=lambda r: (r['family'] != 'free99', r['id'])):
         if record['name'] in ('library', 'filepursuit'): continue
-        if record['site'] in RETIRED_SITES and not include_retired: continue
+        if record['site'] in RETIRED_SITES | UNVERIFIED_SITES and not include_retired: continue
         site = record['site']
         group = groups.setdefault(site, dict(id=record['id'], family=record['family'],
             name=site, site=site, adapters=[], movies=False, series=False))

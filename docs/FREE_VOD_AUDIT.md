@@ -169,3 +169,31 @@ Further compatibility fixes: metadata-only operations no longer read full media 
 The first recovery live probe extracted one Levidia candidate but its media connection timed out; the Scrubs fallback returned no matches. The grouped result now preserves the earlier host failure. Scrubs’ old inline Wootly protocol followed by a second resolution was removed from the active path; its links now use the bundled host resolver once. Local coverage is 30 Python tests. These fixes require a new live probe and final Android CI; no physical-TV playback is inferred.
 
 Compression compatibility: the shared transport now filters explicit Accept-Encoding values to decoders supported by the packaged requests runtime. Desktop scrapers advertised Brotli/Zstandard even when those optional decoders were absent. An offline regression verifies negotiation and that original headers are not mutated (31 local Python tests).
+
+## Positive verification required for restorations
+
+The provisional restoration of 19 sites in #155 was too broad: absence of permanent-closure proof is not positive evidence of a working provider. A fresh review made 71 exact-address HTTPS/HTTP/search/DNS checks across those 19 providers and eight additional nameserver checks. Only Levidia remains enabled from this group. The other 18 are disabled in `UNVERIFIED_SITES`; this does not label every timeout a permanent closure. Seven previously retired domains stay excluded. Inventory is now 38 ordinary websites, 41 adapters, 68 bundled modules. Existing transport/Levidia repairs remain.
+
+| Site | Observed evidence | Normal discovery |
+| --- | --- | --- |
+| `123moviestv.me` | ParkLogic nameservers; HTTP redirect landing page; HTTPS fails | Disabled pending verification |
+| `1movies.la` | ParkLogic nameservers; HTTP redirect landing page; HTTPS fails | Disabled pending verification |
+| `9pm.to` | ParkLogic nameservers; Site Unavailable placeholder | Disabled pending verification |
+| `cinebox.cc` | Homepage and search timed out; no positive verification | Disabled pending verification |
+| `couchtuner.show` | ParkLogic nameservers; exact www address has redirect landing page | Disabled pending verification |
+| `ev01.to` | Homepage and search timed out; no positive verification | Disabled pending verification |
+| `filmxy.online` | Exact www homepage timed out; no positive verification | Disabled pending verification |
+| `flixhq.to` | Homepage and search timed out; no positive verification | Disabled pending verification |
+| `goojara.life` | Homepage and search return Cloudflare 521 origin failure | Disabled pending verification |
+| `hdbest.net` | Homepage and search timed out; no positive verification | Disabled pending verification |
+| `hdtoday.cc` | Homepage and search timed out; no positive verification | Disabled pending verification |
+| `levidia.ch` | Exact www HTTPS homepage and search return catalogue/results; previous runner validated two episode links | Enabled |
+| `movies2watch.tv` | Homepage and search timed out; no positive verification | Disabled pending verification |
+| `movies4fun.net` | Coming Soon placeholder rather than a film catalogue; HTTPS fails | Disabled pending verification |
+| `mp4hydra.top` | No DNS A answer; HTTP/HTTPS failed; no positive verification | Disabled pending verification |
+| `sflixz.watch` | ParkLogic nameservers; HTTP redirect landing page; HTTPS fails | Disabled pending verification |
+| `streamlord.com` | Exact HTTP scraper homepage says Site Unavailable | Disabled pending verification |
+| `watchug.com` | ParkLogic nameservers; HTTP redirect landing page; HTTPS fails | Disabled pending verification |
+| `www1.movie4u.live` | Parent uses ParkLogic nameservers; exact address serves HTTP redirect landing page; HTTPS fails | Disabled pending verification |
+
+DNS registration or HTTP 200 on a landing page does not establish that the old streaming service still operates. ParkLogic nameservers plus redirect/placeholder pages are recorded as parking evidence, not a working catalogue. Local proxy connection failures and timeouts remain inconclusive about global reachability. Explicit audits can still include every disabled adapter; ordinary searches cannot. HTTP diagnostics did not change runtime network policy.
