@@ -71,6 +71,7 @@ try {
     let parsed = null;
     try { parsed = JSON.parse(r.text); } catch (_) {}
     note("3 resolve " + id, `HTTP ${r.status}, ${parsed ? "json " + JSON.stringify(shape(parsed)) : "text: " + r.text.slice(0, 200)}${parsed && parsed.error ? " error=" + parsed.error : ""}${parsed && parsed.location ? " host=" + new URL(parsed.location).hostname : ""}`);
+    if (parsed && parsed.location && process.argv.includes("--print-location")) console.log("LOCATION " + parsed.location);
     // 4. Fetch the media playlist the app would play.
     if (parsed && parsed.location) {
         const m = await get(parsed.location);

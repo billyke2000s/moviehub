@@ -4,20 +4,24 @@ on:
     push:
         branches: [diag/zlive-boomerang]
     workflow_dispatch:
-        inputs:
-            channel:
-                description: "ZLive channel id"
-                required: false
-                default: "boomerang-uk"
 permissions:
     contents: read
 jobs:
     diagnose:
         runs-on: ubuntu-latest
-        timeout-minutes: 5
+        timeout-minutes: 8
         steps:
             - uses: actions/checkout@v5
             - uses: actions/setup-node@v5
               with:
                   node-version: "22"
-            - run: node provider-engine/tools/zlive-diagnose.mjs "${{ inputs.channel || 'boomerang-uk' }}"
+            - name: media
+              run: bash provider-engine/tools/zlive-media.sh boomerang-uk
+            - name: code 0
+              run: node provider-engine/tools/zlive-bundle.mjs 0
+            - name: code 1
+              run: node provider-engine/tools/zlive-bundle.mjs 1
+            - name: code 2
+              run: node provider-engine/tools/zlive-bundle.mjs 2
+            - name: code 3
+              run: node provider-engine/tools/zlive-bundle.mjs 3
