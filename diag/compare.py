@@ -14,7 +14,7 @@ result = {}
 for f in films:
     started = time.monotonic()
     with concurrent.futures.ThreadPoolExecutor(8) as pool:
-        got = list(pool.map(lambda r: (r['id'], json.loads(vod.query_site(r['id'], json.dumps(f), lambda: time.monotonic() - started > 300))), rows))
+        got = list(pool.map(lambda r: (r['id'], json.loads(vod.query_site(r['id'], json.dumps(f), lambda: time.monotonic() - started > 420))), rows))
     result[f['title']] = {pid: {'status': r['status'], 'streams': len(r['sources'])} for pid, r in got}
     ok = {pid: v['streams'] for pid, v in result[f['title']].items() if v['streams']}
     print(f"::notice title={sys.argv[2]} {f['title']}::sites with links {len(ok)}: {ok}  ({round(time.monotonic()-started)} s)")

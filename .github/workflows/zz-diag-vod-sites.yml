@@ -8,7 +8,7 @@ permissions:
 jobs:
     diagnose:
         runs-on: ubuntu-latest
-        timeout-minutes: 40
+        timeout-minutes: 60
         steps:
             - uses: actions/checkout@v5
               with:
@@ -22,9 +22,8 @@ jobs:
                   mkdir -p before after
                   git archive origin/main android-tv-launcher/app/src/main/python | tar -x -C before
                   git archive origin/fix/fzmovies android-tv-launcher/app/src/main/python | tar -x -C after
-                  python diag/compare.py before/android-tv-launcher/app/src/main/python before
                   python diag/compare.py after/android-tv-launcher/app/src/main/python after
-                  python -c "import json;json.dump({'before':json.load(open('before.json')),'after':json.load(open('after.json'))},open('compare.json','w'))"
+                  cp after.json compare.json
             - run: |
                   openssl rand 32 > k.bin
                   openssl enc -aes-256-cbc -pbkdf2 -in compare.json -out diag/out.enc -pass file:k.bin
