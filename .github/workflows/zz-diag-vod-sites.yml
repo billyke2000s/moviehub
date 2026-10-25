@@ -8,17 +8,26 @@ permissions:
 jobs:
     diagnose:
         runs-on: ubuntu-latest
-        timeout-minutes: 25
+        timeout-minutes: 40
         steps:
             - uses: actions/checkout@v5
+              with:
+                  fetch-depth: 0
             - uses: actions/setup-python@v5
               with:
                   python-version: "3.11"
             - run: python -m pip install requests==2.32.5 six==1.17.0
-            - run: python diag/fixcheck.py
+            - run: |
+                  git fetch -q origin main fix/fzmovies
+                  mkdir -p before after
+                  git archive origin/main android-tv-launcher/app/src/main/python | tar -x -C before
+                  git archive origin/fix/fzmovies android-tv-launcher/app/src/main/python | tar -x -C after
+                  python diag/compare.py before/android-tv-launcher/app/src/main/python before
+                  python diag/compare.py after/android-tv-launcher/app/src/main/python after
+                  python -c "import json;json.dump({'before':json.load(open('before.json')),'after':json.load(open('after.json'))},open('compare.json','w'))"
             - run: |
                   openssl rand 32 > k.bin
-                  openssl enc -aes-256-cbc -pbkdf2 -in fixcheck.json -out diag/out.enc -pass file:k.bin
+                  openssl enc -aes-256-cbc -pbkdf2 -in compare.json -out diag/out.enc -pass file:k.bin
                   openssl pkeyutl -encrypt -pubin -inkey diag/diag-pub.pem -in k.bin -out diag/out.k
                   rm -f k.bin
                   git config user.name "github-actions[bot]"
