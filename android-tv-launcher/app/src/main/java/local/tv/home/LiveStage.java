@@ -90,10 +90,12 @@ final class LiveStage implements LiveScreen {
             ExoLive.playResolved(a, locator, source);
             // A standby is ready or on its way: give this copy less time, as moving on is quick.
             overlayHandler.removeCallbacks(startupDeadline);
-            if (race != null && race.hasAlternative()) overlayHandler.postDelayed(
-                startupDeadline,
-                RACE_START_MS
+            long budget = LiveSourceDeadline.milliseconds(
+                race != null && race.hasAlternative(),
+                zliveSource(),
+                true
             );
+            if (budget > 0) overlayHandler.postDelayed(startupDeadline, budget);
         }
 
         @Override
@@ -130,7 +132,7 @@ final class LiveStage implements LiveScreen {
     }
 
     /** How long a raced copy may take to show a picture while a standby is ready or coming. */
-    static final long RACE_START_MS = 8_000;
+    static final long RACE_START_MS = LiveSourceDeadline.RACE_MS;
 
     LiveStage(MainActivity activity) {
         a = activity;
@@ -386,14 +388,14 @@ final class LiveStage implements LiveScreen {
         // standard player. With none, it keeps waiting: a slow link is better than no channel.
         overlayHandler.removeCallbacks(startupDeadline);
         // A race arms its own, shorter deadline once a copy actually starts.
-        if (race == null && (events.hasAlternative() || zliveSource())) overlayHandler.postDelayed(
-            startupDeadline,
-            events.hasAlternative() ? START_MS : 60_000
-        );
+        if (race == null) {
+            long budget = LiveSourceDeadline.milliseconds(events.hasAlternative(), zliveSource(), false);
+            if (budget > 0) overlayHandler.postDelayed(startupDeadline, budget);
+        }
     }
 
     /** How long a source may take to show a picture before the next source is tried. */
-    static final long START_MS = 15_000;
+    static final long START_MS = LiveSourceDeadline.START_MS;
 
     private final Runnable startupDeadline = this::startupMissed;
 
