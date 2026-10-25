@@ -46,6 +46,14 @@ public class EpgImporterTest {
     public void cleanup() {
         EpgImporter.testGuides = null;
         EpgImporter.testOpener = null;
+        // clear() removes channels, but deliberately retains independently refreshed native
+        // schedules. Remove this class's exact-native fixture so coexistence tests start clean.
+        ChannelDatabase.GuideWriter nativeFixture = db.new GuideWriter("enginedlhd:");
+        try {
+            nativeFixture.commit();
+        } finally {
+            nativeFixture.finish();
+        }
         db.clear();
     }
 
