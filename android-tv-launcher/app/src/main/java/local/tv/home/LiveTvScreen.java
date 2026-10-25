@@ -612,8 +612,11 @@ final class LiveTvScreen {
 
     private final StringBuilder typed = new StringBuilder();
     private final Runnable jump = this::jumpToTyped;
-    /** How long after the last digit the typed number is used (OK uses it at once), as on Sky boxes. */
-    static final long TYPE_MS = 2500;
+    /**
+     * How long after the last digit the typed number is used; OK uses it at once. 1.5 s: the owner
+     * found a longer wait too slow once the number on screen updated as typed.
+     */
+    static final long TYPE_MS = 1500;
     /**
      * One message for the number being typed, replaced on each digit. A new long toast per digit
      * queued up ("Channel 1", then "Channel 10"…), so the screen lagged behind the typing.
