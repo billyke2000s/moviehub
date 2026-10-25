@@ -70,7 +70,8 @@ for line in lines:
     print("::notice title=Memory probe::" + line)
 for row in table[2:]:
     print("::notice title=Memory by phase::" + row)
-for line in kills[:5]:
+# GitHub shows at most 10 annotations per level and step, so each kind is rationed.
+for line in kills[:1]:
     print("::warning title=Memory probe kill::" + line[:300])
 summary = os.environ.get("GITHUB_STEP_SUMMARY")
 if summary:
@@ -78,3 +79,25 @@ if summary:
         f.write("## MovieHub memory probe (2 GB emulator)\n\n" + "\n".join("- " + l for l in lines) + "\n\n")
         f.write("\n".join(table) + "\n")
 print("\n".join(lines + table))
+
+# Why a run failed, readable without the artifact: the crash buffer, the end of the Gradle output
+# and the probe's own log lines (fixed text only; the probe never logs addresses).
+def tail_notices(name, title, keep, level="warning", limit=4):
+    path = out / name
+    if not path.exists():
+        return
+    wanted = [l for l in path.read_text(errors="replace").splitlines() if keep(l)]
+    for line in wanted[-limit:]:
+        print(f"::{level} title={title}::" + line.strip()[:400].replace("%", "%25"))
+
+
+if result != "0":
+    tail_notices("crash.log", "Crash", lambda l: l.strip() != "", "error", 6)
+    tail_notices(
+        "gradle-tail.log",
+        "Gradle",
+        lambda l: any(k in l for k in ("FAILED", "Exception", "Error", "at local.tv.home", "Caused by", "Process crashed")),
+        "error",
+        4,
+    )
+tail_notices("probe.log", "Probe log", lambda l: "MemoryProbe" in l, "warning", 8)
