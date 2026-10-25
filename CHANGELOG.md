@@ -1,6 +1,6 @@
-## 0.58 (25 October 2026)
+## 1.0 (25 October 2026)
 
-Everything tested in MovieHub Experimental, up to exp-15, is now part of MovieHub.
+MovieHub 1.0: everything tested in MovieHub Experimental, up to exp-15, is now part of MovieHub.
 
 - Live TV plays through a new player (ExoPlayer): one screen for the guide, picture and banner, and support for DASH channels.
 - Several sources for a channel are tried at once and the best is played; a source with no picture after 15 seconds moves on to the next.
