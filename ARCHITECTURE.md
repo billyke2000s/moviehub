@@ -198,6 +198,14 @@ steps with the observed HTTP/network cause. `ChannelImporter` stores the summary
 puts it first in the description. Settings cards use minimum height plus wrap-content. Guide label sizing
 fits row height while retaining horizontal ellipsis.
 
+`ProviderOutage` turns those fixed summaries into the guide's one "Unavailable now" line, grouped by
+reason: HTTP 403/451 is "geo-locked"; a script failure without an HTTP refusal from a service whose
+label names a country is "likely geo-locked"; timeouts are "timed out". Regional provider copies
+(`lguk`, `distrouk`, `vidaauk`) are built by `provider-engine/tools/build.mjs` from the base adapter
+named in `adapters.mjs` `variants`, setting only that adapter's region (an environment value, or one
+exact source line that the build requires to exist). They share the base adapter's network rules in
+`ProviderBroker.allowed`.
+
 LivePlayer exposes its pending-resolution phase and notifies the currently attached owner when a resolved stream/relay is ready. VlcPlaybackActivity arms its normal video-startup timer at that transition, rather than spending the 15-second backup timeout on the provider walk. Guide/fullscreen handoffs replace the callback with the owner; switching cancels stale resolutions as before.
 
 `LiveProgress` is the pure progress rule for native/provider Live TV. `LivePlayer` samples the live clock and LibVLC displayed-picture counter once per second after playback starts, only while the video view is visible and playing. It reuses LiveZapper’s eight-second stall limit, attempts the existing bounded provider retry once, then reports failure through the current owner’s backup/error callback. Changing channels, handing off views, stopping and pausing reset the baseline. The sampler uses the generation ticket so recovery cannot schedule duplicate polling loops.

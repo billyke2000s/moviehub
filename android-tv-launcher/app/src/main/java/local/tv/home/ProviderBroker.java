@@ -14,10 +14,13 @@ final class ProviderBroker {
         "tcl",
         "xumo",
         "lg",
+        "lguk",
         "whale",
         "distro",
+        "distrouk",
         "vizio",
         "vidaa",
+        "vidaauk",
         "roku",
         "plex",
         "dlhd",
@@ -92,10 +95,12 @@ final class ProviderBroker {
                 case "xumo":
                     return host.equals("valencia-app-mds.xumo.com") && u.getPath().startsWith("/v2/");
                 case "lg":
+                case "lguk":
                     return host.equals("api.lgchannels.com") && u.getPath().startsWith("/api/v1.0/");
                 case "whale":
                     return host.equals("rlaxx.zeasn.tv") && u.getPath().startsWith("/livetv/api/");
                 case "distro":
+                case "distrouk":
                     return (
                         host.equals("tv.jsrdn.com") &&
                         (u.getPath().startsWith("/tv_v5/") || u.getPath().startsWith("/epg/"))
@@ -106,6 +111,7 @@ final class ProviderBroker {
                         u.getPath().startsWith("/api/")
                     );
                 case "vidaa":
+                case "vidaauk":
                     return host.equals("vtvapp-ovp.vidaahub.com") || host.endsWith(".vidaahub.com");
                 case "roku":
                     return host.equals("therokuchannel.roku.com") || host.equals("content.sr.roku.com");

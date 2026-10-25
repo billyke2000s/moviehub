@@ -111,6 +111,27 @@ const lgPayload = {
 const lg = drive("lg", "catalogue", null, () => deflateSync(JSON.stringify(lgPayload)).toString("base64"));
 assert.equal(lg[0].programs[0].title, "Live");
 checks++;
+// Regional copies: the same adapter, asking the service for the other country.
+function firstRequests(id) {
+    const input = { now: 1792440000000, seed: "fixture-seed-123", responses: [], row: {}, history: [] };
+    const r = call(id, "catalogue", input);
+    assert.ok(!r.done && r.requests.length > 0, id + " makes a request");
+    return r.requests;
+}
+function header(request, name) {
+    const headers = request.headers || {};
+    const key = Object.keys(headers).find((k) => k.toLowerCase() === name);
+    return key ? headers[key] : undefined;
+}
+assert.equal(header(firstRequests("lg")[0], "x-device-country"), "US");
+assert.equal(header(firstRequests("lguk")[0], "x-device-country"), "GB");
+const lgUk = drive("lguk", "catalogue", null, () =>
+    deflateSync(JSON.stringify(lgPayload)).toString("base64"),
+);
+assert.equal(lgUk[0].programs[0].title, "Live");
+assert.doesNotMatch(firstRequests("distro")[0].url, /[?&]geo=/);
+assert.match(firstRequests("distrouk")[0].url, /[?&]geo=GB(&|$)/);
+checks += 5;
 const vizio = drive("vizio", "catalogue", null, () => ({
     channels: [
         { channelId: "one", channelName: "One", channelUrls: ["https://media.example/a.m3u8"] },

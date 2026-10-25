@@ -145,9 +145,9 @@ final class ChannelImporter {
                         problems.add("FreeLiveSports unavailable; cached channels kept.");
                     }
                 }
-                // Providers that failed this time, named once in one line: a list of one line per
-                // provider pushed the guide's channel rows off the screen.
-                List<String> unavailable = new ArrayList<>();
+                // Providers that failed this time, named once in one line grouped by why (geo-locked,
+                // timed out…): a list of one line per provider pushed the guide's rows off the screen.
+                List<String[]> unavailable = new ArrayList<>();
                 for (String id : ProviderBroker.IDS)
                     if (AdapterSources.enabled(context, id, providerConnected)) {
                         configured.add(AdapterSources.source(id));
@@ -158,17 +158,19 @@ final class ChannelImporter {
                         } catch (Exception e) {
                             cancel.check();
                             Diagnostics.recovered("Provider refresh " + id, e);
+                            String failure = ProviderFailure.describe(e);
                             context
                                 .getSharedPreferences("providerEngine", 0)
                                 .edit()
-                                .putString(id + "Error", ProviderFailure.describe(e))
+                                .putString(id + "Error", failure)
                                 .apply();
-                            unavailable.add(AdapterSources.sourceName(AdapterSources.source(id)));
+                            unavailable.add(new String[] {
+                                AdapterSources.sourceName(AdapterSources.source(id)),
+                                failure,
+                            });
                         }
                     }
-                if (!unavailable.isEmpty()) problems.add(
-                    "Unavailable now: " + String.join(", ", unavailable) + " (saved channels kept)"
-                );
+                if (!unavailable.isEmpty()) problems.add(ProviderOutage.summary(unavailable));
                 cancel.check();
                 // Failed sources are still configured and keep their last good rows. Disabled
                 // sources must disappear even when a different provider is offline.

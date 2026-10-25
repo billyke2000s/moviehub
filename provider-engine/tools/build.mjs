@@ -1,5 +1,5 @@
 import ts from "typescript";
-import { adapters } from "./adapters.mjs";
+import { adapters, variants } from "./adapters.mjs";
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -75,8 +75,12 @@ const auditedImports = new Set([
     "./endpoints.js",
     "./sign.js",
 ]);
-function compileLeaf(path) {
-    const text = readFileSync(root + path, "utf8");
+function compileLeaf(path, replace) {
+    let text = readFileSync(root + path, "utf8");
+    if (replace) {
+        if (text.split(replace[0]).length !== 2) throw new Error("Regional line not found once in " + path);
+        text = text.replace(replace[0], replace[1]);
+    }
     const tree = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true);
     for (const node of tree.statements) {
         if (
@@ -96,14 +100,28 @@ function compileLeaf(path) {
         },
     }).outputText;
 }
-for (const [id, adapter] of Object.entries(adapters)) {
-    const compiled = compileLeaf("upstream/modules/" + id + "/config.ts");
-    const categories = id === "roku" ? compileLeaf("upstream/modules/roku/categorize.ts") : "";
+const builds = [
+    ...Object.entries(adapters).map(([id, adapter]) => [id, id, adapter, {}, null]),
+    ...Object.entries(variants).map(([id, v]) => [
+        id,
+        v.base,
+        adapters[v.base],
+        v.env || {},
+        v.replace || null,
+    ]),
+];
+for (const [id, base, adapter, env, replace] of builds) {
+    if (!adapter) throw new Error("Unknown base adapter for " + id);
+    const compiled = compileLeaf("upstream/modules/" + base + "/config.ts", replace);
+    const categories = base === "roku" ? compileLeaf("upstream/modules/roku/categorize.ts") : "";
+    const region = Object.entries(env)
+        .map(([key, value]) => `process.env[${JSON.stringify(key)}]=${JSON.stringify(value)};`)
+        .join("");
     pkg.modules[id] =
         compatibility +
         `
 var __provider=${JSON.stringify(id)}, exports, __categories;
-function __load(){
+function __load(){${region ? "\n  " + region : ""}
   __categories=(function(exports){${categories}\n;return exports;})({});
   exports=(function(exports){${compiled}\n;return exports;})({});
 }
