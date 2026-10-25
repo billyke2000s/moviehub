@@ -493,3 +493,11 @@ commit before publishing the next experimental version. Physical-TV latency rema
   geo-locked") and offered to switch providers off after two such failures; the owner pointed out
   that a service down for a day would be mislabelled, so that was replaced by an opt-in "Hide
   US-only providers" setting that applies only to the known US-only list.
+
+## Refresh schedule correction (25 October 2026)
+
+`ChannelSync.refreshIfStale` measured the 12-hour interval from `lastSuccess`, which is written only when
+no service failed. With any provider failing (e.g. US-only services from the UK) it was never written, so
+every home or Live TV visit more than 10 minutes after the last attempt started a full refresh. The
+interval now also counts `lastFinished` (any completed refresh), and an app update refreshes once.
+Found by reading the code after the owner said refreshes "take a while"; not measured on the TV.

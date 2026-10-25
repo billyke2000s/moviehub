@@ -1,6 +1,9 @@
 ## Unreleased
 - After an app update, channels and programme guides refresh once (on the next home or Live TV visit),
   so new guide sources and fixes apply straight away instead of up to 12 hours later.
+- Fix: channels refreshed on almost every home or Live TV visit (after a 10-minute gap) whenever any
+  service failed, e.g. a US-only service from the UK. A refresh that finishes now counts for the 12-hour
+  schedule even when some services failed.
 - Sky UK programme guide (London HD region, Sky's own schedules for ~380 channels, seven days) as the
   second guide after Freeview: Sky Atlantic, Sky Witness, Comedy Central, UKTV and other pay channels.
 - Guide matching: UKTV's renamed channels ("U&Dave", "U&Gold"…) answer to the old names playlists use,
