@@ -4,7 +4,6 @@
 
 Automatic play uses only already-cached sources and never queues a paid/account transfer automatically. Resolved links pass the existing network URL policy before launch. Selection tries at most five candidates, and screen-generation/cancellation guards prevent an abandoned request from starting playback. Episode catalogue prefetches use the existing authenticated TMDB client; no credentials or provider links are logged.
 
-
 MovieHub stores provider accounts and installs its own updates, so these rules matter.
 
 ## Accounts and secrets
@@ -56,11 +55,11 @@ MovieHub stores provider accounts and installs its own updates, so these rules m
 
 ## Permissions
 
-| Permission | Why |
-| --- | --- |
-| `INTERNET` | Metadata, streams, provider APIs, updates |
-| `REQUEST_INSTALL_PACKAGES` | Installing verified app updates |
-| `REQUEST_DELETE_PACKAGES` | Uninstalling apps from All Apps (Android asks the user) |
+| Permission                 | Why                                                     |
+| -------------------------- | ------------------------------------------------------- |
+| `INTERNET`                 | Metadata, streams, provider APIs, updates               |
+| `REQUEST_INSTALL_PACKAGES` | Installing verified app updates                         |
+| `REQUEST_DELETE_PACKAGES`  | Uninstalling apps from All Apps (Android asks the user) |
 
 ## Scam messages in streams
 
@@ -157,7 +156,6 @@ late results and close their relays; native readers stop before their surfaces o
 Diagnostics retain fixed descriptions only, without resolved links, tokens or account details.
 No background discovery or new provider capability is introduced.
 
-
 ## Live playback recovery
 
 Presentation sampling is 32×18 pixels, asynchronous, at most one request at a time and every two seconds while watched. Pixel contents are neither inspected for programme content, persisted, uploaded nor logged. Recovery preserves regional Pluto checks and normal ads/authentication; it refreshes only the existing anonymous session. Native windows and relays stay alive until their readers stop; timeout does not authorize premature destruction. Fixed-label diagnostics contain no URLs/tokens.
@@ -182,7 +180,6 @@ Ready-source validation requests at most 64 KiB of response data through the exi
 
 Per-provider reports expose fixed summaries, counts and module IDs; they never include playback URLs, headers, cookies, website bodies or exception messages. Bounded media probes reject declared sub-two-minute error clips; decoder-side checks cover formats whose metadata was unavailable in the probe. This is not content authentication. Native VOD shutdown retains its engine and video window until the native reader stops; failed stops are quarantined by the existing coordinator instead of destroying an in-use window.
 
-
 VOD native shutdown retains detached texture buffer queues and the LibVLC engine until
 the reader and output have stopped. A failed native join quarantines these resources
 instead of releasing a surface that native code may still access.
@@ -205,3 +202,9 @@ bounded and short-lived; authenticated requests, embeds, tokens and media are ex
 ### Country-scoped EPG fallback
 
 XMLTV fallback uses channel identity and country, never stream URLs or account credentials. Provider-native listings retain priority. Unknown native countries cannot borrow UK schedules, and maps for different countries use distinct keys. Guide transactions publish only after successful parsing; failed guides cannot leak partial listings. Network/download limits and credential handling are unchanged.
+
+## Combined guide and ZLive
+
+Only public source metadata/programmes are published by `Moviehub-epg`; no stream URLs, credential playlists, session tokens or private account inventory are exported. Provider processing uses the existing bounded interpreter with a public-host capability allowlist and stops on access denial. Catalogue journals remain temporary and are excluded from Actions caches. Redistribution permissions are documented per source; public availability is not represented as a blanket broadcaster-data licence.
+
+The client fixed guide URL rejects redirects, bounds compressed/expanded data, rejects DTD/entities and validates before a database transaction. Failed refreshes retain old unexpired data. ZLive carrier decoding does not decrypt protected streams, reproduce the website's encrypted resolver protocol, spoof regions or override HTTP refusals. Existing refusal history/cooldowns and signed-package high-water checks remain enforced. Source hints are encrypted locally and only approved non-credential playback headers are accepted.

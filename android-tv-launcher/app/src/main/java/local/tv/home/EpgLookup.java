@@ -29,11 +29,24 @@ final class EpgLookup {
         if (own.isEmpty() && nativeId) return new ArrayList<>();
         if (!own.isEmpty() && !normal(own).equals(normal(country))) return new ArrayList<>();
         List<String> out = new ArrayList<>();
+        if (!nativeId && epg != null && epg.contains("@")) {
+            String variant = EpgMatch.key(epg.substring(epg.indexOf('@') + 1));
+            if (!variant.isEmpty()) {
+                // @HD is a quality note; @Scotland/@Spain identifies a different service.
+                add(out, EpgMatch.key(epg.substring(0, epg.indexOf('@'))) + variant);
+                return out;
+            }
+        }
         if (!nativeId) add(out, EpgMatch.key(epg));
         add(out, EpgMatch.key(name));
         add(out, EpgMatch.key(identity.key));
         // Match U&Dave/old Dave names in both directions, without losing regional identities.
-        for (String key : new ArrayList<>(out)) add(out, EpgMatch.national(key));
+        for (String key : new ArrayList<>(out)) {
+            add(out, EpgMatch.national(key));
+            if (key.equals("bbc1")) add(out, "bbcone");
+            if (key.equals("bbc2")) add(out, "bbctwo");
+            if (key.equals("skysportspremiereleague")) add(out, "skysportspremierleague");
+        }
         return out;
     }
 

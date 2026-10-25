@@ -95,9 +95,11 @@ final class EngineSources {
         final long expiresAt;
         final JSONObject headers;
         final JSONObject playlistSession;
+        final boolean segmentContainers;
 
         Stream(JSONObject value) throws Exception {
             playlistSession = value.optJSONObject("playlistSession");
+            segmentContainers = value.optBoolean("segmentContainers", false);
             expiresAt = value.optLong("expiresAtMs", 0);
             url = ProviderUrls.playback(value.getString("url"));
             headers = value.getJSONObject("headers");
@@ -175,13 +177,7 @@ final class EngineSources {
         } finally {
             writer.abort();
         }
-        // Guide failures must not undo a successfully imported catalogue.
-        try {
-            guide(db, rows, cancel);
-        } catch (Exception e) {
-            cancel.check();
-            Diagnostics.recovered("FreeLiveSports guide", e);
-        }
+        // The server-generated guide owns programme data; catalogues only update channels.
         c.getSharedPreferences("providerEngine", 0)
             .edit()
             .putInt("flsCount", rows.length())
@@ -195,46 +191,6 @@ final class EngineSources {
             return Playlist.networkUrl(value, false);
         } catch (Exception e) {
             return "";
-        }
-    }
-
-    private static void guide(ChannelDatabase db, JSONArray rows, ChannelDatabase.Cancel cancel)
-        throws Exception {
-        ChannelDatabase.GuideWriter writer = db.new GuideWriter(SOURCE + ":");
-        try {
-            for (int i = 0; i < rows.length(); i++) {
-                JSONObject row = rows.getJSONObject(i);
-                String channel = SOURCE + ":" + row.getString("channelId");
-                writer.match(EpgMatch.key(channel), channel);
-                JSONArray programmes = row.optJSONArray("programs");
-                if (programmes == null) continue;
-                for (int j = 0; j < programmes.length(); j++) {
-                    cancel.check();
-                    JSONObject item = programmes.getJSONObject(j);
-                    long start, stop;
-                    try {
-                        start = java.time.Instant.parse(item.getString("start")).toEpochMilli();
-                        stop = java.time.Instant.parse(item.getString("end")).toEpochMilli();
-                    } catch (Exception e) {
-                        continue;
-                    }
-                    if (stop <= start) continue;
-                    if (writer.programmes >= 50000) throw new IOException("Provider guide limit");
-                    writer.programme(
-                        channel,
-                        start,
-                        stop,
-                        item.optString("title"),
-                        item.optString("desc"),
-                        "Sports",
-                        ""
-                    );
-                }
-            }
-            cancel.check();
-            if (writer.programmes > 0) writer.commit();
-        } finally {
-            writer.finish();
         }
     }
 }

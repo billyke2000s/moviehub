@@ -18,11 +18,11 @@
 // The rest is the SHAPE of zlive's answers — the slug rule, the entry sentinel, the resolver's Location format,
 // the alias table — so the adapter, its resolver and any future script agree on one definition.
 
-import { createDynamicAllow, type DynamicAllow } from '../_fast/dynamicAllow.js';
-import { normalizeDomain as normalizeSourceDomain, type DomainParse } from '../../core/domain.js';
+import { createDynamicAllow, type DynamicAllow } from "../_fast/dynamicAllow.js";
+import { normalizeDomain as normalizeSourceDomain, type DomainParse } from "../../core/domain.js";
 
 /** The committed default — zlive's domain as last known. Also the playlist config default. */
-export const ZLIVE_DEFAULT_DOMAIN = 'zlive.st';
+export const ZLIVE_DEFAULT_DOMAIN = "zlive.st";
 
 /**
  * Default cap on distinct concurrently-live zlive channels (`concurrency`; 0 = unlimited). Two, because zlive ranks
@@ -43,12 +43,12 @@ let _domainEpoch = 0;
 
 /** The active domain, e.g. "zlive.st". Always read at use time. */
 export function getDomain(): string {
-  return _domain;
+    return _domain;
 }
 
 /** Bumped every time setDomain() actually changes the domain. */
 export function getDomainEpoch(): number {
-  return _domainEpoch;
+    return _domainEpoch;
 }
 
 // The `*For(domain)` builders exist so the Settings "Test" probe can hit a CANDIDATE domain without duplicating
@@ -56,29 +56,29 @@ export function getDomainEpoch(): number {
 
 /** The public channel catalog for an arbitrary zlive domain — a bare JSON array, no auth. */
 export function catalogUrlFor(domain: string): string {
-  return `https://cast.${domain}/channels.json`;
+    return `https://cast.${domain}/channels.json`;
 }
 
 /** The stream resolver base for an arbitrary zlive domain: GET <base>/<slug> answers a 302 to a signed playlist. */
 export function resolverBaseFor(domain: string): string {
-  return `https://iptv.${domain}`;
+    return `https://iptv.${domain}`;
 }
 
 /** The active catalog URL, e.g. "https://cast.zlive.st/channels.json". */
 export function getCatalogUrl(): string {
-  return catalogUrlFor(_domain);
+    return catalogUrlFor(_domain);
 }
 
 /** The active resolver base, e.g. "https://iptv.zlive.st". */
 export function getResolverBase(): string {
-  return resolverBaseFor(_domain);
+    return resolverBaseFor(_domain);
 }
 
 // A normal desktop-browser User-Agent, sent on the catalog GET, every resolve, and (via upstreamHeaders) every
 // data-plane hop. zlive needs no other header — a Referer/Origin made no difference to the resolver — so none is
 // sent: masqueradarr identifies as a browser client, it does not impersonate zlive's own site.
 export const UA =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 // ── SSRF allow-set ────────────────────────────────────────────────────────────────────────────────────
 // The shared per-source dynamic allow-set: seeded with the active domain (exact-or-subdomain), grown with every
@@ -94,7 +94,7 @@ export const zliveAllow: DynamicAllow = createDynamicAllow([ZLIVE_DEFAULT_DOMAIN
  * boundary — the catalog fetch, the resolver and the Test endpoint all go to whatever comes back from here.
  */
 export function normalizeDomain(raw: string): DomainParse {
-  return normalizeSourceDomain(raw, 'zlive');
+    return normalizeSourceDomain(raw, "zlive");
 }
 
 /**
@@ -102,13 +102,13 @@ export function normalizeDomain(raw: string): DomainParse {
  * settings/applyPlaylistConfig.ts). Folds the new apex into the allow-set. Returns true when the value actually CHANGED.
  */
 export function setDomain(next: string): boolean {
-  const parsed = normalizeDomain(next);
-  if (!parsed.ok) return false;
-  const changed = parsed.domain !== _domain;
-  _domain = parsed.domain;
-  if (changed) _domainEpoch += 1;
-  zliveAllow.allow(_domain);
-  return changed;
+    const parsed = normalizeDomain(next);
+    if (!parsed.ok) return false;
+    const changed = parsed.domain !== _domain;
+    _domain = parsed.domain;
+    if (changed) _domainEpoch += 1;
+    zliveAllow.allow(_domain);
+    return changed;
 }
 
 // ── Stream cap ────────────────────────────────────────────────────────────────────────────────────────
@@ -116,22 +116,26 @@ let _maxStreams = ZLIVE_DEFAULT_MAX_STREAMS;
 
 /** Distinct zlive channels allowed live at once; 0 = unlimited (resolveSeam's contract for "no cap"). */
 export function getMaxStreams(): number {
-  return _maxStreams;
+    return _maxStreams;
 }
 
 /** Cache a new cap. Junk (NaN, negative, fractional) collapses to the nearest sane value, never to "refuse all". */
 export function setMaxStreams(n: number): void {
-  const v = Math.trunc(Number(n));
-  _maxStreams = Number.isFinite(v) ? Math.min(ZLIVE_MAX_STREAMS_LIMIT, Math.max(0, v)) : ZLIVE_DEFAULT_MAX_STREAMS;
+    const v = Math.trunc(Number(n));
+    _maxStreams = Number.isFinite(v)
+        ? Math.min(ZLIVE_MAX_STREAMS_LIMIT, Math.max(0, v))
+        : ZLIVE_DEFAULT_MAX_STREAMS;
 }
 
 // ── Catalog rows + channel identity ───────────────────────────────────────────────────────────────────
 
 /** The only catalog fields the adapter keeps (zlive's rows also carry cosmetic tagline/region/flag/accent/…). */
 export interface CatalogRow {
-  id: string;
-  name: string;
-  sport: string;
+    id: string;
+    name: string;
+    sport: string;
+    sources?: Array<Record<string, unknown>>;
+    region?: string;
 }
 
 /**
@@ -140,17 +144,21 @@ export interface CatalogRow {
  * serve" means the same thing in both. Rows without a string id are dropped here; slug validity is normalize's.
  */
 export function parseCatalog(body: unknown): CatalogRow[] | null {
-  if (!Array.isArray(body)) return null;
-  const rows: CatalogRow[] = [];
-  for (const r of body as Array<Record<string, unknown> | null>) {
-    if (!r || typeof r.id !== 'string' || !r.id) continue;
-    rows.push({
-      id: r.id,
-      name: typeof r.name === 'string' ? r.name : '',
-      sport: typeof r.sport === 'string' ? r.sport : '',
-    });
-  }
-  return rows;
+    if (!Array.isArray(body)) return null;
+    const rows: CatalogRow[] = [];
+    for (const r of body as Array<Record<string, unknown> | null>) {
+        if (!r || typeof r.id !== "string" || !r.id) continue;
+        rows.push({
+            id: r.id,
+            name: typeof r.name === "string" ? r.name : "",
+            sport: typeof r.sport === "string" ? r.sport : "",
+            sources: Array.isArray(r.sources)
+                ? r.sources.filter((s) => s && typeof s === "object").slice(0, 32)
+                : [],
+            region: typeof r.region === "string" ? r.region : typeof r.flag === "string" ? r.flag : "",
+        });
+    }
+    return rows;
 }
 
 /** The characters zlive's own add-by-slug dialog allows, and the ones its resolver signs rather than 404s. */
@@ -163,28 +171,30 @@ export const SLUG_RE = /^[A-Za-z0-9_-]+$/;
  * the resolver keys on, and it survives zlive flipping a row between auto and manual.
  */
 export function slugOf(id: string): string | null {
-  const slug = String(id).replace(/^auto-/, '').replace(/^evt-/, '');
-  return SLUG_RE.test(slug) ? slug : null;
+    const slug = String(id)
+        .replace(/^auto-/, "")
+        .replace(/^evt-/, "");
+    return SLUG_RE.test(slug) ? slug : null;
 }
 
 /** zlive's own label for rows with no sport (its player's `sport.trim() || "Other"`). */
 export function groupOf(sport: unknown): string {
-  return (typeof sport === 'string' && sport.trim()) || 'Other';
+    return (typeof sport === "string" && sport.trim()) || "Other";
 }
 
 // The stored stream entry: a host-free sentinel (the dulo/pluto pattern). Only the slug is stored; the resolver
 // host is read from the domain cache at resolve time.
-export const ENTRY_PREFIX = 'zlive://';
+export const ENTRY_PREFIX = "zlive://";
 
 export function entryUrlFor(slug: string): string {
-  return `${ENTRY_PREFIX}${slug}`;
+    return `${ENTRY_PREFIX}${slug}`;
 }
 
 /** The slug inside a `zlive://<slug>` entry, or null for anything else. */
 export function slugFromEntry(url: string): string | null {
-  if (typeof url !== 'string' || !url.startsWith(ENTRY_PREFIX)) return null;
-  const slug = url.slice(ENTRY_PREFIX.length);
-  return SLUG_RE.test(slug) ? slug : null;
+    if (typeof url !== "string" || !url.startsWith(ENTRY_PREFIX)) return null;
+    const slug = url.slice(ENTRY_PREFIX.length);
+    return SLUG_RE.test(slug) ? slug : null;
 }
 
 /**
@@ -194,12 +204,12 @@ export function slugFromEntry(url: string): string | null {
  * four upstream sources behind it). First-sync only, like every defaultDisabled: an operator's Enable sticks.
  */
 export const DUPLICATE_OF: Readonly<Record<string, string>> = {
-  'skysportsf1-uk': 'sky-sports-f1',
+    "skysportsf1-uk": "sky-sports-f1",
 };
 
 /** Is `slug` a listed duplicate? Own-key test: a slug may legally be "constructor", which `in` would match. */
 export function isDuplicateSlug(slug: string): boolean {
-  return Object.hasOwn(DUPLICATE_OF, slug);
+    return Object.hasOwn(DUPLICATE_OF, slug);
 }
 
 // ── The resolver's answer ─────────────────────────────────────────────────────────────────────────────
@@ -211,20 +221,20 @@ export function isDuplicateSlug(slug: string): boolean {
  * last good one (resolver.ts). Groups: 1 host, 2 expiry (unix seconds), 3 file name without `.m3u8`.
  */
 export const LOCATION_RE =
-  /^https:\/\/((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z][a-z0-9-]*)\/main\/secure\/[0-9a-f]{64}\/(\d{10})\/([A-Za-z0-9_-]+)\.m3u8$/;
+    /^https:\/\/((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z][a-z0-9-]*)\/main\/secure\/[0-9a-f]{64}\/(\d{10})\/([A-Za-z0-9_-]+)\.m3u8$/;
 
 export interface SignedLocation {
-  host: string;
-  /** The token's expiry, epoch SECONDS (as signed). */
-  expSec: number;
-  /** The upstream file name without `.m3u8` — the resolver's real answer to "which feed is this slug". */
-  file: string;
+    host: string;
+    /** The token's expiry, epoch SECONDS (as signed). */
+    expSec: number;
+    /** The upstream file name without `.m3u8` — the resolver's real answer to "which feed is this slug". */
+    file: string;
 }
 
 /** Parse an on-shape Location, or null when it is off-shape. */
 export function parseSignedLocation(location: string): SignedLocation | null {
-  const m = LOCATION_RE.exec(location);
-  return m ? { host: m[1], expSec: Number(m[2]), file: m[3] } : null;
+    const m = LOCATION_RE.exec(location);
+    return m ? { host: m[1], expSec: Number(m[2]), file: m[3] } : null;
 }
 
 /**
@@ -240,26 +250,26 @@ export function parseSignedLocation(location: string): SignedLocation | null {
  * wins — so a stale entry can only make the decoy check slightly more or less eager, never break playback.
  */
 export const ALIAS_TABLE: Readonly<Record<string, string>> = {
-  abc: 'abc-usa',
-  'acc-network': 'accn-usa',
-  'apple-tv': 'apple-tv',
-  'apple-tv-uhd': 'apple-tv-uhd',
-  'bbc-one-london': 'bbcone-uk',
-  'cartoon-network': 'cartoonnetwork-usa',
-  'dazn-1-germany': 'dazn1-de',
-  'disney-channel': 'disneychannel-usa',
-  espn: 'espn-usa',
-  'fox-sports-1': 'fox-sports-1',
-  'nfl-network': 'nflnetwork-usa',
-  'sky-sport-uno': 'skysportuno-it',
-  'sky-sports-f1': 'skysportsf1-uk',
-  'sky-sports-main-event': 'skysportsmainevent-uk',
-  'skysportsf1-uk': 'skysportsf1-uk',
-  'wapa-deportes': 'wapadeportes-usa',
-  'willow-cricket': 'willow-usa',
+    abc: "abc-usa",
+    "acc-network": "accn-usa",
+    "apple-tv": "apple-tv",
+    "apple-tv-uhd": "apple-tv-uhd",
+    "bbc-one-london": "bbcone-uk",
+    "cartoon-network": "cartoonnetwork-usa",
+    "dazn-1-germany": "dazn1-de",
+    "disney-channel": "disneychannel-usa",
+    espn: "espn-usa",
+    "fox-sports-1": "fox-sports-1",
+    "nfl-network": "nflnetwork-usa",
+    "sky-sport-uno": "skysportuno-it",
+    "sky-sports-f1": "skysportsf1-uk",
+    "sky-sports-main-event": "skysportsmainevent-uk",
+    "skysportsf1-uk": "skysportsf1-uk",
+    "wapa-deportes": "wapadeportes-usa",
+    "willow-cricket": "willow-usa",
 };
 
 /** A slug's alias class: its table file when listed, else itself. Equal classes = aliases of each other. */
 export function aliasClass(slug: string): string {
-  return Object.hasOwn(ALIAS_TABLE, slug) ? ALIAS_TABLE[slug] : slug;
+    return Object.hasOwn(ALIAS_TABLE, slug) ? ALIAS_TABLE[slug] : slug;
 }

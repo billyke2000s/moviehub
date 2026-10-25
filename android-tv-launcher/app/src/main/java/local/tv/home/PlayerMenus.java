@@ -239,7 +239,7 @@ final class PlayerMenus implements LiveMenus {
             (a.zapper.automaticSources() && !playing.isEmpty() ? "now " + playing + " · " : "") +
             "switch if a source fails";
         for (int i = 0; i < copies.size(); i++) {
-            String provider = AdapterSources.sourceName(copies.get(i).source);
+            String provider = AdapterSources.sourceName(copies.get(i));
             names[i + 1] =
                 (i == a.zapper.selectedCopy() ? "▶ " : "") +
                 "Source " +

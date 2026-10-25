@@ -15,7 +15,7 @@
 
 ---
 
-*One interface for browsing, watching and live TV.*
+_One interface for browsing, watching and live TV._
 
 [Overview](#what-is-moviehub) · [Install](#get-moviehub) · [Build](#build-from-source) · [Project status](#project-status) · [Legal](#content-responsibility)
 
@@ -28,7 +28,7 @@ MovieHub is an Android TV launcher and streaming application that combines film 
 ### Features
 
 - **Films and series:** TMDB-powered discovery, watch history and source selection.
-- **Live TV:** Public channel directories, M3U and Xtream integration, and a unified channel guide. Programme listings prefer the provider’s own schedule, with country-matched XMLTV fallback where available.
+- **Live TV:** Public channel directories, M3U and Xtream integration, and a unified channel guide. Programme listings come from one daily combined public guide, preferring exact provider identities with country-matched XMLTV fallback where available.
 - **Sources:** Optional Torrentio, MediaFusion, Comet and Premiumize integrations with automatic or manual selection.
 - **Playback:** VLC-based playback with stream recovery and source switching.
 - **Launcher:** Remote-friendly navigation and access to installed Android TV applications.
@@ -66,17 +66,17 @@ Additional information is available in [DEVELOPMENT.md](DEVELOPMENT.md), [ARCHIT
 
 ## Project handbook
 
-| Guide | What you'll find |
-| :--- | :--- |
-| [Architecture](ARCHITECTURE.md) | Project structure and major components |
-| [Development](DEVELOPMENT.md) | Local setup, coding conventions and releases |
-| [Testing](TESTING.md) | Test layers, commands and limitations |
-| [Security](SECURITY.md) | Account storage, networking and update protections |
-| [Status](STATUS.md) | Known issues and work in progress |
-| [Changelog](CHANGELOG.md) | Version history |
-| [AI contributor rules](AGENTS.md) | Repository editing instructions |
-| [Update publishing](android-tv-launcher/UPDATES.md) | Signed release process |
-| [Design notes](docs/) | Interface and catalogue documentation |
+| Guide                                               | What you'll find                                   |
+| :-------------------------------------------------- | :------------------------------------------------- |
+| [Architecture](ARCHITECTURE.md)                     | Project structure and major components             |
+| [Development](DEVELOPMENT.md)                       | Local setup, coding conventions and releases       |
+| [Testing](TESTING.md)                               | Test layers, commands and limitations              |
+| [Security](SECURITY.md)                             | Account storage, networking and update protections |
+| [Status](STATUS.md)                                 | Known issues and work in progress                  |
+| [Changelog](CHANGELOG.md)                           | Version history                                    |
+| [AI contributor rules](AGENTS.md)                   | Repository editing instructions                    |
+| [Update publishing](android-tv-launcher/UPDATES.md) | Signed release process                             |
+| [Design notes](docs/)                               | Interface and catalogue documentation              |
 
 ## Project status
 
@@ -170,11 +170,9 @@ MovieHub is distributed under the [MIT License](LICENSE). The Live TV interface 
 
 </div>
 
-
 ## Live TV control consistency
 
 Live TV uses the same channel banner on initial playback and restored sessions. Red opens audio/subtitles, green opens sources, yellow shows programme information and blue opens options. Back reveals controls for arrow/OK selection on remotes without colour buttons.
-
 
 ## Live playback recovery
 
@@ -197,7 +195,6 @@ Free movie and series controls show incoming traffic from the selected source. A
 
 Free movie searches include **Provider search details** with separate outcomes for timeouts, connection failures, unsupported hosts and no matching links. The player shows the selected source and incoming traffic, rejects known videos shorter than two minutes, and can try another free service after a failed manual choice. [Provider inventory and audit](docs/FREE_VOD_AUDIT.md).
 
-
 Free movie/episode searches use bundled provider title normalization and TMDB original/alternative
 titles, preserve session request methods and cookies, and continue collecting backups after the
 three-second initial selection. Remote availability varies; provider details distinguish network,
@@ -216,3 +213,11 @@ Experimental DaddyLive lookups use one disposable isolated process per channel l
 compiled provider code with fresh script globals, and briefly cache public mirror pages.
 Tokens, player embeds and media remain fresh. Failed players advance rather than being
 selected repeatedly. Provider/network response time can still affect startup.
+
+### Experimental combined programme guide
+
+The experimental integration downloads only [the finished compressed guide](https://raw.githubusercontent.com/billyke2000s/Moviehub-epg/main/epg.xml.gz) for built-in listings. GitHub fetches and merges the public sources at **04:37 UTC daily**, with a manual trigger. [Coverage, unmatched channels and source failures](https://github.com/billyke2000s/Moviehub-epg/blob/main/coverage.md) are measured against public catalogues, not a viewer's private account. Guide identifiers include aliases and are not unique broadcast services. Scheduling may be delayed and public-repository schedules stop after 60 days without activity; see the generator README.
+
+Downloads use conditional requests and a six-hour check interval inside the existing background channel refresh, with cached data on failure. Channel changes query local SQLite. Private accounts, URLs and favourites stay on the device. The current integration has no separately configured private XMLTV URL feature; it does not publish private account data.
+
+ZLive exposes each distinct advertised, supported public resolver route with its server label. Browser-only protected choices cannot be promised to work in an external player. Current live investigation found a missing public catalogue (404) and a refused legacy media request (403); wrapped-segment and source-selection fixtures do not prove real-device ZLive playback.

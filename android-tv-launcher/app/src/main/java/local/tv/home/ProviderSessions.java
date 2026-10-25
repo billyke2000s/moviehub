@@ -51,6 +51,7 @@ final class ProviderSessions {
         JSONObject journal = new JSONObject().put("history", history),
             input = new JSONObject(row.toString());
         input.put("fresh", fresh.remove(row.getString("channelId")));
+        String resolverSlug = row.optString("resolverSlug", row.getString("channelId"));
         JSONObject envelope = new JSONObject().put("module", hash).put("history", history);
         boolean[] capped = { false },
             contacted = { false };
@@ -76,7 +77,7 @@ final class ProviderSessions {
             JSONArray responses = journal.getJSONArray("responses");
             if (responses.length() > 0 && !capped[0]) history.put(
                 new JSONObject()
-                    .put("slug", row.getString("channelId"))
+                    .put("slug", resolverSlug)
                     .put("fresh", input.getBoolean("fresh"))
                     .put("at", journal.getLong("at"))
                     .put("responses", responses)
@@ -87,7 +88,7 @@ final class ProviderSessions {
                 error instanceof java.io.InterruptedIOException || Thread.currentThread().isInterrupted();
             if (cancelled && contacted[0] && history.length() < 128) history.put(
                 new JSONObject()
-                    .put("slug", row.getString("channelId"))
+                    .put("slug", resolverSlug)
                     .put("fresh", input.getBoolean("fresh"))
                     .put("at", journal.getLong("at"))
                     .put("responses", journal.getJSONArray("responses"))

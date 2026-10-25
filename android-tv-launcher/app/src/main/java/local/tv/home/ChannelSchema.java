@@ -25,6 +25,7 @@ final class ChannelSchema {
         createGuideTables(db);
         addDuplicateKey(db);
         addNumbers(db);
+        addColumn(db, "channels", "source_label", "TEXT NOT NULL DEFAULT ''");
     }
 
     /**
@@ -100,6 +101,7 @@ final class ChannelSchema {
             moved.putAll(rekey(db));
             ChannelNumbers.renumber(db);
         }
+        if (from < 10) addColumn(db, "channels", "source_label", "TEXT NOT NULL DEFAULT ''");
         return moved;
     }
 

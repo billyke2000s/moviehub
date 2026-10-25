@@ -90,10 +90,12 @@ final class LiveStage implements LiveScreen {
             ExoLive.playResolved(a, locator, source);
             // A standby is ready or on its way: give this copy less time, as moving on is quick.
             overlayHandler.removeCallbacks(startupDeadline);
-            if (race != null && race.hasAlternative()) overlayHandler.postDelayed(
-                startupDeadline,
-                RACE_START_MS
+            long budget = LiveSourceDeadline.milliseconds(
+                race != null && race.hasAlternative(),
+                zliveSource(),
+                true
             );
+            if (budget > 0) overlayHandler.postDelayed(startupDeadline, budget);
         }
 
         @Override
@@ -130,7 +132,7 @@ final class LiveStage implements LiveScreen {
     }
 
     /** How long a raced copy may take to show a picture while a standby is ready or coming. */
-    static final long RACE_START_MS = 8_000;
+    static final long RACE_START_MS = LiveSourceDeadline.RACE_MS;
 
     LiveStage(MainActivity activity) {
         a = activity;
@@ -386,17 +388,30 @@ final class LiveStage implements LiveScreen {
         // standard player. With none, it keeps waiting: a slow link is better than no channel.
         overlayHandler.removeCallbacks(startupDeadline);
         // A race arms its own, shorter deadline once a copy actually starts.
-        if (race == null && events.hasAlternative()) overlayHandler.postDelayed(startupDeadline, START_MS);
+        if (race == null) {
+            long budget = LiveSourceDeadline.milliseconds(events.hasAlternative(), zliveSource(), false);
+            if (budget > 0) overlayHandler.postDelayed(startupDeadline, budget);
+        }
     }
 
     /** How long a source may take to show a picture before the next source is tried. */
-    static final long START_MS = 15_000;
+    static final long START_MS = LiveSourceDeadline.START_MS;
 
     private final Runnable startupDeadline = this::startupMissed;
 
     private void startupMissed() {
         if (!full || !foreground || ExoLive.isPlaying()) return;
-        showError("This source did not start within " + START_MS / 1000 + " seconds");
+        showError("This source did not start within its startup time limit");
+    }
+
+    private boolean zliveSource() {
+        if (zapper != null) {
+            int selected = zapper.selectedCopy();
+            if (selected >= 0 && selected < zapper.copies().size()) return AdapterSources.source(
+                "zlive"
+            ).equals(zapper.copies().get(selected).source);
+        }
+        return url != null && url.contains("/engine/zlive/");
     }
 
     private void reconnect() {
@@ -425,6 +440,19 @@ final class LiveStage implements LiveScreen {
             endRace(true);
         }
         if (zapper != null && zapper.failover(reason)) return;
+        if (zliveSource()) {
+            liveFailed = true;
+            overlayHandler.removeCallbacks(slow);
+            overlayHandler.removeCallbacks(retry);
+            overlayHandler.removeCallbacks(startupDeadline);
+            ExoLive.stopIfOwner(this);
+            status.setText(
+                "This source is unavailable. Choose another source or reconnect.\n\nBACK  guide     ▲ ▼  another channel"
+            );
+            status.setBackgroundColor(0x99000000);
+            status.setVisibility(View.VISIBLE);
+            return;
+        }
         status.setText(
             "Still trying this channel…\nIt may not be available right now.\n\nBACK  guide     ▲ ▼  another channel"
         );

@@ -280,7 +280,7 @@ public final class ProviderEngineDeviceTest {
     }
 
     @Test
-    public void realBridgeRefreshPreservesStableChannelsFavouritesAndIndependentGuides() throws Exception {
+    public void realBridgeRefreshPreservesStableChannelsFavouritesAndUsesCombinedGuide() throws Exception {
         ChannelDatabase db = ChannelDatabase.get(context);
         db.clear();
         EngineSources.testCatalogue =
@@ -292,16 +292,41 @@ public final class ProviderEngineDeviceTest {
             assertNotNull(row);
             assertEquals(EngineSources.ROOT + "sport", db.url(row.id, row.key));
             assertEquals(1, db.browse("favourites", "", java.util.Collections.singleton(key), 0, 10).size());
-            // Separate XMLTV refresh must retain the JS provider's programme mapping.
-            ChannelDatabase.GuideWriter xml = db.new GuideWriter(false);
-            try {
-                xml.match("xmlfixture", "xmltv");
-                xml.programme("xmltv", 1, 100, "Other", "", "", "");
-                xml.commit();
-            } finally {
-                xml.finish();
+            long now = System.currentTimeMillis();
+            assertTrue(
+                "Catalogue import must not write a second built-in guide",
+                db.programmes(row, "uk", now, now + 3600000).isEmpty()
+            );
+            java.io.File file = new java.io.File(context.getCacheDir(), "fls-combined-fixture.gz");
+            java.text.SimpleDateFormat format = new java.text.SimpleDateFormat(
+                "yyyyMMddHHmmss Z",
+                java.util.Locale.ROOT
+            );
+            String xml =
+                "<tv><channel id=\"enginefls:sport\"><display-name>Sport</display-name></channel><programme channel=\"enginefls:sport\" start=\"" +
+                format.format(new java.util.Date(now - 60000)) +
+                "\" stop=\"" +
+                format.format(new java.util.Date(now + 3600000)) +
+                "\"><title>Live Sport</title></programme></tv>";
+            try (
+                java.util.zip.GZIPOutputStream output = new java.util.zip.GZIPOutputStream(
+                    new java.io.FileOutputStream(file)
+                )
+            ) {
+                output.write(xml.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             }
-            assertEquals("Live Sport", db.programmes(row, "uk", 1792368000000L, 1792371600000L).get(0).title);
+            try {
+                assertEquals(1, CombinedEpg.install(file, db, () -> {}).channels);
+                assertEquals("Live Sport", db.programmes(row, "uk", now, now + 3600000).get(0).title);
+                assertEquals(1, EngineSources.refresh(context, db, () -> {}));
+                assertEquals(
+                    "Channel catalogue refresh retains the combined schedule",
+                    "Live Sport",
+                    db.programmes(row, "uk", now, now + 3600000).get(0).title
+                );
+            } finally {
+                file.delete();
+            }
             EngineSources.testCatalogue = "[]";
             try {
                 EngineSources.refresh(context, db, () -> {});

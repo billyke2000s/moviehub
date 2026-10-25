@@ -31,6 +31,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         final String section;
         /** Which list or provider this copy came from ("free", "enginedlhd" …); "" when unknown. */
         final String source;
+        final String sourceLabel;
 
         Row(
             long id,
@@ -58,8 +59,25 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             String section,
             String source
         ) {
+            this(id, name, group, logo, key, epg, dkey, number, section, source, "");
+        }
+
+        Row(
+            long id,
+            String name,
+            String group,
+            String logo,
+            String key,
+            String epg,
+            String dkey,
+            int number,
+            String section,
+            String source,
+            String sourceLabel
+        ) {
             this.id = id;
             this.source = source == null ? "" : source;
+            this.sourceLabel = sourceLabel == null ? "" : sourceLabel;
             this.number = number;
             this.section = section == null ? "" : section;
             this.name = name;
@@ -130,7 +148,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     private ChannelDatabase(Context context) {
-        super(context, "channels-v2.db", null, 9);
+        super(context, "channels-v2.db", null, 10);
         this.context = context;
         secrets = new Secrets(context);
         setWriteAheadLoggingEnabled(true);
@@ -213,7 +231,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
                 );
                 db.delete("channels", "source=?", new String[] { source });
                 insert = db.compileStatement(
-                    "INSERT INTO channels(source,position,name,grp,logo,epg,key,url,dkey) VALUES(?,?,?,?,?,?,?,?,?)"
+                    "INSERT INTO channels(source,position,name,grp,logo,epg,key,url,dkey,source_label) VALUES(?,?,?,?,?,?,?,?,?,?)"
                 );
                 search = db.compileStatement("INSERT INTO channel_search(docid,name,grp) VALUES(?,?,?)");
             } catch (Exception e) {
@@ -246,6 +264,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             insert.bindString(7, ChannelQuery.key(c.url));
             insert.bindBlob(8, blob);
             insert.bindString(9, duplicateKey(c.epgId, name, group, source));
+            insert.bindString(10, c.sourceLabel);
             long id = insert.executeInsert();
             search.clearBindings();
             search.bindLong(1, id);
@@ -320,7 +339,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     // ---- Queries --------------------------------------------------------------------------
-    private static final String COLUMNS = "_id,name,grp,logo,key,epg,dkey,number,section,source";
+    private static final String COLUMNS = "_id,name,grp,logo,key,epg,dkey,number,section,source,source_label";
     /**
      * Accounts first, then native Pluto, Free-TV and other public lists, then the experimental
      * provider engine's channels; playlist order within each. A provider copy of a channel that a
@@ -399,7 +418,8 @@ final class ChannelDatabase extends SQLiteOpenHelper {
             c.getString(6),
             c.getInt(7),
             c.getString(8),
-            c.getString(9)
+            c.getString(9),
+            c.getString(10)
         );
     }
 
@@ -646,176 +666,54 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     // ---- Programme guide --------------------------------------------------------------------
-    private final java.util.concurrent.atomic.AtomicLong guideRevision =
-        new java.util.concurrent.atomic.AtomicLong();
+    private final ChannelGuideStore guide = new ChannelGuideStore(this);
 
     long guideRevision() {
-        return guideRevision.get();
+        return guide.guideRevision();
     }
 
-    /** Cheap identity snapshot; adding a backup of an existing channel needs no XMLTV re-download. */
     Set<String> guideSnapshot() {
-        Set<String> keys = new HashSet<>();
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT DISTINCT dkey FROM channels", null)) {
-            while (c.moveToNext()) keys.add(c.getString(0));
-        }
-        return keys;
+        return guide.guideSnapshot();
     }
 
-    /** Every plain key the saved channels can be found under in a guide for {@code country}. */
+    Map<String, String> combinedGuideKeys() {
+        return guide.combinedGuideKeys();
+    }
+
     Set<String> guideKeys(String country) {
-        Set<String> keys = new HashSet<>();
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT epg,name,grp,source FROM channels", null)) {
-            while (c.moveToNext())
-                keys.addAll(
-                    EpgLookup.keys(c.getString(0), c.getString(1), c.getString(2), c.getString(3), country)
-                );
-        }
-        return keys;
+        return guide.guideKeys(country);
     }
 
-    /** Replaces the whole programme guide in one transaction; a failed download keeps the old one. */
-    private static boolean knownEngineGuide(String prefix) {
-        for (String id : ProviderBroker.IDS) if (prefix.equals(AdapterSources.source(id) + ":")) return true;
-        return false;
-    }
-
-    final class GuideWriter {
-
-        private final SQLiteDatabase db = getWritableDatabase();
-        private final SQLiteStatement map, programme;
-        private boolean committed;
-        int programmes;
-
-        GuideWriter() {
-            this(false);
-        }
-
-        /** Native provider guides refresh independently; XMLTV refreshes retain those listings. */
-        GuideWriter(boolean nativePluto) {
-            this(nativePluto ? "nativepluto:" : null);
-        }
-
-        GuideWriter(String prefix) {
-            if (
-                prefix != null &&
-                !prefix.equals("nativepluto:") &&
-                !prefix.equals("enginefls:") &&
-                !knownEngineGuide(prefix)
-            ) {
-                throw new IllegalArgumentException("Unknown native guide");
-            }
-            db.beginTransactionNonExclusive();
-            String where =
-                prefix == null
-                    ? "channel NOT LIKE 'nativepluto:%' AND channel NOT LIKE 'engine%:%'"
-                    : "channel LIKE '" + prefix + "%'";
-            db.delete("programmes", where, null);
-            db.delete("epg_map", where, null);
-            map = db.compileStatement("INSERT INTO epg_map(chkey,channel) VALUES(?,?)");
-            programme = db.compileStatement(
-                "INSERT INTO programmes(channel,start,stop,title,descr,category,flags) VALUES(?,?,?,?,?,?,?)"
-            );
-        }
-
-        void match(String key, String channel) {
-            map.bindString(1, key);
-            map.bindString(2, channel);
-            map.executeInsert();
-        }
-
-        void programme(
-            String channel,
-            long start,
-            long stop,
-            String title,
-            String description,
-            String category,
-            String flags
-        ) {
-            programme.bindString(1, channel);
-            programme.bindLong(2, start);
-            programme.bindLong(3, stop);
-            programme.bindString(4, title);
-            programme.bindString(5, description == null ? "" : description);
-            programme.bindString(6, category == null ? "" : category);
-            programme.bindString(7, flags == null ? "" : flags);
-            programme.executeInsert();
-            programmes++;
-        }
-
-        void commit() {
-            db.setTransactionSuccessful();
-            committed = true;
-        }
-
-        /** Ends the transaction; without commit() nothing changes. */
-        void finish() {
-            map.close();
-            programme.close();
-            db.endTransaction();
-            if (committed) guideRevision.incrementAndGet();
-        }
-    }
-
-    /** Programmes on this channel overlapping [from, to), in time order (at most 12). */
-    List<Programme> programmes(Row row, String country, long from, long to) {
-        return programmes(row, country, from, to, 12);
-    }
-
-    /**
-     * The guide country a channel's listings come from: its own when MovieHub downloads a guide
-     * for it (an Irish "RTEOne.ie" uses the Irish guide), else {@code fallback}. A channel of
-     * another country therefore still gets no listings, rather than a same-named UK channel's.
-     */
     static String guideCountry(String epgId, String fallback) {
-        String own = EpgMatch.country(epgId);
-        return EpgImporter.GUIDE_COUNTRIES.contains(own) ? own : fallback;
+        return ChannelGuideStore.guideCountry(epgId, fallback);
+    }
+
+    List<Programme> programmes(Row row, String country, long from, long to) {
+        return guide.programmes(row, country, from, to);
     }
 
     List<Programme> programmes(Row row, String country, long from, long to, int limit) {
-        // Exact provider listings always win when they overlap this window. If absent, a
-        // country-confirmed channel may use XMLTV by name; never attach another country's guide.
-        List<String> keys = new ArrayList<>();
-        if (
-            row.epg.startsWith("enginefls:") ||
-            knownEngineGuide(row.epg.substring(0, row.epg.indexOf(':') + 1)) ||
-            row.epg.matches("pluto:[0-9a-f]{24}\\.[a-z]{2}")
-        ) keys.add(EpgMatch.key(row.epg));
-        String own = EpgLookup.country(row.epg, row.name, row.group, row.source, country);
-        for (String key : EpgLookup.keys(row.epg, row.name, row.group, row.source, own))
-            keys.add(EpgLookup.scope(own, key));
-        for (String key : keys) {
-            List<Programme> found = programmes(key, from, to, limit);
-            if (!found.isEmpty()) return found;
-        }
-        return new ArrayList<>();
+        return guide.programmes(row, country, from, to, limit);
     }
 
-    private List<Programme> programmes(String key, long from, long to, int limit) {
-        List<Programme> out = new ArrayList<>();
-        try (
-            Cursor c = getReadableDatabase().rawQuery(
-                "SELECT DISTINCT p.start,p.stop,p.title,p.descr,p.category,p.flags FROM epg_map m " +
-                    "JOIN programmes p ON p.channel=m.channel WHERE m.chkey=? AND p.start<? AND p.stop>? " +
-                    "ORDER BY p.start LIMIT " +
-                    Math.max(1, limit),
-                new String[] { key, String.valueOf(to), String.valueOf(from) }
-            )
-        ) {
-            while (c.moveToNext())
-                out.add(
-                    new Programme(
-                        c.getLong(0),
-                        c.getLong(1),
-                        c.getString(2),
-                        c.getString(3),
-                        c.getString(4),
-                        c.getString(5)
-                    )
-                );
+    /** Compatibility entry point for existing importer transactions and offline fixtures. */
+    final class GuideWriter extends ChannelGuideStore.GuideWriter {
+
+        GuideWriter() {
+            this(null, false);
         }
-        return out;
+
+        GuideWriter(boolean nativePluto) {
+            this(nativePluto ? "nativepluto:" : null, false);
+        }
+
+        GuideWriter(String prefix) {
+            this(prefix, false);
+        }
+
+        GuideWriter(String prefix, boolean complete) {
+            ChannelDatabase.this.guide.super(prefix, complete);
+        }
     }
 
     /** Clears all channels, for example after the URL key is lost. */

@@ -1,4 +1,12 @@
 ## Unreleased
+
+- Keep explicit XMLTV regional suffixes such as `@Scotland` separate from national listings; quality suffixes such as `@HD` still share a schedule.
+
+- Move all built-in programme fetching to one daily server-generated `Moviehub-epg/epg.xml.gz`. The TV conditionally downloads, validates and streams it into SQLite in the background; failed or invalid refreshes keep usable cached listings.
+- Remove separate built-in XMLTV, Pluto/Plex/Samsung guide requests and catalogue programme imports. Keep exact provider identities and country/name fallback; extend the window to yesterday through seven days ahead.
+- Expose distinct advertised supported ZLive resolver routes with server labels, stable source identities and approved headers. Decode PNG/WebP/raw/gzip TS carriers without requiring a playlist-token session. Exhausted ZLive attempts stop with manual recovery; existing buffering and refusal cooldowns remain.
+- Live ZLive catalogue currently returns 404 and a legacy playback probe returned 403. Fixture checks cannot establish live playback or a complete current server inventory.
+
 - Keep ambiguous radio display names (Freeview’s Gold Radio displayed as “Gold”) from claiming a television channel’s guide.
 - Fix built-in channels showing no programme information despite matching XMLTV listings: prefer native schedules, then country-matched name/identity fallback; keep country maps separate.
 - Empty, stale or malformed guides no longer block later guides. Populate saved/base channels before slow optional provider catalogues and update the visible guide as listings commit.
@@ -29,8 +37,8 @@
 - Experimental Live TV: a source that shows no picture within 15 seconds moves on to the channel's
   next source, as the standard player does, and a source that errors moves on at once instead of
   being reopened twice first. With no other source, it keeps waiting and retrying as before.
-- Live TV guide: the list's channel count sits on the title line, e.g. "ALL CHANNELS   11,000 channels"
-  or "SPORTS   240 channels" (copies of one channel count once, as in the rows).
+- Live TV guide: the list's channel count sits on the title line, e.g. "ALL CHANNELS 11,000 channels"
+  or "SPORTS 240 channels" (copies of one channel count once, as in the rows).
 - Settings → Provider engine → "Hide US-only providers" (off by default): hides LG Channels, Roku
   Channel and Local Now, the services known to work only in the US. Nothing is ever switched off
   because it failed.
@@ -62,7 +70,6 @@
 - Reject known free videos shorter than two minutes, recover across free services after manual selection, and retain late backups.
 - Keep failed VOD native shutdown off the UI thread with retained window/engine lifetime; show selected source, Mb/s and received bytes.
 
-
 - Configure player panels before window attachment to stabilize the first input-focus handoff.
 
 - Restore free-stream incoming speed from actual upstream relay bytes; count only the active source.
@@ -86,9 +93,6 @@
 - Preserve host headers and record third-party provenance and outstanding release blockers.
 
 # Changelog
-
-
-
 
 ## Unreleased
 
@@ -126,7 +130,6 @@
 
 - Always use the Live TV banner and colour-key actions on live launches, including restored activities without a static guide session. Save each player’s guide context and match the initial listings to its actual channel.
 - Apply learned colour buttons before number/channel shortcuts. Keep source text and all four colour controls inside the banner width.
-
 
 ## 0.47 (23 October 2026)
 
@@ -167,12 +170,10 @@
 - Settings → Playback adds separate automatic-play switches for films and series, plus a preferred maximum resolution (1080p by default). Try up to five ready-to-play sources and fall back to manual selection if no clear file match is found; never silently queue transfers.
 - Route guide colour keys regardless of focus. Back reveals outlined, arrow/OK-accessible colour controls; the next Back uses the existing navigation action. Fullscreen colour controls also gain visible outlines. Standard colour keys, F1–F4 and learned mappings remain supported.
 
-
 ## 0.42
 
 - Movie torrent file lists now put **Recommended movie** first, with video labels and file sizes. Other files remain visible but cannot launch playback. Exact episode selection is unchanged.
 - Expanded video filename recognition and local title/size ranking exclude samples, trailers and extras. No file downloads or extra provider calls are needed for ranking.
-
 
 ## 0.41
 
@@ -239,7 +240,6 @@
 - Add provider, renewal/scoping and segment regression checks. Desktop samples decoded for five channels;
   physical TV and sustained playback are not yet verified.
 
-
 ## Unreleased — experimental standalone provider engine
 
 - Live probe on real services (20 October 2026) found MovieHub itself blocking providers: Samsung TV Plus now redirects through github.com (not allowed), and Tubi's guide (3.7 MB) and Plex's catalogue (3.1 MB) were over the 3 MB response limit. Allowed that redirect and raised the limits to 6 MB per response and 15 MB per operation, with a 16 MB script input cap (Tubi totals 7.5 MB, Plex 8.7 MB). A catalogue step may now take 10 s in the interpreter (3 s before) for slower TV boxes. Samsung redirects to Amagi's CDN are allowed. DaddyLive's stream servers answer 403 (referrer/signature gate) and ZLive's catalogue 404: provider-side, not changed.
@@ -252,7 +252,6 @@
 - Add isolated local JavaScript execution of the historical FreeLiveSports TypeScript leaf, stable SQLite channels, inline EPG and resolve-on-play.
 - Add opt-in provider settings, signed package validation, atomic rollback and gated upstream update CI.
 - Document private upstream access, missing signing setup and provider/runtime limitations; no production release.
-
 
 Versions are published to TVs through the in-app updater (`android-tv-latest` release). Each
 version below was built from the listed `main` commit. Earlier history is in the git log.
@@ -671,7 +670,6 @@ continuity checks.
 Provider-request read timeouts now honor explicit upstream values within the remaining
 search budget, with an eight-second connection cap. A regression checks a 20-second read
 request and clipping to a five-second remaining budget; cancellation remains bounded.
-
 
 - Keep detached VOD SurfaceTextures alive until asynchronous native shutdown completes,
   including Activity destruction while switching to Live TV. Retain non-blocking controls
