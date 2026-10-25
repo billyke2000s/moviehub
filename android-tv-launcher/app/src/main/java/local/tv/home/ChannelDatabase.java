@@ -875,11 +875,13 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         for (String key : EpgLookup.keys(row.epg, row.name, row.group, row.source, own))
             keys.add(EpgLookup.scope(own, key));
         List<Programme> upcoming = null;
+        long now = System.currentTimeMillis();
+        long anchor = from <= now && now < to ? now : from;
         for (String key : keys) {
             List<Programme> found = programmes(key, from, to, limit);
             if (found.isEmpty()) continue;
             for (Programme programme : found)
-                if (programme.start <= from && programme.stop > from) return found;
+                if (programme.start <= anchor && programme.stop > anchor) return found;
             if (upcoming == null) upcoming = found;
         }
         return upcoming == null ? new ArrayList<>() : upcoming;
