@@ -300,6 +300,49 @@ public final class ExoLiveTest {
         });
     }
 
+    /** One channel, three copies from three lists, in guide order: dead, working, slow. */
+    private void raceChannel() throws Exception {
+        ChannelDatabase db = ChannelDatabase.get(
+            InstrumentationRegistry.getInstrumentation().getTargetContext()
+        );
+        String[] sources = { "m3u", "fta", "free" };
+        String[] paths = { "/missing.ts", "/media.m3u8", "/slow.m3u8" };
+        for (int i = 0; i < sources.length; i++) {
+            ChannelDatabase.Writer writer = db.writer(sources[i], () -> {}, n -> {});
+            try {
+                writer.accept(
+                    new Playlist.Channel(
+                        "Race Channel UK",
+                        link(paths[i]),
+                        "Entertainment",
+                        "",
+                        "RaceChannel.uk"
+                    )
+                );
+                writer.commit();
+            } finally {
+                writer.abort();
+            }
+        }
+    }
+
+    @Test
+    public void aDeadCopyHandsOverToAWorkingOneWithoutWaitingForTheSlowOne() throws Exception {
+        raceChannel();
+        remote.runOnMainSync(() -> activity.stage.fullScreen("Race Channel UK", link("/missing.ts"), "race"));
+        // The dead copy fails; the other copies are looked up together and the working one plays.
+        await(() -> ExoLive.isPlaying() && rendered() > 5);
+        remote.runOnMainSync(() -> {
+            assertEquals("The working copy plays", 1, activity.stage.zapper().selectedCopy());
+            assertTrue(
+                "The other copies were looked up by the source race",
+                ExoLive.eventLog().contains("Link found by the source race")
+            );
+        });
+        assertEquals("The slow copy is never opened while a working one plays", 0, slowRequests.get());
+        picturesAdvance();
+    }
+
     @Test
     public void stoppingDuringRetryReleasesPlayerViewAndPendingCallbacks() {
         remote.runOnMainSync(() -> activity.stage.fullScreen("Broken", link("/missing.ts"), "missing"));

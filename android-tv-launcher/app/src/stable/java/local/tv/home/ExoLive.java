@@ -48,6 +48,10 @@ final class ExoLive {
 
     static void stop() {}
 
+    static void playResolved(Context context, String locator, LiveStream.Resolution source) {
+        if (source != null && source.relay != null) source.relay.close();
+    }
+
     static boolean active() {
         return false;
     }

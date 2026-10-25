@@ -1,0 +1,117 @@
+package local.tv.home;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * The rules for finding a live channel's link among its copies, without the threads (see
+ * LiveRace). Up to {@link #PARALLEL} copies are looked up at once, in priority order. The first
+ * choice waits up to {@link #WINDOW_MS} only while a copy of better quality is still being looked
+ * up; otherwise the best copy found plays at once. After the playing copy fails, the best other
+ * copy already found plays straight away, without waiting. Quality comes from the copy's name
+ * ("HD", "1080p"…; see SourceRanking), so it is a hint, not a measurement.
+ */
+final class LiveRacePlan {
+
+    /** Lookups at once: enough to find a working copy quickly, few enough for a TV box. */
+    static final int PARALLEL = 3;
+    /** The longest the first choice waits for a better copy, as films do (SourceWindow). */
+    static final long WINDOW_MS = SourceWindow.WAIT_MS;
+
+    private static final int WAITING = 0,
+        RESOLVING = 1,
+        READY = 2,
+        FAILED = 3,
+        USED = 4;
+
+    /** Candidates in priority order: quality first, then the guide's copy order. */
+    private final int[] order;
+    private final int[] quality;
+    private final int[] state;
+    private final long started;
+    private boolean picked;
+
+    /**
+     * {@code candidates} are copy indices and {@code qualities} their quality hints (lines, e.g.
+     * 1080), in the guide's copy order.
+     */
+    LiveRacePlan(int[] candidates, int[] qualities, long started) {
+        Integer[] sorted = new Integer[candidates.length];
+        for (int i = 0; i < sorted.length; i++) sorted[i] = i;
+        // Stable: equal quality keeps the guide's order.
+        Arrays.sort(sorted, (x, y) -> Integer.compare(qualities[y], qualities[x]));
+        order = new int[candidates.length];
+        quality = new int[candidates.length];
+        for (int i = 0; i < sorted.length; i++) {
+            order[i] = candidates[sorted[i]];
+            quality[i] = qualities[sorted[i]];
+        }
+        state = new int[candidates.length];
+        this.started = started;
+    }
+
+    /**
+     * Copies to start looking up now. Lookups running and links found but not yet used count
+     * together against {@link #PARALLEL}: a ready standby is as good as a lookup, and looking up
+     * more would only load the box and the services.
+     */
+    List<Integer> launch() {
+        int running = 0;
+        for (int s : state) if (s == RESOLVING || s == READY) running++;
+        List<Integer> out = new ArrayList<>();
+        for (int i = 0; i < order.length && running < PARALLEL; i++) {
+            if (state[i] != WAITING) continue;
+            state[i] = RESOLVING;
+            running++;
+            out.add(order[i]);
+        }
+        return out;
+    }
+
+    void resolved(int copy) {
+        int i = at(copy);
+        if (i >= 0 && state[i] == RESOLVING) state[i] = READY;
+    }
+
+    /** The copy's lookup failed, or it was played and did not work. */
+    void failed(int copy) {
+        int i = at(copy);
+        if (i >= 0) state[i] = FAILED;
+    }
+
+    /**
+     * The copy to play now, or -1 to wait. The first choice waits while a better copy is still
+     * waiting or being looked up and the window is open; later choices never wait.
+     */
+    int pick(long now) {
+        int best = -1;
+        for (int i = 0; i < order.length; i++) if (
+            state[i] == READY && (best < 0 || quality[i] > quality[best])
+        ) best = i;
+        if (best < 0) return -1;
+        if (!picked && now - started < WINDOW_MS) {
+            for (int i = 0; i < order.length; i++) if (
+                (state[i] == WAITING || state[i] == RESOLVING) && quality[i] > quality[best]
+            ) return -1;
+        }
+        picked = true;
+        state[best] = USED;
+        return order[best];
+    }
+
+    /** Whether any copy other than the one playing could still be tried. */
+    boolean remaining() {
+        for (int s : state) if (s == WAITING || s == RESOLVING || s == READY) return true;
+        return false;
+    }
+
+    long windowEnds() {
+        return started + WINDOW_MS;
+    }
+
+    private int at(int copy) {
+        for (int i = 0; i < order.length; i++) if (order[i] == copy) return i;
+        return -1;
+    }
+}

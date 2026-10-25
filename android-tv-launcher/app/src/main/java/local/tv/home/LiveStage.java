@@ -35,6 +35,9 @@ final class LiveStage implements LiveScreen {
     private LiveZapper zapper;
     private boolean dialogOpen, liveFailed, full;
     private boolean foreground = true;
+    /** Looks up several copies at once when a channel starts (see LiveRace); null when idle. */
+    private LiveRace race;
+    private int[] raceCopies = new int[0];
     private String url, title;
     /** The guide's corner box the picture sits over, or null when no guide is showing. */
     private View anchor;
@@ -67,9 +70,67 @@ final class LiveStage implements LiveScreen {
 
         @Override
         public boolean hasAlternative() {
-            return full && foreground && zapper != null && zapper.hasUntriedCopy();
+            if (!full || !foreground) return false;
+            if (race != null) return race.hasAlternative();
+            return zapper != null && zapper.hasUntriedCopy();
         }
     };
+
+    private final LiveRace.Listener raceEvents = new LiveRace.Listener() {
+        @Override
+        public void play(int index, String locator, LiveStream.Resolution source) {
+            if (!full || !foreground || zapper == null) {
+                // The screen left meanwhile: discard the link (closing any relay it holds).
+                if (source != null && source.relay != null) source.relay.close();
+                return;
+            }
+            url = locator;
+            zapper.raceSelected(index);
+            ExoLive.attach(LiveStage.this, surface, events);
+            ExoLive.playResolved(a, locator, source);
+            // A standby is ready or on its way: give this copy less time, as moving on is quick.
+            overlayHandler.removeCallbacks(startupDeadline);
+            if (race != null && race.hasAlternative()) overlayHandler.postDelayed(
+                startupDeadline,
+                RACE_START_MS
+            );
+        }
+
+        @Override
+        public void stillLooking() {
+            if (!full) return;
+            status.setText("Trying another source…");
+            status.setBackgroundColor(Color.TRANSPARENT);
+            status.setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        public void exhausted() {
+            endRace(true);
+            showError("None of this channel's sources could be found");
+        }
+    };
+
+    /** Starts looking up {@code copies} of the channel at once; LiveRace plays the one chosen. */
+    private void startRace(int[] copies) {
+        endRace(false);
+        raceCopies = copies;
+        opening("Finding the best source…");
+        ExoLive.attach(this, surface, events);
+        race = new LiveRace(a, ChannelDatabase.get(a), zapper.copies(), copies, a.http(), raceEvents);
+        race.start();
+    }
+
+    /** Stops the race; {@code failed} tells the zapper its copies were tried, so failover skips them. */
+    private void endRace(boolean failed) {
+        if (race != null) race.cancel();
+        race = null;
+        if (failed && zapper != null) zapper.raceFailed(raceCopies);
+        raceCopies = new int[0];
+    }
+
+    /** How long a raced copy may take to show a picture while a standby is ready or coming. */
+    static final long RACE_START_MS = 8_000;
 
     LiveStage(MainActivity activity) {
         a = activity;
@@ -192,6 +253,7 @@ final class LiveStage implements LiveScreen {
 
     /** Watches {@code channelUrl} full screen on the same picture (MainActivity.play). */
     void fullScreen(String channelTitle, String channelUrl, String id) {
+        endRace(false);
         url = channelUrl;
         title = channelTitle;
         focusBeforeFull = a.getCurrentFocus();
@@ -226,6 +288,7 @@ final class LiveStage implements LiveScreen {
         if (!full) return;
         full = false;
         SidePanel.closeFor(a);
+        endRace(false);
         if (zapper != null) zapper.close();
         zapper = null;
         overlayHandler.removeCallbacksAndMessages(null);
@@ -248,6 +311,7 @@ final class LiveStage implements LiveScreen {
     /** MovieHub went into the background while watching. */
     void stopped() {
         foreground = false;
+        endRace(false);
         overlayHandler.removeCallbacksAndMessages(null);
         ExoLive.stopIfOwner(this);
     }
@@ -321,7 +385,8 @@ final class LiveStage implements LiveScreen {
         // With another source to try, this one gets START_MS to show a picture, as in the
         // standard player. With none, it keeps waiting: a slow link is better than no channel.
         overlayHandler.removeCallbacks(startupDeadline);
-        if (events.hasAlternative()) overlayHandler.postDelayed(startupDeadline, START_MS);
+        // A race arms its own, shorter deadline once a copy actually starts.
+        if (race == null && events.hasAlternative()) overlayHandler.postDelayed(startupDeadline, START_MS);
     }
 
     /** How long a source may take to show a picture before the next source is tried. */
@@ -336,6 +401,7 @@ final class LiveStage implements LiveScreen {
 
     private void reconnect() {
         if (url == null) return;
+        endRace(false);
         liveFailed = false;
         opening("Reconnecting…");
         ExoLive.attach(this, surface, events);
@@ -349,6 +415,15 @@ final class LiveStage implements LiveScreen {
 
     private void showError(String reason) {
         if (!full || !foreground) return;
+        if (race != null) {
+            // The next copy already found (or the next one being looked up) takes over.
+            if (race.hasAlternative()) {
+                overlayHandler.removeCallbacks(startupDeadline);
+                race.next();
+                return;
+            }
+            endRace(true);
+        }
         if (zapper != null && zapper.failover(reason)) return;
         status.setText(
             "Still trying this channel…\nIt may not be available right now.\n\nBACK  guide     ▲ ▼  another channel"
@@ -435,6 +510,13 @@ final class LiveStage implements LiveScreen {
         }
         title = newTitle;
         liveFailed = false;
+        // Several copies and automatic sources: look them up at once and play the best found.
+        int[] copies = zapper == null ? new int[0] : zapper.raceCandidates();
+        if (copies.length > 1) {
+            startRace(copies);
+            return;
+        }
+        endRace(false);
         opening("Opening channel…");
         ExoLive.attach(this, surface, events);
         ExoLive.play(a, url, true);

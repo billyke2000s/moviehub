@@ -127,6 +127,40 @@ final class ExoLive {
      * Plays {@code locator} (a stored channel address or native/provider locator). When it is
      * already playing and {@code restart} is false it carries on and this returns true.
      */
+    /**
+     * Plays {@code locator} from a link LiveRace already found, without looking it up again. If
+     * it later fails, the usual path applies: another source when one waits, else a fresh lookup.
+     */
+    static void playResolved(Context context, String locator, LiveStream.Resolution source) {
+        app = context.getApplicationContext();
+        ensurePlayer();
+        if (!locator.equals(url)) {
+            reopens = 0;
+            hlsRetried = false;
+            event("New channel");
+        }
+        cancelReopen();
+        cancelResolution();
+        url = locator;
+        int ticket = ++generation;
+        player.stop();
+        closeRelay();
+        EngineSources.Stream stream = source.provider;
+        event("Link found by the source race");
+        start(
+            ticket,
+            source.relay == null ? source.url : source.relay.url,
+            // As open(): provider headers, Pluto's agent for native Pluto, none for a plain address.
+            stream != null
+                ? stream.userAgent
+                : PlutoSource.nativeUrl(locator)
+                  ? PlutoSource.USER_AGENT
+                  : null,
+            stream == null ? null : stream.referer,
+            source.relay
+        );
+    }
+
     static boolean play(Context context, String locator, boolean restart) {
         app = context.getApplicationContext();
         ensurePlayer();
