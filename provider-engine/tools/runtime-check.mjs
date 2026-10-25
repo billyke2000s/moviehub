@@ -332,6 +332,10 @@ function zTransport(slug, status = 200, location = sessionLocation) {
     return (req) => {
         assert.equal(req.headers.Origin, "https://zlive.st");
         assert.equal(req.headers.Referer, "https://zlive.st/");
+        // Without browser fetch metadata the API answers with a looping decoy stream.
+        assert.equal(req.headers["sec-fetch-mode"], "cors");
+        assert.equal(req.headers["sec-fetch-site"], "same-site");
+        assert.equal(req.headers["sec-fetch-dest"], "empty");
         if (req.url.endsWith("/session/ticket")) {
             assert.equal(req.method, "GET");
             return { w: "fixture-ticket", transport: { status } };

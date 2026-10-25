@@ -5,6 +5,22 @@ var __zCrypto = require("node:crypto");
 var __zUa =
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 var __zHeaders = { "User-Agent": __zUa, Origin: "https://zlive.st", Referer: "https://zlive.st/" };
+// The API serves a looping "refresh the site" decoy stream unless requests carry the fetch metadata
+// a browser adds (verified 25 October 2026: browser hints alone still got the decoy). Media
+// requests keep the plain headers above.
+var __zApi = {
+    "User-Agent": __zUa,
+    Origin: "https://zlive.st",
+    Referer: "https://zlive.st/",
+    Accept: "*/*",
+    "Accept-Language": "en-GB,en;q=0.9",
+    "sec-ch-ua": '"Chromium";v="131", "Not_A Brand";v="24", "Google Chrome";v="131"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"macOS"',
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-site",
+};
 function __load() {}
 function __zBase(row) {
     var domain = row.domain || "zlive.st";
@@ -120,7 +136,7 @@ function __run(operation, row) {
     row = row || {};
     var base = __zBase(row);
     if (operation === "catalogue")
-        return fetch(base + "/channels.json", { headers: __zHeaders })
+        return fetch(base + "/channels.json", { headers: __zApi })
             .then(__zCheck)
             .then(function (r) {
                 return r.json();
@@ -149,18 +165,13 @@ function __run(operation, row) {
     if (!/^[A-Za-z0-9_-]{1,160}$/.test(slug)) throw new Error("Invalid ZLive channel");
     var saved = __zHistory(slug, !!row.fresh);
     if (saved) return saved;
-    return fetch(base + "/session/ticket", { headers: __zHeaders })
+    return fetch(base + "/session/ticket", { headers: __zApi })
         .then(__zCheck)
         .then(function (r) {
             return r.json();
         })
         .then(function (ticket) {
-            var headers = {
-                "User-Agent": __zUa,
-                Origin: __zHeaders.Origin,
-                Referer: __zHeaders.Referer,
-                "Content-Type": "application/json",
-            };
+            var headers = Object.assign({}, __zApi, { "Content-Type": "application/json" });
             return fetch(base + "/resolve", {
                 method: "POST",
                 headers: headers,
