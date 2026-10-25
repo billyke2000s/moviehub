@@ -4,18 +4,26 @@
 
 New settings keep manual source selection as the default. Next-episode metadata is prefetched while watching; season transitions use catalogue episodes and air dates. Missing-pack episodes follow the selected manual/automatic mode. Guide colour shortcuts are handled independently of focused widgets, with Back revealing accessible controls. Physical TV, remote and real-account validation remain outstanding.
 
-Last updated: 25 October 2026.
+Last updated: 25 October 2026 (documentation review).
 
 ## Where things stand
 
-- **Latest in-app update:** the public [updater manifest](https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/update.json)
-  is authoritative for `versionName` and `versionCode`. Compare it with the numbered GitHub release;
-  merging code does not itself publish an update. The baseline verified before this work was 0.38.
-- **Code structure:** feature classes per area, see [ARCHITECTURE.md](ARCHITECTURE.md).
-  `CatalogueScreens` was split (filter sheets in `CatalogueOptions`) and the Live TV guide's
-  panels are in `LiveTvPanels`. `LiveTvScreen` is about 710 lines; split it further (for example
-  colour keys and number entry) before it grows.
-- **CI on `main` before this integration:** APK build passed; the latest device run had 132 passes and one failure (Green opens Sources). The latest publish attempt failed. See the integration PR for subsequent validation.
+- **Released versions.** Normal MovieHub: **0.57** (`android-tv-latest`, version code 57, published
+  24 October 2026). MovieHub Experimental: **exp-15** (`android-tv-experimental`, version code 19,
+  25 October 2026). The public `update.json` files are authoritative; merging code publishes nothing.
+- **Two lines of work.** 0.57 was published from a one-off `release/moviehub-*` branch; `main` (last merge
+  #120, 24 October) is three commits past that source and unreleased. All later work lives on
+  `release/experimental-epg-exp11` (the name is historical; it now carries exp-15), about 70 commits
+  ahead of `main` and never merged back. Experimental builds are published from that branch.
+- **ZLive works on the TV (exp-15, 25 October 2026).** See "Correction" at the end of this file. Only
+  the owner's spot check is behind this, not every channel or long sessions.
+- **Code structure:** feature classes per area, see [ARCHITECTURE.md](ARCHITECTURE.md). Seven files are
+  over the 700-line limit in AGENTS.md and should each be split in a behaviour-free commit:
+  `VlcPlaybackActivity` (908), `LiveZapper` (855), `LiveTvScreen` (770), `LivePlayer` (743),
+  `ChannelDatabase` (731); `SettingsScreens` (694) and `MainActivity` (659) are close.
+- **CI.** The experimental branch's last merged PRs (#143, #144, #145) passed every check, including
+  device tests. One playback device test (`vodRepeatedBufferingPreparesBackupsWithoutStoppingCurrentPlayback`)
+  failed once and passed on rerun of the same commit; watch for it recurring.
 
 ## Known issues
 
@@ -87,24 +95,25 @@ Last updated: 25 October 2026.
 
 ## Open pull requests and branches
 
-- **Dependabot:** #3 (`actions/checkout`) is superseded by checkout@v5 in CI and can be closed.
-  #13 (LibVLC 3.7.7) fails the APK build and lint step, both in Dependabot's run and when retried
-  on the 0.15 branch; the CI log was not readable from the assistant's environment, so the cause is not
-  known yet. LibVLC stays on 3.7.0. #12 (AGP 9): see above.
-- Branches that are merged or no longer needed can be deleted on GitHub (the assistant's proxy
-  cannot delete branches): `ci/device-test-control`, `ci/flaky-measure`, `refactor/readable-structure`,
-  `fix/flaky-device-tests`, `feature/launcher-shim`, and every `feature/*` or `fix/*` branch whose
-  pull request is merged.
+- **#121–#140 are already inside the experimental branch** (checked 25 October 2026: none has a commit
+  the branch lacks). They are a stacked chain, most based on one another, and none reached `main`.
+  They can be closed as superseded, or the experimental branch merged to `main` as one reviewed PR when
+  it is ready to become a normal release.
+- Dependabot #3, #12 and #13 mentioned in earlier notes are closed; LibVLC stays on 3.7.0.
+- Branches that are merged or no longer needed can be deleted on GitHub: `ci/device-test-control`,
+  `ci/flaky-measure`, `refactor/readable-structure`, `fix/flaky-device-tests`, `feature/launcher-shim`,
+  and every `feature/*` or `fix/*` branch whose pull request is merged. `diag/zlive-boomerang` holds the
+  25 October ZLive diagnostics (decoy matrix, headless-browser recording); it only runs when started by hand.
 - `release/moviehub-*` branches are one-off publish jobs and are intentionally not merged.
 
 ## Suggested next steps
 
-1. Check 0.15 on the box: For you, the Apps screen and banners, side panels, Sources, Series and
-   the player controls.
-2. Optional: a TMDB account sign-in so My List syncs to a TMDB watchlist and TMDB's personal
-   recommendations can be mixed into For you.
-3. Check Live TV on the box with a large channel list (the full free list): guide pages, channel
-   up/down and typing numbers should feel quicker. Diagnostics has no guide timing yet.
+1. Decide how the experimental line returns to normal MovieHub: one PR from
+   `release/experimental-epg-exp11` to `main`, then close #121–#140.
+2. Split the files over 700 lines (above) before adding more to them.
+3. Check more ZLive channels and a long session on the TV; add ZLive playback (not only the catalogue)
+   to the live probe, using the decoy check from the diagnostics.
+4. Optional: a TMDB account sign-in so My List syncs to a TMDB watchlist.
 
 ## Native free-TV work (19 October 2026)
 
@@ -507,4 +516,4 @@ Based on published exp13 source `4fb8552`, despite its branch retaining the exp1
 
 ZLive's public catalogue moved to `iptv.zlive.st/channels.json`; the current player uses `/session/ticket` and encrypted POST `/resolve`. A host probe using this flow obtained a valid HLS playlist and decoded a real MPEG-TS segment containing 1280x720 H.264 video and AAC audio. This is one channel/segment, not a physical-TV or long-session result. The observed catalogue listed one source per channel; labelled advertised source routes remain supported without inventing unavailable alternatives. Full final-commit Android CI and per-website audit outcomes are recorded on the repair PR.
 
-**Correction (25 October 2026):** exp-14 played ZLive's decoy, a looping "refresh the site" clip, on the owner's TV. The ticket/AES-GCM protocol was correct (it decrypts the real web player's requests); ZLive chooses the decoy when API requests lack browser fetch metadata. A request matrix from GitHub runners got the decoy (`route.transcode.cfd`, ~85 KB chunks, huge discontinuity sequence) with the old headers or with client hints alone, and the real stream (`hello.transcode.cfd`, ~3 MB Full HD chunks) once `sec-fetch-*` and Accept headers were added. The earlier "decoded 720p segment" probe result above was very likely the decoy. Not yet confirmed on the TV.
+**Correction (25 October 2026):** exp-14 played ZLive's decoy, a looping "refresh the site" clip, on the owner's TV. The ticket/AES-GCM protocol was correct (it decrypts the real web player's requests); ZLive chooses the decoy when API requests lack browser fetch metadata. A request matrix from GitHub runners got the decoy (`route.transcode.cfd`, ~85 KB chunks, huge discontinuity sequence) with the old headers or with client hints alone, and the real stream (`hello.transcode.cfd`, ~3 MB Full HD chunks) once `sec-fetch-*` and Accept headers were added. The earlier "decoded 720p segment" probe result above was very likely the decoy. Fixed in #145 and published as exp-15; the owner confirmed ZLive channels play on the TV the same day.

@@ -221,6 +221,15 @@ LivePlayer exposes its pending-resolution phase and notifies the currently attac
 
 PNG transport skips byte-wise unfiltering for filter-0 rows, copies RGB payload in bulk, and uses larger bounded inflate/gzip input buffers. Explicit Inflater instances are ended in finally; container validation and allocation limits are unchanged.
 
+Four small helpers sit alongside these. `LiveMenus` is the interface for the Live TV side panels
+(audio/subtitles, sources, options) that the banner and colour keys open; `ExoMenus` implements it for
+the experimental ExoPlayer stage. `LivePresentation` (core-tested) tracks how long rendered video
+buffers have been missing, for `LiveSurfaceProbe`; black or static pictures are valid. `LiveSourceDeadline`
+(core-tested) gives `LiveStage` its source budgets: 15 s before trying an alternative, 8 s when sources are
+raced, and 60 s for a final ZLive attempt with no alternative. `ProviderUrls.playback` validates
+provider-supplied playback URLs (length, line breaks, literal spaces from browser User-Agent macros) for
+`EngineSources`, `NativeHttp` and the ZLive address setting.
+
 ## Live video output
 
 `LiveVideoOutput` draws the session's one live LibVLC player through VLC's standard

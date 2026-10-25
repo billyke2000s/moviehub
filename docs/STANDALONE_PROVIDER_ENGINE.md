@@ -86,7 +86,7 @@ are not assertions that every channel plays or that a real TV has passed playbac
 | Vidaa (removed Oct 2026) | Upstream tenant/bootstrap, regional catalog and filters                          | Configuration endpoint returned HTTP 503 from this environment                                                                                                           |
 | dulo             | Not yet ported                                                                   | Device-bound authenticated Supabase sessions and the real browser login must be implemented on Android; no authorized account/device session is available to validate it |
 | Local Now | Actual local/api.ts bootstrap, auto-market, entitlement/market filtering, fresh resolution and inline guide | 183 channels discovered; playback checks recorded below |
-| ZLive | Original catalogue/parser/resolver, native IP/subnet checks, manual redirects, encrypted replay state, local segment transport and expiry renewal | Audited default catalogue returned HTTP 404; no live playback claimed |
+| ZLive | `zlive.js` ticket + AES-GCM resolver (replaced the original upstream resolver, see below), encrypted contact history and refusal cooldowns, local segment transport and expiry renewal | Current catalogue `iptv.zlive.st/channels.json` (252 channels, 25 Oct 2026); played on the owner's TV in exp-15 after adding browser fetch headers |
 | HDHomeRun        | Not yet ported                                                                   | LAN discovery and TS transport require separate Android work; historical upstream marks playback dormant                                                                 |
 | Direct imports   | Existing M3U/Xtream retained                                                     | Independent of the JS port                                                                                                                                               |
 
@@ -200,6 +200,8 @@ GET header preservation/redaction and a rejected 307 POST using fixture connecti
 
 ### ZLive stateful Android port
 
+_History: this section describes the first port; the resolver was replaced on 25 October 2026 (see "Current protocol" below)._
+
 The complete reusable ZLive config/resolver plus shared domain/SSRF modules are now vendored unchanged.
 The required Node `net` subset is a pure-data IP/subnet bridge; DNS is brokered and checked. The original
 resolver receives manual HTTP 302 responses, learns/vets signed targets, reuses tokens, backs off after
@@ -217,9 +219,17 @@ leaving it empty follows upstream's default. It does not clear cooldowns.
 
 ZLive uses the bounded local relay for wrapped media segments and required headers. Signed expiry can
 refresh an actively playing stream before expiry; channel switches/stops cancel the renewal and a paused
-player is never auto-started. Upstream full ingest/remux/keyframe repair is still not ported. The audited
-`cast.zlive.st/channels.json` returned HTTP 404 in the live probe, so ZLive has fixture/Android integration
-coverage, but no live channel/playback evidence. No replacement domain was guessed.
+player is never auto-started. Upstream full ingest/remux/keyframe repair is still not ported.
+
+**Current protocol (25 October 2026).** The old `cast.zlive.st/channels.json` catalogue is gone (404).
+`provider-engine/tools/zlive.js` now uses the site's own flow: catalogue at `iptv.zlive.st/channels.json`,
+a `GET /session/ticket`, then an AES-256-GCM sealed `POST /resolve` that returns the stream location.
+The key derivation was confirmed by decrypting the real web player's own requests (recorded in headless
+Chromium). ZLive answers requests that lack browser fetch metadata (`sec-fetch-*`, Accept) with a looping
+"refresh the site" decoy from a different host (~85 KB chunks instead of ~3 MB Full HD ones); client hints
+alone are not enough. API requests therefore send those headers; media requests keep the plain ones.
+exp-15 played ZLive channels on the owner's TV. The live probe (`live-probe.mjs`) still checks only the
+ZLive catalogue, not playback.
 
 ## Final automated result
 
