@@ -20,11 +20,23 @@ _HOSTS = sorted({d.lower() for cls in resolveurl.relevant_resolvers(include_univ
 def providers():
     return json.dumps(_RECORDS)
 
-def search_providers():
+# Websites found dead on 25 October 2026: every one of three checks from a GitHub runner, minutes
+# apart, failed (no DNS record, broken TLS certificate, Cloudflare 521/522, or no connection). They are
+# skipped when searching but stay bundled, so provenance checks against the original add-ons still pass.
+RETIRED_SITES = frozenset({
+    '123-movies.golf', '123moviestv.me', '1movies.la', '9pm.to', 'cinebox.cc', 'couchtuner.show',
+    'dopebox.to', 'ev01.to', 'filmxy.online', 'flixhq.to', 'flixwave.me', 'goojara.life',
+    'hdbest.net', 'hdtoday.cc', 'levidia.ch', 'm4ufree.se', 'movies2watch.tv', 'movies4fun.net',
+    'mp4hydra.top', 'projectfreetv.lol', 'putlocker.gives', 'sflixz.watch', 'soap2dayz.top',
+    'streamlord.com', 'watchug.com', 'www1.movie4u.live',
+})
+
+def search_providers(include_retired=False):
     """One public website per entry; alternate addon adapters remain fallbacks."""
     groups = {}
     for record in sorted(_RECORDS, key=lambda r: (r['family'] != 'free99', r['id'])):
         if record['name'] in ('library', 'filepursuit'): continue
+        if record['site'] in RETIRED_SITES and not include_retired: continue
         site = record['site']
         group = groups.setdefault(site, dict(id=record['id'], family=record['family'],
             name=site, site=site, adapters=[], movies=False, series=False))
@@ -35,7 +47,7 @@ def search_providers():
 
 
 def query_site(provider_id, raw, cancelled, emit=None):
-    group = next(r for r in json.loads(search_providers()) if r['id'] == provider_id)
+    group = next(r for r in json.loads(search_providers(include_retired=True)) if r['id'] == provider_id)
     deadline = time.monotonic() + 45
     info = json.loads(raw)
     cancel = cancelled.get if hasattr(cancelled, "get") else cancelled

@@ -12,12 +12,19 @@ from moviehub_compat import client
 
 class FreeVodTests(unittest.TestCase):
     def test_search_inventory_counts_websites_without_losing_bundled_adapters(self):
+        everything = json.loads(vod.search_providers(include_retired=True))
+        self.assertEqual(len(everything), 63)
+        self.assertEqual(len({r['site'] for r in everything}), 63)
+        self.assertEqual(sum(len(r['adapters']) for r in everything), 66)
         rows = json.loads(vod.search_providers())
-        self.assertEqual(len(rows), 63)
-        self.assertEqual(len({r['site'] for r in rows}), 63)
-        self.assertEqual(sum(len(r['adapters']) for r in rows), 66)
-        self.assertFalse(any('library' in r['id'] or 'filepursuit' in r['id'] for r in rows))
-        levidia = next(r for r in rows if r['site'] == 'levidia.ch')
+        # 26 websites found dead on 25 October 2026 are skipped when searching.
+        self.assertEqual(len(vod.RETIRED_SITES), 26)
+        self.assertEqual(len(rows), 37)
+        self.assertEqual(sum(len(r['adapters']) for r in rows), 39)
+        self.assertFalse(any(r['site'] in vod.RETIRED_SITES for r in rows))
+        self.assertTrue(vod.RETIRED_SITES <= {r['site'] for r in everything})
+        self.assertFalse(any('library' in r['id'] or 'filepursuit' in r['id'] for r in everything))
+        levidia = next(r for r in everything if r['site'] == 'levidia.ch')
         self.assertEqual(levidia['adapters'], ['free99:levidia_ch', 'scrubs:levidia_ch'])
         self.assertTrue(levidia['movies'] and levidia['series'])
         self.assertEqual(vod.validate(), 68)
