@@ -202,7 +202,10 @@ fits row height while retaining horizontal ellipsis.
 reason: HTTP 403/451 is "geo-locked"; a script failure without an HTTP refusal from a service whose
 label names a country is "likely geo-locked"; timeouts are "timed out". Plex plays by
 the compound channel id from its catalogue row (`row.id`), so it does not skip the catalogue on a cold
-resolve. DistroTV and Vidaa were removed in October 2026: both services' API hosts no longer resolve.
+resolve. DistroTV and Vidaa were removed in October 2026: both services' API hosts no longer resolve. `PlexGuide` adds Plex listings after
+a Plex refresh: Plex's catalogue has none and its own guide is one request per channel per day, so it
+reads i.mjh.nz/Plex/{gb,us}.xml.gz through `EpgImporter.parse` with an id rule (the stable id after
+the last dash of the compound XMLTV id), writing through the provider's own `GuideWriter` prefix.
 
 LivePlayer exposes its pending-resolution phase and notifies the currently attached owner when a resolved stream/relay is ready. VlcPlaybackActivity arms its normal video-startup timer at that transition, rather than spending the 15-second backup timeout on the provider walk. Guide/fullscreen handoffs replace the callback with the owner; switching cancels stale resolutions as before.
 
