@@ -1,4 +1,5 @@
 ## Unreleased
+- Keep ambiguous radio display names (Freeview’s Gold Radio displayed as “Gold”) from claiming a television channel’s guide.
 - Fix built-in channels showing no programme information despite matching XMLTV listings: prefer native schedules, then country-matched name/identity fallback; keep country maps separate.
 - Empty, stale or malformed guides no longer block later guides. Populate saved/base channels before slow optional provider catalogues and update the visible guide as listings commit.
 - After an app update, channels and programme guides refresh once (on the next home or Live TV visit),

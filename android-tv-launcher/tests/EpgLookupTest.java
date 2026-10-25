@@ -10,6 +10,12 @@ public class EpgLookupTest {
     }
 
     public static void main(String[] args) {
+        check(EpgMatch.guideNameKey("GoldRadio.uk", "Gold").isEmpty(), "radio does not steal TV Gold");
+        check(EpgMatch.guideNameKey("Gold.uk", "Gold").equals("gold"), "TV Gold keeps its name");
+        check(
+            EpgMatch.guideNameKey("BBCRadio4.uk", "BBC Radio 4").equals("bbcradio4"),
+            "explicit radio names still match"
+        );
         check(
             EpgLookup.keys("enginedlhd:12", "Sky Witness HD", "Entertainment", "enginedlhd", "uk").contains(
                 "skywitness"

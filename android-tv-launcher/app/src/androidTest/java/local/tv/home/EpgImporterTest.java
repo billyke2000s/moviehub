@@ -292,6 +292,19 @@ public class EpgImporterTest {
     }
 
     @Test
+    public void radioDisplayNameDoesNotClaimTheTvChannelsFallback() throws Exception {
+        db.clear();
+        long now = System.currentTimeMillis();
+        channel("m3u", "Gold UK", "Gold.uk", "General", "https://example.test/gold");
+        Map<String, String> data = new HashMap<>();
+        data.put("freeview", guide(now, "Radio", "GoldRadio.uk", "Gold"));
+        data.put("sky", guide(now, "TV", "2304.sky.uk", "U&Gold"));
+        files(data, new EpgImporter.Guide("freeview", "uk", true), new EpgImporter.Guide("sky", "uk", true));
+        EpgImporter.run(context, db, () -> {});
+        assertEquals("TV on 2304.sky.uk", nowOn("https://example.test/gold", now));
+    }
+
+    @Test
     public void matchesChannelsAcrossNamingStylesAndKeepsOnlyCurrentProgrammes() throws Exception {
         java.text.SimpleDateFormat format = new java.text.SimpleDateFormat("yyyyMMddHHmmss Z", Locale.ROOT);
         long now = System.currentTimeMillis();

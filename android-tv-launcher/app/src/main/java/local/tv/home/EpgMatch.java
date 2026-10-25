@@ -33,6 +33,12 @@ final class EpgMatch {
 
     private EpgMatch() {}
 
+    /** A radio channel called "Gold" must not claim the TV channel's plain "gold" key. */
+    static String guideNameKey(String channelId, String name) {
+        String plain = key(name);
+        return key(channelId).contains("radio") && !plain.contains("radio") ? "" : plain;
+    }
+
     /**
      * For a regional guide (Freeview), the national key a regional channel also answers to, or "":
      * the London feeds stand for the national channel ("bbconelondon" is "bbcone"), as online

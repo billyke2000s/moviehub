@@ -358,11 +358,16 @@ final class EpgImporter {
                     List<String> keys = new ArrayList<>();
                     if (idKey != null) addKey(keys, idKey.apply(channelId), wanted);
                     else {
-                        for (String candidate : names) addKey(keys, EpgMatch.key(candidate), wanted);
+                        for (String candidate : names)
+                            addKey(keys, EpgMatch.guideNameKey(channelId, candidate), wanted);
                         addKey(keys, EpgMatch.key(channelId), wanted);
                         if (aliases) {
                             for (String candidate : names)
-                                addKey(keys, EpgMatch.national(EpgMatch.key(candidate)), wanted);
+                                addKey(
+                                    keys,
+                                    EpgMatch.national(EpgMatch.guideNameKey(channelId, candidate)),
+                                    wanted
+                                );
                             addKey(keys, EpgMatch.national(EpgMatch.key(channelId)), wanted);
                         }
                     }
