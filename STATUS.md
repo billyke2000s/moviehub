@@ -1,6 +1,6 @@
 # Status
 
-## Confirmed source quality — in review
+## Confirmed source quality — 1.0.6
 
 Movie links' quality is read from the file or stream where possible instead of trusting the
 website's label, websites that overstate quality lose trust, the first choice waits up to 8 s when
