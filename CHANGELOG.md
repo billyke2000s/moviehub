@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Add separately maintained native 4KHDHub and Vixsrc website adapters, with independent downstream sources and current public player loading.
+- Add opt-in per-source Android decoding, duration, resolution and midpoint-seek audits.
+
 ## 1.0.4 (26 October 2026)
 
 - More movie links from updated website searches and player loading, including Iwaatch, AnyMovies, M4uHD, Levidia, SeriezLoaded/Waffi and Tubi.

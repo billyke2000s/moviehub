@@ -539,3 +539,7 @@ Additional recovery regressions check Scrubs Levidia delegates Wootly once and a
 The site recovery suite imports `test_current_vod_sites.py` from `test_free_vod.py`. It covers canonical result links, current search/player flows, distinct providers sharing a CDN URL, authenticated Xpass responses, rejected tampering with empty AES-GCM associated data, and diagnostics without URLs or credentials. Live checks and limitations are recorded in [the 26 October audit](docs/FREE_VOD_SITE_AUDIT_2026_10_26.md).
 
 Current site recovery: 46 offline Python tests, including Tubi’s padded challenge/issued signing key, clear-resource filtering and Waffi mirror isolation. Android instrumentation exercises named-backend deduplication through the actual selection-window key. The HTTP identity audit compares app requests, a cookie-preserving browser-style requests session and curl without executing challenge code.
+
+## Native movie source expansion (26 October 2026)
+
+`test_native_vod_sites.py` covers exact title/year selection, literal redirect decoding without executing scripts, isolated mirror failure, distinct returned hosts, safe filename encoding, current Vixsrc movie/episode identities and expired token rejection. The opt-in native Android audit plays each returned source independently through the actual relay and LibVLC; a completed job is not evidence every source passed. Inspect its redacted JSONL statuses and final shard marker.

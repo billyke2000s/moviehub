@@ -234,3 +234,7 @@ Levidia is restored after verifying its exact scraper address and search. The ot
 ## Site-by-site VOD recovery (26 October 2026)
 
 Free film/series results list each actual playback provider separately, with its discovery website retained. See [the site-by-site audit](docs/FREE_VOD_SITE_AUDIT_2026_10_26.md) for current website, search and player findings.
+
+## Native movie source expansion (26 October 2026)
+
+MovieHub-native movie adapters can use a real TMDB identity directly. These are maintained separately from the bundled Kodi adapters; each downstream media host remains an individual source. Provider availability and 4K results vary by film and network. Source labels are advertised quality unless the media manifest supplies a resolution.

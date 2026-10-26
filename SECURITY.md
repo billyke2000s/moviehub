@@ -226,3 +226,7 @@ Provisional VOD restorations require positive catalogue/search evidence before e
 Current web-player scripts are parsed as data and never executed. Anonymous page/challenge values and public player keys are fetched when needed, never pinned in the APK or included in diagnostics. Request traces retain only hostname, method and status. The bundled AES-GCM decoder now verifies the tag when associated data is empty; tampered Xpass response fixtures are rejected. Existing public-address, TLS, cookie/credential scope, body limits and cancellation checks remain in force.
 
 Tubi’s anonymous handshake obtains a fresh server-issued signing key bound to a random verifier and a guest access token. Neither is persisted or logged, and the API token is not copied into media headers. Login-gated and DRM resources are skipped. Waffi follows only the advertised public mirrors and player endpoint; it does not invoke upload, repair or admin controls. Known CAPTCHA-dependent shorteners are reported as requiring browser verification.
+
+## Native movie source expansion (26 October 2026)
+
+The native website adapters use the same public-HTTPS URL checks, request limits, redirect credential scoping and cancellation as bundled providers. Landing/player tokens are fetched afresh and treated as data; scripts are never evaluated. No shared account cookie, API key, credential or DRM license is bundled. Reports omit stream URLs and token values.
