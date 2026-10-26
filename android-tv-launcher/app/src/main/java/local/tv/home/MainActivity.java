@@ -513,6 +513,15 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
 
     /** Home is a viewport, never a vertically scrolling page. The dock has reserved space. */
     void fixedScreen(String title, Runnable goBack) {
+        fixedScreen(title, goBack, false);
+    }
+
+    /**
+     * As {@link #fixedScreen(String, Runnable)}; {@code live} pages (the guide and its menus) are
+     * shown inside the Live TV stage so its one picture can sit over them. Every other page is
+     * shown on its own, and the stage is taken off screen with its picture stopped.
+     */
+    void fixedScreen(String title, Runnable goBack, boolean live) {
         activeKeyBar = null;
         runLeaving();
         resumeRefresh = null;
@@ -527,8 +536,11 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
         page = vertical();
         page.setBackgroundColor(0xff090d14);
         page.setPadding(dp(38), dp(20), dp(38), dp(20));
-        if (stage != null) stage.setPage(page);
-        else setContentView(page);
+        if (live && stage != null) stage.setPage(page);
+        else {
+            if (stage != null) stage.release();
+            setContentView(page);
+        }
         if (title != null) {
             LinearLayout head = row();
             TextView name = text(title, 24);

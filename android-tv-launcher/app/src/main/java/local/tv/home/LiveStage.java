@@ -181,6 +181,41 @@ final class LiveStage implements LiveScreen {
     }
 
     /**
+     * A page outside Live TV is opening: leaves full screen, stops the picture and takes the stage
+     * off screen. MainActivity then shows that page on its own.
+     */
+    void release() {
+        if (full) exitFull(false);
+        endRace(false);
+        overlayHandler.removeCallbacksAndMessages(null);
+        ExoLive.stopIfOwner(this);
+        clearAnchor();
+        pageHost.removeAllViews();
+        if (root.getParent() instanceof ViewGroup) ((ViewGroup) root.getParent()).removeView(root);
+    }
+
+    /** Whether the stage is on screen (only while a Live TV page or channel is showing). */
+    boolean onScreen() {
+        return root.isAttachedToWindow();
+    }
+
+    /**
+     * A channel is starting full screen from a page outside the stage (a reminder's "Watch now"):
+     * brings that page into the stage, so BACK returns to it.
+     */
+    private void adopt() {
+        ViewGroup content = a.findViewById(android.R.id.content);
+        if (content == null) return;
+        View current = content.getChildCount() == 0 ? null : content.getChildAt(0);
+        if (current == root) return;
+        if (current != null) content.removeView(current);
+        if (root.getParent() instanceof ViewGroup) ((ViewGroup) root.getParent()).removeView(root);
+        pageHost.removeAllViews();
+        if (current != null) pageHost.addView(current, new FrameLayout.LayoutParams(-1, -1));
+        a.setContentView(root);
+    }
+
+    /**
      * The guide shows its live picture in {@code box}, with {@code label} naming the channel.
      * The one picture is placed over the box (and follows it if it moves).
      */
@@ -259,6 +294,7 @@ final class LiveStage implements LiveScreen {
         url = channelUrl;
         title = channelTitle;
         focusBeforeFull = a.getCurrentFocus();
+        adopt();
         full = true;
         liveFailed = false;
         pageHost.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);

@@ -89,7 +89,7 @@ final class GuideMenu {
     }
 
     private void build(String[][] items, String heading, Runnable back) {
-        activity.fixedScreen(null, back);
+        activity.fixedScreen(null, back, true);
         LinearLayout page = activity.page;
         page.setPadding(activity.dp(80), activity.dp(24), activity.dp(80), activity.dp(18));
         page.setBackground(GuideFrame.background());
