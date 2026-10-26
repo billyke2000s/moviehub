@@ -539,3 +539,19 @@ Additional recovery regressions check Scrubs Levidia delegates Wootly once and a
 The site recovery suite imports `test_current_vod_sites.py` from `test_free_vod.py`. It covers canonical result links, current search/player flows, distinct providers sharing a CDN URL, authenticated Xpass responses, rejected tampering with empty AES-GCM associated data, and diagnostics without URLs or credentials. Live checks and limitations are recorded in [the 26 October audit](docs/FREE_VOD_SITE_AUDIT_2026_10_26.md).
 
 Current site recovery: 46 offline Python tests, including Tubi’s padded challenge/issued signing key, clear-resource filtering and Waffi mirror isolation. Android instrumentation exercises named-backend deduplication through the actual selection-window key. The HTTP identity audit compares app requests, a cookie-preserving browser-style requests session and curl without executing challenge code.
+
+## Individual live VOD decoding audit
+
+`FreeVodLiveAuditTest` is skipped unless instrumentation receives `vodLiveAudit=true`.
+The separate `vod-decoded-audit.yml` workflow shards every enabled movie website across eight
+emulators. It uses the packaged Python scraper, Java source conversion, session transport and
+LibVLC player. Each returned source is played separately without fallback; the report records
+decoded frames, coded video dimensions, duration, catalogue identity and successful midpoint
+seeking. Inception (148 minutes) and Night of the Living Dead (96 minutes) have a 15% duration
+tolerance; a fallback film with no independently verified runtime is explicitly unverified.
+A short successful sample does not establish whole-film playback or visual title identity.
+
+Reports contain no media URLs, cookies, headers or native player logs. A green audit job means
+the audit completed, not that each provider worked: inspect every JSONL `status` and final shard
+marker. Blocked, absent, undecodable, implausible-duration and unknown-duration outcomes remain
+failures or unverified results. HTTP signatures alone never count as successful playback.
