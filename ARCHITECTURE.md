@@ -469,3 +469,7 @@ A cold ZLive start (no saved source hint) never downloads the catalogue: `Adapte
 ## VOD provider recovery
 
 Discovery retains 38 websites (41 adapters) and all 68 bundled modules. Seven domains are retired and 18 provisional restorations are in `UNVERIFIED_SITES`, disabled pending positive verification. Only Levidia is restored from the original 26 exclusions. `include_retired=True` exposes both groups for explicit audits; transient failures do not prove permanent closure. Both Levidia adapters have maintained parsing fixes. Header-only client operations retain redirects and cookies without reading media bodies. Cross-authority redirects remove an explicit Host alongside credentials. Already-resolved file paths still pass media validation even when an upstream scraper labels them indirect.
+
+## Site-by-site VOD recovery (26 October 2026)
+
+`moviehub_compat/current_hosts.py` implements inspected Xpass/Wplay and MoviesAPI player flows without executing remote JavaScript. Website adapters retain current search/player protocols. `moviehub_vod.py` preserves website/source-provider identity and redacted per-host/request diagnostics; `FreeVodProviders` carries the existing segment-container flag into the relay. `VodSearch` counts website jobs separately from host results.

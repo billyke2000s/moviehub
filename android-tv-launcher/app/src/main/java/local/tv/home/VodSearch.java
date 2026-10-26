@@ -18,6 +18,7 @@ final class VodSearch implements AutoCloseable {
     private final List<java.util.function.Consumer<SourceRepository.Source>> observers = new ArrayList<>();
     private static volatile VodSearch current;
     private final Map<String, String> outcomes = new ConcurrentHashMap<>();
+    private final Map<String, String> hostOutcomes = new ConcurrentHashMap<>();
 
     VodSearch(Context context, JSONObject query, SourceRepository repo, boolean premiumize, int quality) {
         VodSearch previous = current;
@@ -58,6 +59,17 @@ final class VodSearch implements AutoCloseable {
                                     FreeVodProviders.search(app, id, query, cancelled, this::found)
                                 );
                                 outcomes.put(id, providerOutcome(report));
+                                JSONArray hosts = report.optJSONArray("hostAttempts");
+                                if (hosts != null) for (int i = 0; i < hosts.length(); i++) {
+                                    JSONObject host = hosts.getJSONObject(i);
+                                    String state = host.optString("status");
+                                    String label = state.equals("complete")
+                                        ? "Playable links found"
+                                        : state.equals("extracted")
+                                          ? "Host links extracted"
+                                          : providerOutcome(host);
+                                    hostOutcomes.put(id + " → " + host.optString("provider"), label);
+                                }
                             }
                         } catch (Exception error) {
                             outcomes.put(id, "Adapter error: " + error.getClass().getSimpleName());
@@ -156,6 +168,10 @@ final class VodSearch implements AutoCloseable {
             if (text.length() > 0) text.append("\n");
             text.append(id).append(": ").append(outcomes.get(id));
         }
+        for (String id : new TreeSet<>(hostOutcomes.keySet())) {
+            if (text.length() > 0) text.append("\n");
+            text.append(id).append(": ").append(hostOutcomes.get(id));
+        }
         return text.length() == 0 ? "Loading bundled providers…" : text.toString();
     }
 
@@ -163,7 +179,7 @@ final class VodSearch implements AutoCloseable {
         int complete = 0;
         for (String outcome : outcomes.values())
             if (!outcome.equals("Queued") && !outcome.equals("Searching")) complete++;
-        return complete + "/" + outcomes.size() + " providers checked";
+        return complete + "/" + outcomes.size() + " websites checked";
     }
 
     private boolean expired() {

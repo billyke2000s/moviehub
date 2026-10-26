@@ -57,9 +57,21 @@ class source:
             if not 'imdb.com/title/%s/' % imdb in html:
                 return self.results
             links = re.compile(r"window\.open\(dbneg\('(.+?)'\)", re.DOTALL).findall(html)
+            # The page's dbneg offset changes; the bundled fixed alphabet is obsolete.
+            decoder = re.search(r'function\s+dbneg\([^)]*\)(.{0,3000})', html, re.S)
+            offset = re.search(r'(?:var|let|const)\s+\w+\s*=\s*(0x[0-9a-fA-F]+)', decoder[1]) if decoder else None
             for link in links:
                 try:
-                    link = decryption.decode(link)
+                    if offset:
+                        values = link.split('-')
+                        if len(values) > 16384 or not all(re.fullmatch('[0-9a-fA-F]+', value) for value in values):
+                            continue
+                        codes = [int(value, 16) - int(offset[1], 16) for value in values]
+                        if not all(32 <= value < 127 for value in codes):
+                            continue
+                        link = ''.join(chr(value) for value in codes)
+                    else:
+                        link = decryption.decode(link)
                     for source in scrape_sources.process(hostDict, link):
                         if scrape_sources.check_host_limit(source['source'], self.results):
                             continue

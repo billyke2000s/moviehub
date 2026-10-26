@@ -1,14 +1,20 @@
 name: Free VOD provider audit
 on:
     push:
-        branches: [fix/free-vod-reliability, fix/experimental-zlive-vod, fix/vod-provider-recovery]
+        branches:
+            [
+                fix/free-vod-reliability,
+                fix/experimental-zlive-vod,
+                fix/vod-provider-recovery,
+                fix/site-by-site-vod,
+            ]
     workflow_dispatch:
 permissions:
     contents: read
 jobs:
     audit:
         runs-on: ubuntu-latest
-        timeout-minutes: 12
+        timeout-minutes: 25
         strategy:
             matrix:
                 media: [movies, series]
@@ -26,13 +32,19 @@ jobs:
               run: |
                   args=()
                   if [ "${{ matrix.media }}" = series ]; then args+=(--series); fi
-                  python android-tv-launcher/tests/probe-free-vod.py "${args[@]}" | tee provider-audit.jsonl
+                  python android-tv-launcher/tests/probe-free-vod.py --include-retired "${args[@]}" | tee provider-audit.jsonl
             - name: Check a recent film with the repaired and previously productive scrapers
               if: matrix.media == 'movies'
               run: |
                   python android-tv-launcher/tests/probe-free-vod.py \
                     --provider free99:levidia_ch --provider free99:fzmovies_live \
                     --provider free99:anymovies_co \
+                    --provider scrubs:watchtvseries_net --provider scrubs:tvids_net \
+                    --provider scrubs:tvseries_video --provider scrubs:m4uhd_tv \
+                    --provider scrubs:iwaatch_com --provider scrubs:pressplay_top \
+                    --provider free99:seriesloaded_ng --provider scrubs:moviesnipipay_me \
+                    --provider scrubs:tvmovieflix_com --provider scrubs:watchseries_cyou \
+                    --provider scrubs:projectfreetv_cyou \
                     --movie "Inception" 2010 tt1375666 27205 | tee focused-movie-audit.jsonl
             - uses: actions/upload-artifact@v6
               if: always()

@@ -20,16 +20,20 @@ class source:
 
     def movie(self, imdb, tmdb, title, localtitle, aliases, year):
         try:
-            title = cleantitle.get_plus(title)
-            check_term = '%s (%s)' % (title, year)
-            url = self.base_link + self.search_link % (title, year)
+            url = self.base_link + self.search_link % (cleantitle.get_plus(title), year)
             searchPage = client.scrapePage(url).text
-            section = client_utils.parseDOM(searchPage, "h2", attrs={"class": "excerpt-title"})
-            for item in section:
-                results = re.compile(r'<a href="(.+?)">(.+?)</a>').findall(item)
-                for url, checkit in results:
-                    if cleantitle.get_plus(check_term) == cleantitle.get_plus(checkit):
-                        return url
+            sections = client_utils.parseDOM(searchPage, 'h2', attrs={'class': 'excerpt-title'})
+            for item in sections:
+                links = client_utils.parseDOM(item, 'a', ret='href')
+                labels = client_utils.parseDOM(item, 'span', attrs={'class': 'entry-title-primary'})
+                if not labels:
+                    labels = client_utils.parseDOM(item, 'a')
+                if not links or not labels:
+                    continue
+                label = client_utils.remove_tags(labels[0]).strip()
+                match = re.match(r'(.+?)\s*\((\d{4})\)', label)
+                if match and match[2] == str(year) and cleantitle.match_alias(match[1], aliases):
+                    return links[0]
             return
         except:
             #log_utils.log('movie', 1)

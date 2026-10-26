@@ -524,3 +524,7 @@ ZLive's public catalogue moved to `iptv.zlive.st/channels.json`; the current pla
 ## VOD exclusion review and compatibility recovery (25 October 2026)
 
 Only Levidia remains restored after positive verification. The other 18 provisional restorations from #155 are disabled pending positive catalogue/search evidence; seven retired domains remain disabled. Ordinary discovery searches 38 websites and 41 adapters. Levidia homepage and search were directly reachable at the exact www address used by its scrapers. Current source contains the merged 1.0.2 header-isolation, file-size and search-budget fixes, plus maintained Levidia parsing and general metadata/redirect repairs. Automated live outcomes and fixture results must be read from this change’s final CI; no physical-TV result is claimed.
+
+## Site-by-site VOD recovery (26 October 2026)
+
+Site-by-site recovery is in progress on `fix/site-by-site-vod`. All 63 public website roots were inspected; reachable sites were traced into current searches, detail pages and player protocols. The website/host list is separated, and concrete parser/transport repairs are documented in [the audit](docs/FREE_VOD_SITE_AUDIT_2026_10_26.md). Inconclusive responses are not treated as closure; no excluded site is restored in this work. Offline/core and exact-head runner validation are required before completion. No new APK published.

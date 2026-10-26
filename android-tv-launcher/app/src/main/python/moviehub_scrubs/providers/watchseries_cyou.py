@@ -2,7 +2,7 @@ from ast import literal_eval
 # -*- coding: utf-8 -*-
 
 import re
-from six.moves.urllib_parse import parse_qs, urlencode
+from six.moves.urllib_parse import parse_qs, urlencode, urljoin
 
 from moviehub_scrubs import cleantitle
 from moviehub_scrubs import client
@@ -69,7 +69,7 @@ class source:
                 links = DOM(html, 'iframe', ret='src')
                 for link in links:
                     try:
-                        link = self.base_link + link if not link.startswith('http') else link
+                        link = urljoin(self.base_link + '/', link)
                         for source in scrape_sources.process(hostDict, link):
                             if scrape_sources.check_host_limit(source['source'], self.results):
                                 continue
@@ -86,7 +86,7 @@ class source:
                 links = [(i[0][0], i[1][0]) for i in links if len(i[0]) > 0 and len(i[1]) > 0]
                 for link, host in links:
                     try:
-                        link = self.base_link + link if not link.startswith('http') else link
+                        link = urljoin(self.base_link + '/', link)
                         item = scrape_sources.make_item(hostDict, link, host=host, info=None, prep=True)
                         if item:
                             if scrape_sources.check_host_limit(item['source'], self.results):

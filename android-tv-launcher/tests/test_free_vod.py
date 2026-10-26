@@ -64,7 +64,7 @@ class FreeVodTests(unittest.TestCase):
             result=json.loads(vod.query_site('free99:levidia_ch',json.dumps({'season':-1}),lambda:False,emit))
         self.assertEqual(call.call_count,2)
         self.assertEqual(result['status'],'complete')
-        self.assertEqual(emit.items[0]['providerName'],'levidia.ch')
+        self.assertEqual(emit.items[0]['providerName'],'levidia.ch · media.example')
         self.assertEqual(emit.items[0]['provider'],'free99:levidia_ch')
         self.assertEqual(emit.items[0]['adapter'],'scrubs:levidia_ch')
 
@@ -545,5 +545,7 @@ class FreeVodTests(unittest.TestCase):
         self.assertEqual(evaluate("seed + 2", {'seed':3}),5)
         for expression in ["__import__('os').getcwd()", "(1).__class__", "[x for x in []]", "2**1000", "'a'*99999999"]:
             with self.subTest(expression=expression),self.assertRaises(ValueError):evaluate(expression)
+
+from test_current_vod_sites import CurrentSiteTests
 
 if __name__=='__main__':unittest.main()

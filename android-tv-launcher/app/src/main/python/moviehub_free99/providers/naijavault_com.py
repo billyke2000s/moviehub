@@ -18,7 +18,7 @@ class source:
         self.results = []
         self.domains = ['naijavault.com']
         self.base_link = 'https://www.naijavault.com'
-        self.search_link = '/?s=%s'
+        self.search_link = '/search/%s/'
         self.headers = client.dnt_headers
         self.notes = 'testing this'
         
@@ -61,19 +61,20 @@ class source:
             r = client.scrapePage(search_url, headers=self.headers).text
             r = DOM(r, 'div', attrs={'class': 'mh-loop-content mh-clearfix'})
             if not r:   # new search using localtitle
-                title = data['localtitle']
+                title = data.get('localtitle') or title
                 check_term = '%s Season %s' % (title, season) if 'tvshowtitle' in data else title
                 check_title = cleantitle.get(check_term)
                 search_url = self.base_link + self.search_link % cleantitle.get_utf8(title)
                 r = client.scrapePage(search_url, headers=self.headers).text
                 r = DOM(r, 'div', attrs={'class': 'mh-loop-content mh-clearfix'})
 
-            r = [(DOM(i, 'a', ret='href', attrs={'rel': 'bookmark'}),
-            DOM(i, 'a', ret='title'),
-            DOM(i, 'div', attrs={'class': 'mh-excerpt'})) for i in r]
-            # FLATTEN the list
-            r = [(i[0][0], i[1][0], i[2][0]) for i in r if len(i[0]) > 0 and len(i[1]) > 0 and len(i[2]) > 0]
-            r = [(i[0], client_utils.replaceHTMLCodes(i[1]), client_utils.replaceHTMLCodes(i[2])) for i in r]
+            cards = r
+            r = []
+            for card in cards:
+                urls = DOM(card, 'a', ret='href', attrs={'rel': 'bookmark'})
+                labels = DOM(card, 'a', attrs={'rel': 'bookmark'})
+                if urls and labels:
+                    r.append((urls[0], client_utils.remove_tags(labels[0]).strip(), card))
 
             keywords = [           # so we can add more later
                 r"\d{4}",          # year

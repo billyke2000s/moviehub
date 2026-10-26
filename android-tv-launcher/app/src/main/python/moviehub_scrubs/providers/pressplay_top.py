@@ -17,20 +17,20 @@ DOM = client_utils.parseDOM
 class source:
     def __init__(self):
         self.results = []
-        self.domains = ['pressplay.top']
-        self.base_link = 'https://www.pressplay.top'
+        self.domains = ['pressplay.top', 'pressplayz.top']
+        self.base_link = 'https://pressplayz.top'
         self.search_link = '/?s=%s'
         self.notes = 'dupe site of movies4fun_net or soap2day_fan and 123movies_skin.'
 
 
     def movie(self, imdb, tmdb, title, localtitle, aliases, year):
-        url = {'imdb': imdb, 'title': title, 'aliases': aliases, 'year': year}
+        url = {'imdb': imdb, 'tmdb': tmdb, 'title': title, 'aliases': aliases, 'year': year}
         url = urlencode(url)
         return url
 
 
     def tvshow(self, imdb, tmdb, tvdb, tvshowtitle, localtvshowtitle, aliases, year):
-        url = {'imdb': imdb, 'tvshowtitle': tvshowtitle, 'aliases': aliases, 'year': year}
+        url = {'imdb': imdb, 'tmdb': tmdb, 'tvshowtitle': tvshowtitle, 'aliases': aliases, 'year': year}
         url = urlencode(url)
         return url
 
@@ -46,71 +46,25 @@ class source:
 
 
     def sources(self, url, hostDict):
-        try:
-            if not url:
-                return self.results
-            data = parse_qs(url)
-            data = dict([(i, data[i][0]) if data[i] else (i, '') for i in data])
-            aliases = literal_eval(data['aliases'])
-            title = data['tvshowtitle'] if 'tvshowtitle' in data else data['title']
-            season, episode = (data['season'], data['episode']) if 'tvshowtitle' in data else ('0', '0')
-            year = data['premiered'].split('-')[0] if 'tvshowtitle' in data else data['year']
-            search_term = '%s Season %s Episode %s' % (title, season, episode) if 'tvshowtitle' in data else title
-            search_title = cleantitle.get_plus(search_term)
-            check_title = cleantitle.get(search_term)
-            search_link = self.base_link + self.search_link % search_title
-            r = client.scrapePage(search_link).text
-            r = DOM(r, 'div', attrs={'id': r'post-.+?'})
-            r = [(DOM(i, 'a', attrs={'class': 'title'}, ret='href'), DOM(i, 'a', attrs={'class': 'title'}), re.findall(r'(\d{4})', i)) for i in r]
-            r = [(i[0][0], i[1][0], i[2][0]) for i in r if len(i[0]) > 0 and len(i[1]) > 0 and len(i[2]) > 0]
-            if 'tvshowtitle' in data:
-                try:
-                    url = [i[0] for i in r if check_title == cleantitle.get(i[1]) and year == i[2]][0]
-                except:
-                    url = self.base_link + '/episode/%s-season-%s-episode-%s/' % (cleantitle.geturl(title), season, episode)
-            else:
-                try:
-                    url = [i[0] for i in r if check_title == cleantitle.get(i[1]) and year == i[2]][0]
-                except:
-                    url = self.base_link + '/%s/' % cleantitle.geturl(title)
-            html = client.scrapePage(url).text
-            links = []
+        if not url:
+            return self.results
+        data = {key: value[0] for key, value in parse_qs(url).items()}
+        # The current site's server selector obtains this public list, then expands TMDB IDs.
+        servers = client.request(self.base_link + '/api/player-servers', output='json')
+        replacements = {'id': data['tmdb'], 'season': data.get('season', '1'),
+                        'episode': data.get('episode', '1'), 'time': '0'}
+        field = 'tvUrl' if 'tvshowtitle' in data else 'movieUrl'
+        for server in servers:
+            if not server.get('active') or not server.get(field):
+                continue
+            link = server[field]
+            for key, value in replacements.items():
+                link = link.replace('{' + key + '}', value)
             try:
-                varservers = re.compile(r'var Servers = {(.+?)};', re.DOTALL).findall(html)[0]
-                varservers = client_utils.replaceHTMLCodes(varservers)
-                links += re.compile(r':"(.+?)"', re.DOTALL).findall(varservers)
-            except:
-                #log_utils.log('sources', 1)
-                pass
-            links += DOM(html, 'iframe', ret='src')
-            for link in links:
-                if link.startswith('//'):
-                    link = 'https:' + link
-                if not link.startswith('http'):
-                    continue
-                if '/theneedful.html' in link:
-                    continue
-                if '1movietv' in link:
-                    try:
-                        html = client.scrapePage(link).text
-                        vurls = []
-                        vurls += DOM(html, 'iframe', ret='src')
-                        vurls += DOM(html, 'iframe', ret='class src')
-                        for vurl in vurls:
-                            if '1movietv' in vurl:
-                                continue
-                            for source in scrape_sources.process(hostDict, vurl):
-                                self.results.append(source)
-                    except:
-                        #log_utils.log('sources', 1)
-                        pass
-                else:
-                    for source in scrape_sources.process(hostDict, link):
-                        self.results.append(source)
-            return self.results
-        except:
-            #log_utils.log('sources', 1)
-            return self.results
+                self.results.extend(scrape_sources.process(hostDict, link))
+            except Exception:
+                continue
+        return self.results
 
 
     def resolve(self, url):

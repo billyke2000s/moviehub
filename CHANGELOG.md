@@ -1,5 +1,12 @@
 ## Unreleased
 
+## Unreleased — site-by-site VOD recovery
+
+- Preserve individual playback providers beneath each discovery website, including separate backend diagnostics.
+- Adapt confirmed current searches/player flows for canonical TV sites, M4uHD, AnyMovies, Iwaatch, PressPlay, SeriezLoaded, Movies Ni Pipay and nested player selectors.
+- Decode the observed Xpass public player response and opt its PNG-wrapped media into the existing relay decoder; authenticate AES-GCM even with empty associated data.
+- Record all 63 website observations and keep unverified restorations disabled.
+
 - Restore verified Levidia. Disable the other 18 provisional restorations pending positive verification, alongside seven retired domains.
 - Repair Levidia searches with empty landing cookies, yearless results and optional session markup; resolve Wootly hosts once with the bundled resolver.
 - Preserve host failures in diagnostics when another adapter returns no matches.

@@ -52,8 +52,29 @@ class source:
             hdlr = 's%02de%02d' % (int(data['season']), int(data['episode'])) if 'tvshowtitle' in data else data['year']
             search_term = '%s %s' % (title, hdlr)
             search_title = cleantitle.geturl(search_term)
-            search_link = self.base_link + '/%s/' % search_title
+            if 'tvshowtitle' in data:
+                search_link = self.base_link + '/%s/' % search_title
+            else:
+                search_html = client.request(self.base_link + '/?s=' + cleantitle.get_plus(title))
+                cards = client_utils.parseDOM(search_html, 'article', attrs={'class': 'box'})
+                search_link = None
+                for card in cards:
+                    names = client_utils.parseDOM(card, 'a', ret='title')
+                    years = client_utils.parseDOM(card, 'span', attrs={'class': 'addyear'})
+                    links = client_utils.parseDOM(card, 'a', ret='href')
+                    if names and years and links and cleantitle.get(names[0]) == cleantitle.get(title) and years[0] == data['year']:
+                        search_link = links[0]
+                        break
+                if not search_link:
+                    return self.results
             html = client.scrapePage(search_link).text
+            # Current pages expose separate download providers, in addition to older embeds.
+            hrefs = client_utils.parseDOM(html, 'a', attrs={'class': 'linkselector'}, ret='href')
+            bodies = client_utils.parseDOM(html, 'a', attrs={'class': 'linkselector'})
+            for href, body in zip(hrefs, bodies):
+                names = client_utils.parseDOM(body, 'i')
+                self.results.append(dict(url=href, source=names[0] if names else 'Direct',
+                                         direct=False, quality='SD', info=''))
             #try: all seem to be shrtlnkz.com trash
                 #downloads = client_utils.parseDOM(html, 'div', attrs={'class': 'dl-item'})[0]
                 #downloads = re.compile(r'<a href="(.+?)".+?domain=(.+?)">').findall(downloads)
