@@ -228,6 +228,7 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
                 result.update({'provider':provider_id, 'website':website, 'catalogue':record['site'],
                                'sourceProvider':source_host(host_name, item['url']),
                                'providerName':source_label(website, host_name, item['url']), 'quality':result.pop('verifiedQuality', None) or str(item.get('quality','SD')),
+                               'claimedQuality':str(item.get('quality','SD')),
                                'info':str(item.get('info','')), 'title': title,
                                'segmentContainers': bool(item.get('segmentContainers', False)),
                                'boundedRanges': bool(item.get('boundedRanges', False))})
@@ -301,15 +302,50 @@ def playable(raw, preferred=2160):
         if not known or 'application/octet-stream' not in kind: return None
     from moviehub_compat.media import duration_seconds
     duration = duration_seconds(prefix, kind)
-    if duration is not None and 0 < duration < 120: return None
     playlist = '.m3u8' in path or '.mpd' in path or 'mpegurl' in kind or 'dash+xml' in kind
+    size = None
+    if not playlist:
+        size, tail_duration = file_picture(url, headers, response, prefix)
+        if duration is None: duration = tail_duration
+        # The file's own header outranks the website's quality claim.
+        if size: verified = quality_label(*size)
+    if duration is not None and 0 < duration < 120: return None
     # A manifest's byte size says nothing about its media throughput. Only compare media samples.
     rate=len(response.content)*8/(elapsed*1000000) if not playlist and len(response.content)>=32768 else 0
     # Keep header-free DASH native: a loopback URL would change relative MPD base paths.
     if '.mpd' in path or 'dash+xml' in kind: headers = original_headers
     return {'url':url,'headers':headers,'verifiedQuality':verified,
+            'qualityVerified':verified is not None,'playlist':playlist,
+            'videoWidth':size[0] if size else 0,'videoHeight':size[1] if size else 0,
             'format':'dash' if '.mpd' in path or 'dash+xml' in kind else 'stream',
             'probeMbps':rate,'responseMs':round(elapsed*1000),'durationSeconds':duration}
+
+def quality_label(width, height):
+    from moviehub_compat.media import quality_label as label
+    return label(width, height)
+
+def file_picture(url, headers, response, prefix):
+    """Real (width, height) and duration of a media file, from its own header bytes.
+
+    Most MP4, MKV and WebM files declare their picture size in the bytes already
+    probed. An MP4 that stores its index (moov) at the end needs one more bounded
+    read there. Any failure leaves the size unknown; it never rejects the source.
+    """
+    from moviehub_compat.media import video_size, mp4_next_box, mp4_moov_size, duration_seconds
+    size = video_size(prefix)
+    if size: return size, None
+    offset = mp4_next_box(prefix)
+    total = re.search(r'/(\d+)\s*$', response.headers.get('Content-Range', ''))
+    if offset is None or (total and offset >= int(total.group(1))): return None, None
+    try:
+        tail = client.fetch(url, dict(headers, Range='bytes=%d-%d' % (offset, offset + 65535)),
+                            timeout=4, max_bytes=65536)
+        if tail.status_code != 206: return None, None
+        return mp4_moov_size(tail.content), duration_seconds(tail.content, 'video/mp4')
+    except client.Cancelled:
+        raise
+    except Exception:
+        return None, None
 
 # Replace the upstream HTTP fetcher with the bounded transport; retain Net's cookie and UA API.
 from resolveurl.lib.net import Net

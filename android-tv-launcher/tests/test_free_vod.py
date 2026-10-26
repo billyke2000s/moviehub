@@ -166,6 +166,10 @@ class FreeVodTests(unittest.TestCase):
             result=json.loads(vod.query('free99:levidia_ch',json.dumps(query),lambda:False))
         self.assertEqual(result['status'],'complete')
         self.assertEqual(len(result['sources']),1)
+        # Without a readable picture size the website's own claim is kept, and marked as a claim.
+        self.assertEqual(result['sources'][0]['quality'],'HD')
+        self.assertEqual(result['sources'][0]['claimedQuality'],'HD')
+        self.assertFalse(result['sources'][0]['qualityVerified'])
         process.assert_called_once()
 
     def test_resolved_files_mislabeled_indirect_still_require_valid_media(self):
@@ -478,6 +482,89 @@ class FreeVodTests(unittest.TestCase):
                 result=vod.playable('https://media.example/file.mp4')
             self.assertAlmostEqual(result['probeMbps'],5.24288,places=4)
             self.assertEqual(result['responseMs'],100)
+
+    HEADERS = Path(__file__).resolve().parent/'media-headers'
+
+    def media_response(self, content, status=206, total=None, kind='video/mp4'):
+        response=requests.Response();response.status_code=status
+        response.headers['Content-Type']=kind
+        if total: response.headers['Content-Range']='bytes 0-%d/%d'%(len(content)-1,total)
+        response._content=content
+        return response
+
+    def test_real_file_headers_give_the_actual_picture_size(self):
+        from moviehub_compat.media import video_size, quality_label, mp4_next_box, mp4_moov_size
+        cases={'854x480-faststart.mp4':((854,480),'480p'),
+               '1920x800-faststart.mp4':((1920,800),'1080p'),
+               '1280x720.mkv':((1280,720),'720p'),
+               '640x360.webm':((640,360),'360p')}
+        for name,(size,label) in cases.items():
+            with self.subTest(file=name):
+                data=(self.HEADERS/name).read_bytes()
+                self.assertEqual(video_size(data),size)
+                self.assertEqual(quality_label(*size),label)
+        start=(self.HEADERS/'854x480-moov-last-start.mp4').read_bytes()
+        index=(self.HEADERS/'854x480-moov-last-index.mp4').read_bytes()
+        self.assertIsNone(video_size(start))
+        self.assertEqual(mp4_next_box(start),1140867)
+        self.assertEqual(mp4_moov_size(index),(854,480))
+        self.assertEqual(quality_label(3840,1600),'2160p')
+        for junk in (b'',b'garbage'*50,b'\x1a\x45\xdf\xa3\xff',b'\x00\x00\x00\x01ftyp'):
+            self.assertIsNone(video_size(junk))
+
+    def lengthened(self, name):
+        """A real MP4 header with its declared duration changed to 90 minutes (the files are 3 s)."""
+        import struct
+        index=bytearray((self.HEADERS/name).read_bytes())
+        body=index.find(b'mvhd')+4
+        self.assertEqual(index[body],0)
+        scale=struct.unpack_from('>I',index,body+12)[0]
+        struct.pack_into('>I',index,body+16,scale*5400)
+        return bytes(index)
+
+    def test_probe_labels_sources_from_the_file_instead_of_the_website(self):
+        response=self.media_response(self.lengthened('854x480-faststart.mp4'))
+        with patch.object(client,'fetch',return_value=response),patch.object(client,'safe',side_effect=lambda url:url):
+            result=vod.playable('https://media.example/film.1080p.mp4')
+        self.assertEqual(result['verifiedQuality'],'480p')
+        self.assertTrue(result['qualityVerified'])
+        self.assertFalse(result['playlist'])
+        self.assertEqual((result['videoWidth'],result['videoHeight']),(854,480))
+
+    def test_probe_reads_an_index_stored_at_the_end_with_one_bounded_request(self):
+        start=self.media_response((self.HEADERS/'854x480-moov-last-start.mp4').read_bytes(),total=1143973)
+        calls=[]
+        def fetch(url,headers,**kwargs):
+            calls.append((headers.get('Range'),kwargs.get('max_bytes')))
+            return start if len(calls)==1 else self.media_response(self.lengthened('854x480-moov-last-index.mp4'))
+        with patch.object(client,'fetch',side_effect=fetch),patch.object(client,'safe',side_effect=lambda url:url):
+            result=vod.playable('https://media.example/film.mp4')
+        self.assertEqual(calls,[('bytes=0-65535',65536),('bytes=1140867-1206402',65536)])
+        self.assertEqual(result['verifiedQuality'],'480p')
+        self.assertEqual(result['durationSeconds'],5400)
+        # The real three-second file is now recognised as a short clip, which was unknown before.
+        short=self.media_response((self.HEADERS/'854x480-moov-last-index.mp4').read_bytes())
+        with patch.object(client,'fetch',side_effect=[start,short]),patch.object(client,'safe',side_effect=lambda url:url):
+            self.assertIsNone(vod.playable('https://media.example/clip.mp4'))
+
+    def test_failed_index_read_leaves_size_unknown_without_rejecting(self):
+        start=self.media_response((self.HEADERS/'854x480-moov-last-start.mp4').read_bytes(),total=1143973)
+        for second in (requests.ConnectionError('reset'),self.media_response(b'<html>',status=200,kind='text/html')):
+            with self.subTest(second=type(second).__name__):
+                with patch.object(client,'fetch',side_effect=[start,second]),patch.object(client,'safe',side_effect=lambda url:url):
+                    result=vod.playable('https://media.example/film.mp4')
+                self.assertIsNotNone(result)
+                self.assertIsNone(result['verifiedQuality'])
+                self.assertFalse(result['qualityVerified'])
+        # An index beyond the file's reported end is never requested.
+        truncated=self.media_response((self.HEADERS/'854x480-moov-last-start.mp4').read_bytes(),total=1000)
+        with patch.object(client,'fetch',return_value=truncated) as fetch,patch.object(client,'safe',side_effect=lambda url:url):
+            self.assertIsNotNone(vod.playable('https://media.example/film.mp4'))
+        self.assertEqual(fetch.call_count,1)
+        # Cancelling the search still stops it during the extra read.
+        with patch.object(client,'fetch',side_effect=[start,client.Cancelled()]),patch.object(client,'safe',side_effect=lambda url:url):
+            with self.assertRaises(client.Cancelled):
+                vod.playable('https://media.example/film.mp4')
 
     def test_all_bundled_provider_constructors_import(self):
         rows=json.loads(vod.providers())
