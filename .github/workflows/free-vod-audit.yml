@@ -46,6 +46,16 @@ jobs:
                     --provider scrubs:tvmovieflix_com --provider scrubs:watchseries_cyou \
                     --provider scrubs:projectfreetv_cyou \
                     --movie "Inception" 2010 tt1375666 27205 | tee focused-movie-audit.jsonl
+            - name: Check the exact film from the reported TV failure
+              if: matrix.media == 'movies'
+              run: |
+                  python android-tv-launcher/tests/probe-free-vod.py \
+                    --provider free99:levidia_ch --provider free99:fzmovies_live \
+                    --provider free99:anymovies_co --provider free99:seriesloaded_ng \
+                    --provider scrubs:iwaatch_com --provider scrubs:m4uhd_tv \
+                    --provider scrubs:watchtvseries_net --provider scrubs:tvids_net \
+                    --provider scrubs:pressplay_top \
+                    --movie "Spider-Man: Brand New Day" 2026 tt22084616 969681 | tee reported-movie-audit.jsonl
             - name: Probe Tubi with a currently listed film
               if: matrix.media == 'movies'
               run: |
@@ -63,3 +73,4 @@ jobs:
                       focused-movie-audit.jsonl
                       http-identity-audit.jsonl
                       tubi-movie-audit.jsonl
+                      reported-movie-audit.jsonl

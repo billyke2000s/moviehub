@@ -16,8 +16,8 @@ DOM = client_utils.parseDOM
 class source:
     def __init__(self):
         self.results = []
-        self.domains = ['watch-tvseries.net', 'watch-tvseries.me']
-        self.base_link = 'https://watch-tvseries.net'
+        self.domains = ['watch-tvseries.net', 'watch-tvseries.me', 'watch-tvseries.tv']
+        self.base_link = 'https://www.watch-tvseries.tv'
         self.search_link = '/search?q=%s'
         self.notes = 'Dupe of tvids_net. Sources seem to be all holders like 2embed which fail to work on my end. Likely needs more testing and more work done.'
 

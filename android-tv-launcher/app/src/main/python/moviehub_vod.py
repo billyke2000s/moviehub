@@ -78,8 +78,8 @@ def query_site(provider_id, raw, cancelled, emit=None):
             seen.add(key)
             item['adapter'] = item['provider']
             item['provider'] = group['id']
-            item['website'] = group['site']
-            item['providerName'] = source_label(group['site'], item.get('sourceProvider', ''), item['url'])
+            item['website'] = item.get('website') or group['site']
+            item['providerName'] = source_label(item['website'], item.get('sourceProvider', ''), item['url'])
             results.append(item)
             if emit is not None: emit.ready(json.dumps(item))
     for adapter in group['adapters']:
@@ -218,9 +218,9 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
                     client.host_result(item.get('originProvider') or item.get('source') or item['url'], 'rejected_media')
                     continue
                 seen.add(key)
-                website = record['site']
+                website = (urlparse(provider.base_link).hostname or record['site']).removeprefix('www.')
                 host_name = item.get('originProvider') or item.get('source', '')
-                result.update({'provider':provider_id, 'website':website,
+                result.update({'provider':provider_id, 'website':website, 'catalogue':record['site'],
                                'sourceProvider':source_host(host_name, item['url']),
                                'providerName':source_label(website, host_name, item['url']), 'quality':result.pop('verifiedQuality', None) or str(item.get('quality','SD')),
                                'info':str(item.get('info','')), 'title': title,

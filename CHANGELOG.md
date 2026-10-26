@@ -1,5 +1,12 @@
 ## Unreleased
 
+## 1.0.4 (26 October 2026)
+
+- More movie links from updated website searches and player loading, including Iwaatch, AnyMovies, M4uHD, Levidia, SeriezLoaded/Waffi and Tubi.
+- Each actual playback provider has its own source row, including separately named backends behind the same website.
+- Source details distinguish website failures, playback-host failures and providers requiring browser verification.
+- Preserves the background-poster fix from 1.0.3.
+
 ## Unreleased — site-by-site VOD recovery
 
 - Preserve individual playback providers beneath each discovery website, including separate backend diagnostics.

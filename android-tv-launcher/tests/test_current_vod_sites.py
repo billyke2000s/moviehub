@@ -22,7 +22,7 @@ class CurrentSiteTests(unittest.TestCase):
     def test_distinct_hosts_sharing_a_media_url_remain_separate_in_website_results(self):
         module = importlib.import_module('moviehub_free99.providers.levidia_ch')
         class Provider:
-            base_link = 'https://levidia.ch'
+            base_link = 'https://www.current-catalogue.example'
             def movie(self, *args): return 'lookup'
             def sources(self, key, hosts):
                 return [dict(source=host, url='https://cdn.example/video.m3u8', direct=True,
@@ -33,8 +33,8 @@ class CurrentSiteTests(unittest.TestCase):
         with patch.object(module, 'source', return_value=Provider()), patch.object(vod, 'playable', side_effect=playable):
             result = json.loads(vod.query_site('free99:levidia_ch', raw, lambda: False))
         self.assertEqual({x['providerName'] for x in result['sources']},
-                         {'levidia.ch · Host One', 'levidia.ch · Host Two'})
-        self.assertTrue(all(x['website'] == 'levidia.ch' and x['segmentContainers'] for x in result['sources']))
+                         {'current-catalogue.example · Host One', 'current-catalogue.example · Host Two'})
+        self.assertTrue(all(x['website'] == 'current-catalogue.example' and x['catalogue'] == 'levidia.ch' and x['segmentContainers'] for x in result['sources']))
 
     def test_watch_tvseries_and_tvids_follow_absolute_canonical_links(self):
         from moviehub_scrubs import scrape_sources
@@ -50,6 +50,8 @@ class CurrentSiteTests(unittest.TestCase):
                 key = provider.movie('tt1', '1', 'Film', 'Film', [{'title': 'Film'}], '2020')
                 provider.sources(key, [])
             self.assertEqual(calls[-1], 'https://canonical.example/movies/film-1')
+            if name == 'watchtvseries_net':
+                self.assertTrue(calls[0].startswith('https://www.watch-tvseries.tv/search?'))
 
     def test_m4u_current_movie_cards_and_each_ajax_server(self):
         from moviehub_scrubs.providers import m4uhd_tv
