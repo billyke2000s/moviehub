@@ -1,5 +1,23 @@
 # Status
 
+## Current source release candidate — 26 October 2026
+
+1.0.4 (code 104) is published and its APK checksum was independently matched to the update feed.
+1.0.5 is prepared for publication with two new native movie websites, Vixsrc and 4KHDHub,
+finite-range file playback, correct quality badges and a backup-audio fix. The original poster
+fix is preserved. All CI jobs passed on `f5b4e63e65788c512389ca31996c6a8d66d43474`.
+
+The initial 1.0.4 live audit covered all 33 then-enabled movie websites and verified 18 of 21
+returned links across seven sites. The final focused pass verified Levidia (four of six links),
+one 4KHDHub HD link, Vixsrc and a known Rarefilmm film, with decoding, plausible duration,
+midpoint playback and decoded/output audio. Other links failed or remained unverified. A
+3840×1600 file decoded and sought in an earlier pass, but reliable 4K audio playback has not
+passed verification; no universal provider or 4K guarantee is claimed. See the dated audit reports.
+
+The inventory is 36 enabled websites and 39 adapters, plus excluded auditable sites, with 68
+original Kodi modules and two native modules. Four additional exclusions have fresh sale/parking
+or unrelated gambling evidence. Historical notes below describe earlier snapshots.
+
 ## Continuous series and automatic playback
 
 New settings keep manual source selection as the default. Next-episode metadata is prefetched while watching; season transitions use catalogue episodes and air dates. Missing-pack episodes follow the selected manual/automatic mode. Guide colour shortcuts are handled independently of focused widgets, with Back revealing accessible controls. Physical TV, remote and real-account validation remain outstanding.

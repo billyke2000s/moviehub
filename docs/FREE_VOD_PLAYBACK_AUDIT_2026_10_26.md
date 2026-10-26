@@ -97,3 +97,26 @@ name for the substring `4k`; the badge logic now uses the release resolution ins
 requests to the SDR 4K edition returned 206 through 4 MiB and 403 at 8 MiB, so the relay's parts
 are capped at the observed 4 MiB limit. The final audit also measures played audio buffers,
 which distinguishes valid passthrough from missing audio. Results remain pending.
+
+## Final focused pass
+
+[Focused Android audit on f5b4e63](https://github.com/billyke2000s/moviehub/actions/runs/40323734300)
+completed with the 4 MiB cap, corrected quality badges and decoded/output audio counters.
+Its companion `NATIVE_VOD_PLAYBACK_AUDIT_2026_10_26.jsonl` records every result. Levidia returned
+six links: four verified and two did not decode. 4KHDHub returned three 1080p links: one verified,
+one failed to decode and one decoded but did not verify midpoint playback. Vixsrc verified.
+Rarefilmm was retested with its actual catalogue film Anna (1967), TMDB 45486, reference runtime
+87 minutes: decoded video/audio and midpoint playback verified. This avoids treating absence of
+three mainstream test films as a scraper failure for that niche collection.
+
+Seven of eleven returned links in this focused pass verified; it did not establish a reliable
+4K stream with verified audio. An earlier real 3840×1600 file did decode and seek, but its audio
+was unverified. Availability varied across requests; do not relabel these failures as successes,
+and do not infer permanent site closure from them. Socket exceptions may also result from a player
+closing a no-longer-needed range during seeking, so exception presence alone does not reverse a
+successful decode/duration/seek/audio measurement.
+
+[Full Android CI](https://github.com/billyke2000s/moviehub/actions/runs/40323741854) and
+[standalone engine verification](https://github.com/billyke2000s/moviehub/actions/runs/40323741898)
+passed on the same product-code head. The final documentation-only commit records those results
+and prepares the numbered release notes without changing the APK source.

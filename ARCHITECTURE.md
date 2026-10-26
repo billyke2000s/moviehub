@@ -472,7 +472,7 @@ A cold ZLive start (no saved source hint) never downloads the catalogue: `Adapte
 
 ## VOD provider recovery
 
-Discovery retains 38 websites (41 adapters) and all 68 bundled modules. Seven domains are retired and 18 provisional restorations are in `UNVERIFIED_SITES`, disabled pending positive verification. Only Levidia is restored from the original 26 exclusions. `include_retired=True` exposes both groups for explicit audits; transient failures do not prove permanent closure. Both Levidia adapters have maintained parsing fixes. Header-only client operations retain redirects and cookies without reading media bodies. Cross-authority redirects remove an explicit Host alongside credentials. Already-resolved file paths still pass media validation even when an upstream scraper labels them indirect.
+Discovery offers 36 websites (39 adapters) and 70 modules (68 Kodi and two native). Eleven domains are retired or repurposed and 18 provisional restorations are in `UNVERIFIED_SITES`, disabled pending positive verification. Only Levidia is restored from the original 26 exclusions. `include_retired=True` exposes both groups for explicit audits; transient failures do not prove permanent closure. Both Levidia adapters have maintained parsing fixes. Header-only client operations retain redirects and cookies without reading media bodies. Cross-authority redirects remove an explicit Host alongside credentials. Already-resolved file paths still pass media validation even when an upstream scraper labels them indirect.
 
 ## Site-by-site VOD recovery (26 October 2026)
 

@@ -229,7 +229,7 @@ MovieHub searches distinct movie/series websites, retaining alternate Kodi scrap
 
 ### Movie and series discovery recovery
 
-Levidia is restored after verifying its exact scraper address and search. The other 18 provisional restorations are disabled pending positive verification; seven retired domains also stay disabled. Ordinary discovery contains 38 websites and 41 adapters. Scraper metadata lookups stop after response headers, redirects discard an obsolete Host header, and Levidia tolerates an empty initial cookie jar and yearless search entries. Availability is reported per search; this does not promise that every remote website or host plays.
+Levidia is restored after verifying its exact scraper address and search. The other 18 provisional restorations are disabled pending positive verification; eleven confirmed retired or repurposed domains also stay disabled. Ordinary discovery contains 36 websites and 39 adapters, including two separately maintained native websites. Scraper metadata lookups stop after response headers, redirects discard an obsolete Host header, and Levidia tolerates an empty initial cookie jar and yearless search entries. Availability is reported per search; this does not promise that every remote website or host plays.
 
 ## Site-by-site VOD recovery (26 October 2026)
 

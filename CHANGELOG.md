@@ -1,14 +1,12 @@
 ## Unreleased
 
-- Fix source quality badges mistaking a provider name such as 4KHDHub for a video resolution.
+## 1.0.5 (26 October 2026)
 
-- Stream and seek hosts which require fixed byte ranges instead of rejecting the player's open-ended file request.
-
-- Keep backup movie playback audible after native prewarming temporarily mutes a player.
-- Stop searching four freshly confirmed parked, for-sale or gambling domains; their adapters remain available for explicit audits.
-
-- Add separately maintained native 4KHDHub and Vixsrc website adapters, with independent downstream sources and current public player loading.
-- Add opt-in per-source Android decoding, duration, resolution and midpoint-seek audits.
+- New movie websites: Vixsrc and 4KHDHub, with each playback host listed separately.
+- Better playback and seeking for large movie files from hosts which require fixed byte ranges.
+- Quality badges use the release resolution and no longer mistake provider branding for 4K.
+- Keep movie backup switches audible after the replacement player was prepared silently.
+- Stop querying four domains confirmed parked, for sale or repurposed; keep their modules available for explicit audits.
 
 ## 1.0.4 (26 October 2026)
 
