@@ -89,3 +89,11 @@ restriction: no Range or `bytes=0-` returned 403, while `bytes=0-65535` returned
 correct Matroska bytes and full file size. `ProviderFileRanges` addresses that observed difference
 by joining finite requests without changing playback offsets. Its final Android results remain
 pending; the first audit is not presented as seven working 4K links.
+
+The first range-aware Android pass played three new 1080p files and Vixsrc. One actual
+3840×1600 file decoded and sought but recorded no decoded audio buffers, so its audio remained
+unverified. Four 1080p files were incorrectly badged 4K because the old UI searched the provider
+name for the substring `4k`; the badge logic now uses the release resolution instead. Follow-up
+requests to the SDR 4K edition returned 206 through 4 MiB and 403 at 8 MiB, so the relay's parts
+are capped at the observed 4 MiB limit. The final audit also measures played audio buffers,
+which distinguishes valid passthrough from missing audio. Results remain pending.

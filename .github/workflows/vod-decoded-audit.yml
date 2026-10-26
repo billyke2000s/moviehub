@@ -2,6 +2,10 @@ name: Individual VOD decoding and runtime audit
 on:
     push:
         branches: [feat/verified-movie-sources]
+        paths:
+            - "android-tv-launcher/app/src/main/**"
+            - "android-tv-launcher/app/src/androidTest/**"
+            - "android-tv-launcher/tests/run-live-vod-audit.sh"
     workflow_dispatch:
 permissions:
     contents: read

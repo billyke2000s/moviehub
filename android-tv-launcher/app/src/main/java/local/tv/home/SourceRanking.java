@@ -14,11 +14,12 @@ final class SourceRanking {
 
     static int resolution(String description) {
         String text = description.toLowerCase(Locale.ROOT);
-        if (word(text, "2160p?|4k|uhd")) return 2160;
+        if (word(text, "2160p?|4k")) return 2160;
         if (word(text, "1440p?|2k")) return 1440;
         if (word(text, "1080[pi]?|fhd|full[ -]?hd")) return 1080;
         if (word(text, "720p?|hd")) return 720;
         if (word(text, "576p?")) return 576;
+        if (word(text, "uhd")) return 2160;
         return 480;
     }
 

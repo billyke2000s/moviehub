@@ -37,7 +37,7 @@ final class ProviderFileRanges extends InputStream {
 
     ProviderFileRanges(URI target, String range, Open open, Release release, BooleanSupplier cancelled)
         throws IOException {
-        this(target, range, open, release, cancelled, 8 * 1024 * 1024);
+        this(target, range, open, release, cancelled, 4 * 1024 * 1024);
     }
 
     ProviderFileRanges(
@@ -57,7 +57,7 @@ final class ProviderFileRanges extends InputStream {
         long first = 0,
             last = Long.MAX_VALUE;
         try {
-            if (chunk < 1 || chunk > 8 * 1024 * 1024) throw new IOException("File range size rejected");
+            if (chunk < 1 || chunk > 4 * 1024 * 1024) throw new IOException("File range size rejected");
             if (range != null) {
                 Matcher match = Pattern.compile("bytes=([0-9]{0,15})-([0-9]{0,15})").matcher(range);
                 if (

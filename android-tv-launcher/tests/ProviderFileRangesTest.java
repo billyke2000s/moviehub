@@ -52,6 +52,10 @@ public final class ProviderFileRangesTest {
                     exchange.sendResponseHeaders(416, -1);
                     return;
                 }
+                if (Long.parseLong(match.group(2)) - first + 1 > 4 * 1024 * 1024) {
+                    exchange.sendResponseHeaders(403, -1);
+                    return;
+                }
                 int size = data.length + (path.equals("/changed") && first > 0 ? 1 : 0);
                 String range = path.equals("/bad")
                     ? "bytes invalid"
@@ -107,6 +111,20 @@ public final class ProviderFileRangesTest {
                 );
             }
             check(requests.size() == 4, "File is fetched in bounded parts");
+            try (
+                ProviderFileRanges file = new ProviderFileRanges(
+                    URI.create("https://public.example/file"),
+                    null,
+                    open,
+                    release,
+                    () -> false
+                )
+            ) {
+                check(
+                    Arrays.equals(data, file.readAllBytes()),
+                    "Default parts stay within the observed host's 4 MiB limit"
+                );
+            }
             try (
                 ProviderFileRanges file = new ProviderFileRanges(
                     URI.create("https://public.example/file"),

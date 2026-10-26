@@ -149,9 +149,10 @@ public final class FreeVodLiveAuditTest {
                 .putExtra("title", "Individual source audit")
                 .putExtra("vodSession", VodSources.remember(session))
         );
+        ErrorLog.clear();
         try {
             long deadline = SystemClock.elapsedRealtime() + 45000;
-            long[] sample = new long[6];
+            long[] sample = new long[7];
             boolean decoded = false;
             while (SystemClock.elapsedRealtime() < deadline) {
                 snapshot(activity, sample);
@@ -196,13 +197,20 @@ public final class FreeVodLiveAuditTest {
                 }
             }
             result
+                .put("decodedFrames", sample[2])
+                .put("decodedAudio", sample[5])
+                .put("playedAudioBuffers", sample[6])
+                .put("receivedBytes", activity.vod == null ? 0 : activity.vod.incomingBytes())
+                .put("selectedAudioLanguage", audioLanguage(activity))
+                .put("width", sample[3])
+                .put("height", sample[4])
                 .put("midpointDecoded", seek)
                 .put("measured4k", decoded && sample[3] >= 3800 && sample[4] >= 1500)
                 .put(
                     "status",
                     !decoded
                         ? "no_decoded_video"
-                        : sample[5] == 0
+                        : sample[5] == 0 && sample[6] == 0
                           ? "audio_unverified"
                           : expectedMinutes == 0
                             ? "runtime_unverified"
@@ -213,6 +221,12 @@ public final class FreeVodLiveAuditTest {
                                 : "verified"
                 );
         } finally {
+            org.json.JSONArray errors = new org.json.JSONArray();
+            java.util.Set<String> uniqueErrors = new java.util.LinkedHashSet<>();
+            for (ErrorLog.Entry error : ErrorLog.snapshot())
+                uniqueErrors.add(error.where + ": " + error.type);
+            for (String error : uniqueErrors) errors.put(error);
+            result.put("transportErrors", errors);
             instrumentation.runOnMainSync(activity::finish);
             instrumentation.waitForIdleSync();
             long deadline = SystemClock.elapsedRealtime() + 10000;
@@ -232,7 +246,10 @@ public final class FreeVodLiveAuditTest {
                 for (int index = 0; index < media.getTrackCount(); index++) {
                     IMedia.Track track = media.getTrack(index);
                     if (track instanceof IMedia.AudioTrack && track.id == player.getAudioTrack()) {
-                        language[0] = String.valueOf(track.language).replaceAll("[^a-zA-Z-]", "");
+                        language[0] = (track.language == null ? "" : track.language).replaceAll(
+                            "[^a-zA-Z-]",
+                            ""
+                        );
                         if (language[0].length() > 20) language[0] = "";
                     }
                 }
@@ -255,6 +272,7 @@ public final class FreeVodLiveAuditTest {
                 IMedia.Stats stats = media.getStats();
                 sample[2] = stats == null ? 0 : stats.decodedVideo;
                 sample[5] = stats == null ? 0 : stats.decodedAudio;
+                sample[6] = stats == null ? 0 : stats.playedAbuffers;
                 for (int index = 0; index < media.getTrackCount(); index++) if (
                     media.getTrack(index) instanceof IMedia.VideoTrack
                 ) {

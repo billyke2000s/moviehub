@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Fix source quality badges mistaking a provider name such as 4KHDHub for a video resolution.
+
 - Stream and seek hosts which require fixed byte ranges instead of rejecting the player's open-ended file request.
 
 - Keep backup movie playback audible after native prewarming temporarily mutes a player.

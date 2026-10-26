@@ -156,6 +156,17 @@ public final class FreeVodProvidersTest {
     }
 
     @Test
+    public void sourceBadgesUseReleaseResolutionInsteadOfProviderBranding() {
+        assertEquals(
+            "1080p",
+            SourcesScreen.quality("4khdhub.one · Host\n1080p · Film.1080p.UHD.4KHDHub.mkv")
+        );
+        assertEquals("720p", SourcesScreen.quality("4khdhub.one · Host\n720p · Film.4KHDHub.mkv"));
+        assertEquals("4K", SourcesScreen.quality("4khdhub.one · Host\n2160p · Film.UHD.mkv"));
+        assertEquals("SD", SourcesScreen.quality("4khdhub.one · Host\nSD · Film.4KHDHub.mkv"));
+    }
+
+    @Test
     public void javaCancellationReachesPackagedPythonBeforeAnyProviderRequest() throws Exception {
         AtomicInteger emitted = new AtomicInteger();
         FreeVodProviders.search(

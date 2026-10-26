@@ -231,4 +231,4 @@ Tubi’s anonymous handshake obtains a fresh server-issued signing key bound to 
 
 The native website adapters use the same public-HTTPS URL checks, request limits, redirect credential scoping and cancellation as bundled providers. Landing/player tokens are fetched afresh and treated as data; scripts are never evaluated. No shared account cookie, API key, credential or DRM license is bundled. Reports omit stream URLs and token values.
 
-Finite-range file playback retains HTTPS/public-host checks on every redirect and never disables TLS validation. Each upstream part is capped at 8 MiB. Content-Range offsets, totals, lengths and available strong ETags are checked; malformed or changed entities fail instead of concatenating mismatched data. Cancelled sessions close active upstream requests.
+Finite-range file playback retains HTTPS/public-host checks on every redirect and never disables TLS validation. Each upstream part is capped at 4 MiB. Content-Range offsets, totals, lengths and available strong ETags are checked; malformed or changed entities fail instead of concatenating mismatched data. Cancelled sessions close active upstream requests.
