@@ -38,7 +38,8 @@ public final class FreeVodLiveAuditTest {
         try (FileWriter clear = new FileWriter(output, false)) {
             clear.write("");
         }
-        List<String> sites = FreeVodProviders.ids(context, false);
+        boolean series = Boolean.parseBoolean(arguments.getString("vodSeries", "false"));
+        List<String> sites = FreeVodProviders.ids(context, series);
         String providers = arguments.getString("vodProviders", "");
         if (!providers.isEmpty()) sites.removeIf(
             site -> !java.util.Arrays.asList(providers.split(",")).contains(site)
@@ -52,7 +53,14 @@ public final class FreeVodLiveAuditTest {
                 film("Night of the Living Dead", "1968", "tt0063350", 10331, 96),
                 film("Spider-Man: Brand New Day", "2026", "tt22084616", 969681, 0),
             };
-            if (site.equals("scrubs:rarefilmm_com")) films = new JSONObject[] {
+            if (series) films = new JSONObject[] {
+                film("Breaking Bad", "2008", "tt0903747", 1396, 58)
+                    .put("season", 1)
+                    .put("episode", 1)
+                    .put("premiered", "2008-01-20")
+                    .put("episodeTitle", "Pilot"),
+            };
+            if (!series && site.equals("scrubs:rarefilmm_com")) films = new JSONObject[] {
                 film("Anna", "1967", "", 45486, 87),
             };
             for (JSONObject film : films) {
@@ -72,6 +80,8 @@ public final class FreeVodLiveAuditTest {
                     .put("kind", "lookup")
                     .put("website", site)
                     .put("tmdb", film.getInt("tmdb"))
+                    .put("season", film.optInt("season", -1))
+                    .put("episode", film.optInt("episode", -1))
                     .put("title", film.getString("title"));
                 try {
                     JSONObject report = new JSONObject(
@@ -94,6 +104,8 @@ public final class FreeVodLiveAuditTest {
                         .put("provider", SourcesScreen.provider(source.title))
                         .put("advertisedQuality", SourcesScreen.quality(source.title))
                         .put("tmdb", film.getInt("tmdb"))
+                        .put("season", film.optInt("season", -1))
+                        .put("episode", film.optInt("episode", -1))
                         .put("title", film.getString("title"))
                         .put("separateSource", separate);
                     try {

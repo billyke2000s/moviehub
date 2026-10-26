@@ -41,6 +41,7 @@ class RiveTests(unittest.TestCase):
         self.assertTrue(all('Referer=https%3A%2F%2Fwww.rivestream.app%2F' in row['url']
                             for row in results))
         self.assertTrue(all(row['direct'] for row in results))
+        self.assertTrue(all(row['segmentContainers'] for row in results))
 
     def test_wrong_title_episode_protected_and_unsupported_rows_are_rejected(self):
         for data in [dict(tmdbId=1), dict(tmdb_id=1), dict(season=1), dict(episode=1)]:
@@ -70,6 +71,7 @@ class RiveTests(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['quality'], 'Auto')
         self.assertEqual(results[0]['originProvider'], 'Primevids · dcloud')
+        self.assertFalse(results[0]['segmentContainers'])
 
     def test_one_backend_failure_does_not_hide_other_separate_links(self):
         def request(url, **kwargs):

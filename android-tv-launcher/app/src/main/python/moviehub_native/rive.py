@@ -85,6 +85,9 @@ class source:
             item = direct(url, self.base_link + '/', label,
                           quality[1] + 'p' if quality else 'Auto')
             item['info'] = claim
+            # These routes serve raw TS with image/jpeg headers. Opt into the existing
+            # whole-entity carrier path so a player's zero range retains the real TS type.
+            item['segmentContainers'] = backend == 'citadel'
             results.append(item)
         return results
 

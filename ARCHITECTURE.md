@@ -500,4 +500,4 @@ Website labels such as "1080p" are claims. `moviehub_vod.playable` already reads
 
 ## FMHY Rive adapter
 
-`moviehub_native/rive.py` implements the existing movie/tvshow/episode/sources/resolve contract, using TMDB identities and the public anonymous Primevids/Citadel endpoint. `moviehub_native.PROVIDERS` registers the website. Existing website grouping, source keys, ranking, relay, audio handling, credentials and persistence are unchanged. Every returned distinct URL retains its own source row.
+`moviehub_native/rive.py` implements the existing movie/tvshow/episode/sources/resolve contract, using TMDB identities and the public anonymous Primevids/Citadel endpoint. `moviehub_native.PROVIDERS` registers the website. Existing website grouping, source keys, ranking, audio handling, credentials and persistence are unchanged. Every returned distinct URL retains its own source row. Citadel opts into the existing carrier path: whole-entity zero-range TS reads are sniffed before selecting the MIME type, including when the origin incorrectly says image/jpeg. Unflagged range handling is unchanged.

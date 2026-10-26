@@ -11,6 +11,62 @@ import org.json.JSONObject;
 /** Real TCP client and production relay, with only the upstream HTTP transport replaced. */
 public final class ProviderRelayTransportTest {
 
+    private static void rawTsWithImageMime(byte[] ts) throws Exception {
+        AtomicReference<HttpURLConnection> requested = new AtomicReference<>();
+        ProviderRelay.testConnections = uri -> {
+            HttpURLConnection response = new HttpURLConnection(uri.toURL()) {
+                public void connect() {}
+
+                public void disconnect() {}
+
+                public boolean usingProxy() {
+                    return false;
+                }
+
+                public int getResponseCode() {
+                    return 200;
+                }
+
+                public InputStream getInputStream() {
+                    return new ByteArrayInputStream(ts);
+                }
+
+                public String getContentType() {
+                    return "image/jpeg";
+                }
+
+                public long getContentLengthLong() {
+                    return ts.length;
+                }
+            };
+            requested.set(response);
+            return response;
+        };
+        EngineSources.Stream stream = new EngineSources.Stream(
+            new JSONObject()
+                .put("url", "https://8.8.8.8/segment.jpg")
+                .put("headers", new JSONObject())
+                .put("segmentContainers", true)
+        );
+        try (ProviderRelay relay = new ProviderRelay(stream)) {
+            HttpURLConnection client = (HttpURLConnection) URI.create(relay.url).toURL().openConnection();
+            client.setRequestProperty("Range", "bytes=0-");
+            try (InputStream input = client.getInputStream()) {
+                if (!"video/mp2t".equals(client.getContentType())) throw new AssertionError(
+                    "A whole TS entity retained its misleading image MIME type"
+                );
+                if (!Arrays.equals(ts, input.readAllBytes())) throw new AssertionError("TS payload changed");
+                if (requested.get().getRequestProperty("Range") != null) throw new AssertionError(
+                    "Whole-entity media sent a carrier byte range"
+                );
+            } finally {
+                client.disconnect();
+            }
+        } finally {
+            ProviderRelay.testConnections = null;
+        }
+    }
+
     private static void chunk(DataOutputStream out, String name, byte[] data) throws Exception {
         byte[] type = name.getBytes(StandardCharsets.US_ASCII);
         CRC32 crc = new CRC32();
@@ -25,6 +81,7 @@ public final class ProviderRelayTransportTest {
     public static void main(String[] args) throws Exception {
         byte[] ts = new byte[188 * 5];
         for (int at = 0; at < ts.length; at += 188) ts[at] = 0x47;
+        rawTsWithImageMime(ts);
         ByteArrayOutputStream image = new ByteArrayOutputStream();
         DataOutputStream png = new DataOutputStream(image);
         png.write(new byte[] { (byte) 137, 80, 78, 71, 13, 10, 26, 10 });
@@ -163,6 +220,6 @@ public final class ProviderRelayTransportTest {
         } finally {
             ProviderRelay.testConnections = null;
         }
-        System.out.println("8 real TCP file and wrapped-segment range checks passed");
+        System.out.println("9 real TCP file, raw-TS and wrapped-segment range checks passed");
     }
 }

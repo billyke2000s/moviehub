@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Correct the MIME type of the newly added Rive routes whose servers label raw video segments as images, retaining video and audio bytes. Audit new-provider movie and episode links separately.
+
 - Add Rive movie and episode sources from FMHY through the existing provider bridge. Keep distinct links separately listed; existing providers and source identity rules are unchanged. Desktop samples passed video/audio, runtime and midpoint decoding checks; see the dated addition report for Android validation status.
 
 ## 1.0.6 (26 October 2026)

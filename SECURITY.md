@@ -236,3 +236,5 @@ Finite-range file playback retains HTTPS/public-host checks on every redirect an
 ## Rive source addition
 
 The Rive adapter uses anonymous HTTPS requests through the existing bounded transport. It requires numeric TMDB and episode identities, rejects explicit identity mismatches and protected or unsupported response records, and retains only the ordinary website Referer for playback. It obtains no account credentials, introduces no dependencies and executes no remote scripts. Audit evidence omits media URLs and tokens.
+
+Rive Citadel’s opt-in carrier path identifies raw TS from received bytes when a zero-to-end request obtains the whole entity. It does not trust a misleading image MIME type, change media bytes, broaden permitted hosts, disable TLS or change non-opted-in range handling.

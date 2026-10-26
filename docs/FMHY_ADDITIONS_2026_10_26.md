@@ -46,3 +46,11 @@ Existing Rive-independent providers were not removed, repaired or reclassified b
 - Working-tree whitespace checks pass.
 - New-source Android workflow selects only native:rive and requires every returned link to report verified video/audio, plausible runtime, midpoint decoding and separate-source identity. Empty or partially failing audits fail the job.
 - Android build/lint, instrumentation and new-source live-player results are pending. No APK release has been published for this addition.
+
+## Initial packaged Android audit and targeted transport fix
+
+[Initial run 40375703384](https://github.com/billyke2000s/moviehub/actions/runs/40375703384) failed its strict verification gate: **two of seven movie links verified**, five did not. Primevids/dcloud and one Citadel route decoded video/audio, had plausible runtimes and decoded after seeking to the midpoint. The other routes raised relay IOExceptions. The [initial per-link results](FMHY_RIVE_ANDROID_INITIAL_2026_10_26.jsonl) are preserved. Desktop decoding did not establish packaged-player compatibility for those five links.
+
+Live inspection found raw MPEG-TS beginning with the TS sync byte served as image/jpeg on the failing English routes, while a passing route used application/octet-stream. A real-TCP regression reproduced the misleading image MIME type on an opted-in whole-entity zero-range read and failed before the fix. The relay now sniffs those opted-in whole-entity payloads too; Citadel selects the existing carrier flag. Media bytes and audio are unchanged, and ordinary unflagged range handling stays on its existing path. The targeted relay suite passes, including the existing finite-file and wrapped-media cases. No existing provider was removed or reconfigured.
+
+The follow-up workflow tests both new-provider movie links and exact-episode links. Its results remain pending; the failed initial audit is not counted as full verification. The first main commit's APK/build job and experimental device suite passed; the normal device suite is tracked separately, and signing compatibility was skipped by that push workflow's configuration.

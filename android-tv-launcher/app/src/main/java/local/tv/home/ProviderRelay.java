@@ -299,7 +299,7 @@ final class ProviderRelay implements AutoCloseable {
                     byte[] head = new byte[ProviderSegments.HEAD];
                     int held = 0,
                         skip = 0;
-                    if (!playlist && !wrappedContainer && range == null) {
+                    if (!playlist && !wrappedContainer && (range == null || wholeEntity)) {
                         while (held < head.length) {
                             int count = in.read(head, held, head.length - held);
                             if (count < 0) break;

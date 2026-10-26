@@ -5,6 +5,9 @@ on:
         paths:
             - "android-tv-launcher/app/src/main/python/moviehub_native/rive.py"
             - "android-tv-launcher/app/src/main/python/moviehub_native/__init__.py"
+            - "android-tv-launcher/app/src/main/java/local/tv/home/ProviderRelay.java"
+            - "android-tv-launcher/app/src/androidTest/java/local/tv/home/FreeVodLiveAuditTest.java"
+            - "android-tv-launcher/tests/run-live-vod-audit.sh"
             - ".github/workflows/fmhy-new-vod-audit.yml"
     workflow_dispatch:
 permissions:
@@ -17,6 +20,7 @@ jobs:
             fail-fast: false
             matrix:
                 shard: [0]
+                media: [movies, series]
         steps:
             - uses: actions/checkout@v5
             - uses: actions/setup-java@v5
@@ -45,7 +49,7 @@ jobs:
                   arch: x86_64
                   profile: tv_1080p
                   disable-animations: true
-                  script: bash android-tv-launcher/tests/run-live-vod-audit.sh 0 1 native:rive
+                  script: bash android-tv-launcher/tests/run-live-vod-audit.sh 0 1 native:rive ${{ matrix.media }}
             - name: Require every returned link to pass video, audio, runtime and midpoint checks
               run: |
                   python - <<'PYTHON'
@@ -63,6 +67,6 @@ jobs:
             - uses: actions/upload-artifact@v6
               if: always()
               with:
-                  name: fmhy-new-source-audit-${{ matrix.shard }}
+                  name: fmhy-new-source-audit-${{ matrix.media }}-${{ matrix.shard }}
                   path: vod-live-audit.jsonl
                   if-no-files-found: warn
