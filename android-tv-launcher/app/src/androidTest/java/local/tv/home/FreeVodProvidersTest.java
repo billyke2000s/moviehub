@@ -85,9 +85,9 @@ public final class FreeVodProvidersTest {
 
     @Test
     public void packagedPythonImportsEveryProviderAndHostResolverWithoutKodi() throws Exception {
-        // Seven retired and 18 unverified sites stay disabled; Levidia stays searchable.
-        assertEquals(38, FreeVodProviders.ids(context).size());
-        assertEquals(68, FreeVodProviders.validate(context));
+        // Eleven retired/repurposed and 18 unverified sites stay disabled; Levidia stays searchable.
+        assertEquals(36, FreeVodProviders.ids(context).size());
+        assertEquals(70, FreeVodProviders.validate(context));
     }
 
     @Test
@@ -153,6 +153,17 @@ public final class FreeVodProvidersTest {
         assertFalse(window.add(VodSearch.sourceKey(one), one));
         assertEquals(2, window.snapshot().size());
         assertNotEquals(SourcesScreen.provider(one.title), SourcesScreen.provider(two.title));
+    }
+
+    @Test
+    public void sourceBadgesUseReleaseResolutionInsteadOfProviderBranding() {
+        assertEquals(
+            "1080p",
+            SourcesScreen.quality("4khdhub.one · Host\n1080p · Film.1080p.UHD.4KHDHub.mkv")
+        );
+        assertEquals("720p", SourcesScreen.quality("4khdhub.one · Host\n720p · Film.4KHDHub.mkv"));
+        assertEquals("4K", SourcesScreen.quality("4khdhub.one · Host\n2160p · Film.UHD.mkv"));
+        assertEquals("SD", SourcesScreen.quality("4khdhub.one · Host\nSD · Film.4KHDHub.mkv"));
     }
 
     @Test

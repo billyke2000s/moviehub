@@ -1,5 +1,23 @@
 # Status
 
+## Current source release candidate — 26 October 2026
+
+1.0.4 (code 104) is published and its APK checksum was independently matched to the update feed.
+1.0.5 is prepared for publication with two new native movie websites, Vixsrc and 4KHDHub,
+finite-range file playback, correct quality badges and a backup-audio fix. The original poster
+fix is preserved. All CI jobs passed on `f5b4e63e65788c512389ca31996c6a8d66d43474`.
+
+The initial 1.0.4 live audit covered all 33 then-enabled movie websites and verified 18 of 21
+returned links across seven sites. The final focused pass verified Levidia (four of six links),
+one 4KHDHub HD link, Vixsrc and a known Rarefilmm film, with decoding, plausible duration,
+midpoint playback and decoded/output audio. Other links failed or remained unverified. A
+3840×1600 file decoded and sought in an earlier pass, but reliable 4K audio playback has not
+passed verification; no universal provider or 4K guarantee is claimed. See the dated audit reports.
+
+The inventory is 36 enabled websites and 39 adapters, plus excluded auditable sites, with 68
+original Kodi modules and two native modules. Four additional exclusions have fresh sale/parking
+or unrelated gambling evidence. Historical notes below describe earlier snapshots.
+
 ## Continuous series and automatic playback
 
 New settings keep manual source selection as the default. Next-episode metadata is prefetched while watching; season transitions use catalogue episodes and air dates. Missing-pack episodes follow the selected manual/automatic mode. Guide colour shortcuts are handled independently of focused widgets, with Back revealing accessible controls. Physical TV, remote and real-account validation remain outstanding.
@@ -532,3 +550,11 @@ Site-by-site recovery is in progress on `fix/site-by-site-vod`. All 63 public we
 Initial runner audit [40251539758](https://github.com/billyke2000s/moviehub/actions/runs/40251539758) at `4522a1c` completed 57 movie-site and 48 episode-site checks, covering all 63 public sites. The focused Inception probe returned eight validated media links from FZMovies, AnyMovies, M4uHD and Iwaatch. Tubi’s current anonymous movie protocol and Waffi’s separate mirrors/online player were then inspected and adapted; their exact-head runner results are still pending. Browser-challenge and unsupported downstream-host cases remain explicitly unresolved.
 
 The follow-up runner validated 12 Inception links across six websites and four clear-HLS Tubi links for a listed film. PR 158 preserves the independently merged PR 157 backdrop fix and tracks combined Android/device validation. The exact reported Spider-Man title is included in the final public-source audit. Release target: MovieHub 1.0.4, update code 104, preserving the existing package, certificate and updater feed.
+
+## Native movie source expansion (26 October 2026)
+
+1.0.4 is published (code 104, unchanged signing identity). Its existing-site recovery was followed by a 33-movie-website Android audit: 21 returned sources, 18 decoded and passed runtime plus midpoint-seek checks across seven websites; two Levidia links did not decode and one other film lacked an independently verified expected runtime. New native 4KHDHub/Vixsrc adapters are staged in this branch; live Android results are pending and no new 4K release is claimed yet.
+
+The Android backup-switch audio assertion recurred on unchanged production playback code. The selected replacement now restores a transient native zero to normal gain; Android still controls the user volume. Fresh homepage checks confirm anitaku.pe is parked, goojara.club and okmov.to lead to GoDaddy sale listings, and series9mx.pro leads to an unrelated gambling service. These four remain bundled for auditing but leave default discovery. Upmovies and WatchSeriesHD remain inconclusive on the fresh request and are not newly retired.
+
+The first native Android audit passed Vixsrc but all seven resolved 4KHDHub files failed to decode. Follow-up requests proved finite ranges return 206 while no/open-ended ranges return 403. The new opt-in finite-range transport and progressive-file 403 fallback are tested locally (19 new checks); the final live Android rerun is pending.

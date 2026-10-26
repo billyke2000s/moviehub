@@ -33,6 +33,7 @@ final class EngineSources {
         final JSONObject headers;
         final JSONObject playlistSession;
         final boolean segmentContainers;
+        final boolean boundedRanges;
 
         Stream(JSONObject value) {
             url = value.getString("url");
@@ -40,6 +41,7 @@ final class EngineSources {
                 value.optJSONObject("headers") == null ? new JSONObject() : value.getJSONObject("headers");
             playlistSession = value.optJSONObject("playlistSession");
             segmentContainers = value.optBoolean("segmentContainers", false);
+            boundedRanges = value.optBoolean("boundedRanges", false);
         }
     }
 }

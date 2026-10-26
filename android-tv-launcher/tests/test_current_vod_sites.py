@@ -26,7 +26,7 @@ class CurrentSiteTests(unittest.TestCase):
             def movie(self, *args): return 'lookup'
             def sources(self, key, hosts):
                 return [dict(source=host, url='https://cdn.example/video.m3u8', direct=True,
-                             segmentContainers=True) for host in ['Host One', 'Host Two']]
+                             segmentContainers=True, boundedRanges=True) for host in ['Host One', 'Host Two']]
             def resolve(self, url): return url
         raw = json.dumps(dict(title='Film', year='2020', imdb='tt123', tmdb=1, season=-1, episode=-1))
         def playable(url, quality): return dict(url=url, headers={}, verifiedQuality=None)
@@ -34,7 +34,7 @@ class CurrentSiteTests(unittest.TestCase):
             result = json.loads(vod.query_site('free99:levidia_ch', raw, lambda: False))
         self.assertEqual({x['providerName'] for x in result['sources']},
                          {'current-catalogue.example · Host One', 'current-catalogue.example · Host Two'})
-        self.assertTrue(all(x['website'] == 'current-catalogue.example' and x['catalogue'] == 'levidia.ch' and x['segmentContainers'] for x in result['sources']))
+        self.assertTrue(all(x['website'] == 'current-catalogue.example' and x['catalogue'] == 'levidia.ch' and x['segmentContainers'] and x['boundedRanges'] for x in result['sources']))
 
     def test_watch_tvseries_and_tvids_follow_absolute_canonical_links(self):
         from moviehub_scrubs import scrape_sources

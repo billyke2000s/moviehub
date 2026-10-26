@@ -472,10 +472,16 @@ A cold ZLive start (no saved source hint) never downloads the catalogue: `Adapte
 
 ## VOD provider recovery
 
-Discovery retains 38 websites (41 adapters) and all 68 bundled modules. Seven domains are retired and 18 provisional restorations are in `UNVERIFIED_SITES`, disabled pending positive verification. Only Levidia is restored from the original 26 exclusions. `include_retired=True` exposes both groups for explicit audits; transient failures do not prove permanent closure. Both Levidia adapters have maintained parsing fixes. Header-only client operations retain redirects and cookies without reading media bodies. Cross-authority redirects remove an explicit Host alongside credentials. Already-resolved file paths still pass media validation even when an upstream scraper labels them indirect.
+Discovery offers 36 websites (39 adapters) and 70 modules (68 Kodi and two native). Eleven domains are retired or repurposed and 18 provisional restorations are in `UNVERIFIED_SITES`, disabled pending positive verification. Only Levidia is restored from the original 26 exclusions. `include_retired=True` exposes both groups for explicit audits; transient failures do not prove permanent closure. Both Levidia adapters have maintained parsing fixes. Header-only client operations retain redirects and cookies without reading media bodies. Cross-authority redirects remove an explicit Host alongside credentials. Already-resolved file paths still pass media validation even when an upstream scraper labels them indirect.
 
 ## Site-by-site VOD recovery (26 October 2026)
 
 `moviehub_compat/current_hosts.py` implements inspected Xpass/Wplay, Waffi mirror/online-player and MoviesAPI player flows without executing remote JavaScript. Website adapters retain current search/player protocols. `moviehub_vod.py` preserves website/source-provider identity and redacted per-host/request diagnostics; `FreeVodProviders` carries the existing segment-container flag into the relay. `VodSearch` counts website jobs separately from host results.
 
 `moviehub_compat/tubi.py` follows Tubi’s current anonymous guest-session handshake and public movie search. It retains only matching clear HLS resources and does not supply the guest API token to media hosts.
+
+## Native movie source expansion (26 October 2026)
+
+`moviehub_native` contains independent 4KHDHub and Vixsrc website adapters and a separate inventory. `moviehub_providers.json` remains the 68-module Kodi provenance inventory. `moviehub_vod` combines the inventories for discovery and reuses the existing bounded transport, resolver, source labels and media checks. Native adapters do not execute downloaded scripts.
+
+`ProviderFileRanges` supports the observed hosts that reject whole-file and open-ended HTTP requests. It joins finite 4 MiB upstream ranges into one continuous, seekable response, checks byte offsets/length/entity identity and retains normal public-URL and redirect checks. Sources explicitly marked `boundedRanges` use it immediately. A validated progressive file that returns 403 for a whole-file/open-ended read can also retry through this path; HLS keeps its existing transport.

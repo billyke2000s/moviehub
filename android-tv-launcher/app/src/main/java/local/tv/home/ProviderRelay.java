@@ -18,6 +18,7 @@ final class ProviderRelay implements AutoCloseable {
     private final String credentialAuthority;
     private final PlaylistSession playlistSession;
     private final boolean segmentContainers;
+    private final boolean boundedRanges;
     private final Set<HttpURLConnection> active = ConcurrentHashMap.newKeySet();
     private final Set<Socket> clients = ConcurrentHashMap.newKeySet();
     // Four, so a slow segment download never holds up the playlist refresh behind it.
@@ -77,6 +78,7 @@ final class ProviderRelay implements AutoCloseable {
         playlistSession =
             stream.playlistSession == null ? null : new PlaylistSession(stream.url, stream.playlistSession);
         segmentContainers = stream.segmentContainers || playlistSession != null;
+        boundedRanges = stream.boundedRanges;
         headers = new LinkedHashMap<>();
         for (Iterator<String> keys = stream.headers.keys(); keys.hasNext(); ) {
             String key = keys.next(),
@@ -119,7 +121,7 @@ final class ProviderRelay implements AutoCloseable {
     }
 
     static boolean needed(EngineSources.Stream stream) {
-        if (stream.playlistSession != null || stream.segmentContainers) return true;
+        if (stream.playlistSession != null || stream.segmentContainers || stream.boundedRanges) return true;
         for (Iterator<String> keys = stream.headers.keys(); keys.hasNext(); ) {
             String key = keys.next();
             if (
@@ -204,6 +206,10 @@ final class ProviderRelay implements AutoCloseable {
                 }
             }
             URI current = URI.create(target);
+            if (boundedRanges) {
+                serveFileRanges(socket, current, range);
+                return;
+            }
             boolean playlistRequest;
             synchronized (this) {
                 playlistRequest = playlists.contains(token);
@@ -231,6 +237,21 @@ final class ProviderRelay implements AutoCloseable {
                     retried = true;
                     hop--;
                     continue;
+                }
+                if (
+                    status == 403 &&
+                    playlistSession == null &&
+                    !segmentContainers &&
+                    (range == null || range.matches("bytes=[0-9]+-")) &&
+                    current.getPath().toLowerCase(Locale.ROOT).matches(".*\\.(mp4|mkv|webm|mov|m4v|avi)$")
+                ) {
+                    // Discovery proved a finite media range exists. Some hosts reject the
+                    // player's open-ended read; retry with validated, finite file ranges.
+                    active.remove(upstream);
+                    upstream.disconnect();
+                    upstream = null;
+                    serveFileRanges(socket, current, range);
+                    return;
                 }
                 if (
                     status == 403 &&
@@ -359,6 +380,42 @@ final class ProviderRelay implements AutoCloseable {
                 active.remove(upstream);
                 if (!reusable) upstream.disconnect();
             }
+        }
+    }
+
+    private void serveFileRanges(Socket socket, URI target, String range) throws Exception {
+        try (
+            ProviderFileRanges file = new ProviderFileRanges(
+                target,
+                range,
+                this::open,
+                (connection, complete) -> {
+                    active.remove(connection);
+                    if (!complete) connection.disconnect();
+                },
+                () -> closed
+            );
+            InputStream input = counted(file)
+        ) {
+            OutputStream output = socket.getOutputStream();
+            String extra = file.ranged ? "Content-Range: " + file.contentRange() + "\r\n" : "";
+            output.write(
+                (
+                    "HTTP/1.1 " +
+                    (file.ranged ? "206 Partial Content" : "200 OK") +
+                    "\r\nContent-Type: " +
+                    file.contentType +
+                    "\r\nContent-Length: " +
+                    file.length() +
+                    "\r\nAccept-Ranges: bytes\r\nCache-Control: no-store\r\nConnection: close\r\n" +
+                    extra +
+                    "\r\n"
+                ).getBytes(StandardCharsets.US_ASCII)
+            );
+            byte[] buffer = new byte[32768];
+            int count;
+            while (!closed && (count = input.read(buffer)) != -1) output.write(buffer, 0, count);
+            output.flush();
         }
     }
 

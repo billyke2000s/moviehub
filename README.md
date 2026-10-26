@@ -229,8 +229,12 @@ MovieHub searches distinct movie/series websites, retaining alternate Kodi scrap
 
 ### Movie and series discovery recovery
 
-Levidia is restored after verifying its exact scraper address and search. The other 18 provisional restorations are disabled pending positive verification; seven retired domains also stay disabled. Ordinary discovery contains 38 websites and 41 adapters. Scraper metadata lookups stop after response headers, redirects discard an obsolete Host header, and Levidia tolerates an empty initial cookie jar and yearless search entries. Availability is reported per search; this does not promise that every remote website or host plays.
+Levidia is restored after verifying its exact scraper address and search. The other 18 provisional restorations are disabled pending positive verification; eleven confirmed retired or repurposed domains also stay disabled. Ordinary discovery contains 36 websites and 39 adapters, including two separately maintained native websites. Scraper metadata lookups stop after response headers, redirects discard an obsolete Host header, and Levidia tolerates an empty initial cookie jar and yearless search entries. Availability is reported per search; this does not promise that every remote website or host plays.
 
 ## Site-by-site VOD recovery (26 October 2026)
 
 Free film/series results list each actual playback provider separately, with its discovery website retained. See [the site-by-site audit](docs/FREE_VOD_SITE_AUDIT_2026_10_26.md) for current website, search and player findings.
+
+## Native movie source expansion (26 October 2026)
+
+MovieHub-native movie adapters can use a real TMDB identity directly. These are maintained separately from the bundled Kodi adapters; each downstream media host remains an individual source. Provider availability and 4K results vary by film and network. Source labels are advertised quality unless the media manifest supplies a resolution.

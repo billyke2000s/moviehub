@@ -96,10 +96,12 @@ final class EngineSources {
         final JSONObject headers;
         final JSONObject playlistSession;
         final boolean segmentContainers;
+        final boolean boundedRanges;
 
         Stream(JSONObject value) throws Exception {
             playlistSession = value.optJSONObject("playlistSession");
             segmentContainers = value.optBoolean("segmentContainers", false);
+            boundedRanges = value.optBoolean("boundedRanges", false);
             expiresAt = value.optLong("expiresAtMs", 0);
             url = ProviderUrls.playback(value.getString("url"));
             headers = value.getJSONObject("headers");

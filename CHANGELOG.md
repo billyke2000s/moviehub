@@ -1,5 +1,13 @@
 ## Unreleased
 
+## 1.0.5 (26 October 2026)
+
+- New movie websites: Vixsrc and 4KHDHub, with each playback host listed separately.
+- Better playback and seeking for large movie files from hosts which require fixed byte ranges.
+- Quality badges use the release resolution and no longer mistake provider branding for 4K.
+- Keep movie backup switches audible after the replacement player was prepared silently.
+- Stop querying four domains confirmed parked, for sale or repurposed; keep their modules available for explicit audits.
+
 ## 1.0.4 (26 October 2026)
 
 - More movie links from updated website searches and player loading, including Iwaatch, AnyMovies, M4uHD, Levidia, SeriezLoaded/Waffi and Tubi.

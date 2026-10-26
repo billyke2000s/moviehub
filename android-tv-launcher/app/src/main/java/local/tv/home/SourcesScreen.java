@@ -55,14 +55,10 @@ final class SourcesScreen {
 
     /** "4K", "1080p", "720p" or "SD", from a source's description. */
     static String quality(String raw) {
-        String lower = raw.toLowerCase(Locale.ROOT);
-        return lower.contains("2160p") || lower.contains("4k")
-            ? "4K"
-            : lower.contains("1080p")
-              ? "1080p"
-              : lower.contains("720p")
-                ? "720p"
-                : "SD";
+        // Provider names such as 4KHDHub are not a video's resolution. Numeric
+        // release resolution also takes precedence over a generic UHD source tag.
+        int resolution = SourceRanking.resolution(release(raw));
+        return resolution >= 2160 ? "4K" : resolution >= 720 ? resolution + "p" : "SD";
     }
 
     /** Badges for a source: HDR or Dolby Vision, codec and file size, when the description says. */

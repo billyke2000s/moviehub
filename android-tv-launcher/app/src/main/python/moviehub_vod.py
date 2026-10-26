@@ -12,6 +12,8 @@ import resolveurl
 
 from pathlib import Path
 _RECORDS = json.loads(Path(__file__).with_name('moviehub_providers.json').read_text())
+from moviehub_native import PROVIDERS as _NATIVE_PROVIDERS
+_RECORDS += _NATIVE_PROVIDERS
 _MODULES = {r['id']: r for r in _RECORDS}
 # Keep host selection headless and free-only. Never authorize a cloud service or open a popup.
 _HOSTS = sorted({d.lower() for cls in resolveurl.relevant_resolvers(include_universal=False, include_popups=False)
@@ -24,6 +26,8 @@ def providers():
 RETIRED_SITES = frozenset({
     '123-movies.golf', 'dopebox.to', 'flixwave.me', 'm4ufree.se',
     'projectfreetv.lol', 'putlocker.gives', 'soap2dayz.top',
+    # Rechecked 26 October: sale listings/parking or an unrelated gambling destination.
+    'anitaku.pe', 'goojara.club', 'okmov.to', 'series9mx.pro',
 })
 
 # Previously excluded sites need positive catalogue/search evidence before restoration.
@@ -141,7 +145,8 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
     stage = "lookup"
     try:
         client.check()
-        utils = importlib.import_module('moviehub_'+record['family']+'.source_utils')
+        family = 'scrubs' if record['family'] == 'native' else record['family']
+        utils = importlib.import_module('moviehub_'+family+'.source_utils')
         utils._seen.websites = set()
         provider = importlib.import_module(record['module']).source()
         # Several original scrapers keep client.dnt_headers itself as self.headers and then add
@@ -151,7 +156,7 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
         imdb, tmdb = info.get('imdb', ''), str(info.get('tmdb', ''))
         title, year = info.get('title', ''), str(info.get('year', ''))
         # Use each add-on's title preparation before constructing its lookup key.
-        clean = importlib.import_module('moviehub_'+record['family']+'.cleantitle')
+        clean = importlib.import_module('moviehub_'+family+'.cleantitle')
         localtitle = info.get('localTitle') or title
         season, episode = str(info['season']), str(info['episode'])
         original_title = title
@@ -224,7 +229,8 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
                                'sourceProvider':source_host(host_name, item['url']),
                                'providerName':source_label(website, host_name, item['url']), 'quality':result.pop('verifiedQuality', None) or str(item.get('quality','SD')),
                                'info':str(item.get('info','')), 'title': title,
-                               'segmentContainers': bool(item.get('segmentContainers', False))})
+                               'segmentContainers': bool(item.get('segmentContainers', False)),
+                               'boundedRanges': bool(item.get('boundedRanges', False))})
                 client.host_result(result['sourceProvider'], 'complete')
                 sources.append(result)
                 if emit is not None: emit.ready(json.dumps(result))

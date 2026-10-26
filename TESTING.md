@@ -9,7 +9,7 @@ There are three layers of checks. CI runs all of them on every pull request that
 
 | Layer                          | Where                                      | Needs                                | Runs in CI step                                              |
 | ------------------------------ | ------------------------------------------ | ------------------------------------ | ------------------------------------------------------------ |
-| Core checks (540)              | `android-tv-launcher/tests/`               | Only a JDK                           | "Verify playlist, network, channel search and episode rules" |
+| Core checks (932)              | `android-tv-launcher/tests/`               | Only a JDK                           | "Verify playlist, network, channel search and episode rules" |
 | Build and lint                 | Gradle                                     | Android SDK 35                       | "Build APK and run Android lint"                             |
 | Device tests (instrumentation) | `android-tv-launcher/app/src/androidTest/` | Android emulator                     | `device-tests` job                                           |
 | Signing compatibility          | release build vs published APK             | signing secrets (same-repo PRs only) | `signed-compatibility` job                                   |
@@ -367,7 +367,7 @@ LiveControlsTest.entryOkClickAndBackUseTheSameFullBanner checks visible video fo
 
 SourceWindowTest covers the exact three-second boundary, best available result, no-result
 waiting, late results, duplicates, cancellation and appending alternatives without resetting
-VOD stall/failed-source state. test_free_vod.py imports all 68 bundled constructors and runs
+VOD stall/failed-source state. test_free_vod.py imports the 68 Kodi constructors and two native constructors and runs
 the real MP4Hydra provider against offline search/page/playlist/media fixtures with two CDN
 servers. It also covers header preservation, HTML error rejection, cancellation and private/
 plain-HTTP target rejection. Run `python android-tv-launcher/tests/test_free_vod.py` with
@@ -375,7 +375,7 @@ requests and six installed. These checks do not prove live playback. Python 3.11
 for Android builds; Chaquopy adds native runtime ABIs to the APK. Full Android CI and device
 validation must pass before treating this as a release candidate.
 
-FreeVodProvidersTest imports all 68 constructors from the packaged Android Python runtime
+FreeVodProvidersTest imports all 70 constructors from the packaged Android Python runtime
 and checks Java-to-Python cancellation. The offline suite also rejects executable decoder
 expressions. A separate CI probe reports public provider availability without logging URLs.
 
@@ -399,7 +399,7 @@ Player panels request input focus after their DecorView attaches, with the initi
 
 ## Free VOD failure and duration regressions
 
-The Python suite individually checks all 68 provider lookup contracts and explicit library/API-key exclusions, rejects 7/30/119.9-second media, accepts the 120-second boundary and unknown metadata, and preserves a matching playback User-Agent. See [inventory audit](docs/FREE_VOD_AUDIT.md). `PlaybackTest` adds real-VLC manual free-source failure through a broken host and short clip to another provider, initial short-clip rejection with a late-discovered backup, and a deliberately blocked native stop while controls and original playback remain responsive. The speed regression requires visible Mb/s and received-byte labels with a positive real relay byte count. The checked-in `vod.mp4` fixture is real 150-second H.264/AAC media, generated from the original fixture with FFmpeg and fully decoded locally. Duration checks stay active; short-video regressions still use the original 30-second fixture. See the test-assets README for the reproduction command. Full Android CI validation is required; these are fixtures, not physical-TV/provider evidence.
+The Python suite individually checks all 70 provider lookup contracts and explicit library/API-key exclusions, rejects 7/30/119.9-second media, accepts the 120-second boundary and unknown metadata, and preserves a matching playback User-Agent. See [inventory audit](docs/FREE_VOD_AUDIT.md). `PlaybackTest` adds real-VLC manual free-source failure through a broken host and short clip to another provider, initial short-clip rejection with a late-discovered backup, and a deliberately blocked native stop while controls and original playback remain responsive. The speed regression requires visible Mb/s and received-byte labels with a positive real relay byte count. The checked-in `vod.mp4` fixture is real 150-second H.264/AAC media, generated from the original fixture with FFmpeg and fully decoded locally. Duration checks stay active; short-video regressions still use the original 30-second fixture. See the test-assets README for the reproduction command. Full Android CI validation is required; these are fixtures, not physical-TV/provider evidence.
 
 ## Provider compatibility regressions
 
@@ -530,7 +530,7 @@ The first Android run of this PR failed two device tests (`ProviderAdaptersTest.
 
 ## VOD retirement and transport recovery
 
-The Python suite checks Levidia remains in ordinary discovery, empty landing cookies, yearless results, cross-site Host/credential removal, and zero body reads for file-size, redirect, header and cookie lookups. Existing duration, cancellation, TLS/public-address, redirect-cookie and all-adapter contracts remain required. The public probe supports `--include-retired` and repeated `--provider` filters; failures are observations for the selected title and network, not proof of closure. Current inventory: 38 searchable websites, 41 adapters, 68 modules bundled. A regression requires Levidia to be the only enabled member of the original 26 exclusions.
+The Python suite checks Levidia remains in ordinary discovery, empty landing cookies, yearless results, cross-site Host/credential removal, and zero body reads for file-size, redirect, header and cookie lookups. Existing duration, cancellation, TLS/public-address, redirect-cookie and all-adapter contracts remain required. The public probe supports `--include-retired` and repeated `--provider` filters; failures are observations for the selected title and network, not proof of closure. Current inventory: 36 searchable websites, 39 adapters and 70 modules (68 Kodi plus two native). A regression requires Levidia to be the only enabled member of the original 26 exclusions.
 
 Additional recovery regressions check Scrubs Levidia delegates Wootly once and an empty fallback does not hide a host timeout. Offline tests forbid live HTTP from upstream constructors. Local suite: 32 Python tests.
 
@@ -539,3 +539,19 @@ Additional recovery regressions check Scrubs Levidia delegates Wootly once and a
 The site recovery suite imports `test_current_vod_sites.py` from `test_free_vod.py`. It covers canonical result links, current search/player flows, distinct providers sharing a CDN URL, authenticated Xpass responses, rejected tampering with empty AES-GCM associated data, and diagnostics without URLs or credentials. Live checks and limitations are recorded in [the 26 October audit](docs/FREE_VOD_SITE_AUDIT_2026_10_26.md).
 
 Current site recovery: 46 offline Python tests, including Tubi’s padded challenge/issued signing key, clear-resource filtering and Waffi mirror isolation. Android instrumentation exercises named-backend deduplication through the actual selection-window key. The HTTP identity audit compares app requests, a cookie-preserving browser-style requests session and curl without executing challenge code.
+
+## Native movie source expansion (26 October 2026)
+
+`test_native_vod_sites.py` covers exact title/year selection, literal redirect decoding without executing scripts, isolated mirror failure, distinct returned hosts, safe filename encoding, current Vixsrc movie/episode identities and expired token rejection. The opt-in native Android audit plays each returned source independently through the actual relay and LibVLC; a completed job is not evidence every source passed. Inspect its redacted JSONL statuses and final shard marker.
+
+The focused native-source audit also records decoded audio buffers and selected audio-language metadata; it does not call a source verified when neither decoded nor played audio buffers were observed. Device volume remains controlled by Android.
+
+`ProviderFileRangesTest` exercises a real finite-range-only HTTP fixture: full streaming across multiple parts, middle/finite/suffix seeks, interrupted-part resumption without duplicated bytes, guarded redirects, invalid/changing metadata, changed ETags, downgrade rejection and cancellation. `PlaybackTest.finiteRangeOnlyHostPlaysAndSeeksThroughTheRealRelay` requires actual LibVLC playback through the same opt-in relay; an open-ended fixture request is rejected with HTTP 403. It covers explicit source opt-in and automatic recovery from that rejected request.
+
+The live audit reports decoded audio and output audio-buffer counters separately, so valid passthrough does not require software audio decoding. It records selected audio-language metadata, received bytes and redacted transport exception types. Final dimensions/counters are taken after the midpoint check. Source badges ignore provider branding and prefer numeric resolution over a generic UHD source tag.
+
+Final validation on `f5b4e63e65788c512389ca31996c6a8d66d43474`: 51 offline Python tests,
+932 local core checks, all Android/build/lint/signing CI jobs and standalone engine checks passed.
+The focused live audit completed for Levidia, both native sites and a catalogue-listed Rarefilmm
+film. Read `docs/NATIVE_VOD_PLAYBACK_AUDIT_2026_10_26.jsonl` for each result; a completed audit
+does not assert all links passed. Product code is unchanged by the final documentation commit.

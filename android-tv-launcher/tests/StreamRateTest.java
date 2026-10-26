@@ -15,6 +15,9 @@ public final class StreamRateTest {
         check(SourceRanking.resolution("HD") == 720);
         check(SourceRanking.resolution("UHD") == 2160);
         check(SourceRanking.resolution("4Kings") == 480);
+        check(SourceRanking.resolution("4KHDHub 1080p") == 1080);
+        check(SourceRanking.resolution("1080p UHD BluRay") == 1080);
+        check(SourceRanking.resolution("720p from 4khdhub.one") == 720);
         check(SourceRanking.rank("1080p HDCAM", 1080) < SourceRanking.rank("SD WEB-DL", 1080));
         check(SourceRanking.readyRank("1080p", 1080, 1, 500) > SourceRanking.readyRank("720p", 1080, 99, 1));
         check(
@@ -22,7 +25,7 @@ public final class StreamRateTest {
         );
         check(SourceRanking.readyRank("1080p", 1080, 0, 50) > SourceRanking.readyRank("1080p", 1080, 0, 500));
         check(SourceRanking.readyRank("1080p", 1080, 0, 500) > SourceRanking.readyRank("4K", 1080, 99, 1));
-        System.out.println("16 incoming-rate and ready-source ranking checks passed");
+        System.out.println("19 incoming-rate and ready-source ranking checks passed");
     }
 
     private static void check(boolean value) {
