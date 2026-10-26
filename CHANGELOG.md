@@ -5,6 +5,7 @@
 - Preserve individual playback providers beneath each discovery website, including separate backend diagnostics.
 - Adapt confirmed current searches/player flows for canonical TV sites, M4uHD, AnyMovies, Iwaatch, PressPlay, SeriezLoaded, Movies Ni Pipay and nested player selectors.
 - Decode the observed Xpass public player response and opt its PNG-wrapped media into the existing relay decoder; authenticate AES-GCM even with empty associated data.
+- Recover Tubi movie search with its current anonymous web-client handshake and enumerate Waffi mirrors plus online playback separately.
 - Record all 63 website observations and keep unverified restorations disabled.
 
 - Restore verified Levidia. Disable the other 18 provisional restorations pending positive verification, alongside seven retired domains.

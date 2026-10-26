@@ -46,6 +46,14 @@ jobs:
                     --provider scrubs:tvmovieflix_com --provider scrubs:watchseries_cyou \
                     --provider scrubs:projectfreetv_cyou \
                     --movie "Inception" 2010 tt1375666 27205 | tee focused-movie-audit.jsonl
+            - name: Probe Tubi with a currently listed film
+              if: matrix.media == 'movies'
+              run: |
+                  python android-tv-launcher/tests/probe-free-vod.py --provider scrubs:tubitv_com \
+                    --movie "Bikini Spring Break" 2012 tt2304517 0 | tee tubi-movie-audit.jsonl
+            - name: Compare HTTP identity on challenge-blocked reachable websites
+              if: matrix.media == 'movies'
+              run: python android-tv-launcher/tests/probe-vod-http.py | tee http-identity-audit.jsonl
             - uses: actions/upload-artifact@v6
               if: always()
               with:
@@ -53,3 +61,5 @@ jobs:
                   path: |
                       provider-audit.jsonl
                       focused-movie-audit.jsonl
+                      http-identity-audit.jsonl
+                      tubi-movie-audit.jsonl

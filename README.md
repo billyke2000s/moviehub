@@ -225,7 +225,7 @@ ZLive exposes each distinct advertised, supported public resolver route with its
 
 ### Experimental provider repairs
 
-MovieHub searches distinct movie/series websites, retaining alternate Kodi scrapers as fallbacks without counting the same website twice. Available links are grouped under their website. Resume refreshes movie/episode metadata and searches for a current link before restoring progress. ZLive uses its current public ticket-and-POST player API and the source labels actually advertised in its catalogue. Provider availability depends on the website, host and location; bundled module counts do not establish playback availability.
+MovieHub searches distinct movie/series websites, retaining alternate Kodi scrapers as fallbacks without counting the same website twice. Each actual playback provider has a separate row labelled with its discovery website; multiple mirrors are not collapsed into one website row. Resume refreshes movie/episode metadata and searches for a current link before restoring progress. ZLive uses its current public ticket-and-POST player API and the source labels actually advertised in its catalogue. Provider availability depends on the website, host and location; bundled module counts do not establish playback availability.
 
 ### Movie and series discovery recovery
 

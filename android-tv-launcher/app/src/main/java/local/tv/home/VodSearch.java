@@ -63,6 +63,7 @@ final class VodSearch implements AutoCloseable {
                                 if (hosts != null) for (int i = 0; i < hosts.length(); i++) {
                                     JSONObject host = hosts.getJSONObject(i);
                                     String state = host.optString("status");
+                                    host.put("stage", "hosts");
                                     String label = state.equals("complete")
                                         ? "Playable links found"
                                         : state.equals("extracted")
@@ -135,6 +136,10 @@ final class VodSearch implements AutoCloseable {
                 return "Kodi library only";
             case "requires_api_key":
                 return "Requires an API key";
+            case "interaction_required":
+                return "Requires browser verification";
+            case "preparing":
+                return "Host is preparing this file";
             case "unsupported_type":
                 return "Does not search this media type";
             case "timeout":
@@ -157,7 +162,11 @@ final class VodSearch implements AutoCloseable {
                 return "Connection failed";
             default:
                 return status.matches("http_[0-9]{3}")
-                    ? "Website returned HTTP " + status.substring(5)
+                    ? (java.util.Arrays.asList("hosts", "resolution", "media").contains(
+                          report.optString("stage")
+                      )
+                          ? "Playback host returned HTTP "
+                          : "Website returned HTTP ") + status.substring(5)
                     : "Adapter could not complete";
         }
     }
@@ -187,8 +196,12 @@ final class VodSearch implements AutoCloseable {
         return cancelled.get();
     }
 
+    static String sourceKey(SourceRepository.Source source) {
+        return SourcesScreen.provider(source.title) + "\n" + source.uri;
+    }
+
     private synchronized void found(SourceRepository.Source source) {
-        if (expired() || !window.add(source.uri, source)) return;
+        if (expired() || !window.add(sourceKey(source), source)) return;
         for (var observer : observers) observer.accept(source);
     }
 

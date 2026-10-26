@@ -103,7 +103,8 @@ def query_site(provider_id, raw, cancelled, emit=None):
         extracted=sum(a['extracted'] for a in attempts), rejected=sum(a['rejected'] for a in attempts),
         resolutionErrors=sum(a['resolutionErrors'] for a in attempts),
         unsupportedHosts=sum(a['unsupportedHosts'] for a in attempts),
-        hostAttempts=[host for attempt in attempts for host in attempt['hostAttempts']]))
+        hostAttempts=[host for attempt in attempts for host in attempt['hostAttempts']],
+        stage=next((attempt['stage'] for attempt in attempts if attempt['status'] == status), '')))
 
 
 def source_host(value, url):
@@ -190,6 +191,10 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
                 client.check()
                 stage = "resolution"
                 url=provider.resolve(item['url'])
+                if urlparse(url.partition('|')[0]).hostname == 'quickeemail.com':
+                    client.host_result(item.get('source') or url, 'interaction_required')
+                    unsupported += 1
+                    continue
                 if not item.get('direct', False):
                     host=resolveurl.HostedMediaFile(url=url, include_universal=False, include_popups=False)
                     if not host.valid_url():
@@ -199,6 +204,7 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
                         path = urlparse(url.partition('|')[0]).path
                         if not re.search(r'\.(?:mp4|mkv|webm|avi|ts|mov|m4v|m3u8|mpd)$', path, re.I):
                             unsupported += 1
+                            client.host_result(item.get('source') or item['url'], 'unsupported_host')
                             continue
                     else:
                         url=host.resolve()
@@ -232,6 +238,8 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
         status = ('complete' if sources else 'timeout' if timed_out else client.failure() or lookup_failure or
                   ('rejected_media' if rejected else 'resolution_failed' if errors else
                    'unsupported_host' if unsupported else 'no_matches'))
+        if not candidates and client.diagnostics()['hostAttempts']:
+            stage = 'hosts'
         return json.dumps({'status':status,'sources':sources,'extracted':extracted,
                            'rejected':rejected,'resolutionErrors':errors,'unsupportedHosts':unsupported,
                            'stage':stage,'candidateLimitReached':len(candidates)>200, **client.diagnostics()})
@@ -274,6 +282,7 @@ def playable(raw, preferred=2160):
     prefix=response.content.lstrip()
     if '.m3u8' in path or 'mpegurl' in kind:
         if not prefix.startswith((b'#EXTM3U', b'\xef\xbb\xbf#EXTM3U')): return None
+        if b'SAMPLE-AES' in prefix or re.search(rb'KEYFORMAT\s*=\s*"(?!identity")', prefix): return None
         heights=[int(x) for x in re.findall(rb'RESOLUTION=\d+x(\d+)', prefix)]
         if heights:
             allowed=[h for h in heights if h <= preferred]

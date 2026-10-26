@@ -42,6 +42,8 @@ def process(url, delegate=None):
             except Exception:
                 continue
         return results
+    if (host == 'waffi.cloud' or host.endswith('.waffi.cloud')) and delegate:
+        return waffi(url, delegate)
     if host == 'embed.wplay.me':
         page = client.request(url)
         links = re.findall(r'<iframe\b[^>]*\bsrc=["\']([^"\']+)', page, re.I)
@@ -56,6 +58,51 @@ def process(url, delegate=None):
     if host in ('moviesapi.to', 'vidspark.to'):
         return moviesapi(url)
     return None
+
+
+def waffi(url, delegate):
+    from moviehub_scrubs import client_utils
+    response = client.fetch(url, max_bytes=65536)
+    page, page_url = response.text, response.url
+    if response.headers.get('Content-Type', '').lower().startswith(('video/', 'audio/')):
+        return [direct(page_url, url, urlparse(page_url).hostname)]
+    if 'data-download-page' not in page:
+        return None
+    results = []
+    links = client_utils.parseDOM(page, 'a', attrs={'class': 'mirror-download'}, ret='href')
+    for link in dict.fromkeys(links):
+        client.check()
+        try:
+            target = client.fetch(urljoin(page_url, link), headers={'Referer': page_url}, max_bytes=0)
+            if target.status_code >= 400:
+                client.host_result(target.url, 'http_' + str(target.status_code))
+                continue
+            if urlparse(target.url).hostname == urlparse(page_url).hostname:
+                continue
+            if target.headers.get('Content-Type', '').lower().startswith(('video/', 'audio/')):
+                results.append(direct(target.url, page_url, urlparse(target.url).hostname))
+            else:
+                results.extend(delegate(target.url))
+        except Exception:
+            client.host_result(urljoin(page_url, link), 'resolution_failed')
+            continue
+    # The online player is a separate backend, not a synonym for every download mirror.
+    watches = client_utils.parseDOM(page, 'a', attrs={'class': r'watch watch-online.*'}, ret='href')
+    for watch in watches:
+        try:
+            watch_url = urljoin(page_url, watch)
+            player = client.request(watch_url, referer=page_url)
+            endpoints = client_utils.parseDOM(player, 'movi-player', ret='data-source')
+            for endpoint in endpoints:
+                reply = client.scrapePage(urljoin(watch_url, endpoint), referer=watch_url)
+                data = reply.json()
+                if reply.status_code == 202:
+                    client.host_result('new.waffi.cloud · Watch', 'preparing')
+                elif reply.status_code == 200 and data.get('url'):
+                    results.append(direct(urljoin(watch_url, data['url']), watch_url, 'new.waffi.cloud · Watch'))
+        except Exception:
+            client.host_result('new.waffi.cloud · Watch', 'resolution_failed')
+    return results
 
 
 def xpass(url):

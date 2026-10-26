@@ -172,6 +172,59 @@ class CurrentSiteTests(unittest.TestCase):
             result = rarefilmm_com.source().movie('tt1', '1', 'Film', 'Film', [{'title': 'Film'}], '2020')
         self.assertEqual(result, 'https://rarefilmm.com/film/')
 
+    def test_tubi_guest_handshake_keeps_padded_challenge_and_uses_issued_signing_key(self):
+        from moviehub_compat import tubi
+        replies = [dict(id='issued-id', key=base64.b64encode(b'issued-secret').decode()),
+                   dict(access_token='issued-guest-token')]
+        with patch.object(tubi.secrets, 'token_hex', return_value='fixture-verifier'), patch.object(tubi.uuid, 'uuid4', return_value='fixture-device'), patch.object(client, 'request', side_effect=replies) as request:
+            self.assertEqual(tubi.anonymous_token(), 'issued-guest-token')
+        first = json.loads(request.call_args_list[0].kwargs['post'])
+        self.assertEqual(first['challenge'], base64.urlsafe_b64encode(hashlib.sha256(b'fixture-verifier').digest()).decode())
+        self.assertTrue(first['challenge'].endswith('='))
+        second = request.call_args_list[1]
+        self.assertEqual(json.loads(second.kwargs['post'])['id'], 'issued-id')
+        self.assertIn('X-Tubi-Signature=', second.args[0])
+        self.assertNotIn('issued-secret', second.args[0])
+
+    def test_tubi_matches_year_skips_account_and_drm_resources_and_keeps_each_cdn(self):
+        from moviehub_compat import tubi
+        catalogue = dict(contents={
+            'one': dict(id='1', title='Film', year=2020, type='v'),
+            'wrong-year': dict(id='2', title='Film', year=2019, type='v'),
+            'login': dict(id='3', title='Film', year=2020, type='v', needs_login=True)})
+        resources = [dict(type='hlsv6', codec='H264', resolution='720P', manifest=dict(url='https://one.example/master.m3u8')),
+                     dict(type='hlsv6', codec='H265', resolution='1080P', manifest=dict(url='https://two.example/master.m3u8')),
+                     dict(type='widevine', manifest=dict(url='https://drm.example/master.mpd'))]
+        def request(url, **kwargs):
+            if '/search?' in url:
+                self.assertEqual(kwargs['headers']['Authorization'], 'Bearer issued-guest-token')
+                return catalogue
+            self.assertEqual(url, 'https://tubitv.com/embed/1')
+            return '<script>var data={"video_resources":' + json.dumps(resources) + '};</script>'
+        with patch.object(tubi, 'anonymous_token', return_value='issued-guest-token'), patch.object(client, 'request', side_effect=request):
+            result = tubi.movies('Film', '2020', [{'title': 'Film'}])
+        self.assertEqual([x['source'] for x in result], ['one.example', 'two.example'])
+        self.assertNotIn('issued-guest-token', json.dumps(result))
+
+    def test_waffi_exposes_each_mirror_and_keeps_working_one_after_an_error(self):
+        page = ('<main data-download-page><a class="mirror-download" href="/a/id/mirrors/one">One</a>'
+                '<a class="mirror-download" href="/a/id/mirrors/two">Two</a>'
+                '<a class="watch watch-online watch-enabled" href="/a/id/watch">Watch</a></main>')
+        def fetch(url, **kwargs):
+            response = requests.Response(); response.status_code = 200; response.url = url
+            response.headers['Content-Type'] = 'text/html'
+            if '/mirrors/one' in url:
+                response.url = 'https://one.example/file'; response.status_code = 403
+            elif '/mirrors/two' in url: response.url = 'https://two.example/file'
+            else: response._content = page.encode()
+            return response
+        pending = SimpleNamespace(status_code=202, json=lambda: dict(state='queued'))
+        with patch.object(client, 'fetch', side_effect=fetch), patch.object(client, 'request', return_value='<movi-player data-source="/a/id/playback"></movi-player>'), patch.object(client, 'scrapePage', return_value=pending):
+            result = current_hosts.waffi('https://new.waffi.cloud/a/id/film', lambda target: [target])
+        self.assertEqual(result, ['https://two.example/file'])
+        self.assertIn(dict(provider='one.example', status='http_403'), client.diagnostics()['hostAttempts'])
+        self.assertIn(dict(provider='new.waffi.cloud · Watch', status='preparing'), client.diagnostics()['hostAttempts'])
+
     def test_trace_contains_only_hosts_methods_statuses_and_survives_resolution_scope(self):
         response = requests.Response(); response.status_code = 403
         response.url = 'https://site.example/token?secret=private'; response._content = b'blocked'
