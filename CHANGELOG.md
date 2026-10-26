@@ -1,5 +1,7 @@
 ## Unreleased
 
+## 1.0.6 (26 October 2026)
+
 - Movie source quality is read from the file itself where possible: a link labelled 1080p that is really 480p now shows "480p ✓" and ranks as 480p. Websites caught overstating quality twice in their last five checks have their labels ignored ("1080p?").
 - If no good source is found in the first 3 seconds, the app waits up to 8 seconds for one before starting.
 - While a film plays, the Sources menu shows its real quality, says when the label was wrong, and points out a better confirmed source when one turns up. It never switches by itself.
