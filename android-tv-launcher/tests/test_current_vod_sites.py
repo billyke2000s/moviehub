@@ -46,12 +46,27 @@ class CurrentSiteTests(unittest.TestCase):
             def request(url, **kwargs):
                 calls.append(url)
                 return search if '/search?' in url else '<a data-url="https://host.example/embed/1">Server</a>'
-            with patch.object(scraper_client, 'request', side_effect=request), patch.object(scrape_sources, 'process', return_value=[]):
+            with patch.object(scraper_client, 'request', side_effect=request), patch.object(scraper_client, 'scrapePage', side_effect=lambda url, **kwargs: SimpleNamespace(status_code=200, text=request(url))), patch.object(scrape_sources, 'process', return_value=[]):
                 key = provider.movie('tt1', '1', 'Film', 'Film', [{'title': 'Film'}], '2020')
                 provider.sources(key, [])
             self.assertEqual(calls[-1], 'https://canonical.example/movies/film-1')
             if name == 'watchtvseries_net':
                 self.assertTrue(calls[0].startswith('https://www.watch-tvseries.tv/search?'))
+
+    def test_tvids_uses_public_entry_domain_when_its_advertised_mirror_is_challenged(self):
+        from moviehub_scrubs.providers import tvids_net
+        from moviehub_scrubs import scrape_sources
+        search = ('<div class="relative text-center"><a href="https://www.tvids.to/movies/film-1">'
+                  '<img alt="Film"></a><a href="/list/movies/years/2020">2020</a></div>')
+        responses = [SimpleNamespace(status_code=403, text='Challenge'),
+                     SimpleNamespace(status_code=200, text='<a data-url="https://host.example/embed/1">Play</a>')]
+        provider = tvids_net.source()
+        key = provider.movie('tt1', '1', 'Film', 'Film', [{'title': 'Film'}], '2020')
+        with patch.object(scraper_client, 'request', return_value=search), patch.object(scraper_client, 'scrapePage', side_effect=responses) as pages, patch.object(scrape_sources, 'process', return_value=[]) as process:
+            provider.sources(key, [])
+        self.assertEqual([call.args[0] for call in pages.call_args_list],
+                         ['https://www.tvids.to/movies/film-1', 'https://www.tvids.net/movies/film-1'])
+        self.assertEqual(process.call_args.args[1], 'https://host.example/embed/1')
 
     def test_m4u_current_movie_cards_and_each_ajax_server(self):
         from moviehub_scrubs.providers import m4uhd_tv
