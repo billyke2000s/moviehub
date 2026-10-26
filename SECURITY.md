@@ -218,3 +218,5 @@ Movie media probes remove Cookie/Authorization on cross-origin redirects and sco
 ## VOD transport recovery
 
 Header-only metadata operations use the same TLS/public-address/redirect/cancellation checks and close the response without reading its body. Cross-authority redirects discard explicit Host and credential headers. Recognised media file paths mislabeled indirect are accepted only after the existing response and short-video checks. No TLS bypass, bot-challenge bypass, remote-code execution or new source domains are introduced.
+
+Provisional VOD restorations require positive catalogue/search evidence before entering normal discovery. Eighteen unverified sites are disabled separately from seven retired domains. HTTP-only landing-page requests were diagnostic checks, not a downgrade of application TLS policy.

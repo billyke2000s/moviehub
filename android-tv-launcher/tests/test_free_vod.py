@@ -26,17 +26,29 @@ class FreeVodTests(unittest.TestCase):
         self.assertEqual(len({r['site'] for r in everything}), 63)
         self.assertEqual(sum(len(r['adapters']) for r in everything), 66)
         rows = json.loads(vod.search_providers())
-        # Only seven domains with DNS/parking/HTTP 410 evidence remain excluded.
+        # Seven retired domains and 18 unverified restorations stay out of discovery.
         self.assertEqual(len(vod.RETIRED_SITES), 7)
-        self.assertEqual(len(rows), 56)
-        self.assertEqual(sum(len(r['adapters']) for r in rows), 59)
-        self.assertFalse(any(r['site'] in vod.RETIRED_SITES for r in rows))
+        self.assertEqual(len(vod.UNVERIFIED_SITES), 18)
+        self.assertEqual(len(rows), 38)
+        self.assertEqual(sum(len(r['adapters']) for r in rows), 41)
+        excluded = vod.RETIRED_SITES | vod.UNVERIFIED_SITES
+        self.assertFalse(any(r['site'] in excluded for r in rows))
+        self.assertTrue(vod.RETIRED_SITES.isdisjoint(vod.UNVERIFIED_SITES))
         self.assertTrue(vod.RETIRED_SITES <= {r['site'] for r in everything})
         self.assertFalse(any('library' in r['id'] or 'filepursuit' in r['id'] for r in everything))
         levidia = next(r for r in rows if r['site'] == 'levidia.ch')
         self.assertEqual(levidia['adapters'], ['free99:levidia_ch', 'scrubs:levidia_ch'])
         self.assertTrue(levidia['movies'] and levidia['series'])
         self.assertEqual(vod.validate(), 68)
+
+    def test_only_levidia_is_restored_from_the_original_26_exclusions(self):
+        originally_excluded = set(('123-movies.golf 123moviestv.me 1movies.la 9pm.to cinebox.cc '
+            'couchtuner.show dopebox.to ev01.to filmxy.online flixhq.to flixwave.me goojara.life '
+            'hdbest.net hdtoday.cc levidia.ch m4ufree.se movies2watch.tv movies4fun.net mp4hydra.top '
+            'projectfreetv.lol putlocker.gives sflixz.watch soap2dayz.top streamlord.com watchug.com '
+            'www1.movie4u.live').split())
+        active = {row['site'] for row in json.loads(vod.search_providers())}
+        self.assertEqual(active & originally_excluded, {'levidia.ch'})
 
     def test_same_site_uses_alternate_adapter_only_after_primary_has_no_links(self):
         from unittest.mock import Mock

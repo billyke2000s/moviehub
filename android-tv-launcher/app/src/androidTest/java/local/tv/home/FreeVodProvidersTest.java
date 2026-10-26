@@ -85,8 +85,8 @@ public final class FreeVodProvidersTest {
 
     @Test
     public void packagedPythonImportsEveryProviderAndHostResolverWithoutKodi() throws Exception {
-        // Seven domains excluded on DNS/parking/HTTP 410 evidence; Levidia stays searchable.
-        assertEquals(56, FreeVodProviders.ids(context).size());
+        // Seven retired and 18 unverified sites stay disabled; Levidia stays searchable.
+        assertEquals(38, FreeVodProviders.ids(context).size());
         assertEquals(68, FreeVodProviders.validate(context));
     }
 
