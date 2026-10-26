@@ -84,7 +84,7 @@ final class PhoneLive {
     void show() {
         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         activity.destination = this::show;
-        activity.fixedScreen(null, activity::finish);
+        activity.fixedScreen(null, activity::finish, true);
         try {
             ChannelSync.refreshIfStale(activity, true);
         } catch (Exception e) {
