@@ -1,11 +1,21 @@
 # Status
 
-## Current source release candidate — 26 October 2026
+## Confirmed source quality — in review
 
-1.0.4 (code 104) is published and its APK checksum was independently matched to the update feed.
-1.0.5 is prepared for publication with two new native movie websites, Vixsrc and 4KHDHub,
-finite-range file playback, correct quality badges and a backup-audio fix. The original poster
-fix is preserved. All CI jobs passed on `f5b4e63e65788c512389ca31996c6a8d66d43474`.
+Movie links' quality is read from the file or stream where possible instead of trusting the
+website's label, websites that overstate quality lose trust, the first choice waits up to 8 s when
+nothing good has been found, and the player corrects labels and points out confirmed better
+sources without switching by itself. Known limits: MPEG-TS and DASH files are not size-checked
+before playback (only once playing); a streaming playlist's label is what it offers, and the
+player may still choose a lower step on a slow connection; how often real websites mislabel links
+has not been measured. Not yet tried on a physical TV.
+
+## Current release — 26 October 2026
+
+1.0.5 (code 105) is published from `main` at `acdab4ae3f9bb71ec766e411bbb8e9a6b28c23c3`; the APK
+downloaded from the update feed matched the feed's SHA-256. It adds two native movie websites,
+Vixsrc and 4KHDHub, finite-range file playback, correct quality badges and a backup-audio fix.
+It has not been tried on a physical TV.
 
 The initial 1.0.4 live audit covered all 33 then-enabled movie websites and verified 18 of 21
 returned links across seven sites. The final focused pass verified Levidia (four of six links),
