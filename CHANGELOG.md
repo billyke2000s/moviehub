@@ -5,6 +5,7 @@
 - Preserve host failures in diagnostics when another adapter returns no matches.
 - Negotiate only compression formats supported by the installed Python runtime.
 - Stop metadata lookups reading whole videos, discard stale Host headers on redirects, and validate already-resolved files mislabeled as indirect links.
+- Background artwork shows again on Home, title details, search and list pages (hidden behind a solid panel since 1.0). Only Live TV pages now sit inside the Live TV screen; leaving Live TV stops its picture, and Back from a channel no longer restarts the guide's picture when the guide is not showing.
 
 ## 1.0.2 (25 October 2026)
 

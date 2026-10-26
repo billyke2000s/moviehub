@@ -402,10 +402,14 @@ the separate experimental build, with a stub in normal builds; it is now the one
 has not been audited. Films and series still play through LibVLC.
 
 Live TV is one screen, `LiveStage`, owned by `MainActivity`: its root holds
-the page host (every `fixedScreen` page, including the TV Guide menu and channel guide), then one
+the page host (only Live TV pages: the TV Guide menu, channel guide and phone Live TV, which call
+`fixedScreen(…, true)`; every other page is shown on its own and `LiveStage.release()` stops the
+picture and takes the stage off screen), then one
 `SurfaceView` that is only ever placed over the guide's corner box or stretched to full screen,
 then an overlay (the guide picture's label, status text and the satellite banner). `MainActivity.play` for Live TV calls `LiveStage.fullScreen` instead of opening a player
-Activity, so the guide stays underneath and BACK returns to it unchanged. `MainActivity.dispatchKeyEvent`
+Activity, so the guide stays underneath and BACK returns to it unchanged. A channel started from a
+page outside Live TV (a reminder's Watch now) first moves that page into the stage (`adopt`), so BACK
+returns to it. `MainActivity.dispatchKeyEvent`
 sends keys to `LiveStage.key` while full screen. The banner and
 channel changing are the same `SkyOverlay` and `LiveZapper`, through the `LiveScreen` interface
 (implemented by `LiveHost` for separate player screens and by `LiveStage`). `ExoMenus` holds the

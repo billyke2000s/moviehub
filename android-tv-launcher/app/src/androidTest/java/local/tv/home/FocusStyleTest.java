@@ -132,6 +132,57 @@ public class FocusStyleTest {
         });
     }
 
+    @Test
+    public void backdropsAreNotHiddenBehindASolidPage() {
+        remote.runOnMainSync(() -> {
+            activity.fixedScreen(null, () -> {}, true);
+            assertTrue("Live TV pages are shown inside the stage", activity.stage.onScreen());
+            activity.homeScreen.home();
+            assertFalse("Pages outside Live TV are shown on their own", activity.stage.onScreen());
+        });
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() ->
+            assertNull("Nothing solid covers Home's artwork", solidCover(activity.homeShelf.backdrop))
+        );
+        BackdropView[] list = new BackdropView[1];
+        remote.runOnMainSync(() -> {
+            activity.screen("List", () -> {});
+            list[0] = activity.fullBleedBackdrop(true);
+        });
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() ->
+            assertNull("Nothing solid covers a list page's artwork", solidCover(list[0]))
+        );
+    }
+
+    /** A screen-sized view with an opaque colour drawn above {@code backdrop}, or null. */
+    View solidCover(View backdrop) {
+        ViewGroup layers = (ViewGroup) backdrop.getParent();
+        assertTrue("The screen has been laid out", layers.getWidth() > 0 && layers.getHeight() > 0);
+        for (int i = layers.indexOfChild(backdrop) + 1; i < layers.getChildCount(); i++) {
+            View found = solidCover(layers.getChildAt(i), layers.getWidth(), layers.getHeight());
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    View solidCover(View node, int width, int height) {
+        if (node.getVisibility() != View.VISIBLE) return null;
+        android.graphics.drawable.Drawable background = node.getBackground();
+        if (
+            background instanceof android.graphics.drawable.ColorDrawable &&
+            android.graphics.Color.alpha(((android.graphics.drawable.ColorDrawable) background).getColor()) ==
+                255 &&
+            node.getWidth() >= width * 0.9 &&
+            node.getHeight() >= height * 0.9
+        ) return node;
+        if (node instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) node).getChildCount(); i++) {
+            View found = solidCover(((ViewGroup) node).getChildAt(i), width, height);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
     int countText(View node, String value) {
         int count = node instanceof TextView && value.contentEquals(((TextView) node).getText()) ? 1 : 0;
         if (node instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) node).getChildCount(); i++) count +=

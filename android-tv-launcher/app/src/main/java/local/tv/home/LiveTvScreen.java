@@ -134,7 +134,7 @@ final class LiveTvScreen {
 
     /** The guide's fixed parts; BACK goes to the guide menu. */
     private void buildFrame() {
-        activity.fixedScreen(null, menu::show);
+        activity.fixedScreen(null, menu::show, true);
         frame.build();
         frameGeneration = activity.generation;
         activity.leaving = () -> {
@@ -247,7 +247,11 @@ final class LiveTvScreen {
 
     /** Plays the last channel watched in the guide's corner (unless turned off or locked). */
     void startPicture() {
-        if (frame.pictureBox != null) picture.show(activity, frame.pictureBox, frame.pictureLabel);
+        if (frame.pictureBox != null && frame.pictureBox.isAttachedToWindow()) picture.show(
+            activity,
+            frame.pictureBox,
+            frame.pictureLabel
+        );
     }
 
     /** Loads the current page of channels and their programmes into the grid. */
