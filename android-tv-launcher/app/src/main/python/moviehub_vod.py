@@ -26,6 +26,8 @@ def providers():
 RETIRED_SITES = frozenset({
     '123-movies.golf', 'dopebox.to', 'flixwave.me', 'm4ufree.se',
     'projectfreetv.lol', 'putlocker.gives', 'soap2dayz.top',
+    # Rechecked 26 October: sale listings/parking or an unrelated gambling destination.
+    'anitaku.pe', 'goojara.club', 'okmov.to', 'series9mx.pro',
 })
 
 # Previously excluded sites need positive catalogue/search evidence before restoration.
@@ -227,7 +229,8 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
                                'sourceProvider':source_host(host_name, item['url']),
                                'providerName':source_label(website, host_name, item['url']), 'quality':result.pop('verifiedQuality', None) or str(item.get('quality','SD')),
                                'info':str(item.get('info','')), 'title': title,
-                               'segmentContainers': bool(item.get('segmentContainers', False))})
+                               'segmentContainers': bool(item.get('segmentContainers', False)),
+                               'boundedRanges': bool(item.get('boundedRanges', False))})
                 client.host_result(result['sourceProvider'], 'complete')
                 sources.append(result)
                 if emit is not None: emit.ready(json.dumps(result))

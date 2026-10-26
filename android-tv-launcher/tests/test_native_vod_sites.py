@@ -54,7 +54,7 @@ class NativeSiteTests(unittest.TestCase):
             rows = provider.sources(key, [])
         self.assertEqual(len(rows), 2)
         self.assertEqual({x['source'] for x in rows}, {'HubCloud · worker-a.example', 'HubCloud · worker-b.example'})
-        self.assertTrue(all(x['quality'] == '2160p' and x['direct'] for x in rows))
+        self.assertTrue(all(x['quality'] == '2160p' and x['direct'] and x['boundedRanges'] for x in rows))
         self.assertIn('Film%20%2B%20Cut.mkv', rows[0]['url'])
         self.assertFalse(any(x.endswith('/wrong') for x in calls))
 

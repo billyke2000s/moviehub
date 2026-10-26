@@ -386,7 +386,9 @@ public class VlcPlaybackActivity extends LiveHost {
         MediaPlayer previous = player;
         VLCVideoLayout previousView = filmVideo;
         int volume = previous == null ? 100 : previous.getVolume();
-        if (volume < 0) volume = 100;
+        // Backup preparation mutes native players. Android controls the user volume;
+        // never carry a transient native mute into the selected replacement.
+        if (volume <= 0) volume = 100;
         player = ready;
         filmVideo = layout;
         url = link;

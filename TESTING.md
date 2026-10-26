@@ -543,3 +543,7 @@ Current site recovery: 46 offline Python tests, including Tubi’s padded challe
 ## Native movie source expansion (26 October 2026)
 
 `test_native_vod_sites.py` covers exact title/year selection, literal redirect decoding without executing scripts, isolated mirror failure, distinct returned hosts, safe filename encoding, current Vixsrc movie/episode identities and expired token rejection. The opt-in native Android audit plays each returned source independently through the actual relay and LibVLC; a completed job is not evidence every source passed. Inspect its redacted JSONL statuses and final shard marker.
+
+The focused native-source audit also records decoded audio buffers and selected audio-language metadata; it does not call a source verified when no audio decoded. Device volume remains controlled by Android.
+
+`ProviderFileRangesTest` exercises a real finite-range-only HTTP fixture: full streaming across multiple parts, middle/finite/suffix seeks, interrupted-part resumption without duplicated bytes, guarded redirects, invalid/changing metadata, changed ETags, downgrade rejection and cancellation. `PlaybackTest.finiteRangeOnlyHostPlaysAndSeeksThroughTheRealRelay` requires actual LibVLC playback through the same opt-in relay; an open-ended fixture request is rejected with HTTP 403. It covers explicit source opt-in and automatic recovery from that rejected request.

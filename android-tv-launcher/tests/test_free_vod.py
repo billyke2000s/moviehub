@@ -26,11 +26,11 @@ class FreeVodTests(unittest.TestCase):
         self.assertEqual(len({r['site'] for r in everything}), 65)
         self.assertEqual(sum(len(r['adapters']) for r in everything), 68)
         rows = json.loads(vod.search_providers())
-        # Seven retired domains and 18 unverified restorations stay out of discovery.
-        self.assertEqual(len(vod.RETIRED_SITES), 7)
+        # Eleven confirmed retired/repurposed domains and 18 unverified restorations stay out of discovery.
+        self.assertEqual(len(vod.RETIRED_SITES), 11)
         self.assertEqual(len(vod.UNVERIFIED_SITES), 18)
-        self.assertEqual(len(rows), 40)
-        self.assertEqual(sum(len(r['adapters']) for r in rows), 43)
+        self.assertEqual(len(rows), 36)
+        self.assertEqual(sum(len(r['adapters']) for r in rows), 39)
         excluded = vod.RETIRED_SITES | vod.UNVERIFIED_SITES
         self.assertFalse(any(r['site'] in excluded for r in rows))
         self.assertTrue(vod.RETIRED_SITES.isdisjoint(vod.UNVERIFIED_SITES))

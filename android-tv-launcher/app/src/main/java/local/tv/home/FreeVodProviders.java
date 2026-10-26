@@ -90,6 +90,7 @@ public final class FreeVodProviders {
                             .put("url", link)
                             .put("headers", headers)
                             .put("segmentContainers", item.optBoolean("segmentContainers", false))
+                            .put("boundedRanges", item.optBoolean("boundedRanges", false))
                     );
                 found.accept(source);
             } catch (Exception error) {

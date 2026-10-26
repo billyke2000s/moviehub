@@ -41,7 +41,7 @@ jobs:
                   arch: x86_64
                   profile: tv_1080p
                   disable-animations: true
-                  script: bash android-tv-launcher/tests/run-live-vod-audit.sh 0 1 native:fourkhdhub,native:vixsrc
+                  script: bash android-tv-launcher/tests/run-live-vod-audit.sh 0 1 native:fourkhdhub,native:vixsrc,scrubs:rarefilmm_com,free99:levidia_ch
             - uses: actions/upload-artifact@v6
               if: always()
               with:

@@ -100,7 +100,9 @@ class source:
                             continue
                         provider = 'HubCloud · ' + (urlparse(address).hostname or 'Media')
                         item = direct(address, 'https://hubcloud.ist/', provider, quality)
-                        item['info'] = filename[:500]
+                        size = re.search(r'\b[0-9.]+\s*[GM]B\b', text(card.content))
+                        item['info'] = (filename + (' · ' + size[0] if size else ''))[:500]
+                        item['boundedRanges'] = True
                         results.append(item)
                 except Exception as error:
                     client.host_result('HubCloud', type(error).__name__)

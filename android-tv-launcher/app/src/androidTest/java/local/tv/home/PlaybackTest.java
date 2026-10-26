@@ -129,15 +129,28 @@ public class PlaybackTest {
             String request = reader.readLine(),
                 line;
             int start = 0;
-            boolean range = false;
+            boolean range = false,
+                finiteRange = false;
             while ((line = reader.readLine()) != null && !line.isEmpty())
                 if (line.toLowerCase(java.util.Locale.ROOT).startsWith("range: bytes=")) {
-                    String value = line.substring(line.indexOf('=') + 1).split("-", 2)[0];
+                    String rawRange = line.substring(line.indexOf('=') + 1);
+                    finiteRange = rawRange.matches("[0-9]+-[0-9]+");
+                    String value = rawRange.split("-", 2)[0];
                     if (!value.isEmpty()) {
                         start = Integer.parseInt(value);
                         range = true;
                     }
                 }
+            if (request != null && request.contains("/finite-vod.mp4") && !finiteRange) {
+                connection
+                    .getOutputStream()
+                    .write(
+                        "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".getBytes(
+                            java.nio.charset.StandardCharsets.US_ASCII
+                        )
+                    );
+                return;
+            }
             if (request != null && request.contains("/missing")) {
                 missingRequests.incrementAndGet();
                 // A broken channel: nothing there.
@@ -150,7 +163,9 @@ public class PlaybackTest {
                     );
                 return;
             }
-            if (request != null && request.contains("/vod.mp4")) data = movie;
+            if (
+                request != null && (request.contains("/vod.mp4") || request.contains("/finite-vod.mp4"))
+            ) data = movie;
             String mime = "video/mp4";
             if (request != null && request.contains(".m3u8")) {
                 data = (
@@ -299,6 +314,46 @@ public class PlaybackTest {
             player().setTime(8000);
         });
         await(() -> player().getTime() >= 6000, 10000);
+    }
+
+    @Test
+    public void finiteRangeOnlyHostPlaysAndSeeksThroughTheRealRelay() throws Exception {
+        ProviderRelay.testConnections = uri ->
+            (HttpURLConnection) new URL(
+                "http://127.0.0.1:" + server.getLocalPort() + "/finite-vod.mp4"
+            ).openConnection();
+        for (boolean explicit : new boolean[] { true, false }) {
+            EngineSources.Stream transport = new EngineSources.Stream(
+                new org.json.JSONObject()
+                    .put("url", "https://8.8.8.8/film.mkv")
+                    .put("headers", new org.json.JSONObject())
+                    .put("boundedRanges", explicit)
+            );
+            if (explicit) assertTrue(
+                "Finite-range files require the relay even with no custom headers",
+                ProviderRelay.needed(transport)
+            );
+            VodSources.Session session = new VodSources.Session(
+                java.util.Collections.singletonList(
+                    new VodSourceFailover.Source("finite", "Finite range host", "Fixture")
+                ),
+                index -> {
+                    throw new IOException("No backup in transport test");
+                },
+                true
+            );
+            session.transport = index -> transport;
+            session.free = true;
+            openVod(session);
+            await(() -> player() != null && player().isPlaying() && player().getTime() > 500, 30000);
+            long midpoint = player().getLength() / 2;
+            assertTrue("The full fixture duration survives the bounded upstream request", midpoint > 10000);
+            instrumentation.runOnMainSync(() -> player().setTime(midpoint));
+            await(() -> player().isPlaying() && Math.abs(player().getTime() - midpoint) < 3000, 15000);
+            long before = player().getTime();
+            await(() -> player().getTime() > before + 500, 5000);
+            assertTrue("Seeked playback is downloading through the relay", activity.vod.incomingBytes() > 0);
+        }
     }
 
     @Test

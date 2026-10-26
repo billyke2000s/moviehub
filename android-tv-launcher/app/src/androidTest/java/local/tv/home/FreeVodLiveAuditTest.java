@@ -43,6 +43,7 @@ public final class FreeVodLiveAuditTest {
         if (!providers.isEmpty()) sites.removeIf(
             site -> !java.util.Arrays.asList(providers.split(",")).contains(site)
         );
+        org.junit.Assert.assertFalse("No matching enabled movie websites selected", sites.isEmpty());
         for (int index = shard; index < sites.size(); index += shards) {
             String site = sites.get(index);
             // Full, unambiguous catalogue identities. Runtime tolerance allows credits and alternate cuts.
@@ -50,6 +51,9 @@ public final class FreeVodLiveAuditTest {
                 film("Inception", "2010", "tt1375666", 27205, 148),
                 film("Night of the Living Dead", "1968", "tt0063350", 10331, 96),
                 film("Spider-Man: Brand New Day", "2026", "tt22084616", 969681, 0),
+            };
+            if (site.equals("scrubs:rarefilmm_com")) films = new JSONObject[] {
+                film("Anna", "1967", "", 45486, 87),
             };
             for (JSONObject film : films) {
                 List<SourceRepository.Source> sources = new ArrayList<>();
@@ -147,7 +151,7 @@ public final class FreeVodLiveAuditTest {
         );
         try {
             long deadline = SystemClock.elapsedRealtime() + 45000;
-            long[] sample = new long[5];
+            long[] sample = new long[6];
             boolean decoded = false;
             while (SystemClock.elapsedRealtime() < deadline) {
                 snapshot(activity, sample);
@@ -166,6 +170,8 @@ public final class FreeVodLiveAuditTest {
                 .put("durationSeconds", duration / 1000)
                 .put("expectedMinutes", expectedMinutes)
                 .put("decodedFrames", sample[2])
+                .put("decodedAudio", sample[5])
+                .put("selectedAudioLanguage", audioLanguage(activity))
                 .put("width", sample[3])
                 .put("height", sample[4])
                 .put("decoded", decoded)
@@ -196,13 +202,15 @@ public final class FreeVodLiveAuditTest {
                     "status",
                     !decoded
                         ? "no_decoded_video"
-                        : expectedMinutes == 0
-                          ? "runtime_unverified"
-                          : !plausible
-                            ? "runtime_mismatch"
-                            : !seek
-                              ? "seek_unverified"
-                              : "verified"
+                        : sample[5] == 0
+                          ? "audio_unverified"
+                          : expectedMinutes == 0
+                            ? "runtime_unverified"
+                            : !plausible
+                              ? "runtime_mismatch"
+                              : !seek
+                                ? "seek_unverified"
+                                : "verified"
                 );
         } finally {
             instrumentation.runOnMainSync(activity::finish);
@@ -211,6 +219,28 @@ public final class FreeVodLiveAuditTest {
             while (!activity.isDestroyed() && SystemClock.elapsedRealtime() < deadline)
                 SystemClock.sleep(100);
         }
+    }
+
+    private String audioLanguage(VlcPlaybackActivity activity) {
+        String[] language = { "" };
+        instrumentation.runOnMainSync(() -> {
+            MediaPlayer player = activity.player;
+            if (player == null) return;
+            IMedia media = player.getMedia();
+            if (media == null) return;
+            try {
+                for (int index = 0; index < media.getTrackCount(); index++) {
+                    IMedia.Track track = media.getTrack(index);
+                    if (track instanceof IMedia.AudioTrack && track.id == player.getAudioTrack()) {
+                        language[0] = String.valueOf(track.language).replaceAll("[^a-zA-Z-]", "");
+                        if (language[0].length() > 20) language[0] = "";
+                    }
+                }
+            } finally {
+                media.release();
+            }
+        });
+        return language[0];
     }
 
     private void snapshot(VlcPlaybackActivity activity, long[] sample) {
@@ -224,6 +254,7 @@ public final class FreeVodLiveAuditTest {
             try {
                 IMedia.Stats stats = media.getStats();
                 sample[2] = stats == null ? 0 : stats.decodedVideo;
+                sample[5] = stats == null ? 0 : stats.decodedAudio;
                 for (int index = 0; index < media.getTrackCount(); index++) if (
                     media.getTrack(index) instanceof IMedia.VideoTrack
                 ) {

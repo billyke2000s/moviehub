@@ -536,3 +536,7 @@ The follow-up runner validated 12 Inception links across six websites and four c
 ## Native movie source expansion (26 October 2026)
 
 1.0.4 is published (code 104, unchanged signing identity). Its existing-site recovery was followed by a 33-movie-website Android audit: 21 returned sources, 18 decoded and passed runtime plus midpoint-seek checks across seven websites; two Levidia links did not decode and one other film lacked an independently verified expected runtime. New native 4KHDHub/Vixsrc adapters are staged in this branch; live Android results are pending and no new 4K release is claimed yet.
+
+The Android backup-switch audio assertion recurred on unchanged production playback code. The selected replacement now restores a transient native zero to normal gain; Android still controls the user volume. Fresh homepage checks confirm anitaku.pe is parked, goojara.club and okmov.to lead to GoDaddy sale listings, and series9mx.pro leads to an unrelated gambling service. These four remain bundled for auditing but leave default discovery. Upmovies and WatchSeriesHD remain inconclusive on the fresh request and are not newly retired.
+
+The first native Android audit passed Vixsrc but all seven resolved 4KHDHub files failed to decode. Follow-up requests proved finite ranges return 206 while no/open-ended ranges return 403. The new opt-in finite-range transport and progressive-file 403 fallback are tested locally (19 new checks); the final live Android rerun is pending.

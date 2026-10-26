@@ -1,5 +1,10 @@
 ## Unreleased
 
+- Stream and seek hosts which require fixed byte ranges instead of rejecting the player's open-ended file request.
+
+- Keep backup movie playback audible after native prewarming temporarily mutes a player.
+- Stop searching four freshly confirmed parked, for-sale or gambling domains; their adapters remain available for explicit audits.
+
 - Add separately maintained native 4KHDHub and Vixsrc website adapters, with independent downstream sources and current public player loading.
 - Add opt-in per-source Android decoding, duration, resolution and midpoint-seek audits.
 
