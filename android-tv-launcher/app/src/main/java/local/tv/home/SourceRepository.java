@@ -21,6 +21,13 @@ final class SourceRepository {
         String ranking;
         double probeMbps;
         long responseMs = Long.MAX_VALUE;
+        /** The quality was read from the file or stream itself, not taken from the website. */
+        boolean confirmed;
+        /** A streaming playlist (HLS/DASH), whose player may choose a lower step than offered. */
+        boolean playlist;
+        /** Free sources: the website searched, and the quality it claimed for this link. */
+        String site = "",
+            claimed = "";
 
         Source(String title, String uri) {
             this(title, uri, null, new JSONObject());

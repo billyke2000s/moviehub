@@ -32,14 +32,24 @@ final class VideoDetails {
      * the width decides when it implies a taller 16:9 picture than the height does.
      */
     static String quality(int width, int height) {
+        int tier = tier(width, height);
+        return tier >= 2160 ? "4K" : tier + "p";
+    }
+
+    /**
+     * The same rule as a number for comparisons: 2160, 1440, 1080, 720, 576, 480, or the height
+     * itself below that. 854×480 is 480; 1920×800 is 1080. 0 when the size is unknown.
+     */
+    static int tier(int width, int height) {
+        if (width <= 0 || height <= 0) return 0;
         int lines = Math.max(height, Math.round((width * 9f) / 16f));
-        if (lines >= 2100) return "4K";
-        if (lines >= 1400) return "1440p";
-        if (lines >= 1050) return "1080p";
-        if (lines >= 700) return "720p";
-        if (lines >= 560) return "576p";
-        if (lines >= 470) return "480p";
-        return height + "p";
+        if (lines >= 2100) return 2160;
+        if (lines >= 1400) return 1440;
+        if (lines >= 1050) return 1080;
+        if (lines >= 700) return 720;
+        if (lines >= 560) return 576;
+        if (lines >= 470) return 480;
+        return height;
     }
 
     /** "50 fps", or "29.97 fps" when the rate is not a whole number. */

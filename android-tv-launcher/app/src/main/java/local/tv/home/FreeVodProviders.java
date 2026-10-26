@@ -80,7 +80,21 @@ public final class FreeVodProviders {
                     files,
                     headers
                 );
-                source.ranking = label + (SourceRanking.camera(item.optString("info")) ? " CAM" : "");
+                source.confirmed = item.optBoolean("qualityVerified", false);
+                source.playlist = item.optBoolean("playlist", false);
+                source.site = item.optString("website", id);
+                source.claimed = item.optString("claimedQuality", label);
+                // A playlist's label is capped at the preferred quality, so only a file's own size
+                // can show that a website overstated it.
+                if (source.confirmed && !source.playlist) judge(
+                    context,
+                    source.site,
+                    source.claimed,
+                    SourceRanking.resolution(label)
+                );
+                source.ranking =
+                    QualityClaims.effective(label, source.confirmed, history(context, source.site)) +
+                    (SourceRanking.camera(item.optString("info")) ? " CAM" : "");
                 source.probeMbps = item.optDouble("probeMbps", 0);
                 source.responseMs = item.optLong("responseMs", Long.MAX_VALUE);
                 // Preserve native DASH base-URL handling; the relay rewrites HLS, not MPD templates.
@@ -98,5 +112,27 @@ public final class FreeVodProviders {
             }
         };
         return runtime(context).callAttr("query_site", id, query.toString(), cancelled, callback).toString();
+    }
+
+    private static final String TRUST = "quality_claims.";
+
+    /** This website's recent label checks, as {@link QualityClaims#record} keeps them. */
+    static String history(Context context, String site) {
+        return context.getSharedPreferences("ui", Context.MODE_PRIVATE).getString(TRUST + site, "");
+    }
+
+    /**
+     * Remembers whether a website's claimed quality matched the real picture ({@code actualTier},
+     * see {@link VideoDetails#tier}). Search workers and the player both report, so this is locked.
+     */
+    static synchronized void judge(Context context, String site, String claimed, int actualTier) {
+        if (site == null || site.isEmpty()) return;
+        int verdict = QualityClaims.verdict(claimed, actualTier);
+        if (verdict == QualityClaims.NO_CLAIM) return;
+        android.content.SharedPreferences prefs = context.getSharedPreferences("ui", Context.MODE_PRIVATE);
+        prefs
+            .edit()
+            .putString(TRUST + site, QualityClaims.record(prefs.getString(TRUST + site, ""), verdict))
+            .apply();
     }
 }

@@ -555,3 +555,11 @@ Final validation on `f5b4e63e65788c512389ca31996c6a8d66d43474`: 51 offline Pytho
 The focused live audit completed for Levidia, both native sites and a catalogue-listed Rarefilmm
 film. Read `docs/NATIVE_VOD_PLAYBACK_AUDIT_2026_10_26.jsonl` for each result; a completed audit
 does not assert all links passed. Product code is unchanged by the final documentation commit.
+
+## Confirmed source quality (26 October 2026)
+
+`test_free_vod.py` reads header slices of real FFmpeg-made files in `tests/media-headers` (854×480 and 1920×800 MP4 with the index first, 1280×720 MKV, 640×360 WebM, and an 854×480 MP4 with its index last). It checks the probe replaces a website's "1080p" with the file's 480p, makes exactly one extra bounded read for an index stored last (which also exposes a real 3-second file as a short clip), keeps the size unknown without rejecting the source when that read fails, never requests an index beyond the file's end, and stops on cancellation. The site-level test checks the website's claim is kept separately and marked unconfirmed.
+
+`QualityClaimsTest` covers judging claims (including the reported 1080p-labelled 854×480 case), the five-result history and recovery, ranking distrusted claims as SD, played-source labels and which confirmed better source is worth mentioning. `SourceWindowTest` covers the conditional longer first-choice wait; `StreamRateTest` covers confirmed-over-claimed ranking and small-picture labels; `VideoDetailsTest` covers the numeric tier.
+
+`PlaybackTest.playingFilmCorrectsAnOverstatedLabelAndOnlySuggestsAConfirmedBetterSource` plays the real 160×90 fixture labelled 1080p through LibVLC, with a 4K link that is only claimed and a 720p link confirmed from its file. It requires the corrected label, the website's recorded verdict, a suggestion of the confirmed 720p link only, and no automatic switch. These are fixtures: they do not show how often real websites mislabel links, or how a real TV's network affects playlist steps.

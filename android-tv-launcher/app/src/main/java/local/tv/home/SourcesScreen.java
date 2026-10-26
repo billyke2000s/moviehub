@@ -61,6 +61,22 @@ final class SourcesScreen {
         return resolution >= 2160 ? "4K" : resolution >= 720 ? resolution + "p" : "SD";
     }
 
+    /**
+     * A free source's quality for lists and the player's Sources menu: "480p ✓" when read from the
+     * file or stream itself, the website's claim otherwise ("1080p"), with "?" when that website has
+     * recently overstated quality and its claim is ignored for ranking.
+     */
+    static String badge(SourceRepository.Source source) {
+        String claimed = quality(source.title);
+        if (source.confirmed && source.ranking != null) {
+            int real = SourceRanking.resolution(source.ranking);
+            return (real >= 2160 ? "4K" : real + "p") + " ✓";
+        }
+        boolean ignored =
+            source.ranking != null && quality(source.ranking).equals("SD") && !claimed.equals("SD");
+        return ignored ? claimed + "?" : claimed;
+    }
+
     /** Badges for a source: HDR or Dolby Vision, codec and file size, when the description says. */
     static List<String> details(String raw) {
         String lower = raw.toLowerCase(Locale.ROOT);

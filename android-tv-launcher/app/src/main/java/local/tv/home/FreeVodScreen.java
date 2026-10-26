@@ -41,7 +41,7 @@ final class FreeVodScreen {
                 activity.prefs.getInt(AutoPlayback.QUALITY, 1080)
             );
             TextView status = activity.muted(
-                "Finding streams… choosing the best available after 3 seconds.",
+                "Finding streams… choosing the best available in 3 to 8 seconds.",
                 16
             );
             activity.page.addView(status);
@@ -103,11 +103,7 @@ final class FreeVodScreen {
                                             source.files.optJSONObject(0).optString("link")
                                         ).getHost();
                                         panel.option(
-                                            SourcesScreen.quality(source.title) +
-                                                " · " +
-                                                host +
-                                                " · Link " +
-                                                (i + 1),
+                                            SourcesScreen.badge(source) + " · " + host + " · Link " + (i + 1),
                                             () -> {
                                                 handedOff = true;
                                                 play(

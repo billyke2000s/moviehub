@@ -23,6 +23,24 @@ final class SourceWindowTest {
         empty.cancel();
         check(empty.pick(5200) == null);
         check(!empty.add("cancelled", 1080));
+        // Only a weak first choice waits longer: up to 8 s, or until the search finishes.
+        java.util.function.ToIntFunction<Integer> height = value -> value;
+        SourceWindow<Integer> good = new SourceWindow<>(0, value -> value);
+        check(good.add("1080", 1080));
+        check(good.pick(3000, false, 1080, height) == 1080);
+        SourceWindow<Integer> weak = new SourceWindow<>(0, value -> value);
+        check(weak.add("480", 480));
+        check(weak.pick(2999, false, 1080, height) == null);
+        check(weak.pick(3000, false, 1080, height) == null);
+        check(weak.pick(3000, true, 1080, height) == 480);
+        check(weak.add("720", 720));
+        check(weak.pick(7999, false, 1080, height) == null);
+        check(weak.pick(8000, false, 1080, height) == 720);
+        check(weak.add("late-1080", 1080));
+        check(weak.pick(5000, false, 1080, height) == 1080);
+        check(weak.pick(5000, false, 720, height) == 1080);
+        weak.cancel();
+        check(weak.pick(9000, true, 1080, height) == null);
         VodSourceFailover queue = new VodSourceFailover();
         queue.setSources(java.util.Arrays.asList(new VodSourceFailover.Source("a", "a", "one")));
         queue.onPlaying();
@@ -38,6 +56,6 @@ final class SourceWindowTest {
         );
         check(queue.failover().url.equals("c"));
         check(queue.failover() == null);
-        System.out.println("20 source selection and late-backup checks passed");
+        System.out.println("35 source selection and late-backup checks passed");
     }
 }

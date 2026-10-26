@@ -274,6 +274,61 @@ public class PlaybackTest {
     }
 
     @Test
+    public void playingFilmCorrectsAnOverstatedLabelAndOnlySuggestsAConfirmedBetterSource() throws Exception {
+        Context context = instrumentation.getTargetContext();
+        android.content.SharedPreferences prefs = context.getSharedPreferences("ui", Context.MODE_PRIVATE);
+        prefs.edit().remove("quality_claims.fixture.example").remove(AutoPlayback.QUALITY).commit();
+        // The real fixture is 160×90; the website said 1080p.
+        VodSourceFailover.Source labelled = new VodSourceFailover.Source(
+            "labelled",
+            "fixture.example · 1080p",
+            "fixture.example"
+        );
+        labelled.claimed = "1080p";
+        labelled.site = "fixture.example";
+        // A website's claim alone is never suggested; a size read from the file is.
+        VodSourceFailover.Source claimedOnly = new VodSourceFailover.Source("claimed", "other · 4K", "other");
+        claimedOnly.claimed = "4K";
+        VodSourceFailover.Source confirmed = new VodSourceFailover.Source(
+            "confirmed",
+            "better · 720p ✓",
+            "better"
+        );
+        confirmed.claimed = "720p";
+        confirmed.confirmed = 720;
+        VodSources.Session session = new VodSources.Session(
+            java.util.Arrays.asList(labelled, claimedOnly, confirmed),
+            index -> {
+                throw new IOException("No automatic switch expected");
+            },
+            false
+        );
+        session.free = true;
+        long previous = VodQuality.settleMs;
+        VodQuality.settleMs = 1000;
+        try {
+            openVod(session);
+            await(() -> labelled.actual > 0, 15000);
+            assertEquals(90, labelled.actual);
+            assertEquals("fixture.example · 90p ✓ (said 1080p)", labelled.label);
+            assertEquals("1", prefs.getString("quality_claims.fixture.example", ""));
+            java.util.concurrent.atomic.AtomicInteger announced =
+                new java.util.concurrent.atomic.AtomicInteger();
+            await(() -> {
+                instrumentation.runOnMainSync(() -> announced.set(activity.vod.quality.announced()));
+                return announced.get() == 720;
+            }, 5000);
+            instrumentation.runOnMainSync(() -> {
+                assertEquals("No automatic switch", 0, activity.vod.activeIndex());
+                assertTrue(player().isPlaying());
+            });
+        } finally {
+            VodQuality.settleMs = previous;
+            prefs.edit().remove("quality_claims.fixture.example").commit();
+        }
+    }
+
+    @Test
     public void freeVodRelayShowsIncomingTrafficWhileRealVlcPlays() throws Exception {
         ProviderRelay.testConnections = uri ->
             (HttpURLConnection) new URL(
