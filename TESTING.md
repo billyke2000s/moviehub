@@ -533,3 +533,9 @@ The first Android run of this PR failed two device tests (`ProviderAdaptersTest.
 The Python suite checks Levidia remains in ordinary discovery, empty landing cookies, yearless results, cross-site Host/credential removal, and zero body reads for file-size, redirect, header and cookie lookups. Existing duration, cancellation, TLS/public-address, redirect-cookie and all-adapter contracts remain required. The public probe supports `--include-retired` and repeated `--provider` filters; failures are observations for the selected title and network, not proof of closure. Current inventory: 38 searchable websites, 41 adapters, 68 modules bundled. A regression requires Levidia to be the only enabled member of the original 26 exclusions.
 
 Additional recovery regressions check Scrubs Levidia delegates Wootly once and an empty fallback does not hide a host timeout. Offline tests forbid live HTTP from upstream constructors. Local suite: 32 Python tests.
+
+## Site-by-site VOD recovery (26 October 2026)
+
+The site recovery suite imports `test_current_vod_sites.py` from `test_free_vod.py`. It covers canonical result links, current search/player flows, distinct providers sharing a CDN URL, authenticated Xpass responses, rejected tampering with empty AES-GCM associated data, and diagnostics without URLs or credentials. Live checks and limitations are recorded in [the 26 October audit](docs/FREE_VOD_SITE_AUDIT_2026_10_26.md).
+
+Current site recovery: 46 offline Python tests, including Tubi’s padded challenge/issued signing key, clear-resource filtering and Waffi mirror isolation. Android instrumentation exercises named-backend deduplication through the actual selection-window key. The HTTP identity audit compares app requests, a cookie-preserving browser-style requests session and curl without executing challenge code.

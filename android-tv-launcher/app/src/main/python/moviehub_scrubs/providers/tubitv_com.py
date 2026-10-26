@@ -52,6 +52,9 @@ class source:
             data = parse_qs(url)
             data = dict([(i, data[i][0]) if data[i] else (i, '') for i in data])
             aliases = literal_eval(data['aliases'])
+            if 'tvshowtitle' not in data:
+                from moviehub_compat import tubi
+                return tubi.movies(data['title'], data['year'], aliases)
             title = data['tvshowtitle'] if 'tvshowtitle' in data else data['title']
             season, episode = (data['season'], data['episode']) if 'tvshowtitle' in data else ('0', '0')
             year = data['premiered'].split('-')[0] if 'tvshowtitle' in data else data['year']

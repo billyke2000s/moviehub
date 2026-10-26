@@ -73,12 +73,13 @@ def query_site(provider_id, raw, cancelled, emit=None):
     class Emit:
         def ready(self, value):
             item = json.loads(value)
-            key = (item['url'], json.dumps(item['headers'], sort_keys=True))
+            key = (item['url'], item.get('sourceProvider', ''), json.dumps(item['headers'], sort_keys=True))
             if key in seen: return
             seen.add(key)
             item['adapter'] = item['provider']
             item['provider'] = group['id']
-            item['providerName'] = group['site']
+            item['website'] = item.get('website') or group['site']
+            item['providerName'] = source_label(item['website'], item.get('sourceProvider', ''), item['url'])
             results.append(item)
             if emit is not None: emit.ready(json.dumps(item))
     for adapter in group['adapters']:
@@ -89,7 +90,8 @@ def query_site(provider_id, raw, cancelled, emit=None):
         attempts.append(dict(adapter=adapter, status=report['status'], stage=report.get('stage', ''),
                              extracted=report.get('extracted', 0), rejected=report.get('rejected', 0),
                              resolutionErrors=report.get('resolutionErrors', 0),
-                             unsupportedHosts=report.get('unsupportedHosts', 0)))
+                             unsupportedHosts=report.get('unsupportedHosts', 0),
+                             hostAttempts=report.get('hostAttempts', []), requests=report.get('requests', [])))
         # Do not hit the same website twice when the first adapter already supplied playable links.
         if results: break
     # A fallback with no matches cannot erase a real extraction/host failure from
@@ -100,7 +102,24 @@ def query_site(provider_id, raw, cancelled, emit=None):
     return json.dumps(dict(status=status, sources=results, attempts=attempts,
         extracted=sum(a['extracted'] for a in attempts), rejected=sum(a['rejected'] for a in attempts),
         resolutionErrors=sum(a['resolutionErrors'] for a in attempts),
-        unsupportedHosts=sum(a['unsupportedHosts'] for a in attempts)))
+        unsupportedHosts=sum(a['unsupportedHosts'] for a in attempts),
+        hostAttempts=[host for attempt in attempts for host in attempt['hostAttempts']],
+        stage=next((attempt['stage'] for attempt in attempts if attempt['status'] == status), '')))
+
+
+def source_host(value, url):
+    """Use the advertised playback host, retaining it when resolution moves to a CDN."""
+    value = str(value or '').strip()
+    if '://' in value:
+        value = urlparse(value.partition('|')[0]).hostname or ''
+    if not value or value.casefold() in ('direct', 'cdn', 'unknown', 'local', 'none'):
+        value = urlparse(url.partition('|')[0]).hostname or 'Direct'
+    # Labels are a single UI line, never an authenticated URL or a request header.
+    return re.sub(r'[^a-zA-Z0-9 ._·()-]', '', value)[:100].removeprefix('www.') or 'Direct'
+
+
+def source_label(website, host, url):
+    return website + ' · ' + source_host(host, url)
 
 
 def validate():
@@ -165,13 +184,17 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
         unsupported = 0
         lookup_failure = client.failure()
         # Host/media resolution gets a fresh scope with whatever remains of the site's budget.
-        client.scope(cancel, timeout=max(.1, deadline-time.monotonic()), http=info.get('http', False))
+        client.scope(cancel, timeout=max(.1, deadline-time.monotonic()), http=info.get('http', False), preserve=True)
         sources=[]; seen=set(); timed_out=False
         for item in candidates[:200]:
             try:
                 client.check()
                 stage = "resolution"
                 url=provider.resolve(item['url'])
+                if urlparse(url.partition('|')[0]).hostname == 'quickeemail.com':
+                    client.host_result(item.get('source') or url, 'interaction_required')
+                    unsupported += 1
+                    continue
                 if not item.get('direct', False):
                     host=resolveurl.HostedMediaFile(url=url, include_universal=False, include_popups=False)
                     if not host.valid_url():
@@ -181,36 +204,49 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
                         path = urlparse(url.partition('|')[0]).path
                         if not re.search(r'\.(?:mp4|mkv|webm|avi|ts|mov|m4v|m3u8|mpd)$', path, re.I):
                             unsupported += 1
+                            client.host_result(item.get('source') or item['url'], 'unsupported_host')
                             continue
                     else:
                         url=host.resolve()
-                if not isinstance(url,str) or url in seen: continue
+                host_name = item.get('originProvider') or item.get('source', '')
+                key = (url, source_host(host_name, item['url']))
+                if not isinstance(url,str) or key in seen: continue
                 stage = "media"
                 result=playable(url, info.get("maxQuality", 2160))
                 if result is None:
                     rejected += 1
+                    client.host_result(item.get('originProvider') or item.get('source') or item['url'], 'rejected_media')
                     continue
-                seen.add(url)
-                result.update({'provider':provider_id, 'providerName':urlparse(provider.base_link).hostname or record['name'], 'quality':result.pop('verifiedQuality', None) or str(item.get('quality','SD')),
-                               'info':str(item.get('info','')), 'title': title})
+                seen.add(key)
+                website = (urlparse(provider.base_link).hostname or record['site']).removeprefix('www.')
+                host_name = item.get('originProvider') or item.get('source', '')
+                result.update({'provider':provider_id, 'website':website, 'catalogue':record['site'],
+                               'sourceProvider':source_host(host_name, item['url']),
+                               'providerName':source_label(website, host_name, item['url']), 'quality':result.pop('verifiedQuality', None) or str(item.get('quality','SD')),
+                               'info':str(item.get('info','')), 'title': title,
+                               'segmentContainers': bool(item.get('segmentContainers', False))})
+                client.host_result(result['sourceProvider'], 'complete')
                 sources.append(result)
                 if emit is not None: emit.ready(json.dumps(result))
             except client.Cancelled:
                 timed_out = True
                 break
             except Exception:
+                client.host_result(item.get('originProvider') or item.get('source') or item['url'], 'resolution_failed')
                 errors += 1
                 continue
         status = ('complete' if sources else 'timeout' if timed_out else client.failure() or lookup_failure or
                   ('rejected_media' if rejected else 'resolution_failed' if errors else
                    'unsupported_host' if unsupported else 'no_matches'))
+        if not candidates and client.diagnostics()['hostAttempts']:
+            stage = 'hosts'
         return json.dumps({'status':status,'sources':sources,'extracted':extracted,
                            'rejected':rejected,'resolutionErrors':errors,'unsupportedHosts':unsupported,
-                           'stage':stage,'candidateLimitReached':len(candidates)>200})
+                           'stage':stage,'candidateLimitReached':len(candidates)>200, **client.diagnostics()})
     except client.Cancelled:
-        return json.dumps({'status':'timeout','sources':[],'stage':stage})
+        return json.dumps({'status':'timeout','sources':[],'stage':stage, **client.diagnostics()})
     except Exception as error:
-        return json.dumps({'status':type(error).__name__,'sources':[],'stage':stage})
+        return json.dumps({'status':type(error).__name__,'sources':[],'stage':stage, **client.diagnostics()})
 
 def playable(raw, preferred=2160):
     url, sep, suffix=raw.partition('|')
@@ -246,6 +282,7 @@ def playable(raw, preferred=2160):
     prefix=response.content.lstrip()
     if '.m3u8' in path or 'mpegurl' in kind:
         if not prefix.startswith((b'#EXTM3U', b'\xef\xbb\xbf#EXTM3U')): return None
+        if b'SAMPLE-AES' in prefix or re.search(rb'KEYFORMAT\s*=\s*"(?!identity")', prefix): return None
         heights=[int(x) for x in re.findall(rb'RESOLUTION=\d+x(\d+)', prefix)]
         if heights:
             allowed=[h for h in heights if h <= preferred]

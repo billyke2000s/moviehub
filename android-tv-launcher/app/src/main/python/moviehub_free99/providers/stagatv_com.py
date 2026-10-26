@@ -19,7 +19,7 @@ class source:
     def __init__(self):
         self.results = []
         self.domains = ['m.stagatv.com']
-        self.base_link = 'https://m.stagatv.com'
+        self.base_link = 'https://www9.stagatv.com'
         self.search_link = '/?s={}'
         self.headers = client.dnt_headers
         self.ajax_link = '/wp-admin/admin-ajax.php'
@@ -73,7 +73,7 @@ class source:
                 'Origin': self.base_link,
                 'X-Requested-With': 'XMLHttpRequest',
                 'Referer': self.base_link,
-                'Alt-Used': 'm.stagatv.com',
+                'Alt-Used': 'www9.stagatv.com',
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
                 "Sec-GPC": "1",
                 "Sec-Fetch-Dest": "empty",

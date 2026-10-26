@@ -2,7 +2,7 @@ from ast import literal_eval
 # -*- coding: utf-8 -*-
 
 import re
-from six.moves.urllib_parse import parse_qs, urlencode
+from six.moves.urllib_parse import parse_qs, urlencode, urljoin
 
 from moviehub_scrubs import cleantitle
 from moviehub_scrubs import client
@@ -16,8 +16,8 @@ DOM = client_utils.parseDOM
 class source:
     def __init__(self):
         self.results = []
-        self.domains = ['watch-tvseries.net', 'watch-tvseries.me']
-        self.base_link = 'https://watch-tvseries.net'
+        self.domains = ['watch-tvseries.net', 'watch-tvseries.me', 'watch-tvseries.tv']
+        self.base_link = 'https://www.watch-tvseries.tv'
         self.search_link = '/search?q=%s'
         self.notes = 'Dupe of tvids_net. Sources seem to be all holders like 2embed which fail to work on my end. Likely needs more testing and more work done.'
 
@@ -68,7 +68,8 @@ class source:
                 r = [(DOM(i, 'a', ret='href'), DOM(i, 'img', ret='alt'), re.findall(r'/years/(\d{4})', i)) for i in r]
                 r = [(i[0][0], i[1][0], i[2][0]) for i in r if len(i[0]) > 0 and len(i[1]) > 0 and len(i[2]) > 0]
                 result_url = [i[0] for i in r if cleantitle.match_alias(i[1], aliases) and cleantitle.match_year(i[2], year) and type_check in i[0]][0]
-            result_url = self.base_link + result_url if not any(x in result_url for x in self.domains) else result_url
+            # Search cards now point at a canonical domain different from the entry domain.
+            result_url = urljoin(self.base_link + '/', result_url)
             html = client.request(result_url)
             links = DOM(html, 'a', ret='data-url')
             for link in links:

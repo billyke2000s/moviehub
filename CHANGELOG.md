@@ -1,5 +1,20 @@
 ## Unreleased
 
+## 1.0.4 (26 October 2026)
+
+- More movie links from updated website searches and player loading, including Iwaatch, AnyMovies, M4uHD, Levidia, SeriezLoaded/Waffi and Tubi.
+- Each actual playback provider has its own source row, including separately named backends behind the same website.
+- Source details distinguish website failures, playback-host failures and providers requiring browser verification.
+- Preserves the background-poster fix from 1.0.3.
+
+## Unreleased — site-by-site VOD recovery
+
+- Preserve individual playback providers beneath each discovery website, including separate backend diagnostics.
+- Adapt confirmed current searches/player flows for canonical TV sites, M4uHD, AnyMovies, Iwaatch, PressPlay, SeriezLoaded, Movies Ni Pipay and nested player selectors.
+- Decode the observed Xpass public player response and opt its PNG-wrapped media into the existing relay decoder; authenticate AES-GCM even with empty associated data.
+- Recover Tubi movie search with its current anonymous web-client handshake and enumerate Waffi mirrors plus online playback separately.
+- Record all 63 website observations and keep unverified restorations disabled.
+
 - Restore verified Levidia. Disable the other 18 provisional restorations pending positive verification, alongside seven retired domains.
 - Repair Levidia searches with empty landing cookies, yearless results and optional session markup; resolve Wootly hosts once with the bundled resolver.
 - Preserve host failures in diagnostics when another adapter returns no matches.

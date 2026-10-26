@@ -225,8 +225,12 @@ ZLive exposes each distinct advertised, supported public resolver route with its
 
 ### Experimental provider repairs
 
-MovieHub searches distinct movie/series websites, retaining alternate Kodi scrapers as fallbacks without counting the same website twice. Available links are grouped under their website. Resume refreshes movie/episode metadata and searches for a current link before restoring progress. ZLive uses its current public ticket-and-POST player API and the source labels actually advertised in its catalogue. Provider availability depends on the website, host and location; bundled module counts do not establish playback availability.
+MovieHub searches distinct movie/series websites, retaining alternate Kodi scrapers as fallbacks without counting the same website twice. Each actual playback provider has a separate row labelled with its discovery website; multiple mirrors are not collapsed into one website row. Resume refreshes movie/episode metadata and searches for a current link before restoring progress. ZLive uses its current public ticket-and-POST player API and the source labels actually advertised in its catalogue. Provider availability depends on the website, host and location; bundled module counts do not establish playback availability.
 
 ### Movie and series discovery recovery
 
 Levidia is restored after verifying its exact scraper address and search. The other 18 provisional restorations are disabled pending positive verification; seven retired domains also stay disabled. Ordinary discovery contains 38 websites and 41 adapters. Scraper metadata lookups stop after response headers, redirects discard an obsolete Host header, and Levidia tolerates an empty initial cookie jar and yearless search entries. Availability is reported per search; this does not promise that every remote website or host plays.
+
+## Site-by-site VOD recovery (26 October 2026)
+
+Free film/series results list each actual playback provider separately, with its discovery website retained. See [the site-by-site audit](docs/FREE_VOD_SITE_AUDIT_2026_10_26.md) for current website, search and player findings.

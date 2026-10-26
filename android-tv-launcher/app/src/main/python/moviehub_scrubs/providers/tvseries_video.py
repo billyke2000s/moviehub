@@ -1,7 +1,7 @@
 from ast import literal_eval
 # -*- coding: utf-8 -*-
 
-from six.moves.urllib_parse import parse_qs, urlencode
+from six.moves.urllib_parse import parse_qs, urlencode, urljoin
 
 from moviehub_scrubs import cleantitle
 from moviehub_scrubs import client
@@ -62,7 +62,7 @@ class source:
             r = [(i[0][0], i[1][0], i[2][0], i[3][0]) for i in r if len(i[0]) > 0 and len(i[1]) > 0 and len(i[2]) > 0 and len(i[3]) > 0]
             if 'tvshowtitle' in data:
                 url = [i[0] for i in r if cleantitle.match_alias(i[1], aliases) and cleantitle.match_year(i[2], year, data['year']) and i[3] == type_check][0]
-                url = self.base_link + url
+                url = urljoin(self.base_link + '/', url)
                 sepi = '/season-%s-episode-%s-' % (season, episode)
                 r = client.scrapePage(url, headers=headers).text   # headers added
                 r = DOM(r, 'div', attrs={'class': 'eplist'})[0]
@@ -70,7 +70,7 @@ class source:
                 url = [i for i in r if sepi in i][0]
             else:
                 url = [i[0] for i in r if cleantitle.match_alias(i[1], aliases) and cleantitle.match_year(i[2], year) and i[3] == type_check][0]
-            url = self.base_link + url
+            url = urljoin(self.base_link + '/', url)
             html = client.scrapePage(url, headers=headers).text   # headers added
             links = []
             links += DOM(html, 'div', ret='data-vid')

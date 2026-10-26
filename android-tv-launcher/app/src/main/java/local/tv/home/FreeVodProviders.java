@@ -85,7 +85,12 @@ public final class FreeVodProviders {
                 source.responseMs = item.optLong("responseMs", Long.MAX_VALUE);
                 // Preserve native DASH base-URL handling; the relay rewrites HLS, not MPD templates.
                 if (!"dash".equals(item.optString("format")) || headers.length() > 0) source.stream =
-                    new EngineSources.Stream(new JSONObject().put("url", link).put("headers", headers));
+                    new EngineSources.Stream(
+                        new JSONObject()
+                            .put("url", link)
+                            .put("headers", headers)
+                            .put("segmentContainers", item.optBoolean("segmentContainers", false))
+                    );
                 found.accept(source);
             } catch (Exception error) {
                 Diagnostics.recovered("Free source result", error);

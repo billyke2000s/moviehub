@@ -143,6 +143,19 @@ public final class FreeVodProvidersTest {
     }
 
     @Test
+    public void namedBackendsSharingOneMediaUrlStaySeparateInTheSelectionWindow() {
+        String url = "https://cdn.example/film.m3u8";
+        SourceRepository.Source one = new SourceRepository.Source("site.example · Host One\n1080p", url);
+        SourceRepository.Source two = new SourceRepository.Source("site.example · Host Two\n1080p", url);
+        SourceWindow<SourceRepository.Source> window = new SourceWindow<>(0, source -> 1);
+        assertTrue(window.add(VodSearch.sourceKey(one), one));
+        assertTrue(window.add(VodSearch.sourceKey(two), two));
+        assertFalse(window.add(VodSearch.sourceKey(one), one));
+        assertEquals(2, window.snapshot().size());
+        assertNotEquals(SourcesScreen.provider(one.title), SourcesScreen.provider(two.title));
+    }
+
+    @Test
     public void javaCancellationReachesPackagedPythonBeforeAnyProviderRequest() throws Exception {
         AtomicInteger emitted = new AtomicInteger();
         FreeVodProviders.search(

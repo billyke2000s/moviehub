@@ -16,8 +16,8 @@ DOM = client_utils.parseDOM
 class source:
     def __init__(self):
         self.results = []
-        self.domains = ['seriezloaded.com.ng']
-        self.base_link = 'https://www.seriezloaded.com.ng'
+        self.domains = ['seriezloaded.com.ng', 'seriezloaded.tv']
+        self.base_link = 'https://seriezloaded.tv'
         self.search_link = '?action=live_search_posts&term=%s'
         self.ajax_link = '/wp-admin/admin-ajax.php'
         self.headers = client.dnt_headers
@@ -48,6 +48,14 @@ class source:
     def getlinks(self, data, aliases, title, season, episode, year, page_link=None):
         if any(domain in page_link for domain in self.domains):
             html = client.request(page_link, headers=self.headers)
+            # Current download buttons lead to a short public landing page.
+            # Interactive challenges remain unsupported; never fabricate their tokens.
+            if '/sl-download' in page_link:
+                if re.search(r'captchaEnabled\s*=\s*true', html):
+                    return
+                match = re.search(r'''window\.location\.assign\(\s*["']([^"']+)''', html)
+                if match:
+                    return match[1].replace('\\/', '/')
             ext_links = DOM(html, 'div', attrs={'class': 'sl-container'})
             if not ext_links:
                 return
@@ -82,19 +90,27 @@ class source:
             title_imdb = data['imdb']
             season, episode = (data['season'], data['episode']) if 'tvshowtitle' in data else ('0', '0')
             year = data['premiered'].split('-')[0] if 'tvshowtitle' in data else data['year']
-            search_url = self.base_link + self.ajax_link + self.search_link % cleantitle.get_utf8(title_imdb)   # MOVIES
-            if 'tvshowtitle' in data:
-                title_clean = f'%22{title_imdb}%22 %22season {season}%22 %22episode {episode}%22'
-                title_clean = cleantitle.get_utf8(title_clean)
-                search_url = self.base_link + self.ajax_link + self.search_link % title_clean
-
-            r = client.request(search_url, headers=self.headers, output='json')
-
-            if not r:
-                title_clean = f'%22{title_imdb}%22 %22season {season}%22'
-                title_clean = cleantitle.get_utf8(title_clean)
-                search_url = self.base_link + self.ajax_link + self.search_link % title_clean
-                r = client.request(search_url, headers=self.headers, output='json')
+            # The live site replaced admin-ajax live_search_posts with catalogue search.
+            search_term = (f'{title} Season {season} Episode {episode}'
+                           if 'tvshowtitle' in data else title)
+            search_url = self.base_link + '/?s=' + cleantitle.get_plus(search_term)
+            search_html = client.request(search_url, headers=self.headers)
+            cards = DOM(search_html, 'h3', attrs={'class': r'entry-title.*'})
+            r = []
+            for card in cards:
+                links = DOM(card, 'a', ret='href')
+                labels = DOM(card, 'a')
+                if not links or not labels:
+                    continue
+                label = client_utils.remove_tags(labels[0]).strip()
+                if 'tvshowtitle' not in data:
+                    found_year = re.search(r'\((\d{4})\)', label)
+                    clean_label = re.sub(r'\s*\(\d{4}\)', '', label)
+                    if not found_year or found_year[1] != year or not cleantitle.match_alias(clean_label, aliases):
+                        continue
+                elif cleantitle.get(search_term) != cleantitle.get(label):
+                    continue
+                r.append({'title': label, 'link': links[0]})
             if not r:
                 return
 
@@ -137,7 +153,7 @@ class source:
                 search_items = [
                     ('a', {'id': 'download-button'}),
                     ('a', {'id': 'sl-download-button'}),
-                    ('a', {'class': 'btn-ghost'})
+                    ('a', {'class': r'(?:btn-ghost|sl-post-download-button)'})
                 ]
 
                 for tag, attrs in search_items:
@@ -178,8 +194,8 @@ class source:
                             final_links += [(my_link, info)]
 
             else:  # movies have multiple links
-                links2 = list(zip(DOM(r,'a', ret='href', attrs={'class': 'btn-ghost'}),
-                                 DOM(r, 'a', attrs={'class': 'btn-ghost'})))
+                links2 = list(zip(DOM(r,'a', ret='href', attrs={'class': r'(?:btn-ghost|sl-post-download-button)'}),
+                                 DOM(r, 'a', attrs={'class': r'(?:btn-ghost|sl-post-download-button)'})))
                 links = [(i[0], i[1]) for i in links2 if 'download' in i[1].lower()]
                 if not links:
                     return

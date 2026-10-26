@@ -221,7 +221,7 @@ def make_item(hostDict, link, host=None, info=None, prep=False):
         return item
 
 
-def process(hostDict, link, host=None, info=None):
+def _process(hostDict, link, host=None, info=None):
     sources = []
     try:
         link = prepare_link(link)
@@ -662,3 +662,15 @@ def source_stream(link, hostDict, info=None):
         return sources
 
 
+
+
+def process(hostDict, link, host=None, info=None):
+    from moviehub_compat import current_hosts
+    try:
+        modern = current_hosts.process(link, lambda child: process(hostDict, child, info=info))
+        results = modern if modern is not None else _process(hostDict, link, host=host, info=info)
+        client.host_result(link, 'extracted' if results else 'unsupported_host')
+        return results
+    except Exception:
+        client.host_result(link, 'resolution_failed')
+        raise

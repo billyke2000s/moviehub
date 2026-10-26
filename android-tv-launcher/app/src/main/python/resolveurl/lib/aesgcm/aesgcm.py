@@ -145,7 +145,8 @@ class AESGCM(object):
         counter[-1] = 1
         tagMask = self._rawAesEncrypt(counter)
 
-        if data and not ct_compare_digest(tag, self._auth(ciphertext, data, tagMask)):
+        # Empty associated data still requires authentication of ciphertext and tag.
+        if not ct_compare_digest(tag, self._auth(ciphertext, data, tagMask)):
             return None
 
         # The counter starts at 2 for the actual decryption.

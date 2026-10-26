@@ -2,6 +2,7 @@ from ast import literal_eval
 # -*- coding: utf-8 -*-
 
 import re
+import json
 import base64
 
 from six import ensure_text
@@ -53,8 +54,11 @@ class source:
                 #log_utils.log('sources', 1)
                 pass
             try:
-                servers = re.findall(r'''var\s+Servers\s*=\s*\{([^\]]+)}''', page, re.DOTALL | re.IGNORECASE)[0]
-                links += re.findall(r''':['"]([^'"]+)['"]''', servers, re.DOTALL | re.IGNORECASE)
+                marker = re.search(r'var\s+Servers\s*=\s*', page)
+                servers, unused = json.JSONDecoder().raw_decode(page[marker.end():])
+                controls = re.sub(r'<!--.*?-->', '', page, flags=re.S)
+                active = re.findall(r'loadServer\(\s*(\w+)\s*\)', controls)
+                links += [servers[name] for name in dict.fromkeys(active) if isinstance(servers.get(name), str)]
             except:
                 #log_utils.log('sources', 1)
                 pass
@@ -75,6 +79,8 @@ class source:
                                     self.results.append(item)
                         elif '/player.php?' in link:
                             link = client.request(link, timeout='6', output='geturl')
+                            for source in scrape_sources.process(hostDict, link):
+                                self.results.append(source)
                         else:
                             continue
                     else:

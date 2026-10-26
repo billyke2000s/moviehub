@@ -3,7 +3,7 @@ from ast import literal_eval
 
 import re
 
-from six.moves.urllib_parse import parse_qs, urlencode
+from six.moves.urllib_parse import parse_qs, urlencode, urljoin
 
 from moviehub_free99 import cleantitle
 from moviehub_free99 import client
@@ -17,7 +17,7 @@ class source:
         self.results = []
         self.domains = ['downloads-anymovies.co', 'downloads-anymovies.com']
         self.base_link = 'https://www.downloads-anymovies.co'
-        self.search_link = '/search.php?zoom_query=%s+%s'
+        self.search_link = '/search/search.php?q=%s+%s'
         self.notes = 'looks like the search has blockage now.'
 
 
@@ -42,13 +42,15 @@ class source:
             try:
                 r = client_utils.parseDOM(search_html, 'div', attrs={'class': 'result_title'})
                 r = zip(client_utils.parseDOM(r, 'a', ret='href'), client_utils.parseDOM(r, 'a'))
-                r = [(i[0], re.findall(r'(?:Watch|)(.+?)\((\d+)', i[1])) for i in r]
+                r = [(i[0], re.findall(r'(?:Watch|)(.+?)\((\d+)', client_utils.remove_tags(i[1]))) for i in r]
                 r = [(i[0], i[1][0]) for i in r if len(i[1]) > 0]
                 page_url = [i[0] for i in r if cleantitle.match_alias(i[1][0], aliases) and cleantitle.match_year(i[1][1], year)][0]
             except:
                 page_url = self.base_link + '/added_movies/%s-%s-watch-full-movie-online-free.html' % (cleantitle.geturl(title), year)
+            page_url = urljoin(self.base_link + '/', page_url)
             page_html = client.scrapePage(page_url).text
             links = client_utils.parseDOM(page_html, 'a', attrs={'target': '_blank'}, ret='href')
+            links += re.findall(r'''_loadP\(this,\s*['"]([^'"]+)''', page_html)
             for link in links:
                 try:
                     if any(x in link for x in ['report-error.html', 'statcounter.com']):

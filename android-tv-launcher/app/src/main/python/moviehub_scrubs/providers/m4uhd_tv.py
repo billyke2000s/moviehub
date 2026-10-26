@@ -1,4 +1,5 @@
 from ast import literal_eval
+from urllib.parse import urljoin
 # -*- coding: utf-8 -*-
 
 from moviehub_scrubs import cleantitle
@@ -13,7 +14,8 @@ class source:
         try:
             self.results = [] # Spare domain: m4uhd.to
             self.domains = ['m4uhd.tv']
-            self.base_link = 'https://ww1.m4uhd.tv'
+            # The original entry domain redirects to this catalogue.
+            self.base_link = 'https://m4uhdpro.net'
             self.search_link = '/search/%s.html'
             self.ajax_link = '/ajax'
             self.cookie = client.request(self.base_link, output='cookie', timeout='5')
@@ -30,7 +32,7 @@ class source:
             check_title = cleantitle.get_plus(check_term)
             search_url = self.base_link + self.search_link % movie_title
             html = client.request(search_url, cookie=self.cookie)
-            r = client_utils.parseDOM(html, 'div', attrs={'class': 'item'})
+            r = client_utils.parseDOM(html, 'div', attrs={'class': '(?:item|movie-item)'})
             r = [(client_utils.parseDOM(i, 'a', ret='href'), client_utils.parseDOM(i, 'a', ret='title')) for i in r]
             r = [(i[0][0], i[1][0]) for i in r if len(i[0]) > 0 and len(i[1]) > 0]
             url = [i[0] for i in r if check_title == cleantitle.get_plus(i[1])][0]
@@ -44,15 +46,15 @@ class source:
         try:
             if not url:
                 return self.results
-            url = self.base_link + "/" + url
+            url = urljoin(self.base_link + '/', url)
             html = client.request(url, cookie=self.cookie)
             post_link = self.base_link + self.ajax_link
             token = client_utils.parseDOM(html, 'meta', attrs={'name': 'csrf-token'}, ret='content')[0]
             results = client_utils.parseDOM(html, 'span', ret='data')
             for result in results:
                 try:
-                    payload = {'url': post_link, '_token': token, 'm4u': result}
-                    r = client.request(post_link, post=payload, cookie=self.cookie)
+                    payload = {'_token': token, 'm4u': result}
+                    r = client.request(post_link, post=payload, cookie=self.cookie, referer=url)
                     link = client_utils.parseDOM(r, 'iframe', ret='src')[0]
                     for source in scrape_sources.process(hostDict, link):
                         if scrape_sources.check_host_limit(source['source'], self.results):

@@ -14,9 +14,11 @@ MAX_BODY = 8 * 1024 * 1024
 
 class Cancelled(BaseException): pass
 
-def scope(cancel, timeout=18, http=False):
+def scope(cancel, timeout=18, http=False, preserve=False):
     _STATE.cancel, _STATE.deadline, _STATE.http = cancel, time.monotonic()+timeout, http
     _STATE.failure = None
+    if not preserve:
+        _STATE.trace, _STATE.hosts = [], {}
 
 def check():
     callback = getattr(_STATE, 'cancel', None)
@@ -88,6 +90,9 @@ def fetch(url, headers=None, post=None, timeout=8, redirect=True, max_bytes=MAX_
                     chunks.append(chunk[:max(0,max_bytes-(size-len(chunk)))]); break
                 chunks.append(chunk)
                 if max_bytes != MAX_BODY and size >= max_bytes: break
+            trace = getattr(_STATE, 'trace', [])
+            if len(trace) < 256:
+                trace.append(dict(host=urlparse(current).hostname, method=method, status=response.status_code))
             if response.status_code >= 400: _STATE.failure = 'http_' + str(response.status_code)
             response.cookies = session.cookies.copy()
             response._content=b''.join(chunks)
@@ -154,3 +159,20 @@ def url_ok(url):
 
 def failure():
     return getattr(_STATE, "failure", None)
+
+
+def host_result(value, status):
+    """Record separate playback providers without retaining signed URLs or credentials."""
+    host = urlparse(value.partition('|')[0]).hostname if '://' in value else value
+    host = ''.join(c for c in str(host or '') if c.isalnum() or c in ' ._·()-')[:100]
+    hosts = getattr(_STATE, 'hosts', None)
+    if host and hosts is not None and len(hosts) < 200:
+        previous = hosts.get(host)
+        if previous != 'complete':
+            hosts[host] = status
+
+
+def diagnostics():
+    return dict(requests=list(getattr(_STATE, 'trace', [])),
+                hostAttempts=[dict(provider=host, status=status)
+                              for host, status in getattr(_STATE, 'hosts', {}).items()])

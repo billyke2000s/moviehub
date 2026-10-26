@@ -39,7 +39,9 @@ def probe(row):
         return {'provider':row['id'], 'status':result['status'], 'streams':len(result['sources']),
                 'seconds':round(time.monotonic()-begin, 1), 'extracted':result.get('extracted',0),
                 'rejected':result.get('rejected',0),'resolutionErrors':result.get('resolutionErrors',0),
-                'unsupportedHosts':result.get('unsupportedHosts',0), 'attempts':result.get('attempts',[])}
+                'unsupportedHosts':result.get('unsupportedHosts',0), 'attempts':result.get('attempts',[]),
+                'sourceProviders':sorted({x.get('providerName', '') for x in result['sources']}),
+                'hostAttempts':result.get('hostAttempts', [])}
     except BaseException as error:
         return {'provider':row['id'], 'status':type(error).__name__, 'streams':0}
 

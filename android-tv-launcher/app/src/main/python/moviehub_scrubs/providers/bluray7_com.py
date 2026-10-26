@@ -40,14 +40,22 @@ class source:
             search_url = self.base_link + self.search_link % cleantitle.get_plus(title)
             self.session = requests.Session()
             self.cookie = client.request(self.base_link, output='cookie', timeout='5')
-            html = client.request(search_url, cookie=self.cookie)
+            response = client.scrapePage(search_url, cookie=self.cookie)
+            html = response.text
             items = client_utils.parseDOM(html, 'div', attrs={'class': 'result-item'})
             r = [(client_utils.parseDOM(i, 'a', ret='href'), client_utils.parseDOM(i, 'img', ret='alt')) for i in items]
             r = [(i[0][0], i[1][0]) for i in r if len(i[0]) > 0 and len(i[1]) > 0]
             r = [(i[0], re.findall(r'(.+?) [(](\d{4})[)]', i[1])) for i in r]
             r = [(i[0], i[1][0]) for i in r if len(i[1]) > 0]
-            url = [i[0] for i in r if cleantitle.match_alias(i[1][0], aliases) and cleantitle.match_year(i[1][1], year)][0]
-            html = client.request(url, cookie=self.cookie)
+            matches = [i[0] for i in r if cleantitle.match_alias(i[1][0], aliases) and cleantitle.match_year(i[1][1], year)]
+            if matches:
+                url = matches[0]
+                html = client.request(url, cookie=self.cookie)
+            else:
+                heading = client_utils.parseDOM(html, 'h1')
+                if not heading or not cleantitle.match_alias(re.sub(r'\s*\(\d{4}\)', '', heading[0]), aliases) or f'({year})' not in heading[0]:
+                    return self.results
+                url = response.url
             try:
                 qual = client_utils.parseDOM(html, 'strong', attrs={'class': 'quality'})[0]
             except:

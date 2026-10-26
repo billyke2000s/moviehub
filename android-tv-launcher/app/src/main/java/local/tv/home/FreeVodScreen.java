@@ -138,7 +138,7 @@ final class FreeVodScreen {
                     status.setText(
                         count > 0
                             ? displayed.size() +
-                                  " websites · " +
+                                  " providers · " +
                                   count +
                                   " links found · " +
                                   search.progress() +

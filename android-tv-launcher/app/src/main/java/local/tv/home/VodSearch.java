@@ -18,6 +18,7 @@ final class VodSearch implements AutoCloseable {
     private final List<java.util.function.Consumer<SourceRepository.Source>> observers = new ArrayList<>();
     private static volatile VodSearch current;
     private final Map<String, String> outcomes = new ConcurrentHashMap<>();
+    private final Map<String, String> hostOutcomes = new ConcurrentHashMap<>();
 
     VodSearch(Context context, JSONObject query, SourceRepository repo, boolean premiumize, int quality) {
         VodSearch previous = current;
@@ -58,6 +59,18 @@ final class VodSearch implements AutoCloseable {
                                     FreeVodProviders.search(app, id, query, cancelled, this::found)
                                 );
                                 outcomes.put(id, providerOutcome(report));
+                                JSONArray hosts = report.optJSONArray("hostAttempts");
+                                if (hosts != null) for (int i = 0; i < hosts.length(); i++) {
+                                    JSONObject host = hosts.getJSONObject(i);
+                                    String state = host.optString("status");
+                                    host.put("stage", "hosts");
+                                    String label = state.equals("complete")
+                                        ? "Playable links found"
+                                        : state.equals("extracted")
+                                          ? "Host links extracted"
+                                          : providerOutcome(host);
+                                    hostOutcomes.put(id + " → " + host.optString("provider"), label);
+                                }
                             }
                         } catch (Exception error) {
                             outcomes.put(id, "Adapter error: " + error.getClass().getSimpleName());
@@ -123,6 +136,10 @@ final class VodSearch implements AutoCloseable {
                 return "Kodi library only";
             case "requires_api_key":
                 return "Requires an API key";
+            case "interaction_required":
+                return "Requires browser verification";
+            case "preparing":
+                return "Host is preparing this file";
             case "unsupported_type":
                 return "Does not search this media type";
             case "timeout":
@@ -145,7 +162,11 @@ final class VodSearch implements AutoCloseable {
                 return "Connection failed";
             default:
                 return status.matches("http_[0-9]{3}")
-                    ? "Website returned HTTP " + status.substring(5)
+                    ? (java.util.Arrays.asList("hosts", "resolution", "media").contains(
+                          report.optString("stage")
+                      )
+                          ? "Playback host returned HTTP "
+                          : "Website returned HTTP ") + status.substring(5)
                     : "Adapter could not complete";
         }
     }
@@ -156,6 +177,10 @@ final class VodSearch implements AutoCloseable {
             if (text.length() > 0) text.append("\n");
             text.append(id).append(": ").append(outcomes.get(id));
         }
+        for (String id : new TreeSet<>(hostOutcomes.keySet())) {
+            if (text.length() > 0) text.append("\n");
+            text.append(id).append(": ").append(hostOutcomes.get(id));
+        }
         return text.length() == 0 ? "Loading bundled providers…" : text.toString();
     }
 
@@ -163,7 +188,7 @@ final class VodSearch implements AutoCloseable {
         int complete = 0;
         for (String outcome : outcomes.values())
             if (!outcome.equals("Queued") && !outcome.equals("Searching")) complete++;
-        return complete + "/" + outcomes.size() + " providers checked";
+        return complete + "/" + outcomes.size() + " websites checked";
     }
 
     private boolean expired() {
@@ -171,8 +196,12 @@ final class VodSearch implements AutoCloseable {
         return cancelled.get();
     }
 
+    static String sourceKey(SourceRepository.Source source) {
+        return SourcesScreen.provider(source.title) + "\n" + source.uri;
+    }
+
     private synchronized void found(SourceRepository.Source source) {
-        if (expired() || !window.add(source.uri, source)) return;
+        if (expired() || !window.add(sourceKey(source), source)) return;
         for (var observer : observers) observer.accept(source);
     }
 
