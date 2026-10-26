@@ -36,6 +36,12 @@ public final class VideoDetailsTest {
         same("", VideoDetails.codecName("video/unknown"));
         same("1440p", VideoDetails.quality(2560, 1440));
         same("480p", VideoDetails.quality(854, 480));
+        // The numeric tier used to compare a source's label with its real picture.
+        same("480", String.valueOf(VideoDetails.tier(854, 480)));
+        same("1080", String.valueOf(VideoDetails.tier(1920, 800)));
+        same("2160", String.valueOf(VideoDetails.tier(3840, 1600)));
+        same("240", String.valueOf(VideoDetails.tier(320, 240)));
+        same("0", String.valueOf(VideoDetails.tier(0, 0)));
         System.out.println(checks + " picture-detail checks passed");
     }
 }
