@@ -238,3 +238,7 @@ Free film/series results list each actual playback provider separately, with its
 ## Native movie source expansion (26 October 2026)
 
 MovieHub-native movie adapters can use a real TMDB identity directly. These are maintained separately from the bundled Kodi adapters; each downstream media host remains an individual source. Provider availability and 4K results vary by film and network. Source labels are advertised quality unless the media manifest supplies a resolution.
+
+## FMHY provider additions
+
+Rive adds separately listed movie and episode resources through the existing native-provider bridge. Only audited Primevids/dcloud and Citadel routes are enabled; this does not advertise its unverified 4K backend. See [the new-source audit](docs/FMHY_ADDITIONS_2026_10_26.md) for tested titles, measured quality, audio, duration and outstanding checks.

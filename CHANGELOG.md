@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Add Rive movie and episode sources from FMHY through the existing provider bridge. Keep distinct links separately listed; existing providers and source identity rules are unchanged. Desktop samples passed video/audio, runtime and midpoint decoding checks; see the dated addition report for Android validation status.
+
 ## 1.0.6 (26 October 2026)
 
 - Movie source quality is read from the file itself where possible: a link labelled 1080p that is really 480p now shows "480p ✓" and ranks as 480p. Websites caught overstating quality twice in their last five checks have their labels ignored ("1080p?").

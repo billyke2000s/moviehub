@@ -24,8 +24,10 @@ midpoint playback and decoded/output audio. Other links failed or remained unver
 3840×1600 file decoded and sought in an earlier pass, but reliable 4K audio playback has not
 passed verification; no universal provider or 4K guarantee is claimed. See the dated audit reports.
 
-The inventory is 36 enabled websites and 39 adapters, plus excluded auditable sites, with 68
-original Kodi modules and two native modules. Four additional exclusions have fresh sale/parking
+The inventory is 37 enabled websites and 40 adapters, plus excluded auditable sites, with 68
+original Kodi modules and three native modules. Rive is the first addition in the new
+FMHY-only batch; desktop movie/episode decoding passed, with Android validation tracked in
+[the addition report](docs/FMHY_ADDITIONS_2026_10_26.md). Four additional exclusions have fresh sale/parking
 or unrelated gambling evidence. Historical notes below describe earlier snapshots.
 
 ## Continuous series and automatic playback

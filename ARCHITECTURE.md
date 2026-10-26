@@ -497,3 +497,7 @@ Website labels such as "1080p" are claims. `moviehub_vod.playable` already reads
 `SourceWindow.pick(now, finished, target, quality)` keeps the three-second first choice when the best source reaches `min(preferred, 1080p)`; otherwise it waits up to `LONGER_WAIT_MS` (8 s) or until the search finishes. Camera copies never count as good enough.
 
 `VodQuality` (owned by `VodPlayback`, main thread) reads `getCurrentVideoTrack` once a source has played for 15 seconds, so adaptive playlists can settle. It corrects the Sources label ("480p ✓ (said 1080p)", or "playing 480p of up to 1080p" for a playlist), judges an unconfirmed file source's website, and shows a short notice. When a later source has a confirmed HD quality better than what is playing (and within the preferred quality), it says so once per step and points to More → Sources; choosing it there uses the existing background-prepared switch at the current position. It never switches by itself.
+
+## FMHY Rive adapter
+
+`moviehub_native/rive.py` implements the existing movie/tvshow/episode/sources/resolve contract, using TMDB identities and the public anonymous Primevids/Citadel endpoint. `moviehub_native.PROVIDERS` registers the website. Existing website grouping, source keys, ranking, relay, audio handling, credentials and persistence are unchanged. Every returned distinct URL retains its own source row.
