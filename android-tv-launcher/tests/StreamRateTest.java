@@ -25,7 +25,28 @@ public final class StreamRateTest {
         );
         check(SourceRanking.readyRank("1080p", 1080, 0, 50) > SourceRanking.readyRank("1080p", 1080, 0, 500));
         check(SourceRanking.readyRank("1080p", 1080, 0, 500) > SourceRanking.readyRank("4K", 1080, 99, 1));
-        System.out.println("19 incoming-rate and ready-source ranking checks passed");
+        // A quality read from the file beats the same quality claimed by a website, at any speed,
+        // but never beats a better quality.
+        check(
+            SourceRanking.readyRank("1080p", 1080, 0, 999, true) >
+                SourceRanking.readyRank("1080p", 1080, 99, 1, false)
+        );
+        check(
+            SourceRanking.readyRank("1080p", 1080, 0, 999, false) >
+                SourceRanking.readyRank("720p", 1080, 99, 1, true)
+        );
+        check(
+            SourceRanking.readyRank("720p", 1080, 5, 300) ==
+                SourceRanking.readyRank("720p", 1080, 5, 300, false)
+        );
+        // Confirmed small pictures rank below plain SD; ordinary SD and unknown labels stay 480.
+        check(SourceRanking.resolution("360p") == 360);
+        check(SourceRanking.resolution("240p · Film.mp4") == 240);
+        check(SourceRanking.resolution("480p") == 480);
+        check(SourceRanking.resolution("SD") == 480);
+        check(SourceRanking.resolution("Film.2019.x264") == 480);
+        check(SourceRanking.resolution("1080p 360p") == 1080);
+        System.out.println("28 incoming-rate and ready-source ranking checks passed");
     }
 
     private static void check(boolean value) {

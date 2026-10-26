@@ -106,12 +106,21 @@ final class VodSources {
         return session;
     }
 
-    private static VodSourceFailover.Source entry(SourceRepository.Source source) {
-        return new VodSourceFailover.Source(
+    static VodSourceFailover.Source entry(SourceRepository.Source source) {
+        VodSourceFailover.Source entry = new VodSourceFailover.Source(
             source.uri,
-            SourcesScreen.provider(source.title) + " · " + SourcesScreen.quality(source.title),
+            SourcesScreen.provider(source.title) + " · " + SourcesScreen.badge(source),
             SourcesScreen.provider(source.title)
         );
+        // A camera copy's picture size is real but it is never a better source to suggest.
+        if (source.confirmed && source.ranking != null && !SourceRanking.camera(source.ranking)) {
+            entry.confirmed = SourceRanking.resolution(source.ranking);
+        }
+        // Cloud results have no separate claim; their release name is the claim.
+        entry.claimed = source.claimed.isEmpty() ? SourcesScreen.quality(source.title) : source.claimed;
+        entry.site = source.site;
+        entry.playlist = source.playlist;
+        return entry;
     }
 
     static Session prepare(

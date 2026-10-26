@@ -19,13 +19,30 @@ final class VodSourceFailover {
     static final class Source {
 
         final String url;
-        final String label;
+        /** Shown in the Sources menu; corrected once the real picture size is known. */
+        volatile String label;
         final String provider;
+        /** Quality read from the file or stream (a tier such as 1080), 0 when only claimed. */
+        int confirmed;
+        /** What the website claimed, and which website, for judging its labels. */
+        String claimed = "",
+            site = "";
+        /** A streaming playlist, whose player may pick a lower step than it offers. */
+        boolean playlist;
+        /** The real picture tier once this source has played for a while; 0 until then. */
+        volatile int actual;
 
         Source(String url, String label, String provider) {
             this.url = url;
             this.label = label;
             this.provider = provider;
+        }
+
+        /** The best known quality: what played, else what the file said, else the claim. */
+        int knownQuality() {
+            if (actual > 0) return actual;
+            if (confirmed > 0) return confirmed;
+            return claimed.isEmpty() ? 0 : SourceRanking.resolution(claimed);
         }
     }
 
@@ -99,6 +116,11 @@ final class VodSourceFailover {
     /** Keep an already playing source out of a manual replacement attempt. */
     void exclude(int index) {
         failed.add(index);
+    }
+
+    /** Failed, or already played and left; not worth suggesting again. */
+    boolean failed(int index) {
+        return failed.contains(index);
     }
 
     void onPlaying() {

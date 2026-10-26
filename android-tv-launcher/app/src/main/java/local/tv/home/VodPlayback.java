@@ -42,6 +42,7 @@ final class VodPlayback {
     static final long SEEK_ADVANCE_MS = 2000,
         SEEK_SETTLE_MAX_MS = 30_000;
     private final Runnable check = this::check;
+    final VodQuality quality;
 
     VodPlayback(VlcPlaybackActivity activity, VodSources.Session session) {
         this.activity = activity;
@@ -49,6 +50,7 @@ final class VodPlayback {
         queue.setSources(session.sources);
         active = session.active;
         queue.select(active, session.pinned);
+        quality = new VodQuality(activity, session.sources, queue, session.free);
     }
 
     boolean automaticSources() {
@@ -99,6 +101,14 @@ final class VodPlayback {
         boolean seeking = seekingNow();
         queue.setSeeking(seeking);
         queue.setUserPaused(activity.paused);
+        quality.tick(
+            active,
+            !seeking &&
+                !activity.paused &&
+                !preparing &&
+                activity.player != null &&
+                activity.player.isPlaying()
+        );
         if (seeking || activity.paused) {
             cancelPreparation();
             return;

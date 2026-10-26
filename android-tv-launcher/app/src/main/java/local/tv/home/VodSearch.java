@@ -14,6 +14,7 @@ final class VodSearch implements AutoCloseable {
     final AtomicBoolean cancelled = new AtomicBoolean();
     private final AtomicInteger pending = new AtomicInteger(1);
     private final SourceWindow<SourceRepository.Source> window;
+    private final int target;
     private final long deadline;
     private final List<java.util.function.Consumer<SourceRepository.Source>> observers = new ArrayList<>();
     private static volatile VodSearch current;
@@ -38,9 +39,12 @@ final class VodSearch implements AutoCloseable {
                 source.ranking == null ? source.title : source.ranking,
                 quality,
                 source.probeMbps,
-                source.responseMs
+                source.responseMs,
+                source.confirmed
             )
         );
+        // Good enough to start at once: the preferred quality, but 1080p when 4K is preferred.
+        target = Math.min(quality, 1080);
         Context app = context.getApplicationContext();
         // Runtime extraction and imports must never hold the UI thread.
         workers.submit(() -> {
@@ -215,7 +219,13 @@ final class VodSearch implements AutoCloseable {
     }
 
     SourceRepository.Source selected() {
-        return window.pick(SystemClock.elapsedRealtime());
+        return window.pick(SystemClock.elapsedRealtime(), finished(), target, VodSearch::startQuality);
+    }
+
+    /** A camera copy never counts as good enough to stop waiting for a better source. */
+    static int startQuality(SourceRepository.Source source) {
+        String label = source.ranking == null ? source.title : source.ranking;
+        return SourceRanking.camera(label) ? 0 : SourceRanking.resolution(label);
     }
 
     boolean finished() {
