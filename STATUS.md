@@ -532,3 +532,11 @@ Site-by-site recovery is in progress on `fix/site-by-site-vod`. All 63 public we
 Initial runner audit [40251539758](https://github.com/billyke2000s/moviehub/actions/runs/40251539758) at `4522a1c` completed 57 movie-site and 48 episode-site checks, covering all 63 public sites. The focused Inception probe returned eight validated media links from FZMovies, AnyMovies, M4uHD and Iwaatch. Tubi’s current anonymous movie protocol and Waffi’s separate mirrors/online player were then inspected and adapted; their exact-head runner results are still pending. Browser-challenge and unsupported downstream-host cases remain explicitly unresolved.
 
 The follow-up runner validated 12 Inception links across six websites and four clear-HLS Tubi links for a listed film. PR 158 preserves the independently merged PR 157 backdrop fix and tracks combined Android/device validation. The exact reported Spider-Man title is included in the final public-source audit. Release target: MovieHub 1.0.4, update code 104, preserving the existing package, certificate and updater feed.
+
+## Deeper VOD verification (26 October 2026)
+
+The 1.0.4 source recovery passed main-branch CI. Its publication rerun is pending after the
+existing backup-switch audio assertion failed in the first release test run. The opt-in live
+Android audit now checks individual returned sources through the real transport and LibVLC,
+including decoded frames, measured duration/resolution and midpoint seeking. Results remain
+pending; no added source or 4K capability is claimed from a provider's advertised label.
