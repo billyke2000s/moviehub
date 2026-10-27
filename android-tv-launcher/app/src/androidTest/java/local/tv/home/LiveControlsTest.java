@@ -34,7 +34,12 @@ public final class LiveControlsTest {
     private boolean oldAutoUpdates;
 
     private void await(BooleanSupplier condition) {
-        long deadline = SystemClock.elapsedRealtime() + 10000;
+        await(condition, 10000);
+    }
+
+    /** Opening MainActivity on a cold emulator can take longer than a control's reaction. */
+    private void await(BooleanSupplier condition, long limit) {
+        long deadline = SystemClock.elapsedRealtime() + limit;
         java.util.concurrent.atomic.AtomicBoolean matched = new java.util.concurrent.atomic.AtomicBoolean();
         do {
             remote.runOnMainSync(() -> matched.set(condition.getAsBoolean()));
@@ -132,15 +137,15 @@ public final class LiveControlsTest {
         activity = (MainActivity) remote.startActivitySync(
             new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         );
-        await(() -> activity.hasWindowFocus());
+        await(() -> activity.hasWindowFocus(), 30000);
         remote.runOnMainSync(() -> {
             activity.stage.setPage(new android.widget.FrameLayout(activity));
             activity.stage.fullScreen(channel.name, url, channel.key);
         });
-        await(() -> zapper() != null && zapper().copies().size() == 2 && resolutions.get() == 1);
+        await(() -> zapper() != null && zapper().copies().size() == 2 && resolutions.get() == 1, 30000);
         // Resolver readiness does not imply that Android has finished transferring input focus.
         // Inject physical keys only once this newly launched player owns the window.
-        await(() -> activity.hasWindowFocus());
+        await(() -> activity.hasWindowFocus(), 30000);
     }
 
     @After
