@@ -136,9 +136,13 @@ public class MediaMetadataProbeTest {
             assertEquals(movie.length, data.getSize());
             assertEquals(32, data.readAt(movie.length - 32, b, 0, 32));
             assertEquals(32, data.readAt(movie.length - 32, b, 0, 32));
+            // Native sniffers return to the start after reading the end; it must stay cached.
+            byte[] first = new byte[32];
+            assertEquals(32, data.readAt(0, first, 0, first.length));
+            assertArrayEquals(java.util.Arrays.copyOfRange(movie, 0, 32), first);
             assertEquals(2, requests.get());
             assertArrayEquals(java.util.Arrays.copyOfRange(movie, movie.length - 32, movie.length), b);
-            assertTrue(bytes.get() <= 65536 + 32);
+            assertTrue(bytes.get() <= 2 * 65536);
         }
     }
 

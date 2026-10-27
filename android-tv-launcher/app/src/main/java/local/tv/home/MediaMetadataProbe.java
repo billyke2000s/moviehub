@@ -135,9 +135,10 @@ final class MediaMetadataProbe {
         private final String url;
         private final AtomicBoolean cancelled;
         private final long deadline = System.nanoTime() + TIME_LIMIT_MS * 1_000_000;
-        private long size = -1,
-            chunkAt = -1;
-        private byte[] chunk = new byte[0];
+        private volatile long size = -1;
+        // Extractors sniff several formats and revisit the index. Retain every fetched block
+        // within the existing total byte budget instead of refetching an evicted prefix.
+        private final Map<Long, byte[]> chunks = new LinkedHashMap<>();
         private int received;
         private boolean closed;
 
@@ -163,25 +164,27 @@ final class MediaMetadataProbe {
             if (count == 0) return 0;
             if (position < 0) throw new IOException("Invalid metadata offset");
             if (size >= 0 && position >= size) return -1;
-            if (position < chunkAt || position >= chunkAt + chunk.length) {
+            long chunkAt = (position / 65536) * 65536;
+            byte[] chunk = chunks.get(chunkAt);
+            if (chunk == null) {
                 if (received >= BYTE_LIMIT) throw new IOException("Metadata byte limit");
                 int want = Math.min(65536, BYTE_LIMIT - received);
                 HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
                 c.setConnectTimeout(timeout());
                 c.setReadTimeout(timeout());
                 c.setInstanceFollowRedirects(false);
-                c.setRequestProperty("Range", "bytes=" + position + "-" + (position + want - 1));
+                c.setRequestProperty("Range", "bytes=" + chunkAt + "-" + (chunkAt + want - 1));
                 c.setRequestProperty("Accept-Encoding", "identity");
                 try {
                     int status = c.getResponseCode();
                     if (status != 200 && status != 206) throw new IOException("Metadata response rejected");
-                    if (status == 200 && position != 0) throw new IOException("Metadata range ignored");
+                    if (status == 200 && chunkAt != 0) throw new IOException("Metadata range ignored");
                     String range = c.getHeaderField("Content-Range");
                     if (status == 206) {
                         Matcher m = Pattern.compile("bytes (\\d+)-(\\d+)/(\\d+)").matcher(
                             range == null ? "" : range
                         );
-                        if (!m.matches() || Long.parseLong(m.group(1)) != position) throw new IOException(
+                        if (!m.matches() || Long.parseLong(m.group(1)) != chunkAt) throw new IOException(
                             "Metadata range mismatch"
                         );
                         size = Long.parseLong(m.group(3));
@@ -199,8 +202,8 @@ final class MediaMetadataProbe {
                             received += n;
                         }
                     }
-                    chunkAt = position;
                     chunk = out.toByteArray();
+                    chunks.put(chunkAt, chunk);
                 } finally {
                     c.disconnect();
                 }
@@ -219,7 +222,7 @@ final class MediaMetadataProbe {
         @Override
         public synchronized void close() {
             closed = true;
-            chunk = new byte[0];
+            chunks.clear();
         }
     }
 }
