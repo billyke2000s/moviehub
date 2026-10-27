@@ -43,6 +43,12 @@ public class MediaFactsTest {
             "no invented list facts"
         );
         check(file.bitrate().equals("8.2 Mb/s video + 384 kb/s audio"), "separate declared track rates");
+        check(
+            new MediaFacts.Value(MediaFacts.Origin.FILE, 1920, 1080, "", "aac", 2, "", 0, 128000, 0)
+                .bitrate()
+                .equals("Video bitrate unknown · 128 kb/s audio"),
+            "known audio rate survives missing video rate"
+        );
         check(!file.describe().contains("Atmos"), "channels do not prove Atmos");
         check(
             MediaFacts.UNKNOWN.describe().equals("Resolution unknown · Audio unknown · Bitrate unknown"),

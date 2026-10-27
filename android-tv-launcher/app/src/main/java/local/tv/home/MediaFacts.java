@@ -87,7 +87,9 @@ final class MediaFacts {
         }
 
         String bitrate() {
-            if (videoBitrate <= 0) return "Bitrate unknown";
+            if (videoBitrate <= 0) return audioBitrate > 0
+                ? "Video bitrate unknown · " + VideoDetails.bitrate(audioBitrate) + " audio"
+                : "Bitrate unknown";
             return (
                 VideoDetails.bitrate(videoBitrate) +
                 (origin == Origin.PLAYLIST ? " (playlist)" : " video") +
