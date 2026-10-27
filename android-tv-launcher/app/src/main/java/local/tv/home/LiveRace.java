@@ -119,12 +119,9 @@ final class LiveRace {
                 LiveStream.Resolution source = null;
                 Exception failure = null;
                 try {
-                    locator = Playlist.networkUrl(db.url(row.id, row.key), allowHttp);
-                    // Plain stream addresses need no lookup; provider channels do (as ExoLive.open).
-                    source =
-                        PlutoSource.nativeUrl(locator) || EngineSources.locator(locator)
-                            ? LiveStream.resolve(context, locator, http, null)
-                            : new LiveStream.Resolution(null, locator, null);
+                    Found found = find(context, db, row, allowHttp, http);
+                    locator = found.locator;
+                    source = found.source;
                 } catch (Exception e) {
                     failure = e;
                 }
@@ -134,6 +131,35 @@ final class LiveRace {
                 main.post(() -> arrived(index, found, result, error));
             })
         );
+    }
+
+    /** A copy's address and its playable link. */
+    static final class Found {
+
+        final String locator;
+        final LiveStream.Resolution source;
+
+        Found(String locator, LiveStream.Resolution source) {
+            this.locator = locator;
+            this.source = source;
+        }
+    }
+
+    /** Looks up one copy's link. Blocks: call it off the main thread. */
+    static Found find(
+        Context context,
+        ChannelDatabase db,
+        ChannelDatabase.Row row,
+        boolean allowHttp,
+        NativeHttp http
+    ) throws Exception {
+        String locator = Playlist.networkUrl(db.url(row.id, row.key), allowHttp);
+        // Plain stream addresses need no lookup; provider channels do (as ExoLive.open).
+        LiveStream.Resolution source =
+            PlutoSource.nativeUrl(locator) || EngineSources.locator(locator)
+                ? LiveStream.resolve(context, locator, http, null)
+                : new LiveStream.Resolution(null, locator, null);
+        return new Found(locator, source);
     }
 
     private void arrived(int index, String locator, LiveStream.Resolution source, Exception failure) {
