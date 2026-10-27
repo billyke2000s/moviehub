@@ -1,16 +1,13 @@
-## Unreleased
+## 1.0.7 (27 October 2026)
 
-- Live TV: a source chosen by hand on one channel no longer carries over to the next channel opened from the guide (it opened in Manual, so it never moved to a backup).
-- Live TV: clicking the picture with an air mouse, or tapping it on a phone, shows the channel banner again, as it did before the switch to the new player.
-- Removed the old Live TV player code (LibVLC), which nothing used since Live TV moved to ExoPlayer. Films and series are unchanged.
-- Live TV: a channel starts on whichever of its sources is found first, and moves to a better-quality source (by its HD/1080p name) as soon as one is found. If the better source buffers or fails within a minute, the channel goes back to the one that was working and leaves the better one alone for 10 minutes (longer if it happens again), so the picture never flips back and forth. Choosing a source yourself turns this off for the channel.
-- Live TV: a channel that keeps buffering (8 seconds stuck, or 3 stalls in a minute) now moves to the channel's next source, as the old player did; with no other source, a long stall reconnects. A stream that stops completely without an error is recovered the same way.
-- Live TV: reconnects are limited to two, refilled only after 30 seconds of good picture, so a stream that keeps dying no longer reopens endlessly. Reconnects look the link up afresh.
-- Live TV: provider links that expire are renewed a minute before they do, instead of cutting out.
-
-- Correct the MIME type of the newly added Rive routes whose servers label raw video segments as images, retaining video and audio bytes. Audit new-provider movie and episode links separately.
-
-- Add Rive movie and episode sources from FMHY through the existing provider bridge. Keep distinct links separately listed; existing providers and source identity rules are unchanged. Desktop samples passed video/audio, runtime and midpoint decoding checks; see the dated addition report for Android validation status.
+- Live TV starts on the first source it finds, then switches to a better-quality one (HD, 1080p…) as soon as it is found. If that source buffers or fails within a minute, it goes back to the one that worked and leaves it alone for 10 minutes or more, so the picture never flips back and forth. Choosing a source yourself turns this off.
+- A channel that keeps buffering (8 seconds stuck, or 3 stalls in a minute) moves to its next source; with no other source, a long stall reconnects. A stream that stops without an error is recovered the same way.
+- Reconnects are limited to two, refilled after 30 seconds of good picture, and look the link up afresh.
+- Provider links are renewed a minute before they expire, instead of cutting out.
+- A source chosen by hand no longer carries over to the next channel opened from the guide.
+- Clicking the picture with an air mouse, or tapping it on a phone, shows the channel banner again.
+- New Rive movie and episode sources.
+- The old Live TV player code was removed. Films and series are unchanged.
 
 ## 1.0.6 (26 October 2026)
 
