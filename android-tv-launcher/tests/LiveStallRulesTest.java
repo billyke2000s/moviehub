@@ -40,6 +40,7 @@ public final class LiveStallRulesTest {
         check("stall starts", !rules.buffering(1000, true, true, true));
         check("under eight seconds", !rules.tick(8999, 0, 10, false, true, true));
         check("eight seconds", rules.tick(9000, 0, 10, false, true, true));
+        check("reported as buffering", rules.lastWasBuffering());
         check("acted once", !rules.tick(10000, 0, 10, false, true, true));
     }
 
@@ -86,6 +87,7 @@ public final class LiveStallRulesTest {
         dead.tick(0, 5000, 100, true, true, false);
         check("seven seconds still", !dead.tick(7999, 5000, 100, true, true, false));
         check("nothing moved for eight", dead.tick(8000, 5000, 100, true, true, false));
+        check("reported as a dead stream", !dead.lastWasBuffering());
 
         LiveStallRules sound = watching();
         for (long t = 0; t <= 12000; t += 1000) {

@@ -26,7 +26,7 @@ final class LiveStallRules {
     private final LiveBuffering buffering = new LiveBuffering();
     private final LiveProgress progress = new LiveProgress();
     private final LiveRestartBudget reconnects = new LiveRestartBudget();
-    private boolean pictures;
+    private boolean pictures, lastBuffering;
 
     /** A new channel or source was chosen, or the viewer asked to reconnect: a fresh budget. */
     void newSelection() {
@@ -71,10 +71,12 @@ final class LiveStallRules {
     ) {
         boolean watching = pictures && playWhenReady;
         reconnects.observe(now, frames, watching && playing);
+        lastBuffering = true;
         if (
             (buffering.stalled(now, watching) || (watching && buffering.persistent(now))) &&
             recover(now, alternative)
         ) return true;
+        lastBuffering = false;
         if (progress.stalled(now, position, frames, watching && playing, LiveBuffering.STALL_MS)) {
             boolean clockMoving = progress.clockMoving(now, LiveBuffering.STALL_MS);
             progress.reset();
@@ -84,6 +86,11 @@ final class LiveStallRules {
             }
         }
         return false;
+    }
+
+    /** Whether the last {@link #tick} that returned true acted on buffering (else a dead stream). */
+    boolean lastWasBuffering() {
+        return lastBuffering;
     }
 
     /** Takes one reconnect from the budget; false when both are used and none refilled yet. */

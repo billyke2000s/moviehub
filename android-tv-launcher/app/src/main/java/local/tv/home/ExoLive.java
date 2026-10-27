@@ -278,7 +278,7 @@ final class ExoLive {
                 player.getPlayWhenReady(),
                 hasAlternative()
             )
-        ) stalled("This source stopped playing");
+        ) stalled(rules.lastWasBuffering() ? "This source kept buffering" : "This source stopped playing");
     }
 
     /** A rule above says this source is stuck: another source when one waits, else a reconnect. */
