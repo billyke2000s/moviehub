@@ -180,87 +180,33 @@ final class LibraryScreens {
         try {
             String stored = activity.secrets.get("recentPlayback");
             JSONArray recent = new JSONArray(stored.isEmpty() ? "[]" : stored);
-            int count = 0;
-            SharedPreferences positions = activity.getSharedPreferences("positions", Context.MODE_PRIVATE);
+            Map<String, ?> positions = activity
+                .getSharedPreferences("positions", Context.MODE_PRIVATE)
+                .getAll();
+            Set<String> watched = activity.prefs.getStringSet("watchedEpisodes", Collections.emptySet());
+            List<ContinueWatching.Entry> history = new ArrayList<>();
             for (int i = 0; i < recent.length(); i++) {
                 JSONObject item = recent.getJSONObject(i);
-                String key = item.getString("id");
-                Object saved = positions.getAll().get(key);
-                if (!(saved instanceof Number) || ((Number) saved).longValue() <= 0) continue;
-                long position = ((Number) saved).longValue(),
-                    length = positions.getLong(key + ":duration", 0);
-                count++;
-                String title = item.optString("title", "Title"),
-                    url = item.getString("url");
-                LinearLayout card = activity.listRow();
-                card.setPadding(activity.dp(10), activity.dp(10), activity.dp(20), activity.dp(10));
-                ImageView artwork = new ImageView(activity);
-                artwork.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                artwork.setClipToOutline(true);
-                artwork.setBackground(activity.box(0xff1a2230));
-                card.addView(artwork, new LinearLayout.LayoutParams(activity.dp(192), activity.dp(108)));
-                String path = item.optString("backdrop_path", item.optString("poster_path"));
-                if (path.startsWith("/")) activity.posters.loadImage(
-                    artwork,
-                    "https://image.tmdb.org/t/p/w342" + path
-                );
-                LinearLayout copy = activity.vertical();
-                copy.setPadding(activity.dp(18), 0, activity.dp(18), 0);
-                TextView name = activity.rowText(title, 19, false, 1);
-                name.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
-                copy.addView(name);
-                String episode =
-                    item.has("season") && item.has("episode")
-                        ? "S" + item.optInt("season") + " E" + item.optInt("episode") + "   ·   "
-                        : "";
-                copy.addView(
-                    activity.rowText(
-                        episode +
-                            (length > position
-                                ? Math.max(1, (length - position) / 60000) + " min left"
-                                : position / 60000 + " min watched"),
-                        14,
-                        true,
-                        1
+                history.add(
+                    new ContinueWatching.Entry(
+                        i,
+                        group(item),
+                        series(item),
+                        position(positions, item),
+                        watched.contains(item.optString("episodeKey", "-"))
                     )
                 );
-                if (length > 0) {
-                    LinearLayout.LayoutParams bar = new LinearLayout.LayoutParams(-1, activity.dp(4));
-                    bar.topMargin = activity.dp(8);
-                    copy.addView(activity.progress((float) position / length), bar);
-                }
-                card.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
-                card.addView(activity.rowText("▶  Resume   ⋯", 15, false, 1));
-                activity.styleListRow(card, false);
-                card.setOnClickListener(v -> VodResume.start(activity, item, false));
-                Runnable more = () ->
-                    SidePanel.of(activity, title)
-                        .option("Resume", () -> VodResume.start(activity, item, false))
-                        .option("Start over", () -> {
-                            VodResume.start(activity, item, true);
-                        })
-                        .option("Remove from Continue watching", () -> {
-                            ResumePoint.clear(activity, key, ResumePoint.titleKey(item));
-                            continueWatching();
-                        })
-                        .show();
-                card.setOnLongClickListener(v -> {
-                    more.run();
-                    return true;
-                });
-                card.setOnKeyListener((v, keyCode, event) -> {
-                    if (keyCode != android.view.KeyEvent.KEYCODE_MENU) return false;
-                    if (event.getAction() == android.view.KeyEvent.ACTION_UP) more.run();
-                    return true;
-                });
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-                lp.topMargin = activity.dp(10);
-                activity.page.addView(card, lp);
             }
-            if (count == 0) activity.emptyState(
+            List<ContinueWatching.Row> rows = ContinueWatching.rows(history);
+            for (ContinueWatching.Row row : rows) {
+                JSONObject item = recent.getJSONObject(row.index);
+                if (row.next) nextEpisodeRow(item, recent);
+                else resumeRow(item, positions, recent);
+            }
+            if (rows.isEmpty()) activity.emptyState(
                 activity.page,
                 "Pick up where you left off",
-                "Movies and episodes you start will appear here.",
+                "Movies and episodes you watch for a few minutes will appear here.",
                 "Browse movies",
                 () -> library("Movies")
             );
@@ -272,6 +218,209 @@ final class LibraryScreens {
                 "Retry",
                 this::continueWatching
             );
+        }
+    }
+
+    private static boolean series(JSONObject item) {
+        return item.has("episodeKey") || item.has("season") || "tv".equals(item.optString("media_type"));
+    }
+
+    /** The film or series a history record belongs to (ContinueWatching.group). */
+    private static String group(JSONObject item) {
+        boolean series = series(item);
+        return ContinueWatching.group(
+            series,
+            item.optInt("tmdbId"),
+            series ? item.optString("name", item.optString("title")) : item.optString("title"),
+            item.optString("id")
+        );
+    }
+
+    /** The saved resume point: the title's (any source), else this file's, else 0. */
+    private static long position(Map<String, ?> positions, JSONObject item) {
+        String titleKey = ResumePoint.titleKey(item);
+        Object saved = titleKey == null ? null : positions.get(titleKey);
+        if (!(saved instanceof Number)) saved = positions.get(item.optString("id"));
+        return saved instanceof Number ? Math.max(0, ((Number) saved).longValue()) : 0;
+    }
+
+    private static String episodeLabel(JSONObject item) {
+        return item.has("season") && item.has("episode")
+            ? "S" + item.optInt("season") + " E" + item.optInt("episode")
+            : "";
+    }
+
+    /** A film or episode part-way through: Resume carries on from where it stopped. */
+    private void resumeRow(JSONObject item, Map<String, ?> positions, JSONArray recent) {
+        long position = position(positions, item);
+        Object duration = positions.get(item.optString("id") + ":duration");
+        long length = duration instanceof Number ? ((Number) duration).longValue() : 0;
+        String episode = episodeLabel(item);
+        String title = series(item)
+            ? item.optString("name", item.optString("title", "Series"))
+            : item.optString("title", "Title");
+        String detail =
+            (episode.isEmpty() ? "" : episode + "   ·   ") +
+            (length > position
+                ? Math.max(1, (length - position) / 60000) + " min left"
+                : position / 60000 + " min watched");
+        LinearLayout copy = card(item, title, recent, () -> VodResume.start(activity, item, false), true);
+        TextView line = activity.rowText(detail, 14, true, 1);
+        copy.addView(line);
+        if (length > 0) {
+            LinearLayout.LayoutParams bar = new LinearLayout.LayoutParams(-1, activity.dp(4));
+            bar.topMargin = activity.dp(8);
+            copy.addView(activity.progress((float) position / length), bar);
+        }
+    }
+
+    /**
+     * A series whose newest episode was finished: the row offers the next aired episode, looked
+     * up in the background (as Up next does), and goes when there is none.
+     */
+    private void nextEpisodeRow(JSONObject item, JSONArray recent) {
+        String title = item.optString("name", item.optString("title", "Series"));
+        JSONObject[] next = new JSONObject[1];
+        LinearLayout copy = card(
+            item,
+            title,
+            recent,
+            () -> {
+                if (next[0] != null) VodResume.start(activity, next[0], false);
+                else activity.toast("Still finding the next episode");
+            },
+            false
+        );
+        TextView line = activity.rowText(
+            "Finished " + episodeLabel(item) + "   ·   finding the next episode…",
+            14,
+            true,
+            1
+        );
+        copy.addView(line);
+        View row = (View) copy.getParent();
+        activity.async(
+            () -> {
+                try {
+                    SeriesPlayback.Next found = SeriesPlayback.resolve(
+                        item,
+                        item.optInt("season"),
+                        item.optInt("episode"),
+                        path -> activity.media.tmdb(path),
+                        java.time.LocalDate.now(java.time.ZoneOffset.UTC).toString()
+                    );
+                    return new Object[] { found };
+                } catch (Exception e) {
+                    Diagnostics.recovered("Finding the next episode for Continue watching", e);
+                    return new Object[] { null, e };
+                }
+            },
+            result -> {
+                SeriesPlayback.Next found = (SeriesPlayback.Next) result[0];
+                if (found == null && result.length == 1) {
+                    // The last aired episode was watched: nothing to continue.
+                    if (row.getParent() instanceof ViewGroup) ((ViewGroup) row.getParent()).removeView(row);
+                    return;
+                }
+                if (found == null) {
+                    line.setText(
+                        "Finished " + episodeLabel(item) + "   ·   could not check for the next episode"
+                    );
+                    return;
+                }
+                JSONObject resume = new JSONObject(item.toString());
+                resume.remove("id");
+                resume.remove("url");
+                resume
+                    .put("season", found.season)
+                    .put("episode", found.episode)
+                    .put("episodeKey", found.metadata.optString("episodeKey"))
+                    .put("media_type", "tv");
+                next[0] = resume;
+                String name = found.metadata.optString("episodeTitle", "");
+                line.setText(
+                    "Next   ·   S" +
+                        found.season +
+                        " E" +
+                        found.episode +
+                        (name.isEmpty() ? "" : "   ·   " + name)
+                );
+            }
+        );
+    }
+
+    /** A Continue watching card: artwork, title, the Resume hint and the Hold Select panel. */
+    private LinearLayout card(
+        JSONObject item,
+        String title,
+        JSONArray recent,
+        Runnable resume,
+        boolean restartable
+    ) {
+        LinearLayout card = activity.listRow();
+        card.setPadding(activity.dp(10), activity.dp(10), activity.dp(20), activity.dp(10));
+        ImageView artwork = new ImageView(activity);
+        artwork.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        artwork.setClipToOutline(true);
+        artwork.setBackground(activity.box(0xff1a2230));
+        card.addView(artwork, new LinearLayout.LayoutParams(activity.dp(192), activity.dp(108)));
+        String path = item.optString("backdrop_path", item.optString("poster_path"));
+        if (path.startsWith("/")) activity.posters.loadImage(
+            artwork,
+            "https://image.tmdb.org/t/p/w342" + path
+        );
+        LinearLayout copy = activity.vertical();
+        copy.setPadding(activity.dp(18), 0, activity.dp(18), 0);
+        TextView name = activity.rowText(title, 19, false, 1);
+        name.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+        copy.addView(name);
+        card.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
+        card.addView(activity.rowText("▶  Resume   ⋯", 15, false, 1));
+        activity.styleListRow(card, false);
+        card.setOnClickListener(v -> resume.run());
+        Runnable more = () -> {
+            SidePanel panel = SidePanel.of(activity, title).option("Resume", resume);
+            if (restartable) panel.option("Start over", () -> VodResume.start(activity, item, true));
+            panel
+                .option("Remove from Continue watching", () -> {
+                    forget(group(item), recent);
+                    continueWatching();
+                })
+                .show();
+        };
+        card.setOnLongClickListener(v -> {
+            more.run();
+            return true;
+        });
+        card.setOnKeyListener((v, keyCode, event) -> {
+            if (keyCode != android.view.KeyEvent.KEYCODE_MENU) return false;
+            if (event.getAction() == android.view.KeyEvent.ACTION_UP) more.run();
+            return true;
+        });
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.topMargin = activity.dp(10);
+        activity.page.addView(card, lp);
+        return copy;
+    }
+
+    /**
+     * Removes a film or series from Continue watching: its saved progress (every source and
+     * episode) and its history records, so a finished series does not come back as Next.
+     * Watched-episode marks and My List are kept.
+     */
+    void forget(String group, JSONArray recent) {
+        try {
+            JSONArray kept = new JSONArray();
+            for (int i = 0; i < recent.length(); i++) {
+                JSONObject item = recent.getJSONObject(i);
+                if (group.equals(group(item))) {
+                    ResumePoint.clear(activity, item.optString("id"), ResumePoint.titleKey(item));
+                } else kept.put(item);
+            }
+            activity.secrets.put("recentPlayback", kept.toString());
+        } catch (Exception e) {
+            Diagnostics.recovered("Removing from Continue watching", e);
+            activity.toast("Could not remove this title");
         }
     }
 

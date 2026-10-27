@@ -123,6 +123,12 @@ Last updated: 25 October 2026 (1.0 promotes the experimental line into MovieHub)
    tests were deleted; films and series still play on LibVLC. The picture click (air-mouse OK, phone
    tap) it had was ported to `LiveStage`. `LiveControlsTest` now runs on `LiveStage`. Emulator only.
 
+13. **Continue watching shows the next episode (27 October 2026).** One row per film or series,
+   nothing under three minutes, and a finished episode's series offers the next aired episode
+   (`ContinueWatching`, `LibraryScreens`). The next-episode lookup uses TMDB each time the screen
+   opens; it has only been checked with fixtures, not real series. History saved before this change
+   still has its old records; they are grouped the same way.
+
 ## Decisions
 
 - Version 7 → 8 channel upgrades must add `main` before renumbering the preferred copies.

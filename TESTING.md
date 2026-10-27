@@ -617,3 +617,17 @@ does not assert all links passed. Product code is unchanged by the final documen
 `test_fmhy_rive.py`, imported by `test_free_vod.py`, checks exact movie/episode identity, separate links, quality/language labels, playback headers, unsafe URLs, protected records and cancellation. The desktop live audit decoded all seven returned Inception links and three Breaking Bad S01E01 links independently at the start and midpoint with audio. See `docs/FMHY_ADDITIONS_2026_10_26.md`. These are sampled desktop decodes and actual Python-bridge checks, not physical-TV evidence. The separate new-source workflow checks the packaged Android player without selecting existing providers.
 
 The initial packaged Rive audit verified two movie links and rejected five with relay errors. The redacted initial results are preserved, not relabelled as successes. A real-TCP regression reproduces raw TS served with image/jpeg during a zero-to-end read: it failed before the fix, then passed with bytes preserved and the correct TS MIME type. The new-source workflow now audits movie and exact-episode links in separate jobs; all returned links must pass. See the dated report for the follow-up result.
+
+## Continue watching rows (27 October 2026)
+
+`ContinueWatchingTest` (core, 13 checks) covers the row rules: nothing under three minutes, one row
+per film whichever source, the newest record of a film deciding, a series resuming its newest episode
+watched properly, a finished episode offering the next one once per series, an episode opened only
+for a moment leaving it to the one before, a part-way rewatch resuming, row order, and grouping by
+TMDB id, then shown title, then file id. `ContinueWatchingScreenTest` (device) builds the screen from
+a fixture history: a one-minute start hidden, a film from two sources shown once, a series shown once
+under its name and resuming the episode watched properly, a finished episode's series kept, and
+removing a series forgetting every episode record and saved position. The next-episode lookup uses
+TMDB ids that do not exist, so the real catalogue lookup (next episode found, or the row going when
+the series is finished) is not exercised by fixtures.
+

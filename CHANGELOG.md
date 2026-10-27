@@ -1,3 +1,7 @@
+## Unreleased
+
+- Continue watching lists only films and episodes you watched for at least 3 minutes, shows each film once whichever source played it, and shows a series as one row: the episode you are part-way through, or the next episode once you finish one. A series leaves the list after its last aired episode. Removing a series from the list removes all its episodes.
+
 ## 1.0.7 (27 October 2026)
 
 - Live TV starts on the first source it finds, then switches to a better-quality one (HD, 1080p…) as soon as it is found. If that source buffers or fails within a minute, it goes back to the one that worked and leaves it alone for 10 minutes or more, so the picture never flips back and forth. Choosing a source yourself turns this off.
