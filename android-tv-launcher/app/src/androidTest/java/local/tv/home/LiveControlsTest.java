@@ -31,6 +31,7 @@ public final class LiveControlsTest {
     private final CountDownLatch release = new CountDownLatch(1);
     private MainActivity activity;
     private ChannelDatabase db;
+    private boolean oldAutoUpdates;
 
     private void await(BooleanSupplier condition) {
         long deadline = SystemClock.elapsedRealtime() + 10000;
@@ -93,6 +94,9 @@ public final class LiveControlsTest {
     @Before
     public void open() throws Exception {
         Context context = remote.getTargetContext();
+        // As ExoLiveTest: no update prompt may take the window focus from Live TV.
+        oldAutoUpdates = context.getSharedPreferences("ui", 0).getBoolean("autoUpdates", true);
+        context.getSharedPreferences("ui", 0).edit().putBoolean("autoUpdates", false).commit();
         remote.runOnMainSync(ExoLive::stop);
         db = ChannelDatabase.get(context);
         db.clear();
@@ -149,6 +153,12 @@ public final class LiveControlsTest {
         release.countDown();
         remote.waitForIdleSync();
         ExoLive.testResolver = null;
+        remote
+            .getTargetContext()
+            .getSharedPreferences("ui", 0)
+            .edit()
+            .putBoolean("autoUpdates", oldAutoUpdates)
+            .commit();
         LiveZapper.session = null;
         if (db != null) db.clear();
     }
