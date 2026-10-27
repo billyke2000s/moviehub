@@ -1,3 +1,7 @@
+## Unreleased
+
+- Fix: a film or episode link that sent a sliver of data (about 0.1 MB) and stopped stayed stuck instead of moving to the next link. If the picture has not moved for 15 seconds while not paused or seeking, the player now switches link (or says no working backup is left).
+
 ## 1.0.13 (27 October 2026)
 
 - Sources show quality and audio first, then the website ("1080p ✓ · 5.1 · website"), so a long website name no longer hides the quality. Links that name surround sound show "Atmos", "7.1" or "5.1" (the website's claim, from the release name), and rank above stereo or unstated links of the same picture quality.

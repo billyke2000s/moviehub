@@ -656,6 +656,13 @@ row, and that film rows are typed as films and series rows as series. Not covere
 thumb buttons on screen, For you actually changing after a rating (it needs real TMDB), the New
 episode label on screen, and the Anime screen loading real TMDB rows.
 
+## Stuck first link switches (27 October 2026)
+
+`VodSourceFailoverTest` (core) adds checks for `noProgress`: a position that does not move for 15 s
+switches, the wait restarts rather than firing every second, moving picture and pausing or seeking
+never count, and switching source starts the wait again. Not covered: LibVLC's events for a real
+link that stalls after a fraction of a megabyte (the owner's report), which no test reproduces.
+
 ## Audio badges and quality-first source labels (27 October 2026)
 
 `StreamRateTest` (core) adds 18 audio checks: Atmos, 7.1 and 5.1 written in the usual release-name
