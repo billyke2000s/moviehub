@@ -28,6 +28,7 @@ final class VodQuality {
         announced;
     private long playingSince;
     private String mismatch;
+    private IMedia refreshedMedia;
 
     VodQuality(
         VlcPlaybackActivity activity,
@@ -128,6 +129,17 @@ final class VodQuality {
         IMedia media = activity.player.getMedia();
         if (media == null) return;
         try {
+            // A local-only parse request clears LibVLC's early cached Java track snapshot when
+            // native selections are ready. It does not fetch another stream or start a decoder.
+            if (
+                media != refreshedMedia &&
+                activity.player.getVideoTrack() >= 0 &&
+                (activity.player.getAudioTrack() >= 0 ||
+                    (activity.player.getAudioTracksCount() == 0 && activity.player.getTime() >= 2000))
+            ) {
+                refreshedMedia = media;
+                media.parseAsync(IMedia.Parse.ParseLocal, 1000);
+            }
             IMedia.VideoTrack video = null;
             IMedia.AudioTrack audio = null;
             int videoId = activity.player.getVideoTrack(),
@@ -140,20 +152,20 @@ final class VodQuality {
                     (IMedia.AudioTrack) track;
             }
             if (video == null) video = activity.player.getCurrentVideoTrack();
-            if (video == null || video.width <= 0 || video.height <= 0) return;
             VodSourceFailover.Source source = sources.get(active);
-            source.facts.value = new MediaFacts.Value(
+            MediaFacts.Value nativeFacts = new MediaFacts.Value(
                 MediaFacts.Origin.PLAYING,
-                video.width,
-                video.height,
-                video.codec,
+                video == null ? 0 : video.width,
+                video == null ? 0 : video.height,
+                video == null ? "" : video.codec,
                 audio == null ? "" : audio.codec,
                 audio == null ? 0 : audio.channels,
                 audio == null ? "" : audio.language,
-                video.bitrate,
+                video == null ? 0 : video.bitrate,
                 audio == null ? 0 : audio.bitrate,
                 activity.player.getLength()
             );
+            source.facts.value = MediaFacts.combine(nativeFacts, source.facts.inspected);
             // Correct facts as soon as tracks exist; quality-claim notices retain their settling delay.
             source.label = "Playing " + source.facts.value.describe() + " · " + source.provider;
         } finally {

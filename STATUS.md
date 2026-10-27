@@ -1,5 +1,10 @@
 # Status
 
+## HLS and playing metadata correction — candidate
+
+The owner reported audio remaining unknown in the list and player, and HLS rows showing only an advertised ceiling. The correction adds playlist audio declarations and bounded media-header inspection for selected variants and separate audio, preserves independent header facts during partial native updates, and requests a supported local-only track-cache refresh after selections become available. UI rows and provider code are unchanged. CI must validate real TS/fMP4 metadata and an initially empty HLS playback track cache before completion is claimed. Encrypted, byte-range or unsupported/over-budget headers can still remain declarations or unknown; adaptive streams are labelled as checked variants rather than a promise of their playing resolution.
+
+
 ## VOD runtime, metadata and next episode — 1.0.15 published, 27 October 2026
 
 The Play sources page now lists each link independently, including multiple links from one website. Metadata updates each row in place before selection; resolution, audio formats/channels and declared bitrates stay unknown when unavailable. No new website-selection submenu is introduced. The final correction passed Android build/lint, signing/updater compatibility, normal and experimental emulator suites, and provider-engine CI at `2934cd7824fd665e248903d224f5dac0d49335e0`.

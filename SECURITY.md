@@ -1,5 +1,10 @@
 # Security
 
+## Bounded HLS media-header inspection
+
+HLS metadata follows only resource URLs rewritten and granted by the existing guarded relay. Playlist, initialization and clear segment reads share the original aggregate two-second/256 KiB downstream budget and cancellation token. No key retrieval or decryption is added; encrypted and byte-range resources are not sniffed. The VLC cache-refresh request is local-only and does not start an additional decoder or network parse. No new source domains, persisted playback URLs or logged credentials are introduced.
+
+
 ## Automatic source selection
 
 Per-link source rows expose only media facts and the discovery website, not resolved URLs or request headers. Metadata label refresh does not perform additional network reads.

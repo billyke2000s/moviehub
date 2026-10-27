@@ -97,6 +97,68 @@ public class MediaFactsTest {
                 0,
             "stereo not surround"
         );
+        MediaFacts.Value partial = new MediaFacts.Value(
+            MediaFacts.Origin.PLAYING,
+            1920,
+            800,
+            "h264",
+            "",
+            0,
+            "",
+            0,
+            0,
+            0
+        );
+        MediaFacts.Value combined = MediaFacts.combine(partial, file);
+        check(
+            combined.audio().contains("Available EAC3 5.1"),
+            "missing native track preserves available file audio"
+        );
+        check(combined.audio().contains("media headers"), "availability does not claim selected audio");
+        check(combined.videoBitrate == file.videoBitrate, "matching picture preserves declared track rate");
+        MediaFacts.Value lower = MediaFacts.combine(
+            new MediaFacts.Value(MediaFacts.Origin.PLAYING, 640, 360, "h264", "aac", 2, "fr", 0, 0, 0),
+            file
+        );
+        check(lower.videoBitrate == 0, "different representation cannot inherit video bitrate");
+        check(lower.channels == 2 && lower.audioCodec.equals("aac"), "selected audio replaces file track");
+        check(
+            lower.audioBitrate == 0 && !lower.audio().contains("Available"),
+            "different selected codec cannot inherit audio bitrate"
+        );
+        MediaFacts.Value independentAudio = MediaFacts.combine(
+            new MediaFacts.Value(MediaFacts.Origin.PLAYING, 0, 0, "", "aac", 1, "", 0, 0, 0),
+            MediaFacts.UNKNOWN
+        );
+        check(independentAudio.audio().equals("AAC Mono"), "audio does not depend on video metadata");
+        MediaFacts.Value stream = new MediaFacts.Value(
+            MediaFacts.Origin.STREAM,
+            160,
+            90,
+            "avc1",
+            "aac",
+            1,
+            "",
+            0,
+            0,
+            0
+        ).context(true, 4500000, "");
+        check(
+            stream.listLabel("site").startsWith("90p ✓ · Mono · site"),
+            "header resolution not playlist ceiling"
+        );
+        check(
+            stream.bitrate().contains("4.5 Mb/s playlist bandwidth"),
+            "bandwidth not relabelled as actual video bitrate"
+        );
+        check(stream.picture().contains("checked variant"), "adaptive representation provenance");
+        MediaFacts f = new MediaFacts();
+        f.value = partial;
+        f.inspection(file);
+        check(
+            f.inspected == file && f.value == partial,
+            "late inspection retained without replacing playing facts"
+        );
         System.out.println(checks + " media facts checks passed");
     }
 }

@@ -1,5 +1,10 @@
 # Testing
 
+## HLS and playing metadata correction — candidate
+
+Core HlsMediaInfoTest covers quoted CODECS, matching audio groups, channel declarations, language, bandwidth, adaptive variant selection, ambiguous codec unions, encrypted media and byte-range exclusions. MediaFactsTest checks independent audio facts, available-versus-selected provenance, retained track rates and refusal to carry rates across representation changes. HlsMetadataProbeTest uses actual H.264/AAC TS and separate fMP4 initialization headers behind deliberately false 1080p/5.1 declarations, shared resource budgets/deadlines, and encrypted-resource exclusion. PlaybackTest primes an empty Java Media track cache before releasing a real HLS fixture, then requires actual selected AAC and 160×90 playback facts. Focused regressions run before the full device suite. Android results must be read at the final PR head; no physical-TV or specific live-source result is claimed.
+
+
 ## VOD runtime, metadata and continuation — 1.0.15 (27 October 2026)
 Release evidence: **1,235 core checks passed locally** using Eclipse JDT targeting Java 17. Final candidate `2934cd7824fd665e248903d224f5dac0d49335e0` passed [Android build/lint, signing and both emulator suites](https://github.com/billyke2000s/moviehub/actions/runs/40590471873), plus [provider-engine CI](https://github.com/billyke2000s/moviehub/actions/runs/40590471944). The unchanged merged app also passed [main CI](https://github.com/billyke2000s/moviehub/actions/runs/40592864239).
 

@@ -246,7 +246,7 @@ final class VodSearch implements AutoCloseable {
             metadata.execute(() -> {
                 MediaFacts.Value facts = MediaMetadataProbe.read(source, preferred, cancelled);
                 if (cancelled.get()) return;
-                if (source.facts.value.origin != MediaFacts.Origin.PLAYING) source.facts.value = facts;
+                source.facts.inspection(facts);
                 if (PlaybackEnd.lengthMismatch(facts.durationMs, runtimeMs)) {
                     window.remove(sourceKey(source));
                 }

@@ -10,6 +10,7 @@ final class MediaFacts {
         FILE,
         PLAYLIST,
         PLAYING,
+        STREAM,
     }
 
     static final class Value {
@@ -18,6 +19,9 @@ final class MediaFacts {
         final int width, height, channels, videoBitrate, audioBitrate;
         final long durationMs;
         final String videoCodec, audioCodec, language;
+        final boolean checkedVariant;
+        final int playlistBandwidth;
+        final String availableAudio;
 
         Value(
             Origin origin,
@@ -31,6 +35,41 @@ final class MediaFacts {
             int audioBitrate,
             long durationMs
         ) {
+            this(
+                origin,
+                width,
+                height,
+                videoCodec,
+                audioCodec,
+                channels,
+                language,
+                videoBitrate,
+                audioBitrate,
+                durationMs,
+                false,
+                0,
+                ""
+            );
+        }
+
+        private Value(
+            Origin origin,
+            int width,
+            int height,
+            String videoCodec,
+            String audioCodec,
+            int channels,
+            String language,
+            int videoBitrate,
+            int audioBitrate,
+            long durationMs,
+            boolean checkedVariant,
+            int playlistBandwidth,
+            String availableAudio
+        ) {
+            this.checkedVariant = checkedVariant;
+            this.playlistBandwidth = Math.max(0, playlistBandwidth);
+            this.availableAudio = availableAudio;
             this.origin = origin;
             this.width = Math.max(0, width);
             this.height = Math.max(0, height);
@@ -41,6 +80,24 @@ final class MediaFacts {
             this.videoBitrate = Math.max(0, videoBitrate);
             this.audioBitrate = Math.max(0, audioBitrate);
             this.durationMs = Math.max(0, durationMs);
+        }
+
+        Value context(boolean variant, int bandwidth, String available) {
+            return new Value(
+                origin,
+                width,
+                height,
+                videoCodec,
+                audioCodec,
+                channels,
+                language,
+                videoBitrate,
+                audioBitrate,
+                durationMs,
+                variant,
+                bandwidth,
+                available
+            );
         }
 
         int tier() {
@@ -60,7 +117,8 @@ final class MediaFacts {
                       width +
                       "×" +
                       height +
-                      (origin == Origin.PLAYLIST ? " (playlist)" : " ✓");
+                      (origin == Origin.PLAYLIST ? " (playlist)" : " ✓") +
+                      (checkedVariant && origin != Origin.PLAYING ? " (checked variant)" : "");
         }
 
         String channelLabel() {
@@ -83,10 +141,21 @@ final class MediaFacts {
             String text = codec + (count.isEmpty() ? "" : (codec.isEmpty() ? "" : " ") + count);
             if (!language.isEmpty() && !language.equalsIgnoreCase("und")) text +=
                 (text.isEmpty() ? "" : " · ") + language;
-            return text.isEmpty() ? "Audio unknown" : text;
+            return text.isEmpty()
+                ? "Audio unknown"
+                : availableAudio.isEmpty()
+                  ? text
+                  : "Available " + text + " (" + availableAudio + ")";
         }
 
         String bitrate() {
+            String rate = trackBitrate();
+            return playlistBandwidth > 0 && origin != Origin.PLAYLIST
+                ? rate + " · " + VideoDetails.bitrate(playlistBandwidth) + " playlist bandwidth"
+                : rate;
+        }
+
+        private String trackBitrate() {
             if (videoBitrate <= 0) return audioBitrate > 0
                 ? "Video bitrate unknown · " + VideoDetails.bitrate(audioBitrate) + " audio"
                 : "Bitrate unknown";
@@ -113,7 +182,18 @@ final class MediaFacts {
             if (!video.isEmpty()) detail += video + " · ";
             detail += codec.isEmpty() ? "Audio format unknown" : codec;
             if (!language.isEmpty() && !language.equalsIgnoreCase("und")) detail += " · " + language;
-            return quality + " · " + audio + " · " + website + "\n" + detail + " · " + bitrate();
+            return (
+                quality +
+                " · " +
+                audio +
+                " · " +
+                website +
+                "\n" +
+                (checkedVariant ? "Checked HLS variant · " : "") +
+                detail +
+                " · " +
+                bitrate()
+            );
         }
 
         String describe() {
@@ -123,6 +203,65 @@ final class MediaFacts {
 
     static final Value UNKNOWN = new Value(Origin.UNKNOWN, 0, 0, "", "", 0, "", 0, 0, 0);
     volatile Value value = UNKNOWN;
+    volatile Value inspected = UNKNOWN;
+
+    void inspection(Value facts) {
+        inspected = facts;
+        if (value.origin != Origin.PLAYING) value = facts;
+    }
+
+    /** Native track snapshots can be partial. Never erase known headers or invent selected audio. */
+    static Value combine(Value nativeFacts, Value headers) {
+        boolean video = nativeFacts.width > 0 && nativeFacts.height > 0;
+        boolean audio = !nativeFacts.audioCodec.isEmpty() || nativeFacts.channels > 0;
+        boolean sameVideo =
+            video &&
+            nativeFacts.width == headers.width &&
+            nativeFacts.height == headers.height &&
+            !VideoDetails.codecName(nativeFacts.videoCodec).isEmpty() &&
+            VideoDetails.codecName(nativeFacts.videoCodec).equals(VideoDetails.codecName(headers.videoCodec));
+        boolean sameAudio =
+            audio &&
+            !audioName(nativeFacts.audioCodec).isEmpty() &&
+            audioName(nativeFacts.audioCodec).equals(audioName(headers.audioCodec)) &&
+            nativeFacts.channels == headers.channels;
+        String available =
+            audio || (headers.audioCodec.isEmpty() && headers.channels == 0)
+                ? ""
+                : headers.origin == Origin.PLAYLIST
+                  ? "playlist"
+                  : "media headers";
+        Origin origin = video
+            ? Origin.PLAYING
+            : headers.origin == Origin.UNKNOWN
+              ? nativeFacts.origin
+              : headers.origin;
+        return new Value(
+            origin,
+            video ? nativeFacts.width : headers.width,
+            video ? nativeFacts.height : headers.height,
+            video ? nativeFacts.videoCodec : headers.videoCodec,
+            audio ? nativeFacts.audioCodec : headers.audioCodec,
+            audio ? nativeFacts.channels : headers.channels,
+            audio ? nativeFacts.language : headers.language,
+            nativeFacts.videoBitrate > 0
+                ? nativeFacts.videoBitrate
+                : sameVideo || !video
+                  ? headers.origin == Origin.PLAYLIST
+                      ? 0
+                      : headers.videoBitrate
+                  : 0,
+            nativeFacts.audioBitrate > 0
+                ? nativeFacts.audioBitrate
+                : sameAudio || !audio
+                  ? headers.audioBitrate
+                  : 0,
+            nativeFacts.durationMs > 0 ? nativeFacts.durationMs : headers.durationMs,
+            headers.checkedVariant,
+            headers.origin == Origin.PLAYLIST ? headers.videoBitrate : headers.playlistBandwidth,
+            available
+        );
+    }
 
     private static String clean(String s) {
         return s == null

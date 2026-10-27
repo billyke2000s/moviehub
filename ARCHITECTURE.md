@@ -1,5 +1,10 @@
 # Architecture
 
+## HLS and incomplete playing metadata
+
+`HlsMediaInfo` parses quoted codec lists and matching audio rendition groups. `HlsMetadataProbe` follows the chosen variant and separate audio playlist through relay-granted URLs, then inspects initialization data or the first clear media segment with Android MediaExtractor. All resources share one two-second/256 KiB budget. Actual header dimensions replace playlist ceilings; rows identify the checked HLS variant because adaptive playback can choose another representation. Playlist bandwidth remains separately identified, and segment duration never becomes title runtime. Encrypted and byte-range media retain explicit declarations rather than being inspected incorrectly. `MediaFacts` retains an independent inspection snapshot; partial native updates cannot erase it or transfer a bitrate across changed codecs/dimensions. Available header audio is labelled separately from selected audio. `VodQuality` requests one supported local-only parse refresh after native selections exist to invalidate LibVLC's early Java track cache; metadata collection no longer requires video metadata before reporting audio.
+
+
 ## VOD runtime, metadata and next-episode preparation
 
 `FreeVodRows` renders one independently selectable button per discovery route and resolved URI, without a website submenu. Its first line is resolution, channels and website; the second gives dimensions, codecs, language and declared bitrate. Metadata refresh updates existing buttons even when link counts are unchanged, retaining remote focus. Playback backup identities use the same route/URI key.

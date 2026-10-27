@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Read HLS audio codec/channel declarations and bounded actual media headers, including separate audio; show checked variant dimensions and keep playlist bandwidth distinct. Preserve useful header facts when native track updates are incomplete and refresh early VLC track snapshots without a network parse.
+
 ## 1.0.15 (27 October 2026)
 
 - Show each discovered link directly on the Play sources page, including multiple links from one website. Refresh its own resolution, audio format/channels and declared bitrate in place; keep unknown fields explicit.
