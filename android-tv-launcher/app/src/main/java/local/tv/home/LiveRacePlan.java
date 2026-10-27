@@ -6,18 +6,17 @@ import java.util.List;
 
 /**
  * The rules for finding a live channel's link among its copies, without the threads (see
- * LiveRace). Up to {@link #PARALLEL} copies are looked up at once, in priority order. The first
- * choice waits up to {@link #WINDOW_MS} only while a copy of better quality is still being looked
- * up; otherwise the best copy found plays at once. After the playing copy fails, the best other
- * copy already found plays straight away, without waiting. Quality comes from the copy's name
- * ("HD", "1080p"…; see SourceRanking), so it is a hint, not a measurement.
+ * LiveRace). Up to {@link #PARALLEL} copies are looked up at once, in priority order. The quickest
+ * copy found plays at once (after the short {@link #TIE_MS} tie window), the best one when several
+ * are found together; a better copy found later is offered to LiveUpgrade rather than waited for.
+ * After the playing copy fails, the best other copy already found plays straight away. Quality
+ * comes from the copy's name ("HD", "1080p"…; see SourceRanking), so it is a hint, not a
+ * measurement.
  */
 final class LiveRacePlan {
 
     /** Lookups at once: enough to find a working copy quickly, few enough for a TV box. */
     static final int PARALLEL = 3;
-    /** The longest the first choice waits for a better copy, as films do (SourceWindow). */
-    static final long WINDOW_MS = SourceWindow.WAIT_MS;
     /**
      * Plain stream addresses need no lookup, so several copies "arrive" within milliseconds in
      * whatever order their threads run. The first choice waits this long for a copy ahead in
@@ -87,8 +86,8 @@ final class LiveRacePlan {
     }
 
     /**
-     * The copy to play now, or -1 to wait. The first choice waits while a better copy is still
-     * waiting or being looked up and the window is open; later choices never wait.
+     * The copy to play now, or -1 to wait. Only the first choice waits, and only for the tie
+     * window; later choices never wait.
      */
     int pick(long now) {
         int best = -1;
@@ -98,11 +97,6 @@ final class LiveRacePlan {
         if (best < 0) return -1;
         if (!picked && now - started < TIE_MS) {
             for (int i = 0; i < best; i++) if (state[i] == WAITING || state[i] == RESOLVING) return -1;
-        }
-        if (!picked && now - started < WINDOW_MS) {
-            for (int i = 0; i < order.length; i++) if (
-                (state[i] == WAITING || state[i] == RESOLVING) && quality[i] > quality[best]
-            ) return -1;
         }
         picked = true;
         state[best] = USED;
@@ -115,8 +109,17 @@ final class LiveRacePlan {
         return false;
     }
 
-    long windowEnds() {
-        return started + WINDOW_MS;
+    /** Whether copy {@code copy} is being looked up now. */
+    boolean lookingUp(int copy) {
+        int i = at(copy);
+        return i >= 0 && state[i] == RESOLVING;
+    }
+
+    /** LiveUpgrade took copy {@code copy} (found here or looked up itself) and plays it now. */
+    void playing(int copy) {
+        int i = at(copy);
+        if (i >= 0) state[i] = USED;
+        picked = true;
     }
 
     long tieEnds() {

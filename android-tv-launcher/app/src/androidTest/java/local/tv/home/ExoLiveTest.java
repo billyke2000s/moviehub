@@ -106,6 +106,7 @@ public final class ExoLiveTest {
             }
         }, "ExoFixtureServer").start();
         remote.runOnMainSync(ExoLive::stop);
+        LiveUpgrade.cooldowns.clear();
         LiveZapper.session = null;
         ChannelDatabase.get(context).clear();
         activity = (MainActivity) remote.startActivitySync(
@@ -171,7 +172,7 @@ public final class ExoLiveTest {
                     "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:31\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:30,\n" +
                     (path.equals("/subs.m3u8")
                         ? "subtitle.vtt"
-                        : path.equals("/stall.m3u8")
+                        : path.startsWith("/stall")
                           ? "stall-segment.ts"
                           : "segment.ts") +
                     "\n#EXT-X-ENDLIST\n"
@@ -761,6 +762,99 @@ public final class ExoLiveTest {
         }
     }
 
+    // ---- Quality upgrades ------------------------------------------------------------------------
+
+    /** The channel playing its SD copy (copy 0, first in the guide) with a better "HD" copy 1. */
+    private void upgradeChannel(String hdPath) throws Exception {
+        channels(new String[][] {
+            { "m3u", "Upgrade Channel UK", "/media.m3u8", "UpgradeChannel.uk" },
+            { "fta", "Upgrade Channel HD UK", hdPath, "UpgradeChannel.uk" },
+            { "free", "Other Channel UK", "/other.m3u8", "OtherChannel.uk" },
+        });
+        remote.runOnMainSync(() ->
+            activity.stage.fullScreen("Upgrade Channel UK", link("/media.m3u8"), "upgrade")
+        );
+        await(() -> ExoLive.isPlaying() && rendered() > 5);
+        await(() -> activity.stage.zapper().copies().size() == 2);
+    }
+
+    @Test
+    public void aBetterCopyFoundAfterTheQuickestOneTakesOver() throws Exception {
+        try {
+            upgradeChannel("/hd.m3u8");
+            // The quickest copy plays first; the HD copy, once found, takes over by itself.
+            await(() -> activity.stage.zapper().selectedCopy() == 1 && ExoLive.isPlaying() && rendered() > 5);
+            remote.runOnMainSync(() -> {
+                assertEquals(link("/hd.m3u8"), ExoLive.currentUrl());
+                assertTrue(ExoLive.eventLog().contains("Looking up better source 2"));
+            });
+            picturesAdvance();
+            // It stays: quality only goes up, so there is no switching back and forth.
+            SystemClock.sleep(3000);
+            remote.runOnMainSync(() -> assertEquals(1, activity.stage.zapper().selectedCopy()));
+        } finally {
+            restoreChannelPrefs();
+        }
+    }
+
+    @Test
+    public void aBetterCopyThatKeepsBufferingFallsBackAndCoolsDownAcrossChannels() throws Exception {
+        try {
+            upgradeChannel("/stall-hd.m3u8");
+            String[] hdKey = new String[1];
+            remote.runOnMainSync(() -> hdKey[0] = activity.stage.zapper().copies().get(1).key);
+            // The HD copy takes over, shows pictures, then stalls: the buffering rules send it back.
+            await(() -> stallRequests.get() == 1);
+            await(() -> ExoLive.eventLog().contains("Better source did not hold"));
+            await(() -> activity.stage.zapper().selectedCopy() == 0 && ExoLive.isPlaying() && rendered() > 5);
+            remote.runOnMainSync(() -> {
+                assertEquals(link("/media.m3u8"), ExoLive.currentUrl());
+                assertTrue(LiveUpgrade.cooling(hdKey[0], SystemClock.elapsedRealtime()));
+            });
+            // Cooling down: it is not chosen again, so the picture does not flip back and forth.
+            SystemClock.sleep(4000);
+            remote.runOnMainSync(() -> assertEquals(0, activity.stage.zapper().selectedCopy()));
+            assertEquals(1, stallRequests.get());
+
+            // Another channel and back: the race and upgrades still leave the cooling copy alone.
+            int[] here = new int[1];
+            remote.runOnMainSync(() -> {
+                here[0] = activity.stage.zapper().position();
+                activity.stage.zapper().channel(here[0] == 0 ? 1 : -1);
+            });
+            await(() -> activity.stage.zapper().position() != here[0] && ExoLive.isPlaying());
+            remote.runOnMainSync(() -> activity.stage.zapper().lastChannel());
+            await(
+                () ->
+                    activity.stage.zapper().position() == here[0] &&
+                    activity.stage.zapper().copies().size() == 2 &&
+                    ExoLive.isPlaying() &&
+                    rendered() > 5
+            );
+            SystemClock.sleep(4000);
+            remote.runOnMainSync(() -> {
+                assertEquals(0, activity.stage.zapper().selectedCopy());
+                assertEquals(link("/media.m3u8"), ExoLive.currentUrl());
+            });
+            assertEquals("The cooling copy was not played again", 1, stallRequests.get());
+        } finally {
+            restoreChannelPrefs();
+        }
+    }
+
+    @Test
+    public void aManualSourceChoiceIsNeverUpgraded() throws Exception {
+        try {
+            upgradeChannel("/hd.m3u8");
+            remote.runOnMainSync(() -> activity.stage.zapper().useCopy(0, false));
+            await(() -> !activity.stage.zapper().automaticSources() && ExoLive.isPlaying() && rendered() > 5);
+            SystemClock.sleep(4000);
+            remote.runOnMainSync(() -> assertEquals(0, activity.stage.zapper().selectedCopy()));
+        } finally {
+            restoreChannelPrefs();
+        }
+    }
+
     @After
     public void cleanup() throws Exception {
         remote.runOnMainSync(() -> {
@@ -778,5 +872,6 @@ public final class ExoLiveTest {
             .putBoolean("autoUpdates", oldAutoUpdates)
             .commit();
         LiveZapper.session = null;
+        LiveUpgrade.cooldowns.clear();
     }
 }

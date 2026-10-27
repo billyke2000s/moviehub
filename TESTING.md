@@ -491,9 +491,18 @@ source choice does not carry over to a different channel opened full screen (it 
 only the removed LibVLC player reset the mode when the stream changed). Provider link renewal has no device test (it needs a provider
 link with an expiry); real provider streams are not exercised by fixtures.
 
-`LiveRacePlanTest` (core, 17 checks) covers the source race rules: priority by quality then copy order,
-at most three lookups and standbys together, waiting inside the three-second window only while a better
-copy is pending, no waiting after a failure, and exhaustion. `ExoLiveTest.aDeadCopyHandsOverToAWorking
+`LiveRacePlanTest` (core, 24 checks) covers the source race rules: priority by quality then copy order,
+at most three lookups and standbys together, the quickest copy playing at once, a copy taken by
+`LiveUpgrade` counted as playing, no waiting after a failure, the short tie window, and exhaustion.
+`LiveUpgradePlanTest` (core, 36 checks) covers upgrades: only a better claim than both the copy's name
+and its measured picture, best claim first, one at a time, an unreachable copy changing nothing, a
+held trial allowing a further upgrade, a failed trial falling back, a 10-minute cooldown that survives
+a channel change, doubles on repeat, is capped at an hour and resets after a held trial, and picture
+lines from width and height. `ExoLiveTest.aBetterCopyFoundAfterTheQuickestOneTakesOver` starts a
+channel on its SD copy and checks its HD copy takes over and stays. `aBetterCopyThatKeepsBuffering
+FallsBackAndCoolsDownAcrossChannels` gives the HD copy a stalling stream: it falls back to SD, cools
+down, is not played again, and after another channel and back the race and upgrades still leave it
+alone. `aManualSourceChoiceIsNeverUpgraded` checks a copy chosen by hand stays. `ExoLiveTest.aDeadCopyHandsOverToAWorking
 OneWithoutWaitingForTheSlowOne` plays a three-copy fixture channel (404, working, slow) and checks the
 working copy plays through the race and the slow one is never opened. Real provider lookups, quality
 names and the eight-second deadline are not exercised by fixtures.
