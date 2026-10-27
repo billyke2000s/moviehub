@@ -15,8 +15,17 @@ import org.videolan.libvlc.Media;
 import org.videolan.libvlc.MediaPlayer;
 import org.videolan.libvlc.util.VLCVideoLayout;
 
-/** Fullscreen TV playback; account and resume storage retain their original identities. */
-public class VlcPlaybackActivity extends LiveHost {
+/**
+ * Full-screen film and series playback on LibVLC; account and resume storage retain their
+ * original identities. Live TV plays on ExoPlayer in {@link LiveStage}, not here.
+ */
+public class VlcPlaybackActivity extends Activity {
+
+    final Handler overlayHandler = new Handler(Looper.getMainLooper());
+    /** Where the picture is drawn. */
+    FrameLayout video;
+    /** A side panel is open over the picture. */
+    boolean dialogOpen;
 
     private LibVLC engine;
     MediaPlayer player;
@@ -30,12 +39,7 @@ public class VlcPlaybackActivity extends LiveHost {
     /** The film or episode this file is (see ResumePoint.titleKey), or null. */
     private String titleKey;
     private long position;
-    boolean live, ended, foreground, dragging;
-    boolean triedAlternative;
-    /** The next live start opens the stream again instead of carrying on. */
-    private boolean restartLive;
-    /** Live TV was paused, so the picture is behind the live broadcast until "Back to live". */
-    boolean behindLive;
+    boolean ended, foreground, dragging;
     /** Paused by the viewer (the player reports pausing a moment later, so this is kept here). */
     boolean paused;
     private int reminderTicks;
@@ -70,7 +74,6 @@ public class VlcPlaybackActivity extends LiveHost {
         if (exitHint != null) exitHint.setVisibility(View.GONE);
     };
     final Runnable hideOverlay = () -> {
-        forgetReleasedLivePlayer();
         if (
             controls != null && !dragging && !dialogOpen && player != null && player.isPlaying()
         ) controls.setVisibility(View.GONE);
@@ -79,7 +82,6 @@ public class VlcPlaybackActivity extends LiveHost {
     /** Film skips and seek-bar moves waiting to become one jump (see {@link SkipQueue}). */
     final SkipQueue skips = new SkipQueue();
     final Runnable applySkip = () -> {
-        forgetReleasedLivePlayer();
         long target = skips.take();
         if (target >= 0 && vod != null) vod.seeking(target);
         if (target >= 0 && player != null && player.isSeekable()) player.setTime(target);
@@ -99,25 +101,13 @@ public class VlcPlaybackActivity extends LiveHost {
 
     private final Runnable tick = new Runnable() {
         public void run() {
-            forgetReleasedLivePlayer();
             if (vod != null) vod.tick();
             if (player != null) {
                 // While a skip is waiting, show where it will land.
                 long length = player.getLength(),
                     time = skips.pending() ? skips.target() : Math.max(0, player.getTime());
-                timeLeft.setText(
-                    live
-                        ? behindLive
-                            ? player.isPlaying()
-                                ? "BEHIND LIVE"
-                                : "PAUSED"
-                            : "LIVE"
-                        : length > 0
-                          ? PlayerOverlay.timeLeft(Math.max(0, length - time))
-                          : "—"
-                );
+                timeLeft.setText(length > 0 ? PlayerOverlay.timeLeft(Math.max(0, length - time)) : "—");
                 if (
-                    !live &&
                     (vod == null || !vod.rejectedMedia()) &&
                     !nextPromptShown &&
                     length > 0 &&
@@ -154,7 +144,7 @@ public class VlcPlaybackActivity extends LiveHost {
                             : String.format(Locale.ROOT, " · %.2f MB received", bytes / 1000000d));
                 }
                 speed.setText(traffic);
-                timeline.setEnabled(!live && player.isSeekable() && length > 0);
+                timeline.setEnabled(player.isSeekable() && length > 0);
                 if (!dragging && length > 0) timeline.setProgress(
                     (int) Math.min(1000, (time * 1000) / length)
                 );
@@ -163,18 +153,11 @@ public class VlcPlaybackActivity extends LiveHost {
         }
     };
 
-    @Override
-    public LiveMenus liveMenus() {
-        return menus;
+    int dp(int n) {
+        return (int) (n * getResources().getDisplayMetrics().density + .5f);
     }
 
     void revealControls() {
-        if (zapper != null) {
-            // Live TV from the guide shows the satellite-box overlay instead of film controls.
-            zapper.showBanner();
-            if (zapper.overlay != null) zapper.overlay.pause(paused, behindLive);
-            return;
-        }
         if (controls == null) return;
         boolean hidden = controls.getVisibility() != View.VISIBLE;
         controls.setVisibility(View.VISIBLE);
@@ -196,36 +179,6 @@ public class VlcPlaybackActivity extends LiveHost {
             );
     }
 
-    /**
-     * Plays another stream in place: the next channel, or a backup copy of this one. Called by
-     * {@link LiveZapper}.
-     */
-    @Override
-    public void switchTo(String title, String newUrl, String newId) {
-        try {
-            url = Playlist.networkUrl(
-                newUrl,
-                getSharedPreferences("ui", MODE_PRIVATE).getBoolean("http", false)
-            );
-        } catch (Exception e) {
-            if (zapper == null || !zapper.failover("This stream's address is not allowed")) showError(
-                "This channel's address is not allowed. Turn on Allow HTTP in Settings → System to play it."
-            );
-            return;
-        }
-        id = newId;
-        getIntent().putExtra("title", title).putExtra("url", url).putExtra("id", id);
-        behindLive = false;
-        paused = false;
-        if (titleView != null) titleView.setText(title);
-        position = 0;
-        resumeCheck = 0;
-        playedOnce = false;
-        buffering = false;
-        triedAlternative = false;
-        startPlayer();
-    }
-
     @Override
     public void onWindowFocusChanged(boolean focused) {
         super.onWindowFocusChanged(focused);
@@ -234,27 +187,6 @@ public class VlcPlaybackActivity extends LiveHost {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        if (zapper != null && zapper.colourKey(event, zapper::colour)) return true;
-        forgetReleasedLivePlayer();
-        // A Live TV channel that failed: SELECT tries it again (unless browsing other channels).
-        if (
-            liveFailed &&
-            zapper != null &&
-            !zapper.browsing() &&
-            (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER ||
-                event.getKeyCode() == KeyEvent.KEYCODE_ENTER)
-        ) {
-            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
-                // Every copy failed: start again from the first copy so each gets another try.
-                if (!zapper.retryFromFirst()) {
-                    restartLive = true;
-                    startPlayer();
-                }
-            }
-            return true;
-        }
-        // Live TV from the guide: the satellite remote (see LiveZapper.key).
-        if (zapper != null && zapper.key(event)) return true;
         if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
             // Handled here, never by Android's default, and acted on when the key is released
             // (as Android does), so a held key counts as one press.
@@ -275,9 +207,7 @@ public class VlcPlaybackActivity extends LiveHost {
                 return true;
             }
             if (key == KeyEvent.KEYCODE_MEDIA_PAUSE) {
-                if (live) LivePlayer.pauseForUser();
                 if (player != null) player.pause();
-                if (live) behindLive = true;
                 paused = true;
                 if (vod != null) vod.pauseChanged();
                 showPlaying(false);
@@ -289,8 +219,7 @@ public class VlcPlaybackActivity extends LiveHost {
                 return true;
             }
             if (key == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD) {
-                if (live && behindLive && (player == null || !player.isSeekable())) backToLive();
-                else seek(10000);
+                seek(10000);
                 return true;
             }
             if (key >= KeyEvent.KEYCODE_DPAD_UP && key <= KeyEvent.KEYCODE_DPAD_CENTER) {
@@ -312,11 +241,6 @@ public class VlcPlaybackActivity extends LiveHost {
         id = getIntent().getStringExtra("id");
         titleKey = getIntent().getStringExtra("titleKey");
         if (id == null) id = "media";
-        live = getIntent().getBooleanExtra("live", false);
-        if (live && Build.VERSION.SDK_INT >= 34) {
-            overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, 0, 0);
-            overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, 0, 0);
-        }
         try {
             url = Playlist.networkUrl(
                 getIntent().getStringExtra("url"),
@@ -327,15 +251,12 @@ public class VlcPlaybackActivity extends LiveHost {
             finish();
             return;
         }
-        position =
-            state == null ? (live ? 0 : ResumePoint.load(this, id, titleKey)) : state.getLong("position");
+        position = state == null ? ResumePoint.load(this, id, titleKey) : state.getLong("position");
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
         video = new FrameLayout(this);
-        if (!live) {
-            filmVideo = new VLCVideoLayout(this);
-            video.addView(filmVideo, new FrameLayout.LayoutParams(-1, -1));
-        }
+        filmVideo = new VLCVideoLayout(this);
+        video.addView(filmVideo, new FrameLayout.LayoutParams(-1, -1));
         root.addView(video, new FrameLayout.LayoutParams(-1, -1));
         status = new TextView(this);
         status.setTextColor(Color.WHITE);
@@ -345,37 +266,11 @@ public class VlcPlaybackActivity extends LiveHost {
         status.setText("Opening source…");
         root.addView(status, new FrameLayout.LayoutParams(-1, -1));
         PlayerOverlay.build(this, root);
-        if (live) {
-            Bundle guideState =
-                state == null ? getIntent().getBundleExtra("liveGuide") : state.getBundle("liveGuide");
-            // Older/internal launchers may have no snapshot. Always build Live TV controls.
-            LiveZapper.Session guide =
-                guideState == null && LiveZapper.session != null
-                    ? LiveGuideState.restore(LiveGuideState.save(LiveZapper.session))
-                    : LiveGuideState.restore(guideState);
-            zapper = new LiveZapper(this, guide);
-            zapper.attach(root);
-            // The film controls never show over Live TV; the satellite-box overlay does.
-            controls.setVisibility(View.GONE);
-        }
-        root.setOnClickListener(v -> {
-            // An air mouse's OK arrives as a click on the picture: same overlay as the OK key.
-            if (zapper != null && zapper.touch) zapper.tapped();
-            else if (zapper != null) zapper.ok();
-            else revealControls();
-        });
+        // An air mouse's OK arrives as a click on the picture: same overlay as the OK key.
+        root.setOnClickListener(v -> revealControls());
         setContentView(root);
-        if (live) {
-            video.setFocusable(true);
-            video.setFocusableInTouchMode(true);
-            video.requestFocus();
-        } else pause.requestFocus();
+        pause.requestFocus();
         revealControls();
-    }
-
-    @Override
-    public String playbackUrl() {
-        return url;
     }
 
     LibVLC filmEngine() {
@@ -434,9 +329,7 @@ public class VlcPlaybackActivity extends LiveHost {
                     .build()
             )
             .setOnAudioFocusChangeListener(change -> {
-                forgetReleasedLivePlayer();
                 if (change < 0 && player != null) {
-                    if (live) LivePlayer.pauseForUser();
                     player.pause();
                     paused = true;
                     if (vod != null) vod.pauseChanged();
@@ -452,16 +345,11 @@ public class VlcPlaybackActivity extends LiveHost {
 
     private void startPlayer() {
         if (!foreground) return;
-        liveFailed = false;
         status.setBackgroundColor(Color.TRANSPARENT);
         release();
         status.setText("Opening source…");
         status.setVisibility(View.VISIBLE);
         overlayHandler.removeCallbacks(stalled);
-        if (live) {
-            startLive();
-            return;
-        }
         VodSources.Session sources = VodSources.get(getIntent().getStringExtra("vodSession"));
         if (sources != null) vod = new VodPlayback(this, sources);
         armStartupTimeout();
@@ -490,7 +378,7 @@ public class VlcPlaybackActivity extends LiveHost {
         media.setHWDecoderEnabled(true, false);
         // Open directly at the resume point instead of starting at 0:00 and then seeking, which
         // made the player buffer twice.
-        if (!live && position > 1000) {
+        if (position > 1000) {
             media.addOption(":start-time=" + position / 1000);
             resumeCheck = position;
             position = 0;
@@ -500,70 +388,16 @@ public class VlcPlaybackActivity extends LiveHost {
         player.play();
     }
 
-    /**
-     * Live TV uses the one shared live player: when the guide's picture is already playing this
-     * channel, it carries on and only moves to the full screen (no reconnecting or buffering).
-     * {@code restartLive} opens the stream again (Back to live, Try again).
-     */
-    private void startLive() {
-        boolean carriedOn = LivePlayer.play(this, url, PlayerOptions.live(this), restartLive);
-        restartLive = false;
-        player = LivePlayer.player();
-        LivePlayer.attach(
-            this,
-            video,
-            this::onPlayerEvent,
-            () -> {
-                if (!foreground) return;
-                showError("This channel is unavailable. Check your connection or try another channel.");
-            },
-            this::armStartupTimeout,
-            this::livePlayerReplaced
-        );
-        // Resolution has its own bounded broker deadline. Starting the video timer before it
-        // finishes can discard a working provider before LibVLC has even received its URL.
-        if (LivePlayer.isResolving()) {
-            status.setText("Finding a working stream…");
-        } else armStartupTimeout();
-        if (!LiveNative.busy(player)) {
-            player.setRate(playbackRate);
-            if (aspect != null) player.setAspectRatio(aspect);
-        }
-        if (carriedOn && !LiveNative.busy(player) && player.isPlaying()) {
-            // Already playing: no "Playing" event will come, so show it as playing now.
-            playedOnce = true;
-            overlayHandler.removeCallbacks(stalled);
-            status.setVisibility(View.GONE);
-            showPlaying(true);
-            revealControls();
-        }
-    }
-
-    private void livePlayerReplaced() {
-        player = LivePlayer.player();
-        url = LivePlayer.currentUrl();
-        id = ChannelQuery.key(url);
-        getIntent().putExtra("url", url).putExtra("id", id);
-        liveFailed = buffering = paused = behindLive = triedAlternative = false;
-        playedOnce = true;
-        Timings.finish("stall", "Buffering pause while watching");
-        overlayHandler.removeCallbacks(stalled);
-        status.setVisibility(View.GONE);
-        showPlaying(true);
-        if (zapper != null) zapper.sourceReplaced();
-    }
-
     private void armStartupTimeout() {
         overlayHandler.removeCallbacks(stalled);
         if (!foreground) return;
         status.setText("Opening source…");
-        // Live TV with backups moves on sooner than a film would, after link resolution.
-        overlayHandler.postDelayed(stalled, zapper != null || vod != null ? 15000 : 45000);
+        // A film with other sources moves on sooner than one with nowhere else to go.
+        overlayHandler.postDelayed(stalled, vod != null ? 15000 : 45000);
     }
 
     /** The player's events: playing, buffering, the end, and errors (which try the other format). */
     private void onPlayerEvent(MediaPlayer.Event event) {
-        forgetReleasedLivePlayer();
         if (!foreground || player == null) return;
         if (event.type == MediaPlayer.Event.Playing) {
             Timings.finish("play", "Press play to picture");
@@ -579,7 +413,6 @@ public class VlcPlaybackActivity extends LiveHost {
             long target = resumeCheck;
             resumeCheck = 0;
             if (target > 0) overlayHandler.postDelayed(() -> {
-                forgetReleasedLivePlayer();
                 if (player != null && player.isSeekable() && player.getTime() < target - 5000) {
                     // The jump to the resume point is a seek too, not a stall.
                     if (vod != null) vod.seeking(target);
@@ -607,10 +440,6 @@ public class VlcPlaybackActivity extends LiveHost {
                 if (vod != null) vod.onBuffering(false);
             }
         } else if (event.type == MediaPlayer.Event.EndReached) {
-            if (live) {
-                showError("This live stream ended. Try another source or channel.");
-                return;
-            }
             if (vod != null && vod.rejectShortVideo(true)) return;
             ended = true;
             ResumePoint.clear(this, id, titleKey);
@@ -624,96 +453,46 @@ public class VlcPlaybackActivity extends LiveHost {
                 prefs.edit().putStringSet("watchedEpisodes", watched).apply();
             }
             if (
-                !live &&
                 !nextCancelled &&
                 SourcesScreen.Binge.imdb != null &&
                 getIntent().getStringExtra("episodeKey") != null
             ) launchNextEpisode();
             else finish();
         } else if (event.type == MediaPlayer.Event.EncounteredError) {
-            if (
-                live &&
-                !triedAlternative &&
-                (Uri.parse(url).getPath().endsWith(".ts") || Uri.parse(url).getPath().endsWith(".m3u8"))
-            ) {
-                triedAlternative = true;
-                Uri original = Uri.parse(url);
-                String path = original.getEncodedPath();
-                path = path.endsWith(".ts")
-                    ? path.substring(0, path.length() - 3) + ".m3u8"
-                    : path.substring(0, path.length() - 5) + ".ts";
-                url = original.buildUpon().encodedPath(path).build().toString();
-                video.post(this::startPlayer);
-            } else showError("This source could not be played. Try another source or retry the connection.");
+            showError("This source could not be played. Try another source or retry the connection.");
         }
     }
 
-    /** Live TV: the current copy could not be opened; moves on to a backup or says so. */
-    @Override
-    public void liveSourceFailed() {
-        showError("This source could not be played. Try another source or retry the connection.");
-    }
-
     private void showError(String message) {
-        forgetReleasedLivePlayer();
         if (!foreground || isFinishing() || dialogOpen) return;
-        if (zapper != null && zapper.failover("This stream is not working")) return;
         if (vod != null && vod.failover()) return;
         overlayHandler.removeCallbacks(stalled);
         if (player != null) {
             long time = player.getTime();
-            if (time > 0 && !live) position = time;
+            if (time > 0) position = time;
             player.pause();
         }
         showPlaying(false);
-        if (zapper != null) {
-            // Live TV: say so in the picture, with no panel in the way, so ▲ ▼ go straight on to
-            // the next channel. SELECT tries this one again.
-            liveFailed = true;
-            boolean generic =
-                message.startsWith("This source could not") || message.startsWith("The source is taking");
-            status.setText(
-                (generic ? "This channel isn't working right now." : message) +
-                    (zapper.touch
-                        ? "\n\nTap the picture for the channel buttons"
-                        : "\n\n▲ ▼  change channel     SELECT  try again     BACK  guide")
-            );
-            status.setBackgroundColor(0xd9000000);
-            status.setVisibility(View.VISIBLE);
-            zapper.showBanner();
-            return;
-        }
         status.setText("Playback unavailable");
         status.setVisibility(View.VISIBLE);
         dialogOpen = true;
         SidePanel.of(this, "Can't play this")
             .message(message)
-            .action("Try again", () -> {
-                restartLive = true;
-                startPlayer();
-            })
-            .action(zapper != null ? "Back to the guide" : "Back to sources", this::finish)
+            .action("Try again", this::startPlayer)
+            .action("Back to sources", this::finish)
             .onDismiss(this::panelClosed)
             .show();
     }
 
     /** A side panel over the video closed: show the controls again. */
-    @Override
-    public void panelClosed() {
+    void panelClosed() {
         dialogOpen = false;
         revealControls();
-    }
-
-    @Override
-    public void finish() {
-        super.finish();
-        if (live && Build.VERSION.SDK_INT < 34) overridePendingTransition(0, 0);
     }
 
     /**
      * Back on a film first puts the controls away, then asks "Press Back again", and only leaves
      * on another press within {@link #EXIT_WINDOW_MS}, so a stray press does not stop the film.
-     * Live TV asks once and leaves on the second press, as before.
      */
     private void onBackKey() {
         long now = SystemClock.elapsedRealtime();
@@ -721,7 +500,7 @@ public class VlcPlaybackActivity extends LiveHost {
             finish();
             return;
         }
-        if (!live && controls != null && controls.getVisibility() == View.VISIBLE) {
+        if (controls != null && controls.getVisibility() == View.VISIBLE) {
             overlayHandler.removeCallbacks(hideOverlay);
             controls.setVisibility(View.GONE);
             return;
@@ -731,21 +510,16 @@ public class VlcPlaybackActivity extends LiveHost {
     }
 
     private void showExitHint() {
-        if (live) revealControls();
         exitHint.setVisibility(View.VISIBLE);
         overlayHandler.removeCallbacks(hideExitHint);
         overlayHandler.postDelayed(hideExitHint, EXIT_WINDOW_MS);
     }
 
-    @Override
-    public void toggle() {
-        forgetReleasedLivePlayer();
+    void toggle() {
         revealControls();
         if (player == null) return;
         if (player.isPlaying()) {
-            if (live) LivePlayer.pauseForUser();
             player.pause();
-            if (live) behindLive = true;
             paused = true;
             showPlaying(false);
         } else {
@@ -757,32 +531,12 @@ public class VlcPlaybackActivity extends LiveHost {
         revealControls();
     }
 
-    /**
-     * Skips back or forward. Films combine quick presses into one jump ({@link SkipQueue}). Live TV
-     * can be rewound only when its stream allows it (many live streams keep a few minutes);
-     * otherwise it says so.
-     */
+    /** Skips back or forward, combining quick presses into one jump ({@link SkipQueue}). */
     void seek(long delta) {
-        forgetReleasedLivePlayer();
         revealControls();
-        if (player == null) return;
-        if (!live && player.isSeekable()) {
-            long length = player.getLength();
-            showSkipTarget(skips.skip(player.getTime(), delta, length), length);
-            return;
-        }
-        if (!player.isSeekable()) {
-            if (live) Toast.makeText(
-                this,
-                delta < 0 ? "This channel can't be rewound" : "Already live",
-                Toast.LENGTH_SHORT
-            ).show();
-            return;
-        }
-        long target = Math.max(0, player.getTime() + delta),
-            length = player.getLength();
-        player.setTime(length > 0 ? Math.min(length, target) : target);
-        if (live && delta < 0) behindLive = true;
+        if (player == null || !player.isSeekable()) return;
+        long length = player.getLength();
+        showSkipTarget(skips.skip(player.getTime(), delta, length), length);
     }
 
     /** Shows a waiting film jump on the controls and jumps once the presses stop. */
@@ -796,39 +550,12 @@ public class VlcPlaybackActivity extends LiveHost {
         overlayHandler.postDelayed(applySkip, SkipQueue.DELAY_MS);
     }
 
-    /** Catches up with the broadcast after pausing or rewinding live TV: opens the stream again. */
-    void backToLive() {
-        behindLive = false;
-        paused = false;
-        restartLive = true;
-        startPlayer();
-    }
-
-    /** "Watch now" on a reminder: changes channel here, or leaves for the guide to open it. */
+    /** "Watch now" on a reminder leaves for the guide, which opens the channel. */
     private void showDueReminder() {
         Reminders.show(this, reminder -> {
-            if (zapper != null) zapper.tuneKey(reminder.key);
-            else {
-                Reminders.pending = reminder;
-                finish();
-            }
+            Reminders.pending = reminder;
+            finish();
         });
-    }
-
-    /**
-     * Lets go of the player. Live TV's shared player keeps playing here; {@link #onStop} stops it
-     * unless the guide's picture has taken it over.
-     */
-    /**
-     * Live TV plays on the shared player, which the guide (or a test) can release or replace while
-     * this screen is closing. Calling a released player crashes the app, so this screen lets go of
-     * one that is no longer the shared player.
-     */
-    private void forgetReleasedLivePlayer() {
-        if (live) {
-            MediaPlayer current = LivePlayer.player();
-            player = LiveNative.busy(current) ? null : current;
-        }
     }
 
     private void release() {
@@ -838,10 +565,6 @@ public class VlcPlaybackActivity extends LiveHost {
         }
         skips.clear();
         overlayHandler.removeCallbacks(applySkip);
-        if (live) {
-            player = null;
-            return;
-        }
         if (player != null) {
             MediaPlayer retired = player;
             player = null;
@@ -856,7 +579,6 @@ public class VlcPlaybackActivity extends LiveHost {
 
     @Override
     public void onStop() {
-        forgetReleasedLivePlayer();
         overlayHandler.removeCallbacksAndMessages(null);
         sleepAt = 0;
         foreground = false;
@@ -865,7 +587,7 @@ public class VlcPlaybackActivity extends LiveHost {
             // Before playback starts the time is 0; keep the resume point the media opened at.
             if (time > 0) position = time;
             else if (resumeCheck > 0) position = resumeCheck;
-            if (!live && (vod == null || !vod.rejectedMedia())) {
+            if (vod == null || !vod.rejectedMedia()) {
                 long length = player.getLength();
                 boolean completed = ended || ResumePoint.completed(position, length);
                 ResumePoint.save(this, id, titleKey, position, length, completed);
@@ -883,9 +605,6 @@ public class VlcPlaybackActivity extends LiveHost {
             }
         }
         release();
-        // Back to the guide: its picture has already taken the live player over, so it plays on.
-        // Anywhere else, nothing took it over, so it stops.
-        if (live) LivePlayer.stopIfOwner(this);
         if (audio != null && audioFocus != null) audio.abandonAudioFocusRequest(audioFocus);
         super.onStop();
     }
@@ -893,19 +612,15 @@ public class VlcPlaybackActivity extends LiveHost {
     @Override
     public void onSaveInstanceState(Bundle out) {
         super.onSaveInstanceState(out);
-        forgetReleasedLivePlayer();
         long now = player == null ? 0 : player.getTime();
         out.putLong("position", Math.max(Math.max(position, resumeCheck), now));
-        if (zapper != null) out.putBundle("liveGuide", LiveGuideState.save(zapper.guideSession()));
     }
 
     @Override
     public void onDestroy() {
         SidePanel.closeFor(this);
-        if (zapper != null) zapper.close();
         overlayHandler.removeCallbacksAndMessages(null);
         release();
-        if (live) LivePlayer.stopIfOwner(this);
         if (isFinishing()) VodSources.forget(getIntent().getStringExtra("vodSession"));
         super.onDestroy();
     }

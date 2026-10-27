@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 import org.videolan.libvlc.MediaPlayer;
 
-/** Serial native joins per live player, off main. A window is retained until its reader stops. */
+/** Serial native joins per LibVLC player (films, through VodNative), off main. A window is retained until its reader stops. */
 final class LiveNative {
 
     private static final Handler main = new Handler(Looper.getMainLooper());

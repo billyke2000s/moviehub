@@ -200,7 +200,9 @@ and verifies that channel and programme font metrics fit the rows. CI screenshot
 
 A same-JVM desktop benchmark compared old/new PNG decoding on the same 6.8 MB Main Event container: every run produced identical 6,885,312-byte TS output, and every new run was faster (roughly 2x in later runs; timings vary). All 17 existing PNG format/filter/error checks remain applicable. This is not an ARM64 benchmark or proof of the cause of a particular TV freeze.
 
-## Live picture handoff evidence
+## Live picture handoff evidence (LibVLC live player; removed 27 October 2026)
+
+The tests below were deleted with the LibVLC live player (see "LibVLC live tests removed"). This section is kept as history.
 
 PlaybackTest repeats guide → full screen → guide twice for both direct and resolved fixture
 streams. LiveHandoffEvidence checks that the same `LiveVideoOutput` and player survive, that
@@ -218,7 +220,9 @@ uses and which made every move wait up to 16.7 s.
 Before 21 October 2026 the live picture used a retained SurfaceTexture/TextureView; its handoff
 times (47–104 ms on the emulator, 20 October 2026) are not comparable with the SurfaceView move.
 
-## Early video freeze and reload investigation
+## Early video freeze and reload investigation (LibVLC live player; removed 27 October 2026)
+
+The tests below were deleted with the LibVLC live player (see "LibVLC live tests removed"). This section is kept as history.
 
 PlaybackTest `aPictureRefreshKeepsTheSameStreamAndSound` calls the watchdog's repair
 (`refreshView`, a video-track restart) during playback and checks unchanged player/output, stream-open and resolver
@@ -287,7 +291,9 @@ three-second budget including time to resume decoding. One screenshot immediatel
 first decoded frames can still precede SurfaceFlinger composition; this is not proof of a
 persistently black surface. The test still fails if the visible picture misses that budget.
 
-## Playback continuity validation (0.46 candidate)
+## Playback continuity validation (0.46 candidate) (LibVLC live player; removed 27 October 2026)
+
+The tests below were deleted with the LibVLC live player (see "LibVLC live tests removed"). This section is kept as history.
 
 `LiveRenewalTest` serves fixture MPEG-TS through real LibVLC. A latch blocks provider renewal
 while the original video advances; tests then cover successful reopening, a failed refresh
@@ -325,7 +331,9 @@ Independent release validation 39871238896 passed 146/146 tests. PR validation p
 restores the selected audio track after rediscovery. Repair evidence waits for selected
 audio and playing state, then checks new audio-output progress rather than old-session stats.
 
-## Prepared live backup validation
+## Prepared live backup validation (LibVLC live player; removed 27 October 2026)
+
+The tests below were deleted with the LibVLC live player (see "LibVLC live tests removed"). This section is kept as history.
 
 `LiveBufferingTest` covers exact live thresholds, duplicate buffering notifications, window
 expiry, startup/pause exclusion, buffering completion and one trigger per recovery window.
@@ -343,11 +351,15 @@ decoder support, actual TV memory limits and live-feed timing require physical-d
 
 ## Live TV control consistency
 
+Since 27 October 2026 `LiveControlsTest` runs on `LiveStage` (see "LibVLC live tests removed"); mentions of Activity recreation below describe the removed separate player screen.
+
 `LiveControlsTest` now opens its live fixture without the static guide session. It covers physical colours, real Activity recreation with cleared static context, saved guide snapshot independence, a learned green button using a numeric key, and visible unclipped controls with long source/channel names. Existing Back/arrow/OK tests remain. These fixtures do not verify the owner’s physical remote. Local core checks pass (733); Android CI is pending.
 
 `LiveControlsTest.physicalColoursKeepWorkingWhileAnotherPlayerPanelOwnsFocus` sends red, green, blue and yellow without manually dismissing intermediate dialogs. `completeHeaderSurvivesProgrammeUpdatesAndBackControls` checks full-height channel-strip labels, not only footer buttons, after typing and programme updates; it saves `live-complete-channel-header.png`. These use fixtures, not the physical remote.
 
-## Live playback recovery
+## Live playback recovery (LibVLC live player; removed 27 October 2026)
+
+The tests below were deleted with the LibVLC live player (see "LibVLC live tests removed"). This section is kept as history.
 
 LiveRecoveryTest serves deterministic 320×180 and 640×360 H.264/AAC MPEG-TS segments behind an HLS playlist with timestamp discontinuities. It checks actual video/audio progression across format changes, bounded same-channel Pluto retries, controls during a deliberately blocked native stop, and recovery after hiding the active SurfaceView. Pure-Java checks cover retry exhaustion/replenishment and presentation timeouts without treating valid static/black buffers as failures. Physical ARM64/TV-box decoding and comparative Media3 testing remain outstanding; no claim that these fixtures reproduce every Pluto broadcast.
 
@@ -423,10 +435,24 @@ retains the film-to-native-Live-TV cancellation test that exposed the EGL crash.
 The previous final run failed after 121 passes with SIGSEGV in EGL swapBuffers; this
 regression and its correction require a new full emulator result.
 
+## LibVLC live tests removed (27 October 2026)
+
+The LibVLC live player was removed (see ARCHITECTURE.md, "ExoPlayer Live TV"), and with it the device
+tests that only exercised it: `LiveBackupTest`, `LiveRecoveryTest`, `LiveRenewalTest`,
+`LiveHandoffEvidence`, the Live TV tests in `PlaybackTest` (including the seven already skipped with
+`@Ignore`), and the core `LivePresentationTest`, `LiveRepairBudgetTest` and `PlaybackBufferTest`.
+`PlaybackTest` keeps every film and series test. `LiveControlsTest` was ported rather than removed:
+the banner, colour keys and source rules it checks are shared with Live TV, so it now opens the
+channel full screen in `LiveStage` (with `ExoLive.testResolver` holding the link lookup) instead of
+the removed separate player screen. Its `recreatedPlayerKeepsLiveControlsWithoutStaticGuideState`
+was dropped: Live TV no longer has a separate player screen to recreate. `entryOkClickAndBackUseTheSameFullBanner`
+now also covers the picture click ported to `LiveStage`. Provider link renewal on ExoPlayer still has
+no device test.
+
 ## ExoPlayer Live TV and the test app
 
 `ExoLiveTest` and `DlhdStartupTest` are ordinary device tests (in `src/androidTest`), so the normal
-`device-tests` job runs them. When ExoPlayer became the Live TV engine (1.0), seven VLC-era tests that drove Live TV through the guide stopped applying. They are kept but skipped with `@Ignore` naming their replacement: `ExoLiveTest` now covers the guide's corner picture, a broken channel's on-screen message and moving on with the remote, and a manual backup surviving guide/full-screen trips without reopening; `PhoneModeTest` checks touch controls on the ExoPlayer full screen. Not ported: counting native re-resolutions on handover (ExoPlayer only resolves on open, and the round-trip test asserts no reopen) and VLC's muted standby backup (ExoPlayer races sources instead). VLC Live TV tests that open `VlcPlaybackActivity` directly still run and pass, but that path is no longer how the app plays Live TV. CI's `apk` job also compiles the MovieHub Experimental test app
+`device-tests` job runs them. CI's `apk` job also compiles the MovieHub Experimental test app
 (`-Pexperimental assembleDebug`) and checks its package name, and `experimental-device-tests` runs the two
 suites again inside that build. `ExoLiveTest` exercises Media3 itself on the TV emulator: decoded frame progress and nonblank
 screenshots through two guide/fullscreen round trips without new stream requests; 404 retry

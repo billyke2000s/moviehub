@@ -97,9 +97,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `GuideRows`                   | The guide's rows: channel names and programme cells, moving along programmes and through time, SELECT to watch or set a reminder.                                                                                                                                                                                   |
 | `LiveTvPanels`                | The guide's side panels: options, sections and groups, search, programme information with reminders, the parental lock, colour-key set-up.                                                                                                                                                                          |
 | `GuidePicture`                | The live picture in the guide's corner (the last channel watched); stops when the guide closes unless the full screen has taken the player over.                                                                                                                                                                    |
-| `LivePlayer`                  | The one Live TV player (LibVLC engine and media player), shared by the full screen and the guide picture so going between them moves the picture without reconnecting. Films keep their own player.                                                                                                                 |
-| `LiveVideoOutput`             | Where the session's one live player draws: VLC's standard `VLCVideoLayout` (SurfaceView), moved between the guide's mini picture and the full screen without reopening the stream.                                                                                                                                  |
-| `PlayerOptions`               | LibVLC engine options, one list for films and one for Live TV, so a change to one never reaches the other.                                                                                                                                                                                                          |
+| `LiveStage`, `ExoLive`        | Live TV's one screen and its one ExoPlayer, shared by the full screen and the guide picture, so going between them moves the picture without reconnecting (see "ExoPlayer Live TV"). |
+| `PlayerOptions`               | LibVLC engine options for films and series (Live TV plays on ExoPlayer).                                                                                                |
 | `SettingsScreens`             | Settings tabs, account setup (TMDB, Premiumize, Xtream, M3U), languages, toggles.                                                                                                                                                                                                                                   |
 | `FreeChannelsPage`            | The Settings → Free channels tab: public lists, every free service on/off with channel counts, and Advanced (US-only, Masqueradarr, ZLive address, service updates). `ProviderSettings` keeps only the first-start question.                                                                                        |
 | `ForYou`                      | The Home "For you" shelf: blends TMDB recommendations for up to six titles you played, saved or opened, ranked and cached on the box.                                                                                                                                                                               |
@@ -126,13 +125,13 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `VideoFiles`                                                           | Chooses the right file in a multi-file release: the film beside extras, or the episode in a season pack (exact matches can play straight away; likely ones are only marked "Suggested episode"). Plain Java.                                                                                                                                                            |
 | `SkipQueue`                                                            | Combines quick film skips and seek-bar moves into one jump, 750 ms after the last (plain Java).                                                                                                                                                                                                                                                                         |
 | `AppUpdates`, `UpdateApkProvider`                                      | Downloads and verifies update APKs; shares the verified APK with the system installer.                                                                                                                                                                                                                                                                                  |
-| `VlcPlaybackActivity`                                                  | Fullscreen playback: tracks, subtitles, speed, picture ratio, sleep timer, resume positions by title, so another source carries on (`ResumePoint`; opened directly at the resume point), skips combined into one jump (`SkipQueue`), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`).                                                         |
+| `VlcPlaybackActivity`                                                  | Fullscreen film and series playback (LibVLC; Live TV never opens it): tracks, subtitles, speed, picture ratio, sleep timer, resume positions by title, so another source carries on (`ResumePoint`; opened directly at the resume point), skips combined into one jump (`SkipQueue`), Back twice to leave. Controls are flat icons (`res/drawable/ic_player_*`).                                                         |
 | `PlayerOverlay`                                                        | Builds the player's on-screen controls (title and download speed, timeline, flat icon controls, Back hint).                                                                                                                                                                                                                                                             |
 | `LiveZapper`                                                           | Live TV while watching: the satellite remote's keys, channel up/down, number entry, last channel, browsing other channels in the banner, the PIN lock, and backup copies with automatic switching.                                                                                                                                                                      |
 | `SkyFont`                                                              | The Live TV typeface (Hind, OFL, in `assets/fonts`), with the system font as a fallback.                                                                                                                                                                                                                                                                                |
 | `SafetyNotice`                                                         | The first-start "Staying safe" notice (also in Settings → System) about scam messages in streams.                                                                                                                                                                                                                                                                       |
 | `SkyOverlay`                                                           | The full-screen Live TV overlay in the classic satellite-box style: banner, programme information panel (with a picture/source line) and pause bar.                                                                                                                                                                                                                     |
-| `VideoDetails`                                                         | Formats the picture playing (size, 1080p/720p name, frame rate, codec, bitrate) for the information panel; `LivePlayer.videoDetails` (VLC) and `ExoLive.videoDetails` (experimental) feed it through `LiveScreen.videoDetails`.                                                                                                                                         |
+| `VideoDetails`                                                         | Formats the picture playing (size, 1080p/720p name, frame rate, codec, bitrate) for the information panel; `ExoLive.videoDetails` feeds it through `LiveScreen.videoDetails`; the film player uses it directly.                                                                                                                                         |
 | `QualityClaims`                                                        | Plain-Java rules for movie source quality: judging a website's claim against the real picture, the last-five history that makes a site distrusted, the label once a source has played, and which confirmed better source to mention. `FreeVodProviders.judge`/`history` store each website's history in the `ui` preferences.                                           |
 | `VodQuality`                                                           | While a film plays, reads the real picture size from VLC after 15 s, corrects the Sources label, judges the website, and mentions a confirmed better source (never switches by itself). Owned by `VodPlayback`.                                                                                                                                                         |
 | `PlayerMenus`                                                          | The player's side panels: audio, subtitles, video track, speed, picture size, subtitle timing, sleep timer.                                                                                                                                                                                                                                                             |
@@ -165,13 +164,13 @@ once, when the activity is constructed, and keep almost no state of their own.
 
 ## Native free TV
 
-`PlutoSource` implements regional anonymous discovery, in-memory session/catalogue caching and resolve-on-play. `NativeHttp` bounds and cancels HTTPS requests. `NativeSources` connects catalogue and programme refresh to the existing SQLite store and ChannelImporter. LivePlayer resolves stable native locators asynchronously and preserves them through view handoff. Built-in programme refresh uses only the combined guide. Native Pluto is preferred to public-list copies, after connected accounts. See [provider scope and evidence](docs/NATIVE_FREE_SOURCES.md).
+`PlutoSource` implements regional anonymous discovery, in-memory session/catalogue caching and resolve-on-play. `NativeHttp` bounds and cancels HTTPS requests. `NativeSources` connects catalogue and programme refresh to the existing SQLite store and ChannelImporter. ExoLive resolves stable native locators asynchronously; the same picture is shared by the guide and the full screen. Built-in programme refresh uses only the combined guide. Native Pluto is preferred to public-list copies, after connected accounts. See [provider scope and evidence](docs/NATIVE_FREE_SOURCES.md).
 
 ## Experimental standalone JavaScript providers
 
 `ProviderScript` executes compiled upstream leaf functions in the isolated `ProviderService`;
 `ProviderBridge` uses bounded file-descriptor IPC. `EngineSources` connects FreeLiveSports discovery,
-on-play resolution and channel metadata to SQLite and the shared LivePlayer. `ProviderPackages`,
+on-play resolution and channel metadata to SQLite and the shared live player (`ExoLive`). `ProviderPackages`,
 `ProviderSignature` and `ProviderUpdates` implement signed package checks, atomic slots and rollback.
 Remote updates fail closed without a pinned key. See [scope and limitations](docs/STANDALONE_PROVIDER_ENGINE.md).
 
@@ -236,66 +235,24 @@ resolve. DistroTV and Vidaa were removed in October 2026: both services' API hos
 
 `ZliveSources` expands advertised supported resolver routes, deduplicates them and stores bounded encrypted resolver hints. `source_label` is additive database schema version 10; original primary channel identities keep favourites intact. Older signed provider packages without the ZLive source-schema capability use the compatible bundled ZLive module; other module/update/signature rules remain. `ProviderContainerSegments` supports PNG, WebP EXIF, raw TS and gzip TS carriers when a ZLive stream declares that capability, without changing HTTP refusals. Exhausted ZLive source attempts stop and offer manual recovery; a lone startup is bounded at 60 seconds. Existing race/backup timing and buffering stay unchanged.
 
-LivePlayer exposes its pending-resolution phase and notifies the currently attached owner when a resolved stream/relay is ready. VlcPlaybackActivity arms its normal video-startup timer at that transition, rather than spending the 15-second backup timeout on the provider walk. Guide/fullscreen handoffs replace the callback with the owner; switching cancels stale resolutions as before.
 
-`LiveProgress` is the pure progress rule for native/provider Live TV. `LivePlayer` samples the live clock and LibVLC displayed-picture counter once per second after playback starts, only while the video view is visible and playing. It reuses LiveZapper’s eight-second stall limit, attempts the existing bounded provider retry once, then reports failure through the current owner’s backup/error callback. Changing channels, handing off views, stopping and pausing reset the baseline. The sampler uses the generation ticket so recovery cannot schedule duplicate polling loops.
+`LiveProgress` is the pure progress rule for Live TV (picture and clock movement); `ExoLive` applies it through `LiveStallRules` (see "Live stream rules ported from the LibVLC player").
 
 PNG transport skips byte-wise unfiltering for filter-0 rows, copies RGB payload in bulk, and uses larger bounded inflate/gzip input buffers. Explicit Inflater instances are ended in finally; container validation and allocation limits are unchanged.
 
-Four small helpers sit alongside these. `LiveMenus` is the interface for the Live TV side panels
+Three small helpers sit alongside these. `LiveMenus` is the interface for the Live TV side panels
 (audio/subtitles, sources, options) that the banner and colour keys open; `ExoMenus` implements it for
-the experimental ExoPlayer stage. `LivePresentation` (core-tested) tracks how long rendered video
-buffers have been missing, for `LiveSurfaceProbe`; black or static pictures are valid. `LiveSourceDeadline`
+`LiveStage`. `LiveSourceDeadline`
 (core-tested) gives `LiveStage` its source budgets: 15 s before trying an alternative, 8 s when sources are
 raced, and 60 s for a final ZLive attempt with no alternative. `ProviderUrls.playback` validates
 provider-supplied playback URLs (length, line breaks, literal spaces from browser User-Agent macros) for
 `EngineSources`, `NativeHttp` and the ZLive address setting.
 
-## Live video output
-
-`LiveVideoOutput` draws the session's one live LibVLC player through VLC's standard
-`VLCVideoLayout` (a SurfaceView), attached with `MediaPlayer.attachViews(layout, null, false,
-false)` exactly as the film player does. The hardware decoder hands pictures to Android's
-compositor directly, so the picture does not depend on the app's main thread redrawing.
-
-GuidePicture and VlcPlaybackActivity supply FrameLayout hosts. Moving between them follows
-VLC's own Android app: the video track is switched off, LiveVideoOutput waits for VLC's Vout event
-to report no video output (at most 600 ms), then calls `detachViews()`, attaches a new layout in
-the destination and switches the track back on. Changing the surface under a running video
-output crashed VLC's window thread (AWindowHandler, SIGSEGV) or stopped decoding in CI. Only the screen surface changes:
-the player, its media, the network connection (and relay) and the audio carry on, so the stream
-is never reopened or re-resolved. The picture may blink while the new surface takes over; the
-owner accepted that on 21 October 2026.
-
-This replaced (21 October 2026) a session-long SurfaceTexture shown through TextureViews with
-last-frame covers. That gave blink-free moves, but every frame waited for the main thread to
-redraw: the owner saw full-screen live video lag, and stop while the sound played on, while the
-same stream played smoothly in the mini picture.
-
-Live Activity transitions use zero-animation launch options and matching close overrides (the
-API 34 transition override or the legacy finish override). The stream Surface survives the
-window change; the UI does not add a system fade around it.
-
-Google's [Grafika double-decode sample](https://github.com/google/grafika/blob/master/app/src/main/java/com/android/grafika/DoubleDecodeActivity.java)
-also retains SurfaceTextures to preserve decoders across Activity recreation.
-
-## Video freeze recovery
-
-`LiveVideoOutput.pictures()` reads VLC's decoded-video count (`IMedia.Stats.decodedVideo`, kept
-rising across source switches; the displayed-picture count barely moves with hardware decoding;
--1 until the first frame, so the check then falls back to the playback clock). LivePlayer samples
-it and the playback clock once a second. After the existing eight-second live stall threshold, a
-clock-moving/picture-stopped session gets one `refreshView()`: the same off-wait-on sequence on
-the same surface, restarting only the video decoder and output (same player, media, relay and
-audio). Swapping the surface in place raced the old surface's teardown on the emulator. An absent clock or a persistent second freeze uses
-the existing bounded source retry/failure path. Paused and hidden playback are excluded.
-Troubleshooting shows fixed recovery descriptions and counts, with no URLs or tokens.
-
-LiveZapper owns the per-channel Automatic/manual source policy and two-step Back interaction. PlayerMenus lists Automatic followed by saved copies; The source name in SkyOverlay's title strip is text only; the green Source key opens the list. Listing copies is a local database operation; only the selected copy goes through LivePlayer resolution. Automatic failover visits the remaining saved copies once and stops.
+LiveZapper owns the per-channel Automatic/manual source policy and two-step Back interaction. PlayerMenus lists Automatic followed by saved copies; The source name in SkyOverlay's title strip is text only; the green Source key opens the list. Listing copies is a local database operation; only the selected copy is looked up (`ExoLive`, or the source race). Automatic failover visits the remaining saved copies once and stops.
 
 `provider-engine/tools/freeshot.js` parses the FreeShot related-channel directory and follows only the selected UK sports channel’s two literal iframe links. ProviderBroker permits only FreeShot directory/embed and WideIPTV player paths. PlaylistSession supports the fixed WideIPTV anonymous JSON renewal endpoint, scoped to one discovered BlueTier origin/channel path; ProviderRelay posts renewal bodies and rewrites tokens without exposing them to VLC. Zero-to-end range requests fetch and decode the complete wrapped segment rather than applying decoded offsets to its PNG container.
 
-LivePlayer retains the current source mode and attempted source keys with the active stream. LiveTvScreen matches the active stable URL’s saved SHA-256 key against the selected channel’s copies before opening full screen. LiveZapper restores the matching copy/mode/attempt history, and resets them on a new channel. These comparisons read local metadata only.
+`LiveZapper.activeAutomatic` and `LiveZapper.attemptedSources` keep the current source mode and attempted source keys across the guide and the full screen (each builds its own zapper). LiveTvScreen matches the active stable URL’s saved SHA-256 key against the selected channel’s copies before opening full screen. LiveZapper restores the matching copy/mode/attempt history, and resets them on a new channel. These comparisons read local metadata only.
 
 Restoring a retained source compares saved hashes rather than decrypting every backup URL; it performs no additional stream lookup.
 
@@ -305,63 +262,25 @@ Restoring a retained source compares saved hashes rather than decrypting every b
 
 `VodSourceFailover` owns plain-Java thresholds and source exhaustion. `VodPlayback` owns asynchronous resolution, cancellation generations, a 45-second deadline per candidate, and a muted second VLC player using the film engine. The original player continues until video decodes within two seconds of its position. Replacement uses a TextureView so staging can be transparent on API 28; initial VOD and shared Live TV retain their existing SurfaceView path. Insufficient decoder resources may prevent a replacement: failure keeps the original player. Live thresholds and the shared live instance are independent.
 
-`LivePictureRates` samples current VLC stats without retaining a frame callback. `LiveHandoffCover` best-effort captures a bounded still during a guide/full-screen move; stale PixelCopy callbacks cannot move video, and the cover expires after five seconds. Existing surface cancellation and video-repair reattachment remain intact.
 
-## Playback continuity (0.46 candidate)
-
-`PlaybackBuffer` owns bounded transport cache profiles. `PlayerOptions` applies the VOD/live
-engine defaults; `LivePlayer.open` applies the selected direct/HLS/relay media profile.
-Scheduled provider renewal uses the existing resolver and one native player, retaining the
-current media/relay until a fresh link resolves. Pending lookup has a generation guard; a pause
-discards its late result, and a failed refresh leaves a still-working stream running. Closing
-VLC precedes closing its relay. The subsequent decoder restart can still blink. This is not
-dual-decoder prepared cross-provider failover. The progress watchdog now covers ordinary IPTV
-as well as provider streams, with video-track, visibility, pause and resolution exclusions.
-
-`LiveRepairBudget` permits one surface repair until two contiguous visible observations show
-video progress. Hidden/pending surfaces and old queued frames cannot replenish the budget.
-
-Native window shutdown follow-up: post-merge retry 39868257885 crashed in EGL window
-creation during native-source handoff. An unreported Vout count no longer permits immediate
-detachment. Every move requests track shutdown; a missing acknowledgement after 600 ms
-stops the native reader before moving and restarts playback on the destination. This rare
-fallback reconnects the stream; normal acknowledged moves retain it. Device fixtures cover
-unreported output counts and suppressed shutdown acknowledgement. Validation is pending.
-
-## Prepared live backups
-
-`LiveBackup` belongs to the shared `LivePlayer`, rather than the fullscreen Activity. It reads
-saved channel-copy URLs only when recovery is needed, resolves through the existing provider
-capabilities and owns at most one muted MediaPlayer/relay at a time. The candidate uses a
-standard SurfaceView staged outside the visible host, then that same layout/player is moved
-into place without a decoder restart. It must show increasing decoded video and, where present,
-audio over at least 500 ms. Radio copies can qualify through advancing audio. On promotion,
-the old native reader is stopped before its output/relay are closed; the new owner callback
-updates controls and the current source without calling play again. Provider renewal transfers
-with the adopted relay. Native decoder allocation failure leaves the original intact.
+## Live buffering thresholds
 
 `LiveBuffering` owns monotonic, edge-counted live thresholds: 8 seconds or 3 starts per 60
-seconds, excluding startup, pause and hidden/transitioning output. Movies/series retain their
-independent 4-second/2-start rules. The progress watchdog also prepares a backup after its
-bounded surface repair. Resolution (45 s) and playback (15 s) have deadlines. Each copy is
-attempted once; exhausted candidates retain working original playback. Pause, manual mode,
-channel change, exit and view handoff cancel and release standby native resources before
-removing their surface. Handoff retains the source configuration so the guide can prepare its
-own replacement. Resuming Automatic/new selection resets exhaustion. Android low-memory
-signals skip candidate allocation. Separate providers cannot be synchronized from their
-unrelated playback clocks: a cut can jump in programme time.
+seconds, excluding startup and pause. Movies/series retain their independent 4-second/2-start
+rules (`VodSourceFailover`) and the LibVLC network buffer `PlaybackBuffer.VOD_MS`. `ExoLive`
+applies the live thresholds through `LiveStallRules`; provider link renewal is in `ExoLive` too.
 
 ## Live TV control consistency
 
-Live launches snapshot `LiveZapper.Session` through `LiveGuideState` into the Intent, and Activity state saves the current list/position. Every live Activity builds `SkyOverlay`; a missing static session cannot select film controls. The initial database lookup matches the launch URL and falls back to all channels if its saved list excludes that channel. Learned colour actions precede generic number/channel shortcuts.
+Full screen copies `LiveZapper.Session` through `LiveGuideState` (`LiveStage.fullScreen`), so the guide's later changes cannot move it. The initial database lookup matches the launch URL and falls back to all channels if its saved list excludes that channel. Learned colour actions precede generic number/channel shortcuts.
 
 Player-owned `SidePanel` dialogs route recognized colour keys through `LiveZapper` after closing, because dialog input does not reach Activity dispatch. Live colours complete on uncancelled release. `SkyOverlay` reserves the channel strip independently of programme content, with room to expand for larger fonts.
 
 ## Live playback recovery
 
-`LiveStream` resolves live transports and configures VLC media; selection, lifetime and recovery remain in `LivePlayer`. `LiveNative` serializes native stop/video-disable operations per player on two bounded workers. Main-thread consumers suspend native access while that player is busy. Surface/relay/player/engine disposal follows completion, never a timeout. Generation guards drop obsolete opens. `LiveRestartBudget` allows two reconnects and replenishes only after 30 seconds of observed progress. Native Pluto invalidates its anonymous session on retry. `LiveSurfaceProbe` uses one tiny asynchronous PixelCopy at most every two seconds; structurally missing surfaces reach recovery after eight seconds. PixelCopy NO_DATA/UNKNOWN is inconclusive on hardware decoders and never triggers a reconnect; visible decoding progress replenishes surface recovery. Slow joins are logged without releasing windows underneath native readers.
+`LiveStream` finds a channel's playable link (`resolve`, with an optional device-test fixture, `ExoLive.testResolver`); playback, selection and recovery remain in `ExoLive` and `LiveStage`. `LiveRestartBudget` allows two reconnects and replenishes only after 30 seconds of observed progress. Native Pluto invalidates its anonymous session on retry. `LiveNative` now serves only the film player (through `VodNative`): it serializes LibVLC stop/video-disable operations per player on two bounded workers, and disposal follows completion, never a timeout.
 
-Three short buffering notifications can still prepare an alternate source. A same-source reconnect requires prolonged buffering (eight seconds) or stalled video progress; ordinary HLS period notifications do not consume the reconnect budget.
+Three short buffering notifications move to an alternate source only when one waits. A same-source reconnect requires prolonged buffering (eight seconds) or stopped picture and clock; ordinary HLS period notifications do not consume the reconnect budget.
 
 ## Consistent live banner and standard colours
 
@@ -369,7 +288,7 @@ The live overlay measures the channel banner before optional pause/information p
 
 ## One live overlay and shared colour input
 
-Live TV does not attach PlayerOverlay film controls. PlayerOverlay creates only unattached bookkeeping widgets for shared playback state; SkyOverlay is the sole visible live controls view. Entry calls LiveZapper.showBanner; OK and picture click call LiveZapper.ok, which shows that same banner. On a TV its buttons are always boxed (`SkyOverlay.boxControls`); ◀ ▶ move between them and OK presses the highlighted one. Back focuses the green Source key (`SkyOverlay.SOURCE_KEY`). Unused buttons in the live player are named in a short toast (`VlcPlaybackActivity.showUnusedButton`). Colour set-up stores key codes, or scan codes for buttons Android reports as KEYCODE_UNKNOWN (`LiveTvScreen.COLOUR_SCAN_PREFS`); KeyBar and the player share `LiveTvScreen.colour(prefs, event)`. Options remains an explicit blue/Menu/selected-button action. Activity and SidePanel route colours through one session-owned ColourPress before native-player access, recognizing the first delivered press, standalone release or complete multiple event while suppressing duplicates across changing windows. Unknown translated keys can use Android TV Generic.kl’s standard colour scan identities (398–401); known non-colour keys are never overridden.
+Live TV never uses the film controls (PlayerOverlay); SkyOverlay is the sole visible live controls view. Entry calls LiveZapper.showBanner; OK and a click on the picture call LiveZapper.ok (a tap on a phone calls LiveZapper.tapped), which shows that same banner. On a TV its buttons are always boxed (`SkyOverlay.boxControls`); ◀ ▶ move between them and OK presses the highlighted one. Back focuses the green Source key (`SkyOverlay.SOURCE_KEY`). Colour set-up stores key codes, or scan codes for buttons Android reports as KEYCODE_UNKNOWN (`LiveTvScreen.COLOUR_SCAN_PREFS`); KeyBar and the player share `LiveTvScreen.colour(prefs, event)`. Options remains an explicit blue/Menu/selected-button action. Activity and SidePanel route colours through one session-owned ColourPress before native-player access, recognizing the first delivered press, standalone release or complete multiple event while suppressing duplicates across changing windows. Unknown translated keys can use Android TV Generic.kl’s standard colour scan identities (398–401); known non-colour keys are never overridden.
 
 ## Progressive free VOD discovery
 
@@ -417,10 +336,17 @@ retained guide/fullscreen output is unchanged.
 
 Live TV plays through `ExoLive`, on Media3 ExoPlayer 1.5.1 (HLS and DASH). Until 1.0 this was only in
 the separate experimental build, with a stub in normal builds; it is now the one Live TV engine.
-`ExoLive.available()` is now always true, so `MainActivity` always builds `LiveStage`, and the
-`ExoLive.available() ? … : LivePlayer…` branches always take the ExoPlayer side. The LibVLC live classes
-(`LivePlayer`, `LiveVideoOutput` and related) remain in the code; whether any path still reaches them
-has not been audited. Films and series still play through LibVLC.
+`MainActivity` always builds `LiveStage` and sends every Live TV channel there. Films and series still
+play through LibVLC (`VlcPlaybackActivity`), which has no Live TV mode.
+
+The LibVLC live player was removed on 27 October 2026, after an audit showed nothing could reach it
+(`VlcPlaybackActivity` is not exported, and `MainActivity` only opened it for Live TV when `LiveStage`
+was missing, which never happened): `LivePlayer`, `LiveBackup`, `LiveVideoOutput`,
+`LiveSurfaceProbe`, `LivePresentation`, `LivePictureRates`, `LiveRepairBudget`, `LiveHandoffCover`,
+`LiveHost`, `PlayerOptions.live`, the live profiles of `PlaybackBuffer`, the Live TV mode of
+`VlcPlaybackActivity`, `PlayerMenus` and `PlayerOverlay`, and the VLC branches of `GuidePicture`,
+`LiveTvScreen` and `LiveZapper`. Its general stream rules had been ported to `ExoLive` first; its
+surface and decoder workarounds were not needed. Git history keeps the removed code.
 
 Live TV is one screen, `LiveStage`, owned by `MainActivity`: its root holds
 the page host (only Live TV pages: the TV Guide menu, channel guide and phone Live TV, which call
@@ -433,7 +359,7 @@ page outside Live TV (a reminder's Watch now) first moves that page into the sta
 returns to it. `MainActivity.dispatchKeyEvent`
 sends keys to `LiveStage.key` while full screen. The banner and
 channel changing are the same `SkyOverlay` and `LiveZapper`, through the `LiveScreen` interface
-(implemented by `LiveHost` for separate player screens and by `LiveStage`). `ExoMenus` holds the
+(implemented by `LiveStage`). `ExoMenus` holds the
 audio, Sources and Options panels. Link lookup still goes through `LiveStream.resolve`
 unchanged. Recovery: behind-live-window rejoins; other errors and 15 s stalls reopen the channel,
 then `LiveZapper.failover` moves to a backup copy. `ExoLiveTracks` holds audio/subtitle selection and
@@ -457,11 +383,12 @@ three hours, after opening); the old link plays during the lookup and a failed r
 playing. A new channel, a source chosen by the race or by hand, or an explicit restart is a new
 selection with a fresh budget; an internal reopen is not.
 
-Not ported, as LibVLC-specific workarounds: view refreshes for a still picture, the repair budget,
-surface probes (`LiveSurfaceProbe`, `LivePresentation`), software-video fallback, native stop
-serialisation and the muted prepared backup (`LiveBackup`; the source race's standbys serve that
-purpose). The 4 s relayed-stream buffer (`PlaybackBuffer.RELAY_MS`) is a LibVLC option and was not
-ported either; ExoPlayer keeps its default buffering.
+Not ported, as LibVLC-specific workarounds (since removed with that player): view refreshes for a
+still picture and their repair budget, surface probes, software-video fallback, native stop
+serialisation and the muted prepared backup (the source race's standbys serve that purpose). The 4 s
+relayed-stream buffer was a LibVLC option and was not ported either; ExoPlayer keeps its default
+buffering. The LibVLC screen's picture click (an air mouse's OK, a phone tap) was ported to
+`LiveStage`.
 
 ### Experimental retry and screen lifetime
 

@@ -11,7 +11,7 @@ import org.videolan.libvlc.MediaPlayer;
  * The player's side panels: audio and subtitle tracks, video track, playback speed, picture size,
  * subtitle timing and the sleep timer. Split out of {@link VlcPlaybackActivity}.
  */
-final class PlayerMenus implements LiveMenus {
+final class PlayerMenus {
 
     private final VlcPlaybackActivity a;
 
@@ -20,14 +20,11 @@ final class PlayerMenus implements LiveMenus {
     }
 
     private boolean ready() {
-        return (
-            a.player != null && (!a.live || (a.player == LivePlayer.player() && !LiveNative.busy(a.player)))
-        );
+        return a.player != null;
     }
 
     /** One panel for both, as streaming apps do: pick which one to change. */
-    @Override
-    public void audioAndSubtitles() {
+    void audioAndSubtitles() {
         a.dialogOpen = true;
         SidePanel.of(a, "Audio & Subtitles")
             .option("Audio", () -> tracks(false))
@@ -93,22 +90,10 @@ final class PlayerMenus implements LiveMenus {
             .show();
     }
 
+    /** The More button: the film's playback options. */
     void moreControls() {
-        options(false);
-    }
-
-    /**
-     * Live TV's Options (the blue key, MENU, or the focused Options button): there are no on-screen controls, so
-     * pause and audio and subtitles are here too.
-     */
-    @Override
-    public void liveOptions() {
-        options(true);
-    }
-
-    private void options(boolean liveTv) {
         List<String> labels = new ArrayList<>();
-        if (!a.live) labels.add("Playback speed · " + a.playbackRate + "×");
+        labels.add("Playback speed · " + a.playbackRate + "×");
         labels.add("Picture size");
         labels.add("Subtitle timing");
         labels.add(
@@ -118,29 +103,12 @@ final class PlayerMenus implements LiveMenus {
                       " min left"
                 : "Sleep timer"
         );
-        if (a.zapper != null) labels.add(0, a.zapper.sourceText());
-        if (!a.live && a.vod != null && a.vod.hasChoices()) labels.add(0, "Sources");
-        if (a.live && a.behindLive) labels.add(0, "Back to live");
-        if (liveTv) {
-            labels.add(0, "Reconnect channel");
-            labels.add(0, "Repair picture");
-            // Everything the coloured buttons do is here too, for remotes without them.
-            if (a.zapper != null) labels.add(0, "Programme information");
-            labels.add(0, "Audio & subtitles");
-            labels.add(0, ready() && a.player.isPlaying() ? "Pause" : "Play");
-        }
+        if (a.vod != null && a.vod.hasChoices()) labels.add(0, "Sources");
         a.dialogOpen = true;
-        SidePanel panel = SidePanel.of(a, liveTv ? "Options" : "Playback options").onDismiss(a::panelClosed);
+        SidePanel panel = SidePanel.of(a, "Playback options").onDismiss(a::panelClosed);
         for (String label : labels)
             panel.option(label, () -> {
-                if (label.equals("Repair picture")) LivePlayer.repairPicture();
-                else if (label.equals("Reconnect channel")) a.backToLive();
-                else if (label.equals("Pause") || label.equals("Play")) a.toggle();
-                else if (label.equals("Audio & subtitles")) audioAndSubtitles();
-                else if (label.equals("Programme information")) a.zapper.information();
-                else if (label.equals("Back to live")) a.backToLive();
-                else if (label.equals("Sources") && !a.live) chooseVodSource();
-                else if (label.startsWith("Source")) chooseSource();
+                if (label.equals("Sources")) chooseVodSource();
                 else if (label.startsWith("Playback speed")) chooseSpeed();
                 else if (label.equals("Picture size")) choosePicture();
                 else if (label.equals("Subtitle timing")) subtitleTiming();
@@ -226,32 +194,6 @@ final class PlayerMenus implements LiveMenus {
                 .show();
             else if (which == 0) a.vod.automatic();
             else a.vod.select(which - 1);
-        });
-    }
-
-    @Override
-    public void chooseSource() {
-        java.util.List<ChannelDatabase.Row> copies = a.zapper.copies();
-        String[] names = new String[copies.size() + 1];
-        String playing = a.zapper.sourceProvider();
-        names[0] =
-            "Automatic · " +
-            (a.zapper.automaticSources() && !playing.isEmpty() ? "now " + playing + " · " : "") +
-            "switch if a source fails";
-        for (int i = 0; i < copies.size(); i++) {
-            String provider = AdapterSources.sourceName(copies.get(i));
-            names[i + 1] =
-                (i == a.zapper.selectedCopy() ? "▶ " : "") +
-                "Source " +
-                (i + 1) +
-                "  ·  " +
-                (provider.isEmpty() ? "" : provider + "  ·  ") +
-                copies.get(i).name;
-        }
-        int current = a.zapper.automaticSources() ? 0 : a.zapper.selectedCopy() + 1;
-        options("Sources", names, current, which -> {
-            if (which == 0) a.zapper.automaticSources(true);
-            else a.zapper.useCopy(which - 1, false);
         });
     }
 }

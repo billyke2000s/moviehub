@@ -311,8 +311,8 @@ final class LiveStage implements LiveScreen {
         // LibVLC player did when its stream changed. The same stream (back from the guide) keeps its
         // mode, so a source chosen by hand survives the trip.
         if (!channelUrl.equals(ExoLive.currentUrl())) {
-            LivePlayer.automaticSources = true;
-            LivePlayer.attemptedSources.clear();
+            LiveZapper.activeAutomatic = true;
+            LiveZapper.attemptedSources.clear();
         }
         LiveZapper.Session guide =
             LiveZapper.session == null
