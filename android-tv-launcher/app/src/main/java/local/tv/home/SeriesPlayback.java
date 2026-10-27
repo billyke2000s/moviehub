@@ -189,10 +189,10 @@ final class SeriesPlayback {
         metadata.remove("episodeTitle");
         for (int i = 0; i < episodes.length(); i++) {
             JSONObject item = episodes.getJSONObject(i);
-            if (item.optInt("episode_number") == episode) metadata.put(
-                "episodeTitle",
-                item.optString("name")
-            );
+            if (item.optInt("episode_number") == episode) {
+                metadata.put("episodeTitle", item.optString("name"));
+                metadata.put("air_date", item.optString("air_date", ""));
+            }
         }
         return new Next(season, episode, metadata);
     }

@@ -222,8 +222,19 @@ final class PosterCards {
         String name = item.optString("title", item.optString("name", "Title"));
         boolean saved = activity.libraryScreens.isWatchlisted(item);
         String type = item.optString("media_type", item.has("title") ? "movie" : "tv");
+        int id = item.optInt("id");
+        int rating = RatingActions.get(activity.prefs, type, id);
         SidePanel.of(activity, name)
             .option("View details", () -> tmdbTitle(item))
+            .option(RatingActions.likeLabel(rating), () ->
+                RatingActions.toggle(activity.prefs, type, id, TitleRatings.LIKE)
+            )
+            .option(RatingActions.dislikeLabel(rating), () -> {
+                if (
+                    RatingActions.toggle(activity.prefs, type, id, TitleRatings.DISLIKE) ==
+                    TitleRatings.DISLIKE
+                ) activity.toast("We won't suggest this in For you");
+            })
             .option(saved ? "Remove from My List" : "Add to My List", () -> {
                 activity.libraryScreens.toggleWatchlist(item);
                 activity.toast(saved ? "Removed from My List" : "Added to My List");

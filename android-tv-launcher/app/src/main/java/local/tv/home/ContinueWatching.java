@@ -76,6 +76,24 @@ final class ContinueWatching {
         return name.isEmpty() ? "id:" + id : "title:" + name;
     }
 
+    /** How recently a next episode must have aired to be shown as new. */
+    static final int NEW_DAYS = 7;
+
+    /**
+     * Whether a next episode that aired on {@code airDate} ("yyyy-MM-dd") counts as new on
+     * {@code today}: aired, and no more than {@link #NEW_DAYS} days ago.
+     */
+    static boolean isNew(String airDate, String today) {
+        if (airDate == null || !airDate.matches("\\d{4}-\\d{2}-\\d{2}")) return false;
+        try {
+            java.time.LocalDate aired = java.time.LocalDate.parse(airDate),
+                now = java.time.LocalDate.parse(today);
+            return !aired.isAfter(now) && !aired.isBefore(now.minusDays(NEW_DAYS));
+        } catch (java.time.DateTimeException e) {
+            return false;
+        }
+    }
+
     /** The rows, newest first, from {@code history} newest first. */
     static List<Row> rows(List<Entry> history) {
         List<Row> rows = new ArrayList<>();

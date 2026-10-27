@@ -59,6 +59,92 @@ final class TmdbCategories {
         return discover(type, query.toString());
     }
 
+    /** Japanese animation: TMDB's Animation genre and Japanese as the original language. */
+    static final String ANIME = "with_genres=16&with_original_language=ja";
+
+    /**
+     * The Anime start page's rows: series first (most anime is series), then films, then series by
+     * genre. Each row's path says whether it lists films or series ({@link #typeOf}).
+     */
+    static List<Entry> anime(LocalDate today) {
+        String now = today.toString(),
+            weekAgo = today.minusDays(7).toString(),
+            weekAhead = today.plusDays(7).toString();
+        List<Entry> rows = new ArrayList<>();
+        rows.add(new Entry("Popular anime", discover("tv", ANIME + "&sort_by=popularity.desc")));
+        rows.add(
+            new Entry(
+                "Airing this week",
+                discover(
+                    "tv",
+                    ANIME +
+                        "&air_date.gte=" +
+                        weekAgo +
+                        "&air_date.lte=" +
+                        weekAhead +
+                        "&sort_by=popularity.desc"
+                )
+            )
+        );
+        rows.add(
+            new Entry(
+                "New anime series",
+                discover(
+                    "tv",
+                    ANIME + "&first_air_date.lte=" + now + "&sort_by=first_air_date.desc&vote_count.gte=20"
+                )
+            )
+        );
+        rows.add(
+            new Entry(
+                "Top rated anime",
+                discover("tv", ANIME + "&sort_by=vote_average.desc&vote_count.gte=200")
+            )
+        );
+        rows.add(new Entry("Anime films", discover("movie", ANIME + "&sort_by=popularity.desc")));
+        rows.add(
+            new Entry(
+                "Top rated anime films",
+                discover("movie", ANIME + "&sort_by=vote_average.desc&vote_count.gte=200")
+            )
+        );
+        String[][] genres = {
+            { "10759", "Action & adventure anime" },
+            { "35", "Comedy anime" },
+            { "10765", "Fantasy & sci-fi anime" },
+            { "18", "Drama anime" },
+            { "9648", "Mystery anime" },
+            { "10751", "Family anime" },
+        };
+        // A comma in with_genres means every listed genre (Animation and this one).
+        for (String[] genre : genres)
+            rows.add(
+                new Entry(
+                    genre[1],
+                    discover(
+                        "tv",
+                        "with_genres=16," + genre[0] + "&with_original_language=ja&sort_by=popularity.desc"
+                    )
+                )
+            );
+        return rows;
+    }
+
+    /** Whether a catalogue path lists films or series; {@code fallback} when the path does not say. */
+    static String typeOf(String path, String fallback) {
+        if (
+            path.startsWith("discover/movie") ||
+            path.startsWith("movie/") ||
+            path.startsWith("trending/movie")
+        ) {
+            return "movie";
+        }
+        if (
+            path.startsWith("discover/tv") || path.startsWith("tv/") || path.startsWith("trending/tv")
+        ) return "tv";
+        return fallback;
+    }
+
     static Entry genre(String type, int id, String name) {
         if (id <= 0 || name.trim().isEmpty()) throw new IllegalArgumentException("Invalid genre");
         return new Entry(name, discover(type, "with_genres=" + id));

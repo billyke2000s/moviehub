@@ -32,7 +32,7 @@ final class HomeScreen {
         activity.page.setPadding(activity.dp(30), activity.dp(10), activity.dp(30), activity.dp(10));
         BackdropView backdrop = activity.fullBleedBackdrop();
         LinearLayout top = activity.row();
-        for (String kind : new String[] { "Live TV", "Movies", "Series", "My list", "Continue" })
+        for (String kind : new String[] { "Live TV", "Movies", "Series", "Anime", "My list", "Continue" })
             top.addView(
                 activity.navigationButton(kind, () -> {
                     if (kind.equals("Live TV")) activity.liveTv.start();

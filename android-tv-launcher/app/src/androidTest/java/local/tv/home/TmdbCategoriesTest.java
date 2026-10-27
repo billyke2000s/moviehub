@@ -114,4 +114,24 @@ public class TmdbCategoriesTest {
             fail("Invalid year accepted");
         } catch (IllegalArgumentException expected) {}
     }
+
+    @Test
+    public void animeRowsAreJapaneseAnimationAndKnowWhetherTheyListFilmsOrSeries() {
+        List<TmdbCategories.Entry> rows = TmdbCategories.anime(LocalDate.of(2026, 10, 27));
+        Set<String> routes = new HashSet<>();
+        for (TmdbCategories.Entry entry : rows) {
+            assertTrue(entry.name, routes.add(entry.path));
+            assertTrue(entry.name, entry.path.contains("with_original_language=ja"));
+            assertTrue(entry.name, entry.path.contains("with_genres=16"));
+            assertTrue(entry.name, entry.path.contains("include_adult=false"));
+        }
+        assertEquals("tv", TmdbCategories.typeOf(named(rows, "Popular anime").path, "movie"));
+        assertEquals("movie", TmdbCategories.typeOf(named(rows, "Anime films").path, "tv"));
+        assertTrue(
+            named(rows, "Airing this week").path.contains("air_date.gte=2026-10-20&air_date.lte=2026-11-03")
+        );
+        assertTrue(named(rows, "Comedy anime").path.contains("with_genres=16,35"));
+        assertEquals("tv", TmdbCategories.typeOf("collection/10", "tv"));
+        assertEquals("movie", TmdbCategories.typeOf("trending/movie/day", "tv"));
+    }
 }
