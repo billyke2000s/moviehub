@@ -32,7 +32,7 @@ final class LiveStage implements LiveScreen {
     private final View surface;
     private final TextView status;
     private final Handler overlayHandler = new Handler(Looper.getMainLooper());
-    private final LiveMenus menus = new ExoMenus(this, this::reconnect);
+    private final LiveMenus menus = new ExoMenus(this, this::reconnect, this::backToLive);
     private LiveZapper zapper;
     private boolean dialogOpen, liveFailed, full;
     private boolean foreground = true;
@@ -56,6 +56,8 @@ final class LiveStage implements LiveScreen {
             overlayHandler.removeCallbacks(slow);
             overlayHandler.removeCallbacks(retry);
             status.setVisibility(View.GONE);
+            // A new picture (another channel, a reconnect, Back to live) clears the pause bar.
+            showPauseBar();
         }
 
         @Override
@@ -418,8 +420,12 @@ final class LiveStage implements LiveScreen {
             if (code == KeyEvent.KEYCODE_MEDIA_PLAY) ExoLive.resume();
             else if (code == KeyEvent.KEYCODE_MEDIA_PAUSE) ExoLive.pause();
             else if (code == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) toggle();
-            else return false;
+            else if (code == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD && ExoLive.behindLive()) {
+                backToLive();
+                return true;
+            } else return false;
             zapper.showBanner();
+            showPauseBar();
             return true;
         }
         return false;
@@ -544,7 +550,17 @@ final class LiveStage implements LiveScreen {
 
     /** Whether an upgrade may change what plays: full screen, in front, playing, no panel open. */
     boolean upgradeWatching() {
-        return full && foreground && !liveFailed && !dialogOpen && zapper != null && ExoLive.active();
+        // Never while paused or behind live: switching would start the picture again at the live edge.
+        return (
+            full &&
+            foreground &&
+            !liveFailed &&
+            !dialogOpen &&
+            zapper != null &&
+            ExoLive.active() &&
+            !ExoLive.paused() &&
+            !ExoLive.behindLive()
+        );
     }
 
     LiveRace race() {
@@ -685,6 +701,24 @@ final class LiveStage implements LiveScreen {
     public void toggle() {
         if (ExoLive.isPlaying()) ExoLive.pause();
         else ExoLive.resume();
+        showPauseBar();
+    }
+
+    /**
+     * The satellite recorders' pause bar: "PAUSED" while paused, then "BEHIND LIVE" until Back to
+     * live (the fast-forward key, or Options), as the old LibVLC player showed it.
+     */
+    void showPauseBar() {
+        if (zapper == null || zapper.overlay == null) return;
+        zapper.overlay.pause(ExoLive.paused(), ExoLive.behindLive());
+    }
+
+    /** Back to live: to the live edge in the same stream, or the channel reopened when it has none. */
+    void backToLive() {
+        if (!full) return;
+        if (!ExoLive.backToLive()) reconnect();
+        showPauseBar();
+        if (zapper != null) zapper.showBanner();
     }
 
     @Override

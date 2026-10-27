@@ -227,7 +227,12 @@ failed copy cools down for 10 minutes, doubling on each repeat up to an hour, ke
 across channel changes for the app session. A copy that holds its trial resets its cooldown length.
 Quality only rises and a copy that fell back cools down, so switching cannot loop. A new channel, a
 copy chosen by hand (which turns automatic sources off) or by failover, reconnecting, and leaving full
-screen reset any upgrade in progress.
+screen reset any upgrade in progress. Upgrades also wait while the viewer has paused or is behind live.
+
+Pausing Live TV (`ExoLive.pause`) marks the picture behind the live broadcast until Back to live
+(`ExoLive.backToLive`: the live edge of an HLS/DASH live window, else `LiveStage` reopens the
+channel) or a new opening. `LiveStage.showPauseBar` shows SkyOverlay's pause bar for both states;
+the fast-forward key and Options → Back to live catch up.
 Experimental Live TV moves to the
 next source after `LiveStage.START_MS` (15 s) without a picture, or at once on an error, whenever
 `LiveZapper.hasUntriedCopy()`; with no other copy it keeps the old reopen-and-wait behaviour. Plex plays by

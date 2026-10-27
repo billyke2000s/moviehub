@@ -94,6 +94,8 @@ final class ExoLive {
     private static NativeHttp resolvingHttp;
     private static boolean hlsRetried;
     private static String status = "Idle";
+    /** Paused by the viewer since the stream last joined the live edge (see {@link #behindLive}). */
+    private static boolean behindLive;
     private static final Runnable watch = new Runnable() {
         @Override
         public void run() {
@@ -232,6 +234,7 @@ final class ExoLive {
                     event("Error " + error.getErrorCodeName());
                     if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
                         // Fell behind the live window: rejoin live without reopening the channel.
+                        behindLive = false;
                         player.seekToDefaultPosition();
                         player.prepare();
                         return;
@@ -432,6 +435,8 @@ final class ExoLive {
             return;
         }
         relay = next;
+        // A fresh opening starts at the live edge.
+        behindLive = false;
         rules.opened();
         DefaultHttpDataSource.Factory http = new DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true)
@@ -601,8 +606,35 @@ final class ExoLive {
         return player != null && player.isPlaying();
     }
 
+    /** Paused by the viewer: the picture is now behind the live broadcast until Back to live. */
     static void pause() {
-        if (player != null) player.pause();
+        if (player == null) return;
+        player.pause();
+        behindLive = true;
+    }
+
+    /** Paused by the viewer (the player is not set to play). */
+    static boolean paused() {
+        return player != null && !player.getPlayWhenReady();
+    }
+
+    /** The picture is behind the live broadcast after a pause, until Back to live or a new channel. */
+    static boolean behindLive() {
+        return player != null && behindLive;
+    }
+
+    /**
+     * Catches up with the broadcast: jumps to the live edge when the stream keeps a live window
+     * (HLS and DASH live), and returns false when it does not (the owner then reopens the channel).
+     */
+    static boolean backToLive() {
+        if (player == null) return false;
+        if (!player.isCurrentMediaItemLive() || !player.isCurrentMediaItemDynamic()) return false;
+        behindLive = false;
+        event("Back to live");
+        player.seekToDefaultPosition();
+        player.play();
+        return true;
     }
 
     static void resume() {

@@ -7,11 +7,12 @@ import java.util.List;
 final class ExoMenus implements LiveMenus {
 
     private final LiveScreen screen;
-    private final Runnable reconnect;
+    private final Runnable reconnect, backToLive;
 
-    ExoMenus(LiveScreen screen, Runnable reconnect) {
+    ExoMenus(LiveScreen screen, Runnable reconnect, Runnable backToLive) {
         this.screen = screen;
         this.reconnect = reconnect;
+        this.backToLive = backToLive;
     }
 
     @Override
@@ -117,20 +118,24 @@ final class ExoMenus implements LiveMenus {
     public void liveOptions() {
         LiveZapper zapper = screen.zapper();
         if (zapper == null) return;
-        String[] labels = {
+        List<String> labels = new java.util.ArrayList<>();
+        if (ExoLive.behindLive()) labels.add("Back to live");
+        java.util.Collections.addAll(
+            labels,
             ExoLive.isPlaying() ? "Pause" : "Play",
             "Audio & subtitles",
             "Programme information",
             zapper.sourceText(),
             "Reconnect channel",
             "Player event log",
-            "Player status · ExoPlayer · " + ExoLive.status(),
-        };
+            "Player status · ExoPlayer · " + ExoLive.status()
+        );
         screen.dialogOpen(true);
         SidePanel panel = SidePanel.of(screen.activity(), "Options").onDismiss(screen::panelClosed);
         for (String label : labels)
             panel.option(label, () -> {
-                if (label.equals("Pause") || label.equals("Play")) screen.toggle();
+                if (label.equals("Back to live")) backToLive.run();
+                else if (label.equals("Pause") || label.equals("Play")) screen.toggle();
                 else if (label.equals("Audio & subtitles")) audioAndSubtitles();
                 else if (label.equals("Player event log")) eventLog();
                 else if (label.equals("Programme information")) zapper.information();
