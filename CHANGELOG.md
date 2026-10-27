@@ -1,6 +1,7 @@
 ## Unreleased
 
 - Continue watching lists only films and episodes you watched for at least 3 minutes, shows each film once whichever source played it, and shows a series as one row: the episode you are part-way through, or the next episode once you finish one. A series leaves the list after its last aired episode. Removing a series from the list removes all its episodes.
+- Live TV: pausing shows the pause bar again, then "Behind live" after you carry on. Fast-forward (or Options → Back to live) catches up with the broadcast. Better-quality switching waits while you are paused or behind live.
 
 ## 1.0.7 (27 October 2026)
 

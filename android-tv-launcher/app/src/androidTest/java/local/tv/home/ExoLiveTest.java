@@ -855,6 +855,31 @@ public final class ExoLiveTest {
         }
     }
 
+    private void liveKey(int code) {
+        remote.runOnMainSync(() -> assertTrue(activity.stage.key(new KeyEvent(KeyEvent.ACTION_DOWN, code))));
+    }
+
+    @Test
+    public void pausingShowsThePauseBarAndFastForwardGoesBackToLive() {
+        play("/media.m3u8");
+        await(() -> activity.stage.zapper() != null && activity.stage.zapper().overlay != null);
+        liveKey(KeyEvent.KEYCODE_MEDIA_PAUSE);
+        remote.runOnMainSync(() -> {
+            assertTrue("Paused by the viewer", ExoLive.paused());
+            assertTrue("The pause bar shows", activity.stage.zapper().overlay.pauseShowing());
+        });
+        liveKey(KeyEvent.KEYCODE_MEDIA_PLAY);
+        await(() -> ExoLive.isPlaying());
+        remote.runOnMainSync(() -> {
+            assertTrue("Still behind the broadcast after a pause", ExoLive.behindLive());
+            assertTrue("The bar now says behind live", activity.stage.zapper().overlay.pauseShowing());
+        });
+        // This fixture has no live window, so Back to live reopens the channel at its start.
+        liveKey(KeyEvent.KEYCODE_MEDIA_FAST_FORWARD);
+        await(() -> ExoLive.isPlaying() && !ExoLive.behindLive());
+        await(() -> !activity.stage.zapper().overlay.pauseShowing());
+    }
+
     @After
     public void cleanup() throws Exception {
         remote.runOnMainSync(() -> {

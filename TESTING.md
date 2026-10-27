@@ -631,3 +631,10 @@ removing a series forgetting every episode record and saved position. The next-e
 TMDB ids that do not exist, so the real catalogue lookup (next episode found, or the row going when
 the series is finished) is not exercised by fixtures.
 
+## Live TV pause and Back to live (27 October 2026)
+
+`ExoLiveTest.pausingShowsThePauseBarAndFastForwardGoesBackToLive` pauses a fixture channel with the
+remote's pause key, checks the pause bar, carries on and checks it now says behind live, then presses
+fast-forward and checks the picture plays again with the bar gone. The fixture has no live window,
+so this exercises the reopen path; jumping to a real HLS live edge is not covered by fixtures.
+
