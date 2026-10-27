@@ -732,7 +732,13 @@ public final class ExoLiveTest {
             );
             await(() -> ExoLive.isPlaying() && activity.stage.zapper().copies().size() == 2);
             remote.runOnMainSync(() -> activity.stage.zapper().useCopy(1, false));
-            await(() -> !activity.stage.zapper().automaticSources() && ExoLive.isPlaying());
+            // Wait for the chosen copy itself to play: the switch finishes after a database read.
+            await(
+                () ->
+                    !activity.stage.zapper().automaticSources() &&
+                    link("/manual-b.m3u8").equals(ExoLive.currentUrl()) &&
+                    ExoLive.isPlaying()
+            );
             // Back to a page (as the guide), then a different channel: it must not inherit the
             // manual choice.
             remote.runOnMainSync(() -> {
