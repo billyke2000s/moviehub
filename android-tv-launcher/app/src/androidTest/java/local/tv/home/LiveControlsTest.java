@@ -242,7 +242,9 @@ public final class LiveControlsTest {
         assertTrue(zapper().automaticSources());
         assertEquals("Loading the channel did not probe its backup", 1, resolutions.get());
         remote.runOnMainSync(() -> zapper().useCopy(0, false));
-        await(() -> !zapper().automaticSources());
+        // ExoPlayer opens the chosen copy afresh, even the one already playing (the LibVLC player
+        // carried on): wait for that one lookup, so it is not counted as background discovery.
+        await(() -> !zapper().automaticSources() && resolutions.get() == 2);
         remote.runOnMainSync(() -> assertEquals("The chosen copy plays", 0, zapper().selectedCopy()));
         remote.runOnMainSync(() ->
             assertFalse("Manual mode must stay on the selected source", zapper().failover("fixture failure"))
