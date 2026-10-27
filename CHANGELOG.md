@@ -1,5 +1,7 @@
 ## Unreleased — runtime and source metadata
 
+- Show each discovered link directly on the Play sources page, including multiple links from one website. Refresh its own resolution, audio format/channels and declared bitrate in place; keep unknown fields explicit.
+
 - Check known film/episode runtimes before accepting active and prepared links; pass exact episode runtime through cards, continuation and resume.
 - Read bounded media metadata for source resolution, available audio and declared bitrates; confirm selected tracks while playing and distinguish playlist declarations and unknown details.
 - Prepare the next episode's links during the last three minutes, preserving the current search and manual selection; cancel on leaving. Show a short "Switched link" notice after replacement.

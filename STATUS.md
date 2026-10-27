@@ -2,6 +2,8 @@
 
 ## VOD runtime, metadata and next episode — candidate, 27 October 2026
 
+The Play sources page now lists each link independently, including multiple links from one website. Metadata updates each row in place before selection; resolution, audio formats/channels and declared bitrates stay unknown when unavailable. No new website-selection submenu is introduced. Final correction CI must be read before reporting success.
+
 The owner-requested follow-up adds exact episode runtimes, active/prepared runtime rejection,
 a brief replacement note, bounded metadata-only resolution/audio/bitrate inspection and next-episode
 link preparation. The player tick was extracted in a separate behaviour-free commit. Provider Python,

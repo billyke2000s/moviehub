@@ -2,6 +2,8 @@
 
 ## VOD runtime, metadata and next-episode preparation
 
+`FreeVodRows` renders one independently selectable button per discovery route and resolved URI, without a website submenu. Its first line is resolution, channels and website; the second gives dimensions, codecs, language and declared bitrate. Metadata refresh updates existing buttons even when link counts are unchanged, retaining remote focus. Playback backup identities use the same route/URI key.
+
 `VodPlayerTick` owns the one-second film/episode controls update, extracted from
 `VlcPlaybackActivity` in a behaviour-free commit. Catalogue episode metadata carries that exact
 episode's `runtime` (minutes) from cards, continuation and resume; it never inherits the prior

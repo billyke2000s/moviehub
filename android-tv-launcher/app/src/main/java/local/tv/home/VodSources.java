@@ -98,7 +98,8 @@ final class VodSources {
         session.transport = index -> ordered.get(index).stream;
         session.close = search::close;
         search.observe(source -> {
-            for (var existing : ordered) if (existing.uri.equals(source.uri)) return;
+            for (var existing : ordered)
+                if (VodSearch.sourceKey(existing).equals(VodSearch.sourceKey(source))) return;
             if (ordered.size() >= 200) return;
             ordered.add(source);
             session.sources.add(entry(source));
@@ -109,7 +110,7 @@ final class VodSources {
     static VodSourceFailover.Source entry(SourceRepository.Source source) {
         String audio = SourceRanking.audioLabel(source.title);
         VodSourceFailover.Source entry = new VodSourceFailover.Source(
-            source.uri,
+            VodSearch.sourceKey(source),
             SourcesScreen.sourceLabel(source, SourcesScreen.provider(source.title)),
             SourcesScreen.provider(source.title)
         );

@@ -2,6 +2,8 @@
 
 ## Automatic source selection
 
+Per-link source rows expose only media facts and the discovery website, not resolved URLs or request headers. Metadata label refresh does not perform additional network reads.
+
 Automatic play uses only already-cached sources and never queues a paid/account transfer automatically. Resolved links pass the existing network URL policy before launch. Selection tries at most five candidates, and screen-generation/cancellation guards prevent an abandoned request from starting playback. Episode catalogue prefetches use the existing authenticated TMDB client; no credentials or provider links are logged.
 
 MovieHub stores provider accounts and installs its own updates, so these rules matter.

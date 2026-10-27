@@ -79,17 +79,7 @@ final class SourcesScreen {
     }
 
     static String sourceLabel(SourceRepository.Source source, String provider) {
-        MediaFacts.Value facts = source.facts.value;
-        String audio = facts.audio();
-        if (facts.origin == MediaFacts.Origin.UNKNOWN) {
-            String claim = SourceRanking.audioLabel(source.title);
-            if (!claim.isEmpty()) audio += " (claims " + claim + ")";
-        }
-        String picture =
-            facts.tier() > 0
-                ? facts.picture()
-                : badge(source) + (source.confirmed ? (source.playlist ? " (playlist)" : "") : " (claimed)");
-        return QualityClaims.sourceLabel(picture, audio + " · " + facts.bitrate(), provider);
+        return source.facts.value.describe() + " · " + provider;
     }
 
     /** Badges for a source: HDR or Dolby Vision, codec and file size, when the description says. */

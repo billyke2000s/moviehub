@@ -26,6 +26,7 @@ final class VodSourceFailover {
 
     static final class Source {
 
+        /** Stable source identity; playback addresses come from the session resolver. */
         final String url;
         /** Shown in the Sources menu; corrected once the real picture size is known. */
         volatile String label;

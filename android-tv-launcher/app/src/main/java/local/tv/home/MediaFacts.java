@@ -63,20 +63,23 @@ final class MediaFacts {
                       (origin == Origin.PLAYLIST ? " (playlist)" : " ✓");
         }
 
+        String channelLabel() {
+            return channels == 1
+                ? "Mono"
+                : channels == 2
+                  ? "Stereo"
+                  : channels == 6
+                    ? "5.1"
+                    : channels == 8
+                      ? "7.1"
+                      : channels > 0
+                        ? channels + "ch"
+                        : "";
+        }
+
         String audio() {
             String codec = audioName(audioCodec);
-            String count =
-                channels == 1
-                    ? "Mono"
-                    : channels == 2
-                      ? "Stereo"
-                      : channels == 6
-                        ? "5.1"
-                        : channels == 8
-                          ? "7.1"
-                          : channels > 0
-                            ? channels + "ch"
-                            : "";
+            String count = channelLabel();
             String text = codec + (count.isEmpty() ? "" : (codec.isEmpty() ? "" : " ") + count);
             if (!language.isEmpty() && !language.equalsIgnoreCase("und")) text +=
                 (text.isEmpty() ? "" : " · ") + language;
@@ -90,6 +93,25 @@ final class MediaFacts {
                 (origin == Origin.PLAYLIST ? " (playlist)" : " video") +
                 (audioBitrate > 0 ? " + " + VideoDetails.bitrate(audioBitrate) + " audio" : "")
             );
+        }
+
+        /** Two-line source row: measured quality/channels/site, then the file's other facts. */
+        String listLabel(String website) {
+            String quality =
+                tier() == 0
+                    ? "Resolution unknown"
+                    : (origin == Origin.PLAYLIST ? "Up to " : "") +
+                      QualityClaims.name(tier()) +
+                      (origin == Origin.PLAYLIST ? " (playlist)" : " ✓");
+            String channels = channelLabel();
+            String codec = audioName(audioCodec);
+            String audio = channels.isEmpty() ? (codec.isEmpty() ? "Audio unknown" : codec) : channels;
+            String detail = width > 0 && height > 0 ? width + "×" + height + " · " : "";
+            String video = VideoDetails.codecName(videoCodec);
+            if (!video.isEmpty()) detail += video + " · ";
+            detail += codec.isEmpty() ? "Audio format unknown" : codec;
+            if (!language.isEmpty() && !language.equalsIgnoreCase("und")) detail += " · " + language;
+            return quality + " · " + audio + " · " + website + "\n" + detail + " · " + bitrate();
         }
 
         String describe() {

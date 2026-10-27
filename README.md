@@ -23,6 +23,8 @@ _One interface for browsing, watching and live TV._
 
 ## What is MovieHub?
 
+The Play sources page shows each discovered link separately, including multiple links from the same website. Each row updates its own file metadata: `1080p ✓ · 5.1 · website`, followed by dimensions, codecs and declared bitrate when available. Unavailable fields stay unknown; adaptive playlist ceilings are labelled separately.
+
 MovieHub is an Android TV launcher and streaming application that combines film and series discovery, live television, playback and installed applications in a single interface designed for TV remotes.
 
 ### Features

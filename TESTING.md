@@ -2,6 +2,8 @@
 
 ## VOD runtime, metadata and continuation candidate (27 October 2026)
 
+`FreeVodRowsTest` checks separate links from one website, separate routes to the same URL, direct selection without a submenu, removal and metadata updates retaining the same focused button. MediaFactsTest checks the exact quality/channels/website order, formats/bitrates and explicit unknown/playlist labels. These fixture checks do not establish live-source availability.
+
 Run `bash android-tv-launcher/tests/run-core-tests.sh`. PlaybackEndTest adds exact 60/160-percent
 boundaries, unknown/negative lengths, extended cuts, overflow-safe comparisons and the three-minute
 prefetch window including pause, early/ended and wrong-runtime exclusion. MediaFactsTest covers

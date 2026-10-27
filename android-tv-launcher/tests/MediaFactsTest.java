@@ -26,6 +26,22 @@ public class MediaFactsTest {
         check(file.picture().contains("1920×800"), "exact dimensions");
         check(file.audio().equals("EAC3 5.1 · eng"), "real audio metadata");
         check(file.audioRank() == 1, "5.1 rank");
+        check(
+            file.listLabel("fixture.example").startsWith("1080p ✓ · 5.1 · fixture.example\n"),
+            "quality channels website first"
+        );
+        check(file.listLabel("fixture.example").contains("1920×800"), "list dimensions");
+        check(file.listLabel("fixture.example").contains("EAC3 · eng"), "list audio format and language");
+        check(
+            file.listLabel("fixture.example").contains("8.2 Mb/s video + 384 kb/s audio"),
+            "list declared rates"
+        );
+        check(
+            MediaFacts.UNKNOWN.listLabel("fixture.example").startsWith(
+                "Resolution unknown · Audio unknown · fixture.example"
+            ),
+            "no invented list facts"
+        );
         check(file.bitrate().equals("8.2 Mb/s video + 384 kb/s audio"), "separate declared track rates");
         check(!file.describe().contains("Atmos"), "channels do not prove Atmos");
         check(
@@ -48,6 +64,11 @@ public class MediaFactsTest {
         check(playlist.picture().contains("playlist"), "declared not played");
         check(playlist.bitrate().equals("12.0 Mb/s (playlist)"), "manifest aggregate rate");
         check(playlist.audio().equals("Audio unknown"), "no invented playlist audio");
+        check(
+            playlist.listLabel("fixture.example").startsWith("Up to 4K (playlist)"),
+            "playlist ceiling on list"
+        );
+        check(!playlist.listLabel("fixture.example").contains("✓"), "playlist not marked file confirmed");
         check(MediaFacts.audioName("audio/mp4a-latm").equals("AAC"), "AAC MIME");
         check(MediaFacts.audioName("audio/ac3").equals("AC3"), "AC3 MIME");
         check(MediaFacts.audioName("opus").equals("Opus"), "Opus");
