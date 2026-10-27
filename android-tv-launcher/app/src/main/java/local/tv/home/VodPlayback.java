@@ -233,7 +233,7 @@ final class VodPlayback {
         playing = false;
         lastCatchup = 0;
         int request = ++ticket;
-        target = activity.player == null ? 0 : Math.max(0, activity.player.getTime());
+        target = Math.max(0, activity.playedPosition());
         deadline = SystemClock.elapsedRealtime() + 15000;
         activity.status.setText("Preparing " + session.sources.get(index).label + "…");
         activity.status.setVisibility(View.VISIBLE);
@@ -314,7 +314,7 @@ final class VodPlayback {
             } finally {
                 media.release();
             }
-            long oldTime = activity.player == null ? target : Math.max(target, activity.player.getTime());
+            long oldTime = Math.max(target, activity.playedPosition());
             long nextTime = candidate.getTime();
             if (decoded && Math.abs(nextTime - oldTime) <= 2000) {
                 MediaPlayer ready = candidate;
