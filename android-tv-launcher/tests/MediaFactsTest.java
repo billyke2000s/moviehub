@@ -159,6 +159,27 @@ public class MediaFactsTest {
                 .startsWith("90p ✓ · Mono (playlist) · site"),
             "confirmed video cannot promote declared audio into a header fact"
         );
+        check(
+            MediaFacts.combine(partial, stream.context(true, 4500000, "playlist"))
+                .audio()
+                .contains("(playlist)"),
+            "partial player reads preserve audio declaration provenance"
+        );
+        check(
+            MediaFacts.combine(
+                new MediaFacts.Value(MediaFacts.Origin.PLAYING, 0, 0, "", "aac", 1, "", 0, 0, 0),
+                playlist
+            )
+                .bitrate()
+                .contains("12.0 Mb/s (playlist)"),
+            "partial video snapshot retains known playlist bandwidth"
+        );
+        check(
+            new MediaFacts.Value(MediaFacts.Origin.PLAYLIST, 0, 0, "", "", 0, "en", 0, 0, 0)
+                .audio()
+                .equals("Audio unknown · en"),
+            "language is not an audio format"
+        );
         MediaFacts f = new MediaFacts();
         f.value = partial;
         f.inspection(file);

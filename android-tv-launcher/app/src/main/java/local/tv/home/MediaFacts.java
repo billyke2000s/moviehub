@@ -139,13 +139,12 @@ final class MediaFacts {
             String codec = audioName(audioCodec);
             String count = channelLabel();
             String text = codec + (count.isEmpty() ? "" : (codec.isEmpty() ? "" : " ") + count);
-            if (!language.isEmpty() && !language.equalsIgnoreCase("und")) text +=
-                (text.isEmpty() ? "" : " · ") + language;
-            return text.isEmpty()
-                ? "Audio unknown"
-                : availableAudio.isEmpty()
-                  ? text
-                  : "Available " + text + " (" + availableAudio + ")";
+            boolean known = !text.isEmpty();
+            if (!known) text = "Audio unknown";
+            if (!language.isEmpty() && !language.equalsIgnoreCase("und")) text += " · " + language;
+            return !known || availableAudio.isEmpty()
+                ? text
+                : "Available " + text + " (" + availableAudio + ")";
         }
 
         String bitrate() {
@@ -234,9 +233,11 @@ final class MediaFacts {
         String available =
             audio || (headers.audioCodec.isEmpty() && headers.channels == 0)
                 ? ""
-                : headers.origin == Origin.PLAYLIST
-                  ? "playlist"
-                  : "media headers";
+                : !headers.availableAudio.isEmpty()
+                  ? headers.availableAudio
+                  : headers.origin == Origin.PLAYLIST
+                    ? "playlist"
+                    : "media headers";
         Origin origin = video
             ? Origin.PLAYING
             : headers.origin == Origin.UNKNOWN
@@ -250,13 +251,15 @@ final class MediaFacts {
             audio ? nativeFacts.audioCodec : headers.audioCodec,
             audio ? nativeFacts.channels : headers.channels,
             audio ? nativeFacts.language : headers.language,
-            nativeFacts.videoBitrate > 0
-                ? nativeFacts.videoBitrate
-                : sameVideo || !video
-                  ? headers.origin == Origin.PLAYLIST
-                      ? 0
-                      : headers.videoBitrate
-                  : 0,
+            origin == Origin.PLAYLIST
+                ? headers.videoBitrate
+                : nativeFacts.videoBitrate > 0
+                  ? nativeFacts.videoBitrate
+                  : sameVideo || !video
+                    ? headers.origin == Origin.PLAYLIST
+                        ? 0
+                        : headers.videoBitrate
+                    : 0,
             nativeFacts.audioBitrate > 0
                 ? nativeFacts.audioBitrate
                 : sameAudio || !audio
