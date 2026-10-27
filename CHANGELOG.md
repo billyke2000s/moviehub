@@ -1,4 +1,4 @@
-## Unreleased
+## 1.0.14 (27 October 2026)
 
 - Fix: a film or episode link that sent a sliver of data (about 0.1 MB) and stopped stayed stuck instead of moving to the next link. If the picture has not moved for 15 seconds while not paused or seeking, the player now switches link (or says no working backup is left).
 
