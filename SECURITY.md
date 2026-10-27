@@ -239,6 +239,6 @@ The Rive adapter uses anonymous HTTPS requests through the existing bounded tran
 
 Rive Citadel’s opt-in carrier path identifies raw TS from received bytes when a zero-to-end request obtains the whole entity. It does not trust a misleading image MIME type, change media bytes, broaden permitted hosts, disable TLS or change non-opted-in range handling.
 
-## Movy and Atlantic response envelopes
+## Movy response envelope
 
-Movy's short-lived anonymous seed is obtained for each delivery-route lookup and is not persisted. Its decoder processes data only. Atlantic's Moscow response-envelope key is published in the website's JavaScript; it is not a user/account credential or DRM key. The adapter uses Android's existing authenticated AES-GCM cipher and rejects invalid tags. Neither adapter executes remote JavaScript or adds dependencies. Returned media still passes the existing public-address, HTTPS, header and media checks; account tokens, cookies and signed media URLs are not stored in the repository.
+Movy's short-lived anonymous seed is obtained for each delivery-route lookup and is not persisted. Its decoder processes data only, never downloaded JavaScript. No runtime dependency is added. Returned media still passes the existing public-address, HTTPS, header and media checks; account tokens, cookies and signed media URLs are not stored in the repository.

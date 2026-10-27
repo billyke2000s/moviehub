@@ -25,7 +25,6 @@ jobs:
                 media: [movies, series]
                 route:
                     - { provider: "native:movy", names: "Boise,Miami" }
-                    - { provider: "native:atlantic", names: "Moscow" }
                 include:
                     - media: series
                       route: { provider: "native:rive", names: "Vanguard" }

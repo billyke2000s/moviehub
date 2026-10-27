@@ -86,23 +86,8 @@ public final class FreeVodProvidersTest {
     @Test
     public void packagedPythonImportsEveryProviderAndHostResolverWithoutKodi() throws Exception {
         // Eleven retired/repurposed and 18 unverified sites stay disabled; Levidia stays searchable.
-        assertEquals(39, FreeVodProviders.ids(context).size());
-        assertEquals(73, FreeVodProviders.validate(context));
-    }
-
-    @Test
-    public void atlanticEnvelopeUsesAndroidGcmAndRejectsTampering() throws Exception {
-        FreeVodProviders.ids(context);
-        var module = com.chaquo.python.Python.getInstance().getModule("moviehub_native.atlantic");
-        String fixture =
-            "ms_000102030405060708090a0b9ef7f55340ef5d8f9d149e6b559f7d93e235a4ba4316327c17589d50a34bb435eb60e6d282609c735c17a31f6b580ba2cc";
-        assertEquals("https://media.example/moscow.m3u8", module.callAttr("decode", fixture).toString());
-        try {
-            module.callAttr("decode", fixture.substring(0, fixture.length() - 2) + "00");
-            fail("An invalid authentication tag must be rejected");
-        } catch (com.chaquo.python.PyException expected) {
-            assertTrue(expected.getMessage().contains("AEADBadTagException"));
-        }
+        assertEquals(38, FreeVodProviders.ids(context).size());
+        assertEquals(72, FreeVodProviders.validate(context));
     }
 
     @Test

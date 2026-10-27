@@ -6,6 +6,4 @@ PROVIDERS = [dict(id='native:fourkhdhub', module='moviehub_native.fourkhdhub', f
     dict(id='native:rive', module='moviehub_native.rive', family='native',
     name='rive', site='rivestream.app', movies=True, series=True),
     dict(id='native:movy', module='moviehub_native.movy', family='native',
-    name='movy', site='movy.sx', movies=True, series=True),
-    dict(id='native:atlantic', module='moviehub_native.atlantic', family='native',
-    name='atlantic', site='atlantic.st', movies=True, series=True)]
+    name='movy', site='movy.sx', movies=True, series=True)]
