@@ -1,8 +1,8 @@
 # Status
 
-## VOD runtime, metadata and next episode — candidate, 27 October 2026
+## VOD runtime, metadata and next episode — 1.0.15 release preparation, 27 October 2026
 
-The Play sources page now lists each link independently, including multiple links from one website. Metadata updates each row in place before selection; resolution, audio formats/channels and declared bitrates stay unknown when unavailable. No new website-selection submenu is introduced. Final correction CI must be read before reporting success.
+The Play sources page now lists each link independently, including multiple links from one website. Metadata updates each row in place before selection; resolution, audio formats/channels and declared bitrates stay unknown when unavailable. No new website-selection submenu is introduced. The final correction passed Android build/lint, signing/updater compatibility, normal and experimental emulator suites, and provider-engine CI at `2934cd7824fd665e248903d224f5dac0d49335e0`.
 
 The owner-requested follow-up adds exact episode runtimes, active/prepared runtime rejection,
 a brief replacement note, bounded metadata-only resolution/audio/bitrate inspection and next-episode
@@ -15,7 +15,7 @@ current backup search or opening another decoder. Manual mode remains manual; le
 
 Core checks pass locally using Eclipse JDT targeting Java 17 (this workspace has a JRE, no javac).
 Android SDK/build/lint/device/signing checks require CI and must be recorded on the PR's final head.
-No physical-TV or live-provider result is claimed; no update is published by this candidate.
+No physical-TV or exact failing live-link result is claimed. The owner authorized publication as 1.0.15 (code 115); successful publication must be confirmed from the publish workflow and public update manifest.
 The 1.0.14 publish run [40541787521](https://github.com/billyke2000s/moviehub/actions/runs/40541787521)
 succeeded from `8e3d77121d1d1cc914e4dbcb1fada76e319292ce`; older release notes below are historical.
 
