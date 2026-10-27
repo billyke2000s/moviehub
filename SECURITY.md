@@ -2,7 +2,7 @@
 
 ## Bounded HLS media-header inspection
 
-HLS metadata follows only resource URLs rewritten and granted by the existing guarded relay. Playlist, initialization and clear segment reads share the original aggregate two-second/256 KiB downstream budget and cancellation token. No key retrieval or decryption is added; encrypted and byte-range resources are not sniffed. The VLC cache-refresh request is local-only and does not start an additional decoder or network parse. No new source domains, persisted playback URLs or logged credentials are introduced.
+HLS metadata follows only resource URLs rewritten and granted by the existing guarded relay. Playlist, initialization and clear segment reads share the original aggregate two-second/256 KiB downstream budget and cancellation token. Ordinary identity AES-128 HLS uses only the playlist-advertised 16-byte key, fetched through the same relay with the same aggregate limits; the correct explicit/media-sequence IV is required. Key and decrypted prefix bytes are transient and cleared after inspection. SAMPLE-AES, other key formats and byte-range resources are excluded. Keys and playback addresses are never logged or persisted. The VLC cache-refresh request is local-only and does not start an additional decoder or network parse. No new source domains, persisted playback URLs or logged credentials are introduced.
 
 
 ## Automatic source selection

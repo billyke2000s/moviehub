@@ -9,8 +9,14 @@ final class HlsMediaInfo {
     final MediaFacts.Value declared;
     final String variant, audioPlaylist, initialization, segment;
     final boolean encrypted, byteRanges;
+    final Map<String, String> key;
+    final String sequence;
 
     HlsMediaInfo(String text, int preferred) {
+        this(text, preferred, "eng,en");
+    }
+
+    HlsMediaInfo(String text, int preferred, String audioLanguages) {
         Map<String, String> chosen = Collections.emptyMap();
         String selected = "";
         int best = Integer.MIN_VALUE;
@@ -30,30 +36,52 @@ final class HlsMediaInfo {
         String group = chosen.getOrDefault("AUDIO", "");
         Map<String, String> rendition = Collections.emptyMap();
         String init = "",
-            first = "";
-        boolean protectedMedia = false,
-            ranges = false;
+            first = "",
+            mediaSequence = "0";
+        boolean ranges = false;
+        Map<String, String> activeKey = Collections.emptyMap(),
+            initKey = activeKey,
+            firstKey = activeKey;
+        int bestAudio = Integer.MIN_VALUE;
         for (String line : lines) {
             if (line.startsWith("#EXT-X-MEDIA:")) {
                 Map<String, String> a = attributes(line);
+                int rank =
+                    languageRank(a.getOrDefault("LANGUAGE", ""), audioLanguages) * 10 +
+                    (a.getOrDefault("DEFAULT", "").equals("YES")
+                        ? 2
+                        : a.getOrDefault("AUTOSELECT", "").equals("YES")
+                          ? 1
+                          : 0);
                 if (
                     a.getOrDefault("TYPE", "").equals("AUDIO") &&
                     !group.isEmpty() &&
                     group.equals(a.get("GROUP-ID")) &&
-                    (rendition.isEmpty() || a.getOrDefault("DEFAULT", "").equals("YES"))
-                ) rendition = a;
-            } else if (line.startsWith("#EXT-X-MAP:")) {
+                    rank > bestAudio
+                ) {
+                    rendition = a;
+                    bestAudio = rank;
+                }
+            } else if (first.isEmpty() && line.startsWith("#EXT-X-MAP:")) {
                 Map<String, String> a = attributes(line);
                 init = a.getOrDefault("URI", "");
+                initKey = activeKey;
                 ranges |= a.containsKey("BYTERANGE");
-            } else if (line.startsWith("#EXT-X-KEY:")) {
-                protectedMedia |= !attributes(line).getOrDefault("METHOD", "NONE").equals("NONE");
-            } else if (line.startsWith("#EXT-X-BYTERANGE:")) ranges = true;
-            else if (!line.startsWith("#") && !line.trim().isEmpty() && first.isEmpty()) first = line.trim();
+            } else if (first.isEmpty() && line.startsWith("#EXT-X-KEY:")) activeKey = attributes(line);
+            else if (first.isEmpty() && line.startsWith("#EXT-X-MEDIA-SEQUENCE:")) mediaSequence = line
+                .substring(line.indexOf(':') + 1)
+                .trim();
+            else if (first.isEmpty() && line.startsWith("#EXT-X-BYTERANGE:")) ranges = true;
+            else if (!line.startsWith("#") && !line.trim().isEmpty() && first.isEmpty()) {
+                first = line.trim();
+                firstKey = activeKey;
+            }
         }
         initialization = init;
         segment = variant.isEmpty() ? first : "";
-        encrypted = protectedMedia;
+        key = initialization.isEmpty() ? firstKey : initKey;
+        sequence = mediaSequence;
+        encrypted = !key.getOrDefault("METHOD", "NONE").equals("NONE");
         byteRanges = ranges;
         audioPlaylist = rendition.getOrDefault("URI", "");
         String[] size = chosen.getOrDefault("RESOLUTION", "").split("x");
@@ -80,6 +108,23 @@ final class HlsMediaInfo {
             0,
             0
         );
+    }
+
+    private static int languageRank(String actual, String preferred) {
+        String[] languages = preferred.split(",");
+        for (int i = 0; i < languages.length; i++) if (
+            canonicalLanguage(actual).equals(canonicalLanguage(languages[i])) && !actual.isEmpty()
+        ) return Math.max(1, 100 - i);
+        return 0;
+    }
+
+    private static String canonicalLanguage(String raw) {
+        String language = raw.trim().toLowerCase(Locale.ROOT).split("[-_]", 2)[0];
+        try {
+            return new Locale(language).getISO3Language();
+        } catch (MissingResourceException ignored) {
+            return language;
+        }
     }
 
     static Map<String, String> attributes(String line) {

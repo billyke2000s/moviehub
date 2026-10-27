@@ -1,14 +1,22 @@
 package local.tv.home;
 
+import android.media.MediaDataSource;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 /** Inspects init/segment headers through the same relay and total probe budget; never decodes. */
 final class HlsMetadataProbe {
 
-    static MediaFacts.Value read(String base, String text, int preferred, MediaMetadataProbe.Budget budget) {
-        HlsMediaInfo root = new HlsMediaInfo(text, preferred);
+    static MediaFacts.Value read(
+        String base,
+        String text,
+        int preferred,
+        String audioLanguages,
+        MediaMetadataProbe.Budget budget
+    ) {
+        HlsMediaInfo root = new HlsMediaInfo(text, preferred, audioLanguages);
         MediaFacts.Value declared = root.declared;
         HlsMediaInfo media = root;
         String location = base,
@@ -19,7 +27,7 @@ final class HlsMetadataProbe {
                 location = resource(location, media.variant);
                 String next = playlist(location, budget);
                 if (!next.startsWith("#EXTM3U")) return declared;
-                media = new HlsMediaInfo(next, preferred);
+                media = new HlsMediaInfo(next, preferred, audioLanguages);
                 if (media.declared.width > 0) declared = media.declared;
                 if (!media.audioPlaylist.isEmpty()) {
                     audioBase = location;
@@ -36,7 +44,11 @@ final class HlsMetadataProbe {
             audio = MediaFacts.UNKNOWN;
             try {
                 String audioLocation = resource(audioBase, audioPlaylist);
-                HlsMediaInfo audioInfo = new HlsMediaInfo(playlist(audioLocation, budget), preferred);
+                HlsMediaInfo audioInfo = new HlsMediaInfo(
+                    playlist(audioLocation, budget),
+                    preferred,
+                    audioLanguages
+                );
                 audio = headers(audioLocation, audioInfo, budget);
             } catch (Exception error) {
                 Diagnostics.recovered("HLS metadata audio", error);
@@ -68,23 +80,82 @@ final class HlsMetadataProbe {
         HlsMediaInfo info,
         MediaMetadataProbe.Budget budget
     ) {
-        // No keys, decryption, or potentially unrelated byte-range resources are inspected.
-        if (info.encrypted || info.byteRanges || !info.variant.isEmpty()) return MediaFacts.UNKNOWN;
+        if (info.byteRanges || !info.variant.isEmpty()) return MediaFacts.UNKNOWN;
+        if (info.encrypted && !HlsEncryption.supported(info.key)) return MediaFacts.UNKNOWN;
         String part = info.initialization.isEmpty() ? info.segment : info.initialization;
         if (part.isEmpty()) return MediaFacts.UNKNOWN;
         try (MediaMetadataProbe.Data data = new MediaMetadataProbe.Data(resource(base, part), budget)) {
-            return MediaMetadataProbe.extract(data);
+            if (!info.encrypted) return MediaMetadataProbe.extract(data);
+            // Ordinary identity AES-128 HLS uses a playlist-advertised 16-byte key. Never
+            // request SAMPLE-AES/DRM keys, and never persist or log key/IV material.
+            if (!info.initialization.isEmpty() && !info.key.containsKey("IV")) return MediaFacts.UNKNOWN;
+            byte[] key = new byte[17];
+            try (
+                MediaMetadataProbe.Data keyData = new MediaMetadataProbe.Data(
+                    resource(base, info.key.get("URI")),
+                    budget
+                )
+            ) {
+                if (keyData.readAt(0, key, 0, key.length) != 16) return MediaFacts.UNKNOWN;
+                byte[] encoded = new byte[65536];
+                int n = data.readAt(0, encoded, 0, encoded.length);
+                if (n < 16) return MediaFacts.UNKNOWN;
+                boolean complete = data.getSize() == n;
+                if (!complete) n -= n % 16;
+                byte[] decoded = HlsEncryption.decrypt(
+                    encoded,
+                    n,
+                    Arrays.copyOf(key, 16),
+                    HlsEncryption.iv(info.sequence, info.key.get("IV")),
+                    complete
+                );
+                try (Prefix plain = new Prefix(decoded, budget)) {
+                    return MediaMetadataProbe.extract(plain);
+                } finally {
+                    Arrays.fill(decoded, (byte) 0);
+                }
+            } finally {
+                Arrays.fill(key, (byte) 0);
+            }
         } catch (Exception error) {
             Diagnostics.recovered("HLS media headers", error);
             return MediaFacts.UNKNOWN;
         }
     }
 
+    private static final class Prefix extends MediaDataSource {
+
+        private final byte[] bytes;
+        private final MediaMetadataProbe.Budget budget;
+
+        Prefix(byte[] bytes, MediaMetadataProbe.Budget budget) {
+            this.bytes = bytes;
+            this.budget = budget;
+        }
+
+        public int readAt(long position, byte[] target, int offset, int size) throws IOException {
+            budget.timeout();
+            if (size == 0) return 0;
+            if (position < 0) throw new IOException("Invalid metadata offset");
+            if (position >= bytes.length) return -1;
+            int n = Math.min(size, bytes.length - (int) position);
+            System.arraycopy(bytes, (int) position, target, offset, n);
+            return n;
+        }
+
+        public long getSize() {
+            return bytes.length;
+        }
+
+        public void close() {}
+    }
+
     private static String playlist(String url, MediaMetadataProbe.Budget budget) throws IOException {
         try (MediaMetadataProbe.Data data = new MediaMetadataProbe.Data(url, budget)) {
             byte[] bytes = new byte[65536];
             int n = data.readAt(0, bytes, 0, bytes.length);
-            return n <= 0 ? "" : new String(bytes, 0, n, StandardCharsets.UTF_8).trim();
+            String text = n <= 0 ? "" : new String(bytes, 0, n, StandardCharsets.UTF_8).trim();
+            return text.startsWith("\uFEFF") ? text.substring(1) : text;
         }
     }
 

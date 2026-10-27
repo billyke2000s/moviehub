@@ -18,7 +18,8 @@ public class HlsMetadataProbeTest {
 
     private final Map<String, byte[]> resources = new java.util.concurrent.ConcurrentHashMap<>();
     private final AtomicInteger bytes = new AtomicInteger(),
-        segmentRequests = new AtomicInteger();
+        segmentRequests = new AtomicInteger(),
+        keyRequests = new AtomicInteger();
     private ServerSocket server;
     private volatile boolean closed;
 
@@ -73,6 +74,7 @@ public class HlsMetadataProbeTest {
             );
             String request = reader.readLine();
             String path = request.split(" ")[1];
+            if (path.endsWith(".key") || path.endsWith("key.bin")) keyRequests.incrementAndGet();
             byte[] data = resources.get(path);
             if (data == null) throw new IOException("Missing fixture resource");
             int from = 0,
@@ -160,14 +162,81 @@ public class HlsMetadataProbeTest {
     }
 
     @Test
-    public void encryptedMediaKeepsDeclarationsWithoutDownloadingSegmentsOrKeys() {
-        put("/media.m3u8", "#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI=\"key.bin\"\n#EXTINF:30,\nplayback.ts\n");
+    public void unsupportedEncryptionKeepsDeclarationsWithoutDownloadingSegmentsOrKeys() {
+        put(
+            "/media.m3u8",
+            "#EXTM3U\n#EXT-X-KEY:METHOD=SAMPLE-AES,KEYFORMAT=\"com.example.protected\",URI=\"key.bin\"\n#EXTINF:30,\nplayback.ts\n"
+        );
         MediaFacts.Value facts = read();
         assertEquals(MediaFacts.Origin.PLAYLIST, facts.origin);
         assertEquals("AAC", facts.audioCodec);
         assertEquals(0, facts.channels);
         assertEquals(0, segmentRequests.get());
+        assertEquals(0, keyRequests.get());
         assertTrue(facts.picture().contains("playlist"));
+    }
+
+    private byte[] encrypt(byte[] value, byte[] key, byte[] iv) throws Exception {
+        javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(
+            javax.crypto.Cipher.ENCRYPT_MODE,
+            new javax.crypto.spec.SecretKeySpec(key, "AES"),
+            new javax.crypto.spec.IvParameterSpec(iv)
+        );
+        return cipher.doFinal(value);
+    }
+
+    @Test
+    public void aes128SegmentHeadersRevealActualResolutionAndAudioWithinTheSameBudget() throws Exception {
+        byte[] key = new byte[16];
+        java.util.Arrays.fill(key, (byte) 23);
+        resources.put("/media.key", key);
+        resources.put(
+            "/encrypted.ts",
+            encrypt(resources.get("/playback.ts"), key, HlsEncryption.iv("257", null))
+        );
+        put(
+            "/media.m3u8",
+            "#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:257\n#EXT-X-KEY:METHOD=AES-128,URI=\"media.key\"\n#EXTINF:30,\nencrypted.ts\n"
+        );
+        MediaFacts.Value facts = read();
+        assertEquals(facts.describe(), MediaFacts.Origin.STREAM, facts.origin);
+        assertEquals(320, facts.width);
+        assertEquals(180, facts.height);
+        assertEquals("AAC", MediaFacts.audioName(facts.audioCodec));
+        assertEquals(1, facts.channels);
+        assertEquals(0, facts.durationMs);
+        assertEquals(1, keyRequests.get());
+        assertTrue(bytes.get() <= MediaMetadataProbe.BYTE_LIMIT);
+    }
+
+    @Test
+    public void aes128InitializationWithExplicitIvAndPreferredEnglishAudio() throws Exception {
+        byte[] key = new byte[16];
+        java.util.Arrays.fill(key, (byte) 17);
+        byte[] iv = HlsEncryption.iv("0", "0x0102030405060708090a0b0c0d0e0f10");
+        resources.put("/media.key", key);
+        resources.put("/encrypted-init.mp4", encrypt(resources.get("/metadata-init-video.mp4"), key, iv));
+        put(
+            "/master.m3u8",
+            "#EXTM3U\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"a\",DEFAULT=YES,LANGUAGE=\"ita\",URI=\"wrong.m3u8\"\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"a\",DEFAULT=NO,LANGUAGE=\"eng\",URI=\"english.m3u8\"\n#EXT-X-STREAM-INF:RESOLUTION=1920x1080,BANDWIDTH=4500000,CODECS=\"avc1.640028,mp4a.40.2\",AUDIO=\"a\"\nmedia.m3u8\n"
+        );
+        put(
+            "/media.m3u8",
+            "#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI=\"media.key\",IV=0x0102030405060708090a0b0c0d0e0f10\n#EXT-X-MAP:URI=\"encrypted-init.mp4\"\n#EXTINF:6,\nunneeded.m4s\n"
+        );
+        put(
+            "/english.m3u8",
+            "#EXTM3U\n#EXT-X-MAP:URI=\"metadata-init-audio.mp4\"\n#EXTINF:6,\nunneeded-audio.m4s\n"
+        );
+        MediaFacts.Value facts = read();
+        assertEquals(facts.describe(), MediaFacts.Origin.STREAM, facts.origin);
+        assertEquals(160, facts.width);
+        assertEquals(90, facts.height);
+        assertEquals("AAC", MediaFacts.audioName(facts.audioCodec));
+        assertEquals(1, facts.channels);
+        assertEquals("eng", facts.language);
+        assertEquals(1, keyRequests.get());
     }
 
     @Test

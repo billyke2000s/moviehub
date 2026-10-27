@@ -18,6 +18,15 @@ final class MediaMetadataProbe {
     static final long TIME_LIMIT_MS = 2000;
 
     static MediaFacts.Value read(SourceRepository.Source source, int preferred, AtomicBoolean cancelled) {
+        return read(source, preferred, "eng,en", cancelled);
+    }
+
+    static MediaFacts.Value read(
+        SourceRepository.Source source,
+        int preferred,
+        String audioLanguages,
+        AtomicBoolean cancelled
+    ) {
         ProviderRelay relay = null;
         String stage = "transport";
         try {
@@ -40,6 +49,7 @@ final class MediaMetadataProbe {
                     relay.url,
                     text,
                     preferred,
+                    audioLanguages,
                     budget
                 );
                 // DASH and unsupported/incomplete containers remain unknown until playback.
@@ -56,7 +66,7 @@ final class MediaMetadataProbe {
         }
     }
 
-    static MediaFacts.Value extract(Data data) throws IOException {
+    static MediaFacts.Value extract(MediaDataSource data) throws IOException {
         MediaExtractor extractor = new MediaExtractor();
         try {
             extractor.setDataSource(data);

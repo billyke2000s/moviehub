@@ -24,6 +24,7 @@ final class VodSearch implements AutoCloseable {
     private final SourceWindow<SourceRepository.Source> window;
     private final int target;
     private final int preferred;
+    private final String audioLanguages;
     private final long deadline;
     private final List<java.util.function.Consumer<SourceRepository.Source>> observers = new ArrayList<>();
     private static volatile VodSearch current;
@@ -71,6 +72,7 @@ final class VodSearch implements AutoCloseable {
         // Good enough to start at once: the preferred quality, but 1080p when 4K is preferred.
         target = Math.min(quality, 1080);
         preferred = quality;
+        audioLanguages = context.getSharedPreferences("ui", 0).getString("audioLanguage", "eng,en");
         Context app = context.getApplicationContext();
         // Runtime extraction and imports must never hold the UI thread.
         workers.submit(() -> {
@@ -244,7 +246,12 @@ final class VodSearch implements AutoCloseable {
         for (var observer : observers) observer.accept(source);
         try {
             metadata.execute(() -> {
-                MediaFacts.Value facts = MediaMetadataProbe.read(source, preferred, cancelled);
+                MediaFacts.Value facts = MediaMetadataProbe.read(
+                    source,
+                    preferred,
+                    audioLanguages,
+                    cancelled
+                );
                 if (cancelled.get()) return;
                 source.facts.inspection(facts);
                 if (PlaybackEnd.lengthMismatch(facts.durationMs, runtimeMs)) {

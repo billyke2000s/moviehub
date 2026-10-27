@@ -57,6 +57,29 @@ public class HlsMediaInfoTest {
             new HlsMediaInfo("#EXTM3U\n#EXT-X-STREAM-INF:RESOLUTION=garbage\n", 1080).declared.width == 0,
             "malformed metadata unknown"
         );
+        String audioGroups =
+            "#EXTM3U\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"g\",DEFAULT=YES,LANGUAGE=\"ita\",URI=\"it.m3u8\"\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"g\",DEFAULT=NO,LANGUAGE=\"eng\",URI=\"en.m3u8\"\n#EXT-X-STREAM-INF:RESOLUTION=1920x1080,AUDIO=\"g\"\nv.m3u8\n";
+        check(
+            new HlsMediaInfo(audioGroups, 1080).audioPlaylist.equals("en.m3u8"),
+            "English preference overrides Italian default"
+        );
+        check(
+            new HlsMediaInfo(audioGroups, 1080, "ita,it").audioPlaylist.equals("it.m3u8"),
+            "user audio preference respected"
+        );
+        HlsMediaInfo rotation = new HlsMediaInfo(
+            "#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:257\n#EXT-X-KEY:METHOD=AES-128,URI=\"key\"\na.ts\n#EXT-X-KEY:METHOD=NONE\nb.ts",
+            1080
+        );
+        check(
+            rotation.encrypted && rotation.key.get("URI").equals("key") && rotation.sequence.equals("257"),
+            "key belongs to inspected first segment"
+        );
+        HlsMediaInfo clearInit = new HlsMediaInfo(
+            "#EXTM3U\n#EXT-X-MAP:URI=\"init.mp4\"\n#EXT-X-KEY:METHOD=AES-128,URI=\"key\"\na.m4s",
+            1080
+        );
+        check(!clearInit.encrypted, "clear init must not use a later segment key");
         System.out.println(checks + " HLS metadata checks passed");
     }
 }
