@@ -193,6 +193,7 @@ final class ExoLive {
                 @Override
                 public void onPlaybackStateChanged(int state) {
                     if (state == Player.STATE_BUFFERING) {
+                        if (!"Buffering".equals(status) && !"Opening".equals(status)) event("Buffering");
                         status = "Buffering";
                         if (listener != null) listener.buffering(true);
                         if (

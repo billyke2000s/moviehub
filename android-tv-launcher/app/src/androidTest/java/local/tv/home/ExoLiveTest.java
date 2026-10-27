@@ -50,7 +50,32 @@ public final class ExoLiveTest {
             SystemClock.sleep(25);
         } while (SystemClock.elapsedRealtime() < until);
         UiEvidence.capture("experimental-timeout");
-        fail("Live TV player timed out; focus=" + (activity != null && activity.hasWindowFocus()));
+        String[] state = { "" };
+        remote.runOnMainSync(() -> {
+            ExoPlayer player = ExoLive.player();
+            state[0] =
+                player == null
+                    ? "no player"
+                    : "state " +
+                      player.getPlaybackState() +
+                      " playWhenReady " +
+                      player.getPlayWhenReady() +
+                      " playing " +
+                      player.isPlaying() +
+                      " position " +
+                      player.getCurrentPosition() +
+                      " rendered " +
+                      rendered();
+        });
+        String log = ExoLive.eventLog();
+        fail(
+            "Live TV player timed out; focus=" +
+                (activity != null && activity.hasWindowFocus()) +
+                "; " +
+                state[0] +
+                "; log: " +
+                log.substring(0, Math.min(900, log.length())).replace('\n', '|')
+        );
     }
 
     @Before
