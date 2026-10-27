@@ -16,7 +16,7 @@ final class VodNextEpisode implements AutoCloseable {
     private final VlcPlaybackActivity activity;
     private final SeriesPlayback.Metadata metadata;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
-    private boolean started, closed, transferred;
+    private boolean started, closed, transferred, adopted;
     private String currentKey;
     private long preparedAt;
     volatile SeriesPlayback.Next next;
@@ -102,12 +102,14 @@ final class VodNextEpisode implements AutoCloseable {
         // An interrupted Activity transition cannot retain a search indefinitely.
         expiry.postDelayed(() -> {
             synchronized (VodNextEpisode.class) {
-                if (handedOff == this) {
-                    handedOff = null;
-                    dispose();
-                }
+                if (handedOff == this) handedOff = null;
+                if (!adopted) dispose();
             }
         }, 60_000);
+    }
+
+    synchronized void claim() {
+        adopted = true;
     }
 
     static synchronized VodNextEpisode take(JSONObject current) {

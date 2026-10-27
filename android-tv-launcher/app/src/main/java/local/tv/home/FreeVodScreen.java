@@ -30,6 +30,7 @@ final class FreeVodScreen {
         VodNextEpisode prepared
     ) {
         try {
+            if (prepared != null) prepared.claim();
             SourceRepository repo = prepared == null ? new SourceRepository(activity.secrets) : prepared.repo;
             VodSearch search =
                 prepared == null
@@ -153,6 +154,7 @@ final class FreeVodScreen {
             };
             handler.post(refresh);
         } catch (Exception error) {
+            if (prepared != null && prepared.search != null) prepared.search.close();
             Diagnostics.recovered("Starting source search", error);
             activity.toast("Could not start the source search");
         }
