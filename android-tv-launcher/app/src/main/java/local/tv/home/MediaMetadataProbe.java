@@ -19,6 +19,7 @@ final class MediaMetadataProbe {
 
     static MediaFacts.Value read(SourceRepository.Source source, int preferred, AtomicBoolean cancelled) {
         ProviderRelay relay = null;
+        String stage = "transport";
         try {
             EngineSources.Stream transport = source.stream;
             if (transport == null) transport = new EngineSources.Stream(
@@ -28,6 +29,7 @@ final class MediaMetadataProbe {
             );
             relay = new ProviderRelay(transport);
             try (Data data = new Data(relay.url, cancelled)) {
+                stage = "header read";
                 byte[] prefix = new byte[65536];
                 int n = data.readAt(0, prefix, 0, prefix.length);
                 if (n <= 0) return MediaFacts.UNKNOWN;
@@ -37,7 +39,9 @@ final class MediaMetadataProbe {
                 if (text.startsWith("<")) return MediaFacts.UNKNOWN;
                 MediaExtractor extractor = new MediaExtractor();
                 try {
+                    stage = "container extraction";
                     extractor.setDataSource(data);
+                    stage = "track metadata";
                     int width = 0,
                         height = 0,
                         channels = 0,
@@ -85,7 +89,8 @@ final class MediaMetadataProbe {
                 }
             }
         } catch (Exception error) {
-            // Metadata absence is not a source failure, and exception messages may contain URLs.
+            // Keep only the phase and exception type, never URLs, headers or exception messages.
+            Diagnostics.recovered("Source metadata " + stage, error);
             return MediaFacts.UNKNOWN;
         } finally {
             if (relay != null) relay.close();

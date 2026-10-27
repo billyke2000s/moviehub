@@ -106,8 +106,12 @@ public class MediaMetadataProbeTest {
     @Test
     public void readsRealContainerTracksWithoutPlayingAndWithinByteBudget() throws Exception {
         SourceRepository.Source source = new SourceRepository.Source("4K Atmos", "https://8.8.8.8/vod.mp4");
+        ErrorLog.clear();
         MediaFacts.Value facts = MediaMetadataProbe.read(source, 2160, new AtomicBoolean());
-        assertEquals(MediaFacts.Origin.FILE, facts.origin);
+        StringBuilder diagnostic = new StringBuilder("requests=" + requests.get() + " bytes=" + bytes.get());
+        for (ErrorLog.Entry error : ErrorLog.snapshot())
+            diagnostic.append("; ").append(error.where).append(": ").append(error.type);
+        assertEquals(diagnostic.toString(), MediaFacts.Origin.FILE, facts.origin);
         assertEquals(160, facts.width);
         assertEquals(90, facts.height);
         assertEquals("AAC", MediaFacts.audioName(facts.audioCodec));
