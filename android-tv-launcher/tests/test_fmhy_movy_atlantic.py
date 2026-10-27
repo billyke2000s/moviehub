@@ -87,6 +87,7 @@ class MovyAtlanticTests(unittest.TestCase):
             results = atlantic.source().sources(self.movie(atlantic.source()), [])
         self.assertEqual(results[0]['originProvider'], 'Moscow')
         self.assertEqual(results[0]['quality'], 'Auto')
+        self.assertTrue(results[0]['segmentContainers'])
         query = parse_qs(urlparse(request.call_args.args[0]).query)
         self.assertEqual(query, {'tmdbId': ['27205'], 'type': ['movie']})
         with self.assertRaises(ValueError):

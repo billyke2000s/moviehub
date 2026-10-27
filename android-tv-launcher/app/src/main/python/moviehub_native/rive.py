@@ -37,7 +37,10 @@ class source:
         results = []
         # Primevids/dcloud supplied the measured 1080-class film; retain Citadel's
         # separate lower-resolution and language resources afterwards.
-        for backend in ('vanguard', 'primevids', 'citadel'):
+        backends = ('vanguard', 'primevids', 'citadel') if 'season' in query else ('primevids', 'citadel')
+        # Vanguard passed the packaged episode check; its movie audio/seek check
+        # did not pass. Keep movie discovery on the existing routes.
+        for backend in backends:
             client.check()
             try:
                 results.extend(self.backend(query, backend))

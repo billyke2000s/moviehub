@@ -87,13 +87,16 @@ class RiveTests(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['originProvider'], 'Citadel · English')
 
-    def test_vanguard_remains_separate_and_retains_its_4k_claim(self):
+    def test_vanguard_is_separate_for_episodes_but_not_enabled_for_movies(self):
         def request(url, **kwargs):
             rows = [dict(format='hls', quality='4K HDR', url='https://media.example/vanguard')]
             return {'data': {'sources': rows if 'provider=vanguard' in url else []}}
         with patch.object(client, 'request', side_effect=request), \
              patch.object(client, 'safe', side_effect=lambda url: url):
-            results = self.provider.sources(self.movie(), [])
+            key = self.provider.tvshow('', '1396', None, 'Breaking Bad', '', [], '2008')
+            episode = self.provider.episode(key, '', '1396', None, 'Pilot', '', 1, 1)
+            results = self.provider.sources(episode, [])
+            self.assertEqual(self.provider.sources(self.movie(), []), [])
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['originProvider'], 'Vanguard · 4K HDR')
         self.assertEqual(results[0]['quality'], '2160p')

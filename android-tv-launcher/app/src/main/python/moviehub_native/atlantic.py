@@ -53,7 +53,11 @@ class source:
         url = client.safe(decode(value))
         # The audit found a 1080-class stream; read each returned playlist's actual
         # resolution through the existing media probe rather than assigning 4K.
-        return [direct(url, self.base_link + '/', 'Moscow', 'Auto')]
+        item = direct(url, self.base_link + '/', 'Moscow', 'Auto')
+        # Moscow's TS segments are served as text/html, even during zero-range
+        # reads. Use the existing opt-in MIME/container handling, as Citadel does.
+        item['segmentContainers'] = True
+        return [item]
 
     def resolve(self, url):
         return url
