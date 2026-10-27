@@ -102,6 +102,12 @@ Last updated: 25 October 2026 (1.0 promotes the experimental line into MovieHub)
    layout. MainActivity now handles rotation itself (configChanges), so screens are not rebuilt
    when a phone turns.
 
+10. **Live TV stream rules ported from the LibVLC player (27 October 2026).** Buffering, dead-stream,
+   reconnect-budget and provider-link-renewal rules now apply to the ExoPlayer live player
+   (`LiveStallRules`). Checked by core tests and emulator fixtures only; not yet seen on a real
+   stalling provider stream or the TV box. Link renewal has no device test. The LibVLC 4 s relayed
+   buffer was not ported; watch for short pauses on FreeShot/DaddyLive/ZLive.
+
 ## Decisions
 
 - Version 7 → 8 channel upgrades must add `main` before renumbering the preferred copies.

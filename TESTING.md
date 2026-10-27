@@ -478,6 +478,17 @@ catalogue's gridKeys is inferred, not yet seen on a device.
 is reported once and not reopened when the listener has another source. The 15-second startup
 deadline (`LiveStage.START_MS`) has no device test; it uses the same failover path.
 
+`LiveStallRulesTest` (core, 44 checks) covers the stream rules ported from the LibVLC live player:
+startup and reopen startup not counted, a long stall moving on when another source waits, three
+stalls a minute moving on only with another source, a long stall with none reconnecting once, pausing
+never counting, a dead stream recovered while a still picture with moving sound is not, and two
+reconnects refilled only by 30 s of moving picture. `ExoLiveTest.aSourceThatKeepsBufferingMovesToTheNextSource`
+plays a two-copy fixture channel whose first copy sends a few seconds of HLS and then holds the
+connection open: after its pictures, eight seconds of buffering move to the working copy without
+reopening the stalled one. `aLongStallWithNoOtherSourceReconnectsThatSource` checks the same stall
+reconnects a single-source channel. Provider link renewal has no device test (it needs a provider
+link with an expiry); real provider streams are not exercised by fixtures.
+
 `LiveRacePlanTest` (core, 17 checks) covers the source race rules: priority by quality then copy order,
 at most three lookups and standbys together, waiting inside the three-second window only while a better
 copy is pending, no waiting after a failure, and exhaustion. `ExoLiveTest.aDeadCopyHandsOverToAWorking
