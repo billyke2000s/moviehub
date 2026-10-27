@@ -87,6 +87,8 @@ public class VlcPlaybackActivity extends Activity {
         if (target >= 0 && player != null && player.isSeekable()) player.setTime(target);
     };
     private boolean nextPromptShown, nextCancelled;
+    /** The furthest position actually reached; decides whether an end is a real finish. */
+    private long furthestMs;
 
     private void launchNextEpisode() {
         if (SourcesScreen.Binge.imdb == null || isFinishing()) return;
@@ -106,11 +108,12 @@ public class VlcPlaybackActivity extends Activity {
                 // While a skip is waiting, show where it will land.
                 long length = player.getLength(),
                     time = skips.pending() ? skips.target() : Math.max(0, player.getTime());
+                furthestMs = Math.max(furthestMs, player.getTime());
                 timeLeft.setText(length > 0 ? PlayerOverlay.timeLeft(Math.max(0, length - time)) : "—");
                 if (
                     (vod == null || !vod.rejectedMedia()) &&
                     !nextPromptShown &&
-                    length > 0 &&
+                    length >= PlaybackEnd.MIN_LENGTH_MS &&
                     time > 0 &&
                     length - time <= 10000 &&
                     length - time > 0 &&
@@ -441,6 +444,13 @@ public class VlcPlaybackActivity extends Activity {
             }
         } else if (event.type == MediaPlayer.Event.EndReached) {
             if (vod != null && vod.rejectShortVideo(true)) return;
+            furthestMs = Math.max(furthestMs, player.getTime());
+            if (!PlaybackEnd.finished(player.getLength(), furthestMs)) {
+                // A broken source: it ended at once, was a short clip, or was cut off part-way.
+                // Not watched, and no next episode; try another source instead.
+                showError("This source stopped before the end. Try another source or retry the connection.");
+                return;
+            }
             ended = true;
             ResumePoint.clear(this, id, titleKey);
             String episode = getIntent().getStringExtra("episodeKey");
@@ -589,7 +599,7 @@ public class VlcPlaybackActivity extends Activity {
             else if (resumeCheck > 0) position = resumeCheck;
             if (vod == null || !vod.rejectedMedia()) {
                 long length = player.getLength();
-                boolean completed = ended || ResumePoint.completed(position, length);
+                boolean completed = ended || PlaybackEnd.watchedWhenLeaving(position, length);
                 ResumePoint.save(this, id, titleKey, position, length, completed);
                 if (completed) {
                     String episode = getIntent().getStringExtra("episodeKey");

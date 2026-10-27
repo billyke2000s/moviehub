@@ -1,3 +1,7 @@
+## Unreleased
+
+- Fix: a broken film or episode source that ended at once, was a short clip or was cut off part-way was treated as watched, and in a series jumped straight to the next episode. Such an end is now a failed source (the player tries another one or offers Try again) and nothing is marked watched. The Up next prompt and leaving the player near the end also ignore media under two minutes (`PlaybackEnd`).
+
 ## 1.0.9 (27 October 2026)
 
 - Add Movy Boise and Miami as separate movie and episode sources, including verified 4K with audio. Add Rive Vanguard for episodes, using the existing source system.
