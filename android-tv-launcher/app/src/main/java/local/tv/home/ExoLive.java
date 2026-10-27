@@ -65,8 +65,12 @@ final class ExoLive {
         }
     }
 
-    /** Reopens per channel before the owner is told it failed. */
+    /** Reopens per selection before the owner is told it failed (see {@link LiveStallRules}). */
     static final int MAX_REOPENS = 2;
+    /** The earliest and latest a provider link is renewed, before it expires (as LivePlayer). */
+    static final long RENEW_MIN_MS = 30_000,
+        RENEW_MAX_MS = 3 * 3600_000L,
+        RENEW_AHEAD_MS = 60_000;
     /** Events kept for the log. */
     static final int LOG_SIZE = 60;
 
@@ -79,7 +83,14 @@ final class ExoLive {
     private static ProviderRelay relay;
     private static Object owner;
     private static Listener listener;
-    private static int generation, reopens;
+    private static int generation;
+    /** Buffering, dead-stream and reconnect rules ported from the LibVLC live player. */
+    private static final LiveStallRules rules = new LiveStallRules();
+    /** The provider cache was cleared once for this selection, as LivePlayer.retryProvider did. */
+    private static boolean engineRefreshed;
+    private static Runnable renewal;
+    private static Future<?> renewing;
+    private static NativeHttp renewingHttp;
     private static Runnable pendingReopen;
     private static Future<?> resolution;
     private static NativeHttp resolvingHttp;
@@ -97,6 +108,7 @@ final class ExoLive {
         @Override
         public void run() {
             checkPicture();
+            checkStalls();
             main.postDelayed(this, 1000);
         }
     };
@@ -131,10 +143,11 @@ final class ExoLive {
         app = context.getApplicationContext();
         ensurePlayer();
         if (!locator.equals(url)) {
-            reopens = 0;
             hlsRetried = false;
             event("New channel");
         }
+        // The race chose this source: it gets its own reconnects, as a source chosen by hand.
+        newSelection();
         cancelReopen();
         cancelResolution();
         url = locator;
@@ -153,7 +166,8 @@ final class ExoLive {
                   ? PlutoSource.USER_AGENT
                   : null,
             stream == null ? null : stream.referer,
-            source.relay
+            source.relay,
+            stream == null ? 0 : stream.expiresAt
         );
     }
 
@@ -165,10 +179,11 @@ final class ExoLive {
             return true;
         }
         if (!locator.equals(url)) {
-            reopens = 0;
             hlsRetried = false;
             event("New channel");
         }
+        // A new channel, or the owner asked to start this one again: a fresh reconnect budget.
+        newSelection();
         cancelReopen();
         url = locator;
         open();
@@ -193,9 +208,23 @@ final class ExoLive {
                     if (state == Player.STATE_BUFFERING) {
                         status = "Buffering";
                         if (listener != null) listener.buffering(true);
+                        if (
+                            rules.buffering(
+                                SystemClock.elapsedRealtime(),
+                                true,
+                                player.getPlayWhenReady(),
+                                hasAlternative()
+                            )
+                        ) stalled("This source kept buffering");
                     } else if (state == Player.STATE_READY) {
                         status = "Playing";
                         if (listener != null) listener.buffering(false);
+                        rules.buffering(
+                            SystemClock.elapsedRealtime(),
+                            false,
+                            player.getPlayWhenReady(),
+                            hasAlternative()
+                        );
                     } else if (state == Player.STATE_ENDED) {
                         event("Stream ended");
                         reopen("The live stream ended");
@@ -204,7 +233,9 @@ final class ExoLive {
 
                 @Override
                 public void onRenderedFirstFrame() {
-                    reopens = 0;
+                    // Reconnects are refilled by 30 s of moving picture (LiveStallRules), not by
+                    // one frame: a stream that plays briefly and dies must not reopen forever.
+                    rules.firstPicture();
                     if (listener != null) listener.playing();
                 }
 
@@ -328,7 +359,48 @@ final class ExoLive {
         lastRendered = rendered;
     }
 
-    private static void event(String text) {
+    /**
+     * Once a second: the buffering and dead-stream rules (see {@link LiveStallRules}). Nothing is
+     * judged while a link is being looked up or a reopen is waiting.
+     */
+    private static void checkStalls() {
+        if (player == null || url == null || listener == null || pendingReopen != null) return;
+        if (resolution != null && !resolution.isDone()) return;
+        long frames = -1;
+        DecoderCounters counters = player.getVideoDecoderCounters();
+        if (counters != null) {
+            counters.ensureUpdated();
+            frames = counters.renderedOutputBufferCount;
+        }
+        if (
+            rules.tick(
+                SystemClock.elapsedRealtime(),
+                player.getCurrentPosition(),
+                frames,
+                player.isPlaying(),
+                player.getPlayWhenReady(),
+                hasAlternative()
+            )
+        ) stalled("This source stopped playing");
+    }
+
+    /** A rule above says this source is stuck: another source when one waits, else a reconnect. */
+    private static void stalled(String reason) {
+        event(reason);
+        reopen(reason);
+    }
+
+    private static boolean hasAlternative() {
+        return listener != null && listener.hasAlternative();
+    }
+
+    private static void newSelection() {
+        rules.newSelection();
+        engineRefreshed = false;
+        cancelRenewal();
+    }
+
+    static void event(String text) {
         String time = new SimpleDateFormat("HH:mm:ss", Locale.ROOT).format(new Date());
         log.addFirst(time + "  " + text);
         while (log.size() > LOG_SIZE) log.removeLast();
@@ -342,7 +414,10 @@ final class ExoLive {
         return text.toString().trim();
     }
 
-    /** Reopens the channel (a fresh link lookup), or tells the owner after {@link #MAX_REOPENS}. */
+    /**
+     * Reopens the channel (a fresh link lookup), or tells the owner once the reconnect budget
+     * ({@link #MAX_REOPENS}, refilled after 30 s of moving picture) is used.
+     */
     private static void reopen(String reason) {
         if (url == null) return;
         // Another copy is waiting: go to it now. Reopening a failed source (a fresh lookup each
@@ -354,15 +429,20 @@ final class ExoLive {
             listener.failed(reason);
             return;
         }
-        if (reopens >= MAX_REOPENS) {
+        if (!rules.reconnect()) {
             status = "Failed: " + reason;
             if (listener != null) listener.failed(reason);
             return;
         }
-        reopens++;
         // Retire the selected upstream player, rather than preferring the same failed one again.
         if (AdapterSources.locator(url)) AdapterSources.failed(url);
-        status = "Reopening (" + reopens + " of " + MAX_REOPENS + ")";
+        // Look the link up afresh rather than reusing a cached one (as LivePlayer.retryProvider).
+        if (EngineSources.locator(url) && !engineRefreshed) {
+            engineRefreshed = true;
+            EngineSources.invalidate();
+        }
+        if (PlutoSource.nativeUrl(url)) PlutoSource.invalidate();
+        status = "Reopening (" + rules.reconnects() + " of " + MAX_REOPENS + ")";
         event("Reopening the channel (" + reasonShort(reason) + ")");
         cancelReopen();
         int ticket = generation;
@@ -392,6 +472,7 @@ final class ExoLive {
     private static void open() {
         cancelReopen();
         cancelResolution();
+        cancelRenewal();
         int ticket = ++generation;
         String locator = url;
         if (locator == null || player == null) return;
@@ -400,7 +481,7 @@ final class ExoLive {
         status = "Finding the stream";
         long started = SystemClock.elapsedRealtime();
         if (!(PlutoSource.nativeUrl(locator) || EngineSources.locator(locator))) {
-            start(ticket, locator, null, null, null);
+            start(ticket, locator, null, null, null, 0);
             return;
         }
         Context context = app;
@@ -417,7 +498,8 @@ final class ExoLive {
                         source.relay == null ? source.url : source.relay.url,
                         stream == null ? PlutoSource.USER_AGENT : stream.userAgent,
                         stream == null ? null : stream.referer,
-                        source.relay
+                        source.relay,
+                        stream == null ? 0 : stream.expiresAt
                     );
                 });
             } catch (Exception e) {
@@ -446,13 +528,15 @@ final class ExoLive {
         String stream,
         String userAgent,
         String referer,
-        ProviderRelay next
+        ProviderRelay next,
+        long expiresAt
     ) {
         if (ticket != generation || player == null) {
             if (next != null) next.close();
             return;
         }
         relay = next;
+        rules.opened();
         DefaultHttpDataSource.Factory http = new DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(15_000)
@@ -472,6 +556,76 @@ final class ExoLive {
         player.prepare();
         player.play();
         status = "Opening";
+        scheduleRenewal(ticket, expiresAt);
+    }
+
+    /**
+     * A provider link that expires is looked up again a minute before it does (at least 30 s
+     * and at most three hours ahead), as the LibVLC live player did. The old link keeps playing
+     * during the lookup; a failed lookup leaves it playing.
+     */
+    private static void scheduleRenewal(int ticket, long expiresAt) {
+        cancelRenewal();
+        if (expiresAt <= 0 || url == null) return;
+        long delay = Math.max(
+            RENEW_MIN_MS,
+            Math.min(RENEW_MAX_MS, expiresAt - System.currentTimeMillis() - RENEW_AHEAD_MS)
+        );
+        String locator = url;
+        renewal = () -> {
+            renewal = null;
+            if (ticket != generation || player == null || !locator.equals(url)) return;
+            // Paused or stalled: look again shortly rather than restarting a picture nobody sees.
+            if (!player.isPlaying()) scheduleRenewal(ticket, System.currentTimeMillis() + RENEW_AHEAD_MS);
+            else renew(ticket, locator);
+        };
+        main.postDelayed(renewal, delay);
+    }
+
+    private static void renew(int ticket, String locator) {
+        event("Renewing the provider link before it expires");
+        Context context = app;
+        NativeHttp http = new NativeHttp();
+        renewingHttp = http;
+        renewing = resolver.submit(() -> {
+            try {
+                LiveStream.Resolution source = LiveStream.resolve(context, locator, http, null);
+                main.post(() -> {
+                    if (ticket != generation || player == null || !locator.equals(url)) {
+                        if (source.relay != null) source.relay.close();
+                        return;
+                    }
+                    event("Provider link renewed");
+                    EngineSources.Stream stream = source.provider;
+                    ProviderRelay old = relay;
+                    relay = null;
+                    start(
+                        ++generation,
+                        source.relay == null ? source.url : source.relay.url,
+                        stream == null ? PlutoSource.USER_AGENT : stream.userAgent,
+                        stream == null ? null : stream.referer,
+                        source.relay,
+                        stream == null ? 0 : stream.expiresAt
+                    );
+                    // Closed after the new link is set, so the old one is not cut mid-read first.
+                    if (old != null) old.close();
+                });
+            } catch (Exception e) {
+                Diagnostics.recovered("Renewing a live provider link", e);
+                main.post(() -> {
+                    if (ticket == generation) event("Link renewal failed; still playing the old link");
+                });
+            }
+        });
+    }
+
+    private static void cancelRenewal() {
+        if (renewal != null) main.removeCallbacks(renewal);
+        renewal = null;
+        if (renewingHttp != null) renewingHttp.cancel();
+        if (renewing != null) renewing.cancel(true);
+        renewingHttp = null;
+        renewing = null;
     }
 
     /** Draws the picture in {@code picture} (the view from {@link #createVideoView}) for {@code who}. */
@@ -497,6 +651,7 @@ final class ExoLive {
         generation++;
         cancelReopen();
         cancelResolution();
+        cancelRenewal();
         main.removeCallbacks(watch);
         listener = null;
         owner = null;
@@ -509,7 +664,8 @@ final class ExoLive {
         lastRendered = -1;
         stillSeconds = 0;
         drawnFps = 0;
-        reopens = 0;
+        rules.newSelection();
+        engineRefreshed = false;
         hlsRetried = false;
         decoder = "";
         closeRelay();

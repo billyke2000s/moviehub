@@ -34,6 +34,7 @@ public final class ExoLiveTest {
     private byte[] media;
     private final AtomicInteger opens = new AtomicInteger();
     private final AtomicInteger slowRequests = new AtomicInteger();
+    private final AtomicInteger stallRequests = new AtomicInteger();
     private boolean oldHttp, oldAutoUpdates;
 
     private String link(String path) {
@@ -108,6 +109,24 @@ public final class ExoLiveTest {
                     );
                 return;
             }
+            if (path.equals("/stall-segment.ts")) {
+                // A quarter of the stream (a few seconds of pictures), then nothing more: the
+                // player buffers with the connection still open, as a stalled live source does.
+                stallRequests.incrementAndGet();
+                OutputStream out = connection.getOutputStream();
+                out.write(
+                    (
+                        "HTTP/1.1 200 OK\r\nContent-Type: video/mp2t\r\nContent-Length: " +
+                        media.length +
+                        "\r\nConnection: close\r\n\r\n"
+                    ).getBytes(StandardCharsets.US_ASCII)
+                );
+                out.write(media, 0, media.length / 4);
+                out.flush();
+                long until = SystemClock.elapsedRealtime() + 25000;
+                while (!closed && SystemClock.elapsedRealtime() < until) SystemClock.sleep(100);
+                return;
+            }
             if (path.equals("/slow.m3u8")) {
                 slowRequests.incrementAndGet();
                 // Longer than LiveStage's old periodic retry, shorter than the HTTP read timeout.
@@ -125,7 +144,11 @@ public final class ExoLiveTest {
                 mime = "application/vnd.apple.mpegurl";
                 bytes = (
                     "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:31\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:30,\n" +
-                    (path.equals("/subs.m3u8") ? "subtitle.vtt" : "segment.ts") +
+                    (path.equals("/subs.m3u8")
+                        ? "subtitle.vtt"
+                        : path.equals("/stall.m3u8")
+                          ? "stall-segment.ts"
+                          : "segment.ts") +
                     "\n#EXT-X-ENDLIST\n"
                 ).getBytes(StandardCharsets.UTF_8);
             } else if (path.equals("/subtitle.vtt")) {
@@ -379,6 +402,52 @@ public final class ExoLiveTest {
         });
         assertEquals("The slow copy is never opened while a working one plays", 0, slowRequests.get());
         picturesAdvance();
+    }
+
+    /** Two copies of one channel in guide order: one that stalls, then one that works. */
+    private void stallingChannel() throws Exception {
+        ChannelDatabase db = ChannelDatabase.get(remote.getTargetContext());
+        String[] sources = { "m3u", "fta" };
+        String[] paths = { "/stall.m3u8", "/media.m3u8" };
+        for (int i = 0; i < sources.length; i++) {
+            ChannelDatabase.Writer writer = db.writer(sources[i], () -> {}, n -> {});
+            try {
+                writer.accept(
+                    new Playlist.Channel(
+                        "Stall Channel UK",
+                        link(paths[i]),
+                        "Entertainment",
+                        "",
+                        "StallChannel.uk"
+                    )
+                );
+                writer.commit();
+            } finally {
+                writer.abort();
+            }
+        }
+    }
+
+    @Test
+    public void aSourceThatKeepsBufferingMovesToTheNextSource() throws Exception {
+        stallingChannel();
+        remote.runOnMainSync(() ->
+            activity.stage.fullScreen("Stall Channel UK", link("/stall.m3u8"), "stall")
+        );
+        // The stalling copy shows pictures first, so its buffering counts (startup does not).
+        await(() -> ExoLive.isPlaying() && rendered() > 5);
+        // LiveBuffering's eight seconds without pictures move it to the working copy.
+        await(() -> ExoLive.eventLog().contains("This source kept buffering"));
+        await(() -> activity.stage.zapper().selectedCopy() == 1 && ExoLive.isPlaying());
+        picturesAdvance();
+        assertEquals("The stalled copy is not reopened while another works", 1, stallRequests.get());
+    }
+
+    @Test
+    public void aLongStallWithNoOtherSourceReconnectsThatSource() {
+        play("/stall.m3u8");
+        await(() -> ExoLive.eventLog().contains("Reopening the channel (This source kept buffering"));
+        await(() -> stallRequests.get() >= 2);
     }
 
     @Test
