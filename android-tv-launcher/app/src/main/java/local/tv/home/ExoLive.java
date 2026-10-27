@@ -17,15 +17,10 @@ import androidx.media3.common.Player;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.DecoderCounters;
-import androidx.media3.exoplayer.DecoderReuseEvaluation;
 import androidx.media3.exoplayer.ExoPlayer;
-import androidx.media3.exoplayer.analytics.AnalyticsListener;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.PlayerView;
-import java.text.SimpleDateFormat;
-import java.util.ArrayDeque;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -72,7 +67,7 @@ final class ExoLive {
         RENEW_MAX_MS = 3 * 3600_000L,
         RENEW_AHEAD_MS = 60_000;
     /** Events kept for the log. */
-    static final int LOG_SIZE = 60;
+    static final int LOG_SIZE = ExoLiveLog.SIZE;
 
     private static final Handler main = new Handler(Looper.getMainLooper());
     private static final ExecutorService resolver = Executors.newSingleThreadExecutor();
@@ -95,19 +90,11 @@ final class ExoLive {
     private static Future<?> resolution;
     private static NativeHttp resolvingHttp;
     private static boolean hlsRetried;
-    private static String status = "Idle",
-        decoder = "";
-    private static final ArrayDeque<String> log = new ArrayDeque<>();
-    /** Rendered-frame count at the last check, to notice the picture stopping while sound plays. */
-    private static int lastRendered = -1,
-        stillSeconds;
-    /** Frames actually drawn per second, from the last one-second check; 0 when unknown. */
-    private static float drawnFps;
-    private static long lastCheckAt;
+    private static String status = "Idle";
     private static final Runnable watch = new Runnable() {
         @Override
         public void run() {
-            checkPicture();
+            ExoLiveLog.checkPicture(player);
             checkStalls();
             main.postDelayed(this, 1000);
         }
@@ -263,100 +250,9 @@ final class ExoLive {
                 }
             }
         );
-        player.addAnalyticsListener(
-            new AnalyticsListener() {
-                @Override
-                public void onVideoDecoderInitialized(
-                    EventTime time,
-                    String name,
-                    long initializedTimestampMs,
-                    long initializationDurationMs
-                ) {
-                    decoder = name;
-                    event("Video decoder " + name);
-                }
-
-                @Override
-                public void onVideoInputFormatChanged(
-                    EventTime time,
-                    Format format,
-                    DecoderReuseEvaluation reuse
-                ) {
-                    event(
-                        "Video " +
-                            format.width +
-                            "×" +
-                            format.height +
-                            (format.frameRate > 0
-                                ? String.format(Locale.ROOT, " %.2f fps", format.frameRate)
-                                : "") +
-                            (format.codecs == null ? "" : " " + format.codecs) +
-                            (format.bitrate > 0 ? " " + format.bitrate / 1000 + " kb/s" : "") +
-                            (reuse == null
-                                ? ""
-                                : reuse.result == DecoderReuseEvaluation.REUSE_RESULT_NO
-                                  ? " (decoder restarted)"
-                                  : "")
-                    );
-                }
-
-                @Override
-                public void onDroppedVideoFrames(EventTime time, int dropped, long elapsedMs) {
-                    event("Dropped " + dropped + " frames in " + elapsedMs + " ms");
-                }
-
-                @Override
-                public void onSurfaceSizeChanged(EventTime time, int width, int height) {
-                    event("Picture size " + width + "×" + height);
-                }
-
-                @Override
-                public void onVideoCodecError(EventTime time, Exception error) {
-                    event("Video decoder error " + error.getClass().getSimpleName());
-                }
-
-                @Override
-                public void onAudioUnderrun(
-                    EventTime time,
-                    int bufferSize,
-                    long bufferSizeMs,
-                    long elapsedSinceLastFeedMs
-                ) {
-                    event("Sound ran short");
-                }
-            }
-        );
+        player.addAnalyticsListener(ExoLiveLog.analytics());
         main.removeCallbacks(watch);
         main.postDelayed(watch, 1000);
-    }
-
-    /** Records (only) when the picture stops advancing while the sound plays on. */
-    private static void checkPicture() {
-        if (player == null || !player.isPlaying()) {
-            lastRendered = -1;
-            stillSeconds = 0;
-            drawnFps = 0;
-            return;
-        }
-        DecoderCounters counters = player.getVideoDecoderCounters();
-        if (counters == null) return;
-        counters.ensureUpdated();
-        int rendered = counters.renderedOutputBufferCount;
-        long now = SystemClock.elapsedRealtime();
-        long elapsed = now - lastCheckAt;
-        // Only a steady one-second sample counts; a restart or a late check is not measured.
-        if (lastRendered >= 0 && rendered >= lastRendered && elapsed >= 500 && elapsed <= 3000) {
-            drawnFps = (1000f * (rendered - lastRendered)) / elapsed;
-        }
-        lastCheckAt = now;
-        if (rendered == lastRendered) {
-            stillSeconds++;
-            if (stillSeconds == 3) event("Picture stopped advancing while sound plays");
-        } else {
-            if (stillSeconds >= 3) event("Picture moving again after " + stillSeconds + " s");
-            stillSeconds = 0;
-        }
-        lastRendered = rendered;
     }
 
     /**
@@ -394,24 +290,19 @@ final class ExoLive {
         return listener != null && listener.hasAlternative();
     }
 
-    private static void newSelection() {
-        rules.newSelection();
-        engineRefreshed = false;
-        cancelRenewal();
-    }
-
-    static void event(String text) {
-        String time = new SimpleDateFormat("HH:mm:ss", Locale.ROOT).format(new Date());
-        log.addFirst(time + "  " + text);
-        while (log.size() > LOG_SIZE) log.removeLast();
+    private static void event(String text) {
+        ExoLiveLog.event(text);
     }
 
     /** The event log, newest first. */
     static String eventLog() {
-        if (log.isEmpty()) return "Nothing recorded yet.";
-        StringBuilder text = new StringBuilder();
-        for (String line : log) text.append(line).append('\n');
-        return text.toString().trim();
+        return ExoLiveLog.eventLog();
+    }
+
+    private static void newSelection() {
+        rules.newSelection();
+        engineRefreshed = false;
+        cancelRenewal();
     }
 
     /**
@@ -661,13 +552,10 @@ final class ExoLive {
             player.release();
             player = null;
         }
-        lastRendered = -1;
-        stillSeconds = 0;
-        drawnFps = 0;
+        ExoLiveLog.reset();
         rules.newSelection();
         engineRefreshed = false;
         hlsRetried = false;
-        decoder = "";
         closeRelay();
         url = null;
         owner = null;
@@ -725,13 +613,14 @@ final class ExoLive {
         Format format = player.getVideoFormat();
         if (format == null) return "";
         // The stream's own rate when it states one; otherwise the rate measured on screen.
-        float fps = format.frameRate > 0 ? format.frameRate : Math.round(drawnFps);
+        float fps = format.frameRate > 0 ? format.frameRate : Math.round(ExoLiveLog.drawnFps());
         int bitrate = format.bitrate > 0 ? format.bitrate : format.averageBitrate;
         String codec = format.sampleMimeType != null ? format.sampleMimeType : format.codecs;
         return VideoDetails.describe(format.width, format.height, fps, codec, bitrate);
     }
 
     static String status() {
+        String decoder = ExoLiveLog.decoder();
         return status + (decoder.isEmpty() ? "" : " · " + decoder);
     }
 }
