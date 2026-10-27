@@ -1,6 +1,10 @@
 # Testing
 
-## VOD runtime, metadata and continuation candidate (27 October 2026)
+## VOD runtime, metadata and continuation — 1.0.15 (27 October 2026)
+Release evidence: **1,235 core checks passed locally** using Eclipse JDT targeting Java 17. Final candidate `2934cd7824fd665e248903d224f5dac0d49335e0` passed [Android build/lint, signing and both emulator suites](https://github.com/billyke2000s/moviehub/actions/runs/40590471873), plus [provider-engine CI](https://github.com/billyke2000s/moviehub/actions/runs/40590471944). The unchanged merged app also passed [main CI](https://github.com/billyke2000s/moviehub/actions/runs/40592864239).
+
+[Publish run 40593042067](https://github.com/billyke2000s/moviehub/actions/runs/40593042067) first stopped before signing/upload because `PlaybackTest.playingFilmCorrectsAnOverstatedLabelAndOnlySuggestsAConfirmedBetterSource` reported selected audio `-1` despite an available AAC track. The full publish job was rerun without code or assertion changes and passed, publishing 1.0.15/code 115. The cause of the initial audio-selection failure is not established. Both fixture tracks span the full 150 seconds. The public update manifest and uploaded APK SHA-256 were cross-checked after publication. This is emulator/fixture evidence, not a physical-TV or exact failing live-link result.
+
 
 `FreeVodRowsTest` checks separate links from one website, separate routes to the same URL, direct selection without a submenu, removal and metadata updates retaining the same focused button. MediaFactsTest checks the exact quality/channels/website order, formats/bitrates and explicit unknown/playlist labels. These fixture checks do not establish live-source availability.
 
