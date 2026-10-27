@@ -14,8 +14,6 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
-import androidx.media3.common.TrackSelectionOverride;
-import androidx.media3.common.Tracks;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.DecoderCounters;
@@ -27,10 +25,8 @@ import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.PlayerView;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -581,111 +577,5 @@ final class ExoLive {
 
     static String status() {
         return status + (decoder.isEmpty() ? "" : " · " + decoder);
-    }
-
-    // ---- Tracks ---------------------------------------------------------------------------------
-
-    /** Audio tracks of the channel playing, as "Language · codec · channels". */
-    static List<String> audioTracks() {
-        List<String> names = new ArrayList<>();
-        for (Format format : formats(C.TRACK_TYPE_AUDIO)) {
-            String language = format.language == null ? "Unknown language" : format.language;
-            String codec =
-                format.sampleMimeType == null ? "" : " · " + format.sampleMimeType.replace("audio/", "");
-            String layout = format.channelCount > 0 ? " · " + format.channelCount + " ch" : "";
-            names.add(language + codec + layout);
-        }
-        return names;
-    }
-
-    static int selectedAudioTrack() {
-        return selected(C.TRACK_TYPE_AUDIO);
-    }
-
-    static void selectAudioTrack(int wanted) {
-        select(C.TRACK_TYPE_AUDIO, wanted);
-    }
-
-    /** Subtitle tracks, as "Language" (with a label when the stream gives one). */
-    static List<String> subtitleTracks() {
-        List<String> names = new ArrayList<>();
-        for (Format format : formats(C.TRACK_TYPE_TEXT)) {
-            String language = format.language == null ? "Unknown language" : format.language;
-            names.add(format.label == null ? language : language + " · " + format.label);
-        }
-        return names;
-    }
-
-    /** The subtitle track shown, or -1 when subtitles are off. */
-    static int selectedSubtitleTrack() {
-        if (
-            player == null ||
-            player.getTrackSelectionParameters().disabledTrackTypes.contains(C.TRACK_TYPE_TEXT)
-        ) {
-            return -1;
-        }
-        return selected(C.TRACK_TYPE_TEXT);
-    }
-
-    /** Shows subtitle track {@code wanted}, or turns subtitles off when it is -1. */
-    static void selectSubtitleTrack(int wanted) {
-        if (player == null) return;
-        if (wanted < 0) {
-            player.setTrackSelectionParameters(
-                player
-                    .getTrackSelectionParameters()
-                    .buildUpon()
-                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
-                    .build()
-            );
-            return;
-        }
-        player.setTrackSelectionParameters(
-            player
-                .getTrackSelectionParameters()
-                .buildUpon()
-                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
-                .build()
-        );
-        select(C.TRACK_TYPE_TEXT, wanted);
-    }
-
-    private static List<Format> formats(int type) {
-        List<Format> formats = new ArrayList<>();
-        if (player == null) return formats;
-        for (Tracks.Group group : player.getCurrentTracks().getGroups()) {
-            if (group.getType() != type) continue;
-            for (int i = 0; i < group.length; i++) formats.add(group.getTrackFormat(i));
-        }
-        return formats;
-    }
-
-    private static int selected(int type) {
-        if (player == null) return -1;
-        int index = 0;
-        for (Tracks.Group group : player.getCurrentTracks().getGroups()) {
-            if (group.getType() != type) continue;
-            for (int i = 0; i < group.length; i++, index++) if (group.isTrackSelected(i)) return index;
-        }
-        return -1;
-    }
-
-    private static void select(int type, int wanted) {
-        if (player == null) return;
-        int index = 0;
-        for (Tracks.Group group : player.getCurrentTracks().getGroups()) {
-            if (group.getType() != type) continue;
-            for (int i = 0; i < group.length; i++, index++) {
-                if (index != wanted) continue;
-                player.setTrackSelectionParameters(
-                    player
-                        .getTrackSelectionParameters()
-                        .buildUpon()
-                        .setOverrideForType(new TrackSelectionOverride(group.getMediaTrackGroup(), i))
-                        .build()
-                );
-                return;
-            }
-        }
     }
 }

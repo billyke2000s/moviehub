@@ -434,15 +434,15 @@ public final class ExoLiveTest {
     @Test
     public void audioSubtitlesAndRemoteBannerUseTheExoPlayer() {
         play("/master.m3u8");
-        await(() -> !ExoLive.audioTracks().isEmpty() && !ExoLive.subtitleTracks().isEmpty());
+        await(() -> !ExoLiveTracks.audioTracks().isEmpty() && !ExoLiveTracks.subtitleTracks().isEmpty());
         remote.runOnMainSync(() -> {
-            ExoLive.selectAudioTrack(0);
-            ExoLive.selectSubtitleTrack(0);
+            ExoLiveTracks.selectAudioTrack(0);
+            ExoLiveTracks.selectSubtitleTrack(0);
         });
-        await(() -> ExoLive.selectedAudioTrack() == 0 && ExoLive.selectedSubtitleTrack() == 0);
+        await(() -> ExoLiveTracks.selectedAudioTrack() == 0 && ExoLiveTracks.selectedSubtitleTrack() == 0);
         remote.runOnMainSync(() -> {
-            ExoLive.selectSubtitleTrack(-1);
-            assertEquals(-1, ExoLive.selectedSubtitleTrack());
+            ExoLiveTracks.selectSubtitleTrack(-1);
+            assertEquals(-1, ExoLiveTracks.selectedSubtitleTrack());
             activity.stage.zapper().overlay.hideBanner();
         });
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);

@@ -25,7 +25,7 @@ final class ExoMenus implements LiveMenus {
     }
 
     private void subtitles() {
-        List<String> tracks = ExoLive.subtitleTracks();
+        List<String> tracks = ExoLiveTracks.subtitleTracks();
         screen.dialogOpen(true);
         if (tracks.isEmpty()) {
             SidePanel.of(screen.activity(), "Subtitles")
@@ -39,15 +39,15 @@ final class ExoMenus implements LiveMenus {
         names[0] = "Off";
         for (int i = 0; i < tracks.size(); i++) names[i + 1] = tracks.get(i);
         SidePanel.of(screen.activity(), "Subtitles")
-            .choices(names, ExoLive.selectedSubtitleTrack() + 1, which ->
-                ExoLive.selectSubtitleTrack(which - 1)
+            .choices(names, ExoLiveTracks.selectedSubtitleTrack() + 1, which ->
+                ExoLiveTracks.selectSubtitleTrack(which - 1)
             )
             .onDismiss(screen::panelClosed)
             .show();
     }
 
     private void audio() {
-        List<String> tracks = ExoLive.audioTracks();
+        List<String> tracks = ExoLiveTracks.audioTracks();
         screen.dialogOpen(true);
         if (tracks.size() < 2) {
             SidePanel.of(screen.activity(), "Audio")
@@ -62,7 +62,11 @@ final class ExoMenus implements LiveMenus {
             return;
         }
         SidePanel.of(screen.activity(), "Audio")
-            .choices(tracks.toArray(new String[0]), ExoLive.selectedAudioTrack(), ExoLive::selectAudioTrack)
+            .choices(
+                tracks.toArray(new String[0]),
+                ExoLiveTracks.selectedAudioTrack(),
+                ExoLiveTracks::selectAudioTrack
+            )
             .onDismiss(screen::panelClosed)
             .show();
     }
