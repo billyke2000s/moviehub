@@ -7,7 +7,7 @@ source. `VlcPlaybackActivity` treated any LibVLC end as a finish; the short-vide
 free sources with a known length, so a source that ended with nothing played slipped through. Ends
 are now checked by `PlaybackEnd`, using only positions actually played (a closed stream may report its
 full length as the time). Published as 1.0.10 at the owner's request as an emergency fix; the owner reports a failing
-video now moves to another source. A follow-up (unreleased) also rejects a resume point beyond the
+video now moves to another source. 1.0.11 also rejects a resume point beyond the
 end of a shorter or broken copy. Not yet tried on a device or TV, and which source
 caused the owner's case is not known.
 

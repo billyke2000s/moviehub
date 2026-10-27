@@ -1,4 +1,4 @@
-## Unreleased
+## 1.0.11 (27 October 2026)
 
 - Fix: resuming an episode on a broken or shorter copy whose video ends before the resume point no longer counts as watching it to the end (no watched mark, no jump to the next episode).
 
