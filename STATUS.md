@@ -129,6 +129,12 @@ Last updated: 25 October 2026 (1.0 promotes the experimental line into MovieHub)
    opens; it has only been checked with fixtures, not real series. History saved before this change
    still has its old records; they are grouped the same way.
 
+14. **Thumbs up/down, New episode, Anime section (27 October 2026).** Ratings are stored on the box
+   and steer For you (`TitleRatings`, `ForYou`); Continue watching marks next episodes aired in the
+   last week; Home has an Anime section built from TMDB discovery (`TmdbCategories.anime`). Checked by
+   core tests and emulator CI only; awaiting the owner's check on the box. [Unverified] whether the
+   👍/👎 symbols draw on every box's font.
+
 ## Decisions
 
 - Version 7 → 8 channel upgrades must add `main` before renumbering the preferred copies.

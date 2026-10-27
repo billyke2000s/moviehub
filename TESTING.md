@@ -620,7 +620,7 @@ The initial packaged Rive audit verified two movie links and rejected five with 
 
 ## Continue watching rows (27 October 2026)
 
-`ContinueWatchingTest` (core, 13 checks) covers the row rules: nothing under three minutes, one row
+`ContinueWatchingTest` (core, 13 checks at the time; see below) covers the row rules: nothing under three minutes, one row
 per film whichever source, the newest record of a film deciding, a series resuming its newest episode
 watched properly, a finished episode offering the next one once per series, an episode opened only
 for a moment leaving it to the one before, a part-way rewatch resuming, row order, and grouping by
@@ -645,3 +645,13 @@ Normal, the LibVLC options and Media3's size and background colour. Every film d
 starts LibVLC with the two subtitle options, so CI checks that LibVLC accepts them; how subtitles
 look on screen is not checked by any test.
 
+## Thumbs, new episodes and Anime (27 October 2026)
+
+`TitleRatingsTest` (core, 12 checks) covers the saved ratings: keys, damaged parts skipped, a new
+rating moving to the front, clearing, the 300-title bound and listing liked or disliked titles.
+`ContinueWatchingTest` now has 19 checks, adding six for "New episode" (aired today or up to seven
+days ago; not future, missing or invalid dates). `TmdbCategoriesTest.animeRows…` (device) checks every
+Anime row is Japanese animation without adult titles, routes are unique, the airing window, a genre
+row, and that film rows are typed as films and series rows as series. Not covered by tests: the
+thumb buttons on screen, For you actually changing after a rating (it needs real TMDB), the New
+episode label on screen, and the Anime screen loading real TMDB rows.
