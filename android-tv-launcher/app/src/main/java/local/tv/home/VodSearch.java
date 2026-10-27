@@ -13,7 +13,7 @@ final class VodSearch implements AutoCloseable {
     private final ThreadPoolExecutor metadata = new ThreadPoolExecutor(
         2,
         2,
-        0,
+        10,
         TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(32)
     );
@@ -42,6 +42,7 @@ final class VodSearch implements AutoCloseable {
         int quality,
         boolean foregroundSearch
     ) {
+        metadata.allowCoreThreadTimeOut(true);
         if (foregroundSearch) {
             VodSearch previous = current;
             if (previous != null) previous.close();

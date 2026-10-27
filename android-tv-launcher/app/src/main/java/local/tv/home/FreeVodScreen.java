@@ -64,6 +64,7 @@ final class FreeVodScreen {
                 boolean handedOff;
 
                 public void run() {
+                    if (handedOff) return;
                     if (
                         activity.isDestroyed() || activity.isFinishing() || activity.generation != generation
                     ) {
@@ -148,8 +149,10 @@ final class FreeVodScreen {
                               : "No stream yet · " + search.progress() + " · still searching…"
                     );
                     // Even an immediate complete response waits for the original selection window.
-                    if (!done || (automatic[0] && best == null && count > 0)) handler.postDelayed(this, 100);
-                    else if (count == 0) search.close();
+                    if (done && count == 0) search.close();
+                    // Keep a light ownership check after a manual list finishes too, so leaving
+                    // cancels any metadata work and releases this search's worker resources.
+                    else handler.postDelayed(this, done ? 1000 : 100);
                 }
             };
             handler.post(refresh);
