@@ -118,7 +118,10 @@ final class VodPlayback {
             waitingForSources = false;
             if (!failover()) unavailable();
         }
-        if (!preparing && queue.isStalled(SystemClock.elapsedRealtime())) failover();
+        long now = SystemClock.elapsedRealtime();
+        long position = activity.player == null ? -1 : activity.player.getTime();
+        if (!preparing && queue.isStalled(now)) failover();
+        else if (!preparing && queue.noProgress(now, position) && !failover()) unavailable();
     }
 
     /** A jump is waiting or starting; {@code target} is where it lands, or -1 while still choosing. */
