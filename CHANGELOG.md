@@ -1,4 +1,4 @@
-## Unreleased
+## 1.0.13 (27 October 2026)
 
 - Sources show quality and audio first, then the website ("1080p ✓ · 5.1 · website"), so a long website name no longer hides the quality. Links that name surround sound show "Atmos", "7.1" or "5.1" (the website's claim, from the release name), and rank above stereo or unstated links of the same picture quality.
 
