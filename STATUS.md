@@ -1,11 +1,12 @@
 # Status
 
-## Broken sources no longer count as watched — in review, 27 October 2026
+## Broken sources no longer count as watched — 1.0.10, 27 October 2026
 
 The owner saw an episode marked watched and the next one start at once, most likely from a faulty
 source. `VlcPlaybackActivity` treated any LibVLC end as a finish; the short-video guard only covered
 free sources with a known length, so a source that ended with nothing played slipped through. Ends
-are now checked by `PlaybackEnd` (core tests pass). Not yet tried on a device or TV, and which source
+are now checked by `PlaybackEnd`, using only positions actually played (a closed stream may report its
+full length as the time). Published as 1.0.10 at the owner's request as an emergency fix. Not yet tried on a device or TV, and which source
 caused the owner's case is not known.
 
 ## Additional FMHY routes — merged, 27 October 2026
