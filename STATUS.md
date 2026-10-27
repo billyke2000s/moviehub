@@ -1,8 +1,8 @@
 # Status
 
-## Additional FMHY routes — integration candidate, 27 October 2026
+## Additional FMHY routes — merged, 27 October 2026
 
-Movy Boise/Miami and Rive Vanguard (episodes only) use the existing free-source system and retain separate playback-route labels. PR #172 is included in the same integration branch. Local core/provider checks and 68 Python regressions pass; sampled desktop video/audio/runtime evidence exists for the four routes. The first packaged Movy audit passed all 16 movie/episode links including measured 4K with audio. Vanguard passed its episode; its failed movie route is not newly enabled. Atlantic still failed Android after an adapter-only MIME setting was tried. Its draft adapter and registration have been removed from this batch. Android build/lint and signing passed at the previous integration head; final device/live checks remain on the PR. No APK has been published and no physical TV result is claimed.
+Movy Boise/Miami and Rive Vanguard (episodes only) use the existing free-source system and retain separate playback-route labels. PR #172 is included in the same integration branch. Local core/provider checks and 68 Python regressions pass; sampled desktop video/audio/runtime evidence exists for the four routes. The first packaged Movy audit passed all 16 movie/episode links including measured 4K with audio. Vanguard passed its episode; its failed movie route is not newly enabled. Atlantic still failed Android after an adapter-only MIME setting was tried. Its draft adapter and registration have been removed from this batch. Final integration head `3cd19c6` passed Android build/lint, signing/updater compatibility, both device suites and all 17 retained source playback checks. [PR #173](https://github.com/billyke2000s/moviehub/pull/173) merged the sources and all of #172. No APK has been published and no physical TV result is claimed.
 
 ## Confirmed source quality — 1.0.6
 
