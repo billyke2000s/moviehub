@@ -45,6 +45,18 @@ final class PlaybackEnd {
         return left <= EARLY_END_MS || nearEnd(Math.min(furthest, length), length);
     }
 
+    /** Readings trail by up to a second, so the player may be a little past the furthest seen. */
+    static final long READING_SLACK_MS = 5000L;
+
+    /**
+     * The position to resume from: the player's {@code time}, capped at {@code reached} (the
+     * furthest played, jumped to or opened at); {@code reached} when the time is unknown.
+     */
+    static long playedPosition(long time, long reached) {
+        if (time <= 0) return Math.max(0, reached);
+        return Math.min(time, reached + READING_SLACK_MS);
+    }
+
     /** Leaving the player near the end counts as watched only for media of a real length. */
     static boolean watchedWhenLeaving(long position, long length) {
         return length >= MIN_LENGTH_MS && nearEnd(position, length);

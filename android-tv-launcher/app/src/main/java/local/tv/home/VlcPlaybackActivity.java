@@ -83,6 +83,18 @@ public class VlcPlaybackActivity extends Activity {
     private long furthestMs;
     /** The resume point the media was opened at (never cleared, unlike {@link #resumeCheck}). */
     private long openedAtMs;
+
+    /**
+     * Where playback really is: the player's time, but never more than was played or jumped to.
+     * A stream that closed early may report its full length (or nothing) as the time, and resuming
+     * from that would open a backup source, Try again or the next visit at the wrong place.
+     */
+    long playedPosition() {
+        long time = player == null ? -1 : player.getTime();
+        long reached = Math.max(Math.max(furthestMs, openedAtMs), resumeCheck);
+        return PlaybackEnd.playedPosition(time, reached);
+    }
+
     /** Film skips and seek-bar moves waiting to become one jump (see {@link SkipQueue}). */
     final SkipQueue skips = new SkipQueue();
     final Runnable applySkip = () -> {
@@ -485,8 +497,8 @@ public class VlcPlaybackActivity extends Activity {
         if (vod != null && vod.failover()) return;
         overlayHandler.removeCallbacks(stalled);
         if (player != null) {
-            long time = player.getTime();
-            if (time > 0) position = time;
+            long played = playedPosition();
+            if (played > 0) position = played;
             player.pause();
         }
         showPlaying(false);
@@ -600,13 +612,10 @@ public class VlcPlaybackActivity extends Activity {
         sleepAt = 0;
         foreground = false;
         if (player != null) {
-            long time = player.getTime();
-            // A stream that closed early may report its full length as the time: never save more
-            // than was played or jumped to (the 1 s tick can trail by a moment).
-            long reached = Math.max(Math.max(furthestMs, openedAtMs), resumeCheck) + 5000;
-            // Before playback starts the time is 0; keep the resume point the media opened at.
-            if (time > 0) position = Math.min(time, reached);
-            else if (resumeCheck > 0) position = resumeCheck;
+            // Never more than was played or jumped to (see playedPosition). Before playback starts
+            // the time is 0, and the resume point the media opened at is kept.
+            long played = playedPosition();
+            if (played > 0) position = played;
             if (vod == null || !vod.rejectedMedia()) {
                 long length = player.getLength();
                 boolean completed = ended || PlaybackEnd.watchedWhenLeaving(position, length);
@@ -632,8 +641,7 @@ public class VlcPlaybackActivity extends Activity {
     @Override
     public void onSaveInstanceState(Bundle out) {
         super.onSaveInstanceState(out);
-        long now = player == null ? 0 : player.getTime();
-        out.putLong("position", Math.max(Math.max(position, resumeCheck), now));
+        out.putLong("position", Math.max(position, playedPosition()));
     }
 
     @Override

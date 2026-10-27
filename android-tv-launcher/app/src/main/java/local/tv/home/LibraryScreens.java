@@ -253,8 +253,7 @@ final class LibraryScreens {
     /** A film or episode part-way through: Resume carries on from where it stopped. */
     private void resumeRow(JSONObject item, Map<String, ?> positions, JSONArray recent) {
         long position = position(positions, item);
-        Object duration = positions.get(item.optString("id") + ":duration");
-        long length = duration instanceof Number ? ((Number) duration).longValue() : 0;
+        long length = ResumePoint.duration(positions, item.optString("id"), ResumePoint.titleKey(item));
         String episode = episodeLabel(item);
         String title = series(item)
             ? item.optString("name", item.optString("title", "Series"))

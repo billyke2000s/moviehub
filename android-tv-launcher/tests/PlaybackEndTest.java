@@ -33,11 +33,18 @@ public class PlaybackEndTest {
         check(!PlaybackEnd.watchedWhenLeaving(0, 45 * min), "leave before playing");
         check(!PlaybackEnd.watchedWhenLeaving(20 * min, 45 * min), "leave half-way");
         check(PlaybackEnd.watchedWhenLeaving(43 * min, 45 * min), "leave in the credits");
+        // Where to resume after a dead stream: the time, but never beyond what was played.
+        check(PlaybackEnd.playedPosition(20 * min, 20 * min) == 20 * min, "normal reading");
+        check(PlaybackEnd.playedPosition(20 * min + 900, 20 * min) == 20 * min + 900, "tick trails");
+        check(PlaybackEnd.playedPosition(10 * min, 20 * min) == 10 * min, "after a jump back");
+        check(PlaybackEnd.playedPosition(45 * min, 20 * min) == 20 * min + 5000, "dead stream says end");
+        check(PlaybackEnd.playedPosition(-1, 20 * min) == 20 * min, "dead stream says nothing");
+        check(PlaybackEnd.playedPosition(0, 0) == 0, "nothing played");
         // The completion rule ResumePoint uses is unchanged.
         check(PlaybackEnd.nearEnd(116 * min, 120 * min), "4 min left of 2 h");
         check(!PlaybackEnd.nearEnd(115 * min, 120 * min), "5 min left of 2 h");
         check(PlaybackEnd.nearEnd(27 * min, 30 * min), "3 min left of 30 min");
         check(!PlaybackEnd.nearEnd(26 * min, 30 * min), "4 min left of 30 min (over a tenth)");
-        System.out.println("22 playback end checks passed");
+        System.out.println("28 playback end checks passed");
     }
 }

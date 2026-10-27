@@ -1,3 +1,8 @@
+## 1.0.12 (27 October 2026)
+
+- Fix: after a stream dies, the backup source, Try again and the saved resume point now carry on from where you actually were, not from the dead stream's reported time (which could be 0:00 or the very end, making every backup "end" at once).
+- Continue watching shows time left and the progress bar after resuming on a different source (the length is now also saved by title).
+
 ## 1.0.11 (27 October 2026)
 
 - Fix: resuming an episode on a broken or shorter copy whose video ends before the resume point no longer counts as watching it to the end (no watched mark, no jump to the next episode).
