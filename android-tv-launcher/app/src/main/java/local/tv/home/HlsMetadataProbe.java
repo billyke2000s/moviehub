@@ -11,7 +11,9 @@ final class HlsMetadataProbe {
         HlsMediaInfo root = new HlsMediaInfo(text, preferred);
         MediaFacts.Value declared = root.declared;
         HlsMediaInfo media = root;
-        String location = base;
+        String location = base,
+            audioBase = base,
+            audioPlaylist = root.audioPlaylist;
         try {
             for (int depth = 0; !media.variant.isEmpty() && depth < 3; depth++) {
                 location = resource(location, media.variant);
@@ -19,6 +21,10 @@ final class HlsMetadataProbe {
                 if (!next.startsWith("#EXTM3U")) return declared;
                 media = new HlsMediaInfo(next, preferred);
                 if (media.declared.width > 0) declared = media.declared;
+                if (!media.audioPlaylist.isEmpty()) {
+                    audioBase = location;
+                    audioPlaylist = media.audioPlaylist;
+                }
             }
         } catch (Exception error) {
             Diagnostics.recovered("HLS metadata playlist", error);
@@ -26,10 +32,10 @@ final class HlsMetadataProbe {
         }
         MediaFacts.Value video = headers(location, media, budget);
         MediaFacts.Value audio = video;
-        if (!root.audioPlaylist.isEmpty()) {
+        if (!audioPlaylist.isEmpty()) {
             audio = MediaFacts.UNKNOWN;
             try {
-                String audioLocation = resource(base, root.audioPlaylist);
+                String audioLocation = resource(audioBase, audioPlaylist);
                 HlsMediaInfo audioInfo = new HlsMediaInfo(playlist(audioLocation, budget), preferred);
                 audio = headers(audioLocation, audioInfo, budget);
             } catch (Exception error) {
@@ -50,7 +56,11 @@ final class HlsMetadataProbe {
             dimensions ? video.videoBitrate : bandwidth,
             audio.audioBitrate,
             0
-        ).context(dimensions, dimensions ? bandwidth : 0, "");
+        ).context(
+            dimensions,
+            dimensions ? bandwidth : 0,
+            !audioHeader && (!declared.audioCodec.isEmpty() || declared.channels > 0) ? "playlist" : ""
+        );
     }
 
     private static MediaFacts.Value headers(

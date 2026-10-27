@@ -149,9 +149,12 @@ final class MediaFacts {
         }
 
         String bitrate() {
-            String rate = trackBitrate();
+            String rate =
+                videoBitrate <= 0 && audioBitrate <= 0 && playlistBandwidth > 0 ? "" : trackBitrate();
             return playlistBandwidth > 0 && origin != Origin.PLAYLIST
-                ? rate + " · " + VideoDetails.bitrate(playlistBandwidth) + " playlist bandwidth"
+                ? (rate.isEmpty() ? "" : rate + " · ") +
+                      VideoDetails.bitrate(playlistBandwidth) +
+                      " playlist bandwidth"
                 : rate;
         }
 
@@ -177,10 +180,13 @@ final class MediaFacts {
             String channels = channelLabel();
             String codec = audioName(audioCodec);
             String audio = channels.isEmpty() ? (codec.isEmpty() ? "Audio unknown" : codec) : channels;
+            if (availableAudio.equals("playlist")) audio += " (playlist)";
             String detail = width > 0 && height > 0 ? width + "×" + height + " · " : "";
             String video = VideoDetails.codecName(videoCodec);
             if (!video.isEmpty()) detail += video + " · ";
-            detail += codec.isEmpty() ? "Audio format unknown" : codec;
+            detail += codec.isEmpty()
+                ? "Audio format unknown"
+                : codec + (availableAudio.equals("playlist") ? " (playlist)" : "");
             if (!language.isEmpty() && !language.equalsIgnoreCase("und")) detail += " · " + language;
             return (
                 quality +

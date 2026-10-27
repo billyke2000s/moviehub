@@ -152,6 +152,13 @@ public class MediaFactsTest {
             "bandwidth not relabelled as actual video bitrate"
         );
         check(stream.picture().contains("checked variant"), "adaptive representation provenance");
+        check(
+            stream
+                .context(true, 4500000, "playlist")
+                .listLabel("site")
+                .startsWith("90p ✓ · Mono (playlist) · site"),
+            "confirmed video cannot promote declared audio into a header fact"
+        );
         MediaFacts f = new MediaFacts();
         f.value = partial;
         f.inspection(file);
