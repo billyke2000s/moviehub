@@ -20,7 +20,9 @@ import androidx.media3.exoplayer.DecoderCounters;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.ui.AspectRatioFrameLayout;
+import androidx.media3.ui.CaptionStyleCompat;
 import androidx.media3.ui.PlayerView;
+import androidx.media3.ui.SubtitleView;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -545,6 +547,29 @@ final class ExoLive {
         }
         if (app != null) ensurePlayer();
         if (view != null && view.getPlayer() != player) view.setPlayer(player);
+        if (view != null) styleSubtitles(view);
+    }
+
+    /** Subtitle size and background from Settings → Playback ({@link SubtitleStyle}). */
+    private static void styleSubtitles(PlayerView picture) {
+        SubtitleView subtitles = picture.getSubtitleView();
+        if (subtitles == null) return;
+        android.content.SharedPreferences prefs = picture.getContext().getSharedPreferences("ui", 0);
+        int size = prefs.getInt(SubtitleStyle.SIZE, SubtitleStyle.NORMAL);
+        boolean background = prefs.getBoolean(SubtitleStyle.BACKGROUND, false);
+        subtitles.setFractionalTextSize(
+            SubtitleStyle.exoFraction(SubtitleView.DEFAULT_TEXT_SIZE_FRACTION, size)
+        );
+        subtitles.setStyle(
+            new CaptionStyleCompat(
+                Color.WHITE,
+                SubtitleStyle.exoBackground(background),
+                Color.TRANSPARENT,
+                background ? CaptionStyleCompat.EDGE_TYPE_NONE : CaptionStyleCompat.EDGE_TYPE_OUTLINE,
+                Color.BLACK,
+                null
+            )
+        );
     }
 
     /** {@code who} is leaving: stops playback only if nothing else has taken the picture over. */
