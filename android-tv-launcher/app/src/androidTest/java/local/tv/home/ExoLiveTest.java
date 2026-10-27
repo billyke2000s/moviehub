@@ -721,10 +721,11 @@ public final class ExoLiveTest {
     public void anotherChannelStartsInAutomaticSourcesAfterAManualChoice() throws Exception {
         try {
             channels(new String[][] {
+                // One writer per source replaces that source's rows, so each copy has its own source.
                 { "m3u", "Manual Channel UK", "/manual-a.m3u8", "ManualChannel.uk" },
                 { "free", "Manual Channel UK", "/manual-b.m3u8", "ManualChannel.uk" },
-                { "m3u", "Next Channel UK", "/next-a.m3u8", "NextChannel.uk" },
-                { "free", "Next Channel UK", "/next-b.m3u8", "NextChannel.uk" },
+                { "fta", "Next Channel UK", "/next-a.m3u8", "NextChannel.uk" },
+                { "next-backup", "Next Channel UK", "/next-b.m3u8", "NextChannel.uk" },
             });
             remote.runOnMainSync(() ->
                 activity.stage.fullScreen("Manual Channel UK", link("/manual-a.m3u8"), "manual")
