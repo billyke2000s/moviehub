@@ -110,14 +110,11 @@ final class VodSources {
         String audio = SourceRanking.audioLabel(source.title);
         VodSourceFailover.Source entry = new VodSourceFailover.Source(
             source.uri,
-            QualityClaims.sourceLabel(
-                SourcesScreen.badge(source),
-                audio,
-                SourcesScreen.provider(source.title)
-            ),
+            SourcesScreen.sourceLabel(source, SourcesScreen.provider(source.title)),
             SourcesScreen.provider(source.title)
         );
         entry.audio = audio;
+        entry.facts = source.facts;
         // A camera copy's picture size is real but it is never a better source to suggest.
         if (source.confirmed && source.ranking != null && !SourceRanking.camera(source.ranking)) {
             entry.confirmed = SourceRanking.resolution(source.ranking);

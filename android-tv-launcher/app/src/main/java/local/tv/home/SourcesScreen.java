@@ -67,6 +67,7 @@ final class SourcesScreen {
      * recently overstated quality and its claim is ignored for ranking.
      */
     static String badge(SourceRepository.Source source) {
+        if (source.facts.value.tier() > 0) return source.facts.value.picture();
         String claimed = quality(source.title);
         if (source.confirmed && source.ranking != null) {
             int real = SourceRanking.resolution(source.ranking);
@@ -75,6 +76,20 @@ final class SourcesScreen {
         boolean ignored =
             source.ranking != null && quality(source.ranking).equals("SD") && !claimed.equals("SD");
         return ignored ? claimed + "?" : claimed;
+    }
+
+    static String sourceLabel(SourceRepository.Source source, String provider) {
+        MediaFacts.Value facts = source.facts.value;
+        String audio = facts.audio();
+        if (facts.origin == MediaFacts.Origin.UNKNOWN) {
+            String claim = SourceRanking.audioLabel(source.title);
+            if (!claim.isEmpty()) audio += " (claims " + claim + ")";
+        }
+        String picture =
+            facts.tier() > 0
+                ? facts.picture()
+                : badge(source) + (source.confirmed ? (source.playlist ? " (playlist)" : "") : " (claimed)");
+        return QualityClaims.sourceLabel(picture, audio + " · " + facts.bitrate(), provider);
     }
 
     /** Badges for a source: HDR or Dolby Vision, codec and file size, when the description says. */

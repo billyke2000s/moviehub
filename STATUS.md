@@ -1,5 +1,22 @@
 # Status
 
+## VOD runtime, metadata and next episode — candidate, 27 October 2026
+
+The owner-requested follow-up adds exact episode runtimes, active/prepared runtime rejection,
+a brief replacement note, bounded metadata-only resolution/audio/bitrate inspection and next-episode
+link preparation. The player tick was extracted in a separate behaviour-free commit. Provider Python,
+source inventory, existing buffering thresholds, package identity and signing are unchanged.
+Runtime compatibility uses the requested 60–160% band and cannot prove episode identity by itself.
+Metadata labels distinguish declarations and playing tracks; absent bitrates are unknown.
+Next-episode preparation reuses the existing search and selection paths without taking over the
+current backup search or opening another decoder. Manual mode remains manual; leaving cancels.
+
+Core checks pass locally using Eclipse JDT targeting Java 17 (this workspace has a JRE, no javac).
+Android SDK/build/lint/device/signing checks require CI and must be recorded on the PR's final head.
+No physical-TV or live-provider result is claimed; no update is published by this candidate.
+The 1.0.14 publish run [40541787521](https://github.com/billyke2000s/moviehub/actions/runs/40541787521)
+succeeded from `8e3d77121d1d1cc914e4dbcb1fada76e319292ce`; older release notes below are historical.
+
 ## Broken sources no longer count as watched — 1.0.10, 27 October 2026
 
 The owner saw an episode marked watched and the next one start at once, most likely from a faulty

@@ -12,6 +12,7 @@ final class VodPlayerTick implements Runnable {
     }
 
     public void run() {
+        activity.rejectRuntime();
         if (activity.vod != null) activity.vod.tick();
         if (activity.player != null) {
             // While a skip is waiting, show where it will land.
@@ -22,6 +23,18 @@ final class VodPlayerTick implements Runnable {
             activity.furthestMs = Math.max(activity.furthestMs, activity.player.getTime());
             activity.timeLeft.setText(length > 0 ? PlayerOverlay.timeLeft(Math.max(0, length - time)) : "—");
             if (
+                !activity.invalidRuntime() &&
+                PlaybackEnd.prepareNext(
+                    time,
+                    length,
+                    activity.runtimeMs(),
+                    activity.paused || activity.dragging || activity.skips.pending()
+                ) &&
+                !activity.nextCancelled &&
+                SourcesScreen.Binge.imdb != null
+            ) activity.nextEpisode.prepare();
+            if (
+                !activity.invalidRuntime() &&
                 (activity.vod == null || !activity.vod.rejectedMedia()) &&
                 !activity.nextPromptShown &&
                 length >= PlaybackEnd.MIN_LENGTH_MS &&
@@ -35,7 +48,10 @@ final class VodPlayerTick implements Runnable {
                 SidePanel.of(activity, "Up next")
                     .message("Ready for the next episode?")
                     .action("Play next episode", () -> activity.launchNextEpisode())
-                    .action("Keep watching", () -> activity.nextCancelled = true)
+                    .action("Keep watching", () -> {
+                        activity.nextCancelled = true;
+                        activity.nextEpisode.close();
+                    })
                     .show();
             }
             // A programme reminder that is due shows over the picture (checked every 15 s).

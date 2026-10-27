@@ -242,3 +242,7 @@ Rive Citadel’s opt-in carrier path identifies raw TS from received bytes when 
 ## Movy response envelope
 
 Movy's short-lived anonymous seed is obtained for each delivery-route lookup and is not persisted. Its decoder processes data only, never downloaded JavaScript. No runtime dependency is added. Returned media still passes the existing public-address, HTTPS, header and media checks; account tokens, cookies and signed media URLs are not stored in the repository.
+
+### Bounded VOD metadata
+
+Source metadata probes reuse the existing guarded relay and its redirect/credential rules. Android MediaExtractor reads through an app-owned random-access data source with a 256 KiB downstream budget and two-second I/O deadline; metadata probing never executes downloaded code or decodes video. Two workers and a bounded queue limit concurrent probes. Facts are transient and scoped to an exact resolved link; no URLs, headers or media are persisted by these checks. Next-episode preparation is cancelled on leaving and late results cannot start playback.

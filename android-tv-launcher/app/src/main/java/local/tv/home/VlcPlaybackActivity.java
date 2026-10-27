@@ -40,6 +40,8 @@ public class VlcPlaybackActivity extends Activity {
     private String titleKey;
     private long position;
     boolean ended, foreground, dragging;
+    private boolean runtimeRejected;
+    final VodNextEpisode nextEpisode = new VodNextEpisode(this);
     /** Paused by the viewer (the player reports pausing a moment later, so this is kept here). */
     boolean paused;
     int reminderTicks;
@@ -107,6 +109,7 @@ public class VlcPlaybackActivity extends Activity {
 
     void launchNextEpisode() {
         if (SourcesScreen.Binge.imdb == null || isFinishing()) return;
+        nextEpisode.handoff();
         android.content.Intent next = new android.content.Intent(this, MainActivity.class);
         next.addFlags(
             android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -242,6 +245,26 @@ public class VlcPlaybackActivity extends Activity {
         return engine;
     }
 
+    long runtimeMs() {
+        return getIntent().getLongExtra("runtimeMs", 0);
+    }
+
+    boolean invalidRuntime() {
+        return (
+            runtimeRejected || (player != null && PlaybackEnd.lengthMismatch(player.getLength(), runtimeMs()))
+        );
+    }
+
+    boolean rejectRuntime() {
+        if (!invalidRuntime()) return false;
+        if (!runtimeRejected) {
+            runtimeRejected = true;
+            if (player != null) player.pause();
+            showError("This source's length does not match the film or episode. Trying another link.");
+        }
+        return true;
+    }
+
     void adoptVod(MediaPlayer ready, VLCVideoLayout layout, String link) {
         MediaPlayer previous = player;
         VLCVideoLayout previousView = filmVideo;
@@ -250,6 +273,7 @@ public class VlcPlaybackActivity extends Activity {
         // never carry a transient native mute into the selected replacement.
         if (volume <= 0) volume = 100;
         player = ready;
+        runtimeRejected = false;
         filmVideo = layout;
         url = link;
         getIntent().putExtra("url", link);
@@ -313,6 +337,7 @@ public class VlcPlaybackActivity extends Activity {
         if (!foreground) return;
         status.setBackgroundColor(Color.TRANSPARENT);
         release();
+        runtimeRejected = false;
         status.setText("Opening source…");
         status.setVisibility(View.VISIBLE);
         overlayHandler.removeCallbacks(stalled);
@@ -408,6 +433,7 @@ public class VlcPlaybackActivity extends Activity {
                 if (vod != null) vod.onBuffering(false);
             }
         } else if (event.type == MediaPlayer.Event.EndReached) {
+            if (rejectRuntime()) return;
             if (vod != null && vod.rejectShortVideo(true)) return;
             // Only positions seen while playing (or jumped to) count: when a stream closes early the
             // player may report its time as the full length, so the time now is not trusted.
@@ -563,7 +589,7 @@ public class VlcPlaybackActivity extends Activity {
             // the time is 0, and the resume point the media opened at is kept.
             long played = playedPosition();
             if (played > 0) position = played;
-            if (vod == null || !vod.rejectedMedia()) {
+            if (!invalidRuntime() && (vod == null || !vod.rejectedMedia())) {
                 long length = player.getLength();
                 boolean completed = ended || PlaybackEnd.watchedWhenLeaving(position, length);
                 ResumePoint.save(this, id, titleKey, position, length, completed);
@@ -580,6 +606,7 @@ public class VlcPlaybackActivity extends Activity {
                 }
             }
         }
+        nextEpisode.close();
         release();
         if (audio != null && audioFocus != null) audio.abandonAudioFocusRequest(audioFocus);
         super.onStop();
@@ -593,6 +620,7 @@ public class VlcPlaybackActivity extends Activity {
 
     @Override
     public void onDestroy() {
+        nextEpisode.close();
         SidePanel.closeFor(this);
         overlayHandler.removeCallbacksAndMessages(null);
         release();

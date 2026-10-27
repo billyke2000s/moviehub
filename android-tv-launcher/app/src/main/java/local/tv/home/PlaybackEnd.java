@@ -57,6 +57,25 @@ final class PlaybackEnd {
         return Math.min(time, reached + READING_SLACK_MS);
     }
 
+    /** Catalogue runtime is minutes converted to ms; unknown/negative lengths never reject. */
+    static boolean lengthMismatch(long length, long runtime) {
+        return (
+            runtime > 0 && length > 0 && (length / (double) runtime < .6 || length / (double) runtime > 1.6)
+        );
+    }
+
+    /** Prefetch only a real episode near its end, never a bad source or a paused viewer. */
+    static boolean prepareNext(long position, long length, long runtime, boolean paused) {
+        return (
+            !paused &&
+            length >= MIN_LENGTH_MS &&
+            position > 0 &&
+            position < length &&
+            length - position <= 180_000 &&
+            !lengthMismatch(length, runtime)
+        );
+    }
+
     /** Leaving the player near the end counts as watched only for media of a real length. */
     static boolean watchedWhenLeaving(long position, long length) {
         return length >= MIN_LENGTH_MS && nearEnd(position, length);

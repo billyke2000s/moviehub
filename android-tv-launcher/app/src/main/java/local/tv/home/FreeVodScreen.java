@@ -17,29 +17,30 @@ final class FreeVodScreen {
     }
 
     void start(String imdb, int season, int episode, String title, String kind, JSONObject metadata) {
+        start(imdb, season, episode, title, kind, metadata, null);
+    }
+
+    void start(
+        String imdb,
+        int season,
+        int episode,
+        String title,
+        String kind,
+        JSONObject metadata,
+        VodNextEpisode prepared
+    ) {
         try {
-            JSONObject info = metadata == null ? new JSONObject() : metadata;
-            String searchTitle = info.optString(season < 0 ? "title" : "name", title);
-            JSONObject query = new JSONObject()
-                .put("imdb", imdb)
-                .put("tmdb", info.optInt("tmdbId", info.optInt("id")))
-                .put("title", searchTitle)
-                .put("localTitle", searchTitle)
-                .put("aliases", aliases(info, season < 0))
-                .put("year", info.optString(season < 0 ? "release_date" : "first_air_date").split("-")[0])
-                .put("season", season)
-                .put("episode", episode)
-                .put("premiered", info.optString("air_date", info.optString("first_air_date")))
-                .put("episodeTitle", info.optString("episodeTitle"))
-                .put("http", activity.http());
-            SourceRepository repo = new SourceRepository(activity.secrets);
-            VodSearch search = new VodSearch(
-                activity,
-                query,
-                repo,
-                activity.secrets.has("premiumize"),
-                activity.prefs.getInt(AutoPlayback.QUALITY, 1080)
-            );
+            SourceRepository repo = prepared == null ? new SourceRepository(activity.secrets) : prepared.repo;
+            VodSearch search =
+                prepared == null
+                    ? new VodSearch(
+                          activity,
+                          query(imdb, season, episode, title, metadata, activity.http()),
+                          repo,
+                          activity.secrets.has("premiumize"),
+                          activity.prefs.getInt(AutoPlayback.QUALITY, 1080)
+                      )
+                    : prepared.search;
             TextView status = activity.muted(
                 "Finding streams… choosing the best available in 3 to 8 seconds.",
                 16
@@ -103,11 +104,7 @@ final class FreeVodScreen {
                                             source.files.optJSONObject(0).optString("link")
                                         ).getHost();
                                         panel.option(
-                                            QualityClaims.sourceLabel(
-                                                SourcesScreen.badge(source),
-                                                SourceRanking.audioLabel(source.title),
-                                                host + " · Link " + (i + 1)
-                                            ),
+                                            SourcesScreen.sourceLabel(source, host + " · Link " + (i + 1)),
                                             () -> {
                                                 handedOff = true;
                                                 play(
@@ -159,6 +156,31 @@ final class FreeVodScreen {
             Diagnostics.recovered("Starting source search", error);
             activity.toast("Could not start the source search");
         }
+    }
+
+    static JSONObject query(
+        String imdb,
+        int season,
+        int episode,
+        String title,
+        JSONObject metadata,
+        boolean http
+    ) throws JSONException {
+        JSONObject info = metadata == null ? new JSONObject() : metadata;
+        String searchTitle = info.optString(season < 0 ? "title" : "name", title);
+        return new JSONObject()
+            .put("imdb", imdb)
+            .put("tmdb", info.optInt("tmdbId", info.optInt("id")))
+            .put("title", searchTitle)
+            .put("localTitle", searchTitle)
+            .put("aliases", aliases(info, season < 0))
+            .put("year", info.optString(season < 0 ? "release_date" : "first_air_date").split("-")[0])
+            .put("season", season)
+            .put("episode", episode)
+            .put("premiered", info.optString("air_date", info.optString("first_air_date")))
+            .put("episodeTitle", info.optString("episodeTitle"))
+            .put("runtime", info.optInt("runtime", 0))
+            .put("http", http);
     }
 
     static JSONArray aliases(JSONObject metadata, boolean movie) {

@@ -1,3 +1,10 @@
+## Unreleased — runtime and source metadata
+
+- Check known film/episode runtimes before accepting active and prepared links; pass exact episode runtime through cards, continuation and resume.
+- Read bounded media metadata for source resolution, available audio and declared bitrates; confirm selected tracks while playing and distinguish playlist declarations and unknown details.
+- Prepare the next episode's links during the last three minutes, preserving the current search and manual selection; cancel on leaving. Show a short "Switched link" notice after replacement.
+- Extract the VOD player tick into a helper in a separate behaviour-free commit.
+
 ## 1.0.14 (27 October 2026)
 
 - Fix: a film or episode link that sent a sliver of data (about 0.1 MB) and stopped stayed stuck instead of moving to the next link. If the picture has not moved for 15 seconds while not paused or seeking, the player now switches link (or says no working backup is left).
