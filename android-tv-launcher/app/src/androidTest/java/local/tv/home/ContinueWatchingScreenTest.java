@@ -136,9 +136,17 @@ public class ContinueWatchingScreenTest {
         }
     }
 
+    /** The visible texts, read on the main thread (await's conditions already run there). */
+    private List<String> visibleNow() {
+        List<String> out = new ArrayList<>();
+        texts(activity.page, out);
+        return out;
+    }
+
+    /** The visible texts, from the test thread. */
     private List<String> shown() {
         List<String> out = new ArrayList<>();
-        remote.runOnMainSync(() -> texts(activity.page, out));
+        remote.runOnMainSync(() -> out.addAll(visibleNow()));
         return out;
     }
 
@@ -151,7 +159,7 @@ public class ContinueWatchingScreenTest {
     @Test
     public void shortStartsAreHiddenAndEachTitleHasOneRow() {
         remote.runOnMainSync(() -> activity.libraryScreens.continueWatching());
-        await(() -> !shown().isEmpty() && shown().contains("Rocky III"));
+        await(() -> !visibleNow().isEmpty() && visibleNow().contains("Rocky III"));
         List<String> texts = shown();
         assertEquals("A film played from two sources is one row", 1, count(texts, "Street Fighter"));
         assertFalse("A one-minute start is not listed", texts.contains("Branded.to.Kill.1967.UHD"));
@@ -172,7 +180,7 @@ public class ContinueWatchingScreenTest {
             .putStringSet("watchedEpisodes", new HashSet<>(Collections.singleton("99999901:1:4")))
             .commit();
         remote.runOnMainSync(() -> activity.libraryScreens.continueWatching());
-        await(() -> shown().contains("Rocky III"));
+        await(() -> visibleNow().contains("Rocky III"));
         List<String> texts = shown();
         // The next episode is looked up from the catalogue in the background; whatever that says,
         // the series was not dropped for being finished, and it is still one row.
@@ -186,7 +194,7 @@ public class ContinueWatchingScreenTest {
     @Test
     public void removingASeriesForgetsEveryEpisodeAndSource() throws Exception {
         remote.runOnMainSync(() -> activity.libraryScreens.continueWatching());
-        await(() -> shown().contains("Fixture Series"));
+        await(() -> visibleNow().contains("Fixture Series"));
         JSONArray recent = new JSONArray(secrets.get("recentPlayback"));
         int before = recent.length();
         // Remove through the same path as the Hold Select panel's "Remove from Continue watching".
@@ -201,7 +209,7 @@ public class ContinueWatchingScreenTest {
             }
             activity.libraryScreens.continueWatching();
         });
-        await(() -> !shown().contains("Fixture Series") && shown().contains("Rocky III"));
+        await(() -> !visibleNow().contains("Fixture Series") && visibleNow().contains("Rocky III"));
         JSONArray after = new JSONArray(secrets.get("recentPlayback"));
         assertEquals("Both episode records are gone", before - 2, after.length());
         assertFalse(positions(remote.getTargetContext()).contains("title:tv:99999901:1:4"));
