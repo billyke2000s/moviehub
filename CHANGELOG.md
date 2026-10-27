@@ -1,6 +1,6 @@
-## Unreleased
+## 1.0.9 (27 October 2026)
 
-- Add Movy Boise/Miami through the existing free-source engine; add Rive Vanguard for episodes (its movie route remains disabled after failing Android audio/seek verification). Each delivery route remains a separate source, with per-link quality probing.
+- Add Movy Boise and Miami as separate movie and episode sources, including verified 4K with audio. Add Rive Vanguard for episodes, using the existing source system.
 
 - Thumbs up / thumbs down on every title page and in the Hold Select menu. A thumbs up makes For you suggest more like it; a thumbs down keeps that title out of For you. Choosing the same thumb again clears it.
 - Continue watching marks a next episode that aired in the last 7 days as "New episode", in the accent colour.
