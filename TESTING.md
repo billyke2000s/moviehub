@@ -486,7 +486,9 @@ reconnects refilled only by 30 s of moving picture. `ExoLiveTest.aSourceThatKeep
 plays a two-copy fixture channel whose first copy sends a few seconds of HLS and then holds the
 connection open: after its pictures, eight seconds of buffering move to the working copy without
 reopening the stalled one. `aLongStallWithNoOtherSourceReconnectsThatSource` checks the same stall
-reconnects a single-source channel. Provider link renewal has no device test (it needs a provider
+reconnects a single-source channel. `anotherChannelStartsInAutomaticSourcesAfterAManualChoice` checks a manual
+source choice does not carry over to a different channel opened full screen (it did since 1.0:
+only the removed LibVLC player reset the mode when the stream changed). Provider link renewal has no device test (it needs a provider
 link with an expiry); real provider streams are not exercised by fixtures.
 
 `LiveRacePlanTest` (core, 17 checks) covers the source race rules: priority by quality then copy order,

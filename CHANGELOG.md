@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Live TV: a source chosen by hand on one channel no longer carries over to the next channel opened from the guide (it opened in Manual, so it never moved to a backup).
 - Live TV: a channel that keeps buffering (8 seconds stuck, or 3 stalls in a minute) now moves to the channel's next source, as the old player did; with no other source, a long stall reconnects. A stream that stops completely without an error is recovered the same way.
 - Live TV: reconnects are limited to two, refilled only after 30 seconds of good picture, so a stream that keeps dying no longer reopens endlessly. Reconnects look the link up afresh.
 - Live TV: provider links that expire are renewed a minute before they do, instead of cutting out.

@@ -717,6 +717,43 @@ public final class ExoLiveTest {
         }
     }
 
+    @Test
+    public void anotherChannelStartsInAutomaticSourcesAfterAManualChoice() throws Exception {
+        try {
+            channels(new String[][] {
+                { "m3u", "Manual Channel UK", "/manual-a.m3u8", "ManualChannel.uk" },
+                { "free", "Manual Channel UK", "/manual-b.m3u8", "ManualChannel.uk" },
+                { "m3u", "Next Channel UK", "/next-a.m3u8", "NextChannel.uk" },
+                { "free", "Next Channel UK", "/next-b.m3u8", "NextChannel.uk" },
+            });
+            remote.runOnMainSync(() ->
+                activity.stage.fullScreen("Manual Channel UK", link("/manual-a.m3u8"), "manual")
+            );
+            await(() -> ExoLive.isPlaying() && activity.stage.zapper().copies().size() == 2);
+            remote.runOnMainSync(() -> activity.stage.zapper().useCopy(1, false));
+            await(() -> !activity.stage.zapper().automaticSources() && ExoLive.isPlaying());
+            // Back to a page (as the guide), then a different channel: it must not inherit the
+            // manual choice.
+            remote.runOnMainSync(() -> {
+                activity.stage.setPage(new FrameLayout(activity));
+                activity.stage.fullScreen("Next Channel UK", link("/next-a.m3u8"), "next");
+            });
+            await(() -> ExoLive.isPlaying() && activity.stage.zapper().copies().size() == 2);
+            remote.runOnMainSync(() -> {
+                assertTrue(
+                    "A new channel starts in Automatic sources",
+                    activity.stage.zapper().automaticSources()
+                );
+                assertTrue(
+                    "Its other copy is still available for failover",
+                    activity.stage.zapper().hasUntriedCopy()
+                );
+            });
+        } finally {
+            restoreChannelPrefs();
+        }
+    }
+
     @After
     public void cleanup() throws Exception {
         remote.runOnMainSync(() -> {
