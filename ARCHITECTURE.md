@@ -33,7 +33,7 @@ episodes. It reuses SeriesPlayback ordering, exact pack selection and the existi
 AutoPlayback selection window, without a second decoder or automatic playback. Its detached
 search does not replace/cancel the current episode's backup search. Explicit continuation transfers
 it once into FreeVodScreen; manual source mode stays manual. Leaving cancels preparation and
-late responses are ignored. An unconsumed transition expires after a minute. Prepared links still
+late responses are ignored. An unconsumed transition expires after a minute; results older than five minutes are discarded. Prepared links still
 open normally and undergo runtime/failover checks; immediate starts depend on source availability.
 
 ## Series continuation and automatic play

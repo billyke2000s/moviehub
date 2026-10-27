@@ -18,6 +18,7 @@ final class VodNextEpisode implements AutoCloseable {
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private boolean started, closed, transferred;
     private String currentKey;
+    private long preparedAt;
     volatile SeriesPlayback.Next next;
     volatile VodSearch search;
     SourceRepository repo;
@@ -37,6 +38,7 @@ final class VodNextEpisode implements AutoCloseable {
         String raw = activity.getIntent().getStringExtra("episodeMetadata");
         if (raw == null) return;
         started = true;
+        preparedAt = android.os.SystemClock.elapsedRealtime();
         Context app = activity.getApplicationContext();
         task = worker.submit(() -> {
             try {
@@ -112,7 +114,11 @@ final class VodNextEpisode implements AutoCloseable {
         VodNextEpisode prepared = handedOff;
         handedOff = null;
         if (prepared == null) return null;
-        if (current == null || !current.optString("episodeKey").equals(prepared.currentKey)) {
+        if (
+            current == null ||
+            !current.optString("episodeKey").equals(prepared.currentKey) ||
+            android.os.SystemClock.elapsedRealtime() - prepared.preparedAt > 5 * 60_000L
+        ) {
             prepared.dispose();
             return null;
         }

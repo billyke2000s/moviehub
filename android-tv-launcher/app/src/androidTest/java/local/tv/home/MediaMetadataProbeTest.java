@@ -139,6 +139,32 @@ public class MediaMetadataProbeTest {
     }
 
     @Test
+    public void byteBudgetStopsFurtherRandomReads() throws Exception {
+        try (MediaMetadataProbe.Data data = new MediaMetadataProbe.Data(url(), new AtomicBoolean())) {
+            byte[] b = new byte[1];
+            for (int i = 0; i < 4; i++) assertEquals(1, data.readAt(i * 65536L, b, 0, 1));
+            try {
+                data.readAt(4 * 65536L, b, 0, 1);
+                fail("Read beyond metadata byte budget");
+            } catch (IOException expected) {}
+            assertEquals(4, requests.get());
+            assertEquals(MediaMetadataProbe.BYTE_LIMIT, bytes.get());
+        }
+    }
+
+    @Test
+    public void expiredDeadlineStopsBeforeNetworkRead() throws Exception {
+        try (MediaMetadataProbe.Data data = new MediaMetadataProbe.Data(url(), new AtomicBoolean())) {
+            android.os.SystemClock.sleep(MediaMetadataProbe.TIME_LIMIT_MS + 50);
+            try {
+                data.readAt(0, new byte[1], 0, 1);
+                fail("Read beyond metadata deadline");
+            } catch (InterruptedIOException expected) {}
+            assertEquals(0, requests.get());
+        }
+    }
+
+    @Test
     public void playlistCeilingAndBandwidthAreDeclarationsNotPlayedTrackFacts() {
         MediaFacts.Value value = MediaMetadataProbe.playlist(
             "#EXTM3U\n" +

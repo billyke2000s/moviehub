@@ -19,7 +19,7 @@ FreeVodProvidersTest checks exact episode runtime on resume.
 MediaMetadataProbeTest uses real Android MediaExtractor and MP4 bytes through the guarded relay,
 requires resolution/audio/duration within the byte budget, checks cancellation before HTTP, a range
 read at the end with no intervening download and chunk reuse, and distinct HLS ceiling/bandwidth
-labels. These are emulator fixtures, not live-provider or physical-TV verification. Android build,
+labels, byte-budget exhaustion and deadline expiry before network access. These are emulator fixtures, not live-provider or physical-TV verification. Android build,
 lint, signing and device results must be read from the final PR checks. Physical ARM box latency,
 provider connection limits and real next-episode availability remain unverified.
 

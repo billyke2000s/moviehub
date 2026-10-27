@@ -260,7 +260,11 @@ public class VlcPlaybackActivity extends Activity {
         if (!runtimeRejected) {
             runtimeRejected = true;
             if (player != null) player.pause();
-            showError("This source's length does not match the film or episode. Trying another link.");
+            // A track/source panel must not suppress recovery from a known wrong copy.
+            if (vod != null && vod.failover()) return true;
+        }
+        if (!dialogOpen) {
+            showError("This source's length does not match the film or episode. Try another link.");
         }
         return true;
     }
