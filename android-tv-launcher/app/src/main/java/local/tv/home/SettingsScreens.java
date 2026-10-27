@@ -605,6 +605,7 @@ final class SettingsScreens {
                 }
             );
             languagePreference(body, "Subtitles", "subtitleLanguage", "none", true);
+            SubtitleSettings.cards(this, activity, body);
             languagePreference(body, "Audio track", "audioLanguage", "eng,en", false);
         } else {
             heading(body, "System");

@@ -638,3 +638,10 @@ remote's pause key, checks the pause bar, carries on and checks it now says behi
 fast-forward and checks the picture plays again with the bar gone. The fixture has no live window,
 so this exercises the reopen path; jumping to a real HLS live edge is not covered by fixtures.
 
+## Subtitle size and background (27 October 2026)
+
+`SubtitleStyleTest` (core, 12 checks) covers the size choices, damaged saved values falling back to
+Normal, the LibVLC options and Media3's size and background colour. Every film device test now
+starts LibVLC with the two subtitle options, so CI checks that LibVLC accepts them; how subtitles
+look on screen is not checked by any test.
+

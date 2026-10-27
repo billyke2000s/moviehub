@@ -15,16 +15,26 @@ final class PlayerOptions {
     /** Films and series (VlcPlaybackActivity's own player). */
     static List<String> film(Context context) {
         SharedPreferences prefs = prefs(context);
-        return Arrays.asList(
-            // VOD favours a little more headroom; this can add time to startup and seeks.
-            "--network-caching=" + PlaybackBuffer.VOD_MS,
-            "--stats",
-            "--no-video-title-show",
-            // Network files have no subtitle files beside them; do not probe for any.
-            "--no-sub-autodetect-file",
-            "--audio-language=" + prefs.getString("audioLanguage", "eng,en"),
-            "--sub-language=" + prefs.getString("subtitleLanguage", "none")
+        List<String> options = new java.util.ArrayList<>(
+            Arrays.asList(
+                // VOD favours a little more headroom; this can add time to startup and seeks.
+                "--network-caching=" + PlaybackBuffer.VOD_MS,
+                "--stats",
+                "--no-video-title-show",
+                // Network files have no subtitle files beside them; do not probe for any.
+                "--no-sub-autodetect-file",
+                "--audio-language=" + prefs.getString("audioLanguage", "eng,en"),
+                "--sub-language=" + prefs.getString("subtitleLanguage", "none")
+            )
         );
+        // Subtitle size and background (Settings → Playback).
+        options.addAll(
+            SubtitleStyle.vlcOptions(
+                prefs.getInt(SubtitleStyle.SIZE, SubtitleStyle.NORMAL),
+                prefs.getBoolean(SubtitleStyle.BACKGROUND, false)
+            )
+        );
+        return options;
     }
 
     private static SharedPreferences prefs(Context context) {
