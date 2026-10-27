@@ -2,7 +2,6 @@ package local.tv.home;
 
 import android.os.SystemClock;
 import java.util.List;
-import org.videolan.libvlc.Media;
 import org.videolan.libvlc.interfaces.IMedia;
 
 /**
@@ -79,13 +78,14 @@ final class VodQuality {
     }
 
     private void measure(int active) {
-        Media.VideoTrack track = activity.player == null ? null : activity.player.getCurrentVideoTrack();
-        // No picture size yet: try again on the next tick.
-        if (track == null || track.width <= 0 || track.height <= 0) return;
+        VodSourceFailover.Source source = sources.get(active);
+        MediaFacts.Value track = source.facts.value;
+        // Use the selected-track snapshot, not LibVLC's convenience getter (which returns
+        // the first video track even when another track is selected in a multi-track file).
+        if (track.origin != MediaFacts.Origin.PLAYING || track.tier() == 0) return;
         boolean first = measuredIndex != active;
         measuredIndex = active;
-        VodSourceFailover.Source source = sources.get(active);
-        int tier = VideoDetails.tier(track.width, track.height);
+        int tier = track.tier();
         source.actual = tier;
         String picture = QualityClaims.playingLabel(
             source.provider,
