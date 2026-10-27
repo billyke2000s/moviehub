@@ -2,7 +2,7 @@
 
 ## Additional FMHY routes — merged, 27 October 2026
 
-Movy Boise/Miami and Rive Vanguard (episodes only) use the existing free-source system and retain separate playback-route labels. PR #172 is included in the same integration branch. Local core/provider checks and 68 Python regressions pass; sampled desktop video/audio/runtime evidence exists for the four routes. The first packaged Movy audit passed all 16 movie/episode links including measured 4K with audio. Vanguard passed its episode; its failed movie route is not newly enabled. Atlantic still failed Android after an adapter-only MIME setting was tried. Its draft adapter and registration have been removed from this batch. Final integration head `3cd19c6` passed Android build/lint, signing/updater compatibility, both device suites and all 17 retained source playback checks. [PR #173](https://github.com/billyke2000s/moviehub/pull/173) merged the sources and all of #172. No APK has been published and no physical TV result is claimed.
+Movy Boise/Miami and Rive Vanguard (episodes only) use the existing free-source system and retain separate playback-route labels. PR #172 is included in the same integration branch. Local core/provider checks and 68 Python regressions pass; sampled desktop video/audio/runtime evidence exists for the four routes. The first packaged Movy audit passed all 16 movie/episode links including measured 4K with audio. Vanguard passed its episode; its failed movie route is not newly enabled. Atlantic still failed Android after an adapter-only MIME setting was tried. Its draft adapter and registration have been removed from this batch. Final integration head `3cd19c6` passed Android build/lint, signing/updater compatibility, both device suites and all 17 retained source playback checks. [PR #173](https://github.com/billyke2000s/moviehub/pull/173) merged the sources and all of #172. These changes are published in 1.0.9; no physical-TV result is claimed.
 
 ## Confirmed source quality — 1.0.6
 
@@ -14,22 +14,25 @@ before playback (only once playing); a streaming playlist's label is what it off
 player may still choose a lower step on a slow connection; how often real websites mislabel links
 has not been measured. Not yet tried on a physical TV.
 
-## Current release — 26 October 2026
+## Current release — 27 October 2026
 
-1.0.5 (code 105) is published from `main` at `acdab4ae3f9bb71ec766e411bbb8e9a6b28c23c3`; the APK
-downloaded from the update feed matched the feed's SHA-256. It adds two native movie websites,
-Vixsrc and 4KHDHub, finite-range file playback, correct quality badges and a backup-audio fix.
-It has not been tried on a physical TV.
+1.0.9 (code 109) is published from `release/moviehub-1.0.9` at
+`13c867e5a74c0224e913adcab8cb50056c571201`. The public APK download matched the update feed's
+SHA-256 (`94a07683f121fc00638be0d56c33fd440212db262fa6f376898609470c5bc9b5`).
+The [publish run](https://github.com/billyke2000s/moviehub/actions/runs/40506979965) passed core/device
+checks, release build/lint and signing-certificate continuity before updating the existing feed.
+The [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.9) contains
+the same APK and manifest. This version includes Movy Boise/Miami, Vanguard episodes, ratings,
+recent-episode labels and Anime. No physical-TV playback result is claimed.
 
 The initial 1.0.4 live audit covered all 33 then-enabled movie websites and verified 18 of 21
 returned links across seven sites. The final focused pass verified Levidia (four of six links),
 one 4KHDHub HD link, Vixsrc and a known Rarefilmm film, with decoding, plausible duration,
 midpoint playback and decoded/output audio. Other links failed or remained unverified. A
-3840×1600 file decoded and sought in an earlier pass, but reliable 4K audio playback has not
-passed verification; no universal provider or 4K guarantee is claimed. See the dated audit reports.
+3840×1600 file decoded and sought in an earlier pass, but reliable 4K audio playback was not established in that initial audit; no universal provider or 4K guarantee is claimed. See the dated audit reports.
 
-The inventory is 37 enabled websites and 40 adapters, plus excluded auditable sites, with 68
-original Kodi modules and three native modules. Rive is the first addition in the new
+The inventory is 38 enabled websites and 41 adapters, plus excluded auditable sites, with 68
+original Kodi modules and four native modules. Rive is the first addition in the new
 FMHY-only batch; desktop movie/episode decoding passed, with Android validation tracked in
 [the addition report](docs/FMHY_ADDITIONS_2026_10_26.md). Four additional exclusions have fresh sale/parking
 or unrelated gambling evidence. Historical notes below describe earlier snapshots.
