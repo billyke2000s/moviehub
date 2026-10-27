@@ -76,14 +76,34 @@ final class QualityClaims {
      * playing below what it offers, "site · playing 480p of up to 1080p".
      */
     static String playingLabel(String provider, int actual, int confirmed, String claimed, boolean playlist) {
+        return playingLabel(provider, actual, confirmed, claimed, playlist, "");
+    }
+
+    /** As above, with the release name's audio ("5.1"; "" when unknown) after the quality. */
+    static String playingLabel(
+        String provider,
+        int actual,
+        int confirmed,
+        String claimed,
+        boolean playlist,
+        String audio
+    ) {
         if (playlist && confirmed > actual) {
-            return provider + " · playing " + name(actual) + " of up to " + name(confirmed);
+            return sourceLabel("playing " + name(actual) + " of up to " + name(confirmed), audio, provider);
         }
-        String label = provider + " · " + name(actual) + " ✓";
+        String quality = name(actual) + " ✓";
         if (confirmed == 0 && verdict(claimed, actual) == OVERSTATED) {
-            label += " (said " + name(SourceRanking.resolution(claimed)) + ")";
+            quality += " (said " + name(SourceRanking.resolution(claimed)) + ")";
         }
-        return label;
+        return sourceLabel(quality, audio, provider);
+    }
+
+    /**
+     * A source's line in the player's Sources menu: quality, audio, then the website. A long
+     * website name is cut off at the end of the line, so the short facts come first.
+     */
+    static String sourceLabel(String quality, String audio, String provider) {
+        return quality + (audio == null || audio.isEmpty() ? "" : " · " + audio) + " · " + provider;
     }
 
     /**

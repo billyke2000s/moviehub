@@ -86,6 +86,8 @@ final class SourcesScreen {
             java.util.regex.Pattern.compile("\\b(?:dv|dovi)\\b").matcher(lower).find()
         ) out.add("Dolby Vision");
         else if (lower.contains("hdr")) out.add("HDR");
+        String audio = SourceRanking.audioLabel(raw);
+        if (!audio.isEmpty()) out.add(audio);
         if (lower.contains("h265") || lower.contains("hevc") || lower.contains("x265")) out.add("HEVC");
         else if (lower.contains("h264") || lower.contains("x264")) out.add("H.264");
         java.util.regex.Matcher size = java.util.regex.Pattern.compile(
