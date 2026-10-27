@@ -40,7 +40,25 @@ public final class LiveControlsTest {
             if (matched.get()) return;
             SystemClock.sleep(20);
         } while (SystemClock.elapsedRealtime() < deadline);
-        assertTrue("Live controls condition timed out", matched.get());
+        if (matched.get()) return;
+        String[] state = { "" };
+        remote.runOnMainSync(() -> {
+            LiveZapper zapper = activity == null || activity.stage == null ? null : activity.stage.zapper();
+            state[0] =
+                "full " +
+                (activity != null && activity.stage != null && activity.stage.full()) +
+                " zapper " +
+                (zapper != null) +
+                " copies " +
+                (zapper == null ? -1 : zapper.copies().size()) +
+                " resolutions " +
+                resolutions.get() +
+                " focus " +
+                (activity != null && activity.hasWindowFocus()) +
+                " log " +
+                ExoLive.eventLog().replace('\n', '|');
+        });
+        fail("Live controls condition timed out; " + state[0].substring(0, Math.min(700, state[0].length())));
     }
 
     private LiveZapper zapper() {
