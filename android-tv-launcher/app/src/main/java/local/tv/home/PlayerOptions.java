@@ -6,8 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * LibVLC engine options. Films and Live TV each have their own list, so a change for one can never
- * reach the other. VOD has more buffering headroom; live channels keep a shorter startup profile.
+ * LibVLC engine options for films and series. (Live TV plays on ExoPlayer, see ExoLive.)
  */
 final class PlayerOptions {
 
@@ -22,19 +21,6 @@ final class PlayerOptions {
             "--stats",
             "--no-video-title-show",
             // Network files have no subtitle files beside them; do not probe for any.
-            "--no-sub-autodetect-file",
-            "--audio-language=" + prefs.getString("audioLanguage", "eng,en"),
-            "--sub-language=" + prefs.getString("subtitleLanguage", "none")
-        );
-    }
-
-    /** Live TV (the shared LivePlayer, full screen and in the guide's corner). */
-    static List<String> live(Context context) {
-        SharedPreferences prefs = prefs(context);
-        return Arrays.asList(
-            // Short, so changing channel shows the picture quickly.
-            "--network-caching=" + PlaybackBuffer.LIVE_MS,
-            "--no-video-title-show",
             "--no-sub-autodetect-file",
             "--audio-language=" + prefs.getString("audioLanguage", "eng,en"),
             "--sub-language=" + prefs.getString("subtitleLanguage", "none")

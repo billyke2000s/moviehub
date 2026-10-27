@@ -62,12 +62,15 @@ final class ExoLive {
 
     /** Reopens per selection before the owner is told it failed (see {@link LiveStallRules}). */
     static final int MAX_REOPENS = 2;
-    /** The earliest and latest a provider link is renewed, before it expires (as LivePlayer). */
+    /** The earliest and latest a provider link is renewed, before it expires. */
     static final long RENEW_MIN_MS = 30_000,
         RENEW_MAX_MS = 3 * 3600_000L,
         RENEW_AHEAD_MS = 60_000;
     /** Events kept for the log. */
     static final int LOG_SIZE = ExoLiveLog.SIZE;
+
+    /** Fixture link lookup for device tests (Pluto-native locators); never assigned by app code. */
+    static LiveStream.Resolver testResolver;
 
     private static final Handler main = new Handler(Looper.getMainLooper());
     private static final ExecutorService resolver = Executors.newSingleThreadExecutor();
@@ -81,7 +84,7 @@ final class ExoLive {
     private static int generation;
     /** Buffering, dead-stream and reconnect rules ported from the LibVLC live player. */
     private static final LiveStallRules rules = new LiveStallRules();
-    /** The provider cache was cleared once for this selection, as LivePlayer.retryProvider did. */
+    /** The provider cache was cleared once for this selection. */
     private static boolean engineRefreshed;
     private static Runnable renewal;
     private static Future<?> renewing;
@@ -101,10 +104,6 @@ final class ExoLive {
     };
 
     private ExoLive() {}
-
-    static boolean available() {
-        return true;
-    }
 
     /** The one picture for Live TV: Media3's PlayerView, without its own on-screen controls. */
     static View createVideoView(Context context) {
@@ -328,7 +327,7 @@ final class ExoLive {
         }
         // Retire the selected upstream player, rather than preferring the same failed one again.
         if (AdapterSources.locator(url)) AdapterSources.failed(url);
-        // Look the link up afresh rather than reusing a cached one (as LivePlayer.retryProvider).
+        // Look the link up afresh rather than reusing a cached one.
         if (EngineSources.locator(url) && !engineRefreshed) {
             engineRefreshed = true;
             EngineSources.invalidate();
@@ -381,7 +380,12 @@ final class ExoLive {
         resolvingHttp = http;
         resolution = resolver.submit(() -> {
             try {
-                LiveStream.Resolution source = LiveStream.resolve(context, locator, http, null);
+                LiveStream.Resolution source = LiveStream.resolve(
+                    context,
+                    locator,
+                    http,
+                    ExoLive.testResolver
+                );
                 EngineSources.Stream stream = source.provider;
                 main.post(() -> {
                     event("Link found in " + (SystemClock.elapsedRealtime() - started) / 1000 + " s");
@@ -481,7 +485,12 @@ final class ExoLive {
         renewingHttp = http;
         renewing = resolver.submit(() -> {
             try {
-                LiveStream.Resolution source = LiveStream.resolve(context, locator, http, null);
+                LiveStream.Resolution source = LiveStream.resolve(
+                    context,
+                    locator,
+                    http,
+                    ExoLive.testResolver
+                );
                 main.post(() -> {
                     if (ticket != generation || player == null || !locator.equals(url)) {
                         if (source.relay != null) source.relay.close();

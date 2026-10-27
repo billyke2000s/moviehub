@@ -38,6 +38,15 @@ final class LiveZapper {
     /** Set by the guide when a channel is chosen; read by the player. */
     static volatile Session session;
 
+    /**
+     * The source mode and copies tried for the channel playing, kept across the guide and the full
+     * screen (each builds its own zapper), keyed by copy. Main thread only. (Kept by LivePlayer
+     * until its LibVLC live player was removed.)
+     */
+    static boolean activeAutomatic = true;
+
+    static final Set<String> attemptedSources = new HashSet<>();
+
     /** Buffering this long, or this many pauses in a minute, moves to the next backup. */
     static final long STALL_MS = LiveBuffering.STALL_MS;
     static final int STALLS_PER_MINUTE = LiveBuffering.STARTS_PER_MINUTE;
@@ -155,8 +164,7 @@ final class LiveZapper {
 
     void automaticSources(boolean enabled) {
         if (enabled && !automaticSources) {
-            LivePlayer.retryBackups();
-            LivePlayer.attemptedSources.clear();
+            attemptedSources.clear();
             attemptedCopies.clear();
             attemptedCopies.add(copy);
         }
@@ -171,13 +179,10 @@ final class LiveZapper {
     }
 
     private void rememberSources() {
-        LivePlayer.automaticSources = automaticSources;
-        if (!automaticSources) {
-            LivePlayer.cancelBackup();
-            LivePlayer.attemptedSources.clear();
-        }
+        activeAutomatic = automaticSources;
+        if (!automaticSources) attemptedSources.clear();
         for (int index : attemptedCopies)
-            if (index >= 0 && index < copies.size()) LivePlayer.attemptedSources.add(copies.get(index).key);
+            if (index >= 0 && index < copies.size()) attemptedSources.add(copies.get(index).key);
     }
 
     // ---- Changing channel -----------------------------------------------------------------
@@ -270,8 +275,8 @@ final class LiveZapper {
         // screen was opened with. Never assume the first copy (that mislabelled the source).
         String activeUrl = current ? playingUrl() : null;
         String activeKey = activeUrl == null ? null : ChannelQuery.key(activeUrl);
-        boolean activeAutomatic = LivePlayer.automaticSources;
-        Set<String> activeAttempts = new HashSet<>(LivePlayer.attemptedSources);
+        boolean wasAutomatic = activeAutomatic;
+        Set<String> activeAttempts = new HashSet<>(attemptedSources);
         worker.execute(() -> {
             try {
                 Session target = s;
@@ -303,7 +308,7 @@ final class LiveZapper {
                     }
                 }
                 final int playingCopy = selected;
-                final boolean automatic = !carried || activeAutomatic;
+                final boolean automatic = !carried || wasAutomatic;
                 String url = play ? db.url(found.get(0).id, found.get(0).key) : null;
                 List<ChannelDatabase.Programme> on = listing(row);
                 player.activity().runOnUiThread(() -> {
@@ -330,7 +335,6 @@ final class LiveZapper {
                         }
                         if (current) sourceReplaced();
                         rememberSources();
-                        LivePlayer.backups(player.activity(), copies);
                         showBanner(row, on);
                         // A native resolver can fail before this initial database read finishes.
                         if (current && player.liveFailed()) failover("This source is unavailable");
@@ -481,9 +485,8 @@ final class LiveZapper {
     boolean failover(String reason) {
         if (!automaticSources) return false;
         if (switching) return true; // the next copy is already on its way
-        if (LivePlayer.prepareBackupForFailure()) return true;
         for (int i = 0; i < copies.size(); i++) if (
-            LivePlayer.attemptedSources.contains(copies.get(i).key)
+            attemptedSources.contains(copies.get(i).key)
         ) attemptedCopies.add(i);
         for (int offset = 1; offset < copies.size(); offset++) {
             int next = (copy + offset) % copies.size();
@@ -505,9 +508,7 @@ final class LiveZapper {
         List<Integer> out = new ArrayList<>();
         out.add(copy);
         for (int i = 0; i < copies.size(); i++) if (
-            i != copy &&
-            !attemptedCopies.contains(i) &&
-            !LivePlayer.attemptedSources.contains(copies.get(i).key)
+            i != copy && !attemptedCopies.contains(i) && !attemptedSources.contains(copies.get(i).key)
         ) out.add(i);
         if (out.size() <= 1) return new int[0];
         int[] result = new int[out.size()];
@@ -537,7 +538,7 @@ final class LiveZapper {
             index >= 0 &&
             index < copies.size() &&
             !attemptedCopies.contains(index) &&
-            !LivePlayer.attemptedSources.contains(copies.get(index).key)
+            !attemptedSources.contains(copies.get(index).key)
         );
     }
 
@@ -547,7 +548,7 @@ final class LiveZapper {
         for (int offset = 1; offset < copies.size(); offset++) {
             int next = (copy + offset) % copies.size();
             if (
-                !attemptedCopies.contains(next) && !LivePlayer.attemptedSources.contains(copies.get(next).key)
+                !attemptedCopies.contains(next) && !attemptedSources.contains(copies.get(next).key)
             ) return true;
         }
         return false;
@@ -567,7 +568,7 @@ final class LiveZapper {
 
     /** The link playing now: the live engine's, else the one this screen was opened with. */
     private String playingUrl() {
-        String engine = ExoLive.available() ? ExoLive.currentUrl() : LivePlayer.currentUrl();
+        String engine = ExoLive.currentUrl();
         return engine != null ? engine : player.playbackUrl();
     }
 
@@ -578,10 +579,10 @@ final class LiveZapper {
         String key = ChannelQuery.key(current);
         for (int i = 0; i < copies.size(); i++) {
             if (copies.get(i).key.equals(key)) copy = i;
-            if (LivePlayer.attemptedSources.contains(copies.get(i).key)) attemptedCopies.add(i);
+            if (attemptedSources.contains(copies.get(i).key)) attemptedCopies.add(i);
         }
         switching = false;
-        automaticSources = LivePlayer.automaticSources;
+        automaticSources = activeAutomatic;
         showBanner();
     }
 

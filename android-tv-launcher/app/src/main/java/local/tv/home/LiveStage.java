@@ -311,8 +311,8 @@ final class LiveStage implements LiveScreen {
         // LibVLC player did when its stream changed. The same stream (back from the guide) keeps its
         // mode, so a source chosen by hand survives the trip.
         if (!channelUrl.equals(ExoLive.currentUrl())) {
-            LivePlayer.automaticSources = true;
-            LivePlayer.attemptedSources.clear();
+            LiveZapper.activeAutomatic = true;
+            LiveZapper.attemptedSources.clear();
         }
         LiveZapper.Session guide =
             LiveZapper.session == null
@@ -325,6 +325,13 @@ final class LiveStage implements LiveScreen {
         video.setFocusable(true);
         video.setFocusableInTouchMode(true);
         video.requestFocus();
+        // An air mouse's OK, or a tap on a phone, arrives as a click on the picture: the same
+        // banner as OK, as the old LibVLC player screen did.
+        video.setOnClickListener(v -> {
+            if (zapper == null) return;
+            if (zapper.touch) zapper.tapped();
+            else zapper.ok();
+        });
         ExoLive.attach(this, surface, events);
         if (!ExoLive.play(a, url, false)) opening("Opening channel…");
         else status.setVisibility(View.GONE);
@@ -347,6 +354,9 @@ final class LiveStage implements LiveScreen {
         overlayHandler.removeCallbacksAndMessages(null);
         bannerHost.removeAllViews();
         status.setVisibility(View.GONE);
+        // Back over the guide's box, the picture must not take the guide's clicks.
+        video.setOnClickListener(null);
+        video.setClickable(false);
         video.setFocusable(false);
         pageHost.setVisibility(View.VISIBLE);
         pageHost.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);

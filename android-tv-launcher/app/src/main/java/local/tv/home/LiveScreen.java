@@ -6,8 +6,7 @@ import android.widget.FrameLayout;
 
 /**
  * Where full-screen Live TV is shown: what the satellite banner ({@link SkyOverlay}) and channel
- * changing ({@link LiveZapper}) need, whether the picture is a separate player screen
- * ({@link LiveHost}) or the one-screen Live TV inside the guide.
+ * changing ({@link LiveZapper}) need: the one-screen Live TV inside the guide ({@link LiveStage}).
  */
 interface LiveScreen {
     /** Owns a {@link LiveScreen} that may currently be showing (for side-panel key routing). */

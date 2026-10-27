@@ -18,25 +18,66 @@ import java.util.function.BooleanSupplier;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
-/** Live controls and source discovery while a selected resolver is still pending. */
+/**
+ * Live controls and source discovery while a selected resolver is still pending, on the one-screen
+ * Live TV (LiveStage, ExoPlayer). Until the LibVLC live player was removed these ran on its
+ * separate player screen; the banner, colour keys and source rules are the same code.
+ */
 @RunWith(AndroidJUnit4.class)
 public final class LiveControlsTest {
 
     private final Instrumentation remote = InstrumentationRegistry.getInstrumentation();
     private final AtomicInteger resolutions = new AtomicInteger();
     private final CountDownLatch release = new CountDownLatch(1);
-    private VlcPlaybackActivity activity;
+    private MainActivity activity;
     private ChannelDatabase db;
+    private boolean oldAutoUpdates;
 
     private void await(BooleanSupplier condition) {
-        long deadline = SystemClock.elapsedRealtime() + 10000;
+        await(condition, 10000);
+    }
+
+    /** Opening MainActivity on a cold emulator can take longer than a control's reaction. */
+    private void await(BooleanSupplier condition, long limit) {
+        long deadline = SystemClock.elapsedRealtime() + limit;
         java.util.concurrent.atomic.AtomicBoolean matched = new java.util.concurrent.atomic.AtomicBoolean();
         do {
             remote.runOnMainSync(() -> matched.set(condition.getAsBoolean()));
             if (matched.get()) return;
             SystemClock.sleep(20);
         } while (SystemClock.elapsedRealtime() < deadline);
-        assertTrue("Live controls condition timed out", matched.get());
+        if (matched.get()) return;
+        String[] state = { "" };
+        remote.runOnMainSync(() -> {
+            LiveZapper zapper = activity == null || activity.stage == null ? null : activity.stage.zapper();
+            state[0] =
+                "full " +
+                (activity != null && activity.stage != null && activity.stage.full()) +
+                " zapper " +
+                (zapper != null) +
+                " copies " +
+                (zapper == null ? -1 : zapper.copies().size()) +
+                " resolutions " +
+                resolutions.get() +
+                " focus " +
+                (activity != null && activity.hasWindowFocus()) +
+                " log " +
+                ExoLive.eventLog().replace('\n', '|');
+        });
+        fail("Live controls condition timed out; " + state[0].substring(0, Math.min(700, state[0].length())));
+    }
+
+    private LiveZapper zapper() {
+        return activity.stage.zapper();
+    }
+
+    private boolean dialogOpen() {
+        return activity.stage.dialogOpen();
+    }
+
+    /** BACK out of full screen returns to the guide page underneath (no separate screen closes). */
+    private boolean leftFullScreen() {
+        return !activity.stage.full();
     }
 
     private android.app.Dialog currentPanel() {
@@ -58,7 +99,10 @@ public final class LiveControlsTest {
     @Before
     public void open() throws Exception {
         Context context = remote.getTargetContext();
-        remote.runOnMainSync(LivePlayer::stop);
+        // As ExoLiveTest: no update prompt may take the window focus from Live TV.
+        oldAutoUpdates = context.getSharedPreferences("ui", 0).getBoolean("autoUpdates", true);
+        context.getSharedPreferences("ui", 0).edit().putBoolean("autoUpdates", false).commit();
+        remote.runOnMainSync(ExoLive::stop);
         db = ChannelDatabase.get(context);
         db.clear();
         String[] ids = { "5ad8d3a31b95267e225e4e09", "6304f8d5ffb61000071ab478" };
@@ -82,27 +126,26 @@ public final class LiveControlsTest {
         }
         var channel = db.browse("all", "", Collections.emptySet(), 0).get(0);
         assertEquals(2, db.copies(channel).size());
-        LivePlayer.testResolver = (locator, http) -> {
+        ExoLive.testResolver = (locator, http) -> {
             resolutions.incrementAndGet();
             release.await(30, TimeUnit.SECONDS);
             throw new IOException("Fixture resolver stopped");
         };
         // Cold/direct live launches have no process-global guide session.
         LiveZapper.session = null;
-        activity = (VlcPlaybackActivity) remote.startActivitySync(
-            new Intent(context, VlcPlaybackActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                .putExtra("url", db.url(channel.id, channel.key))
-                .putExtra("id", channel.key)
-                .putExtra("title", channel.name)
-                .putExtra("live", true)
+        String url = db.url(channel.id, channel.key);
+        activity = (MainActivity) remote.startActivitySync(
+            new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         );
-        await(
-            () -> activity.zapper != null && activity.zapper.copies().size() == 2 && resolutions.get() == 1
-        );
+        await(() -> activity.hasWindowFocus(), 30000);
+        remote.runOnMainSync(() -> {
+            activity.stage.setPage(new android.widget.FrameLayout(activity));
+            activity.stage.fullScreen(channel.name, url, channel.key);
+        });
+        await(() -> zapper() != null && zapper().copies().size() == 2 && resolutions.get() == 1, 30000);
         // Resolver readiness does not imply that Android has finished transferring input focus.
         // Inject physical keys only once this newly launched player owns the window.
-        await(() -> activity.hasWindowFocus());
+        await(() -> activity.hasWindowFocus(), 30000);
     }
 
     @After
@@ -110,23 +153,29 @@ public final class LiveControlsTest {
         remote.runOnMainSync(() -> {
             if (SidePanel.current != null && SidePanel.current.isShowing()) SidePanel.current.dismiss();
             if (activity != null) activity.finish();
-            LivePlayer.stop();
+            ExoLive.stop();
         });
         release.countDown();
         remote.waitForIdleSync();
-        LivePlayer.testResolver = null;
+        ExoLive.testResolver = null;
+        remote
+            .getTargetContext()
+            .getSharedPreferences("ui", 0)
+            .edit()
+            .putBoolean("autoUpdates", oldAutoUpdates)
+            .commit();
         LiveZapper.session = null;
         if (db != null) db.clear();
     }
 
     @Test
     public void backRevealsSourcesBeforeLeavingEvenWhenBannerWasAlreadyVisible() {
-        var samePlayer = LivePlayer.player();
+        var samePlayer = ExoLive.player();
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         remote.waitForIdleSync();
-        assertFalse(activity.isFinishing());
-        assertTrue(activity.zapper.overlay.bannerShowing());
-        assertSame(samePlayer, LivePlayer.player());
+        assertTrue(activity.stage.full());
+        assertTrue(zapper().overlay.bannerShowing());
+        assertSame(samePlayer, ExoLive.player());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         remote.waitForIdleSync();
         assertNotNull(SidePanel.current);
@@ -134,9 +183,9 @@ public final class LiveControlsTest {
         assertEquals("Opening controls and Sources must not resolve backups", 1, resolutions.get());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
         remote.waitForIdleSync();
-        await(() -> !activity.dialogOpen && SidePanel.current == null && activity.hasWindowFocus());
+        await(() -> !dialogOpen() && SidePanel.current == null && activity.hasWindowFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-        await(activity::isFinishing);
+        await(this::leftFullScreen);
     }
 
     @Test
@@ -145,7 +194,7 @@ public final class LiveControlsTest {
             assertEquals(
                 "Auto mode names the provider playing now",
                 "Source: Auto · Pluto TV · 1 of 2",
-                activity.zapper.sourceText()
+                zapper().sourceText()
             )
         );
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
@@ -153,24 +202,24 @@ public final class LiveControlsTest {
         assertEquals(
             "BACK focuses the green Source key",
             SkyOverlay.SOURCE_KEY,
-            activity.zapper.overlay.focusedControl()
+            zapper().overlay.focusedControl()
         );
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
         remote.waitForIdleSync();
-        assertEquals("▶ moves along to Information", 2, activity.zapper.overlay.focusedControl());
+        assertEquals("▶ moves along to Information", 2, zapper().overlay.focusedControl());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         remote.waitForIdleSync();
-        assertTrue("SELECT presses Information", activity.zapper.overlay.infoShowing());
+        assertTrue("SELECT presses Information", zapper().overlay.infoShowing());
         remote.runOnMainSync(() -> {
-            String picture = activity.zapper.overlay.infoPictureText();
+            String picture = zapper().overlay.infoPictureText();
             assertTrue("Information names the picture", picture.startsWith("Picture: "));
             assertTrue("Information names the source", picture.contains("Source: Auto · Pluto TV"));
-            assertEquals("Only the four colour keys are buttons", 4, activity.zapper.overlay.controls.size());
+            assertEquals("Only the four colour keys are buttons", 4, zapper().overlay.controls.size());
         });
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
         remote.waitForIdleSync();
-        assertEquals("▶ stops at Options, the last button", 3, activity.zapper.overlay.focusedControl());
+        assertEquals("▶ stops at Options, the last button", 3, zapper().overlay.focusedControl());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         remote.waitForIdleSync();
         assertNotNull(SidePanel.current);
@@ -180,64 +229,50 @@ public final class LiveControlsTest {
         // window from this test is left over the next test's video.
         remote.runOnMainSync(() -> {
             SidePanel.current.dismiss();
-            activity.zapper.hideInfo();
+            zapper().hideInfo();
         });
         remote.waitForIdleSync();
-        await(() -> !activity.dialogOpen && SidePanel.current == null && activity.hasWindowFocus());
+        await(() -> !dialogOpen() && SidePanel.current == null && activity.hasWindowFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-        await(activity::isFinishing);
+        await(this::leftFullScreen);
     }
 
     @Test
     public void manualChoicePinsOneSourceAndAutomaticCanBeRestoredWithoutEagerProbing() {
-        assertTrue(activity.zapper.automaticSources());
+        assertTrue(zapper().automaticSources());
         assertEquals("Loading the channel did not probe its backup", 1, resolutions.get());
-        remote.runOnMainSync(() -> activity.zapper.useCopy(0, false));
-        await(() -> !activity.zapper.automaticSources());
-        assertEquals(
-            "Selected channel survives Activity recreation",
-            activity.playbackUrl(),
-            activity.getIntent().getStringExtra("url")
-        );
+        remote.runOnMainSync(() -> zapper().useCopy(0, false));
+        // ExoPlayer opens the chosen copy afresh, even the one already playing (the LibVLC player
+        // carried on): wait for that one lookup, so it is not counted as background discovery.
+        await(() -> !zapper().automaticSources() && resolutions.get() == 2);
+        remote.runOnMainSync(() -> assertEquals("The chosen copy plays", 0, zapper().selectedCopy()));
         remote.runOnMainSync(() ->
-            assertFalse(
-                "Manual mode must stay on the selected source",
-                activity.zapper.failover("fixture failure")
-            )
+            assertFalse("Manual mode must stay on the selected source", zapper().failover("fixture failure"))
         );
         int before = resolutions.get();
         SystemClock.sleep(500);
         assertEquals("No background backup discovery", before, resolutions.get());
         remote.runOnMainSync(() -> {
-            activity.zapper.automaticSources(true);
-            assertTrue(
-                "Automatic mode can try the next saved copy",
-                activity.zapper.failover("fixture failure")
-            );
+            zapper().automaticSources(true);
+            assertTrue("Automatic mode can try the next saved copy", zapper().failover("fixture failure"));
         });
-        await(() -> activity.zapper.selectedCopy() == 1 && resolutions.get() > before);
+        await(() -> zapper().selectedCopy() == 1 && resolutions.get() > before);
         remote.runOnMainSync(() ->
-            assertFalse(
-                "Automatic mode stops after the last copy",
-                activity.zapper.failover("fixture failure")
-            )
+            assertFalse("Automatic mode stops after the last copy", zapper().failover("fixture failure"))
         );
     }
 
     @Test
     public void automaticRestoredOnTheLastManualSourceTriesEarlierCopiesOnlyOnce() {
-        remote.runOnMainSync(() -> activity.zapper.useCopy(1, false));
-        await(() -> activity.zapper.selectedCopy() == 1 && resolutions.get() == 2);
+        remote.runOnMainSync(() -> zapper().useCopy(1, false));
+        await(() -> zapper().selectedCopy() == 1 && resolutions.get() == 2);
         remote.runOnMainSync(() -> {
-            activity.zapper.automaticSources(true);
-            assertTrue(activity.zapper.failover("fixture failure"));
+            zapper().automaticSources(true);
+            assertTrue(zapper().failover("fixture failure"));
         });
-        await(() -> activity.zapper.selectedCopy() == 0 && resolutions.get() == 3);
+        await(() -> zapper().selectedCopy() == 0 && resolutions.get() == 3);
         remote.runOnMainSync(() ->
-            assertFalse(
-                "No automatic loop back to a tried source",
-                activity.zapper.failover("fixture failure")
-            )
+            assertFalse("No automatic loop back to a tried source", zapper().failover("fixture failure"))
         );
     }
 
@@ -248,16 +283,16 @@ public final class LiveControlsTest {
         assertTrue("Red opens Audio & subtitles", SidePanel.current != null && SidePanel.current.isShowing());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
         remote.waitForIdleSync();
-        await(() -> !activity.dialogOpen && SidePanel.current == null && activity.hasWindowFocus());
+        await(() -> !dialogOpen() && SidePanel.current == null && activity.hasWindowFocus());
         physicalColour(KeyEvent.KEYCODE_PROG_GREEN);
         remote.waitForIdleSync();
         assertTrue("Green opens Sources", SidePanel.current != null && SidePanel.current.isShowing());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
         remote.waitForIdleSync();
-        await(() -> !activity.dialogOpen && SidePanel.current == null && activity.hasWindowFocus());
+        await(() -> !dialogOpen() && SidePanel.current == null && activity.hasWindowFocus());
         physicalColour(KeyEvent.KEYCODE_PROG_YELLOW);
         remote.waitForIdleSync();
-        assertTrue("Yellow opens information", activity.zapper.overlay.infoShowing());
+        assertTrue("Yellow opens information", zapper().overlay.infoShowing());
         physicalColour(KeyEvent.KEYCODE_PROG_BLUE);
         remote.waitForIdleSync();
         assertTrue("Blue opens Options", SidePanel.current != null && SidePanel.current.isShowing());
@@ -280,7 +315,7 @@ public final class LiveControlsTest {
         assertFalse("Blue closes Sources", sources.isShowing());
         await(() -> options.getWindow().getDecorView().hasWindowFocus());
         physicalColour(KeyEvent.KEYCODE_PROG_YELLOW);
-        await(() -> SidePanel.current == null && activity.zapper.overlay.infoShowing());
+        await(() -> SidePanel.current == null && zapper().overlay.infoShowing());
         assertFalse("Yellow closes Options", options.isShowing());
         assertEquals("Colour shortcuts never restart the source", 1, resolutions.get());
     }
@@ -288,10 +323,10 @@ public final class LiveControlsTest {
     @Test
     public void completeHeaderSurvivesProgrammeUpdatesAndBackControls() {
         remote.runOnMainSync(() -> {
-            activity.zapper.overlay.hideBanner();
-            activity.zapper.overlay.typing("325");
-            activity.zapper.overlay.hideBanner();
-            activity.zapper.overlay.banner(
+            zapper().overlay.hideBanner();
+            zapper().overlay.typing("325");
+            zapper().overlay.hideBanner();
+            zapper().overlay.banner(
                 "325",
                 "Pluto TV Movies",
                 "Black Knight",
@@ -303,15 +338,15 @@ public final class LiveControlsTest {
                 "Source: Auto · Pluto TV · 1 of 3",
                 false
             );
-            activity.zapper.overlay.focusSources();
+            zapper().overlay.focusSources();
         });
         remote.waitForIdleSync();
         SystemClock.sleep(250);
         remote.runOnMainSync(() -> {
-            android.widget.LinearLayout strip = activity.zapper.overlay.channelStrip;
+            android.widget.LinearLayout strip = zapper().overlay.channelStrip;
             android.graphics.Rect visible = new android.graphics.Rect();
             assertTrue(strip.getGlobalVisibleRect(visible));
-            assertTrue("Full channel strip has reserved height", strip.getHeight() >= activity.dp(64));
+            assertTrue("Full channel strip has reserved height", strip.getHeight() >= activity.stage.dp(64));
             assertEquals("Header is not vertically clipped", strip.getHeight(), visible.height());
             for (int i = 0; i < strip.getChildCount(); i++) {
                 android.view.View label = strip.getChildAt(i);
@@ -351,7 +386,7 @@ public final class LiveControlsTest {
 
     @Test
     public void colourPressWorksBeforeReleaseAndDoesNotRepeatAcrossWindows() {
-        remote.runOnMainSync(() -> activity.zapper.overlay.focusSources());
+        remote.runOnMainSync(() -> zapper().overlay.focusSources());
         playerKey(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_PROG_RED, 0);
         android.app.Dialog audio = currentPanel();
         assertNotNull("A press opens Audio without waiting for release", audio);
@@ -370,9 +405,9 @@ public final class LiveControlsTest {
         assertTrue(containsText(options.getWindow().getDecorView(), "Options"));
         playerKey(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_PROG_YELLOW, 0);
         assertNull(SidePanel.current);
-        assertTrue(activity.zapper.overlay.infoShowing());
+        assertTrue(zapper().overlay.infoShowing());
         playerKey(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_PROG_YELLOW, 0);
-        assertTrue("Yellow release must not close Information again", activity.zapper.overlay.infoShowing());
+        assertTrue("Yellow release must not close Information again", zapper().overlay.infoShowing());
     }
 
     @Test
@@ -417,8 +452,8 @@ public final class LiveControlsTest {
         SkyOverlay[] overlay = new SkyOverlay[1];
         remote.runOnMainSync(() -> {
             android.view.ViewGroup content = activity.findViewById(android.R.id.content);
-            content.addView(host, new android.widget.FrameLayout.LayoutParams(-1, activity.dp(260)));
-            overlay[0] = new SkyOverlay(activity, host);
+            content.addView(host, new android.widget.FrameLayout.LayoutParams(-1, activity.stage.dp(260)));
+            overlay[0] = new SkyOverlay(activity.stage, host);
             overlay[0].banner(
                 "407",
                 "Sky Sports F1 (720p)",
@@ -447,7 +482,7 @@ public final class LiveControlsTest {
                 android.graphics.Rect visible = new android.graphics.Rect();
                 android.view.View strip = overlay[0].channelStrip;
                 assertTrue("Full header remains shown in limited space", strip.getGlobalVisibleRect(visible));
-                assertTrue(strip.getHeight() >= activity.dp(64));
+                assertTrue(strip.getHeight() >= activity.stage.dp(64));
                 assertEquals(
                     "Header never gives up its height to optional panels",
                     strip.getHeight(),
@@ -467,22 +502,19 @@ public final class LiveControlsTest {
     @Test
     public void entryOkClickAndBackUseTheSameFullBanner() {
         remote.runOnMainSync(() -> {
-            assertTrue("Live input focuses the visible video", activity.video.hasFocus());
-            assertNull("Live TV never attaches the film overlay", activity.controls.getParent());
+            assertTrue("Live input focuses the visible video", activity.stage.video().hasFocus());
         });
         remote.waitForIdleSync();
         SystemClock.sleep(250);
         android.graphics.Rect initial = new android.graphics.Rect();
-        remote.runOnMainSync(() ->
-            assertTrue(activity.zapper.overlay.channelStrip.getGlobalVisibleRect(initial))
-        );
+        remote.runOnMainSync(() -> assertTrue(zapper().overlay.channelStrip.getGlobalVisibleRect(initial)));
         // Sky-style: OK brings the banner up with Audio & subtitles highlighted; OK again presses it.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         remote.waitForIdleSync();
         assertNull("The first OK opens no panel", SidePanel.current);
-        assertTrue(activity.zapper.overlay.bannerShowing());
-        assertFalse("OK shows only the banner", activity.zapper.overlay.infoShowing());
-        remote.runOnMainSync(() -> assertEquals(0, activity.zapper.overlay.focusedControl()));
+        assertTrue(zapper().overlay.bannerShowing());
+        assertFalse("OK shows only the banner", zapper().overlay.infoShowing());
+        remote.runOnMainSync(() -> assertEquals(0, zapper().overlay.focusedControl()));
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         remote.waitForIdleSync();
         android.app.Dialog pressed = currentPanel();
@@ -492,12 +524,12 @@ public final class LiveControlsTest {
             SidePanel.current.dismiss();
         });
         remote.waitForIdleSync();
-        await(() -> SidePanel.current == null && !activity.dialogOpen);
+        await(() -> SidePanel.current == null && !dialogOpen());
         remote.runOnMainSync(() -> {
-            activity.zapper.overlay.hideBanner();
-            ((android.view.View) activity.video.getParent()).performClick();
-            assertTrue("Click uses the same live banner", activity.zapper.overlay.bannerShowing());
-            assertFalse("Click matches OK", activity.zapper.overlay.infoShowing());
+            zapper().overlay.hideBanner();
+            activity.stage.video().performClick();
+            assertTrue("Click uses the same live banner", zapper().overlay.bannerShowing());
+            assertFalse("Click matches OK", zapper().overlay.infoShowing());
         });
         remote.waitForIdleSync();
         SystemClock.sleep(250);
@@ -505,15 +537,14 @@ public final class LiveControlsTest {
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
             android.graphics.Rect after = new android.graphics.Rect();
-            assertTrue(activity.zapper.overlay.channelStrip.getGlobalVisibleRect(after));
+            assertTrue(zapper().overlay.channelStrip.getGlobalVisibleRect(after));
             assertEquals("Every reveal retains the complete header layout", initial, after);
             assertEquals(
                 "Back only enables focus on the existing controls",
                 SkyOverlay.SOURCE_KEY,
-                activity.zapper.overlay.focusedControl()
+                zapper().overlay.focusedControl()
             );
             assertNull(SidePanel.current);
-            assertEquals(android.view.View.GONE, activity.controls.getVisibility());
         });
         UiEvidence.capture("live-entry-ok-click-back-one-banner");
     }
@@ -521,17 +552,17 @@ public final class LiveControlsTest {
     @Test
     public void bannerAlwaysShowsBoxedButtonsAndArrowsMoveBetweenThem() {
         remote.runOnMainSync(() -> {
-            activity.zapper.overlay.hideBanner();
-            assertTrue("The video keeps the focus", activity.video.hasFocus());
+            zapper().overlay.hideBanner();
+            assertTrue("The video keeps the focus", activity.stage.video().hasFocus());
         });
         // ▶ with the banner hidden opens the same banner, with no button highlighted yet.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
-            assertFalse("No reduced browsing layout", activity.zapper.browsing());
-            assertTrue(activity.zapper.overlay.bannerShowing());
-            assertEquals(-1, activity.zapper.overlay.focusedControl());
-            for (android.view.View control : activity.zapper.overlay.controls)
+            assertFalse("No reduced browsing layout", zapper().browsing());
+            assertTrue(zapper().overlay.bannerShowing());
+            assertEquals(-1, zapper().overlay.focusedControl());
+            for (android.view.View control : zapper().overlay.controls)
                 assertNotNull("Every button is boxed", control.getBackground());
         });
         // OK with nothing highlighted highlights Audio & subtitles and opens nothing yet.
@@ -539,8 +570,8 @@ public final class LiveControlsTest {
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
             assertNull(SidePanel.current);
-            assertTrue(activity.zapper.overlay.bannerShowing());
-            assertEquals(0, activity.zapper.overlay.focusedControl());
+            assertTrue(zapper().overlay.bannerShowing());
+            assertEquals(0, zapper().overlay.focusedControl());
         });
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         remote.waitForIdleSync();
@@ -551,11 +582,11 @@ public final class LiveControlsTest {
         );
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
         remote.waitForIdleSync();
-        await(() -> SidePanel.current == null && !activity.dialogOpen);
+        await(() -> SidePanel.current == null && !dialogOpen());
         // Hiding the banner returns the focus to the video, so the next OK cannot press a hidden button.
         remote.runOnMainSync(() -> {
-            activity.zapper.overlay.hideBanner();
-            assertEquals(-1, activity.zapper.overlay.focusedControl());
+            zapper().overlay.hideBanner();
+            assertEquals(-1, zapper().overlay.focusedControl());
         });
     }
 
@@ -635,12 +666,9 @@ public final class LiveControlsTest {
         assertSame(options, SidePanel.current);
         playerKey(remoteEvent(KeyEvent.ACTION_MULTIPLE, KeyEvent.KEYCODE_PROG_YELLOW, 400, 1, 400));
         assertNull(SidePanel.current);
-        assertTrue(activity.zapper.overlay.infoShowing());
+        assertTrue(zapper().overlay.infoShowing());
         playerKey(remoteEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_PROG_YELLOW, 400, 0, 400));
-        assertTrue(
-            "The final release does not toggle Information off",
-            activity.zapper.overlay.infoShowing()
-        );
+        assertTrue("The final release does not toggle Information off", zapper().overlay.infoShowing());
         android.content.SharedPreferences prefs = activity.getSharedPreferences("ui", 0);
         for (int i = 0; i < 4; i++) assertEquals(
             LiveTvScreen.COLOURS[i],
@@ -660,43 +688,16 @@ public final class LiveControlsTest {
     }
 
     @Test
-    public void recreatedPlayerKeepsLiveControlsWithoutStaticGuideState() {
-        android.app.Instrumentation.ActivityMonitor monitor = remote.addMonitor(
-            VlcPlaybackActivity.class.getName(),
-            null,
-            false
-        );
-        remote.runOnMainSync(() -> {
-            LiveZapper.session = null;
-            activity.recreate();
-        });
-        VlcPlaybackActivity recreated = (VlcPlaybackActivity) remote.waitForMonitorWithTimeout(
-            monitor,
-            10000
-        );
-        remote.removeMonitor(monitor);
-        assertNotNull("Player recreation completed", recreated);
-        activity = recreated;
-        await(
-            () -> activity.zapper != null && activity.zapper.copies().size() == 2 && activity.hasWindowFocus()
-        );
-        assertEquals(android.view.View.GONE, activity.controls.getVisibility());
-        physicalColour(KeyEvent.KEYCODE_PROG_GREEN);
-        await(() -> SidePanel.current != null && SidePanel.current.isShowing());
-        assertTrue(activity.zapper.sourceText().contains("Pluto TV"));
-    }
-
-    @Test
     public void learnedColourWinsOverNumberEntryWithControlsHidden() {
         android.content.SharedPreferences prefs = activity.getSharedPreferences("ui", 0);
         boolean existed = prefs.contains("remoteGreen");
         int previous = prefs.getInt("remoteGreen", -1);
         try {
             prefs.edit().putInt("remoteGreen", KeyEvent.KEYCODE_7).commit();
-            remote.runOnMainSync(() -> activity.zapper.overlay.hideBanner());
+            remote.runOnMainSync(() -> zapper().overlay.hideBanner());
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_7);
             await(() -> SidePanel.current != null && SidePanel.current.isShowing());
-            assertEquals("Colour did not change channel", 0, activity.zapper.position());
+            assertEquals("Colour did not change channel", 0, zapper().position());
             assertEquals("Colour did not resolve another source", 1, resolutions.get());
         } finally {
             if (existed) prefs.edit().putInt("remoteGreen", previous).commit();
@@ -707,7 +708,7 @@ public final class LiveControlsTest {
     @Test
     public void bannerColourButtonsFitWithLongSourceAndChannelNames() {
         remote.runOnMainSync(() ->
-            activity.zapper.overlay.banner(
+            zapper().overlay.banner(
                 "401",
                 "A very long channel name with region and quality information",
                 "Programme on now",
@@ -724,7 +725,7 @@ public final class LiveControlsTest {
         remote.runOnMainSync(() -> {
             android.graphics.Rect screen = new android.graphics.Rect();
             activity.getWindow().getDecorView().getGlobalVisibleRect(screen);
-            for (android.view.View control : activity.zapper.overlay.controls) {
+            for (android.view.View control : zapper().overlay.controls) {
                 android.graphics.Rect visible = new android.graphics.Rect();
                 assertTrue("Every colour control is visible", control.getGlobalVisibleRect(visible));
                 assertEquals("Control is not clipped horizontally", control.getWidth(), visible.width());

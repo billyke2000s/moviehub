@@ -1,6 +1,8 @@
 ## Unreleased
 
 - Live TV: a source chosen by hand on one channel no longer carries over to the next channel opened from the guide (it opened in Manual, so it never moved to a backup).
+- Live TV: clicking the picture with an air mouse, or tapping it on a phone, shows the channel banner again, as it did before the switch to the new player.
+- Removed the old Live TV player code (LibVLC), which nothing used since Live TV moved to ExoPlayer. Films and series are unchanged.
 - Live TV: a channel starts on whichever of its sources is found first, and moves to a better-quality source (by its HD/1080p name) as soon as one is found. If the better source buffers or fails within a minute, the channel goes back to the one that was working and leaves the better one alone for 10 minutes (longer if it happens again), so the picture never flips back and forth. Choosing a source yourself turns this off for the channel.
 - Live TV: a channel that keeps buffering (8 seconds stuck, or 3 stalls in a minute) now moves to the channel's next source, as the old player did; with no other source, a long stall reconnects. A stream that stops completely without an error is recovered the same way.
 - Live TV: reconnects are limited to two, refilled only after 30 seconds of good picture, so a stream that keeps dying no longer reopens endlessly. Reconnects look the link up afresh.

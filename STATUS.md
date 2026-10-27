@@ -50,10 +50,11 @@ Last updated: 25 October 2026 (1.0 promotes the experimental line into MovieHub)
   ahead of `main` and never merged back. Experimental builds are published from that branch.
 - **ZLive works on the TV (exp-15, 25 October 2026).** See "Correction" at the end of this file. Only
   the owner's spot check is behind this, not every channel or long sessions.
-- **Code structure:** feature classes per area, see [ARCHITECTURE.md](ARCHITECTURE.md). Seven files are
+- **Code structure:** feature classes per area, see [ARCHITECTURE.md](ARCHITECTURE.md). Three files are
   over the 700-line limit in AGENTS.md and should each be split in a behaviour-free commit:
-  `VlcPlaybackActivity` (908), `LiveZapper` (855), `LiveTvScreen` (770), `LivePlayer` (743),
-  `ChannelDatabase` (731); `SettingsScreens` (694) and `MainActivity` (659) are close.
+  `LiveZapper`, `LiveTvScreen` and `ChannelDatabase`; `SettingsScreens` and `MainActivity` are close.
+  `LivePlayer` was removed with the LibVLC live player (27 October 2026), which also brought
+  `VlcPlaybackActivity` under the limit.
 - **CI.** The experimental branch's last merged PRs (#143, #144, #145) passed every check, including
   device tests. One playback device test (`vodRepeatedBufferingPreparesBackupsWithoutStoppingCurrentPlayback`)
   failed once and passed on rerun of the same commit; watch for it recurring.
@@ -88,7 +89,8 @@ Last updated: 25 October 2026 (1.0 promotes the experimental line into MovieHub)
    lock with playback, so running them in parallel would delay starting a channel), and the
    programme guide is fetched only after all of them. Not measured on the X905X5M box.
 
-7. **Relayed sports streams use a 4 s buffer** (`LivePlayer.RELAYED_CACHING_MS`) and the relay
+7. **Relayed sports streams used a 4 s buffer** in the removed LibVLC live player; ExoPlayer keeps its
+   default buffering (see item 10). The relay
    retries a timed-out provider once. Whether this removes the short pauses seen on the owner's
    phone (21 October 2026) is not yet confirmed on a phone or the TV box.
 
@@ -115,6 +117,11 @@ Last updated: 25 October 2026 (1.0 promotes the experimental line into MovieHub)
    upgraded away from. Plain-address checks open one extra
    request per candidate; not checked against providers that limit connections. Only the full screen
    upgrades; the guide's corner picture does not.
+
+12. **LibVLC live player removed (27 October 2026).** Nothing could reach it (Live TV has played on
+   `LiveStage`/ExoPlayer since 1.0), so its classes, its Live TV mode in `VlcPlaybackActivity` and its
+   tests were deleted; films and series still play on LibVLC. The picture click (air-mouse OK, phone
+   tap) it had was ported to `LiveStage`. `LiveControlsTest` now runs on `LiveStage`. Emulator only.
 
 ## Decisions
 

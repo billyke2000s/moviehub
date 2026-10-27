@@ -1,13 +1,14 @@
 package local.tv.home;
 
 import android.content.Context;
-import android.net.Uri;
-import org.videolan.libvlc.LibVLC;
-import org.videolan.libvlc.Media;
-import org.videolan.libvlc.MediaPlayer;
 
-/** Resolves and opens a live transport; selection and recovery stay with LivePlayer. */
+/** Finds a live channel's playable link; playback, selection and recovery stay with ExoLive. */
 final class LiveStream {
+
+    /** Fixture transport for device tests; never assigned by app code. */
+    interface Resolver {
+        String resolve(String locator, NativeHttp http) throws Exception;
+    }
 
     static final class Resolution {
 
@@ -22,7 +23,7 @@ final class LiveStream {
         }
     }
 
-    static Resolution resolve(Context context, String locator, NativeHttp http, LivePlayer.Resolver fixture)
+    static Resolution resolve(Context context, String locator, NativeHttp http, Resolver fixture)
         throws Exception {
         EngineSources.Stream stream = EngineSources.locator(locator)
             ? EngineSources.resolve(context.getApplicationContext(), locator, http)
@@ -47,24 +48,5 @@ final class LiveStream {
             throw e;
         }
         return new Resolution(stream, resolved, nextRelay);
-    }
-
-    static void play(
-        LibVLC engine,
-        MediaPlayer player,
-        String stream,
-        String userAgent,
-        String referer,
-        ProviderRelay relay,
-        boolean softwareVideo
-    ) {
-        Media media = new Media(engine, Uri.parse(stream));
-        media.setHWDecoderEnabled(!softwareVideo, false);
-        media.addOption(":network-caching=" + PlaybackBuffer.live(stream, relay != null));
-        if (userAgent != null) media.addOption(":http-user-agent=" + userAgent);
-        if (referer != null && !referer.isEmpty()) media.addOption(":http-referrer=" + referer);
-        player.setMedia(media);
-        media.release();
-        player.play();
     }
 }

@@ -20,10 +20,6 @@ final class PlayerOverlay {
     private PlayerOverlay() {}
 
     static void build(VlcPlaybackActivity a, FrameLayout root) {
-        if (a.live) {
-            liveState(a);
-            return;
-        }
         // Streaming-app layout: the title on a shade at the top; at the bottom a full-width
         // timeline with the time on the right, then play controls on the left and options on
         // the right. The whole overlay hides together.
@@ -87,7 +83,7 @@ final class PlayerOverlay {
                 }
 
                 public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
-                    if (fromUser && a.player != null && !a.live && a.player.isSeekable()) {
+                    if (fromUser && a.player != null && a.player.isSeekable()) {
                         // Moving along the bar jumps once, when it stops, not at every step.
                         long length = a.player.getLength();
                         a.showSkipTarget(a.skips.moveTo((length * value) / 1000, length), length);
@@ -104,10 +100,10 @@ final class PlayerOverlay {
         buttons.setClipChildren(false);
         buttons.setClipToPadding(false);
         bottom.setClipChildren(false);
-        if (!a.live) add(a, buttons, R.drawable.ic_player_back10, "10", "−10 s", () -> a.seek(-10000));
+        add(a, buttons, R.drawable.ic_player_back10, "10", "−10 s", () -> a.seek(-10000));
         a.pause = add(a, buttons, R.drawable.ic_player_pause, null, "Pause", a::toggle);
         a.pauseIcon = (ImageView) ((ViewGroup) a.pause).getChildAt(0);
-        if (!a.live) add(a, buttons, R.drawable.ic_player_forward10, "10", "+10 s", () -> a.seek(10000));
+        add(a, buttons, R.drawable.ic_player_forward10, "10", "+10 s", () -> a.seek(10000));
         buttons.addView(new android.view.View(a), new LinearLayout.LayoutParams(0, 1, 1));
         add(
             a,
@@ -141,20 +137,6 @@ final class PlayerOverlay {
         );
         hintLayout.topMargin = a.dp(96);
         root.addView(a.exitHint, hintLayout);
-    }
-
-    /** Live TV has one visible overlay (SkyOverlay); shared playback bookkeeping needs no film UI. */
-    private static void liveState(VlcPlaybackActivity a) {
-        a.controls = new View(a);
-        a.controls.setVisibility(View.GONE);
-        a.titleView = new TextView(a);
-        a.titleView.setText(a.getIntent().getStringExtra("title"));
-        a.speed = new TextView(a);
-        a.timeLeft = new TextView(a);
-        a.timeline = new SeekBar(a);
-        a.pause = new View(a);
-        a.pauseIcon = new ImageView(a);
-        a.exitHint = new TextView(a);
     }
 
     private static android.graphics.drawable.GradientDrawable shade(

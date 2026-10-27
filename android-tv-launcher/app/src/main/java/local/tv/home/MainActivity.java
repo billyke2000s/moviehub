@@ -370,7 +370,7 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
-        if (ExoLive.available()) stage = new LiveStage(this);
+        stage = new LiveStage(this);
         tvFullscreen();
         android.content.IntentFilter changes = new android.content.IntentFilter();
         changes.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -643,26 +643,22 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
             Diagnostics.recovered("Saving recent playback", e);
             /* History failure must never prevent playback. */
         }
-        if (live && stage != null) {
+        // Live TV plays on the one screen's ExoPlayer picture (LiveStage), never in a separate player.
+        if (live) {
             stage.fullScreen(title, safe, id);
             return;
         }
-        if (!live) {
-            SeriesPlayback.restore(metadata);
-            SeriesPlayback.prefetch(this, metadata);
-        }
+        SeriesPlayback.restore(metadata);
+        SeriesPlayback.prefetch(this, metadata);
         try {
             startActivity(
                 new Intent(this, VlcPlaybackActivity.class)
                     .putExtra("title", title)
                     .putExtra("url", safe)
                     .putExtra("id", id)
-                    .putExtra("live", live)
-                    .putExtra("liveGuide", live ? LiveGuideState.save(LiveZapper.session) : null)
-                    .putExtra("vodSession", live ? null : VodSources.remember(sources))
+                    .putExtra("vodSession", VodSources.remember(sources))
                     .putExtra("episodeKey", metadata == null ? null : metadata.optString("episodeKey", null))
-                    .putExtra("titleKey", ResumePoint.titleKey(metadata)),
-                live ? ActivityOptions.makeCustomAnimation(this, 0, 0).toBundle() : null
+                    .putExtra("titleKey", ResumePoint.titleKey(metadata))
             );
         } catch (Exception e) {
             toast("Playback could not be started");

@@ -5,12 +5,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
-import org.videolan.libvlc.MediaPlayer;
 
 /**
  * The live picture in the corner of the TV guide, as on a satellite box: the channel you were
  * last watching keeps playing while you browse. It shares the one live player with the full
- * screen ({@link LivePlayer}), so going between them moves the picture without reconnecting.
+ * screen ({@link ExoLive}, drawn by {@link LiveStage}), so going between them moves the picture
+ * without reconnecting.
  * Stopped when the guide closes, unless the full screen has taken the player over.
  */
 final class GuidePicture {
@@ -43,11 +43,10 @@ final class GuidePicture {
             return;
         }
         // Take over at once (before the full-screen player stops), so the stream never pauses.
-        boolean carryOn = ExoLive.available() ? ExoLive.active() : LivePlayer.active();
+        boolean carryOn = ExoLive.active();
         if (carryOn) {
             attach(activity, holder);
-            if (ExoLive.available()) ExoLive.resume();
-            else LivePlayer.resume();
+            ExoLive.resume();
             playing = carryOn;
         } else removeVideo();
         String key = activity.prefs.getString(LiveTvScreen.LAST_CHANNEL, "");
@@ -60,11 +59,7 @@ final class GuidePicture {
             () -> {
                 try {
                     ChannelDatabase.Row row = db.byKey(key);
-                    if (row != null) return new Object[] {
-                        row,
-                        carryOn ? null : db.url(row.id, row.key),
-                        db.copies(row),
-                    };
+                    if (row != null) return new Object[] { row, carryOn ? null : db.url(row.id, row.key) };
                 } catch (Exception e) {
                     Diagnostics.recovered("Finding the guide picture's channel", e);
                 }
@@ -79,17 +74,13 @@ final class GuidePicture {
                 }
                 String name = row.number + " " + row.name;
                 label.setText(name);
-                if (carryOn) {
-                    configureBackups(activity, result);
-                    return;
-                }
+                if (carryOn) return;
                 if (ParentalLock.locked(activity, row)) {
                     label.setText(name + "  ·  Locked");
                     return;
                 }
                 try {
                     start(activity, holder, Playlist.networkUrl((String) result[1], activity.http()));
-                    configureBackups(activity, result);
                 } catch (Exception e) {
                     label.setText(name + "  ·  No picture");
                 }
@@ -97,17 +88,10 @@ final class GuidePicture {
         );
     }
 
-    @SuppressWarnings("unchecked")
-    private void configureBackups(Context context, Object[] result) {
-        if (ExoLive.available()) return; // the ExoPlayer engine prepares no standby player
-        LivePlayer.backups(context, (java.util.List<ChannelDatabase.Row>) result[2]);
-    }
-
     /** Plays {@code url} in {@code holder} on the shared live player. */
     void start(Context context, FrameLayout holder, String url) {
         try {
-            if (ExoLive.available()) ExoLive.play(context, url, false);
-            else LivePlayer.play(context, url, PlayerOptions.live(context), false);
+            ExoLive.play(context, url, false);
             attach(context, holder);
         } catch (RuntimeException e) {
             Diagnostics.recovered("Starting the guide picture", e);
@@ -121,31 +105,14 @@ final class GuidePicture {
             video = new FrameLayout(context);
             holder.addView(video, 0, new FrameLayout.LayoutParams(-1, -1));
         }
-        if (ExoLive.available()) {
-            attachExo(context);
-            return;
-        }
-        LivePlayer.attach(this, video, this::event, () -> playing = false, null, () -> playing = true);
-    }
-
-    private void event(MediaPlayer.Event event) {
-        if (event.type == MediaPlayer.Event.Playing) playing = true;
-        else if (
-            event.type == MediaPlayer.Event.EncounteredError || event.type == MediaPlayer.Event.Stopped
-        ) playing = false;
-    }
-
-    /** The one Live TV picture is placed over this box. */
-    private void attachExo(Context context) {
+        // The one Live TV picture is placed over this box.
         if (host != null && host.stage != null) host.stage.picture(box, label);
     }
 
     /** The guide closed: stops the live player unless the full screen has taken it over. */
     void stop() {
         playing = false;
-        if (ExoLive.available()) {
-            if (host != null && host.stage != null && !host.stage.full()) host.stage.pictureStopped();
-        } else LivePlayer.stopIfOwner(this);
+        if (host != null && host.stage != null && !host.stage.full()) host.stage.pictureStopped();
         removeVideo();
     }
 
