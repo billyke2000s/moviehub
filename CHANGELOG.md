@@ -1,4 +1,6 @@
-## Unreleased — runtime and source metadata
+## Unreleased
+
+## 1.0.15 (27 October 2026)
 
 - Show each discovered link directly on the Play sources page, including multiple links from one website. Refresh its own resolution, audio format/channels and declared bitrate in place; keep unknown fields explicit.
 
