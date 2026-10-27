@@ -1,0 +1,40 @@
+name: Check reported HLS headers on Android
+on:
+  push:
+    branches: [audit/vixsrc-android-metadata]
+    paths: ['.github/workflows/audit-vixsrc-android-metadata.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: '9.6.0'
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Inspect reported public stream with the real Android metadata reader
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 28
+          arch: x86_64
+          profile: tv_1080p
+          disable-animations: true
+          script: bash android-tv-launcher/tests/run-live-hls-metadata.sh
