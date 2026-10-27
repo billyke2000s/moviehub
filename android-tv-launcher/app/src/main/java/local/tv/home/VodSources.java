@@ -107,11 +107,17 @@ final class VodSources {
     }
 
     static VodSourceFailover.Source entry(SourceRepository.Source source) {
+        String audio = SourceRanking.audioLabel(source.title);
         VodSourceFailover.Source entry = new VodSourceFailover.Source(
             source.uri,
-            SourcesScreen.provider(source.title) + " · " + SourcesScreen.badge(source),
+            QualityClaims.sourceLabel(
+                SourcesScreen.badge(source),
+                audio,
+                SourcesScreen.provider(source.title)
+            ),
             SourcesScreen.provider(source.title)
         );
+        entry.audio = audio;
         // A camera copy's picture size is real but it is never a better source to suggest.
         if (source.confirmed && source.ranking != null && !SourceRanking.camera(source.ranking)) {
             entry.confirmed = SourceRanking.resolution(source.ranking);
@@ -145,7 +151,9 @@ final class VodSources {
         rest.sort(
             Comparator.comparingInt((SourceRepository.Source source) ->
                 SourceRanking.rank(source.title, quality)
-            ).reversed()
+            )
+                .thenComparingInt(source -> SourceRanking.audio(source.title))
+                .reversed()
         );
         Set<String> seen = new HashSet<>();
         seen.add(selected.uri);

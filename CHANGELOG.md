@@ -1,3 +1,7 @@
+## Unreleased
+
+- Sources show quality and audio first, then the website ("1080p ✓ · 5.1 · website"), so a long website name no longer hides the quality. Links that name surround sound show "Atmos", "7.1" or "5.1" (the website's claim, from the release name), and rank above stereo or unstated links of the same picture quality.
+
 ## 1.0.12 (27 October 2026)
 
 - Fix: after a stream dies, the backup source, Try again and the saved resume point now carry on from where you actually were, not from the dead stream's reported time (which could be 0:00 or the very end, making every backup "end" at once).

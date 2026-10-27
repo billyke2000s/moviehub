@@ -74,7 +74,8 @@ final class VodQuality {
             tier,
             source.confirmed,
             source.claimed,
-            source.playlist
+            source.playlist,
+            source.audio
         );
         // Only a file's real size judges the website: a playlist may play below what it offers
         // because of the connection, and a size already read from the file was judged then.

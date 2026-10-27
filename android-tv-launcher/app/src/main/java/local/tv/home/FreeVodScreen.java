@@ -103,7 +103,11 @@ final class FreeVodScreen {
                                             source.files.optJSONObject(0).optString("link")
                                         ).getHost();
                                         panel.option(
-                                            SourcesScreen.badge(source) + " · " + host + " · Link " + (i + 1),
+                                            QualityClaims.sourceLabel(
+                                                SourcesScreen.badge(source),
+                                                SourceRanking.audioLabel(source.title),
+                                                host + " · Link " + (i + 1)
+                                            ),
                                             () -> {
                                                 handedOff = true;
                                                 play(

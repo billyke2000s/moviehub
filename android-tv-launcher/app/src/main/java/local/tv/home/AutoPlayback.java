@@ -68,7 +68,9 @@ final class AutoPlayback {
         ready.sort(
             Comparator.comparingInt((SourceRepository.Source source) ->
                 SourceRanking.rank(source.title, quality)
-            ).reversed()
+            )
+                .thenComparingInt(source -> SourceRanking.audio(source.title))
+                .reversed()
         );
         for (int i = 0; i < Math.min(5, ready.size()); i++) {
             if (cancelled.get()) return null;

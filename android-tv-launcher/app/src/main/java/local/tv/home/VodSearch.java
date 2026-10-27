@@ -40,7 +40,8 @@ final class VodSearch implements AutoCloseable {
                 quality,
                 source.probeMbps,
                 source.responseMs,
-                source.confirmed
+                source.confirmed,
+                SourceRanking.audio(source.title)
             )
         );
         // Good enough to start at once: the preferred quality, but 1080p when 4K is preferred.
@@ -102,7 +103,9 @@ final class VodSearch implements AutoCloseable {
                     sources.sort(
                         Comparator.comparingInt((SourceRepository.Source source) ->
                             SourceRanking.rank(source.title, quality)
-                        ).reversed()
+                        )
+                            .thenComparingInt(source -> SourceRanking.audio(source.title))
+                            .reversed()
                     );
                     int attempted = 0;
                     for (SourceRepository.Source source : sources) {

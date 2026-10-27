@@ -275,17 +275,17 @@ public class PlaybackTest {
         // The real fixture is 160×90; the website said 1080p.
         VodSourceFailover.Source labelled = new VodSourceFailover.Source(
             "labelled",
-            "fixture.example · 1080p",
+            "1080p · fixture.example",
             "fixture.example"
         );
         labelled.claimed = "1080p";
         labelled.site = "fixture.example";
         // A website's claim alone is never suggested; a size read from the file is.
-        VodSourceFailover.Source claimedOnly = new VodSourceFailover.Source("claimed", "other · 4K", "other");
+        VodSourceFailover.Source claimedOnly = new VodSourceFailover.Source("claimed", "4K · other", "other");
         claimedOnly.claimed = "4K";
         VodSourceFailover.Source confirmed = new VodSourceFailover.Source(
             "confirmed",
-            "better · 720p ✓",
+            "720p ✓ · better",
             "better"
         );
         confirmed.claimed = "720p";
@@ -304,7 +304,7 @@ public class PlaybackTest {
             openVod(session);
             await(() -> labelled.actual > 0, 15000);
             assertEquals(90, labelled.actual);
-            assertEquals("fixture.example · 90p ✓ (said 1080p)", labelled.label);
+            assertEquals("90p ✓ (said 1080p) · fixture.example", labelled.label);
             assertEquals("1", prefs.getString("quality_claims.fixture.example", ""));
             java.util.concurrent.atomic.AtomicInteger announced =
                 new java.util.concurrent.atomic.AtomicInteger();

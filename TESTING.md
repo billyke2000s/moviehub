@@ -656,6 +656,15 @@ row, and that film rows are typed as films and series rows as series. Not covere
 thumb buttons on screen, For you actually changing after a rating (it needs real TMDB), the New
 episode label on screen, and the Anime screen loading real TMDB rows.
 
+## Audio badges and quality-first source labels (27 October 2026)
+
+`StreamRateTest` (core) adds 18 audio checks: Atmos, 7.1 and 5.1 written in the usual release-name
+forms (with codec, dots, spaces, "6CH"), file sizes such as "5.1 GB" and "Season 5 1080p" not
+counted, labels, and ranking (more channels first among equal quality, never above a better picture
+or a confirmed one). `QualityClaimsTest` checks the quality · audio · website order.
+`PlaybackTest.playingFilmCorrectsAnOverstatedLabel…` expects the new order. Not checked by a test:
+how the labels look on screen, and how often release names state audio wrongly.
+
 ## Broken sources marked as watched (27 October 2026)
 
 `PlaybackEndTest` (core, 28 checks) covers when a stop counts as a finish: a source that ends with

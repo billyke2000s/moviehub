@@ -21,6 +21,8 @@ final class VodSourceFailover {
         final String url;
         /** Shown in the Sources menu; corrected once the real picture size is known. */
         volatile String label;
+        /** The release name's audio ("Atmos", "7.1", "5.1"), or "" when it does not say. */
+        volatile String audio = "";
         final String provider;
         /** Quality read from the file or stream (a tier such as 1080), 0 when only claimed. */
         int confirmed;
