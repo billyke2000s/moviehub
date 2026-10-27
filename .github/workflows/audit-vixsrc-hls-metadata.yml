@@ -1,0 +1,55 @@
+name: Inspect reported Vixsrc HLS metadata
+on:
+  push:
+    branches: [audit/vixsrc-hls-metadata]
+    paths: ['.github/workflows/audit-vixsrc-hls-metadata.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install requests==2.32.5 six==1.17.0
+      - name: Inspect reported episode metadata without logging playback addresses
+        env:
+          PYTHONPATH: android-tv-launcher/app/src/main/python
+        run: |
+          python - <<'PY'
+          import json,re,time,subprocess,tempfile,pathlib
+          from urllib.parse import parse_qsl,urljoin
+          from moviehub_compat import client
+          from moviehub_native import vixsrc
+          client.scope(lambda:False,timeout=30)
+          try:
+              rows=vixsrc.source().sources('/api/tv/10283/1/1',[])
+              if not rows:
+                  print('No stream resolved for the reported episode'); raise SystemExit(0)
+              url,_,encoded=rows[0]['url'].partition('|')
+              headers=dict(parse_qsl(encoded))
+              started=time.monotonic()
+              master=client.request(url,headers=headers)
+              variants=[];lines=master.splitlines()
+              for i,line in enumerate(lines):
+                  if line.startswith('#EXT-X-STREAM-INF:'):
+                      size=re.search(r'RESOLUTION=([0-9]+x[0-9]+)',line)
+                      codecs=re.search(r'CODECS="([^"]*)"',line)
+                      variants.append((i,size.group(1) if size else '',codecs.group(1) if codecs else ''))
+              print(json.dumps({'episode':'Archer S1E1','variants':[{'resolution':s,'codecs':c} for _,s,c in variants]}))
+              if not variants: raise SystemExit(0)
+              i=next((i for i,s,c in variants if s=='1920x1080'),variants[0][0])
+              child_url=urljoin(url,lines[i+1])
+              child=client.request(child_url,headers=headers)
+              methods=[re.search(r'METHOD=([^,]+)',line).group(1) for line in child.splitlines() if line.startswith('#EXT-X-KEY:')]
+              print(json.dumps({'key_methods':methods,'has_init':'#EXT-X-MAP:' in child,'has_byte_ranges':'#EXT-X-BYTERANGE:' in child,'playlist_seconds':round(time.monotonic()-started,3)}))
+              # Declarations and resource types only; no media, keys or expiring URLs are printed.
+              for line in master.splitlines():
+                  if line.startswith('#EXT-X-MEDIA:') and 'TYPE=AUDIO' in line:
+                      print(json.dumps({'audio_attributes':{k:v for k,v in re.findall(r'([A-Z-]+)="?([^",]+)',line.split(':',1)[1]) if k in ('TYPE','GROUP-ID','CHANNELS','LANGUAGE','DEFAULT')}}))
+          except Exception as error:
+              print('Live metadata inspection unavailable: '+type(error).__name__)
+          PY
