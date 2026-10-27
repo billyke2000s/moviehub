@@ -108,7 +108,7 @@ jobs:
           arch: x86_64
           profile: tv_1080p
           disable-animations: true
-          script: gradle -p android-tv-launcher --no-daemon connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=local.tv.home.MediaMetadataProbeTest && bash android-tv-launcher/tests/run-device-tests.sh
+          script: gradle -p android-tv-launcher --no-daemon connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=local.tv.home.MediaMetadataProbeTest,local.tv.home.PlaybackTest#playingFilmCorrectsAnOverstatedLabelAndOnlySuggestsAConfirmedBetterSource && bash android-tv-launcher/tests/run-device-tests.sh
       - name: List failed device tests
         if: failure()
         run: python3 android-tv-launcher/tests/report-test-failures.py android-tv-launcher/app/build/outputs/androidTest-results

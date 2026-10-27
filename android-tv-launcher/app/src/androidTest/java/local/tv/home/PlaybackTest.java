@@ -492,7 +492,25 @@ public class PlaybackTest {
             assertEquals(90, labelled.actual);
             assertTrue(labelled.label, labelled.label.startsWith("90p ✓ (said 1080p)"));
             assertTrue(labelled.label, labelled.label.contains("160×90"));
-            assertTrue(labelled.label, labelled.label.contains("AAC"));
+            // Video and selected audio metadata arrive independently from the native player.
+            long audioDeadline = SystemClock.elapsedRealtime() + 5000;
+            while (!labelled.label.contains("AAC") && SystemClock.elapsedRealtime() < audioDeadline) {
+                SystemClock.sleep(100);
+            }
+            StringBuilder tracks = new StringBuilder();
+            instrumentation.runOnMainSync(() -> {
+                tracks.append(" selected=").append(player().getAudioTrack());
+                var media = player().getMedia();
+                if (media != null) try {
+                    for (int index = 0; index < media.getTrackCount(); index++) {
+                        var track = media.getTrack(index);
+                        tracks.append(" [").append(track.id).append(" ").append(track.codec).append("]");
+                    }
+                } finally {
+                    media.release();
+                }
+            });
+            assertTrue(tracks + " label=" + labelled.label, labelled.label.contains("AAC"));
             assertEquals(MediaFacts.Origin.PLAYING, labelled.facts.value.origin);
             assertEquals("1", prefs.getString("quality_claims.fixture.example", ""));
             java.util.concurrent.atomic.AtomicInteger announced =
