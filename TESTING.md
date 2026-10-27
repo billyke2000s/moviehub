@@ -658,9 +658,10 @@ episode label on screen, and the Anime screen loading real TMDB rows.
 
 ## Broken sources marked as watched (27 October 2026)
 
-`PlaybackEndTest` (core, 20 checks) covers when a stop counts as a finish: a source that ends with
+`PlaybackEndTest` (core, 22 checks) covers when a stop counts as a finish: a source that ends with
 nothing played, a short clip, an unknown length with little played and a stream cut off part-way do
-not; the end, the credits window and a time past the length do. It also covers leaving the player
+not, nor does a resume point well past the end of a shorter copy; the end, the credits window and
+a reading just past the length do. It also covers leaving the player
 and the unchanged `ResumePoint` completion rule. Not covered: the player acting on it (LibVLC's
 end event, failover to another source), which no device test drives with a broken source.
 
