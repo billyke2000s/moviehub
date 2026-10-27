@@ -479,3 +479,7 @@ Website labels such as "1080p" are claims. `moviehub_vod.playable` already reads
 ## FMHY Rive adapter
 
 `moviehub_native/rive.py` implements the existing movie/tvshow/episode/sources/resolve contract, using TMDB identities and the public anonymous Primevids/Citadel endpoint. `moviehub_native.PROVIDERS` registers the website. Existing website grouping, source keys, ranking, audio handling, credentials and persistence are unchanged. Every returned distinct URL retains its own source row. Citadel opts into the existing carrier path: whole-entity zero-range TS reads are sniffed before selecting the MIME type, including when the origin incorrectly says image/jpeg. Unflagged range handling is unchanged.
+
+## Additional FMHY delivery routes (27 October 2026)
+
+`moviehub_native/movy.py` translates the public seed-bound response decoder and uses Boise and Miami only. Movie requests omit episode parameters; series retain the series title, TMDB identity and exact season/episode. `atlantic.py` uses the public Moscow endpoint and Android's existing AES-GCM implementation through Chaquopy to read its response envelope; no crypto dependency or downloaded-script execution is added. Rive adds Vanguard while retaining its existing routes. All adapters return the established `direct` contract, with distinct origin labels and ordinary header/media validation. The existing Java engine, relay, ranking and source keys are unchanged. Discovery now has 39 enabled websites and 42 adapters (73 bundled constructors, including excluded sites).

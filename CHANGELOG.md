@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Add Movy Boise/Miami and Atlantic Moscow through the existing free-source engine; add Rive Vanguard. Each delivery route remains a separate source, with per-link quality probing.
+
 - Thumbs up / thumbs down on every title page and in the Hold Select menu. A thumbs up makes For you suggest more like it; a thumbs down keeps that title out of For you. Choosing the same thumb again clears it.
 - Continue watching marks a next episode that aired in the last 7 days as "New episode", in the accent colour.
 - New Anime section on Home: popular and top rated anime series and films, airing this week, new series and anime by genre, from TMDB (Japanese animation).

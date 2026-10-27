@@ -655,3 +655,11 @@ Anime row is Japanese animation without adult titles, routes are unique, the air
 row, and that film rows are typed as films and series rows as series. Not covered by tests: the
 thumb buttons on screen, For you actually changing after a rating (it needs real TMDB), the New
 episode label on screen, and the Anime screen loading real TMDB rows.
+
+## Additional FMHY route checks (27 October 2026)
+
+The combined change includes PR #172 (ratings, recent-episode labels and Anime). Local core checks pass using Eclipse JDT with Java 17; provider-engine tests pass; the Python suite passes 69 tests. New fixtures cover the Movy decoder against a frozen independent JavaScript vector, wrong identities/seeds, separate labels for identical media URLs, omitted movie episode parameters, exact episode identity, cancellation, protected/private targets and backend failure isolation. Android fixtures decrypt a synthetic Moscow envelope with the actual system cipher and reject a modified authentication tag.
+
+Earlier representative Inception desktop checks decoded Movy Boise/Miami at 3840×2160 with AAC and Rive Vanguard at 3840×1600 HEVC with separate decoded audio; full playlists were about 148 minutes. Atlantic Moscow decoded 1920×800 H.264/AAC with a similar runtime. These observations establish sampled desktop playback, not Android/TV playback. Fresh integration probes obtained eight Movy links, Rive Vanguard and a decoded Moscow URL. Local DNS is unavailable: these fresh HTTP probes used curl's network transport and did not exercise the app's DNS guard. Production URL guards remain unchanged.
+
+The existing opt-in Android live audit now also runs for these adapters on PRs, checks movie and exact-episode sources independently, and requires every selected returned link plus every named delivery route to pass. Its source-name filter affects only the audit. Build/lint, device fixtures and live Android results must be read from the integration PR; no physical-TV claim is made.
