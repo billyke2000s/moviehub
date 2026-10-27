@@ -111,7 +111,20 @@ final class ForYou {
     }
 
     private JSONObject trending(int page) throws Exception {
-        return source.get("trending/all/week?page=" + page);
+        JSONObject response = source.get("trending/all/week?page=" + page);
+        JSONArray items = response.optJSONArray("results"),
+            filtered = new JSONArray();
+        Set<String> disliked = new HashSet<>(
+            TitleRatings.rated(prefs.getString(TitleRatings.PREF, ""), TitleRatings.DISLIKE)
+        );
+        if (items != null) for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.optJSONObject(i);
+            if (
+                item != null &&
+                !disliked.contains(TitleRatings.key(item.optString("media_type"), item.optInt("id")))
+            ) filtered.put(item);
+        }
+        return response.put("results", filtered);
     }
 
     private JSONArray build(List<Seed> seeds) {
