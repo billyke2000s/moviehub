@@ -42,7 +42,6 @@ final class LiveRace {
     private final Map<Integer, String> locators = new HashMap<>();
     private final Map<Integer, NativeHttp> requests = new HashMap<>();
     private final Map<Integer, Future<?>> tasks = new HashMap<>();
-    private final Runnable windowClosed = this::choose;
     private final Runnable tieEnded = this::choose;
     private boolean cancelled,
         choosing = true;
@@ -63,8 +62,11 @@ final class LiveRace {
         this.allowHttp = allowHttp;
         this.listener = listener;
         int[] quality = new int[candidates.length];
+        long now = SystemClock.elapsedRealtime();
         for (int i = 0; i < candidates.length; i++) {
-            quality[i] = SourceRanking.resolution(copies.get(candidates[i]).name);
+            ChannelDatabase.Row row = copies.get(candidates[i]);
+            // A copy that fell back from an upgrade recently goes last (LiveUpgrade's cooldown).
+            quality[i] = LiveUpgrade.cooling(row.key, now) ? 0 : SourceRanking.resolution(row.name);
         }
         plan = new LiveRacePlan(candidates, quality, SystemClock.elapsedRealtime());
     }
@@ -72,7 +74,47 @@ final class LiveRace {
     void start() {
         launch();
         main.postDelayed(tieEnded, Math.max(0, plan.tieEnds() - SystemClock.elapsedRealtime()));
-        main.postDelayed(windowClosed, Math.max(0, plan.windowEnds() - SystemClock.elapsedRealtime()));
+    }
+
+    /** Whether a copy found by the race is playing (not still choosing one). */
+    boolean settled() {
+        return !cancelled && !choosing && current >= 0;
+    }
+
+    /** Whether copy {@code index} is being looked up now (LiveUpgrade waits for it). */
+    boolean lookingUp(int index) {
+        return !cancelled && plan.lookingUp(index);
+    }
+
+    /** Whether copy {@code index} was found and waits unused. */
+    boolean ready(int index) {
+        return !cancelled && ready.containsKey(index);
+    }
+
+    /**
+     * LiveUpgrade plays copy {@code index} now: hands over its link if this race found it
+     * (the caller then owns it), else null. Either way the race treats it as the copy playing.
+     */
+    Found take(int index) {
+        if (cancelled) return null;
+        LiveStream.Resolution source = ready.remove(index);
+        String locator = locators.get(index);
+        Future<?> task = tasks.remove(index);
+        if (task != null) task.cancel(true);
+        NativeHttp http = requests.remove(index);
+        if (http != null) http.cancel();
+        plan.playing(index);
+        current = index;
+        choosing = false;
+        main.removeCallbacks(tieEnded);
+        return source == null ? null : new Found(locator, source);
+    }
+
+    /** The upgraded copy {@code failed} did not hold: copy {@code previous} plays again. */
+    void fellBack(int previous, int failed) {
+        if (cancelled) return;
+        plan.failed(failed);
+        current = previous;
     }
 
     /** Whether another copy could still be tried after the one playing. */
@@ -95,7 +137,7 @@ final class LiveRace {
     void cancel() {
         if (cancelled) return;
         cancelled = true;
-        main.removeCallbacks(windowClosed);
+        main.removeCallbacks(tieEnded);
         for (NativeHttp http : requests.values()) http.cancel();
         for (Future<?> task : tasks.values()) task.cancel(true);
         for (LiveStream.Resolution source : ready.values()) close(source);
@@ -119,12 +161,9 @@ final class LiveRace {
                 LiveStream.Resolution source = null;
                 Exception failure = null;
                 try {
-                    locator = Playlist.networkUrl(db.url(row.id, row.key), allowHttp);
-                    // Plain stream addresses need no lookup; provider channels do (as ExoLive.open).
-                    source =
-                        PlutoSource.nativeUrl(locator) || EngineSources.locator(locator)
-                            ? LiveStream.resolve(context, locator, http, null)
-                            : new LiveStream.Resolution(null, locator, null);
+                    Found found = find(context, db, row, allowHttp, http);
+                    locator = found.locator;
+                    source = found.source;
                 } catch (Exception e) {
                     failure = e;
                 }
@@ -136,10 +175,40 @@ final class LiveRace {
         );
     }
 
+    /** A copy's address and its playable link. */
+    static final class Found {
+
+        final String locator;
+        final LiveStream.Resolution source;
+
+        Found(String locator, LiveStream.Resolution source) {
+            this.locator = locator;
+            this.source = source;
+        }
+    }
+
+    /** Looks up one copy's link. Blocks: call it off the main thread. */
+    static Found find(
+        Context context,
+        ChannelDatabase db,
+        ChannelDatabase.Row row,
+        boolean allowHttp,
+        NativeHttp http
+    ) throws Exception {
+        String locator = Playlist.networkUrl(db.url(row.id, row.key), allowHttp);
+        // Plain stream addresses need no lookup; provider channels do (as ExoLive.open).
+        LiveStream.Resolution source =
+            PlutoSource.nativeUrl(locator) || EngineSources.locator(locator)
+                ? LiveStream.resolve(context, locator, http, null)
+                : new LiveStream.Resolution(null, locator, null);
+        return new Found(locator, source);
+    }
+
     private void arrived(int index, String locator, LiveStream.Resolution source, Exception failure) {
         requests.remove(index);
         tasks.remove(index);
-        if (cancelled) {
+        if (cancelled || !plan.lookingUp(index)) {
+            // Cancelled, or LiveUpgrade took this copy meanwhile and looked it up itself.
             close(source);
             return;
         }
@@ -161,7 +230,7 @@ final class LiveRace {
         if (index >= 0) {
             choosing = false;
             current = index;
-            main.removeCallbacks(windowClosed);
+            main.removeCallbacks(tieEnded);
             listener.play(index, locators.get(index), ready.remove(index));
         } else if (!plan.remaining()) {
             choosing = false;

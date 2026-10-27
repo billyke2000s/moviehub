@@ -108,6 +108,14 @@ Last updated: 25 October 2026 (1.0 promotes the experimental line into MovieHub)
    stalling provider stream or the TV box. Link renewal has no device test. The LibVLC 4 s relayed
    buffer was not ported; watch for short pauses on FreeShot/DaddyLive/ZLive.
 
+11. **Live TV quality upgrades (27 October 2026).** Quickest source first, then a better-named source
+   takes over as soon as it is found, with a 60 s trial, fallback and cooldown (`LiveUpgrade`).
+   Emulator fixtures only. Candidates are judged by their names only. The copy playing counts at the
+   better of its name and its measured picture, so a copy whose name overstates its quality is not
+   upgraded away from. Plain-address checks open one extra
+   request per candidate; not checked against providers that limit connections. Only the full screen
+   upgrades; the guide's corner picture does not.
+
 ## Decisions
 
 - Version 7 → 8 channel upgrades must add `main` before renumbering the preferred copies.

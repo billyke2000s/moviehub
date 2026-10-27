@@ -22,20 +22,23 @@ public final class LiveRacePlanTest {
         same(Arrays.asList(3, 2, 0), plan.launch());
         same(Arrays.asList(), plan.launch());
 
-        // A fast SD link while the 1080p and 720p are still being looked up: wait inside the window…
+        // The quickest link plays: a fast SD link is not held back for the 1080p and 720p still
+        // being looked up (LiveUpgrade switches to a better copy when one is found)…
         plan.resolved(0);
-        same(-1, plan.pick(1000));
-        // …the 720p arrives; the 1080p could still beat it, so keep waiting…
+        same(0, plan.pick(1000));
+        same(true, plan.lookingUp(3));
+        same(false, plan.lookingUp(0));
+        // …the 720p arrives while the SD plays (LiveRace asks pick() again only after a failure).
         plan.resolved(2);
-        same(-1, plan.pick(2000));
-        // …the window closes: play the best found so far.
-        same(2, plan.pick(LiveRacePlan.WINDOW_MS));
 
-        // The 720p does not play: the SD already found plays at once, without waiting again,
-        // even though the 1080p is still being looked up.
+        // LiveUpgrade takes the 720p and plays it; the SD plays no more, the 1080p is still pending.
+        plan.playing(2);
+        same(false, plan.lookingUp(2));
+        // The 720p does not hold: the next copy found plays at once, without waiting.
         plan.failed(2);
-        same(Arrays.asList(1), plan.launch());
-        same(0, plan.pick(LiveRacePlan.WINDOW_MS + 1));
+        same(Arrays.asList(1, 4), plan.launch());
+        plan.resolved(1);
+        same(1, plan.pick(3000));
         same(true, plan.remaining());
 
         // The best possible copy found first plays immediately, inside the window.

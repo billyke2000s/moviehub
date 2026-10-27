@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 /**
  * One screen for all of Live TV. MovieHub's pages (the TV Guide menu, the
@@ -38,6 +39,8 @@ final class LiveStage implements LiveScreen {
     /** Looks up several copies at once when a channel starts (see LiveRace); null when idle. */
     private LiveRace race;
     private int[] raceCopies = new int[0];
+    /** Moves to a better copy as soon as one is found, and back if it does not hold. */
+    private final LiveUpgrade upgrade = new LiveUpgrade(this);
     private String url, title;
     /** The guide's corner box the picture sits over, or null when no guide is showing. */
     private View anchor;
@@ -71,6 +74,8 @@ final class LiveStage implements LiveScreen {
         @Override
         public boolean hasAlternative() {
             if (!full || !foreground) return false;
+            // An upgraded copy on trial: the copy before it is waiting to come back.
+            if (upgrade.trial()) return true;
             if (race != null) return race.hasAlternative();
             return zapper != null && zapper.hasUntriedCopy();
         }
@@ -187,6 +192,7 @@ final class LiveStage implements LiveScreen {
     void release() {
         if (full) exitFull(false);
         endRace(false);
+        upgrade.stop();
         overlayHandler.removeCallbacksAndMessages(null);
         ExoLive.stopIfOwner(this);
         clearAnchor();
@@ -291,6 +297,7 @@ final class LiveStage implements LiveScreen {
     /** Watches {@code channelUrl} full screen on the same picture (MainActivity.play). */
     void fullScreen(String channelTitle, String channelUrl, String id) {
         endRace(false);
+        upgrade.reset();
         url = channelUrl;
         title = channelTitle;
         focusBeforeFull = a.getCurrentFocus();
@@ -334,6 +341,7 @@ final class LiveStage implements LiveScreen {
         full = false;
         SidePanel.closeFor(a);
         endRace(false);
+        upgrade.stop();
         if (zapper != null) zapper.close();
         zapper = null;
         overlayHandler.removeCallbacksAndMessages(null);
@@ -357,6 +365,7 @@ final class LiveStage implements LiveScreen {
     void stopped() {
         foreground = false;
         endRace(false);
+        upgrade.stop();
         overlayHandler.removeCallbacksAndMessages(null);
         ExoLive.stopIfOwner(this);
     }
@@ -377,6 +386,7 @@ final class LiveStage implements LiveScreen {
     void started() {
         foreground = true;
         if (!full || url == null) return;
+        upgrade.reset();
         ExoLive.attach(this, surface, events);
         if (!ExoLive.play(a, url, false)) opening("Opening channel…");
     }
@@ -460,6 +470,7 @@ final class LiveStage implements LiveScreen {
     private void reconnect() {
         if (url == null) return;
         endRace(false);
+        upgrade.reset();
         liveFailed = false;
         opening("Reconnecting…");
         ExoLive.attach(this, surface, events);
@@ -473,6 +484,8 @@ final class LiveStage implements LiveScreen {
 
     private void showError(String reason) {
         if (!full || !foreground) return;
+        // An upgraded copy on trial failed or kept buffering: the copy before it comes back.
+        if (upgrade.failed()) return;
         if (race != null) {
             // The next copy already found (or the next one being looked up) takes over.
             if (race.hasAlternative()) {
@@ -510,10 +523,57 @@ final class LiveStage implements LiveScreen {
         if (!full || !foreground || ExoLive.isPlaying()) return;
         // Start again from the first copy, so every copy gets another go; or the one copy again.
         if (zapper == null || !zapper.retryFromFirst()) {
+            upgrade.reset();
             ExoLive.attach(this, surface, events);
             ExoLive.play(a, url, true);
         }
         // The new attempt schedules its next retry only after it actually fails.
+    }
+
+    // ---- Quality upgrades (LiveUpgrade) ---------------------------------------------------------
+
+    /** Whether an upgrade may change what plays: full screen, in front, playing, no panel open. */
+    boolean upgradeWatching() {
+        return full && foreground && !liveFailed && !dialogOpen && zapper != null && ExoLive.active();
+    }
+
+    LiveRace race() {
+        return race;
+    }
+
+    boolean allowHttp() {
+        return a.http();
+    }
+
+    /** LiveUpgrade found a better copy: it plays now, with the race's short startup budget. */
+    void upgradeTo(int index, String locator, LiveStream.Resolution source) {
+        if (!full || !foreground || zapper == null) {
+            if (source != null && source.relay != null) source.relay.close();
+            return;
+        }
+        url = locator;
+        zapper.raceSelected(index);
+        status.setVisibility(View.GONE);
+        ExoLive.attach(this, surface, events);
+        ExoLive.playResolved(a, locator, source);
+        // The copy before is ready to come back, as a race standby would be.
+        overlayHandler.removeCallbacks(startupDeadline);
+        overlayHandler.postDelayed(
+            startupDeadline,
+            LiveSourceDeadline.milliseconds(true, zliveSource(), true)
+        );
+        Toast.makeText(a, "Better picture found: switching source", Toast.LENGTH_SHORT).show();
+    }
+
+    /** The upgraded copy {@code failed} did not hold: copy {@code previous} at {@code previousUrl} plays again. */
+    void upgradeFellBack(int previous, int failed, String previousUrl) {
+        if (race != null) race.fellBack(previous, failed);
+        url = previousUrl;
+        if (zapper != null) zapper.raceSelected(previous);
+        liveFailed = false;
+        opening("Going back to the previous source…");
+        ExoLive.attach(this, surface, events);
+        ExoLive.play(a, url, true);
     }
 
     // ---- LiveScreen ----------------------------------------------------------------------------
@@ -581,6 +641,8 @@ final class LiveStage implements LiveScreen {
         }
         title = newTitle;
         liveFailed = false;
+        // A new channel, or a copy chosen by hand or by failover: any upgrade is forgotten.
+        upgrade.reset();
         // Several copies and automatic sources: look them up at once and play the best found.
         int[] copies = zapper == null ? new int[0] : zapper.raceCandidates();
         if (copies.length > 1) {

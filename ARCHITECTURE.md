@@ -206,9 +206,28 @@ day looks the same as one refusing a country. Known US-only services (`ProviderO
 Roku, Local Now) say "US only" in their labels, and the opt-in `HIDE_US_ONLY` setting makes
 `AdapterSources.enabled` skip exactly those. `LiveRace` (rules in `LiveRacePlan`, core-tested; the first choice waits up to `TIE_MS`, 250 ms, for an equal copy ahead in priority order, so plain addresses that resolve within milliseconds are not chosen by thread timing) runs when an experimental channel with several
 copies starts with automatic sources: at most three lookups and unused standbys together, quality
-from `SourceRanking.resolution(name)` with the guide's copy order as tiebreak, a three-second first
-window only while a better copy is pending, then `ExoLive.playResolved` with the found link. Failures
-go to `LiveRace.next()` (the best standby, else the next lookup) before the zapper's failover.
+from `SourceRanking.resolution(name)` with the guide's copy order as tiebreak (a copy cooling down
+after a failed upgrade ranks last), and the quickest copy found plays at once (the three-second wait
+for a better copy was removed in October 2026), then `ExoLive.playResolved` with the found link.
+Failures go to `LiveRace.next()` (the best standby, else the next lookup) before the zapper's failover.
+
+`LiveUpgrade` (rules in `LiveUpgradePlan`, core-tested) then moves the full-screen channel to a better
+copy as soon as one is found. Once a second, with automatic sources, it picks the untried copy whose
+name claims the most lines above the copy playing, judged by the better of that copy's name and the
+best video track ExoPlayer reports (`ExoLiveTracks.bestVideoLines`), so a mislabelled SD copy that
+is really 1080 is not "upgraded". It waits while the race is still choosing or looking that copy up,
+takes the race's standby link when there is one, else looks it up itself (`LiveRace.find`) and, for
+a plain address, checks it answers (a 2xx status and first bytes within 5 s; an `.m3u8` must start
+with `#EXTM3U`). An unreachable copy is marked tried. The found copy plays through
+`LiveStage.upgradeTo` with the race's 8 s startup budget and is on trial for 60 s. During the trial,
+`hasAlternative` is true, so ExoLive's ported buffering rules (8 s stuck or 3 stalls a minute), an
+error or a missed start report it failed at once, and `LiveStage.showError` hands it to
+`LiveUpgrade.failed`: the copy before plays again (`upgradeFellBack`, a fresh `ExoLive.play`) and the
+failed copy cools down for 10 minutes, doubling on each repeat up to an hour, kept by its channel key
+across channel changes for the app session. A copy that holds its trial resets its cooldown length.
+Quality only rises and a copy that fell back cools down, so switching cannot loop. A new channel, a
+copy chosen by hand (which turns automatic sources off) or by failover, reconnecting, and leaving full
+screen reset any upgrade in progress.
 Experimental Live TV moves to the
 next source after `LiveStage.START_MS` (15 s) without a picture, or at once on an error, whenever
 `LiveZapper.hasUntriedCopy()`; with no other copy it keeps the old reopen-and-wait behaviour. Plex plays by

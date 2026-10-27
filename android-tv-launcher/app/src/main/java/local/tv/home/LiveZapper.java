@@ -531,6 +531,16 @@ final class LiveZapper {
         for (int index : indices) attemptedCopies.add(index);
     }
 
+    /** Whether copy {@code index} has not been tried since this channel was chosen (no side effects). */
+    boolean untriedCopy(int index) {
+        return (
+            index >= 0 &&
+            index < copies.size() &&
+            !attemptedCopies.contains(index) &&
+            !LivePlayer.attemptedSources.contains(copies.get(index).key)
+        );
+    }
+
     /** Whether {@link #failover} has a copy left to move to (no side effects). */
     boolean hasUntriedCopy() {
         if (!automaticSources || copies.size() <= 1) return false;

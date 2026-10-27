@@ -83,6 +83,19 @@ final class ExoLiveTracks {
         select(C.TRACK_TYPE_TEXT, wanted);
     }
 
+    /**
+     * The best picture the playing stream offers, in lines (see LiveUpgradePlan.lines): the
+     * largest of its video tracks, so an adaptive stream counts at its best quality rather than
+     * the one it has climbed to so far. 0 before the tracks are known.
+     */
+    static int bestVideoLines() {
+        int best = 0;
+        for (Format format : formats(C.TRACK_TYPE_VIDEO)) {
+            best = Math.max(best, LiveUpgradePlan.lines(format.width, format.height));
+        }
+        return best;
+    }
+
     private static List<Format> formats(int type) {
         List<Format> formats = new ArrayList<>();
         ExoPlayer player = ExoLive.player();
