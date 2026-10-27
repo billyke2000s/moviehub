@@ -2,7 +2,7 @@ package local.tv.home;
 
 import android.os.SystemClock;
 import java.util.List;
-import org.videolan.libvlc.Media;
+import org.videolan.libvlc.interfaces.IMedia;
 
 /**
  * Checks a playing film's real picture against its label, and mentions a better source when one
@@ -47,6 +47,22 @@ final class VodQuality {
     /** Called every second with the source on screen and whether it is playing. */
     void tick(int active, boolean playing) {
         if (active < 0 || active >= sources.size()) return;
+        for (VodSourceFailover.Source source : sources) {
+            MediaFacts.Value facts = source.facts.value;
+            if (
+                facts.origin == MediaFacts.Origin.UNKNOWN || facts.origin == MediaFacts.Origin.PLAYING
+            ) continue;
+            if (facts.tier() > 0) {
+                // A new Java header check replaces the old playback-only judgement, not the
+                // website's quality-trust history. Existing Python checks already judged it.
+                if (free && source.confirmed == 0 && facts.origin == MediaFacts.Origin.FILE) {
+                    FreeVodProviders.judge(activity, source.site, source.claimed, facts.tier());
+                }
+                source.confirmed = facts.tier();
+            }
+            source.label = facts.describe() + " · " + source.provider;
+        }
+        if (playing) playingFacts(active);
         if (active != timedIndex) {
             timedIndex = active;
             playingSince = 0;
@@ -57,32 +73,47 @@ final class VodQuality {
         }
         long now = SystemClock.elapsedRealtime();
         if (playingSince == 0) playingSince = now;
-        if (measuredIndex != active && now - playingSince >= settleMs) measure(active);
+        if (now - playingSince >= settleMs) measure(active);
         if (measuredIndex == active) announce(active);
     }
 
     private void measure(int active) {
-        Media.VideoTrack track = activity.player == null ? null : activity.player.getCurrentVideoTrack();
-        // No picture size yet: try again on the next tick.
-        if (track == null || track.width <= 0 || track.height <= 0) return;
-        measuredIndex = active;
         VodSourceFailover.Source source = sources.get(active);
-        int tier = VideoDetails.tier(track.width, track.height);
+        MediaFacts.Value track = source.facts.value;
+        // Use the selected-track snapshot, not LibVLC's convenience getter (which returns
+        // the first video track even when another track is selected in a multi-track file).
+        if (track.origin != MediaFacts.Origin.PLAYING || track.tier() == 0) return;
+        boolean first = measuredIndex != active;
+        measuredIndex = active;
+        int tier = track.tier();
         source.actual = tier;
-        source.label = QualityClaims.playingLabel(
+        String picture = QualityClaims.playingLabel(
             source.provider,
             tier,
             source.confirmed,
             source.claimed,
             source.playlist,
-            source.audio
+            ""
         );
+        source.label =
+            picture.replace(" · " + source.provider, "") +
+            " · " +
+            track.width +
+            "×" +
+            track.height +
+            " · " +
+            source.facts.value.audio() +
+            " · " +
+            source.facts.value.bitrate() +
+            " · " +
+            source.provider;
         // Only a file's real size judges the website: a playlist may play below what it offers
         // because of the connection, and a size already read from the file was judged then.
-        if (free && source.confirmed == 0 && !source.playlist) {
+        if (first && free && source.confirmed == 0 && !source.playlist) {
             FreeVodProviders.judge(activity, source.site, source.claimed, tier);
         }
         mismatch =
+            first &&
             source.confirmed == 0 &&
             !source.playlist &&
             QualityClaims.verdict(source.claimed, tier) == QualityClaims.OVERSTATED
@@ -91,6 +122,43 @@ final class VodQuality {
                   " · it was labelled " +
                   QualityClaims.name(SourceRanking.resolution(source.claimed))
                 : null;
+    }
+
+    private void playingFacts(int active) {
+        IMedia media = activity.player.getMedia();
+        if (media == null) return;
+        try {
+            IMedia.VideoTrack video = null;
+            IMedia.AudioTrack audio = null;
+            int videoId = activity.player.getVideoTrack(),
+                audioId = activity.player.getAudioTrack();
+            for (int i = 0; i < media.getTrackCount(); i++) {
+                IMedia.Track track = media.getTrack(i);
+                if (track instanceof IMedia.VideoTrack && track.id == videoId) video =
+                    (IMedia.VideoTrack) track;
+                if (track instanceof IMedia.AudioTrack && track.id == audioId) audio =
+                    (IMedia.AudioTrack) track;
+            }
+            if (video == null) video = activity.player.getCurrentVideoTrack();
+            if (video == null || video.width <= 0 || video.height <= 0) return;
+            VodSourceFailover.Source source = sources.get(active);
+            source.facts.value = new MediaFacts.Value(
+                MediaFacts.Origin.PLAYING,
+                video.width,
+                video.height,
+                video.codec,
+                audio == null ? "" : audio.codec,
+                audio == null ? 0 : audio.channels,
+                audio == null ? "" : audio.language,
+                video.bitrate,
+                audio == null ? 0 : audio.bitrate,
+                activity.player.getLength()
+            );
+            // Correct facts as soon as tracks exist; quality-claim notices retain their settling delay.
+            source.label = "Playing " + source.facts.value.describe() + " · " + source.provider;
+        } finally {
+            media.release();
+        }
     }
 
     /** The best confirmed quality already pointed out, 0 when none. */

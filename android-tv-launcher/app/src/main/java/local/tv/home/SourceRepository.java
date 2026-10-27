@@ -18,6 +18,23 @@ final class SourceRepository {
         final JSONArray files;
         final JSONObject headers;
         EngineSources.Stream stream;
+        String metadataLink;
+        final MediaFacts facts = new MediaFacts();
+
+        String rankingLabel() {
+            MediaFacts.Value value = facts.value;
+            if (value.tier() > 0) return (
+                QualityClaims.name(value.tier()) + (SourceRanking.camera(title) ? " CAM" : "")
+            );
+            return ranking == null ? title : ranking;
+        }
+
+        int audioRank() {
+            return facts.value.origin == MediaFacts.Origin.UNKNOWN
+                ? SourceRanking.audio(title)
+                : facts.value.audioRank();
+        }
+
         String ranking;
         double probeMbps;
         long responseMs = Long.MAX_VALUE;

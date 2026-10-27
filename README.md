@@ -23,6 +23,8 @@ _One interface for browsing, watching and live TV._
 
 ## What is MovieHub?
 
+The Play sources page shows each discovered link separately, including multiple links from the same website. Each row updates its own file metadata: `1080p ✓ · 5.1 · website`, followed by dimensions, codecs and declared bitrate when available. Unavailable fields stay unknown; adaptive playlist ceilings are labelled separately.
+
 MovieHub is an Android TV launcher and streaming application that combines film and series discovery, live television, playback and installed applications in a single interface designed for TV remotes.
 
 ### Features
@@ -242,3 +244,7 @@ MovieHub-native movie adapters can use a real TMDB identity directly. These are 
 ## FMHY provider additions
 
 Rive adds separately listed movie and episode resources through the existing native-provider bridge. Only audited Primevids/dcloud and Citadel routes are enabled; this does not advertise its unverified 4K backend. See [the new-source audit](docs/FMHY_ADDITIONS_2026_10_26.md) for tested titles, measured quality, audio, duration and outstanding checks.
+
+### VOD playback checks
+
+Known catalogue runtimes reject clearly wrong-length copies. Source lists distinguish container metadata, playlist declarations and playing tracks for resolution, audio and declared bitrate; missing details stay unknown. Metadata reads run in the background with byte/time limits. Next-episode links prepare near the end without starting playback, and failed-link replacements show a brief notice. These changes require the candidate PR build; no physical-TV result is claimed.

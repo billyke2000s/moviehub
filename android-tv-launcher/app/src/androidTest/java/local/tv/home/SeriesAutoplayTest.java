@@ -16,7 +16,8 @@ public final class SeriesAutoplayTest {
         return new JSONObject()
             .put("episode_number", number)
             .put("air_date", date)
-            .put("name", "Episode " + number);
+            .put("name", "Episode " + number)
+            .put("runtime", 25);
     }
 
     private JSONObject season(JSONObject... episodes) throws Exception {
@@ -53,7 +54,26 @@ public final class SeriesAutoplayTest {
         assertEquals(1, next.episode);
         assertEquals("123:2:1", next.metadata.getString("episodeKey"));
         assertEquals("Episode 1", next.metadata.getString("episodeTitle"));
+        assertEquals(25, next.metadata.getInt("runtime"));
         assertEquals("123:1:2", before.getString("episodeKey"));
+    }
+
+    @Test
+    public void missingNextRuntimeDoesNotInheritThePreviousEpisodeRuntime() throws Exception {
+        JSONObject before = current().put("runtime", 80);
+        SeriesPlayback.Next next = SeriesPlayback.resolve(
+            before,
+            1,
+            2,
+            path ->
+                season(
+                    episode(2, "2020-01-01"),
+                    new JSONObject().put("episode_number", 3).put("air_date", "2020-01-02")
+                ),
+            "2026-10-27"
+        );
+        assertEquals(0, next.metadata.optInt("runtime"));
+        assertEquals(80, before.optInt("runtime"));
     }
 
     @Test

@@ -1,5 +1,30 @@
 # Testing
 
+## VOD runtime, metadata and continuation candidate (27 October 2026)
+
+`FreeVodRowsTest` checks separate links from one website, separate routes to the same URL, direct selection without a submenu, removal and metadata updates retaining the same focused button. MediaFactsTest checks the exact quality/channels/website order, formats/bitrates and explicit unknown/playlist labels. These fixture checks do not establish live-source availability.
+
+Run `bash android-tv-launcher/tests/run-core-tests.sh`. PlaybackEndTest adds exact 60/160-percent
+boundaries, unknown/negative lengths, extended cuts, overflow-safe comparisons and the three-minute
+prefetch window including pause, early/ended and wrong-runtime exclusion. MediaFactsTest covers
+wide-frame resolution, audio channels/codecs/language, unknown values, playlist declarations and
+separate track bitrates without guessing Atmos or conflating transfer speed.
+
+PlaybackTest adds real-LibVLC fixtures for an initially wrong-runtime link and an otherwise playable
+wrong-runtime prepared cloud backup. It verifies the right replacement, progress and absence of
+watched/next-episode state. Existing quality-correction checks also require actual dimensions and
+AAC metadata. Next-episode fixtures check exact pack preparation without changing playback,
+one-time consumption and a deliberately late metadata result discarded after cancellation.
+SeriesAutoplayTest checks next-episode runtime and removal of stale prior runtimes;
+FreeVodProvidersTest checks exact episode runtime on resume.
+
+MediaMetadataProbeTest uses real Android MediaExtractor and MP4 bytes through the guarded relay,
+requires resolution/audio/duration within the byte budget, checks cancellation before HTTP, a range
+read at the end with no intervening download and chunk reuse, and distinct HLS ceiling/bandwidth
+labels, byte-budget exhaustion and deadline expiry before network access. The first Android pass exposed repeated extractor header reads exhausting a single-slot cache; aligned retained chunks now cover start/end/start without refetching, under the unchanged total budget. These are emulator fixtures, not live-provider or physical-TV verification. Android build,
+lint, signing and device results must be read from the final PR checks. Physical ARM box latency,
+provider connection limits and real next-episode availability remain unverified.
+
 ## Continuous series and automatic playback
 
 `VideoFilesTest` includes episode ordering, future-date handling and source-resolution ranking. `SeriesAutoplayTest` uses catalogue and source fixtures to check season transitions, updated history keys, missing pack episodes, show endings, uncertain filenames, bounded source fallback and cancellation. `LiveGuideTest` covers colour keys from header focus and Back/arrow/OK controls; `LiveControlsTest` covers all four physical colours during playback, learned scan-code colours, and OK/click/◀ always showing the same banner. These do not verify a particular physical remote or real-provider playback.

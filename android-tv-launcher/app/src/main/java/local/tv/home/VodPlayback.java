@@ -303,7 +303,9 @@ final class VodPlayback {
             return;
         }
         if (
-            candidate != null && session.free && candidate.getLength() > 0 && candidate.getLength() < 120000
+            candidate != null &&
+            (PlaybackEnd.lengthMismatch(candidate.getLength(), activity.runtimeMs()) ||
+                (session.free && candidate.getLength() > 0 && candidate.getLength() < 120000))
         ) {
             failed();
             return;
@@ -333,6 +335,11 @@ final class VodPlayback {
                 ProviderRelay selectedRelay = relays.get(active);
                 if (selectedRelay != null) selectedRelay.resetIncomingRate();
                 session.active = active;
+                android.widget.Toast.makeText(
+                    activity,
+                    "Switched link",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show();
                 rejectedShort = false;
                 queue.onPlaying();
                 // The prepared decoder is now selected and audible; old native shutdown continues off main.

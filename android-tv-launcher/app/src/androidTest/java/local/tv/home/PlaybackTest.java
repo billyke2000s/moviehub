@@ -268,6 +268,192 @@ public class PlaybackTest {
     }
 
     @Test
+    public void nextEpisodePreparationDoesNotPlayAndCanBeConsumedOnlyOnce() throws Exception {
+        org.json.JSONObject current = new org.json.JSONObject()
+            .put("id", 123)
+            .put("name", "Show")
+            .put("imdb_id", "tt1234567")
+            .put("season", 1)
+            .put("episode", 2)
+            .put("episodeKey", "123:1:2");
+        org.json.JSONArray oldPack = SourcesScreen.Binge.files;
+        VodNextEpisode prefetch = new VodNextEpisode(activity, path ->
+            new org.json.JSONObject().put(
+                "episodes",
+                new org.json.JSONArray()
+                    .put(new org.json.JSONObject().put("episode_number", 2).put("air_date", "2020-01-01"))
+                    .put(
+                        new org.json.JSONObject()
+                            .put("episode_number", 3)
+                            .put("air_date", "2020-01-02")
+                            .put("runtime", 25)
+                    )
+            )
+        );
+        try {
+            SourcesScreen.Binge.files = new org.json.JSONArray().put(
+                new org.json.JSONObject().put("path", "Show.S01E03.mp4").put("link", "https://example.test/3")
+            );
+            instrumentation.runOnMainSync(() -> {
+                activity.getIntent().putExtra("episodeMetadata", current.toString());
+                prefetch.prepare();
+                prefetch.prepare();
+            });
+            MediaPlayer original = player();
+            await(() -> prefetch.next != null, 5000);
+            assertEquals(3, prefetch.next.episode);
+            assertEquals(25, prefetch.next.metadata.optInt("runtime"));
+            assertSame("Preparation never changes playback", original, player());
+            assertNull("Exact pack file needs no new source search", prefetch.search);
+            instrumentation.runOnMainSync(prefetch::handoff);
+            assertSame(prefetch, VodNextEpisode.take(current));
+            assertNull(VodNextEpisode.take(current));
+        } finally {
+            prefetch.close();
+            SourcesScreen.Binge.files = oldPack;
+        }
+    }
+
+    @Test
+    public void leavingCancelsNextEpisodePreparationAndDiscardsLateMetadata() throws Exception {
+        var entered = new java.util.concurrent.CountDownLatch(1);
+        var release = new java.util.concurrent.CountDownLatch(1);
+        VodNextEpisode prefetch = new VodNextEpisode(activity, path -> {
+            entered.countDown();
+            while (release.getCount() > 0) {
+                try {
+                    release.await();
+                } catch (InterruptedException ignored) {}
+            }
+            return new org.json.JSONObject().put(
+                "episodes",
+                new org.json.JSONArray()
+                    .put(new org.json.JSONObject().put("episode_number", 2).put("air_date", "2020-01-01"))
+                    .put(new org.json.JSONObject().put("episode_number", 3).put("air_date", "2020-01-02"))
+            );
+        });
+        activity
+            .getIntent()
+            .putExtra(
+                "episodeMetadata",
+                new org.json.JSONObject()
+                    .put("id", 123)
+                    .put("name", "Show")
+                    .put("imdb_id", "tt1234567")
+                    .put("season", 1)
+                    .put("episode", 2)
+                    .put("episodeKey", "123:1:2")
+                    .toString()
+            );
+        try {
+            instrumentation.runOnMainSync(prefetch::prepare);
+            assertTrue(entered.await(5, java.util.concurrent.TimeUnit.SECONDS));
+            instrumentation.runOnMainSync(prefetch::close);
+        } finally {
+            release.countDown();
+        }
+        // The late catalogue response must never start a provider search or become a ready episode.
+        SystemClock.sleep(100);
+        assertNull(prefetch.next);
+        assertNull(prefetch.search);
+    }
+
+    @Test
+    public void runtimeMismatchSkipsAnOtherwiseValidShortBackupAndPreservesProgress() throws Exception {
+        var attempts = new java.util.concurrent.CopyOnWriteArrayList<Integer>();
+        VodSources.Session session = new VodSources.Session(
+            vodEntries(),
+            index -> {
+                attempts.add(index);
+                return new VodSources.Resolved(
+                    "http://127.0.0.1:" + server.getLocalPort() + (index == 1 ? "/playback.mp4" : "/vod.mp4"),
+                    null
+                );
+            },
+            false
+        );
+        // This is deliberately not a free session: runtime checks cover cloud links too.
+        openVod(session);
+        MediaPlayer original = player();
+        instrumentation.runOnMainSync(() -> {
+            activity.getIntent().putExtra("runtimeMs", 150_000L);
+            activity.vod.failover();
+        });
+        await(() -> activity.vod.activeIndex() == 2 && !activity.vod.preparing(), 30000);
+        assertNotSame(original, player());
+        assertEquals(java.util.Arrays.asList(1, 2), attempts);
+        assertTrue(player().getLength() >= 149_000);
+        instrumentation.runOnMainSync(() -> assertFalse(activity.invalidRuntime()));
+    }
+
+    @Test
+    public void wrongRuntimeOnFirstLinkFailsOverWithoutWatchedOrNextEpisode() throws Exception {
+        VodSources.Session session = new VodSources.Session(
+            vodEntries(),
+            index -> new VodSources.Resolved("http://127.0.0.1:" + server.getLocalPort() + "/vod.mp4", null),
+            false
+        );
+        openVod(session, "/playback.mp4");
+        String key = "runtime-fixture:1:1";
+        instrumentation.runOnMainSync(() -> {
+            activity.getIntent().putExtra("runtimeMs", 150_000L).putExtra("episodeKey", key);
+        });
+        await(() -> activity.vod.activeIndex() == 1 && !activity.vod.preparing(), 30000);
+        instrumentation.runOnMainSync(() -> {
+            assertFalse(activity.ended);
+            assertFalse(activity.nextPromptShown);
+            assertFalse(
+                activity
+                    .getSharedPreferences("ui", 0)
+                    .getStringSet("watchedEpisodes", java.util.Collections.emptySet())
+                    .contains(key)
+            );
+        });
+    }
+
+    @Test
+    public void fileMetadataKeepsWebsiteTrustJudgementWithoutCountingEveryTick() throws Exception {
+        Context context = instrumentation.getTargetContext();
+        var prefs = context.getSharedPreferences("ui", 0);
+        prefs.edit().remove("quality_claims.metadata-fixture.example").commit();
+        VodSourceFailover.Source source = new VodSourceFailover.Source("metadata", "1080p", "fixture");
+        source.site = "metadata-fixture.example";
+        source.claimed = "1080p";
+        source.facts.value = new MediaFacts.Value(
+            MediaFacts.Origin.FILE,
+            160,
+            90,
+            "video/avc",
+            "audio/mp4a-latm",
+            1,
+            "und",
+            0,
+            0,
+            150_000
+        );
+        VodSources.Session session = new VodSources.Session(
+            java.util.Collections.singletonList(source),
+            index -> {
+                throw new IOException("No backup expected");
+            },
+            false
+        );
+        session.free = true;
+        try {
+            openVod(session);
+            await(() -> source.confirmed == 90, 5000);
+            assertEquals("1", prefs.getString("quality_claims.metadata-fixture.example", ""));
+            instrumentation.runOnMainSync(() -> {
+                activity.vod.tick();
+                activity.vod.tick();
+            });
+            assertEquals("1", prefs.getString("quality_claims.metadata-fixture.example", ""));
+        } finally {
+            prefs.edit().remove("quality_claims.metadata-fixture.example").commit();
+        }
+    }
+
+    @Test
     public void playingFilmCorrectsAnOverstatedLabelAndOnlySuggestsAConfirmedBetterSource() throws Exception {
         Context context = instrumentation.getTargetContext();
         android.content.SharedPreferences prefs = context.getSharedPreferences("ui", Context.MODE_PRIVATE);
@@ -304,7 +490,28 @@ public class PlaybackTest {
             openVod(session);
             await(() -> labelled.actual > 0, 15000);
             assertEquals(90, labelled.actual);
-            assertEquals("90p ✓ (said 1080p) · fixture.example", labelled.label);
+            assertTrue(labelled.label, labelled.label.startsWith("90p ✓ (said 1080p)"));
+            assertTrue(labelled.label, labelled.label.contains("160×90"));
+            // Video and selected audio metadata arrive independently from the native player.
+            long audioDeadline = SystemClock.elapsedRealtime() + 5000;
+            while (!labelled.label.contains("AAC") && SystemClock.elapsedRealtime() < audioDeadline) {
+                SystemClock.sleep(100);
+            }
+            StringBuilder tracks = new StringBuilder();
+            instrumentation.runOnMainSync(() -> {
+                tracks.append(" selected=").append(player().getAudioTrack());
+                var media = player().getMedia();
+                if (media != null) try {
+                    for (int index = 0; index < media.getTrackCount(); index++) {
+                        var track = media.getTrack(index);
+                        tracks.append(" [").append(track.id).append(" ").append(track.codec).append("]");
+                    }
+                } finally {
+                    media.release();
+                }
+            });
+            assertTrue(tracks + " label=" + labelled.label, labelled.label.contains("AAC"));
+            assertEquals(MediaFacts.Origin.PLAYING, labelled.facts.value.origin);
             assertEquals("1", prefs.getString("quality_claims.fixture.example", ""));
             java.util.concurrent.atomic.AtomicInteger announced =
                 new java.util.concurrent.atomic.AtomicInteger();
