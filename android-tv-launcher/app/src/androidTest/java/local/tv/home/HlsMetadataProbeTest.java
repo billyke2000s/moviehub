@@ -128,11 +128,11 @@ public class HlsMetadataProbeTest {
     public void actualTransportStreamHeadersOverrideAdvertised1080pAndRevealAudio() {
         MediaFacts.Value facts = read();
         assertEquals(facts.describe(), MediaFacts.Origin.STREAM, facts.origin);
-        assertEquals(160, facts.width);
-        assertEquals(90, facts.height);
+        assertEquals(320, facts.width);
+        assertEquals(180, facts.height);
         assertEquals("AAC", MediaFacts.audioName(facts.audioCodec));
         assertEquals(1, facts.channels);
-        assertTrue(facts.listLabel("site").startsWith("90p ✓ · Mono · site"));
+        assertTrue(facts.listLabel("site").startsWith("180p ✓ · Mono · site"));
         assertEquals("A segment length is not the episode runtime", 0, facts.durationMs);
         assertTrue(facts.bitrate().contains("4.5 Mb/s playlist bandwidth"));
         assertTrue(bytes.get() <= MediaMetadataProbe.BYTE_LIMIT);

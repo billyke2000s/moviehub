@@ -570,19 +570,46 @@ public class PlaybackTest {
                 metadataGate.countDown();
             });
             java.util.concurrent.atomic.AtomicBoolean ready = new java.util.concurrent.atomic.AtomicBoolean();
-            await(() -> {
-                instrumentation.runOnMainSync(() ->
-                    ready.set(
-                        player().getAudioTrack() >= 0 &&
-                            source.facts.value.origin == MediaFacts.Origin.PLAYING &&
-                            source.facts.value.width == 160 &&
-                            source.facts.value.height == 90 &&
-                            source.facts.value.audio().contains("AAC") &&
-                            source.facts.value.availableAudio.isEmpty()
-                    )
-                );
-                return ready.get();
-            }, 15000);
+            try {
+                await(() -> {
+                    instrumentation.runOnMainSync(() ->
+                        ready.set(
+                            player().getAudioTrack() >= 0 &&
+                                source.facts.value.origin == MediaFacts.Origin.PLAYING &&
+                                source.facts.value.width == 320 &&
+                                source.facts.value.height == 180 &&
+                                source.facts.value.audio().contains("AAC") &&
+                                source.facts.value.availableAudio.isEmpty()
+                        )
+                    );
+                    return ready.get();
+                }, 15000);
+            } catch (AssertionError failure) {
+                StringBuilder detail = new StringBuilder();
+                instrumentation.runOnMainSync(() -> {
+                    var media = player().getMedia();
+                    try {
+                        detail
+                            .append(" selectedAudio=")
+                            .append(player().getAudioTrack())
+                            .append(" selectedVideo=")
+                            .append(player().getVideoTrack())
+                            .append(" parsed=")
+                            .append(media.isParsed())
+                            .append(" cachedTracks=")
+                            .append(media.getTrackCount())
+                            .append(" label=")
+                            .append(source.label);
+                        for (int i = 0; i < media.getTrackCount(); i++) {
+                            var track = media.getTrack(i);
+                            detail.append(" [").append(track.id).append(" ").append(track.codec).append("]");
+                        }
+                    } finally {
+                        media.release();
+                    }
+                });
+                throw new AssertionError(detail.toString(), failure);
+            }
             assertTrue(source.label, source.label.contains("AAC"));
             assertFalse(source.label, source.label.contains("Audio unknown"));
         } finally {
