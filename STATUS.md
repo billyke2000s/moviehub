@@ -1,5 +1,14 @@
 # Status
 
+## Broken sources no longer count as watched — 1.0.10, 27 October 2026
+
+The owner saw an episode marked watched and the next one start at once, most likely from a faulty
+source. `VlcPlaybackActivity` treated any LibVLC end as a finish; the short-video guard only covered
+free sources with a known length, so a source that ended with nothing played slipped through. Ends
+are now checked by `PlaybackEnd`, using only positions actually played (a closed stream may report its
+full length as the time). Published as 1.0.10 at the owner's request as an emergency fix. Not yet tried on a device or TV, and which source
+caused the owner's case is not known.
+
 ## Additional FMHY routes — merged, 27 October 2026
 
 Movy Boise/Miami and Rive Vanguard (episodes only) use the existing free-source system and retain separate playback-route labels. PR #172 is included in the same integration branch. Local core/provider checks and 68 Python regressions pass; sampled desktop video/audio/runtime evidence exists for the four routes. The first packaged Movy audit passed all 16 movie/episode links including measured 4K with audio. Vanguard passed its episode; its failed movie route is not newly enabled. Atlantic still failed Android after an adapter-only MIME setting was tried. Its draft adapter and registration have been removed from this batch. Final integration head `3cd19c6` passed Android build/lint, signing/updater compatibility, both device suites and all 17 retained source playback checks. [PR #173](https://github.com/billyke2000s/moviehub/pull/173) merged the sources and all of #172. These changes are published in 1.0.9; no physical-TV result is claimed.

@@ -79,11 +79,14 @@ public class VlcPlaybackActivity extends Activity {
         ) controls.setVisibility(View.GONE);
     };
     private final Runnable stalled = () -> showError("The source is taking too long to respond.");
+    /** The furthest position played or jumped to; decides whether an end is a real finish. */
+    private long furthestMs;
     /** Film skips and seek-bar moves waiting to become one jump (see {@link SkipQueue}). */
     final SkipQueue skips = new SkipQueue();
     final Runnable applySkip = () -> {
         long target = skips.take();
         if (target >= 0 && vod != null) vod.seeking(target);
+        if (target >= 0) furthestMs = Math.max(furthestMs, target);
         if (target >= 0 && player != null && player.isSeekable()) player.setTime(target);
     };
     private boolean nextPromptShown, nextCancelled;
@@ -106,11 +109,12 @@ public class VlcPlaybackActivity extends Activity {
                 // While a skip is waiting, show where it will land.
                 long length = player.getLength(),
                     time = skips.pending() ? skips.target() : Math.max(0, player.getTime());
+                furthestMs = Math.max(furthestMs, player.getTime());
                 timeLeft.setText(length > 0 ? PlayerOverlay.timeLeft(Math.max(0, length - time)) : "—");
                 if (
                     (vod == null || !vod.rejectedMedia()) &&
                     !nextPromptShown &&
-                    length > 0 &&
+                    length >= PlaybackEnd.MIN_LENGTH_MS &&
                     time > 0 &&
                     length - time <= 10000 &&
                     length - time > 0 &&
@@ -300,6 +304,7 @@ public class VlcPlaybackActivity extends Activity {
         layout.setAlpha(1f);
         ready.setVolume(volume);
         position = Math.max(0, ready.getTime());
+        furthestMs = Math.max(furthestMs, position);
         resumeCheck = 0;
         buffering = false;
         playedOnce = true;
@@ -381,6 +386,8 @@ public class VlcPlaybackActivity extends Activity {
         if (position > 1000) {
             media.addOption(":start-time=" + position / 1000);
             resumeCheck = position;
+            // A resume point was reached on an earlier play.
+            furthestMs = Math.max(furthestMs, position);
             position = 0;
         }
         player.setMedia(media);
@@ -441,6 +448,14 @@ public class VlcPlaybackActivity extends Activity {
             }
         } else if (event.type == MediaPlayer.Event.EndReached) {
             if (vod != null && vod.rejectShortVideo(true)) return;
+            // Only positions seen while playing (or jumped to) count: when a stream closes early the
+            // player may report its time as the full length, so the time now is not trusted.
+            if (!PlaybackEnd.finished(player.getLength(), furthestMs)) {
+                // A broken source: it ended at once, was a short clip, or was cut off part-way.
+                // Not watched, and no next episode; try another source instead.
+                showError("This source stopped before the end. Try another source or retry the connection.");
+                return;
+            }
             ended = true;
             ResumePoint.clear(this, id, titleKey);
             String episode = getIntent().getStringExtra("episodeKey");
@@ -584,12 +599,15 @@ public class VlcPlaybackActivity extends Activity {
         foreground = false;
         if (player != null) {
             long time = player.getTime();
+            // A stream that closed early may report its full length as the time: never save more
+            // than was played or jumped to (the 1 s tick can trail by a moment).
+            long reached = Math.max(furthestMs, resumeCheck) + 5000;
             // Before playback starts the time is 0; keep the resume point the media opened at.
-            if (time > 0) position = time;
+            if (time > 0) position = Math.min(time, reached);
             else if (resumeCheck > 0) position = resumeCheck;
             if (vod == null || !vod.rejectedMedia()) {
                 long length = player.getLength();
-                boolean completed = ended || ResumePoint.completed(position, length);
+                boolean completed = ended || PlaybackEnd.watchedWhenLeaving(position, length);
                 ResumePoint.save(this, id, titleKey, position, length, completed);
                 if (completed) {
                     String episode = getIntent().getStringExtra("episodeKey");

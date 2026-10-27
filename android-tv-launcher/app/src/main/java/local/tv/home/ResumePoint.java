@@ -14,12 +14,9 @@ final class ResumePoint {
 
     private ResumePoint() {}
 
-    /** Treat a video as finished when no more than four minutes remain. */
-    static final long COMPLETION_WINDOW_MS = 4 * 60 * 1000L;
-
+    /** Treat a video as finished near its end (the rule is {@link PlaybackEnd#nearEnd}). */
     static boolean completed(long position, long length) {
-        return length > 0 && position > 0 && position <= length &&
-            length - position <= Math.min(COMPLETION_WINDOW_MS, length / 10);
+        return PlaybackEnd.nearEnd(position, length);
     }
 
     private static SharedPreferences positions(Context context) {
