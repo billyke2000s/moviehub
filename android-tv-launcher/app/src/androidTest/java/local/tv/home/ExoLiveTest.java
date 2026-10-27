@@ -34,6 +34,7 @@ public final class ExoLiveTest {
     private byte[] media;
     private final AtomicInteger opens = new AtomicInteger();
     private final AtomicInteger slowRequests = new AtomicInteger();
+    private final AtomicInteger stallRequests = new AtomicInteger();
     private boolean oldHttp, oldAutoUpdates;
 
     private String link(String path) {
@@ -49,7 +50,32 @@ public final class ExoLiveTest {
             SystemClock.sleep(25);
         } while (SystemClock.elapsedRealtime() < until);
         UiEvidence.capture("experimental-timeout");
-        fail("Live TV player timed out; focus=" + (activity != null && activity.hasWindowFocus()));
+        String[] state = { "" };
+        remote.runOnMainSync(() -> {
+            ExoPlayer player = ExoLive.player();
+            state[0] =
+                player == null
+                    ? "no player"
+                    : "state " +
+                      player.getPlaybackState() +
+                      " playWhenReady " +
+                      player.getPlayWhenReady() +
+                      " playing " +
+                      player.isPlaying() +
+                      " position " +
+                      player.getCurrentPosition() +
+                      " rendered " +
+                      rendered();
+        });
+        String log = ExoLive.eventLog();
+        fail(
+            "Live TV player timed out; focus=" +
+                (activity != null && activity.hasWindowFocus()) +
+                "; " +
+                state[0] +
+                "; log: " +
+                log.substring(0, Math.min(900, log.length())).replace('\n', '|')
+        );
     }
 
     @Before
@@ -108,6 +134,24 @@ public final class ExoLiveTest {
                     );
                 return;
             }
+            if (path.equals("/stall-segment.ts")) {
+                // A quarter of the stream (a few seconds of pictures), then nothing more: the
+                // player buffers with the connection still open, as a stalled live source does.
+                stallRequests.incrementAndGet();
+                OutputStream out = connection.getOutputStream();
+                out.write(
+                    (
+                        "HTTP/1.1 200 OK\r\nContent-Type: video/mp2t\r\nContent-Length: " +
+                        media.length +
+                        "\r\nConnection: close\r\n\r\n"
+                    ).getBytes(StandardCharsets.US_ASCII)
+                );
+                out.write(media, 0, media.length / 4);
+                out.flush();
+                long until = SystemClock.elapsedRealtime() + 25000;
+                while (!closed && SystemClock.elapsedRealtime() < until) SystemClock.sleep(100);
+                return;
+            }
             if (path.equals("/slow.m3u8")) {
                 slowRequests.incrementAndGet();
                 // Longer than LiveStage's old periodic retry, shorter than the HTTP read timeout.
@@ -125,7 +169,11 @@ public final class ExoLiveTest {
                 mime = "application/vnd.apple.mpegurl";
                 bytes = (
                     "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:31\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:30,\n" +
-                    (path.equals("/subs.m3u8") ? "subtitle.vtt" : "segment.ts") +
+                    (path.equals("/subs.m3u8")
+                        ? "subtitle.vtt"
+                        : path.equals("/stall.m3u8")
+                          ? "stall-segment.ts"
+                          : "segment.ts") +
                     "\n#EXT-X-ENDLIST\n"
                 ).getBytes(StandardCharsets.UTF_8);
             } else if (path.equals("/subtitle.vtt")) {
@@ -381,6 +429,52 @@ public final class ExoLiveTest {
         picturesAdvance();
     }
 
+    /** Two copies of one channel in guide order: one that stalls, then one that works. */
+    private void stallingChannel() throws Exception {
+        ChannelDatabase db = ChannelDatabase.get(remote.getTargetContext());
+        String[] sources = { "m3u", "fta" };
+        String[] paths = { "/stall.m3u8", "/media.m3u8" };
+        for (int i = 0; i < sources.length; i++) {
+            ChannelDatabase.Writer writer = db.writer(sources[i], () -> {}, n -> {});
+            try {
+                writer.accept(
+                    new Playlist.Channel(
+                        "Stall Channel UK",
+                        link(paths[i]),
+                        "Entertainment",
+                        "",
+                        "StallChannel.uk"
+                    )
+                );
+                writer.commit();
+            } finally {
+                writer.abort();
+            }
+        }
+    }
+
+    @Test
+    public void aSourceThatKeepsBufferingMovesToTheNextSource() throws Exception {
+        stallingChannel();
+        remote.runOnMainSync(() ->
+            activity.stage.fullScreen("Stall Channel UK", link("/stall.m3u8"), "stall")
+        );
+        // The stalling copy shows pictures first, so its buffering counts (startup does not).
+        await(() -> ExoLive.isPlaying() && rendered() > 5);
+        // LiveBuffering's eight seconds without pictures move it to the working copy.
+        await(() -> ExoLive.eventLog().contains("This source kept buffering"));
+        await(() -> activity.stage.zapper().selectedCopy() == 1 && ExoLive.isPlaying());
+        picturesAdvance();
+        assertEquals("The stalled copy is not reopened while another works", 1, stallRequests.get());
+    }
+
+    @Test
+    public void aLongStallWithNoOtherSourceReconnectsThatSource() {
+        play("/stall.m3u8");
+        await(() -> ExoLive.eventLog().contains("Reopening the channel (This source kept buffering"));
+        await(() -> stallRequests.get() >= 2);
+    }
+
     @Test
     public void stoppingDuringRetryReleasesPlayerViewAndPendingCallbacks() {
         remote.runOnMainSync(() -> activity.stage.fullScreen("Broken", link("/missing.ts"), "missing"));
@@ -434,15 +528,15 @@ public final class ExoLiveTest {
     @Test
     public void audioSubtitlesAndRemoteBannerUseTheExoPlayer() {
         play("/master.m3u8");
-        await(() -> !ExoLive.audioTracks().isEmpty() && !ExoLive.subtitleTracks().isEmpty());
+        await(() -> !ExoLiveTracks.audioTracks().isEmpty() && !ExoLiveTracks.subtitleTracks().isEmpty());
         remote.runOnMainSync(() -> {
-            ExoLive.selectAudioTrack(0);
-            ExoLive.selectSubtitleTrack(0);
+            ExoLiveTracks.selectAudioTrack(0);
+            ExoLiveTracks.selectSubtitleTrack(0);
         });
-        await(() -> ExoLive.selectedAudioTrack() == 0 && ExoLive.selectedSubtitleTrack() == 0);
+        await(() -> ExoLiveTracks.selectedAudioTrack() == 0 && ExoLiveTracks.selectedSubtitleTrack() == 0);
         remote.runOnMainSync(() -> {
-            ExoLive.selectSubtitleTrack(-1);
-            assertEquals(-1, ExoLive.selectedSubtitleTrack());
+            ExoLiveTracks.selectSubtitleTrack(-1);
+            assertEquals(-1, ExoLiveTracks.selectedSubtitleTrack());
             activity.stage.zapper().overlay.hideBanner();
         });
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
@@ -618,6 +712,50 @@ public final class ExoLiveTest {
             }
             assertEquals("Guide and full screen never reopen the chosen copy", requests, opens.get());
             UiEvidence.capture("live-manual-backup");
+        } finally {
+            restoreChannelPrefs();
+        }
+    }
+
+    @Test
+    public void anotherChannelStartsInAutomaticSourcesAfterAManualChoice() throws Exception {
+        try {
+            channels(new String[][] {
+                // One writer per source replaces that source's rows, so each copy has its own source.
+                { "m3u", "Manual Channel UK", "/manual-a.m3u8", "ManualChannel.uk" },
+                { "free", "Manual Channel UK", "/manual-b.m3u8", "ManualChannel.uk" },
+                { "fta", "Next Channel UK", "/next-a.m3u8", "NextChannel.uk" },
+                { "next-backup", "Next Channel UK", "/next-b.m3u8", "NextChannel.uk" },
+            });
+            remote.runOnMainSync(() ->
+                activity.stage.fullScreen("Manual Channel UK", link("/manual-a.m3u8"), "manual")
+            );
+            await(() -> ExoLive.isPlaying() && activity.stage.zapper().copies().size() == 2);
+            remote.runOnMainSync(() -> activity.stage.zapper().useCopy(1, false));
+            // Wait for the chosen copy itself to play: the switch finishes after a database read.
+            await(
+                () ->
+                    !activity.stage.zapper().automaticSources() &&
+                    link("/manual-b.m3u8").equals(ExoLive.currentUrl()) &&
+                    ExoLive.isPlaying()
+            );
+            // Back to a page (as the guide), then a different channel: it must not inherit the
+            // manual choice.
+            remote.runOnMainSync(() -> {
+                activity.stage.setPage(new FrameLayout(activity));
+                activity.stage.fullScreen("Next Channel UK", link("/next-a.m3u8"), "next");
+            });
+            await(() -> ExoLive.isPlaying() && activity.stage.zapper().copies().size() == 2);
+            remote.runOnMainSync(() -> {
+                assertTrue(
+                    "A new channel starts in Automatic sources",
+                    activity.stage.zapper().automaticSources()
+                );
+                assertTrue(
+                    "Its other copy is still available for failover",
+                    activity.stage.zapper().hasUntriedCopy()
+                );
+            });
         } finally {
             restoreChannelPrefs();
         }

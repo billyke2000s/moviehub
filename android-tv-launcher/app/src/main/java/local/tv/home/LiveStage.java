@@ -300,6 +300,13 @@ final class LiveStage implements LiveScreen {
         pageHost.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
         pageHost.setVisibility(View.INVISIBLE);
         place();
+        // Another stream than the one playing starts in Automatic sources with nothing tried, as the
+        // LibVLC player did when its stream changed. The same stream (back from the guide) keeps its
+        // mode, so a source chosen by hand survives the trip.
+        if (!channelUrl.equals(ExoLive.currentUrl())) {
+            LivePlayer.automaticSources = true;
+            LivePlayer.attemptedSources.clear();
+        }
         LiveZapper.Session guide =
             LiveZapper.session == null
                 ? null

@@ -416,8 +416,33 @@ sends keys to `LiveStage.key` while full screen. The banner and
 channel changing are the same `SkyOverlay` and `LiveZapper`, through the `LiveScreen` interface
 (implemented by `LiveHost` for separate player screens and by `LiveStage`). `ExoMenus` holds the
 audio, Sources and Options panels. Link lookup still goes through `LiveStream.resolve`
-unchanged. Recovery: behind-live-window rejoins; other errors and 15 s stalls reopen the channel at
-most twice, then `LiveZapper.failover` moves to a backup copy.
+unchanged. Recovery: behind-live-window rejoins; other errors and 15 s stalls reopen the channel,
+then `LiveZapper.failover` moves to a backup copy. `ExoLiveTracks` holds audio/subtitle selection and
+`ExoLiveLog` the Player event log (both split out of `ExoLive`, unchanged).
+
+### Live stream rules ported from the LibVLC player
+
+`LiveStallRules` (pure, core-tested) gives `ExoLive` the general rules the LibVLC live player had,
+reusing its rule classes unchanged. Buffering (`LiveBuffering`): 8 s stuck or 3 stalls a minute,
+counted only after the first picture of an opening and never while paused. With another source
+waiting (`Listener.hasAlternative`), that source is reported failed at once, so `LiveStage` moves to
+the race's next copy or `LiveZapper.failover`; with none, only a long stall with no picture movement
+in the last 2 s reconnects. Dead stream (`LiveProgress`): playing with neither picture nor clock
+moving for 8 s and no error recovers the same way; a still picture while the clock (sound) moves is
+only logged. Reconnects (`LiveRestartBudget`): two per selection, refilled after 30 s of moving
+picture, replacing the old reset on every first frame, which let a stream that played briefly and
+died reopen forever. A reopen clears the provider cache once per selection (`EngineSources.invalidate`)
+and Pluto's session, so the link is looked up afresh. Provider links with an expiry
+(`EngineSources.Stream.expiresAt`) are renewed a minute before they expire (at least 30 s, at most
+three hours, after opening); the old link plays during the lookup and a failed renewal leaves it
+playing. A new channel, a source chosen by the race or by hand, or an explicit restart is a new
+selection with a fresh budget; an internal reopen is not.
+
+Not ported, as LibVLC-specific workarounds: view refreshes for a still picture, the repair budget,
+surface probes (`LiveSurfaceProbe`, `LivePresentation`), software-video fallback, native stop
+serialisation and the muted prepared backup (`LiveBackup`; the source race's standbys serve that
+purpose). The 4 s relayed-stream buffer (`PlaybackBuffer.RELAY_MS`) is a LibVLC option and was not
+ported either; ExoPlayer keeps its default buffering.
 
 ### Experimental retry and screen lifetime
 
@@ -427,7 +452,8 @@ detaches PlayerView, releases ExoPlayer and drops static view/owner/listener ref
 frame polling. LiveStage cancels screen timers in the background and on each new selection;
 a full-screen return creates a fresh player. Destroying MainActivity disposes the stage.
 Exhausted-channel retries wait for the new attempt to fail before starting another cycle.
-Freeze observations remain diagnostic, with no automatic repair.
+A still picture over moving sound remains diagnostic, with no automatic repair; see the ported
+stream rules above for stalls and dead streams.
 
 ### Experimental DaddyLive startup
 
