@@ -83,6 +83,13 @@ public final class ContinueWatchingTest {
             ContinueWatching.group(false, 0, " street fighter", "y")
         );
         same("no title", "id:x", ContinueWatching.group(false, 0, "  ", "x"));
+        // New episode alerts: aired within the last week, not in the future.
+        same("aired today", "true", "" + ContinueWatching.isNew("2026-10-27", "2026-10-27"));
+        same("a week ago", "true", "" + ContinueWatching.isNew("2026-10-20", "2026-10-27"));
+        same("eight days ago", "false", "" + ContinueWatching.isNew("2026-10-19", "2026-10-27"));
+        same("not yet aired", "false", "" + ContinueWatching.isNew("2026-10-28", "2026-10-27"));
+        same("no date", "false", "" + ContinueWatching.isNew("", "2026-10-27"));
+        same("bad date", "false", "" + ContinueWatching.isNew("2026-13-40", "2026-10-27"));
         System.out.println(checks + " continue watching checks passed");
     }
 

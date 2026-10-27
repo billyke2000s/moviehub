@@ -1,5 +1,9 @@
 # Status
 
+## Additional FMHY routes — integration candidate, 27 October 2026
+
+Movy Boise/Miami and Rive Vanguard (episodes only) use the existing free-source system and retain separate playback-route labels. PR #172 is included in the same integration branch. Local core/provider checks and 68 Python regressions pass; sampled desktop video/audio/runtime evidence exists for the four routes. The first packaged Movy audit passed all 16 movie/episode links including measured 4K with audio. Vanguard passed its episode; its failed movie route is not newly enabled. Atlantic still failed Android after an adapter-only MIME setting was tried. Its draft adapter and registration have been removed from this batch. Android build/lint and signing passed at the previous integration head; final device/live checks remain on the PR. No APK has been published and no physical TV result is claimed.
+
 ## Confirmed source quality — 1.0.6
 
 Movie links' quality is read from the file or stream where possible instead of trusting the
@@ -105,29 +109,35 @@ Last updated: 25 October 2026 (1.0 promotes the experimental line into MovieHub)
    when a phone turns.
 
 10. **Live TV stream rules ported from the LibVLC player (27 October 2026).** Buffering, dead-stream,
-   reconnect-budget and provider-link-renewal rules now apply to the ExoPlayer live player
-   (`LiveStallRules`). Checked by core tests and emulator fixtures only; not yet seen on a real
-   stalling provider stream or the TV box. Link renewal has no device test. The LibVLC 4 s relayed
-   buffer was not ported; watch for short pauses on FreeShot/DaddyLive/ZLive.
+    reconnect-budget and provider-link-renewal rules now apply to the ExoPlayer live player
+    (`LiveStallRules`). Checked by core tests and emulator fixtures only; not yet seen on a real
+    stalling provider stream or the TV box. Link renewal has no device test. The LibVLC 4 s relayed
+    buffer was not ported; watch for short pauses on FreeShot/DaddyLive/ZLive.
 
 11. **Live TV quality upgrades (27 October 2026).** Quickest source first, then a better-named source
-   takes over as soon as it is found, with a 60 s trial, fallback and cooldown (`LiveUpgrade`).
-   Emulator fixtures only. Candidates are judged by their names only. The copy playing counts at the
-   better of its name and its measured picture, so a copy whose name overstates its quality is not
-   upgraded away from. Plain-address checks open one extra
-   request per candidate; not checked against providers that limit connections. Only the full screen
-   upgrades; the guide's corner picture does not.
+    takes over as soon as it is found, with a 60 s trial, fallback and cooldown (`LiveUpgrade`).
+    Emulator fixtures only. Candidates are judged by their names only. The copy playing counts at the
+    better of its name and its measured picture, so a copy whose name overstates its quality is not
+    upgraded away from. Plain-address checks open one extra
+    request per candidate; not checked against providers that limit connections. Only the full screen
+    upgrades; the guide's corner picture does not.
 
 12. **LibVLC live player removed (27 October 2026).** Nothing could reach it (Live TV has played on
-   `LiveStage`/ExoPlayer since 1.0), so its classes, its Live TV mode in `VlcPlaybackActivity` and its
-   tests were deleted; films and series still play on LibVLC. The picture click (air-mouse OK, phone
-   tap) it had was ported to `LiveStage`. `LiveControlsTest` now runs on `LiveStage`. Emulator only.
+    `LiveStage`/ExoPlayer since 1.0), so its classes, its Live TV mode in `VlcPlaybackActivity` and its
+    tests were deleted; films and series still play on LibVLC. The picture click (air-mouse OK, phone
+    tap) it had was ported to `LiveStage`. `LiveControlsTest` now runs on `LiveStage`. Emulator only.
 
 13. **Continue watching shows the next episode (27 October 2026).** One row per film or series,
-   nothing under three minutes, and a finished episode's series offers the next aired episode
-   (`ContinueWatching`, `LibraryScreens`). The next-episode lookup uses TMDB each time the screen
-   opens; it has only been checked with fixtures, not real series. History saved before this change
-   still has its old records; they are grouped the same way.
+    nothing under three minutes, and a finished episode's series offers the next aired episode
+    (`ContinueWatching`, `LibraryScreens`). The next-episode lookup uses TMDB each time the screen
+    opens; it has only been checked with fixtures, not real series. History saved before this change
+    still has its old records; they are grouped the same way.
+
+14. **Thumbs up/down, New episode, Anime section (27 October 2026).** Ratings are stored on the box
+    and steer For you (`TitleRatings`, `ForYou`); Continue watching marks next episodes aired in the
+    last week; Home has an Anime section built from TMDB discovery (`TmdbCategories.anime`). Checked by
+    core tests and emulator CI only; awaiting the owner's check on the box. [Unverified] whether the
+    👍/👎 symbols draw on every box's font.
 
 ## Decisions
 

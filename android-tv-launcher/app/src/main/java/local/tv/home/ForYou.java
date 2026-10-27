@@ -15,8 +15,9 @@ import org.json.JSONObject;
  * The Home "For you" shelf: a blend of TMDB recommendations for several titles you showed interest
  * in, kept on the box (no account needed).
  *
- * <p>Signals, strongest first: titles you played, titles on My List, and titles whose sources or
- * episodes you opened. Up to {@link #MAX_SEEDS} of them are used. Each seed's TMDB recommendations
+ * <p>Signals, strongest first: titles you gave a thumbs up ({@link TitleRatings}), titles you
+ * played, titles on My List, and titles whose sources or episodes you opened. A title you gave a
+ * thumbs down is never a seed and never suggested. Up to {@link #MAX_SEEDS} of them are used. Each seed's TMDB recommendations
  * are scored by the seed's weight and how high TMDB ranks them; a title recommended by several seeds
  * adds up and rises. Titles you already played or that are seeds themselves are left out.
  *
@@ -90,7 +91,8 @@ final class ForYou {
     synchronized JSONObject page(int page) throws Exception {
         List<Seed> seeds = seeds();
         if (seeds.isEmpty()) return trending(page);
-        String signature = signature(seeds);
+        // A new thumbs down must hide a title at once, even when the seeds stay the same.
+        String signature = signature(seeds) + "|" + prefs.getString(TitleRatings.PREF, "");
         long now = System.currentTimeMillis();
         if (blended == null || !signature.equals(blendedSignature) || now - blendedAt > CACHE_MS) {
             blended = build(seeds);
@@ -109,7 +111,20 @@ final class ForYou {
     }
 
     private JSONObject trending(int page) throws Exception {
-        return source.get("trending/all/week?page=" + page);
+        JSONObject response = source.get("trending/all/week?page=" + page);
+        JSONArray items = response.optJSONArray("results"),
+            filtered = new JSONArray();
+        Set<String> disliked = new HashSet<>(
+            TitleRatings.rated(prefs.getString(TitleRatings.PREF, ""), TitleRatings.DISLIKE)
+        );
+        if (items != null) for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.optJSONObject(i);
+            if (
+                item != null &&
+                !disliked.contains(TitleRatings.key(item.optString("media_type"), item.optInt("id")))
+            ) filtered.put(item);
+        }
+        return response.put("results", filtered);
     }
 
     private JSONArray build(List<Seed> seeds) {
@@ -125,7 +140,9 @@ final class ForYou {
                 Diagnostics.recovered("Loading For you recommendations", e);
             }
         }
-        return blend(seeds, recommendations, watched());
+        Set<String> exclude = watched();
+        exclude.addAll(TitleRatings.rated(prefs.getString(TitleRatings.PREF, ""), TitleRatings.DISLIKE));
+        return blend(seeds, recommendations, exclude);
     }
 
     /**
@@ -173,9 +190,21 @@ final class ForYou {
         return out;
     }
 
-    /** The seeds, strongest first: played (3), My List (2), opened sources/episodes (1). */
+    /**
+     * The seeds, strongest first: thumbs up (4), played (3), My List (2), opened sources/episodes
+     * (1); never a title with a thumbs down.
+     */
     List<Seed> seeds() {
         Map<String, Seed> picked = new LinkedHashMap<>();
+        String ratings = prefs.getString(TitleRatings.PREF, "");
+        JSONArray liked = new JSONArray();
+        for (String key : TitleRatings.rated(ratings, TitleRatings.LIKE)) {
+            String[] parts = key.split(":");
+            try {
+                liked.put(new JSONObject().put("id", Integer.parseInt(parts[1])).put("media_type", parts[0]));
+            } catch (Exception ignored) {}
+        }
+        addSeeds(picked, liked, "id", 4.0);
         // Older entries count a little less so the shelf follows what you watch lately.
         addSeeds(picked, recentPlayback(), "tmdbId", 3.0);
         addSeeds(picked, array(prefs.getString("watchlist", "[]")), "id", 2.0);
@@ -188,6 +217,7 @@ final class ForYou {
             );
         } catch (Exception ignored) {}
         addSeeds(picked, interest, "id", 1.0);
+        for (String key : TitleRatings.rated(ratings, TitleRatings.DISLIKE)) picked.remove(key);
         List<Seed> seeds = new ArrayList<>(picked.values());
         seeds.sort((a, b) -> Double.compare(b.weight, a.weight));
         return new ArrayList<>(seeds.subList(0, Math.min(MAX_SEEDS, seeds.size())));

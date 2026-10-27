@@ -93,6 +93,15 @@ public class ForYouTest {
     }
 
     @Test
+    public void thumbsDownIsHiddenFromTrendingEvenWithoutRecommendationSeeds() throws Exception {
+        prefs.edit().putString(TitleRatings.PREF, "movie:900=-1").commit();
+        ForYou shelf = forYou();
+        assertEquals(Arrays.asList(901), order(shelf.page(1).getJSONArray("results")));
+        prefs.edit().putString(TitleRatings.PREF, "").commit();
+        assertEquals(Arrays.asList(900, 901), order(shelf.page(1).getJSONArray("results")));
+    }
+
+    @Test
     public void blendsSeveralSignalsAndStaysTheSameUntilTheyChange() throws Exception {
         prefs
             .edit()

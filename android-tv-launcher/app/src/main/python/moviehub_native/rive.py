@@ -37,7 +37,10 @@ class source:
         results = []
         # Primevids/dcloud supplied the measured 1080-class film; retain Citadel's
         # separate lower-resolution and language resources afterwards.
-        for backend in ('primevids', 'citadel'):
+        backends = ('vanguard', 'primevids', 'citadel') if 'season' in query else ('primevids', 'citadel')
+        # Vanguard passed the packaged episode check; its movie audio/seek check
+        # did not pass. Keep movie discovery on the existing routes.
+        for backend in backends:
             client.check()
             try:
                 results.extend(self.backend(query, backend))
@@ -66,7 +69,7 @@ class source:
             if not isinstance(row, dict) or row.get('drm'):
                 continue
             claim = ' '.join(str(row.get('quality', '')).split())[:100]
-            # Other Primevids carriers and Vanguard have not passed decode/audio checks.
+            # Other Primevids carriers have not passed decode/audio checks.
             if backend == 'primevids' and claim.casefold() != 'dcloud':
                 continue
             if str(row.get('format', '')).lower() not in ('hls', 'm3u8'):
@@ -79,11 +82,14 @@ class source:
             except (ValueError, OSError):
                 continue
             quality = re.search(r'\b(2160|1080|720|480|360)p\b', claim, re.I)
+            quality_name = quality[1] + 'p' if quality else 'Auto'
+            if re.search(r'\b4K\b', claim, re.I):
+                quality_name = '2160p'
             language = claim.partition('|')[2].strip()
             detail = language if backend == 'citadel' else claim
             label = backend.capitalize() + (' · ' + detail if detail else '')
             item = direct(url, self.base_link + '/', label,
-                          quality[1] + 'p' if quality else 'Auto')
+                          quality_name)
             item['info'] = claim
             # These routes serve raw TS with image/jpeg headers. Opt into the existing
             # whole-entity carrier path so a player's zero range retains the real TS type.

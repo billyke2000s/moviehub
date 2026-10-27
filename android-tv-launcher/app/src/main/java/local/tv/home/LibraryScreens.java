@@ -338,8 +338,15 @@ final class LibraryScreens {
                     .put("media_type", "tv");
                 next[0] = resume;
                 String name = found.metadata.optString("episodeTitle", "");
+                boolean fresh = ContinueWatching.isNew(
+                    found.metadata.optString("air_date", ""),
+                    java.time.LocalDate.now(java.time.ZoneOffset.UTC).toString()
+                );
+                // A new episode alert: it aired in the last week, so it is new since you watched.
+                if (fresh) line.setTextColor(activity.accent());
                 line.setText(
-                    "Next   ·   S" +
+                    (fresh ? "New episode" : "Next") +
+                        "   ·   S" +
                         found.season +
                         " E" +
                         found.episode +

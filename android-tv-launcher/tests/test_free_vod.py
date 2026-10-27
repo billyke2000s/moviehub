@@ -22,15 +22,15 @@ class FreeVodTests(unittest.TestCase):
 
     def test_search_inventory_counts_websites_without_losing_bundled_adapters(self):
         everything = json.loads(vod.search_providers(include_retired=True))
-        self.assertEqual(len(everything), 66)
-        self.assertEqual(len({r['site'] for r in everything}), 66)
-        self.assertEqual(sum(len(r['adapters']) for r in everything), 69)
+        self.assertEqual(len(everything), 67)
+        self.assertEqual(len({r['site'] for r in everything}), 67)
+        self.assertEqual(sum(len(r['adapters']) for r in everything), 70)
         rows = json.loads(vod.search_providers())
         # Eleven confirmed retired/repurposed domains and 18 unverified restorations stay out of discovery.
         self.assertEqual(len(vod.RETIRED_SITES), 11)
         self.assertEqual(len(vod.UNVERIFIED_SITES), 18)
-        self.assertEqual(len(rows), 37)
-        self.assertEqual(sum(len(r['adapters']) for r in rows), 40)
+        self.assertEqual(len(rows), 38)
+        self.assertEqual(sum(len(r['adapters']) for r in rows), 41)
         excluded = vod.RETIRED_SITES | vod.UNVERIFIED_SITES
         self.assertFalse(any(r['site'] in excluded for r in rows))
         self.assertTrue(vod.RETIRED_SITES.isdisjoint(vod.UNVERIFIED_SITES))
@@ -39,7 +39,7 @@ class FreeVodTests(unittest.TestCase):
         levidia = next(r for r in rows if r['site'] == 'levidia.ch')
         self.assertEqual(levidia['adapters'], ['free99:levidia_ch', 'scrubs:levidia_ch'])
         self.assertTrue(levidia['movies'] and levidia['series'])
-        self.assertEqual(vod.validate(), 71)
+        self.assertEqual(vod.validate(), 72)
 
     def test_only_levidia_is_restored_from_the_original_26_exclusions(self):
         originally_excluded = set(('123-movies.golf 123moviestv.me 1movies.la 9pm.to cinebox.cc '
@@ -568,8 +568,8 @@ class FreeVodTests(unittest.TestCase):
 
     def test_all_bundled_provider_constructors_import(self):
         rows=json.loads(vod.providers())
-        self.assertEqual(len(rows),71)
-        self.assertEqual(len({r['id'] for r in rows}),71)
+        self.assertEqual(len(rows),72)
+        self.assertEqual(len({r['id'] for r in rows}),72)
         for row in rows:
             with self.subTest(provider=row['id']):
                 self.assertTrue(hasattr(importlib.import_module(row['module']).source(),'sources'))
@@ -636,5 +636,6 @@ class FreeVodTests(unittest.TestCase):
 from test_current_vod_sites import CurrentSiteTests
 from test_native_vod_sites import NativeSiteTests
 from test_fmhy_rive import RiveTests
+from test_fmhy_movy import MovyTests
 
 if __name__=='__main__':unittest.main()

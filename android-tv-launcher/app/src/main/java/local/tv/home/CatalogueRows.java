@@ -132,8 +132,12 @@ final class CatalogueRows {
             );
             return scroll;
         }
-        List<TmdbCategories.Entry> entries = new ArrayList<>(TmdbCategories.lists(type));
-        entries.addAll(activity.catalogues.catalogueGenres(type));
+        List<TmdbCategories.Entry> entries = new ArrayList<>();
+        if (screen.kind.equals("Anime")) entries.addAll(TmdbCategories.anime(java.time.LocalDate.now()));
+        else {
+            entries.addAll(TmdbCategories.lists(type));
+            entries.addAll(activity.catalogues.catalogueGenres(type));
+        }
         for (int i = 0; i < entries.size(); i++) addRow(i, entries.get(i));
         int first = saved == null ? 0 : Math.max(0, Math.min(saved.focusedRow, rows.size() - 1));
         // When restoring, the saved poster is refocused instead of the first one.
@@ -155,10 +159,12 @@ final class CatalogueRows {
         view.setClipChildren(false);
         view.setClipToPadding(false);
         view.addView(rowTitle(entry.name));
+        // A row lists films or series by its own path (the Anime page has both).
+        String rowType = TmdbCategories.typeOf(entry.path, screen.type);
         PosterFeed.Loader source =
             testLoader != null
                 ? testLoader.forPath(entry.path)
-                : n -> activity.catalogues.cataloguePage(screen.type, entry.path, n);
+                : n -> activity.catalogues.cataloguePage(rowType, entry.path, n);
         Row[] self = new Row[1];
         PosterFeed.Loader loader = n -> {
             JSONObject page = source.load(n);
@@ -171,7 +177,7 @@ final class CatalogueRows {
         PosterFeed feed = new PosterFeed(
             activity,
             true,
-            screen.type,
+            rowType,
             activity.io,
             loader,
             new PosterFeed.Cards() {

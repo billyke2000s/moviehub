@@ -121,6 +121,7 @@ final class TitleDetails {
             activity.libraryScreens.toggleWatchlist(item);
             saved.setText(activity.libraryScreens.isWatchlisted(item) ? "✓ My list" : "+ My list");
         });
+        RatingActions.buttons(activity, actions, type, tmdbId);
         String trailer = trailerKey(item);
         if (!trailer.isEmpty()) action(actions, "Trailer", false, () -> {
             try {

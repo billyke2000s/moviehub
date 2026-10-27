@@ -620,7 +620,7 @@ The initial packaged Rive audit verified two movie links and rejected five with 
 
 ## Continue watching rows (27 October 2026)
 
-`ContinueWatchingTest` (core, 13 checks) covers the row rules: nothing under three minutes, one row
+`ContinueWatchingTest` (core, 13 checks at the time; see below) covers the row rules: nothing under three minutes, one row
 per film whichever source, the newest record of a film deciding, a series resuming its newest episode
 watched properly, a finished episode offering the next one once per series, an episode opened only
 for a moment leaving it to the one before, a part-way rewatch resuming, row order, and grouping by
@@ -645,3 +645,23 @@ Normal, the LibVLC options and Media3's size and background colour. Every film d
 starts LibVLC with the two subtitle options, so CI checks that LibVLC accepts them; how subtitles
 look on screen is not checked by any test.
 
+## Thumbs, new episodes and Anime (27 October 2026)
+
+`TitleRatingsTest` (core, 12 checks) covers the saved ratings: keys, damaged parts skipped, a new
+rating moving to the front, clearing, the 300-title bound and listing liked or disliked titles.
+`ContinueWatchingTest` now has 19 checks, adding six for "New episode" (aired today or up to seven
+days ago; not future, missing or invalid dates). `TmdbCategoriesTest.animeRows…` (device) checks every
+Anime row is Japanese animation without adult titles, routes are unique, the airing window, a genre
+row, and that film rows are typed as films and series rows as series. Not covered by tests: the
+thumb buttons on screen, For you actually changing after a rating (it needs real TMDB), the New
+episode label on screen, and the Anime screen loading real TMDB rows.
+
+## Additional FMHY route checks (27 October 2026)
+
+The combined change includes PR #172 (ratings, recent-episode labels and Anime). Local core checks pass using Eclipse JDT with Java 17; provider-engine tests pass; the Python suite passes 68 tests. New fixtures cover the Movy decoder against a frozen independent JavaScript vector, wrong identities/seeds, separate labels for identical media URLs, omitted movie episode parameters, exact episode identity, cancellation, protected/private targets and backend failure isolation.
+
+Earlier representative Inception desktop checks decoded Movy Boise/Miami at 3840×2160 with AAC and Rive Vanguard at 3840×1600 HEVC with separate decoded audio; full playlists were about 148 minutes. Atlantic Moscow decoded 1920×800 H.264/AAC with a similar runtime. These observations establish sampled desktop playback, not Android/TV playback. Fresh integration probes obtained eight Movy links, Rive Vanguard and a decoded Moscow URL. Local DNS is unavailable: these fresh HTTP probes used curl's network transport and did not exercise the app's DNS guard. Production URL guards remain unchanged.
+
+The existing opt-in Android live audit now also runs for these adapters on PRs, checks movie and exact-episode sources independently, and requires every selected returned link plus every named delivery route to pass. Its source-name filter affects only the audit. Build/lint, device fixtures and live Android results must be read from the integration PR; no physical-TV claim is made.
+
+First packaged audit: all 16 Movy movie/episode links passed video, decoded/output audio, runtime and midpoint seeking, including four measured 3840×2160 links. Vanguard's episode passed at 640×360; its movie audio/seek result did not pass, so the new backend is enabled only for episodes. Atlantic's first movie check had no decoded video and its episode process crashed. Direct inspection found raw MPEG-TS segments labelled `text/html` on range requests; its adapter now opts into the already-existing segment-container/MIME handling. The correction did not resolve either Android failure. Atlantic is excluded from this integration; its draft adapter, registry entry and cipher fixture have been removed. No shared relay/player changes were made. The ratings integration also checks that disliked titles are removed from Trending when recommendation seeds are absent.

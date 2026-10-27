@@ -4,6 +4,7 @@ shard=${1:?Audit shard required}
 shards=${2:?Audit shard count required}
 providers=${3:-}
 media=${4:-movies}
+source_names=${5:-}
 series=false
 if [ "$media" = series ]; then
     series=true
@@ -20,6 +21,7 @@ adb shell am instrument -w -r \
   -e class local.tv.home.FreeVodLiveAuditTest \
   -e vodLiveAudit true -e vodShard "$shard" -e vodShards "$shards" -e vodProviders "$providers" \
   -e vodSeries "$series" \
+  -e vodSourceNames "$source_names" \
   local.tv.home.test/local.tv.home.MovieHubTestRunner
 adb exec-out run-as local.tv.home cat files/vod-live-audit.jsonl > vod-live-audit.jsonl
 python - "$shard" "$shards" <<'PY'

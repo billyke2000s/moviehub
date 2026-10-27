@@ -31,7 +31,7 @@ class RiveTests(unittest.TestCase):
     def test_separate_resources_keep_quality_language_and_playback_headers(self):
         rows = [dict(format='hls', quality=quality, url='https://media.example/' + str(i))
                 for i, quality in enumerate(['720p | English', '720p | English', '480p | Tamil'])]
-        with patch.object(client, 'request', return_value={'data': {'sources': rows}}), \
+        with patch.object(client, 'request', side_effect=lambda url, **kw: {'data': {'sources': rows if 'provider=citadel' in url else []}}), \
              patch.object(client, 'safe', side_effect=lambda url: url):
             results = self.provider.sources(self.movie(), [])
         self.assertEqual(len(results), 3)
@@ -77,6 +77,8 @@ class RiveTests(unittest.TestCase):
         def request(url, **kwargs):
             if 'provider=primevids' in url:
                 raise ValueError('Fixture failure')
+            if 'provider=vanguard' in url:
+                return {'data': {'sources': []}}
             return {'data': {'sources': [dict(format='hls', quality='720p | English',
                                             url='https://media.example/video.m3u8')]}}
         with patch.object(client, 'request', side_effect=request), \
@@ -84,3 +86,18 @@ class RiveTests(unittest.TestCase):
             results = self.provider.sources(self.movie(), [])
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['originProvider'], 'Citadel · English')
+
+    def test_vanguard_is_separate_for_episodes_but_not_enabled_for_movies(self):
+        def request(url, **kwargs):
+            rows = [dict(format='hls', quality='4K HDR', url='https://media.example/vanguard')]
+            return {'data': {'sources': rows if 'provider=vanguard' in url else []}}
+        with patch.object(client, 'request', side_effect=request), \
+             patch.object(client, 'safe', side_effect=lambda url: url):
+            key = self.provider.tvshow('', '1396', None, 'Breaking Bad', '', [], '2008')
+            episode = self.provider.episode(key, '', '1396', None, 'Pilot', '', 1, 1)
+            results = self.provider.sources(episode, [])
+            self.assertEqual(self.provider.sources(self.movie(), []), [])
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['originProvider'], 'Vanguard · 4K HDR')
+        self.assertEqual(results[0]['quality'], '2160p')
+        self.assertFalse(results[0]['segmentContainers'])

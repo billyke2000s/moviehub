@@ -1,3 +1,11 @@
+## Unreleased
+
+- Add Movy Boise/Miami through the existing free-source engine; add Rive Vanguard for episodes (its movie route remains disabled after failing Android audio/seek verification). Each delivery route remains a separate source, with per-link quality probing.
+
+- Thumbs up / thumbs down on every title page and in the Hold Select menu. A thumbs up makes For you suggest more like it; a thumbs down keeps that title out of For you. Choosing the same thumb again clears it.
+- Continue watching marks a next episode that aired in the last 7 days as "New episode", in the accent colour.
+- New Anime section on Home: popular and top rated anime series and films, airing this week, new series and anime by genre, from TMDB (Japanese animation).
+
 ## 1.0.8 (27 October 2026)
 
 - Continue watching shows each film once, skips anything watched for under 3 minutes, and shows each series as one row: the episode you are part-way through, or the next episode once you finish one.

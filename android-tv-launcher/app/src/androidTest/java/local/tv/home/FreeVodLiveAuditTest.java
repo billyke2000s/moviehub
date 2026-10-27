@@ -95,6 +95,14 @@ public final class FreeVodLiveAuditTest {
                     timer.cancel();
                 }
                 record(lookup);
+                String sourceNames = arguments.getString("vodSourceNames", "");
+                if (!sourceNames.isEmpty()) sources.removeIf(source -> {
+                    String label = SourcesScreen.provider(source.title);
+                    for (String name : sourceNames.split(",")) {
+                        if (label.contains(" · " + name)) return false;
+                    }
+                    return true;
+                });
                 Set<String> keys = new HashSet<>();
                 for (SourceRepository.Source source : sources) {
                     boolean separate = keys.add(VodSearch.sourceKey(source));

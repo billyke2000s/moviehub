@@ -86,8 +86,8 @@ public final class FreeVodProvidersTest {
     @Test
     public void packagedPythonImportsEveryProviderAndHostResolverWithoutKodi() throws Exception {
         // Eleven retired/repurposed and 18 unverified sites stay disabled; Levidia stays searchable.
-        assertEquals(37, FreeVodProviders.ids(context).size());
-        assertEquals(71, FreeVodProviders.validate(context));
+        assertEquals(38, FreeVodProviders.ids(context).size());
+        assertEquals(72, FreeVodProviders.validate(context));
     }
 
     @Test

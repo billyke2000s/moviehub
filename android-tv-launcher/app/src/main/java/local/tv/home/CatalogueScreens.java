@@ -116,9 +116,9 @@ final class CatalogueScreens {
             Button library = activity.navigationButton("Library", () -> {});
             library.setOnClickListener(v ->
                 SidePanel.of(activity, "Your library")
-                    .option("My library", () -> activity.libraryScreens.savedLibrary(kind))
-                    .option("Premiumize cloud", () -> activity.cloudScreens.cloud("", kind))
-                    .option("Transfers", () -> activity.cloudScreens.transfers(kind))
+                    .option("My library", () -> activity.libraryScreens.savedLibrary(libraryKind()))
+                    .option("Premiumize cloud", () -> activity.cloudScreens.cloud("", libraryKind()))
+                    .option("Transfers", () -> activity.cloudScreens.transfers(libraryKind()))
                     .show()
             );
             header.addView(library, new LinearLayout.LayoutParams(activity.dp(88), activity.dp(36)));
@@ -182,6 +182,11 @@ final class CatalogueScreens {
             activity.page.addView(content, new LinearLayout.LayoutParams(-1, 0, 1));
             initialFocus = header.getChildAt(1);
             initialFocus.requestFocus();
+        }
+
+        /** The saved library and cloud have Movies and Series only; Anime uses Series. */
+        String libraryKind() {
+            return kind.equals("Anime") ? "Series" : kind;
         }
 
         /** Shows the rows page in this screen. Browse and Filters still open over it. */
