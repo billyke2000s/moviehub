@@ -54,18 +54,31 @@ final class ResumePoint {
         Object saved = titleKey == null ? null : all.get(titleKey);
         if (!(saved instanceof Number)) saved = all.get(id);
         long point = saved instanceof Number ? ((Number) saved).longValue() : 0;
-        Object duration = all.get(id + ":duration");
-        if (duration instanceof Number && completed(point, ((Number) duration).longValue())) {
+        long duration = duration(all, id, titleKey);
+        if (duration > 0 && completed(point, duration)) {
             clear(context, id, titleKey);
             return 0;
         }
         return point;
     }
 
+    /**
+     * The saved length: the title's (the copy that played it last, which set its position), else
+     * this file's, else 0. Older versions saved the length only under the file's id.
+     */
+    static long duration(java.util.Map<String, ?> all, String id, String titleKey) {
+        Object saved = titleKey == null ? null : all.get(titleKey + ":duration");
+        if (!(saved instanceof Number)) saved = all.get(id + ":duration");
+        return saved instanceof Number ? ((Number) saved).longValue() : 0;
+    }
+
     /** Saves the length (when known) and, unless it ended or resuming is off, the position. */
     static void save(Context context, String id, String titleKey, long position, long length, boolean ended) {
         SharedPreferences.Editor edit = positions(context).edit();
-        if (length > 0) edit.putLong(id + ":duration", length);
+        if (length > 0) {
+            edit.putLong(id + ":duration", length);
+            if (titleKey != null) edit.putLong(titleKey + ":duration", length);
+        }
         if (ended || completed(position, length)) {
             edit.remove(id);
             if (titleKey != null) edit.remove(titleKey);
