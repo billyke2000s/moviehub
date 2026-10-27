@@ -53,7 +53,14 @@ final class VodQuality {
             if (
                 facts.origin == MediaFacts.Origin.UNKNOWN || facts.origin == MediaFacts.Origin.PLAYING
             ) continue;
-            if (facts.tier() > 0) source.confirmed = facts.tier();
+            if (facts.tier() > 0) {
+                // A new Java header check replaces the old playback-only judgement, not the
+                // website's quality-trust history. Existing Python checks already judged it.
+                if (free && source.confirmed == 0 && facts.origin == MediaFacts.Origin.FILE) {
+                    FreeVodProviders.judge(activity, source.site, source.claimed, facts.tier());
+                }
+                source.confirmed = facts.tier();
+            }
             source.label = facts.describe() + " · " + source.provider;
         }
         if (playing) playingFacts(active);

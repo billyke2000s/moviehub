@@ -412,6 +412,48 @@ public class PlaybackTest {
     }
 
     @Test
+    public void fileMetadataKeepsWebsiteTrustJudgementWithoutCountingEveryTick() throws Exception {
+        Context context = instrumentation.getTargetContext();
+        var prefs = context.getSharedPreferences("ui", 0);
+        prefs.edit().remove("quality_claims.metadata-fixture.example").commit();
+        VodSourceFailover.Source source = new VodSourceFailover.Source("metadata", "1080p", "fixture");
+        source.site = "metadata-fixture.example";
+        source.claimed = "1080p";
+        source.facts.value = new MediaFacts.Value(
+            MediaFacts.Origin.FILE,
+            160,
+            90,
+            "video/avc",
+            "audio/mp4a-latm",
+            1,
+            "und",
+            0,
+            0,
+            150_000
+        );
+        VodSources.Session session = new VodSources.Session(
+            java.util.Collections.singletonList(source),
+            index -> {
+                throw new IOException("No backup expected");
+            },
+            false
+        );
+        session.free = true;
+        try {
+            openVod(session);
+            await(() -> source.confirmed == 90, 5000);
+            assertEquals("1", prefs.getString("quality_claims.metadata-fixture.example", ""));
+            instrumentation.runOnMainSync(() -> {
+                activity.vod.tick();
+                activity.vod.tick();
+            });
+            assertEquals("1", prefs.getString("quality_claims.metadata-fixture.example", ""));
+        } finally {
+            prefs.edit().remove("quality_claims.metadata-fixture.example").commit();
+        }
+    }
+
+    @Test
     public void playingFilmCorrectsAnOverstatedLabelAndOnlySuggestsAConfirmedBetterSource() throws Exception {
         Context context = instrumentation.getTargetContext();
         android.content.SharedPreferences prefs = context.getSharedPreferences("ui", Context.MODE_PRIVATE);
