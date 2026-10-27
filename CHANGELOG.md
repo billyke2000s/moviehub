@@ -1,3 +1,7 @@
+## Unreleased
+
+- Fix: resuming an episode on a broken or shorter copy whose video ends before the resume point no longer counts as watching it to the end (no watched mark, no jump to the next episode).
+
 ## 1.0.10 (27 October 2026)
 
 - Fix: a broken film or episode source that ended at once, was a short clip or was cut off part-way was treated as watched, and in a series jumped straight to the next episode. Such an end is now a failed source (the player tries another one or offers Try again) and nothing is marked watched. The Up next prompt and leaving the player near the end also ignore media under two minutes (`PlaybackEnd`).

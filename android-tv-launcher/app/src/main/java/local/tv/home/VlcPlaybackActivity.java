@@ -81,6 +81,8 @@ public class VlcPlaybackActivity extends Activity {
     private final Runnable stalled = () -> showError("The source is taking too long to respond.");
     /** The furthest position played or jumped to; decides whether an end is a real finish. */
     private long furthestMs;
+    /** The resume point the media was opened at (never cleared, unlike {@link #resumeCheck}). */
+    private long openedAtMs;
     /** Film skips and seek-bar moves waiting to become one jump (see {@link SkipQueue}). */
     final SkipQueue skips = new SkipQueue();
     final Runnable applySkip = () -> {
@@ -386,8 +388,8 @@ public class VlcPlaybackActivity extends Activity {
         if (position > 1000) {
             media.addOption(":start-time=" + position / 1000);
             resumeCheck = position;
-            // A resume point was reached on an earlier play.
-            furthestMs = Math.max(furthestMs, position);
+            // Reached on an earlier play: kept when saving, but not proof this copy plays that far.
+            openedAtMs = Math.max(openedAtMs, position);
             position = 0;
         }
         player.setMedia(media);
@@ -601,7 +603,7 @@ public class VlcPlaybackActivity extends Activity {
             long time = player.getTime();
             // A stream that closed early may report its full length as the time: never save more
             // than was played or jumped to (the 1 s tick can trail by a moment).
-            long reached = Math.max(furthestMs, resumeCheck) + 5000;
+            long reached = Math.max(Math.max(furthestMs, openedAtMs), resumeCheck) + 5000;
             // Before playback starts the time is 0; keep the resume point the media opened at.
             if (time > 0) position = Math.min(time, reached);
             else if (resumeCheck > 0) position = resumeCheck;

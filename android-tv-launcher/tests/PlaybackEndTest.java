@@ -24,7 +24,10 @@ public class PlaybackEndTest {
         check(PlaybackEnd.finished(45 * min, 45 * min), "played to the end");
         check(PlaybackEnd.finished(45 * min, 45 * min - 30_000), "30 s left");
         check(PlaybackEnd.finished(45 * min, 41 * min + 30_000), "3.5 min left (credits)");
-        check(PlaybackEnd.finished(45 * min, 50 * min), "time past length is clamped");
+        check(PlaybackEnd.finished(45 * min, 45 * min + 3_000), "a tick just past the length");
+        // Resumed at 40 min on a broken 3 min copy: the position is beyond its end, not a finish.
+        check(!PlaybackEnd.finished(3 * min, 40 * min), "resume point past a short copy");
+        check(!PlaybackEnd.finished(30 * min, 40 * min), "resume point past a shorter copy");
         // Leaving the player: a short clip is never watched, a real episode near its end is.
         check(!PlaybackEnd.watchedWhenLeaving(5_000, 5_000), "leave 5 s clip");
         check(!PlaybackEnd.watchedWhenLeaving(0, 45 * min), "leave before playing");
@@ -35,6 +38,6 @@ public class PlaybackEndTest {
         check(!PlaybackEnd.nearEnd(115 * min, 120 * min), "5 min left of 2 h");
         check(PlaybackEnd.nearEnd(27 * min, 30 * min), "3 min left of 30 min");
         check(!PlaybackEnd.nearEnd(26 * min, 30 * min), "4 min left of 30 min (over a tenth)");
-        System.out.println("20 playback end checks passed");
+        System.out.println("22 playback end checks passed");
     }
 }

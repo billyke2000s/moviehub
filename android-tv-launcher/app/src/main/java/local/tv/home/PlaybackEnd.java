@@ -28,14 +28,19 @@ final class PlaybackEnd {
     /** Ending with more than this still to go is a cut-off stream, not a finish. */
     static final long EARLY_END_MS = 60 * 1000L;
 
+    /** Positions are read once a second, so a little past the reported length is normal. */
+    static final long PAST_END_SLACK_MS = 5000L;
+
     /**
      * {@code length} is the media's length (0 or less when unknown) and {@code furthest} the
-     * furthest position reached while playing it.
+     * furthest position reached while playing it. A position well past the length (resuming
+     * beyond the end of a shorter or broken copy) means this media is not the one being watched.
      */
     static boolean finished(long length, long furthest) {
         if (furthest <= 0) return false;
         if (length <= 0) return furthest >= MIN_LENGTH_MS;
         if (length < MIN_LENGTH_MS) return false;
+        if (furthest > length + PAST_END_SLACK_MS) return false;
         long left = length - Math.min(furthest, length);
         return left <= EARLY_END_MS || nearEnd(Math.min(furthest, length), length);
     }
