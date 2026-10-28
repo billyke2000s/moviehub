@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 17747)
-Total output lines: 706
+Warning: truncated output (original token count: 17796)
+Total output lines: 708
 
 # Testing
 
@@ -24,7 +24,9 @@ and series fixtures remain required. Live provider/physical-TV success is not im
 initialization/media requests and cookie isolation across advertised origins.
 
 The `vod-recovery-tests` CI job runs both new session classes plus the existing repeated-buffering
-and late-backup-after-short-clip regressions as a focused group. The full normal and experimental
+and late-backup-after-short-clip regressions as a focused group. Each class/method filter runs
+separately and its XML report must contain the expected cases with no failures or skips; a green
+Gradle exit alone does not establish that every requested filter ran. The full normal and experimental
 suites still run independently. Candidate handoff requires decoded video and position alignment;
 audio is verified after selection by the DASH playback fixture rather than gating a muted decoder
 on native audio counters. Numeric preparation diagnostics are attached to timeout assertions and
@@ -308,9 +310,7 @@ The post-merge run 39821398629 crashed in EGL window initialization in this path
 cancels view callbacks first, stops VLC with its surface retained, then detaches the surface.
 
 Handoff evidence now excludes closing-output frames and requires the destination SurfaceView
-to be shown, valid and sized. The optional PixelCopy capture never delays disabling the old
-video track. The existing direct, native-resolved and manually pinned backup tests each make
-two full-screen/…2747 tokens truncated…utes are configured before the window is attached, so initial focus is not followed by a second layout/visibility change. Repeated isolated emulator runs accompany the full suite for this handoff.
+to b…2796 tokens truncated…utes are configured before the window is attached, so initial focus is not followed by a second layout/visibility change. Repeated isolated emulator runs accompany the full suite for this handoff.
 
 Live-controls physical colour injection uses one down-time identity for both events and drains pending UI work before capturing a replacement dialog. Android Instrumentation’s convenience down/up helper constructs independently timed events, which can look like another press after a window-transfer cancellation. Existing window-focus and old-panel-closure assertions remain required.
 

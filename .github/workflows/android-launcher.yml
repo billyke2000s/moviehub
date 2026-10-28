@@ -152,7 +152,7 @@ jobs:
           arch: x86_64
           profile: tv_1080p
           disable-animations: true
-          script: bash android-tv-launcher/tests/run-device-tests.sh "-Pandroid.testInstrumentationRunnerArguments.class=local.tv.home.VodSessionTest,local.tv.home.VodSessionPlaybackTest,local.tv.home.PlaybackTest#vodRepeatedBufferingPreparesBackupsWithoutStoppingCurrentPlayback,local.tv.home.PlaybackTest#shortInitialFreeClipWaitsForLateBackupWithoutEndingMovie"
+          script: bash android-tv-launcher/tests/run-vod-recovery-tests.sh
       - name: List failed device tests
         if: failure()
         run: python3 android-tv-launcher/tests/report-test-failures.py android-tv-launcher/app/build/outputs/androidTest-results
@@ -162,7 +162,7 @@ jobs:
         with:
           name: vod-recovery-device-tests
           path: |
-            android-tv-launcher/app/build/reports/androidTests/
+            android-tv-launcher/app/build/reports/vod-recovery/
             android-tv-launcher/app/build/reports/tv-screenshots/
           if-no-files-found: ignore
 
