@@ -40,6 +40,12 @@ public final class VodSessionPlaybackTest {
     @Before
     public void setup() throws Exception {
         Context context = instrumentation.getTargetContext();
+        context
+            .getSharedPreferences("positions", 0)
+            .edit()
+            .remove("vod-managed-fixture")
+            .remove("vod-managed-fixture:duration")
+            .commit();
         oldHttp = context.getSharedPreferences("ui", 0).getBoolean("http", false);
         context.getSharedPreferences("ui", 0).edit().putBoolean("http", true).commit();
         for (String name : instrumentation.getContext().getAssets().list("vod-dash")) {
@@ -137,7 +143,7 @@ public final class VodSessionPlaybackTest {
         } catch (Exception ignored) {}
     }
 
-    private void open(VodSources.Session session) {
+    private void launch(VodSources.Session session) {
         token = VodSources.remember(session);
         Context context = instrumentation.getTargetContext();
         activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
@@ -148,6 +154,10 @@ public final class VodSessionPlaybackTest {
                 .putExtra("title", "Managed fixture")
                 .putExtra("vodSession", token)
         );
+    }
+
+    private void open(VodSources.Session session) {
+        launch(session);
         await(
             () -> activity.player != null && activity.player.isPlaying() && activity.player.getTime() > 300
         );
@@ -176,7 +186,7 @@ public final class VodSessionPlaybackTest {
         open(session);
         assertEquals(1, refreshes.get());
         assertEquals(0, session.active);
-        assertTrue(activity.url.endsWith("/vod.mp4"));
+        assertTrue(activity.getIntent().getStringExtra("url").endsWith("/vod.mp4"));
     }
 
     @Test
@@ -204,6 +214,47 @@ public final class VodSessionPlaybackTest {
             }
         });
         assertTrue(authorizedSegments.get() >= 4);
+    }
+
+    @Test
+    public void managedOpeningRetainsResumePointAndAllowsSeeking() throws Exception {
+        instrumentation
+            .getTargetContext()
+            .getSharedPreferences("positions", 0)
+            .edit()
+            .putLong("vod-managed-fixture", 12_000)
+            .commit();
+        String url = "http://127.0.0.1:" + server.getLocalPort() + "/vod.mp4";
+        open(session(index -> new VodSources.Resolved(url, null)));
+        assertTrue(activity.player.getTime() >= 10_000);
+        instrumentation.runOnMainSync(() -> {
+            activity.vod.seeking(35_000);
+            activity.player.setTime(35_000);
+        });
+        await(() -> activity.player != null && activity.player.getTime() >= 34_000);
+        assertEquals(0, activity.vod.activeIndex());
+    }
+
+    @Test
+    public void abandonedManagedResolutionIsInterruptedAndCannotStartLate() throws Exception {
+        java.util.concurrent.CountDownLatch started = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch interrupted = new java.util.concurrent.CountDownLatch(1);
+        VodSources.Session session = session(index -> {
+            started.countDown();
+            try {
+                new java.util.concurrent.CountDownLatch(1).await(30, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (InterruptedException cancelled) {
+                interrupted.countDown();
+                throw cancelled;
+            }
+            throw new IllegalStateException("Fixture lookup was not cancelled");
+        });
+        launch(session);
+        assertTrue(started.await(10, java.util.concurrent.TimeUnit.SECONDS));
+        instrumentation.runOnMainSync(activity::finish);
+        await(activity::isDestroyed);
+        assertTrue(interrupted.await(5, java.util.concurrent.TimeUnit.SECONDS));
+        assertNull(activity.player);
     }
 
     @After

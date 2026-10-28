@@ -195,7 +195,7 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
             try:
                 client.check()
                 from moviehub_identity import matches
-                if not matches(item, info):
+                if not matches(item, dict(info, imdb=imdb, season=int(season), episode=int(episode))):
                     rejected += 1
                     continue
                 stage = "resolution"
@@ -238,7 +238,8 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
                                'boundedRanges': bool(item.get('boundedRanges', False)),
                                'identityEvidence': 'provider_lookup',
                                'filename': str(item.get('filename') or item.get('file') or 'video.mp4'),
-                               'refresh': {'adapter': provider_id, 'host': source_host(host_name, item['url'])}})
+                               'refresh': {'adapter': provider_id, 'host': source_host(host_name, item['url']),
+                                           'locator': item['url'].partition('|')[0], 'quality': str(item.get('quality','SD'))}})
                 client.host_result(result['sourceProvider'], 'complete')
                 sources.append(result)
                 if emit is not None: emit.ready(json.dumps(result))
@@ -268,12 +269,14 @@ def refresh_source(recipe_raw, raw, cancelled):
     class Emit:
         def ready(self, value):
             item = json.loads(value)
-            if item.get('sourceProvider') == recipe['host']:
+            if item.get('sourceProvider') == recipe['host'] and (
+                not recipe.get('quality') or item.get('claimedQuality') == recipe['quality']):
                 found.append(item)
     # Rediscover the same title through its original adapter; signed media URLs are not locators.
     report = json.loads(query(recipe['adapter'], raw, cancelled, Emit(), time.monotonic() + 20))
     if not found:
         raise ValueError('Source refresh did not find the same playback host')
+    found.sort(key=lambda item: item.get('refresh', {}).get('locator') != recipe.get('locator'))
     return json.dumps(found[0])
 
 
@@ -349,7 +352,7 @@ def playable(raw, preferred=2160, expected_seconds=0):
 def expiry_millis(url):
     # Only explicit epoch fields; opaque tokens and durations are never guessed to be expiry.
     for name, value in parse_qsl(urlparse(url).query):
-        if name.lower() in ('expires', 'expiry', 'exp') and value.isdigit():
+        if name.lower() in ('expires', 'expiry', 'exp') and value.isdigit() and len(value) <= 13:
             epoch = int(value)
             if 1_000_000_000 <= epoch < 10_000_000_000: return epoch * 1000
             if 1_000_000_000_000 <= epoch < 10_000_000_000_000: return epoch

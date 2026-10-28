@@ -32,6 +32,34 @@ class SessionTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 vod.refresh_source(json.dumps(dict(adapter='native:vixsrc',host='wanted')), '{}', lambda:False)
 
+    def test_refresh_preserves_quality_and_prefers_the_original_locator(self):
+        def query(adapter, raw, cancelled, emit, deadline):
+            for quality, locator, url in [('SD','original','wrong-quality'), ('HD','other','other-route'), ('HD','original','correct-route')]:
+                emit.ready(json.dumps(dict(sourceProvider='wanted',claimedQuality=quality,
+                    refresh=dict(locator=locator),url=url)))
+            return '{}'
+        recipe=dict(adapter='native:vixsrc',host='wanted',quality='HD',locator='original')
+        with patch.object(vod,'query',side_effect=query):
+            result=json.loads(vod.refresh_source(json.dumps(recipe), '{}', lambda:False))
+        self.assertEqual(result['url'],'correct-route')
+
+    def test_scene_episode_mapping_is_respected_before_filename_validation(self):
+        import importlib
+        module=importlib.import_module('moviehub_free99.providers.levidia_ch')
+        class Provider:
+            base_link='https://fixture.example'
+            def tvshow(self,*args): return 'show'
+            def episode(self,*args): return 'episode'
+            def sources(self,*args): return [dict(url='https://cdn.example/video.mp4',source='direct',
+                direct=True,filename='Show.S01E03.mkv')]
+            def resolve(self,url): return url
+        wanted=dict(title='The Haunting',year='2018',imdb='tt123',tmdb=1,season=2,episode=3)
+        with patch.object(module,'source',return_value=Provider()), patch.object(vod,'playable',
+            return_value=dict(url='https://cdn.example/video.mp4',headers={},verifiedQuality=None)):
+            result=json.loads(vod.query('free99:levidia_ch',json.dumps(wanted),lambda:False))
+        self.assertEqual(result['status'],'complete')
+        self.assertEqual(result['sources'][0]['filename'],'Show.S01E03.mkv')
+
     def test_expiry_uses_explicit_epochs_only(self):
         self.assertEqual(vod.expiry_millis('https://cdn.example/a?expires=1900000000'),1900000000000)
         self.assertEqual(vod.expiry_millis('https://cdn.example/a?exp=1900000000000'),1900000000000)
