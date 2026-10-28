@@ -345,6 +345,7 @@ final class VodPlayback {
             candidate != null &&
             target > 0 &&
             !restartEdition &&
+            !rejectedShort &&
             activity.player != null &&
             !VodMediaPolicy.compatible(activity.player.getLength(), candidate.getLength())
         ) {

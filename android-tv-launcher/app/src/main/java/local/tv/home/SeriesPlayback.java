@@ -5,7 +5,7 @@ import java.time.ZoneOffset;
 import java.util.*;
 import org.json.*;
 
-/** Continue within a pack, or discover the next aired episode across season boundaries. */
+/** Discover the next aired episode and open it through fresh managed sources. */
 final class SeriesPlayback {
 
     private final MainActivity activity;
@@ -248,9 +248,9 @@ final class SeriesPlayback {
                 } else {
                     activity.pageTitle(
                         activity.page,
-                        "Next episode not in this pack",
+                        "Next episode",
                         nextTitle,
-                        "Search other sources to continue watching."
+                        "Find a fresh source to continue watching."
                     );
                     activity.page.addView(activity.button("Search for the next episode", search));
                 }
