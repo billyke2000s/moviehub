@@ -1,4 +1,4 @@
-# Diagnostic only: five-second timing trace; production remains two seconds
+# Correct diagnostic trace newlines; production unchanged
 name: Check reported HLS headers on Android
 on:
   push:

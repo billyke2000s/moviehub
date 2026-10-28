@@ -48,7 +48,8 @@ final class HlsMetadataProbe {
         try {
             for (int depth = 0; !media.variant.isEmpty() && depth < 3; depth++) {
                 location = resource(location, media.variant);
-                String next = playlist(location, budget);\n                trace("video playlist", budget);
+                String next = playlist(location, budget);
+                trace("video playlist", budget);
                 if (!next.startsWith("#EXTM3U")) return declared;
                 media = new HlsMediaInfo(next, preferred, audioLanguages);
                 if (media.declared.width > 0) declared = media.declared;
@@ -93,7 +94,8 @@ final class HlsMetadataProbe {
             return AUDIO.submit(() -> {
                 try {
                     String location = resource(base, path);
-                    HlsMediaInfo info = new HlsMediaInfo(playlist(location, budget), preferred, languages);\n                    trace("audio playlist", budget);
+                    HlsMediaInfo info = new HlsMediaInfo(playlist(location, budget), preferred, languages);
+                    trace("audio playlist", budget);
                     return headers(location, info, budget);
                 } catch (Exception error) {
                     Diagnostics.recovered("HLS metadata audio", error);
@@ -152,9 +154,11 @@ final class HlsMetadataProbe {
                     budget
                 )
             ) {
-                if (keyData.readAt(0, key, 0, key.length) != 16) return MediaFacts.UNKNOWN;\n                trace("key read", budget);
+                if (keyData.readAt(0, key, 0, key.length) != 16) return MediaFacts.UNKNOWN;
+                trace("key read", budget);
                 byte[] encoded = new byte[65536];
-                int n = data.readAt(0, encoded, 0, encoded.length);\n                trace("prefix read bytes=" + n, budget);
+                int n = data.readAt(0, encoded, 0, encoded.length);
+                trace("prefix read bytes=" + n, budget);
                 if (n < 16) return MediaFacts.UNKNOWN;
                 boolean complete = data.getSize() == n;
                 if (!complete) n -= n % 16;
@@ -166,7 +170,9 @@ final class HlsMetadataProbe {
                     complete
                 );
                 try (Prefix plain = new Prefix(decoded, budget)) {
-                    MediaFacts.Value result = MediaMetadataProbe.extract(plain);\n                    trace("extracted audio=" + result.audioCodec + " channels=" + result.channels, budget);\n                    return result;
+                    MediaFacts.Value result = MediaMetadataProbe.extract(plain);
+                    trace("extracted audio=" + result.audioCodec + " channels=" + result.channels, budget);
+                    return result;
                 } finally {
                     Arrays.fill(decoded, (byte) 0);
                 }
@@ -179,7 +185,10 @@ final class HlsMetadataProbe {
         }
     }
 
-    private static void trace(String phase, MediaMetadataProbe.Budget budget) throws IOException {\n        android.util.Log.i("MovieHubHlsMeta", Thread.currentThread().getName() + " " + phase + " remaining=" + budget.timeout());\n    }\n\n    private static final class Prefix extends MediaDataSource {
+    private static void trace(String phase, MediaMetadataProbe.Budget budget) throws IOException {
+        android.util.Log.i("MovieHubHlsMeta", Thread.currentThread().getName() + " " + phase + " remaining=" + budget.timeout());
+    }\n
+    private static final class Prefix extends MediaDataSource {
 
         private final byte[] bytes;
         private final MediaMetadataProbe.Budget budget;

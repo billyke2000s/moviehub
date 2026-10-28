@@ -39,13 +39,15 @@ final class MediaMetadataProbe {
             relay = new ProviderRelay(transport);
             Budget budget = new Budget(cancelled);
             try (Data data = new Data(relay.url, budget)) {
-                stage = "header read";\n                android.util.Log.i("MovieHubHlsMeta", "root start");
+                stage = "header read";
+                android.util.Log.i("MovieHubHlsMeta", "root start");
                 byte[] prefix = new byte[65536];
                 int n = data.readAt(0, prefix, 0, prefix.length);
                 if (n <= 0) return MediaFacts.UNKNOWN;
                 String text = new String(prefix, 0, n, StandardCharsets.UTF_8).trim();
                 if (text.startsWith("\uFEFF")) text = text.substring(1);
-                android.util.Log.i("MovieHubHlsMeta", "root end remaining=" + budget.timeout());\n                if (text.startsWith("#EXTM3U")) return HlsMetadataProbe.read(
+                android.util.Log.i("MovieHubHlsMeta", "root end remaining=" + budget.timeout());
+                if (text.startsWith("#EXTM3U")) return HlsMetadataProbe.read(
                     relay.url,
                     text,
                     preferred,
