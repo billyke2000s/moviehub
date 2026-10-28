@@ -1,3 +1,16 @@
+## Unreleased
+
+- Refresh stale/expired movie and episode sources through their original adapter and playback host;
+  retry resolution once before abandoning a failed source, with separate bounded lookup/startup.
+- Preserve distinct provider/header identities even when links share a media URL; rank backups
+  when needed and prefer independent hosts over aliases of failed delivery hosts.
+- Validate conflicting provider IDs/episode filenames and retain honest lookup provenance.
+- Relay relative DASH manifests, inherited segment addressing and protected-header media requests.
+- Search fresh managed sources for each next episode, preserving recovery and title history keys.
+- Allow known short films/episodes, reject runtime mismatches and offer explicit restart for a
+  manual switch to a different-runtime edition instead of silently reusing its timestamp.
+- Add core, Python, Android session and real LibVLC/DASH regression fixtures.
+
 ## 1.0.16 (28 October 2026)
 
 - Rollback: same app as 1.0.12. Removes the 1.0.13 audio badges, 1.0.14 stuck-link switching and 1.0.15 runtime/metadata/Play sources changes at the owner's request, because 1.0.15 misbehaved. Published with a higher version number so installed TVs accept it.

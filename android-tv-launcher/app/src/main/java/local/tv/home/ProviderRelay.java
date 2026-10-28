@@ -13,6 +13,7 @@ final class ProviderRelay implements AutoCloseable {
     private final ServerSocket server;
     private final String secret = UUID.randomUUID().toString();
     private final Map<String, String> targets = new LinkedHashMap<>();
+    private final Map<String, DashManifest.Template> dashTemplates = new LinkedHashMap<>();
     private final Set<String> playlists = new HashSet<>();
     private final Map<String, String> headers;
     private final String credentialAuthority;
@@ -160,6 +161,18 @@ final class ProviderRelay implements AutoCloseable {
         return "http://127.0.0.1:" + server.getLocalPort() + "/" + secret + "/" + token;
     }
 
+    private synchronized String registerDash(String address) throws Exception {
+        if (!address.contains("$")) return register(address, false);
+        ProviderUrls.playback(address);
+        if (dashTemplates.size() >= 2048) throw new IOException("DASH grant limit");
+        DashManifest.Template template = new DashManifest.Template(address);
+        String token = UUID.randomUUID().toString();
+        dashTemplates.put(token, template);
+        return (
+            "http://127.0.0.1:" + server.getLocalPort() + "/" + secret + "/" + token + "/" + template.local
+        );
+    }
+
     private static String readLine(Reader reader) throws IOException {
         StringBuilder line = new StringBuilder();
         int ch;
@@ -191,6 +204,13 @@ final class ProviderRelay implements AutoCloseable {
                 target;
             synchronized (this) {
                 target = targets.get(token);
+                int slash = token.indexOf('/');
+                if (slash > 0) {
+                    DashManifest.Template template = dashTemplates.get(token.substring(0, slash));
+                    if (template != null) target = ProviderUrls.playback(
+                        template.expand(token.substring(slash + 1))
+                    );
+                }
             }
             if (target == null) throw new IOException("Unknown relay grant");
             String range = null,
@@ -291,6 +311,9 @@ final class ProviderRelay implements AutoCloseable {
                     String signature = new String(prefix, 0, n, StandardCharsets.UTF_8);
                     boolean playlist =
                         signature.startsWith("#EXTM3U") || signature.startsWith("\uFEFF#EXTM3U");
+                    boolean dash =
+                        current.getPath().toLowerCase(Locale.ROOT).endsWith(".mpd") ||
+                        (upstream.getContentType() != null && upstream.getContentType().contains("dash+xml"));
                     boolean wrappedContainer =
                         segmentContainers && ProviderContainerSegments.matches(prefix, n);
                     if (wrappedContainer && range != null && !wholeEntity) throw new IOException(
@@ -299,7 +322,7 @@ final class ProviderRelay implements AutoCloseable {
                     byte[] head = new byte[ProviderSegments.HEAD];
                     int held = 0,
                         skip = 0;
-                    if (!playlist && !wrappedContainer && (range == null || wholeEntity)) {
+                    if (!playlist && !dash && !wrappedContainer && (range == null || wholeEntity)) {
                         while (held < head.length) {
                             int count = in.read(head, held, head.length - held);
                             if (count < 0) break;
@@ -310,11 +333,13 @@ final class ProviderRelay implements AutoCloseable {
                     if (playlist) synchronized (this) {
                         playlists.add(token);
                     }
-                    String type = playlist
-                        ? "application/vnd.apple.mpegurl"
-                        : wrappedContainer || skip > 0 || (held > 0 && head[0] == 0x47)
-                          ? "video/mp2t"
-                          : upstream.getContentType();
+                    String type = dash
+                        ? "application/dash+xml"
+                        : playlist
+                          ? "application/vnd.apple.mpegurl"
+                          : wrappedContainer || skip > 0 || (held > 0 && head[0] == 0x47)
+                            ? "video/mp2t"
+                            : upstream.getContentType();
                     if (type == null || type.contains("\r") || type.contains("\n")) type =
                         "application/octet-stream";
                     String extra = "";
@@ -324,7 +349,7 @@ final class ProviderRelay implements AutoCloseable {
                     ) extra = "Content-Range: " + contentRange + "\r\n";
                     // Files retain their byte length and range support. Rewritten playlists
                     // and stripped segments have different offsets and must not inherit them.
-                    if (!playlist && !wrappedContainer && skip == 0) {
+                    if (!playlist && !dash && !wrappedContainer && skip == 0) {
                         long length = upstream.getContentLengthLong();
                         if (length >= 0) extra += "Content-Length: " + length + "\r\n";
                         if (
@@ -345,7 +370,7 @@ final class ProviderRelay implements AutoCloseable {
                             "\r\n"
                         ).getBytes(StandardCharsets.US_ASCII)
                     );
-                    if (playlist) {
+                    if (playlist || dash) {
                         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                         byte[] buf = new byte[8192];
                         int count;
@@ -354,9 +379,14 @@ final class ProviderRelay implements AutoCloseable {
                             bytes.write(buf, 0, count);
                         }
                         out.write(
-                            rewrite(bytes.toString(StandardCharsets.UTF_8.name()), current).getBytes(
-                                StandardCharsets.UTF_8
-                            )
+                            (dash
+                                ? DashManifest.rewrite(
+                                      bytes.toString(StandardCharsets.UTF_8.name()),
+                                      current,
+                                      this::registerDash
+                                  )
+                                : rewrite(bytes.toString(StandardCharsets.UTF_8.name()), current)
+                            ).getBytes(StandardCharsets.UTF_8)
                         );
                     } else if (wrappedContainer) {
                         ProviderContainerSegments.write(in, out);
@@ -537,6 +567,7 @@ final class ProviderRelay implements AutoCloseable {
         synchronized (this) {
             targets.clear();
             playlists.clear();
+            dashTemplates.clear();
         }
     }
 }

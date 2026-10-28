@@ -24,6 +24,10 @@ final class VodPlayback {
     );
     private Future<?> resolving;
     private final java.util.Map<Integer, ProviderRelay> relays = new java.util.HashMap<>();
+    private ProviderRelay candidateRelay;
+    private final java.util.Set<Integer> refreshed = new java.util.HashSet<>();
+    private boolean manualSelection;
+    private boolean restartEdition;
     private MediaPlayer candidate;
     private VLCVideoLayout candidateView;
     private VodSources.Resolved resolved;
@@ -51,6 +55,12 @@ final class VodPlayback {
         active = session.active;
         queue.select(active, session.pinned);
         quality = new VodQuality(activity, session.sources, queue, session.free);
+    }
+
+    boolean startManaged(long position) {
+        if (!session.managed) return false;
+        prepare(active, false, Math.max(position, activity.playedPosition()));
+        return true;
     }
 
     boolean automaticSources() {
@@ -138,6 +148,12 @@ final class VodPlayback {
         if (closed) return false;
         queue.appendSources(session.sources);
         if (preparing) return true;
+        manualSelection = false;
+        if (session.refresh != null && session.refreshable.test(active) && refreshed.add(active)) {
+            queue.select(active, session.pinned);
+            prepare(active, true, activity.playedPosition());
+            return true;
+        }
         if (queue.failover() == null) {
             if (!session.searching.getAsBoolean()) return false;
             waitingForSources = true;
@@ -152,6 +168,7 @@ final class VodPlayback {
 
     void select(int index) {
         cancelPreparation();
+        manualSelection = true;
         if (!queue.select(index, !session.free)) return;
         session.pinned = !session.free;
         if (index == active) {
@@ -186,7 +203,7 @@ final class VodPlayback {
     boolean rejectedMedia() {
         if (!session.free || activity.player == null) return false;
         long duration = activity.player.getLength();
-        return rejectedShort || (duration > 0 && duration < 120000);
+        return rejectedShort || VodMediaPolicy.rejected(session.expectedDuration, duration);
     }
 
     boolean rejectShortVideo() {
@@ -197,7 +214,7 @@ final class VodPlayback {
         if (!session.free || activity.player == null) return false;
         long duration = activity.player.getLength();
         if (duration <= 0 && ended) duration = activity.player.getTime();
-        if (duration <= 0 || duration >= 120000) return false;
+        if (!VodMediaPolicy.rejected(session.expectedDuration, duration)) return false;
         if (!rejectedShort) {
             rejectedShort = true;
             activity.player.pause();
@@ -229,19 +246,23 @@ final class VodPlayback {
     }
 
     private void prepare(int index) {
+        prepare(index, false, activity.playedPosition());
+    }
+
+    private void prepare(int index, boolean refresh, long position) {
         preparing = true;
         playing = false;
         lastCatchup = 0;
         int request = ++ticket;
-        target = Math.max(0, activity.playedPosition());
-        deadline = SystemClock.elapsedRealtime() + 15000;
+        target = Math.max(0, position);
+        deadline = SystemClock.elapsedRealtime() + 25_000;
         activity.status.setText("Preparing " + session.sources.get(index).label + "…");
         activity.status.setVisibility(View.VISIBLE);
         activity.overlayHandler.postDelayed(check, 100);
         try {
             resolving = resolver.submit(() -> {
                 try {
-                    VodSources.Resolved next = session.resolve.get(index);
+                    VodSources.Resolved next = (refresh ? session.refresh : session.resolve).get(index);
                     String link = Playlist.networkUrl(
                         next.url,
                         activity.getSharedPreferences("ui", 0).getBoolean("http", false)
@@ -249,6 +270,8 @@ final class VodPlayback {
                     activity.runOnUiThread(() -> {
                         if (closed || request != ticket || !activity.foreground) return;
                         resolved = new VodSources.Resolved(link, next.files);
+                        // Resolution and decoder startup have independent budgets.
+                        deadline = SystemClock.elapsedRealtime() + 15_000;
                         try {
                             candidateView = new VLCVideoLayout(activity);
                             candidateView.setAlpha(0f);
@@ -267,7 +290,12 @@ final class VodPlayback {
                                     event.type == MediaPlayer.Event.EndReached
                                 ) failed();
                             });
-                            Media media = new Media(activity.filmEngine(), Uri.parse(mediaUrl(index, link)));
+                            EngineSources.Stream transport = session.transport.apply(index);
+                            if (transport != null) candidateRelay = new ProviderRelay(transport);
+                            Media media = new Media(
+                                activity.filmEngine(),
+                                Uri.parse(candidateRelay == null ? link : candidateRelay.url)
+                            );
                             try {
                                 media.setHWDecoderEnabled(true, false);
                                 if (target > 1000) media.addOption(":start-time=" + target / 1000);
@@ -300,9 +328,35 @@ final class VodPlayback {
             return;
         }
         if (
-            candidate != null && session.free && candidate.getLength() > 0 && candidate.getLength() < 120000
+            candidate != null &&
+            session.free &&
+            VodMediaPolicy.rejected(session.expectedDuration, candidate.getLength())
         ) {
             failed();
+            return;
+        }
+        if (
+            candidate != null &&
+            target > 0 &&
+            !restartEdition &&
+            activity.player != null &&
+            !VodMediaPolicy.compatible(activity.player.getLength(), candidate.getLength())
+        ) {
+            int selected = queue.currentIndex();
+            if (!manualSelection) {
+                failed();
+                return;
+            }
+            cancelPreparation();
+            SidePanel.of(activity, "Different edition")
+                .message("This source has a different runtime. The same timestamp may be a different scene.")
+                .action("Start this source from the beginning", () -> {
+                    if (closed) return;
+                    restartEdition = true;
+                    queue.select(selected, session.pinned);
+                    prepare(selected, false, 0);
+                })
+                .show();
             return;
         }
         if (candidate != null && playing && candidate.isPlaying()) {
@@ -310,11 +364,15 @@ final class VodPlayback {
             boolean decoded = false;
             if (media != null) try {
                 IMedia.Stats stats = media.getStats();
-                decoded = stats != null && stats.decodedVideo > 0;
+                boolean hasAudio = false;
+                MediaPlayer.TrackDescription[] audio = candidate.getAudioTracks();
+                if (audio != null) for (MediaPlayer.TrackDescription track : audio)
+                    if (track.id >= 0) hasAudio = true;
+                decoded = stats != null && stats.decodedVideo > 0 && (!hasAudio || stats.decodedAudio > 0);
             } finally {
                 media.release();
             }
-            long oldTime = Math.max(target, activity.playedPosition());
+            long oldTime = restartEdition ? 0 : Math.max(target, activity.playedPosition());
             long nextTime = candidate.getTime();
             if (decoded && Math.abs(nextTime - oldTime) <= 2000) {
                 MediaPlayer ready = candidate;
@@ -323,10 +381,14 @@ final class VodPlayback {
                 if (resolved.files != null) SourcesScreen.Binge.files = resolved.files;
                 candidate = null;
                 candidateView = null;
+                if (restartEdition) activity.restartVodProgress();
                 activity.adoptVod(ready, view, link);
                 ProviderRelay oldRelay = relays.remove(active);
                 if (oldRelay != null) oldRelay.close();
                 active = queue.currentIndex();
+                if (candidateRelay != null) relays.put(active, candidateRelay);
+                candidateRelay = null;
+                restartEdition = false;
                 ProviderRelay selectedRelay = relays.get(active);
                 if (selectedRelay != null) selectedRelay.resetIncomingRate();
                 session.active = active;
@@ -361,6 +423,12 @@ final class VodPlayback {
         discardCandidate(() -> {
             if (closed || request != ticket) return;
             preparing = false;
+            int current = queue.currentIndex();
+            if (session.refresh != null && session.refreshable.test(current) && refreshed.add(current)) {
+                prepare(current, true, target);
+                return;
+            }
+            manualSelection = false;
             if (queue.failover() != null) prepare(queue.currentIndex());
             else if (session.searching.getAsBoolean()) waitingForSources = true;
             else unavailable();
@@ -380,7 +448,8 @@ final class VodPlayback {
         candidate = null;
         candidateView = null;
         resolved = null;
-        ProviderRelay unused = queue.currentIndex() == active ? null : relays.remove(queue.currentIndex());
+        ProviderRelay unused = candidateRelay;
+        candidateRelay = null;
         // Disconnect pending network reads before waiting for VLC to stop.
         if (unused != null) unused.close();
         VodNative.retire(retired, retiredView, activity.filmEngine(), completed);

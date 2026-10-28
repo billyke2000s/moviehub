@@ -29,6 +29,7 @@ final class VodResume {
                 .put("episode", episode)
                 .put("episodeKey", tmdb + ":" + season + ":" + episode)
                 .put("episodeTitle", detail.optString("name"))
+                .put("runtime", detail.optInt("runtime"))
                 .put("air_date", detail.optString("air_date"));
         }
         return title;

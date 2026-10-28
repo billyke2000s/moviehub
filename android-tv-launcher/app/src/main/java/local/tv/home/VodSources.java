@@ -28,6 +28,10 @@ final class VodSources {
 
         final List<VodSourceFailover.Source> sources;
         final Resolve resolve;
+        Resolve refresh;
+        java.util.function.IntPredicate refreshable = index -> false;
+        boolean managed;
+        long expectedDuration;
         Runnable close = () -> {};
         java.util.function.IntFunction<EngineSources.Stream> transport = index -> null;
         boolean pinned;
@@ -82,7 +86,8 @@ final class VodSources {
         Session session = new Session(
             Collections.singletonList(entry(selected)),
             index -> {
-                SourceRepository.Source source = ordered.get(index);
+                SourceRepository.Source source = ordered.get(index).fresh(false);
+                ordered.set(index, source);
                 JSONArray files = repo.direct(source);
                 int pick = AutoPlayback.pick(files, season, episode, title);
                 if (pick < 0) throw new IllegalArgumentException("No exact playable backup");
@@ -90,6 +95,23 @@ final class VodSources {
             },
             pinned
         );
+        session.sources.get(0).rank = SourceRanking.readyRank(
+            selected.ranking == null ? selected.title : selected.ranking,
+            search.preferred,
+            selected.probeMbps,
+            selected.responseMs,
+            selected.confirmed
+        );
+        session.managed = true;
+        session.refreshable = index -> ordered.get(index).refresh != null || ordered.get(index).files == null;
+        session.refresh = index -> {
+            SourceRepository.Source source = ordered.get(index).fresh(true);
+            ordered.set(index, source);
+            JSONArray files = repo.direct(source);
+            int pick = AutoPlayback.pick(files, season, episode, title);
+            if (pick < 0) throw new IllegalArgumentException("No matching refreshed file");
+            return new Resolved(files.getJSONObject(pick).getString("link"), files);
+        };
         session.free = true;
         // Choosing a free service chooses the first attempt; a failed host can use every backup.
         session.pinned = false;
@@ -98,17 +120,25 @@ final class VodSources {
         session.transport = index -> ordered.get(index).stream;
         session.close = search::close;
         search.observe(source -> {
-            for (var existing : ordered) if (existing.uri.equals(source.uri)) return;
+            for (var existing : ordered) if (existing.key().equals(source.key())) return;
             if (ordered.size() >= 200) return;
             ordered.add(source);
-            session.sources.add(entry(source));
+            VodSourceFailover.Source choice = entry(source);
+            choice.rank = SourceRanking.readyRank(
+                source.ranking == null ? source.title : source.ranking,
+                search.preferred,
+                source.probeMbps,
+                source.responseMs,
+                source.confirmed
+            );
+            session.sources.add(choice);
         });
         return session;
     }
 
     static VodSourceFailover.Source entry(SourceRepository.Source source) {
         VodSourceFailover.Source entry = new VodSourceFailover.Source(
-            source.uri,
+            source.key(),
             SourcesScreen.provider(source.title) + " · " + SourcesScreen.badge(source),
             SourcesScreen.provider(source.title)
         );
@@ -120,6 +150,12 @@ final class VodSources {
         entry.claimed = source.claimed.isEmpty() ? SourcesScreen.quality(source.title) : source.claimed;
         entry.site = source.site;
         entry.playlist = source.playlist;
+        try {
+            String host = java.net.URI.create(source.uri).getHost();
+            entry.failureDomain = host == null ? "" : host.toLowerCase(java.util.Locale.ROOT);
+        } catch (IllegalArgumentException ignored) {
+            /* Cloud locators have no playback host yet. */
+        }
         return entry;
     }
 
@@ -158,10 +194,12 @@ final class VodSources {
                 "Premiumize"
             )
         );
-        return new Session(
+        Session session = new Session(
             entries,
             index -> {
-                if (index == 0) return new Resolved(link, currentFiles);
+                if (
+                    index == 0 && System.currentTimeMillis() - selected.resolvedAt < 120_000
+                ) return new Resolved(link, currentFiles);
                 JSONArray files = repo.direct(ordered.get(index));
                 int pick = AutoPlayback.pick(files, season, episode, title);
                 if (pick < 0) throw new IllegalArgumentException("No exact playable file in backup");
@@ -169,5 +207,14 @@ final class VodSources {
             },
             pinned
         );
+        session.managed = true;
+        session.refreshable = index -> ordered.get(index).files == null;
+        session.refresh = index -> {
+            JSONArray files = repo.direct(ordered.get(index));
+            int pick = AutoPlayback.pick(files, season, episode, title);
+            if (pick < 0) throw new IllegalArgumentException("No matching refreshed cloud file");
+            return new Resolved(files.getJSONObject(pick).getString("link"), files);
+        };
+        return session;
     }
 }

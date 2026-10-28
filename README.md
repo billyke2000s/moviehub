@@ -4,6 +4,11 @@
 
 ### Films, series and live TV in one place.
 
+The managed VOD candidate refreshes temporary links, keeps each source's request headers,
+ranks backups and uses fresh source discovery for next episodes. Header-protected DASH shares
+the local media relay. Runtime evidence guides short-video checks and different-edition restarts.
+See [TESTING.md](TESTING.md) for verification scope.
+
 **An Android TV launcher and streaming application for films, series and live television.**
 
 [![Android](https://img.shields.io/badge/Android-9%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/tv/)

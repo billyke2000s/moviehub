@@ -14,6 +14,46 @@ final class SourceRepository {
     static final class Source {
 
         final String title, uri;
+
+        interface Refresh {
+            Source get() throws Exception;
+        }
+
+        Refresh refresh;
+        long resolvedAt = System.currentTimeMillis(),
+            expiresAt;
+        String identityKey;
+
+        String key() {
+            if (identityKey != null) return identityKey;
+            java.util.TreeMap<String, String> values = new java.util.TreeMap<>();
+            for (Iterator<String> keys = headers.keys(); keys.hasNext(); ) {
+                String name = keys.next();
+                values.put(name.toLowerCase(java.util.Locale.ROOT), headers.optString(name));
+            }
+            StringBuilder canonical = new StringBuilder();
+            for (var value : values.entrySet())
+                canonical
+                    .append(JSONObject.quote(value.getKey()))
+                    .append(':')
+                    .append(JSONObject.quote(value.getValue()))
+                    .append(',');
+            return site + "\n" + title + "\n" + uri + "\n" + canonical;
+        }
+
+        Source fresh(boolean force) throws Exception {
+            long now = System.currentTimeMillis();
+            if (
+                refresh == null ||
+                (!force && now - resolvedAt < 120_000 && (expiresAt <= 0 || expiresAt > now + 30_000))
+            ) return this;
+            Source next = refresh.get();
+            if (next == null) throw new IllegalStateException("Source could not be refreshed");
+            next.identityKey = key();
+            if (next.refresh == null) next.refresh = refresh;
+            return next;
+        }
+
         Cache cache = Cache.UNKNOWN;
         final JSONArray files;
         final JSONObject headers;

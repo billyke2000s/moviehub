@@ -291,6 +291,11 @@ public class VlcPlaybackActivity extends Activity {
         revealControls();
     }
 
+    void restartVodProgress() {
+        position = furthestMs = openedAtMs = resumeCheck = 0;
+        ResumePoint.clear(this, id, titleKey);
+    }
+
     LibVLC filmEngine() {
         return engine;
     }
@@ -386,6 +391,15 @@ public class VlcPlaybackActivity extends Activity {
         player.setEventListener(event -> {
             if (player == opened) onPlayerEvent(event);
         });
+        if (vod != null && vod.startManaged(position)) {
+            if (position > 0) {
+                resumeCheck = position;
+                openedAtMs = Math.max(openedAtMs, position);
+                position = 0;
+            }
+            overlayHandler.removeCallbacks(stalled);
+            return;
+        }
         String mediaUrl = url;
         try {
             if (vod != null) mediaUrl = vod.mediaUrl(vod.activeIndex(), url);

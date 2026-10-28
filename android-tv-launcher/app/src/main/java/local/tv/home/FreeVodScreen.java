@@ -31,6 +31,7 @@ final class FreeVodScreen {
                 .put("episode", episode)
                 .put("premiered", info.optString("air_date", info.optString("first_air_date")))
                 .put("episodeTitle", info.optString("episodeTitle"))
+                .put("runtimeSeconds", runtimeSeconds(info))
                 .put("http", activity.http());
             SourceRepository repo = new SourceRepository(activity.secrets);
             VodSearch search = new VodSearch(
@@ -155,6 +156,13 @@ final class FreeVodScreen {
             Diagnostics.recovered("Starting source search", error);
             activity.toast("Could not start the source search");
         }
+    }
+
+    static int runtimeSeconds(JSONObject metadata) {
+        int minutes = metadata.optInt("runtime");
+        JSONArray times = metadata.optJSONArray("episode_run_time");
+        if (minutes <= 0 && times != null) minutes = times.optInt(0);
+        return Math.max(0, minutes) * 60;
     }
 
     static JSONArray aliases(JSONObject metadata, boolean movie) {

@@ -401,6 +401,9 @@ class FreeVodTests(unittest.TestCase):
                 result=vod.playable('https://media.example/movie.mp4')
                 self.assertEqual(result['durationSeconds'],seconds)
                 self.assertEqual(result['headers']['User-Agent'],client.UserAgent)
+            response._content=mp4(60)
+            self.assertIsNotNone(vod.playable('https://media.example/short.mp4', expected_seconds=60))
+            self.assertIsNone(vod.playable('https://media.example/wrong.mp4', expected_seconds=5400))
             response._content=b'unknown container metadata'
             self.assertIsNotNone(vod.playable('https://media.example/movie.mp4'))
             response.headers['Content-Type']='application/vnd.apple.mpegurl'
@@ -633,6 +636,7 @@ class FreeVodTests(unittest.TestCase):
         for expression in ["__import__('os').getcwd()", "(1).__class__", "[x for x in []]", "2**1000", "'a'*99999999"]:
             with self.subTest(expression=expression),self.assertRaises(ValueError):evaluate(expression)
 
+from test_vod_sessions import SessionTests
 from test_current_vod_sites import CurrentSiteTests
 from test_native_vod_sites import NativeSiteTests
 from test_fmhy_rive import RiveTests

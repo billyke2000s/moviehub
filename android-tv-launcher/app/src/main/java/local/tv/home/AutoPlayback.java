@@ -20,6 +20,16 @@ final class AutoPlayback {
     }
 
     static int pick(JSONArray files, int season, int episode, String title) {
+        if (files.length() == 1) {
+            JSONObject file = files.optJSONObject(0);
+            if (
+                file != null &&
+                "provider_lookup".equals(file.optString("identityEvidence")) &&
+                file.optInt("lookupSeason", -2) == season &&
+                file.optInt("lookupEpisode", -2) == episode &&
+                !file.optString("link").isEmpty()
+            ) return 0;
+        }
         List<String> paths = new ArrayList<>();
         List<Long> sizes = new ArrayList<>();
         for (int i = 0; i < files.length(); i++) {

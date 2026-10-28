@@ -1,5 +1,21 @@
 # Testing
 
+## Managed VOD regression coverage
+
+`VodLinkPolicyTest` covers short/unknown/truncated runtimes, incompatible editions, dynamic backup
+ranking, independent-host preference, inherited DASH BaseURL/templates, constrained substitutions,
+XML entity rejection and protected manifests. It runs in the existing core script.
+`test_vod_sessions.py` covers contradictory provider identity, same-host rediscovery with rotated
+headers/URLs, failed refresh and explicit epoch expiry. The Python media fixture permits a known
+60-second short while rejecting it as a substitute for a 90-minute movie.
+
+`VodSessionTest` covers distinct header identities, expiry-triggered refresh, retained logical
+identity and explicit lookup provenance. `VodSessionPlaybackTest` exercises real LibVLC initial
+managed opening, one expired-link refresh and cookie-protected DASH audio/video through relative
+segment templates. The six-second DASH asset is regenerated from the existing synthetic playback
+fixture; see its README. Full existing normal/experimental playback, cancellation, seek, short-clip
+and series fixtures remain required. Live provider/physical-TV success is not implied by fixtures.
+
 ## Continuous series and automatic playback
 
 `VideoFilesTest` includes episode ordering, future-date handling and source-resolution ranking. `SeriesAutoplayTest` uses catalogue and source fixtures to check season transitions, updated history keys, missing pack episodes, show endings, uncertain filenames, bounded source fallback and cancellation. `LiveGuideTest` covers colour keys from header focus and Back/arrow/OK controls; `LiveControlsTest` covers all four physical colours during playback, learned scan-code colours, and OK/click/◀ always showing the same banner. These do not verify a particular physical remote or real-provider playback.

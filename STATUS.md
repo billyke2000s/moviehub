@@ -1,5 +1,16 @@
 # Status
 
+## VOD link-session repair candidate — 28 October 2026
+
+Implements the link-handling review separately from the FreeLinks optimisation PR: retained source
+identity/header distinctions, bounded rediscovery and one refresh before abandoning a failed link,
+dynamically ranked independent-host backups, explicit provider identity evidence, DASH resource
+transport, managed next episodes, runtime-aware short-video validation and edition-safe restart.
+Core and Python fixtures pass locally; Android build/lint, signed compatibility and real LibVLC
+normal/experimental emulator suites must be read from the final PR commit before release.
+No update has been published. Missing provider metadata and matching-duration different cuts
+remain limits: this is stronger evidence handling, not proof that every website returned the title.
+
 ## Rolled back to 1.0.12 code — 1.0.16, 28 October 2026
 
 The owner reported 1.0.15 as broken and asked to return to 1.0.12. The source tree is restored exactly to the 1.0.12 publish commit `c36ff6c` (only this note and the changelog differ) and published as 1.0.16 (code 116), because the updater rejects lower version codes. The 1.0.13–1.0.15 work remains in Git history if any of it is wanted back later. Sections below describing 1.0.12 apply to this build.
