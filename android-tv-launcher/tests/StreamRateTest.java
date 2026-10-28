@@ -46,40 +46,7 @@ public final class StreamRateTest {
         check(SourceRanking.resolution("SD") == 480);
         check(SourceRanking.resolution("Film.2019.x264") == 480);
         check(SourceRanking.resolution("1080p 360p") == 1080);
-        // Audio claimed by the release name.
-        check(SourceRanking.audio("Show.S01E02.1080p.WEB-DL.DDP5.1.Atmos.H.264") == 3);
-        check(SourceRanking.audio("Film 2019 2160p UHD BluRay TrueHD 7.1 x265") == 2);
-        check(SourceRanking.audio("Film.2019.1080p.BluRay.DTS-HD.MA.7.1.x264") == 2);
-        check(SourceRanking.audio("Show S01E02 1080p WEB DDP5 1 H 264") == 1);
-        check(SourceRanking.audio("Film.2019.1080p.WEBRip.6CH.x265") == 1);
-        check(SourceRanking.audio("Film (2019) 1080p 5.1") == 1);
-        check(SourceRanking.audio("Film.2019.720p.AAC2.0.x264") == 0);
-        check(SourceRanking.audio("Film 2019 1080p · 5.1 GB") == 0);
-        check(SourceRanking.audio("Film 2019 1080p 5.1GB") == 0);
-        check(SourceRanking.audio("Show Season 5 1080p") == 0);
-        check(SourceRanking.audio("Film 2019 1080p") == 0);
-        check(SourceRanking.audioLabel("x DDP5.1 Atmos").equals("Atmos"));
-        check(SourceRanking.audioLabel("x DTS 7.1").equals("7.1"));
-        check(SourceRanking.audioLabel("x 1080p").isEmpty());
-        // Among equal picture quality more channels come first; never above a better picture,
-        // and a confirmed picture still outranks a claimed one.
-        check(
-            SourceRanking.readyRank("1080p", 1080, 0, 999, false, 1) >
-                SourceRanking.readyRank("1080p", 1080, 99, 1, false, 0)
-        );
-        check(
-            SourceRanking.readyRank("1080p", 1080, 0, 999, false, 3) >
-                SourceRanking.readyRank("1080p", 1080, 0, 999, false, 2)
-        );
-        check(
-            SourceRanking.readyRank("720p", 1080, 99, 1, true, 3) <
-                SourceRanking.readyRank("1080p", 1080, 0, 999, false, 0)
-        );
-        check(
-            SourceRanking.readyRank("1080p", 1080, 0, 999, true, 0) >
-                SourceRanking.readyRank("1080p", 1080, 99, 1, false, 3)
-        );
-        System.out.println("46 incoming-rate, ready-source and audio ranking checks passed");
+        System.out.println("28 incoming-rate and ready-source ranking checks passed");
     }
 
     private static void check(boolean value) {

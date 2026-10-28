@@ -45,25 +45,6 @@ public class PlaybackEndTest {
         check(!PlaybackEnd.nearEnd(115 * min, 120 * min), "5 min left of 2 h");
         check(PlaybackEnd.nearEnd(27 * min, 30 * min), "3 min left of 30 min");
         check(!PlaybackEnd.nearEnd(26 * min, 30 * min), "4 min left of 30 min (over a tenth)");
-        check(!PlaybackEnd.lengthMismatch(0, 45 * min), "unknown actual length");
-        check(!PlaybackEnd.lengthMismatch(-1, 45 * min), "negative actual length");
-        check(!PlaybackEnd.lengthMismatch(45 * min, 0), "missing catalogue runtime");
-        check(!PlaybackEnd.lengthMismatch(45 * min, -1), "negative catalogue runtime");
-        check(PlaybackEnd.lengthMismatch(27 * min - 1, 45 * min), "just below 60 percent");
-        check(!PlaybackEnd.lengthMismatch(27 * min, 45 * min), "60 percent inclusive");
-        check(!PlaybackEnd.lengthMismatch(72 * min, 45 * min), "160 percent inclusive");
-        check(PlaybackEnd.lengthMismatch(72 * min + 1, 45 * min), "just above 160 percent");
-        check(!PlaybackEnd.lengthMismatch(150 * min, 120 * min), "extended cut allowed");
-        check(PlaybackEnd.lengthMismatch(3 * min, 45 * min), "trailer rejected");
-        check(!PlaybackEnd.lengthMismatch(Long.MAX_VALUE, Long.MAX_VALUE), "overflow safe");
-        check(!PlaybackEnd.prepareNext(0, 45 * min, 45 * min, false), "no preparation before play");
-        check(!PlaybackEnd.prepareNext(41 * min, 45 * min, 45 * min, false), "too early");
-        check(PlaybackEnd.prepareNext(42 * min, 45 * min, 45 * min, false), "three minutes left");
-        check(!PlaybackEnd.prepareNext(43 * min, 45 * min, 45 * min, true), "paused");
-        check(!PlaybackEnd.prepareNext(45 * min, 45 * min, 45 * min, false), "already ended");
-        check(!PlaybackEnd.prepareNext(2 * min, 3 * min, 45 * min, false), "wrong runtime");
-        check(!PlaybackEnd.prepareNext(10_000, 30_000, 0, false), "short clip");
-        check(!PlaybackEnd.prepareNext(10_000, 0, 0, false), "unknown length");
-        System.out.println("47 playback end and prefetch checks passed");
+        System.out.println("28 playback end checks passed");
     }
 }

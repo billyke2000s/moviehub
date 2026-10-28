@@ -76,43 +76,6 @@ public final class VodSourceFailoverTest {
         );
         check(q.sources().size() == 1);
         check(q.failover() == null);
-        // A source that never moves: switched after NO_PROGRESS_MS, whatever its events said.
-        q = queue();
-        q.onPlaying();
-        long wait = VodSourceFailover.NO_PROGRESS_MS;
-        check(!q.noProgress(0, 0));
-        check(!q.noProgress(wait - 1, 0));
-        check(q.noProgress(wait, 0));
-        // Then the wait starts again rather than firing every second.
-        check(!q.noProgress(wait + 1000, 0));
-        check(q.noProgress(2 * wait, 0));
-        // Moving picture is progress; a tiny re-report of the same place is not.
-        q = queue();
-        check(!q.noProgress(0, 1000));
-        check(!q.noProgress(wait - 1, 1200));
-        check(q.noProgress(wait, 1300));
-        q = queue();
-        for (long t = 0; t <= 3 * wait; t += 1000) check(!q.noProgress(t, t));
-        // Pausing or seeking never counts, and the wait starts afresh afterwards.
-        q = queue();
-        check(!q.noProgress(0, 5000));
-        q.setUserPaused(true);
-        check(!q.noProgress(wait * 2, 5000));
-        q.setUserPaused(false);
-        check(!q.noProgress(wait * 2 + 1000, 5000));
-        check(!q.noProgress(wait * 3, 5000));
-        check(q.noProgress(wait * 3 + 1000, 5000));
-        q = queue();
-        check(!q.noProgress(0, 5000));
-        q.setSeeking(true);
-        check(!q.noProgress(wait * 2, 5000));
-        q.setSeeking(false);
-        check(!q.noProgress(wait * 2 + 1, 5000));
-        // Switching source starts the wait again.
-        q = queue();
-        check(!q.noProgress(0, 0));
-        check(q.failover() != null);
-        check(!q.noProgress(wait, 0));
         System.out.println(checks + " VOD failover checks passed");
     }
 }

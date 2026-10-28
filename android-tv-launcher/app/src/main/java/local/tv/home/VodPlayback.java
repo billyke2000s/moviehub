@@ -118,10 +118,7 @@ final class VodPlayback {
             waitingForSources = false;
             if (!failover()) unavailable();
         }
-        long now = SystemClock.elapsedRealtime();
-        long position = activity.player == null ? -1 : activity.player.getTime();
-        if (!preparing && queue.isStalled(now)) failover();
-        else if (!preparing && queue.noProgress(now, position) && !failover()) unavailable();
+        if (!preparing && queue.isStalled(SystemClock.elapsedRealtime())) failover();
     }
 
     /** A jump is waiting or starting; {@code target} is where it lands, or -1 while still choosing. */
@@ -303,9 +300,7 @@ final class VodPlayback {
             return;
         }
         if (
-            candidate != null &&
-            (PlaybackEnd.lengthMismatch(candidate.getLength(), activity.runtimeMs()) ||
-                (session.free && candidate.getLength() > 0 && candidate.getLength() < 120000))
+            candidate != null && session.free && candidate.getLength() > 0 && candidate.getLength() < 120000
         ) {
             failed();
             return;
@@ -335,11 +330,6 @@ final class VodPlayback {
                 ProviderRelay selectedRelay = relays.get(active);
                 if (selectedRelay != null) selectedRelay.resetIncomingRate();
                 session.active = active;
-                android.widget.Toast.makeText(
-                    activity,
-                    "Switched link",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show();
                 rejectedShort = false;
                 queue.onPlaying();
                 // The prepared decoder is now selected and audible; old native shutdown continues off main.

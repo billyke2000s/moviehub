@@ -49,32 +49,24 @@ public final class QualityClaimsTest {
         check(QualityClaims.name(2160).equals("4K") && QualityClaims.name(480).equals("480p"));
         check(
             QualityClaims.playingLabel("site.example", 480, 0, "1080p", false).equals(
-                "480p ✓ (said 1080p) · site.example"
+                "site.example · 480p ✓ (said 1080p)"
             )
         );
         check(
             QualityClaims.playingLabel("site.example", 1080, 0, "1080p", false).equals(
-                "1080p ✓ · site.example"
+                "site.example · 1080p ✓"
             )
         );
         check(
             QualityClaims.playingLabel("site.example", 720, 720, "1080p", false).equals(
-                "720p ✓ · site.example"
+                "site.example · 720p ✓"
             )
         );
         check(
             QualityClaims.playingLabel("site.example", 480, 1080, "1080p", true).equals(
-                "playing 480p of up to 1080p · site.example"
+                "site.example · playing 480p of up to 1080p"
             )
         );
-
-        check(
-            QualityClaims.playingLabel("site.example", 1080, 0, "1080p", false, "5.1").equals(
-                "1080p ✓ · 5.1 · site.example"
-            )
-        );
-        check(QualityClaims.sourceLabel("1080p", "", "A Long Website").equals("1080p · A Long Website"));
-        check(QualityClaims.sourceLabel("4K", "Atmos", "Site").equals("4K · Atmos · Site"));
 
         // Better-source suggestions: only confirmed HD within the preferred quality, once per step.
         int[] confirmed = { 480, 1080, 0, 2160, 720 };

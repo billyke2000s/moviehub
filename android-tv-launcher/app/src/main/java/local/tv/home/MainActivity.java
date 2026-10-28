@@ -632,7 +632,6 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
                     "first_air_date",
                     "original_title",
                     "original_name",
-                    "runtime",
                 })
                     if (metadata.has(key)) record.put(key, metadata.get(key));
             }
@@ -660,11 +659,6 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
                     .putExtra("vodSession", VodSources.remember(sources))
                     .putExtra("episodeKey", metadata == null ? null : metadata.optString("episodeKey", null))
                     .putExtra("titleKey", ResumePoint.titleKey(metadata))
-                    .putExtra(
-                        "runtimeMs",
-                        metadata == null ? 0L : Math.max(0L, metadata.optLong("runtime")) * 60_000L
-                    )
-                    .putExtra("episodeMetadata", metadata == null ? null : metadata.toString())
             );
         } catch (Exception e) {
             toast("Playback could not be started");

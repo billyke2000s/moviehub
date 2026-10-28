@@ -67,7 +67,6 @@ final class SourcesScreen {
      * recently overstated quality and its claim is ignored for ranking.
      */
     static String badge(SourceRepository.Source source) {
-        if (source.facts.value.tier() > 0) return source.facts.value.picture();
         String claimed = quality(source.title);
         if (source.confirmed && source.ranking != null) {
             int real = SourceRanking.resolution(source.ranking);
@@ -76,10 +75,6 @@ final class SourcesScreen {
         boolean ignored =
             source.ranking != null && quality(source.ranking).equals("SD") && !claimed.equals("SD");
         return ignored ? claimed + "?" : claimed;
-    }
-
-    static String sourceLabel(SourceRepository.Source source, String provider) {
-        return source.facts.value.describe() + " · " + provider;
     }
 
     /** Badges for a source: HDR or Dolby Vision, codec and file size, when the description says. */
@@ -91,8 +86,6 @@ final class SourcesScreen {
             java.util.regex.Pattern.compile("\\b(?:dv|dovi)\\b").matcher(lower).find()
         ) out.add("Dolby Vision");
         else if (lower.contains("hdr")) out.add("HDR");
-        String audio = SourceRanking.audioLabel(raw);
-        if (!audio.isEmpty()) out.add(audio);
         if (lower.contains("h265") || lower.contains("hevc") || lower.contains("x265")) out.add("HEVC");
         else if (lower.contains("h264") || lower.contains("x264")) out.add("H.264");
         java.util.regex.Matcher size = java.util.regex.Pattern.compile(

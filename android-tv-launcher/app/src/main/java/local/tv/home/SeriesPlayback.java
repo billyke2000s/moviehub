@@ -187,13 +187,11 @@ final class SeriesPlayback {
             .put("episode", episode)
             .put("episodeKey", id + ":" + season + ":" + episode);
         metadata.remove("episodeTitle");
-        metadata.remove("runtime");
         for (int i = 0; i < episodes.length(); i++) {
             JSONObject item = episodes.getJSONObject(i);
             if (item.optInt("episode_number") == episode) {
                 metadata.put("episodeTitle", item.optString("name"));
                 metadata.put("air_date", item.optString("air_date", ""));
-                metadata.put("runtime", item.optInt("runtime", 0));
             }
         }
         return new Next(season, episode, metadata);
@@ -205,7 +203,6 @@ final class SeriesPlayback {
             episode = SourcesScreen.Binge.episode;
         JSONObject current = SourcesScreen.Binge.metadata;
         JSONArray pack = SourcesScreen.Binge.files;
-        VodNextEpisode prepared = VodNextEpisode.take(current);
         if (imdb == null || season < 0 || episode <= 0 || current == null) return;
         String kind = SourcesScreen.Binge.kind;
         String title = current.optString("name", "Series");
@@ -214,7 +211,7 @@ final class SeriesPlayback {
         );
         activity.page.addView(activity.muted("Finding the next episode…", 16));
         activity.async(
-            () -> prepared != null ? prepared.next : lookup(current, season, episode),
+            () -> lookup(current, season, episode),
             next -> {
                 activity.page.removeAllViews();
                 if (next == null) {
@@ -261,18 +258,6 @@ final class SeriesPlayback {
                 String nextImdb = imdb(next.metadata);
                 if (nextImdb.isEmpty()) nextImdb = imdb;
                 final String sourceImdb = nextImdb;
-                if (prepared != null && prepared.search != null) {
-                    new FreeVodScreen(activity).start(
-                        sourceImdb,
-                        next.season,
-                        next.episode,
-                        nextTitle,
-                        kind,
-                        next.metadata,
-                        prepared
-                    );
-                    return;
-                }
                 Runnable search = () -> {
                     activity.playbackTitle = next.metadata;
                     activity.sources.torrentSources(sourceImdb, next.season, next.episode, nextTitle, kind);

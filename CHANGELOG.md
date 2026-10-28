@@ -1,21 +1,6 @@
-## Unreleased
+## 1.0.16 (28 October 2026)
 
-## 1.0.15 (27 October 2026)
-
-- Show each discovered link directly on the Play sources page, including multiple links from one website. Refresh its own resolution, audio format/channels and declared bitrate in place; keep unknown fields explicit.
-
-- Check known film/episode runtimes before accepting active and prepared links; pass exact episode runtime through cards, continuation and resume.
-- Read bounded media metadata for source resolution, available audio and declared bitrates; confirm selected tracks while playing and distinguish playlist declarations and unknown details.
-- Prepare the next episode's links during the last three minutes, preserving the current search and manual selection; cancel on leaving. Show a short "Switched link" notice after replacement.
-- Extract the VOD player tick into a helper in a separate behaviour-free commit.
-
-## 1.0.14 (27 October 2026)
-
-- Fix: a film or episode link that sent a sliver of data (about 0.1 MB) and stopped stayed stuck instead of moving to the next link. If the picture has not moved for 15 seconds while not paused or seeking, the player now switches link (or says no working backup is left).
-
-## 1.0.13 (27 October 2026)
-
-- Sources show quality and audio first, then the website ("1080p ✓ · 5.1 · website"), so a long website name no longer hides the quality. Links that name surround sound show "Atmos", "7.1" or "5.1" (the website's claim, from the release name), and rank above stereo or unstated links of the same picture quality.
+- Rollback: same app as 1.0.12. Removes the 1.0.13 audio badges, 1.0.14 stuck-link switching and 1.0.15 runtime/metadata/Play sources changes at the owner's request, because 1.0.15 misbehaved. Published with a higher version number so installed TVs accept it.
 
 ## 1.0.12 (27 October 2026)
 
