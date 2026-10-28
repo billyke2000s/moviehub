@@ -40,11 +40,9 @@ public class VlcPlaybackActivity extends Activity {
     private String titleKey;
     private long position;
     boolean ended, foreground, dragging;
-    private boolean runtimeRejected;
-    final VodNextEpisode nextEpisode = new VodNextEpisode(this);
     /** Paused by the viewer (the player reports pausing a moment later, so this is kept here). */
     boolean paused;
-    int reminderTicks;
+    private int reminderTicks;
     float playbackRate = 1f;
     long sleepAt;
     String aspect;
@@ -58,7 +56,7 @@ public class VlcPlaybackActivity extends Activity {
     SeekBar timeline;
     TextView timeLeft, status, speed;
     /** Latest download speed in megabits per second, or -1 when unknown. */
-    float downloadMbps = -1;
+    private float downloadMbps = -1;
     private AudioManager audio;
     private AudioFocusRequest audioFocus;
     android.view.View controls;
@@ -82,7 +80,7 @@ public class VlcPlaybackActivity extends Activity {
     };
     private final Runnable stalled = () -> showError("The source is taking too long to respond.");
     /** The furthest position played or jumped to; decides whether an end is a real finish. */
-    long furthestMs;
+    private long furthestMs;
     /** The resume point the media was opened at (never cleared, unlike {@link #resumeCheck}). */
     private long openedAtMs;
 
@@ -105,11 +103,10 @@ public class VlcPlaybackActivity extends Activity {
         if (target >= 0) furthestMs = Math.max(furthestMs, target);
         if (target >= 0 && player != null && player.isSeekable()) player.setTime(target);
     };
-    boolean nextPromptShown, nextCancelled;
+    private boolean nextPromptShown, nextCancelled;
 
-    void launchNextEpisode() {
+    private void launchNextEpisode() {
         if (SourcesScreen.Binge.imdb == null || isFinishing()) return;
-        nextEpisode.handoff();
         android.content.Intent next = new android.content.Intent(this, MainActivity.class);
         next.addFlags(
             android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -119,7 +116,60 @@ public class VlcPlaybackActivity extends Activity {
         finish();
     }
 
-    private final Runnable tick = new VodPlayerTick(this);
+    private final Runnable tick = new Runnable() {
+        public void run() {
+            if (vod != null) vod.tick();
+            if (player != null) {
+                // While a skip is waiting, show where it will land.
+                long length = player.getLength(),
+                    time = skips.pending() ? skips.target() : Math.max(0, player.getTime());
+                furthestMs = Math.max(furthestMs, player.getTime());
+                timeLeft.setText(length > 0 ? PlayerOverlay.timeLeft(Math.max(0, length - time)) : "—");
+                if (
+                    (vod == null || !vod.rejectedMedia()) &&
+                    !nextPromptShown &&
+                    length >= PlaybackEnd.MIN_LENGTH_MS &&
+                    time > 0 &&
+                    length - time <= 10000 &&
+                    length - time > 0 &&
+                    getIntent().getStringExtra("episodeKey") != null &&
+                    SourcesScreen.Binge.imdb != null
+                ) {
+                    nextPromptShown = true;
+                    SidePanel.of(VlcPlaybackActivity.this, "Up next")
+                        .message("Ready for the next episode?")
+                        .action("Play next episode", () -> launchNextEpisode())
+                        .action("Keep watching", () -> nextCancelled = true)
+                        .show();
+                }
+                // A programme reminder that is due shows over the picture (checked every 15 s).
+                if (++reminderTicks % 15 == 0 && !dialogOpen) showDueReminder();
+                downloadMbps = vod == null ? PlayerOverlay.downloadSpeed(player) : vod.incomingMbps();
+                if (downloadMbps >= 0) Timings.lastMbps = downloadMbps;
+                String traffic =
+                    downloadMbps < 0
+                        ? "Receiving stream…"
+                        : String.format(Locale.ROOT, "Downloading at %.1f Mb/s", downloadMbps);
+                if (vod != null) {
+                    long bytes = vod.incomingBytes();
+                    traffic =
+                        "Source: " +
+                        vod.sourceLabel() +
+                        "\n" +
+                        traffic +
+                        (bytes < 0
+                            ? ""
+                            : String.format(Locale.ROOT, " · %.2f MB received", bytes / 1000000d));
+                }
+                speed.setText(traffic);
+                timeline.setEnabled(player.isSeekable() && length > 0);
+                if (!dragging && length > 0) timeline.setProgress(
+                    (int) Math.min(1000, (time * 1000) / length)
+                );
+            }
+            if (foreground) overlayHandler.postDelayed(this, 1000);
+        }
+    };
 
     int dp(int n) {
         return (int) (n * getResources().getDisplayMetrics().density + .5f);
@@ -245,30 +295,6 @@ public class VlcPlaybackActivity extends Activity {
         return engine;
     }
 
-    long runtimeMs() {
-        return getIntent().getLongExtra("runtimeMs", 0);
-    }
-
-    boolean invalidRuntime() {
-        return (
-            runtimeRejected || (player != null && PlaybackEnd.lengthMismatch(player.getLength(), runtimeMs()))
-        );
-    }
-
-    boolean rejectRuntime() {
-        if (!invalidRuntime()) return false;
-        if (!runtimeRejected) {
-            runtimeRejected = true;
-            if (player != null) player.pause();
-            // A track/source panel must not suppress recovery from a known wrong copy.
-            if (vod != null && vod.failover()) return true;
-        }
-        if (!dialogOpen) {
-            showError("This source's length does not match the film or episode. Try another link.");
-        }
-        return true;
-    }
-
     void adoptVod(MediaPlayer ready, VLCVideoLayout layout, String link) {
         MediaPlayer previous = player;
         VLCVideoLayout previousView = filmVideo;
@@ -277,7 +303,6 @@ public class VlcPlaybackActivity extends Activity {
         // never carry a transient native mute into the selected replacement.
         if (volume <= 0) volume = 100;
         player = ready;
-        runtimeRejected = false;
         filmVideo = layout;
         url = link;
         getIntent().putExtra("url", link);
@@ -341,7 +366,6 @@ public class VlcPlaybackActivity extends Activity {
         if (!foreground) return;
         status.setBackgroundColor(Color.TRANSPARENT);
         release();
-        runtimeRejected = false;
         status.setText("Opening source…");
         status.setVisibility(View.VISIBLE);
         overlayHandler.removeCallbacks(stalled);
@@ -437,7 +461,6 @@ public class VlcPlaybackActivity extends Activity {
                 if (vod != null) vod.onBuffering(false);
             }
         } else if (event.type == MediaPlayer.Event.EndReached) {
-            if (rejectRuntime()) return;
             if (vod != null && vod.rejectShortVideo(true)) return;
             // Only positions seen while playing (or jumped to) count: when a stream closes early the
             // player may report its time as the full length, so the time now is not trusted.
@@ -557,7 +580,7 @@ public class VlcPlaybackActivity extends Activity {
     }
 
     /** "Watch now" on a reminder leaves for the guide, which opens the channel. */
-    void showDueReminder() {
+    private void showDueReminder() {
         Reminders.show(this, reminder -> {
             Reminders.pending = reminder;
             finish();
@@ -593,7 +616,7 @@ public class VlcPlaybackActivity extends Activity {
             // the time is 0, and the resume point the media opened at is kept.
             long played = playedPosition();
             if (played > 0) position = played;
-            if (!invalidRuntime() && (vod == null || !vod.rejectedMedia())) {
+            if (vod == null || !vod.rejectedMedia()) {
                 long length = player.getLength();
                 boolean completed = ended || PlaybackEnd.watchedWhenLeaving(position, length);
                 ResumePoint.save(this, id, titleKey, position, length, completed);
@@ -610,7 +633,6 @@ public class VlcPlaybackActivity extends Activity {
                 }
             }
         }
-        nextEpisode.close();
         release();
         if (audio != null && audioFocus != null) audio.abandonAudioFocusRequest(audioFocus);
         super.onStop();
@@ -624,7 +646,6 @@ public class VlcPlaybackActivity extends Activity {
 
     @Override
     public void onDestroy() {
-        nextEpisode.close();
         SidePanel.closeFor(this);
         overlayHandler.removeCallbacksAndMessages(null);
         release();

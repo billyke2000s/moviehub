@@ -10,20 +10,11 @@ import org.json.*;
 /** One bounded search continues collecting backups after the first stream has started. */
 final class VodSearch implements AutoCloseable {
 
-    private final ThreadPoolExecutor metadata = new ThreadPoolExecutor(
-        2,
-        2,
-        10,
-        TimeUnit.SECONDS,
-        new ArrayBlockingQueue<>(32)
-    );
-    private final long runtimeMs;
     private final ExecutorService workers = Executors.newFixedThreadPool(8);
     final AtomicBoolean cancelled = new AtomicBoolean();
     private final AtomicInteger pending = new AtomicInteger(1);
     private final SourceWindow<SourceRepository.Source> window;
     private final int target;
-    private final int preferred;
     private final long deadline;
     private final List<java.util.function.Consumer<SourceRepository.Source>> observers = new ArrayList<>();
     private static volatile VodSearch current;
@@ -31,24 +22,9 @@ final class VodSearch implements AutoCloseable {
     private final Map<String, String> hostOutcomes = new ConcurrentHashMap<>();
 
     VodSearch(Context context, JSONObject query, SourceRepository repo, boolean premiumize, int quality) {
-        this(context, query, repo, premiumize, quality, true);
-    }
-
-    VodSearch(
-        Context context,
-        JSONObject query,
-        SourceRepository repo,
-        boolean premiumize,
-        int quality,
-        boolean foregroundSearch
-    ) {
-        metadata.allowCoreThreadTimeOut(true);
-        if (foregroundSearch) {
-            VodSearch previous = current;
-            if (previous != null) previous.close();
-            current = this;
-        }
-        runtimeMs = Math.max(0, query.optLong("runtime")) * 60_000L;
+        VodSearch previous = current;
+        if (previous != null) previous.close();
+        current = this;
         long started = SystemClock.elapsedRealtime();
         // One entry per website; discovery and host resolution have separate bounded budgets.
         deadline = started + 420000;
@@ -60,17 +36,15 @@ final class VodSearch implements AutoCloseable {
         }
         window = new SourceWindow<>(started, source ->
             SourceRanking.readyRank(
-                source.rankingLabel(),
+                source.ranking == null ? source.title : source.ranking,
                 quality,
                 source.probeMbps,
                 source.responseMs,
-                source.confirmed || source.facts.value.tier() > 0,
-                source.audioRank()
+                source.confirmed
             )
         );
         // Good enough to start at once: the preferred quality, but 1080p when 4K is preferred.
         target = Math.min(quality, 1080);
-        preferred = quality;
         Context app = context.getApplicationContext();
         // Runtime extraction and imports must never hold the UI thread.
         workers.submit(() -> {
@@ -128,9 +102,7 @@ final class VodSearch implements AutoCloseable {
                     sources.sort(
                         Comparator.comparingInt((SourceRepository.Source source) ->
                             SourceRanking.rank(source.title, quality)
-                        )
-                            .thenComparingInt(source -> SourceRanking.audio(source.title))
-                            .reversed()
+                        ).reversed()
                     );
                     int attempted = 0;
                     for (SourceRepository.Source source : sources) {
@@ -144,16 +116,9 @@ final class VodSearch implements AutoCloseable {
                             query.getInt("episode"),
                             query.getString("title")
                         );
-                        if (pick >= 0) {
-                            SourceRepository.Source direct = new SourceRepository.Source(
-                                source.title,
-                                source.uri,
-                                files,
-                                new JSONObject()
-                            );
-                            direct.metadataLink = files.getJSONObject(pick).getString("link");
-                            found(direct);
-                        }
+                        if (pick >= 0) found(
+                            new SourceRepository.Source(source.title, source.uri, files, new JSONObject())
+                        );
                     }
                 } catch (Exception error) {
                     Diagnostics.recovered("Optional cloud search", error);
@@ -242,18 +207,6 @@ final class VodSearch implements AutoCloseable {
     private synchronized void found(SourceRepository.Source source) {
         if (expired() || !window.add(sourceKey(source), source)) return;
         for (var observer : observers) observer.accept(source);
-        try {
-            metadata.execute(() -> {
-                MediaFacts.Value facts = MediaMetadataProbe.read(source, preferred, cancelled);
-                if (cancelled.get()) return;
-                if (source.facts.value.origin != MediaFacts.Origin.PLAYING) source.facts.value = facts;
-                if (PlaybackEnd.lengthMismatch(facts.durationMs, runtimeMs)) {
-                    window.remove(sourceKey(source));
-                }
-            });
-        } catch (RejectedExecutionException ignored) {
-            // Saturated metadata queue: keep the link with unknown details; playback confirms it.
-        }
     }
 
     synchronized void observe(java.util.function.Consumer<SourceRepository.Source> observer) {
@@ -271,7 +224,7 @@ final class VodSearch implements AutoCloseable {
 
     /** A camera copy never counts as good enough to stop waiting for a better source. */
     static int startQuality(SourceRepository.Source source) {
-        String label = source.rankingLabel();
+        String label = source.ranking == null ? source.title : source.ranking;
         return SourceRanking.camera(label) ? 0 : SourceRanking.resolution(label);
     }
 
@@ -283,7 +236,6 @@ final class VodSearch implements AutoCloseable {
         cancelled.set(true);
         observers.clear();
         workers.shutdownNow();
-        metadata.shutdownNow();
         if (current == this) current = null;
     }
 }

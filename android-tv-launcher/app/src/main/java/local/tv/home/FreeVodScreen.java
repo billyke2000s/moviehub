@@ -17,31 +17,29 @@ final class FreeVodScreen {
     }
 
     void start(String imdb, int season, int episode, String title, String kind, JSONObject metadata) {
-        start(imdb, season, episode, title, kind, metadata, null);
-    }
-
-    void start(
-        String imdb,
-        int season,
-        int episode,
-        String title,
-        String kind,
-        JSONObject metadata,
-        VodNextEpisode prepared
-    ) {
         try {
-            if (prepared != null) prepared.claim();
-            SourceRepository repo = prepared == null ? new SourceRepository(activity.secrets) : prepared.repo;
-            VodSearch search =
-                prepared == null
-                    ? new VodSearch(
-                          activity,
-                          query(imdb, season, episode, title, metadata, activity.http()),
-                          repo,
-                          activity.secrets.has("premiumize"),
-                          activity.prefs.getInt(AutoPlayback.QUALITY, 1080)
-                      )
-                    : prepared.search;
+            JSONObject info = metadata == null ? new JSONObject() : metadata;
+            String searchTitle = info.optString(season < 0 ? "title" : "name", title);
+            JSONObject query = new JSONObject()
+                .put("imdb", imdb)
+                .put("tmdb", info.optInt("tmdbId", info.optInt("id")))
+                .put("title", searchTitle)
+                .put("localTitle", searchTitle)
+                .put("aliases", aliases(info, season < 0))
+                .put("year", info.optString(season < 0 ? "release_date" : "first_air_date").split("-")[0])
+                .put("season", season)
+                .put("episode", episode)
+                .put("premiered", info.optString("air_date", info.optString("first_air_date")))
+                .put("episodeTitle", info.optString("episodeTitle"))
+                .put("http", activity.http());
+            SourceRepository repo = new SourceRepository(activity.secrets);
+            VodSearch search = new VodSearch(
+                activity,
+                query,
+                repo,
+                activity.secrets.has("premiumize"),
+                activity.prefs.getInt(AutoPlayback.QUALITY, 1080)
+            );
             TextView status = activity.muted(
                 "Finding streams… choosing the best available in 3 to 8 seconds.",
                 16
@@ -60,15 +58,10 @@ final class FreeVodScreen {
             final int generation = activity.generation;
             Runnable refresh = new Runnable() {
                 int count = -1;
+                final Map<String, Button> displayed = new LinkedHashMap<>();
                 boolean handedOff;
-                final FreeVodRows rows = new FreeVodRows(activity, results, source -> {
-                    automatic[0] = false;
-                    handedOff = true;
-                    play(source, search, repo, metadata, imdb, season, episode, title, kind, true);
-                });
 
                 public void run() {
-                    if (handedOff) return;
                     if (
                         activity.isDestroyed() || activity.isFinishing() || activity.generation != generation
                     ) {
@@ -82,14 +75,68 @@ final class FreeVodScreen {
                         return;
                     }
                     List<SourceRepository.Source> found = search.snapshot();
-                    count = found.size();
-                    // Metadata can finish without the number of links changing.
-                    rows.render(found);
+                    if (count != found.size()) {
+                        count = found.size();
+
+                        Map<String, List<SourceRepository.Source>> groups = new LinkedHashMap<>();
+                        for (var source : found)
+                            groups
+                                .computeIfAbsent(SourcesScreen.provider(source.title), key ->
+                                    new ArrayList<>()
+                                )
+                                .add(source);
+                        for (var group : groups.entrySet()) {
+                            String provider = group.getKey();
+                            Button row = displayed.get(provider);
+                            if (row == null) {
+                                row = activity.button(provider, () -> {
+                                    automatic[0] = false;
+                                    List<SourceRepository.Source> choices = new ArrayList<>();
+                                    for (var source : search.snapshot())
+                                        if (
+                                            provider.equals(SourcesScreen.provider(source.title))
+                                        ) choices.add(source);
+                                    SidePanel panel = SidePanel.of(activity, provider);
+                                    for (int i = 0; i < choices.size(); i++) {
+                                        var source = choices.get(i);
+                                        String host = java.net.URI.create(
+                                            source.files.optJSONObject(0).optString("link")
+                                        ).getHost();
+                                        panel.option(
+                                            SourcesScreen.badge(source) + " · " + host + " · Link " + (i + 1),
+                                            () -> {
+                                                handedOff = true;
+                                                play(
+                                                    source,
+                                                    search,
+                                                    repo,
+                                                    metadata,
+                                                    imdb,
+                                                    season,
+                                                    episode,
+                                                    title,
+                                                    kind,
+                                                    true
+                                                );
+                                            }
+                                        );
+                                    }
+                                    panel.show();
+                                });
+                                displayed.put(provider, row);
+                                results.addView(row);
+                            }
+                            int links = group.getValue().size();
+                            row.setText(provider + " · " + links + (links == 1 ? " link" : " links"));
+                        }
+                    }
                     boolean done = search.finished();
                     status.setText(
                         count > 0
-                            ? count +
-                                  (count == 1 ? " link found · " : " links found · ") +
+                            ? displayed.size() +
+                                  " providers · " +
+                                  count +
+                                  " links found · " +
                                   search.progress() +
                                   (done ? "" : " · searching for backups…")
                             : done
@@ -99,43 +146,15 @@ final class FreeVodScreen {
                               : "No stream yet · " + search.progress() + " · still searching…"
                     );
                     // Even an immediate complete response waits for the original selection window.
-                    if (done && count == 0) search.close();
-                    // Keep a light ownership check after a manual list finishes too, so leaving
-                    // cancels any metadata work and releases this search's worker resources.
-                    else handler.postDelayed(this, done ? 1000 : 100);
+                    if (!done || (automatic[0] && best == null && count > 0)) handler.postDelayed(this, 100);
+                    else if (count == 0) search.close();
                 }
             };
             handler.post(refresh);
         } catch (Exception error) {
-            if (prepared != null && prepared.search != null) prepared.search.close();
             Diagnostics.recovered("Starting source search", error);
             activity.toast("Could not start the source search");
         }
-    }
-
-    static JSONObject query(
-        String imdb,
-        int season,
-        int episode,
-        String title,
-        JSONObject metadata,
-        boolean http
-    ) throws JSONException {
-        JSONObject info = metadata == null ? new JSONObject() : metadata;
-        String searchTitle = info.optString(season < 0 ? "title" : "name", title);
-        return new JSONObject()
-            .put("imdb", imdb)
-            .put("tmdb", info.optInt("tmdbId", info.optInt("id")))
-            .put("title", searchTitle)
-            .put("localTitle", searchTitle)
-            .put("aliases", aliases(info, season < 0))
-            .put("year", info.optString(season < 0 ? "release_date" : "first_air_date").split("-")[0])
-            .put("season", season)
-            .put("episode", episode)
-            .put("premiered", info.optString("air_date", info.optString("first_air_date")))
-            .put("episodeTitle", info.optString("episodeTitle"))
-            .put("runtime", info.optInt("runtime", 0))
-            .put("http", http);
     }
 
     static JSONArray aliases(JSONObject metadata, boolean movie) {

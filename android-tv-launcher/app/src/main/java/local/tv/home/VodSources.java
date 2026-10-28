@@ -98,8 +98,7 @@ final class VodSources {
         session.transport = index -> ordered.get(index).stream;
         session.close = search::close;
         search.observe(source -> {
-            for (var existing : ordered)
-                if (VodSearch.sourceKey(existing).equals(VodSearch.sourceKey(source))) return;
+            for (var existing : ordered) if (existing.uri.equals(source.uri)) return;
             if (ordered.size() >= 200) return;
             ordered.add(source);
             session.sources.add(entry(source));
@@ -108,14 +107,11 @@ final class VodSources {
     }
 
     static VodSourceFailover.Source entry(SourceRepository.Source source) {
-        String audio = SourceRanking.audioLabel(source.title);
         VodSourceFailover.Source entry = new VodSourceFailover.Source(
-            VodSearch.sourceKey(source),
-            SourcesScreen.sourceLabel(source, SourcesScreen.provider(source.title)),
+            source.uri,
+            SourcesScreen.provider(source.title) + " · " + SourcesScreen.badge(source),
             SourcesScreen.provider(source.title)
         );
-        entry.audio = audio;
-        entry.facts = source.facts;
         // A camera copy's picture size is real but it is never a better source to suggest.
         if (source.confirmed && source.ranking != null && !SourceRanking.camera(source.ranking)) {
             entry.confirmed = SourceRanking.resolution(source.ranking);
@@ -149,9 +145,7 @@ final class VodSources {
         rest.sort(
             Comparator.comparingInt((SourceRepository.Source source) ->
                 SourceRanking.rank(source.title, quality)
-            )
-                .thenComparingInt(source -> SourceRanking.audio(source.title))
-                .reversed()
+            ).reversed()
         );
         Set<String> seen = new HashSet<>();
         seen.add(selected.uri);

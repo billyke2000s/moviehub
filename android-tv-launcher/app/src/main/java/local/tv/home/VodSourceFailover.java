@@ -15,24 +15,12 @@ final class VodSourceFailover {
     static final long STALL_MS = 4000L;
     static final long WINDOW_MS = 60000L;
     static final int STALLS_PER_WINDOW = 2;
-    /**
-     * The picture has not moved for this long while not paused or seeking: the source is stuck,
-     * whatever the player's events say (a link that sends a fraction of a megabyte and stops may
-     * report Playing and never a finished buffering).
-     */
-    static final long NO_PROGRESS_MS = 15000L;
-    /** Smaller position changes are the player re-reporting the same place, not progress. */
-    static final long PROGRESS_STEP_MS = 500L;
 
     static final class Source {
 
-        /** Stable source identity; playback addresses come from the session resolver. */
         final String url;
         /** Shown in the Sources menu; corrected once the real picture size is known. */
         volatile String label;
-        /** The release name's audio ("Atmos", "7.1", "5.1"), or "" when it does not say. */
-        volatile String audio = "";
-        MediaFacts facts = new MediaFacts();
         final String provider;
         /** Quality read from the file or stream (a tier such as 1080), 0 when only claimed. */
         int confirmed;
@@ -63,8 +51,6 @@ final class VodSourceFailover {
     private final List<Long> recentStalls = new ArrayList<>();
     private int current = -1;
     private long bufferingSince = -1;
-    private long progressAt = -1,
-        progressPosition = -1;
     private boolean hasPlayed;
     private boolean seeking;
     private boolean userPaused;
@@ -144,38 +130,12 @@ final class VodSourceFailover {
 
     void setSeeking(boolean value) {
         seeking = value;
-        if (value) {
-            bufferingSince = -1;
-            progressAt = -1;
-        }
+        if (value) bufferingSince = -1;
     }
 
     void setUserPaused(boolean value) {
         userPaused = value;
-        if (value) {
-            bufferingSince = -1;
-            progressAt = -1;
-        }
-    }
-
-    /**
-     * Call about once a second with the player's position. True when it has not moved for
-     * {@link #NO_PROGRESS_MS}; the wait then starts again, so a stuck source with nowhere to go is
-     * reported at most once per wait.
-     */
-    boolean noProgress(long nowMs, long positionMs) {
-        if (seeking || userPaused) {
-            progressAt = -1;
-            return false;
-        }
-        if (progressAt < 0 || Math.abs(positionMs - progressPosition) >= PROGRESS_STEP_MS) {
-            progressAt = nowMs;
-            progressPosition = positionMs;
-            return false;
-        }
-        if (nowMs - progressAt < NO_PROGRESS_MS) return false;
-        progressAt = nowMs;
-        return true;
+        if (value) bufferingSince = -1;
     }
 
     /** Call only on a transition into buffering, not on every percentage update. */
@@ -217,6 +177,5 @@ final class VodSourceFailover {
         seeking = false;
         userPaused = false;
         bufferingSince = -1;
-        progressAt = -1;
     }
 }

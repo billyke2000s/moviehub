@@ -1,23 +1,8 @@
 # Status
 
-## VOD runtime, metadata and next episode — 1.0.15 published, 27 October 2026
+## Rolled back to 1.0.12 code — 1.0.16, 28 October 2026
 
-The Play sources page now lists each link independently, including multiple links from one website. Metadata updates each row in place before selection; resolution, audio formats/channels and declared bitrates stay unknown when unavailable. No new website-selection submenu is introduced. The final correction passed Android build/lint, signing/updater compatibility, normal and experimental emulator suites, and provider-engine CI at `2934cd7824fd665e248903d224f5dac0d49335e0`.
-
-The owner-requested follow-up adds exact episode runtimes, active/prepared runtime rejection,
-a brief replacement note, bounded metadata-only resolution/audio/bitrate inspection and next-episode
-link preparation. The player tick was extracted in a separate behaviour-free commit. Provider Python,
-source inventory, existing buffering thresholds, package identity and signing are unchanged.
-Runtime compatibility uses the requested 60–160% band and cannot prove episode identity by itself.
-Metadata labels distinguish declarations and playing tracks; absent bitrates are unknown.
-Next-episode preparation reuses the existing search and selection paths without taking over the
-current backup search or opening another decoder. Manual mode remains manual; leaving cancels.
-
-Core checks pass locally using Eclipse JDT targeting Java 17 (this workspace has a JRE, no javac).
-Final Android build/lint, signing/updater compatibility, normal and experimental emulator suites, and provider-engine CI passed on the final candidate. Publication also reran the full normal device suite; see TESTING.md for the initial audio-selection failure and unchanged successful retry.
-No physical-TV or exact failing live-link result is claimed. Published as **1.0.15 (code 115)** by [publish run 40593042067](https://github.com/billyke2000s/moviehub/actions/runs/40593042067). The public update manifest reports version 115 and its APK SHA-256 matches the uploaded asset. TV provider-list completeness remains unresolved; this release changes no providers.
-The 1.0.14 publish run [40541787521](https://github.com/billyke2000s/moviehub/actions/runs/40541787521)
-succeeded from `8e3d77121d1d1cc914e4dbcb1fada76e319292ce`; older release notes below are historical.
+The owner reported 1.0.15 as broken and asked to return to 1.0.12. The source tree is restored exactly to the 1.0.12 publish commit `c36ff6c` (only this note and the changelog differ) and published as 1.0.16 (code 116), because the updater rejects lower version codes. The 1.0.13–1.0.15 work remains in Git history if any of it is wanted back later. Sections below describing 1.0.12 apply to this build.
 
 ## Broken sources no longer count as watched — 1.0.10, 27 October 2026
 

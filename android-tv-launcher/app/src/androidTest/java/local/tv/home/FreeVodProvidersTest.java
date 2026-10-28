@@ -29,7 +29,6 @@ public final class FreeVodProvidersTest {
             paths.add(path);
             if (path.contains("/episode/")) return new JSONObject()
                 .put("name", "Episode title")
-                .put("runtime", 42)
                 .put("air_date", "2020-01-02");
             return new JSONObject()
                 .put("id", 12)
@@ -49,7 +48,6 @@ public final class FreeVodProvidersTest {
         assertEquals("tv/12/season/2/episode/3", paths.get(1));
         assertEquals("12:2:3", episode.getString("episodeKey"));
         assertEquals("Episode title", episode.getString("episodeTitle"));
-        assertEquals(42, episode.getInt("runtime"));
         assertEquals("2020-01-02", episode.getString("air_date"));
         assertFalse(episode.has("url"));
     }

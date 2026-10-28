@@ -1,34 +1,5 @@
 # Testing
 
-## VOD runtime, metadata and continuation — 1.0.15 (27 October 2026)
-Release evidence: **1,235 core checks passed locally** using Eclipse JDT targeting Java 17. Final candidate `2934cd7824fd665e248903d224f5dac0d49335e0` passed [Android build/lint, signing and both emulator suites](https://github.com/billyke2000s/moviehub/actions/runs/40590471873), plus [provider-engine CI](https://github.com/billyke2000s/moviehub/actions/runs/40590471944). The unchanged merged app also passed [main CI](https://github.com/billyke2000s/moviehub/actions/runs/40592864239).
-
-[Publish run 40593042067](https://github.com/billyke2000s/moviehub/actions/runs/40593042067) first stopped before signing/upload because `PlaybackTest.playingFilmCorrectsAnOverstatedLabelAndOnlySuggestsAConfirmedBetterSource` reported selected audio `-1` despite an available AAC track. The full publish job was rerun without code or assertion changes and passed, publishing 1.0.15/code 115. The cause of the initial audio-selection failure is not established. Both fixture tracks span the full 150 seconds. The public update manifest and uploaded APK SHA-256 were cross-checked after publication. This is emulator/fixture evidence, not a physical-TV or exact failing live-link result.
-
-
-`FreeVodRowsTest` checks separate links from one website, separate routes to the same URL, direct selection without a submenu, removal and metadata updates retaining the same focused button. MediaFactsTest checks the exact quality/channels/website order, formats/bitrates and explicit unknown/playlist labels. These fixture checks do not establish live-source availability.
-
-Run `bash android-tv-launcher/tests/run-core-tests.sh`. PlaybackEndTest adds exact 60/160-percent
-boundaries, unknown/negative lengths, extended cuts, overflow-safe comparisons and the three-minute
-prefetch window including pause, early/ended and wrong-runtime exclusion. MediaFactsTest covers
-wide-frame resolution, audio channels/codecs/language, unknown values, playlist declarations and
-separate track bitrates without guessing Atmos or conflating transfer speed.
-
-PlaybackTest adds real-LibVLC fixtures for an initially wrong-runtime link and an otherwise playable
-wrong-runtime prepared cloud backup. It verifies the right replacement, progress and absence of
-watched/next-episode state. Existing quality-correction checks also require actual dimensions and
-AAC metadata. Next-episode fixtures check exact pack preparation without changing playback,
-one-time consumption and a deliberately late metadata result discarded after cancellation.
-SeriesAutoplayTest checks next-episode runtime and removal of stale prior runtimes;
-FreeVodProvidersTest checks exact episode runtime on resume.
-
-MediaMetadataProbeTest uses real Android MediaExtractor and MP4 bytes through the guarded relay,
-requires resolution/audio/duration within the byte budget, checks cancellation before HTTP, a range
-read at the end with no intervening download and chunk reuse, and distinct HLS ceiling/bandwidth
-labels, byte-budget exhaustion and deadline expiry before network access. The first Android pass exposed repeated extractor header reads exhausting a single-slot cache; aligned retained chunks now cover start/end/start without refetching, under the unchanged total budget. These are emulator fixtures, not live-provider or physical-TV verification. Android build,
-lint, signing and device results must be read from the final PR checks. Physical ARM box latency,
-provider connection limits and real next-episode availability remain unverified.
-
 ## Continuous series and automatic playback
 
 `VideoFilesTest` includes episode ordering, future-date handling and source-resolution ranking. `SeriesAutoplayTest` uses catalogue and source fixtures to check season transitions, updated history keys, missing pack episodes, show endings, uncertain filenames, bounded source fallback and cancellation. `LiveGuideTest` covers colour keys from header focus and Back/arrow/OK controls; `LiveControlsTest` covers all four physical colours during playback, learned scan-code colours, and OK/click/◀ always showing the same banner. These do not verify a particular physical remote or real-provider playback.
@@ -684,22 +655,6 @@ Anime row is Japanese animation without adult titles, routes are unique, the air
 row, and that film rows are typed as films and series rows as series. Not covered by tests: the
 thumb buttons on screen, For you actually changing after a rating (it needs real TMDB), the New
 episode label on screen, and the Anime screen loading real TMDB rows.
-
-## Stuck first link switches (27 October 2026)
-
-`VodSourceFailoverTest` (core) adds checks for `noProgress`: a position that does not move for 15 s
-switches, the wait restarts rather than firing every second, moving picture and pausing or seeking
-never count, and switching source starts the wait again. Not covered: LibVLC's events for a real
-link that stalls after a fraction of a megabyte (the owner's report), which no test reproduces.
-
-## Audio badges and quality-first source labels (27 October 2026)
-
-`StreamRateTest` (core) adds 18 audio checks: Atmos, 7.1 and 5.1 written in the usual release-name
-forms (with codec, dots, spaces, "6CH"), file sizes such as "5.1 GB" and "Season 5 1080p" not
-counted, labels, and ranking (more channels first among equal quality, never above a better picture
-or a confirmed one). `QualityClaimsTest` checks the quality · audio · website order.
-`PlaybackTest.playingFilmCorrectsAnOverstatedLabel…` expects the new order. Not checked by a test:
-how the labels look on screen, and how often release names state audio wrongly.
 
 ## Broken sources marked as watched (27 October 2026)
 

@@ -28,46 +28,6 @@ final class SourceRanking {
         return 480;
     }
 
-    /** An audio codec named before the channel count ("DDP5.1", "DTS-HD MA 7 1", "TrueHD 7.1"). */
-    private static final String CODEC =
-        "(?:ddp?|dd\\+|e?ac-?3|aac|dts(?:-?hd)?(?:[ .-]?ma)?|truehd|flac|opus|l?pcm)";
-
-    /** Not part of a longer number, and not a file size ("5.1 GB"). */
-    private static final String NOT_SIZE = "(?![0-9])(?![ .]?(?:gb|gib|mb|mib|tb)(?![a-z]))";
-
-    private static boolean channels(String text, String layout, String count) {
-        String first = layout.substring(0, 1);
-        return (
-            // "5.1" on its own, or after a codec with a space or dot instead ("DDP5 1").
-            Pattern.compile("(?<![a-z0-9.])" + first + "\\.1" + NOT_SIZE)
-                .matcher(text)
-                .find() ||
-            Pattern.compile("(?<![a-z0-9])" + CODEC + "[ .-]?" + first + "[ .]1" + NOT_SIZE)
-                .matcher(text)
-                .find() ||
-            word(text, count + "ch")
-        );
-    }
-
-    /**
-     * The release name's claimed audio: 3 for Dolby Atmos, 2 for 7.1, 1 for 5.1, 0 when it does not
-     * say. Like picture quality it is the website's claim, not read from the file. Among links of
-     * equal picture quality more channels rank higher.
-     */
-    static int audio(String description) {
-        String text = description.toLowerCase(Locale.ROOT);
-        if (word(text, "atmos")) return 3;
-        if (channels(text, "7.1", "8")) return 2;
-        if (channels(text, "5.1", "6")) return 1;
-        return 0;
-    }
-
-    /** "Atmos", "7.1", "5.1", or "" when the release name does not say. */
-    static String audioLabel(String description) {
-        int audio = audio(description);
-        return audio == 3 ? "Atmos" : audio == 2 ? "7.1" : audio == 1 ? "5.1" : "";
-    }
-
     static boolean camera(String description) {
         return word(description.toLowerCase(Locale.ROOT), "cam|camrip|hdcam|hdts|telesync|telecine|tsrip");
     }
@@ -95,28 +55,12 @@ final class SourceRanking {
         long responseMs,
         boolean confirmed
     ) {
-        return readyRank(description, preferred, probeMbps, responseMs, confirmed, 0);
-    }
-
-    /**
-     * {@code audio} is {@link #audio} of the release name. Among equal quality a confirmed picture
-     * comes first, then more audio channels, then the transfer sample.
-     */
-    static int readyRank(
-        String description,
-        int preferred,
-        double probeMbps,
-        long responseMs,
-        boolean confirmed,
-        int audio
-    ) {
         // Transfer samples include startup latency and are an estimate, never a stability guarantee.
         double sample = Double.isFinite(probeMbps) ? Math.max(0, Math.min(99, probeMbps)) : 0;
         int response = (int) Math.max(0, 999 - Math.max(0, Math.min(999, responseMs)));
         return (
             rank(description, preferred) * 100000 +
-            (confirmed ? 400000 : 0) +
-            Math.max(0, Math.min(3, audio)) * 100000 +
+            (confirmed ? 100000 : 0) +
             (int) (sample * 1000) +
             response
         );

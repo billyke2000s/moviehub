@@ -47,10 +47,6 @@ final class SourceWindow<T> {
         return quality.applyAsInt(best) >= target ? best : null;
     }
 
-    synchronized void remove(String key) {
-        ready.remove(key);
-    }
-
     synchronized void cancel() {
         cancelled = true;
         ready.clear();
