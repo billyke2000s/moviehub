@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 17796)
-Total output lines: 708
-
 # Testing
 
 ## Managed VOD regression coverage
@@ -310,7 +307,128 @@ The post-merge run 39821398629 crashed in EGL window initialization in this path
 cancels view callbacks first, stops VLC with its surface retained, then detaches the surface.
 
 Handoff evidence now excludes closing-output frames and requires the destination SurfaceView
-to b…2796 tokens truncated…utes are configured before the window is attached, so initial focus is not followed by a second layout/visibility change. Repeated isolated emulator runs accompany the full suite for this handoff.
+to be shown, valid and sized. The optional PixelCopy capture never delays disabling the old
+video track. The existing direct, native-resolved and manually pinned backup tests each make
+two full-screen/guide round trips without reconnecting.
+
+SidePanelTest covers Activity destruction with an open panel and rejects continuation callbacks.
+LiveControlsTest and SafetyNoticeTest wait for actual window focus before injecting keys across
+panel transitions; showing/idle alone does not establish input focus.
+
+Handoff screenshots are sampled until the destination is visibly nonblank, within the existing
+three-second budget including time to resume decoding. One screenshot immediately after the
+first decoded frames can still precede SurfaceFlinger composition; this is not proof of a
+persistently black surface. The test still fails if the visible picture misses that budget.
+
+## Playback continuity validation (0.46 candidate) (LibVLC live player; removed 27 October 2026)
+
+The tests below were deleted with the LibVLC live player (see "LibVLC live tests removed"). This section is kept as history.
+
+`LiveRenewalTest` serves fixture MPEG-TS through real LibVLC. A latch blocks provider renewal
+while the original video advances; tests then cover successful reopening, a failed refresh
+without reopening, pause without automatic resumption, exit without a late reopen, a
+synthetic video freeze repaired on ordinary IPTV without reopening, and a persistent freeze
+that reaches failure rather than starting another surface repair.
+`PlaybackBufferTest` checks URL-path classification (query/fragment decoys and uppercase HLS),
+relay precedence, malformed paths and bounded VOD headroom. The core script now runs 703 checks.
+CI must validate the full Android suite, builds/lint and signing before release. Physical-TV
+memory/decoder limits and long real-provider sessions remain unverified.
+
+`LiveRepairBudgetTest` verifies persistent freezes across hidden/paused surfaces cannot loop
+through repairs, queued frames do not count as recovery, and genuine progress replenishes
+the repair budget.
+
+Activity destruction now clears its owned SidePanel explicitly, including show-and-finish
+before the first window attach. The native picture-repair fixture establishes actual frame
+progress before injecting a new freeze; hiding a surface is intentionally insufficient to
+reset the new repair budget. Failed device runs print the full crash buffer so Java process
+failures cannot disappear from a video-only filtered tail.
+
+Native window shutdown follow-up: post-merge retry 39868257885 crashed in EGL window
+creation during native-source handoff. An unreported Vout count no longer permits immediate
+detachment. Every move requests track shutdown; a missing acknowledgement after 600 ms
+stops the native reader before moving and restarts playback on the destination. This rare
+fallback reconnects the stream; normal acknowledged moves retain it. Device fixtures cover
+unreported output counts and suppressed shutdown acknowledgement. Validation is pending.
+
+Release run 39870438797 exposed a delayed overlay callback querying an externally released
+shared live player. Overlay, skip, audio-focus, event, delayed-resume and error callbacks now
+apply the existing ownership check before native access; a real-player regression covers it.
+
+Independent release validation 39871238896 passed 146/146 tests. PR validation passed
+145/146, observing audio track -1 during picture recovery. Forced native-stop recovery now
+restores the selected audio track after rediscovery. Repair evidence waits for selected
+audio and playing state, then checks new audio-output progress rather than old-session stats.
+
+## Prepared live backup validation (LibVLC live player; removed 27 October 2026)
+
+The tests below were deleted with the LibVLC live player (see "LibVLC live tests removed"). This section is kept as history.
+
+`LiveBufferingTest` covers exact live thresholds, duplicate buffering notifications, window
+expiry, startup/pause exclusion, buffering completion and one trigger per recovery window.
+The shared core script runs 733 checks.
+
+`LiveBackupTest` uses actual LibVLC and local MPEG-TS: old frames during preparation, one muted
+candidate, promotion of the same already-running decoder/transport, audio volume restoration,
+failed candidates followed by a working copy, exhaustion without loops, bounded startup,
+pause/manual/channel/exit cancellation with deliberately late resolver completion, and a real
+fullscreen/guide transition followed by preparation and promotion in the mini-player. Actual
+screenshots must contain nonblank video after promotion and later full-screen reuse. No new
+provider sources or account credentials are used. Local core validation passed; Android
+build/lint, full emulator and signing validation are pending on the PR. Concurrent hardware
+decoder support, actual TV memory limits and live-feed timing require physical-device checks.
+
+## Live TV control consistency
+
+Since 27 October 2026 `LiveControlsTest` runs on `LiveStage` (see "LibVLC live tests removed"); mentions of Activity recreation below describe the removed separate player screen.
+
+`LiveControlsTest` now opens its live fixture without the static guide session. It covers physical colours, real Activity recreation with cleared static context, saved guide snapshot independence, a learned green button using a numeric key, and visible unclipped controls with long source/channel names. Existing Back/arrow/OK tests remain. These fixtures do not verify the owner’s physical remote. Local core checks pass (733); Android CI is pending.
+
+`LiveControlsTest.physicalColoursKeepWorkingWhileAnotherPlayerPanelOwnsFocus` sends red, green, blue and yellow without manually dismissing intermediate dialogs. `completeHeaderSurvivesProgrammeUpdatesAndBackControls` checks full-height channel-strip labels, not only footer buttons, after typing and programme updates; it saves `live-complete-channel-header.png`. These use fixtures, not the physical remote.
+
+## Live playback recovery (LibVLC live player; removed 27 October 2026)
+
+The tests below were deleted with the LibVLC live player (see "LibVLC live tests removed"). This section is kept as history.
+
+LiveRecoveryTest serves deterministic 320×180 and 640×360 H.264/AAC MPEG-TS segments behind an HLS playlist with timestamp discontinuities. It checks actual video/audio progression across format changes, bounded same-channel Pluto retries, controls during a deliberately blocked native stop, and recovery after hiding the active SurfaceView. Pure-Java checks cover retry exhaustion/replenishment and presentation timeouts without treating valid static/black buffers as failures. Physical ARM64/TV-box decoding and comparative Media3 testing remain outstanding; no claim that these fixtures reproduce every Pluto broadcast.
+
+The alternating-resolution HLS fixture contains explicit timestamp discontinuities. It requires advancing decoded video, decoded audio and played audio buffers across at least eleven seconds, unchanged source/player identity and actual visible pixels. LibVLC's live demux clock alone is not proof of stalled output. A separate test verifies three brief buffering notifications do not reconnect an advancing selected channel when there is no alternate source; the existing third-buffer test still verifies prepared-backup promotion.
+
+0.49 validation checkpoint: source f2e37666b297cb225a458ef9df9101fe0b01d87f passed CI run 39985039245: all 166 TV emulator tests, zero failures/skips, build/lint and signing/updater compatibility. Provider CI also passed. Local core checks: 753. HLS transition evidence: 320 decoded video frames, 547 played audio buffers, one resolver call. Screenshots confirm the moving fixture output and complete channel header. This is fixture/emulator evidence, not a physical TV or live Pluto test.
+
+## Consistent live banner and standard colours
+
+LiveControlsTest now checks actions on key-down before any release, repeats/releases across replacement dialog windows, conflicting saved colour aliases, and a constrained viewport with information/pause panels visible. Earlier tests only sent complete down/up pairs with normal mappings and ample layout space. New tests must pass Android CI; they do not establish behaviour on the owner’s physical remote.
+
+## One live overlay and shared colour input
+
+LiveControlsTest.entryOkClickAndBackUseTheSameFullBanner checks visible video focus, absence of an attached film overlay, repeated OK without opening Options, picture click and Back, and stable header bounds. standardColourDeliveryVariantsShareOneActionAcrossWindows covers a first received nonzero-repeat event, held/released events crossing dialogs, standalone release, multiple delivery, the standard colour scan fallback and preservation of known non-colour keys. ColourPressTest adds 22 pure-Java gesture checks. Core total: 775. Android build/emulator/signing results are recorded on the change’s pull request and release run; physical-TV confirmation remains outstanding.
+
+## Free VOD provider candidate
+
+SourceWindowTest covers the exact three-second boundary, best available result, no-result
+waiting, late results, duplicates, cancellation and appending alternatives without resetting
+VOD stall/failed-source state. test_free_vod.py imports the 68 Kodi constructors and two native constructors and runs
+the real MP4Hydra provider against offline search/page/playlist/media fixtures with two CDN
+servers. It also covers header preservation, HTML error rejection, cancellation and private/
+plain-HTTP target rejection. Run `python android-tv-launcher/tests/test_free_vod.py` with
+requests and six installed. These checks do not prove live playback. Python 3.11 is required
+for Android builds; Chaquopy adds native runtime ABIs to the APK. Full Android CI and device
+validation must pass before treating this as a release candidate.
+
+FreeVodProvidersTest imports all 70 constructors from the packaged Android Python runtime
+and checks Java-to-Python cancellation. The offline suite also rejects executable decoder
+expressions. A separate CI probe reports public provider availability without logging URLs.
+
+## Incoming VOD traffic and ranking
+
+`StreamRateTest` covers timed byte deltas, idle zero, counter resets, quality aliases, camera penalties, the resolution ceiling and equal-quality transfer comparisons. Provider adapter instrumentation counts actual upstream bytes once; the Android Python bridge verifies counted transport for header-free sources. Offline Python tests verify master-playlist resolution and sampled media rates. These small startup samples estimate readiness, not future host stability.
+
+The VOD relay regression includes real file playback/seeking and a TCP check that files retain their byte lengths and range headers without being advertised as HLS. Android extractor fixtures use public literal IP addresses so transport validation never depends on DNS for `.example` test hosts.
+
+## Player panel initial focus
+
+The live-controls physical-key regression must receive actual window focus for Audio, Sources and Options in sequence. Panel layout and system-UI attributes are configured before the window is attached, so initial focus is not followed by a second layout/visibility change. Repeated isolated emulator runs accompany the full suite for this handoff.
 
 Live-controls physical colour injection uses one down-time identity for both events and drains pending UI work before capturing a replacement dialog. Android Instrumentation’s convenience down/up helper constructs independently timed events, which can look like another press after a window-transfer cancellation. Existing window-focus and old-panel-closure assertions remain required.
 
