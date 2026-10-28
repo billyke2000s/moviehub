@@ -28,6 +28,7 @@ final class VodPlayback {
     private final java.util.Set<Integer> refreshed = new java.util.HashSet<>();
     private boolean manualSelection;
     private boolean restartEdition;
+    private String lastFailure = "none";
     private MediaPlayer candidate;
     private VLCVideoLayout candidateView;
     private VodSources.Resolved resolved;
@@ -371,11 +372,9 @@ final class VodPlayback {
             boolean decoded = false;
             if (media != null) try {
                 IMedia.Stats stats = media.getStats();
-                boolean hasAudio = false;
-                MediaPlayer.TrackDescription[] audio = candidate.getAudioTracks();
-                if (audio != null) for (MediaPlayer.TrackDescription track : audio)
-                    if (track.id >= 0) hasAudio = true;
-                decoded = stats != null && stats.decodedVideo > 0 && (!hasAudio || stats.decodedAudio > 0);
+                // The candidate is muted. Audio counters are verified after selection in playback
+                // fixtures; requiring them here can prevent an otherwise ready decoder being adopted.
+                decoded = stats != null && stats.decodedVideo > 0;
             } finally {
                 media.release();
             }
@@ -424,6 +423,7 @@ final class VodPlayback {
     }
 
     private void failed() {
+        lastFailure = candidateState();
         // Invalidate events before scheduling native stop: a stop can itself enqueue EndReached.
         int request = ++ticket;
         preparing = true;
@@ -471,6 +471,53 @@ final class VodPlayback {
         discardCandidate();
         queue.select(active, session.pinned);
         if (activity.player != null && activity.player.isPlaying()) queue.onPlaying();
+    }
+
+    /** Numeric fixture diagnostics only: never include source URLs, headers or credentials. */
+    String diagnosticState() {
+        return (
+            "active=" +
+            active +
+            " choice=" +
+            queue.currentIndex() +
+            " preparing=" +
+            preparing +
+            " target=" +
+            target +
+            " current=" +
+            activity.playedPosition() +
+            " " +
+            candidateState() +
+            " previous=" +
+            lastFailure
+        );
+    }
+
+    private String candidateState() {
+        if (candidate == null) return "no candidate";
+        IMedia media = null;
+        try {
+            media = candidate.getMedia();
+            IMedia.Stats stats = media == null ? null : media.getStats();
+            return (
+                "playing=" +
+                playing +
+                "/" +
+                candidate.isPlaying() +
+                " time=" +
+                candidate.getTime() +
+                " length=" +
+                candidate.getLength() +
+                " video=" +
+                (stats == null ? -1 : stats.decodedVideo) +
+                " audio=" +
+                (stats == null ? -1 : stats.decodedAudio)
+            );
+        } catch (IllegalStateException unavailable) {
+            return "candidate unavailable";
+        } finally {
+            if (media != null) media.release();
+        }
     }
 
     void close() {

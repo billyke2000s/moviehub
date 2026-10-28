@@ -34,7 +34,11 @@ public final class VodSessionPlaybackTest {
     private void await(BooleanSupplier condition) {
         long deadline = SystemClock.elapsedRealtime() + 30_000;
         while (!condition.getAsBoolean() && SystemClock.elapsedRealtime() < deadline) SystemClock.sleep(100);
-        assertTrue("Managed playback timed out", condition.getAsBoolean());
+        String[] state = { "no session" };
+        instrumentation.runOnMainSync(() -> {
+            if (activity != null && activity.vod != null) state[0] = activity.vod.diagnosticState();
+        });
+        assertTrue("Playback condition timed out: " + state[0], condition.getAsBoolean());
     }
 
     @Before
