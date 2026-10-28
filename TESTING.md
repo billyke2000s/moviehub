@@ -1,10 +1,20 @@
 # Testing
 
+EpgImporterTest compares formatted XMLTV times as integer seconds. The unchanged main assertion selected JUnit’s float overload for epoch milliseconds: a deterministic 593 ms truncation reproduced a false 131,072 ms difference. Production EPG parsing is unchanged.
+
+Additional regressions require video/audio header requests to rendezvous before either response is sent, exhaust shared byte reservations concurrently and verify unused capacity returns, and select the second video track by ID without a first-track fallback. The actual Android live check at the previous candidate verified Vixsrc Archer S1E1 as 1920×1080, but separate English-audio headers exceeded the shared two-second deadline; that result motivated overlapping reads. It did not prove audio output or physical-TV playback.
+
+## HLS and playing metadata correction — candidate
+
+The [reported Vixsrc episode metadata check](https://github.com/billyke2000s/moviehub/actions/runs/40603226954) resolved Archer S1E1, observed AAC declarations and AES-128 media encryption, and found Italian/default plus English audio renditions. This motivated ordinary AES-128 header inspection and preferred-language selection; it is not playback/audio-output evidence. HlsEncryptionTest checks a NIST AES-CBC vector, explicit/sequence IVs, malformed input and clearing key bytes.
+
+Core HlsMediaInfoTest covers quoted CODECS, matching audio groups, channel declarations, language, bandwidth, adaptive variant selection, ambiguous codec unions, key scope/rotation, audio-language preferences and byte-range exclusions. MediaFactsTest checks independent audio facts, available-versus-selected provenance, retained track rates and refusal to carry rates across representation changes. HlsMetadataProbeTest uses actual H.264/AAC TS and separate fMP4 initialization headers behind deliberately false 1080p/5.1 declarations, shared resource budgets/deadlines, AES-128 initialization/segment headers and unsupported-key-format exclusion. PlaybackTest primes an empty Java Media track cache before releasing a real HLS fixture, then requires actual selected AAC and 320×180 playback facts. Focused regressions run before the full device suite. Android results must be read at the final PR head; no physical-TV or specific live-source result is claimed.
+
 ## VOD runtime, metadata and continuation — 1.0.15 (27 October 2026)
+
 Release evidence: **1,235 core checks passed locally** using Eclipse JDT targeting Java 17. Final candidate `2934cd7824fd665e248903d224f5dac0d49335e0` passed [Android build/lint, signing and both emulator suites](https://github.com/billyke2000s/moviehub/actions/runs/40590471873), plus [provider-engine CI](https://github.com/billyke2000s/moviehub/actions/runs/40590471944). The unchanged merged app also passed [main CI](https://github.com/billyke2000s/moviehub/actions/runs/40592864239).
 
 [Publish run 40593042067](https://github.com/billyke2000s/moviehub/actions/runs/40593042067) first stopped before signing/upload because `PlaybackTest.playingFilmCorrectsAnOverstatedLabelAndOnlySuggestsAConfirmedBetterSource` reported selected audio `-1` despite an available AAC track. The full publish job was rerun without code or assertion changes and passed, publishing 1.0.15/code 115. The cause of the initial audio-selection failure is not established. Both fixture tracks span the full 150 seconds. The public update manifest and uploaded APK SHA-256 were cross-checked after publication. This is emulator/fixture evidence, not a physical-TV or exact failing live-link result.
-
 
 `FreeVodRowsTest` checks separate links from one website, separate routes to the same URL, direct selection without a submenu, removal and metadata updates retaining the same focused button. MediaFactsTest checks the exact quality/channels/website order, formats/bitrates and explicit unknown/playlist labels. These fixture checks do not establish live-source availability.
 

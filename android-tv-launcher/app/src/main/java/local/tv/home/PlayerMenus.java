@@ -4,8 +4,8 @@ import android.os.SystemClock;
 import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
-import org.videolan.libvlc.Media;
 import org.videolan.libvlc.MediaPlayer;
+import org.videolan.libvlc.interfaces.IMedia;
 
 /**
  * The player's side panels: audio and subtitle tracks, video track, playback speed, picture size,
@@ -35,8 +35,16 @@ final class PlayerMenus {
 
     void resolution() {
         if (!ready()) return;
-        Media.VideoTrack track = a.player.getCurrentVideoTrack();
-        String size = track == null ? "Resolution unavailable" : track.width + " × " + track.height;
+        IMedia media = a.player.getMedia();
+        String size = "Resolution unavailable";
+        if (media != null) {
+            try {
+                IMedia.VideoTrack track = VodQuality.selectedVideo(media, a.player.getVideoTrack());
+                if (track != null) size = track.width + " × " + track.height;
+            } finally {
+                media.release();
+            }
+        }
         MediaPlayer.TrackDescription[] choices = a.player.getVideoTracks();
         if (choices == null || choices.length < 2) {
             a.dialogOpen = true;

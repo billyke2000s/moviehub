@@ -1,5 +1,7 @@
 <div align="center">
 
+Separate HLS video/audio headers are checked concurrently under one short, bounded metadata allowance. Checked variants remain distinct from adaptive playback selections; the player uses selected track IDs for its playing resolution.
+
 # MOVIEHUB
 
 ### Films, series and live TV in one place.
@@ -248,3 +250,7 @@ Rive adds separately listed movie and episode resources through the existing nat
 ### VOD playback checks
 
 Known catalogue runtimes reject clearly wrong-length copies. Source lists distinguish container metadata, playlist declarations and playing tracks for resolution, audio and declared bitrate; missing details stay unknown. Metadata reads run in the background with byte/time limits. Next-episode links prepare near the end without starting playback, and failed-link replacements show a brief notice. These changes are available in 1.0.15 (code 115); no physical-TV result is claimed.
+
+## HLS source metadata correction
+
+The candidate correction checks the chosen HLS variant's actual media headers, including ordinary AES-128 HLS and preferred-language separate audio, and keeps playlist codec/channel declarations when headers are unavailable. Checked variants show actual inspected dimensions; adaptive playback may select a different representation. The player retains useful header information when native fields are missing and distinguishes available audio from selected audio. No provider or source-list layout changes are included. Final candidate verification is recorded in TESTING.md.

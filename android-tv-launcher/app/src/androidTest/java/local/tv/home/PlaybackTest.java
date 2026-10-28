@@ -30,6 +30,7 @@ public class PlaybackTest {
     private final java.util.concurrent.atomic.AtomicInteger missingRequests =
         new java.util.concurrent.atomic.AtomicInteger();
     private boolean oldHttp;
+    private volatile java.util.concurrent.CountDownLatch metadataGate;
 
     private MediaPlayer player() {
         return activity.player;
@@ -125,6 +126,11 @@ public class PlaybackTest {
             );
             String request = reader.readLine(),
                 line;
+            java.util.concurrent.CountDownLatch gate = metadataGate;
+            if (gate != null && request != null && request.contains("/late.m3u8")) gate.await(
+                10,
+                java.util.concurrent.TimeUnit.SECONDS
+            );
             int start = 0;
             boolean range = false,
                 finiteRange = false;
@@ -238,6 +244,10 @@ public class PlaybackTest {
     }
 
     private void openVod(VodSources.Session session, String path) {
+        openVod(session, path, () -> {});
+    }
+
+    private void openVod(VodSources.Session session, String path, Runnable beforeWait) {
         instrumentation.runOnMainSync(activity::finish);
         instrumentation.waitForIdleSync();
         await(activity::isDestroyed, 10000);
@@ -250,6 +260,7 @@ public class PlaybackTest {
                 .putExtra("vodSession", VodSources.remember(session))
                 .putExtra("title", "VOD backup fixture")
         );
+        beforeWait.run();
         await(
             () ->
                 activity.vod != null &&
@@ -526,6 +537,84 @@ public class PlaybackTest {
         } finally {
             VodQuality.settleMs = previous;
             prefs.edit().remove("quality_claims.fixture.example").commit();
+        }
+    }
+
+    @Test
+    public void playingHlsRefreshesAnEarlyEmptyTrackCacheAndReportsSelectedAudio() throws Exception {
+        VodSourceFailover.Source source = new VodSourceFailover.Source("hls", "1080p · fixture", "fixture");
+        source.playlist = true;
+        source.claimed = "1080p";
+        VodSources.Session session = new VodSources.Session(
+            java.util.Collections.singletonList(source),
+            index -> {
+                throw new IOException("No backup expected");
+            },
+            true
+        );
+        metadataGate = new java.util.concurrent.CountDownLatch(1);
+        try {
+            openVod(session, "/late.m3u8", () -> {
+                instrumentation.runOnMainSync(() -> {
+                    var media = player().getMedia();
+                    try {
+                        assertEquals(
+                            "Prime the Java cache before the HLS tracks exist",
+                            0,
+                            media.getTrackCount()
+                        );
+                    } finally {
+                        media.release();
+                    }
+                });
+                metadataGate.countDown();
+            });
+            java.util.concurrent.atomic.AtomicBoolean ready = new java.util.concurrent.atomic.AtomicBoolean();
+            try {
+                await(() -> {
+                    instrumentation.runOnMainSync(() ->
+                        ready.set(
+                            player().getAudioTrack() >= 0 &&
+                                source.facts.value.origin == MediaFacts.Origin.PLAYING &&
+                                source.facts.value.width == 320 &&
+                                source.facts.value.height == 180 &&
+                                source.facts.value.audio().contains("AAC") &&
+                                source.facts.value.availableAudio.isEmpty()
+                        )
+                    );
+                    return ready.get();
+                }, 15000);
+            } catch (AssertionError failure) {
+                StringBuilder detail = new StringBuilder();
+                instrumentation.runOnMainSync(() -> {
+                    var media = player().getMedia();
+                    try {
+                        detail
+                            .append(" selectedAudio=")
+                            .append(player().getAudioTrack())
+                            .append(" selectedVideo=")
+                            .append(player().getVideoTrack())
+                            .append(" parsed=")
+                            .append(media.isParsed())
+                            .append(" cachedTracks=")
+                            .append(media.getTrackCount())
+                            .append(" label=")
+                            .append(source.label);
+                        for (int i = 0; i < media.getTrackCount(); i++) {
+                            var track = media.getTrack(i);
+                            detail.append(" [").append(track.id).append(" ").append(track.codec).append("]");
+                        }
+                    } finally {
+                        media.release();
+                    }
+                });
+                throw new AssertionError(detail.toString(), failure);
+            }
+            assertTrue(source.label, source.label.contains("AAC"));
+            assertFalse(source.label, source.label.contains("Audio unknown"));
+        } finally {
+            metadataGate.countDown();
+            metadataGate = null;
         }
     }
 

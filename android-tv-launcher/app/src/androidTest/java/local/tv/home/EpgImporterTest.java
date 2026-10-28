@@ -318,7 +318,8 @@ public class EpgImporterTest {
         long now = System.currentTimeMillis();
         String start = format.format(new Date(now - 10 * 60000)),
             stop = format.format(new Date(now + 20 * 60000));
-        assertEquals(now - 10 * 60000, EpgImporter.time(start), 1000);
+        // XMLTV timestamps have whole-second precision; compare longs, not JUnit's float overload.
+        assertEquals((now - 10 * 60000) / 1000L, EpgImporter.time(start) / 1000L);
 
         Set<String> wanted = db.guideKeys(EpgImporter.COUNTRY);
         assertTrue(wanted.contains("bbcone"));
