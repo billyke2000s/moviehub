@@ -4,6 +4,11 @@
 
 ### Films, series and live TV in one place.
 
+The optimization candidate packages ARM64 libraries for the S905X5M target, shares bounded
+one-minute TMDB catalogue replies and releases cache memory under pressure. UI, source providers,
+playback engines and update identity are preserved. Firmware must support ARM64 apps.
+Emulator builds explicitly select x86_64; see [TESTING.md](TESTING.md).
+
 **An Android TV launcher and streaming application for films, series and live television.**
 
 [![Android](https://img.shields.io/badge/Android-9%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/tv/)

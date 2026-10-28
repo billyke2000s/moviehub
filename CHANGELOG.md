@@ -1,3 +1,13 @@
+## Unreleased
+
+- Port the FreeLinks optimizations: ARM64-only APK packaging with pinned native stripping tools;
+  x86_64 remains an explicit emulator build option.
+- Coalesce and briefly cache identical TMDB catalogue requests within bounded memory.
+- Trim catalogue/artwork caches under memory pressure, retire idle artwork workers, cap disk
+  image reads and retain cache filenames with faster hex encoding.
+- Move two test-only legacy helpers into instrumentation source without changing migration.
+- Inspect release native architecture/debug sections and preserve existing emulator CI coverage.
+
 ## 1.0.16 (28 October 2026)
 
 - Rollback: same app as 1.0.12. Removes the 1.0.13 audio badges, 1.0.14 stuck-link switching and 1.0.15 runtime/metadata/Play sources changes at the owner's request, because 1.0.15 misbehaved. Published with a higher version number so installed TVs accept it.

@@ -29,7 +29,7 @@ jobs:
             - uses: android-actions/setup-android@v4
               with:
                   packages: "platform-tools"
-            - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'build-tools;36.0.0'
+            - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'build-tools;36.0.0' 'ndk;27.2.12479018'
             - uses: gradle/actions/setup-gradle@v5
               with:
                   gradle-version: "9.6.0"
@@ -45,7 +45,7 @@ jobs:
                   arch: x86_64
                   profile: tv_1080p
                   disable-animations: true
-                  script: bash android-tv-launcher/tests/run-live-vod-audit.sh 0 1 native:fourkhdhub,native:vixsrc,scrubs:rarefilmm_com,free99:levidia_ch
+                  script: ORG_GRADLE_PROJECT_moviehubAbi=x86_64 bash android-tv-launcher/tests/run-live-vod-audit.sh 0 1 native:fourkhdhub,native:vixsrc,scrubs:rarefilmm_com,free99:levidia_ch
             - uses: actions/upload-artifact@v6
               if: always()
               with:
