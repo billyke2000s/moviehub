@@ -15,7 +15,7 @@ import org.json.JSONObject;
 final class MediaMetadataProbe {
 
     static final int BYTE_LIMIT = 256 * 1024;
-    static final long TIME_LIMIT_MS = 2000;
+    static final long TIME_LIMIT_MS = 5000;
 
     static MediaFacts.Value read(SourceRepository.Source source, int preferred, AtomicBoolean cancelled) {
         return read(source, preferred, "eng,en", cancelled);
@@ -39,13 +39,13 @@ final class MediaMetadataProbe {
             relay = new ProviderRelay(transport);
             Budget budget = new Budget(cancelled);
             try (Data data = new Data(relay.url, budget)) {
-                stage = "header read";
+                stage = "header read";\n                android.util.Log.i("MovieHubHlsMeta", "root start");
                 byte[] prefix = new byte[65536];
                 int n = data.readAt(0, prefix, 0, prefix.length);
                 if (n <= 0) return MediaFacts.UNKNOWN;
                 String text = new String(prefix, 0, n, StandardCharsets.UTF_8).trim();
                 if (text.startsWith("\uFEFF")) text = text.substring(1);
-                if (text.startsWith("#EXTM3U")) return HlsMetadataProbe.read(
+                android.util.Log.i("MovieHubHlsMeta", "root end remaining=" + budget.timeout());\n                if (text.startsWith("#EXTM3U")) return HlsMetadataProbe.read(
                     relay.url,
                     text,
                     preferred,
