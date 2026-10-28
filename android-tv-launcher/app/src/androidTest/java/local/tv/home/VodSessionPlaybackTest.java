@@ -257,6 +257,25 @@ public final class VodSessionPlaybackTest {
         assertNull(activity.player);
     }
 
+    @Test
+    public void manuallySelectingFailedActiveSourceRetriesItsManagedResolver() throws Exception {
+        java.util.concurrent.atomic.AtomicBoolean ready = new java.util.concurrent.atomic.AtomicBoolean();
+        String url = "http://127.0.0.1:" + server.getLocalPort() + "/vod.mp4";
+        launch(
+            session(index -> {
+                if (!ready.get()) throw new IOException("Fixture source temporarily unavailable");
+                return new VodSources.Resolved(url, null);
+            })
+        );
+        await(() -> activity.status.getText().toString().contains("No working backup"));
+        ready.set(true);
+        instrumentation.runOnMainSync(() -> activity.vod.select(0));
+        await(
+            () -> activity.player != null && activity.player.isPlaying() && activity.player.getTime() > 300
+        );
+        assertEquals(0, activity.vod.activeIndex());
+    }
+
     @After
     public void cleanup() throws Exception {
         if (activity != null) {

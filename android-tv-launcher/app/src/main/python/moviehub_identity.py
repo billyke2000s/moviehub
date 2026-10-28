@@ -12,5 +12,10 @@ def matches(item, wanted):
     # Only actual provider filenames are evidence. The requested title is never substituted here.
     filename = str(item.get('filename') or item.get('file') or '')
     named = re.search(r'(?i)(?<![a-z0-9])s(\d{1,2})[ ._-]*e(\d{1,3})(?!\d)', filename)
-    if named and (int(named[1]), int(named[2])) != (season, episode): return False
+    if named is None:
+        named = re.search(r'(?i)(?<![a-z0-9])(\d{1,2})x(\d{1,3})(?!\d)', filename)
+    if named:
+        if (int(named[1]), int(named[2])) != (season, episode): return False
+        if re.match(r'(?i)^[ ._]*(?:e|-[ ._]*e?)(\d{1,3})(?!\d)', filename[named.end():]):
+            return False # combined/ranged episodes are not an exact single-episode match
     return True

@@ -9,9 +9,11 @@ class SessionTests(unittest.TestCase):
     def test_rejects_contradictory_episode_and_real_filename_evidence(self):
         wanted = dict(imdb='tt123', tmdb=4, season=2, episode=3)
         for item in [dict(imdb='tt456'), dict(tmdb=5), dict(season=1), dict(episode=4),
-                     dict(filename='Show.S02E04.mkv')]:
+                     dict(filename='Show.S02E04.mkv'), dict(filename='Show.2x04.mkv'),
+                     dict(filename='Show.S02E03E04.mkv'), dict(filename='Show.S02E03-04.mkv')]:
             with self.subTest(item=item): self.assertFalse(matches(item, wanted))
         self.assertTrue(matches(dict(filename='Show.S02E03.mkv'), wanted))
+        self.assertTrue(matches(dict(filename='Show.2x03.mkv'), wanted))
         self.assertTrue(matches({}, wanted)) # explicitly provider-lookup evidence, not invented filename proof
 
     def test_refresh_rediscovers_same_host_with_new_url_and_headers(self):

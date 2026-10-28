@@ -172,7 +172,13 @@ final class VodPlayback {
         if (!queue.select(index, !session.free)) return;
         session.pinned = !session.free;
         if (index == active) {
-            if (activity.player != null && activity.player.isPlaying()) queue.onPlaying();
+            if (activity.player != null && activity.player.isPlaying()) {
+                queue.onPlaying();
+                return;
+            }
+            boolean refresh = session.refresh != null && session.refreshable.test(index);
+            if (refresh) refreshed.add(index);
+            prepare(index, refresh, activity.playedPosition());
             return;
         }
         queue.exclude(active);
@@ -429,6 +435,7 @@ final class VodPlayback {
                 return;
             }
             manualSelection = false;
+            restartEdition = false;
             if (queue.failover() != null) prepare(queue.currentIndex());
             else if (session.searching.getAsBoolean()) waitingForSources = true;
             else unavailable();
@@ -456,6 +463,7 @@ final class VodPlayback {
     }
 
     private void cancelPreparation() {
+        restartEdition = false;
         if (!preparing) return;
         ticket++;
         preparing = false;
