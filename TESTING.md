@@ -4,7 +4,7 @@
 
 `VodLinkPolicyTest` covers short/unknown/truncated runtimes, incompatible editions, dynamic backup
 ranking, independent-host preference, inherited DASH BaseURL/templates, constrained substitutions,
-XML entity rejection and protected manifests. It runs in the existing core script.
+XML entity rejection, protected manifests, nesting and representation limits. It runs in the existing core script.
 `test_vod_sessions.py` covers contradictory provider identity, same-host rediscovery with rotated
 headers/URLs, failed refresh and explicit epoch expiry. The Python media fixture permits a known
 60-second short while rejecting it as a substitute for a 90-minute movie.
@@ -15,6 +15,10 @@ managed opening, one expired-link refresh and cookie-protected DASH audio/video 
 segment templates. The six-second DASH asset is regenerated from the existing synthetic playback
 fixture; see its README. Full existing normal/experimental playback, cancellation, seek, short-clip
 and series fixtures remain required. Live provider/physical-TV success is not implied by fixtures.
+
+`provider-engine/tools/verify.sh` also compiles the DASH helper and runs
+`ProviderDashTransportTest`: a real TCP relay round trip verifies inherited segment templates,
+initialization/media requests and cookie isolation across advertised origins.
 
 ## Continuous series and automatic playback
 

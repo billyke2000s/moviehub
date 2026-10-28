@@ -94,6 +94,20 @@ final class VodLinkPolicyTest {
         } catch (java.io.IOException expected) {
             checks++;
         }
+        String deep = "<MPD>" + "<Period>".repeat(70) + "</Period>".repeat(70) + "</MPD>";
+        try {
+            DashManifest.rewrite(deep, URI.create("https://example.com/a"), target -> target);
+            throw new AssertionError();
+        } catch (java.io.IOException expected) {
+            checks++;
+        }
+        String many = "<MPD><Period>" + "<Representation/>".repeat(129) + "</Period></MPD>";
+        try {
+            DashManifest.rewrite(many, URI.create("https://example.com/a"), target -> target);
+            throw new AssertionError();
+        } catch (java.io.IOException expected) {
+            checks++;
+        }
         System.out.println(checks + " VOD identity, duration, ranked recovery and DASH checks passed");
     }
 }

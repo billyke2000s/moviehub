@@ -14,6 +14,7 @@ final class ProviderRelay implements AutoCloseable {
     private final String secret = UUID.randomUUID().toString();
     private final Map<String, String> targets = new LinkedHashMap<>();
     private final Map<String, DashManifest.Template> dashTemplates = new LinkedHashMap<>();
+    private final Map<String, String> dashTargets = new LinkedHashMap<>();
     private final Set<String> playlists = new HashSet<>();
     private final Map<String, String> headers;
     private final String credentialAuthority;
@@ -163,14 +164,17 @@ final class ProviderRelay implements AutoCloseable {
 
     private synchronized String registerDash(String address) throws Exception {
         if (!address.contains("$")) return register(address, false);
+        String existing = dashTargets.get(address);
+        if (existing != null) return existing;
         ProviderUrls.playback(address);
         if (dashTemplates.size() >= 2048) throw new IOException("DASH grant limit");
         DashManifest.Template template = new DashManifest.Template(address);
         String token = UUID.randomUUID().toString();
         dashTemplates.put(token, template);
-        return (
-            "http://127.0.0.1:" + server.getLocalPort() + "/" + secret + "/" + token + "/" + template.local
-        );
+        String local =
+            "http://127.0.0.1:" + server.getLocalPort() + "/" + secret + "/" + token + "/" + template.local;
+        dashTargets.put(address, local);
+        return local;
     }
 
     private static String readLine(Reader reader) throws IOException {
@@ -568,6 +572,7 @@ final class ProviderRelay implements AutoCloseable {
             targets.clear();
             playlists.clear();
             dashTemplates.clear();
+            dashTargets.clear();
         }
     }
 }

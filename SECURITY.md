@@ -9,7 +9,8 @@ separate lookup/decoder deadlines bound abandoned refresh work. Each candidate h
 replacing its cookies cannot change requests belonging to the healthy player.
 
 DASH uses the existing loopback secret and exact resource grants. Template fields accept only
-numeric values or bounded representation identifiers; substituted targets still pass the public
+numeric values or bounded representation identifiers. XML input, nesting, representation count and
+inherited-template expansion have explicit memory limits; substituted targets still pass the public
 URL policy. Manifests cannot load XML entities, XLink references or DRM sessions. Cookies and
 Authorization remain restricted to their original authority, including across segment redirects.
 

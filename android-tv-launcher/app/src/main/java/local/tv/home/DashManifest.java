@@ -32,7 +32,14 @@ final class DashManifest {
         if (!"MPD".equals(document.getDocumentElement().getLocalName())) throw new IOException(
             "Invalid DASH manifest"
         );
-        walk(document.getDocumentElement(), origin, new LinkedHashMap<>(), grant);
+        walk(
+            document.getDocumentElement(),
+            origin,
+            new LinkedHashMap<>(),
+            grant,
+            new int[] { 2 * 1024 * 1024, 128 },
+            0
+        );
         StringWriter output = new StringWriter();
         TransformerFactory.newInstance()
             .newTransformer()
@@ -48,8 +55,15 @@ final class DashManifest {
         return result;
     }
 
-    private static void walk(Element element, URI inheritedBase, Map<String, Element> inherited, Grant grant)
-        throws Exception {
+    private static void walk(
+        Element element,
+        URI inheritedBase,
+        Map<String, Element> inherited,
+        Grant grant,
+        int[] budget,
+        int depth
+    ) throws Exception {
+        if (depth > 64) throw new IOException("DASH nesting limit");
         URI base = inheritedBase;
         List<Element> children = children(element);
         boolean baseFound = false;
@@ -65,7 +79,7 @@ final class DashManifest {
             if (Arrays.asList("SegmentTemplate", "SegmentList", "SegmentBase").contains(name)) {
                 // A new addressing mode replaces the inherited mode.
                 Element parent = segments.get(name);
-                Element merged = (Element) child.cloneNode(true);
+                Element merged = copy(child, budget);
                 if (parent != null) {
                     NamedNodeMap attrs = parent.getAttributes();
                     for (int i = 0; i < attrs.getLength(); i++) {
@@ -76,7 +90,7 @@ final class DashManifest {
                         );
                     }
                     if (children(merged).isEmpty()) for (Element part : children(parent))
-                        merged.appendChild(part.cloneNode(true));
+                        merged.appendChild(copy(part, budget));
                 }
                 segments.clear();
                 segments.put(name, merged);
@@ -90,11 +104,19 @@ final class DashManifest {
             else if (Arrays.asList("UTCTiming", "Location", "PatchLocation").contains(name)) {
                 // VOD manifests need no remote clock/manifest redirection outside the grant set.
                 element.removeChild(child);
-            } else if (child.getParentNode() == element) walk(child, base, segments, grant);
+            } else if (child.getParentNode() == element) walk(
+                child,
+                base,
+                segments,
+                grant,
+                budget,
+                depth + 1
+            );
         }
         if (representation) {
+            if (--budget[1] < 0) throw new IOException("DASH representation limit");
             for (Element segment : segments.values()) {
-                Element copy = (Element) segment.cloneNode(true);
+                Element copy = copy(segment, budget);
                 resources(copy, base, grant);
                 element.appendChild(copy);
             }
@@ -110,6 +132,25 @@ final class DashManifest {
         for (int i = 0; i < attributes.getLength(); i++) if (
             "http://www.w3.org/1999/xlink".equals(attributes.item(i).getNamespaceURI())
         ) throw new IOException("External DASH references unsupported");
+    }
+
+    private static Element copy(Element source, int[] budget) throws IOException {
+        budget[0] -= weight(source, 0);
+        if (budget[0] < 0) throw new IOException("DASH expansion limit");
+        return (Element) source.cloneNode(true);
+    }
+
+    private static int weight(Node node, int depth) throws IOException {
+        if (depth > 64) throw new IOException("DASH nesting limit");
+        int size = 64 + (node.getNodeValue() == null ? 0 : node.getNodeValue().length());
+        NamedNodeMap attributes = node.getAttributes();
+        if (attributes != null) for (int i = 0; i < attributes.getLength(); i++) size +=
+            attributes.item(i).getNodeValue().length() + attributes.item(i).getNodeName().length();
+        for (Node child = node.getFirstChild(); child != null; child = child.getNextSibling()) size += weight(
+            child,
+            depth + 1
+        );
+        return size;
     }
 
     private static void resources(Element element, URI base, Grant grant) throws Exception {
