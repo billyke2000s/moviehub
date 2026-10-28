@@ -1,5 +1,7 @@
 # Testing
 
+EpgImporterTest compares formatted XMLTV times as integer seconds. The unchanged main assertion selected JUnit’s float overload for epoch milliseconds: a deterministic 593 ms truncation reproduced a false 131,072 ms difference. Production EPG parsing is unchanged.
+
 Additional regressions require video/audio header requests to rendezvous before either response is sent, exhaust shared byte reservations concurrently and verify unused capacity returns, and select the second video track by ID without a first-track fallback. The actual Android live check at the previous candidate verified Vixsrc Archer S1E1 as 1920×1080, but separate English-audio headers exceeded the shared two-second deadline; that result motivated overlapping reads. It did not prove audio output or physical-TV playback.
 
 ## HLS and playing metadata correction — candidate
