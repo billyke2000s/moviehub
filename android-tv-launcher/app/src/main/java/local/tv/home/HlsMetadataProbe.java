@@ -5,9 +5,25 @@ import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.*;
 
 /** Inspects init/segment headers through the same relay and total probe budget; never decodes. */
 final class HlsMetadataProbe {
+
+    // At most two extra I/O tasks for the existing two source probes. No queue, decoder
+    // or per-source thread; idle workers disappear and all reads share the caller's budget.
+    private static final ThreadPoolExecutor AUDIO = new ThreadPoolExecutor(
+        0,
+        2,
+        10,
+        TimeUnit.SECONDS,
+        new SynchronousQueue<>(),
+        task -> {
+            Thread thread = new Thread(task, "hls-audio-headers");
+            thread.setDaemon(true);
+            return thread;
+        }
+    );
 
     static MediaFacts.Value read(
         String base,
@@ -22,6 +38,13 @@ final class HlsMetadataProbe {
         String location = base,
             audioBase = base,
             audioPlaylist = root.audioPlaylist;
+        Future<MediaFacts.Value> pendingAudio = audio(
+            audioBase,
+            audioPlaylist,
+            preferred,
+            audioLanguages,
+            budget
+        );
         try {
             for (int depth = 0; !media.variant.isEmpty() && depth < 3; depth++) {
                 location = resource(location, media.variant);
@@ -30,30 +53,63 @@ final class HlsMetadataProbe {
                 media = new HlsMediaInfo(next, preferred, audioLanguages);
                 if (media.declared.width > 0) declared = media.declared;
                 if (!media.audioPlaylist.isEmpty()) {
+                    if (pendingAudio != null) pendingAudio.cancel(true);
                     audioBase = location;
                     audioPlaylist = media.audioPlaylist;
+                    pendingAudio = audio(audioBase, audioPlaylist, preferred, audioLanguages, budget);
                 }
             }
+            MediaFacts.Value video = headers(location, media, budget);
+            MediaFacts.Value audio = audioPlaylist.isEmpty() ? video : MediaFacts.UNKNOWN;
+            if (pendingAudio != null) {
+                try {
+                    audio = pendingAudio.isDone()
+                        ? pendingAudio.get()
+                        : pendingAudio.get(budget.timeout(), TimeUnit.MILLISECONDS);
+                } catch (InterruptedException error) {
+                    Thread.currentThread().interrupt();
+                } catch (Exception error) {
+                    Diagnostics.recovered("HLS metadata audio", error);
+                }
+            }
+            return combine(declared, video, audio);
         } catch (Exception error) {
             Diagnostics.recovered("HLS metadata playlist", error);
             return declared;
+        } finally {
+            if (pendingAudio != null) pendingAudio.cancel(true);
         }
-        MediaFacts.Value video = headers(location, media, budget);
-        MediaFacts.Value audio = video;
-        if (!audioPlaylist.isEmpty()) {
-            audio = MediaFacts.UNKNOWN;
-            try {
-                String audioLocation = resource(audioBase, audioPlaylist);
-                HlsMediaInfo audioInfo = new HlsMediaInfo(
-                    playlist(audioLocation, budget),
-                    preferred,
-                    audioLanguages
-                );
-                audio = headers(audioLocation, audioInfo, budget);
-            } catch (Exception error) {
-                Diagnostics.recovered("HLS metadata audio", error);
-            }
+    }
+
+    private static Future<MediaFacts.Value> audio(
+        String base,
+        String path,
+        int preferred,
+        String languages,
+        MediaMetadataProbe.Budget budget
+    ) {
+        if (path.isEmpty()) return null;
+        try {
+            return AUDIO.submit(() -> {
+                try {
+                    String location = resource(base, path);
+                    HlsMediaInfo info = new HlsMediaInfo(playlist(location, budget), preferred, languages);
+                    return headers(location, info, budget);
+                } catch (Exception error) {
+                    Diagnostics.recovered("HLS metadata audio", error);
+                    return MediaFacts.UNKNOWN;
+                }
+            });
+        } catch (RejectedExecutionException busy) {
+            return null;
         }
+    }
+
+    private static MediaFacts.Value combine(
+        MediaFacts.Value declared,
+        MediaFacts.Value video,
+        MediaFacts.Value audio
+    ) {
         boolean dimensions = video.width > 0 && video.height > 0;
         boolean audioHeader = !audio.audioCodec.isEmpty();
         int bandwidth = declared.videoBitrate;

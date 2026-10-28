@@ -1,9 +1,10 @@
 # Status
 
+The live Android metadata audit verified 1920×1080 on Vixsrc Archer S1E1 but timed out before inspecting separate English audio. The follow-up overlaps those header requests under the same two-second/256 KiB limit; final live/CI results remain pending. Selected-video reporting no longer substitutes the first video track when the selected ID is absent.
+
 ## HLS and playing metadata correction — candidate
 
 The owner reported audio remaining unknown in the list and player, and HLS rows showing only an advertised ceiling. The correction adds playlist audio declarations and bounded media-header inspection for selected variants and separate audio, preserves independent header facts during partial native updates, and requests a supported local-only track-cache refresh after selections become available. UI rows and provider code are unchanged. CI must validate real TS/fMP4 metadata and an initially empty HLS playback track cache before completion is claimed. Unsupported key formats, byte-range or over-budget headers can still remain declarations or unknown; adaptive streams are labelled as checked variants rather than a promise of their playing resolution.
-
 
 ## VOD runtime, metadata and next episode — 1.0.15 published, 27 October 2026
 

@@ -1,9 +1,10 @@
 # Architecture
 
+Video and separate-audio metadata reads overlap: the existing two source workers can use at most two additional idle-expiring audio I/O workers, with no queue or extra decoder. Synchronized byte reservations prevent concurrent requests from overspending the same 256 KiB cap; the original two-second deadline is shared. Selected video facts and the Video panel use the native selected track ID, never the first-track convenience getter.
+
 ## HLS and incomplete playing metadata
 
 `HlsMediaInfo` parses quoted codec lists and matching audio rendition groups. `HlsMetadataProbe` follows the chosen variant and separate audio playlist through relay-granted URLs, then inspects initialization data or the first media segment with Android MediaExtractor. All resources share one two-second/256 KiB budget. Actual header dimensions replace playlist ceilings; rows identify the checked HLS variant because adaptive playback can choose another representation. Playlist bandwidth remains separately identified, and segment duration never becomes title runtime. Ordinary identity AES-128 initialization data/segment prefixes can be inspected with the playlist-advertised 16-byte key and the correct explicit or media-sequence IV; key reads share the same aggregate budget. Other key formats/sample encryption and byte-range media retain declarations. Audio rendition selection follows the configured audio-language preference before the playlist default. `MediaFacts` retains an independent inspection snapshot; partial native updates cannot erase it or transfer a bitrate across changed codecs/dimensions. Available header audio is labelled separately from selected audio. `VodQuality` requests one supported local-only parse refresh after native selections exist to invalidate LibVLC's early Java track cache; metadata collection no longer requires video metadata before reporting audio.
-
 
 ## VOD runtime, metadata and next-episode preparation
 

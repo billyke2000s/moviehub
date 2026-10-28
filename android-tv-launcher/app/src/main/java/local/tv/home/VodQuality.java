@@ -140,18 +140,14 @@ final class VodQuality {
                 refreshedMedia = media;
                 media.parseAsync(IMedia.Parse.ParseLocal, 1000);
             }
-            IMedia.VideoTrack video = null;
+            IMedia.VideoTrack video = selectedVideo(media, activity.player.getVideoTrack());
             IMedia.AudioTrack audio = null;
-            int videoId = activity.player.getVideoTrack(),
-                audioId = activity.player.getAudioTrack();
+            int audioId = activity.player.getAudioTrack();
             for (int i = 0; i < media.getTrackCount(); i++) {
                 IMedia.Track track = media.getTrack(i);
-                if (track instanceof IMedia.VideoTrack && track.id == videoId) video =
-                    (IMedia.VideoTrack) track;
                 if (track instanceof IMedia.AudioTrack && track.id == audioId) audio =
                     (IMedia.AudioTrack) track;
             }
-            if (video == null) video = activity.player.getCurrentVideoTrack();
             VodSourceFailover.Source source = sources.get(active);
             MediaFacts.Value nativeFacts = new MediaFacts.Value(
                 MediaFacts.Origin.PLAYING,
@@ -167,10 +163,23 @@ final class VodQuality {
             );
             source.facts.value = MediaFacts.combine(nativeFacts, source.facts.inspected);
             // Correct facts as soon as tracks exist; quality-claim notices retain their settling delay.
-            source.label = "Playing " + source.facts.value.describe() + " · " + source.provider;
+            source.label =
+                (source.facts.value.origin == MediaFacts.Origin.PLAYING ? "Playing " : "Source metadata · ") +
+                source.facts.value.describe() +
+                " · " +
+                source.provider;
         } finally {
             media.release();
         }
+    }
+
+    static IMedia.VideoTrack selectedVideo(IMedia media, int id) {
+        if (id < 0) return null;
+        for (int i = 0; i < media.getTrackCount(); i++) {
+            IMedia.Track track = media.getTrack(i);
+            if (track instanceof IMedia.VideoTrack && track.id == id) return (IMedia.VideoTrack) track;
+        }
+        return null;
     }
 
     /** The best confirmed quality already pointed out, 0 when none. */

@@ -1,3 +1,4 @@
+# Candidate 65804dc7d95d5760dc6d3df3d8070f8cddeb70bd — concurrent audio headers
 name: Check reported HLS headers on Android
 on:
   push:
