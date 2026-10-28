@@ -1,6 +1,6 @@
 <div align="center">
 
-
+Separate HLS video/audio headers are checked concurrently under one short, bounded metadata allowance. Checked variants remain distinct from adaptive playback selections; the player uses selected track IDs for its playing resolution.
 
 # MOVIEHUB
 

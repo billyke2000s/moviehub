@@ -8,6 +8,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -22,6 +23,7 @@ public class HlsMetadataProbeTest {
         keyRequests = new AtomicInteger();
     private ServerSocket server;
     private volatile boolean closed;
+    private volatile CountDownLatch concurrentHeaders;
 
     @Before
     public void start() throws Exception {
@@ -89,6 +91,13 @@ public class HlsMetadataProbeTest {
                     range = true;
                 }
             if (path.endsWith(".ts") || path.contains("init-")) segmentRequests.incrementAndGet();
+            CountDownLatch gate = concurrentHeaders;
+            if (gate != null && path.contains("metadata-init-")) {
+                gate.countDown();
+                if (!gate.await(1500, TimeUnit.MILLISECONDS)) throw new IOException(
+                    "Audio/video headers were serialized"
+                );
+            }
             int size = Math.max(0, to - from + 1);
             String type = path.endsWith("m3u8")
                 ? "application/vnd.apple.mpegurl"
@@ -141,7 +150,8 @@ public class HlsMetadataProbeTest {
     }
 
     @Test
-    public void separateFragmentedMp4AudioUsesItsOwnRealHeaderNotDeclared51() {
+    public void separateAudioAndVideoHeadersRunConcurrentlyAndOverrideDeclared51() {
+        concurrentHeaders = new CountDownLatch(2);
         put(
             "/master.m3u8",
             "#EXTM3U\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"audio\",DEFAULT=YES,LANGUAGE=\"en\",CHANNELS=\"6\",URI=\"audio.m3u8\"\n#EXT-X-STREAM-INF:BANDWIDTH=4500000,RESOLUTION=1920x1080,CODECS=\"avc1.640028,mp4a.40.2\",AUDIO=\"audio\"\nmedia.m3u8\n"
@@ -237,6 +247,100 @@ public class HlsMetadataProbeTest {
         assertEquals(1, facts.channels);
         assertEquals("eng", facts.language);
         assertEquals(1, keyRequests.get());
+    }
+
+    @Test
+    public void concurrentReservationsCannotOverspendAndReturnUnusedCapacity() throws Exception {
+        MediaMetadataProbe.Budget budget = new MediaMetadataProbe.Budget(new AtomicBoolean());
+        CountDownLatch attempted = new CountDownLatch(8);
+        ExecutorService workers = Executors.newFixedThreadPool(8);
+        AtomicInteger granted = new AtomicInteger();
+        java.util.List<Future<?>> tasks = new java.util.ArrayList<>();
+        try {
+            for (int i = 0; i < 8; i++) tasks.add(
+                workers.submit(() -> {
+                    MediaMetadataProbe.Budget.Permit permit = null;
+                    try {
+                        try {
+                            permit = budget.reserve(65536);
+                            granted.incrementAndGet();
+                        } catch (IOException limit) {
+                            // Four simultaneous 64 KiB reservations exhaust the shared cap.
+                        } finally {
+                            attempted.countDown();
+                        }
+                        if (!attempted.await(1, TimeUnit.SECONDS)) throw new AssertionError(
+                            "Workers did not rendezvous"
+                        );
+                        if (permit != null) permit.record(16384);
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        throw new AssertionError(interrupted);
+                    } finally {
+                        if (permit != null) permit.close();
+                    }
+                })
+            );
+            for (Future<?> task : tasks) task.get(1500, TimeUnit.MILLISECONDS);
+            assertEquals(4, granted.get());
+            assertEquals(65536, budget.received);
+            try (MediaMetadataProbe.Budget.Permit remaining = budget.reserve(MediaMetadataProbe.BYTE_LIMIT)) {
+                assertEquals(MediaMetadataProbe.BYTE_LIMIT - 65536, remaining.count);
+            }
+            try (MediaMetadataProbe.Budget.Permit returned = budget.reserve(MediaMetadataProbe.BYTE_LIMIT)) {
+                assertEquals(
+                    "Unused reservations must be returned",
+                    MediaMetadataProbe.BYTE_LIMIT - 65536,
+                    returned.count
+                );
+            }
+        } finally {
+            workers.shutdownNow();
+        }
+    }
+
+    @Test
+    public void playingResolutionUsesSelectedTrackIdAndNeverFallsBackToFirstTrack() {
+        org.videolan.libvlc.interfaces.IMedia.VideoTrack first = videoTrack(3, 854, 480);
+        org.videolan.libvlc.interfaces.IMedia.VideoTrack selected = videoTrack(9, 1920, 1080);
+        org.videolan.libvlc.interfaces.IMedia media = new org.videolan.libvlc.stubs.StubMedia(
+            null,
+            android.net.Uri.EMPTY
+        ) {
+            public int getTrackCount() {
+                return 2;
+            }
+
+            public Track getTrack(int index) {
+                return index == 0 ? first : selected;
+            }
+        };
+        assertSame(selected, VodQuality.selectedVideo(media, 9));
+        assertSame(first, VodQuality.selectedVideo(media, 3));
+        assertNull(VodQuality.selectedVideo(media, 99));
+        assertNull(VodQuality.selectedVideo(media, -1));
+    }
+
+    private org.videolan.libvlc.interfaces.IMedia.VideoTrack videoTrack(int id, int width, int height) {
+        return new org.videolan.libvlc.interfaces.IMedia.VideoTrack(
+            "h264",
+            "h264",
+            0,
+            id,
+            0,
+            0,
+            0,
+            "",
+            "",
+            height,
+            width,
+            1,
+            1,
+            25,
+            1,
+            0,
+            0
+        );
     }
 
     @Test

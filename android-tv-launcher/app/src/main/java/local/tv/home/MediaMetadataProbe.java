@@ -130,9 +130,44 @@ final class MediaMetadataProbe {
         final AtomicBoolean cancelled;
         final long deadline = System.nanoTime() + TIME_LIMIT_MS * 1_000_000;
         int received;
+        private int reserved;
 
         Budget(AtomicBoolean cancelled) {
             this.cancelled = cancelled;
+        }
+
+        synchronized Permit reserve(int requested) throws IOException {
+            timeout();
+            int count = Math.min(requested, BYTE_LIMIT - received - reserved);
+            if (count <= 0) throw new IOException("Metadata byte limit");
+            reserved += count;
+            return new Permit(count);
+        }
+
+        final class Permit implements AutoCloseable {
+
+            final int count;
+            private int remaining;
+
+            Permit(int count) {
+                this.count = count;
+                remaining = count;
+            }
+
+            void record(int count) {
+                synchronized (Budget.this) {
+                    remaining -= count;
+                    reserved -= count;
+                    received += count;
+                }
+            }
+
+            public void close() {
+                synchronized (Budget.this) {
+                    reserved -= remaining;
+                    remaining = 0;
+                }
+            }
         }
 
         int timeout() throws IOException {
@@ -178,45 +213,48 @@ final class MediaMetadataProbe {
             long chunkAt = (position / 65536) * 65536;
             byte[] chunk = chunks.get(chunkAt);
             if (chunk == null) {
-                if (budget.received >= BYTE_LIMIT) throw new IOException("Metadata byte limit");
-                int want = Math.min(65536, BYTE_LIMIT - budget.received);
-                HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
-                c.setConnectTimeout(timeout());
-                c.setReadTimeout(timeout());
-                c.setInstanceFollowRedirects(false);
-                c.setRequestProperty("Range", "bytes=" + chunkAt + "-" + (chunkAt + want - 1));
-                c.setRequestProperty("Accept-Encoding", "identity");
-                try {
-                    int status = c.getResponseCode();
-                    if (status != 200 && status != 206) throw new IOException("Metadata response rejected");
-                    if (status == 200 && chunkAt != 0) throw new IOException("Metadata range ignored");
-                    String range = c.getHeaderField("Content-Range");
-                    if (status == 206) {
-                        Matcher m = Pattern.compile("bytes (\\d+)-(\\d+)/(\\d+)").matcher(
-                            range == null ? "" : range
+                try (Budget.Permit permit = budget.reserve(65536)) {
+                    int want = permit.count;
+                    HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+                    c.setConnectTimeout(timeout());
+                    c.setReadTimeout(timeout());
+                    c.setInstanceFollowRedirects(false);
+                    c.setRequestProperty("Range", "bytes=" + chunkAt + "-" + (chunkAt + want - 1));
+                    c.setRequestProperty("Accept-Encoding", "identity");
+                    try {
+                        int status = c.getResponseCode();
+                        if (status != 200 && status != 206) throw new IOException(
+                            "Metadata response rejected"
                         );
-                        if (!m.matches() || Long.parseLong(m.group(1)) != chunkAt) throw new IOException(
-                            "Metadata range mismatch"
-                        );
-                        size = Long.parseLong(m.group(3));
-                    } else {
-                        size = c.getContentLengthLong();
-                    }
-                    ByteArrayOutputStream out = new ByteArrayOutputStream(want);
-                    try (InputStream input = c.getInputStream()) {
-                        byte[] bytes = new byte[8192];
-                        while (out.size() < want) {
-                            c.setReadTimeout(timeout());
-                            int n = input.read(bytes, 0, Math.min(bytes.length, want - out.size()));
-                            if (n < 0) break;
-                            out.write(bytes, 0, n);
-                            budget.received += n;
+                        if (status == 200 && chunkAt != 0) throw new IOException("Metadata range ignored");
+                        String range = c.getHeaderField("Content-Range");
+                        if (status == 206) {
+                            Matcher m = Pattern.compile("bytes (\\d+)-(\\d+)/(\\d+)").matcher(
+                                range == null ? "" : range
+                            );
+                            if (!m.matches() || Long.parseLong(m.group(1)) != chunkAt) throw new IOException(
+                                "Metadata range mismatch"
+                            );
+                            size = Long.parseLong(m.group(3));
+                        } else {
+                            size = c.getContentLengthLong();
                         }
+                        ByteArrayOutputStream out = new ByteArrayOutputStream(want);
+                        try (InputStream input = c.getInputStream()) {
+                            byte[] bytes = new byte[8192];
+                            while (out.size() < want) {
+                                c.setReadTimeout(timeout());
+                                int n = input.read(bytes, 0, Math.min(bytes.length, want - out.size()));
+                                if (n < 0) break;
+                                out.write(bytes, 0, n);
+                                permit.record(n);
+                            }
+                        }
+                        chunk = out.toByteArray();
+                        chunks.put(chunkAt, chunk);
+                    } finally {
+                        c.disconnect();
                     }
-                    chunk = out.toByteArray();
-                    chunks.put(chunkAt, chunk);
-                } finally {
-                    c.disconnect();
                 }
             }
             int available = (int) Math.min(count, chunk.length - (position - chunkAt));

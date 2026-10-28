@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Inspect separate HLS audio/video headers concurrently within the existing two-second/256 KiB allowance, and report selected video tracks rather than substituting the first track.
+
 - Read HLS audio codec/channel declarations and bounded actual media headers, including ordinary AES-128 HLS and preferred-language separate audio; show checked variant dimensions and keep playlist bandwidth distinct. Preserve useful header facts when native track updates are incomplete and refresh early VLC track snapshots without a network parse.
 
 ## 1.0.15 (27 October 2026)
