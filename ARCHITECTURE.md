@@ -1,6 +1,6 @@
 # Architecture
 
-CineStream candidate: 74 websites / 77 enabled adapters, with all fifteen added catalogue
+CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
 say Stream instead of Download. LinksMod navigation is excluded from file traversal so it cannot

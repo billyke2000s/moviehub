@@ -2,8 +2,9 @@
 
 ## Current published update
 
-MovieHub 1.0.18 (code 118), published 29 October 2026, includes both `armeabi-v7a` and
-`arm64-v8a` in one signed APK. It supersedes the ARM64-only 1.0.17 package. The package,
+MovieHub 1.0.19 (code 119), published 29 October 2026, includes the CineStream source/format
+additions and redirect corrections. It retains both `armeabi-v7a` and `arm64-v8a` in one signed APK
+and updates 1.0.18 with the same signing certificate. The package,
 certificate and feed paths are unchanged. [Release validation](../STATUS.md) records the
 public checksum and completed CI.
 
