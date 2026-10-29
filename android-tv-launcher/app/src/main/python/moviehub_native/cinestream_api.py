@@ -72,7 +72,8 @@ class Base:
             try:
                 yield from callback(name)
             except Exception as error:
-                client.host_result(type(self).__name__ + ' ' + str(name), type(error).__name__)
+                label = name.get('name', 'server') if isinstance(name, dict) else name[0] if isinstance(name, tuple) else name
+                client.host_result(type(self).__name__ + ' ' + str(label), type(error).__name__)
 
 
 class VaPlayer(Base):

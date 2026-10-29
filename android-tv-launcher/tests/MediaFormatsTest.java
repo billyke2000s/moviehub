@@ -27,7 +27,7 @@ public final class MediaFormatsTest {
         same("TrueHD", MediaFormats.codec("trhd", true));
         same("AC-3", MediaFormats.codec("a52 ", true));
         same(
-            "Reported: E-AC-3 · HEVC (H.265) · 10-bit · HDR10",
+            "Reported: E-AC-3 · 5.1 · HEVC (H.265) · 10-bit · HDR10",
             SourceFormats.describe("", "Movie.2020.DDP5.1.HEVC.10bit.HDR10")
         );
         same("5.1 · AVC (H.264)", SourceFormats.reported("Film 5.1 H.264"));

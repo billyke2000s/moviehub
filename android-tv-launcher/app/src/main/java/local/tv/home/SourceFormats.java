@@ -21,7 +21,10 @@ final class SourceFormats {
         add(out, release, "aac(?:2[ .]0)?", "AAC");
         add(out, release, "flac", "FLAC");
         add(out, release, "opus", "Opus");
-        add(out, release, "(?:7[ .]1|5[ .]1|2[ .]0)", null);
+        var channels = Pattern.compile(
+            "(?i)(?:(?<![a-z0-9])|(?<=ddp)|(?<=aac)|(?<=dd))(7[ .]1|5[ .]1|2[ .]0)(?![a-z0-9])"
+        ).matcher(release);
+        if (channels.find()) out.add(channels.group(1).replace(' ', '.'));
         add(out, release, "(?:hevc|[hx][ .]?265)", "HEVC (H.265)");
         add(out, release, "(?:avc|[hx][ .]?264)", "AVC (H.264)");
         add(out, release, "av1", "AV1");
