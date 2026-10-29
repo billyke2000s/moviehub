@@ -136,8 +136,10 @@ class Links:
         label = self.name + ' · ' + (backend or urlparse(url).hostname or 'file')
         headers = {'Referer': referer or url, 'User-Agent': USER_AGENT}
         headers.update(self.playback_headers)
+        display_info = re.sub(r'(^|·\s*)Download(?=\s+(?:Now|in)\b)', r'\1Stream',
+                              clean(info), flags=re.I)
         row = item(url, headers,
-                   label, quality(info), clean(info))
+                   label, quality(info), display_info)
         if row:
             row['filename'] = clean(info)
         return row

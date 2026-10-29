@@ -33,8 +33,9 @@ exchange returned `Unknown error`, so this is not a successful UHDMovies playbac
 
 Host-button labels such as Download File / Download FSL Server are copied website instructions,
 not a new app download feature. The new source-label path changes that word to Stream while
-preserving the server/file-size wording, actual media URL, headers and metadata. The same built-in
-player opens the source. Existing provider implementations, UI, source selection and ARM packaging
+preserving the server/file-size wording, actual media URL, headers and metadata. MLSBD-style
+Download Now / Download in instructions in the displayed information also say Stream; original
+filename evidence and reported quality remain intact. The same built-in player opens the source. Existing provider implementations, UI, source selection and ARM packaging
 remain unchanged.
 
 Bollyflix public-page research also exposed LinksMod's Home, signup/login, FAQ and policy links

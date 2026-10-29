@@ -325,3 +325,10 @@ class CineStreamChainTests(unittest.TestCase):
                    '<a href="high.mp4">Download in 1080p quality</a></p>')
         self.assertEqual(list(Mlsbd().movie_entries(doc)),
                          [('low.mp4', 'Download in 480p quality'), ('high.mp4', 'Download in 1080p quality')])
+        row = Links('Mlsbd').media('https://cdn.example/file.mp4', '',
+                                   'Download Now Epi-03 · Download in 720p quality',
+                                   'Download File 1.2 GB')
+        self.assertEqual(row['info'], 'Stream Now Epi-03 · Stream in 720p quality')
+        self.assertEqual(row['filename'], 'Download Now Epi-03 · Download in 720p quality')
+        self.assertEqual(row['quality'], '720p')
+        self.assertEqual(row['source'], 'Mlsbd · Stream File 1.2 GB')
