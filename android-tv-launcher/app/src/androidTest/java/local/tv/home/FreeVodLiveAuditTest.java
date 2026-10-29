@@ -140,6 +140,7 @@ public final class FreeVodLiveAuditTest {
             .put("season", -1)
             .put("episode", -1)
             .put("http", false)
+            .put("cinestreamNoExternalDecoder", true)
             .put(
                 "cinestreamAuditBackends",
                 InstrumentationRegistry.getArguments().getString("vodCineStreamBackends", "")

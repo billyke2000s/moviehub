@@ -319,3 +319,10 @@ and the observed cloud/original/direct actions are considered. These fields neve
 headers; login-only pages and unrelated hosts cannot trigger the exchange. Redirect string
 literals are decoded as data, without running JavaScript. Existing URL, budget, cancellation and
 media-validation guards remain in force. External-decoder audit restrictions are unchanged.
+
+## Expanded native-audit decoder restriction
+
+`cinestreamNoExternalDecoder` blocks enc-dec.app before networking within the individual native
+adapter's isolated scope, then restores the previous scope. The full native audit sets this flag;
+normal production queries default to the existing behavior. This retains the prior prohibition on
+unattended opaque provider-response uploads when expanding beyond the original sixteen routes.

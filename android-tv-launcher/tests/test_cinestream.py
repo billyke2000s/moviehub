@@ -28,6 +28,20 @@ class CineStreamTests(unittest.TestCase):
         response._content = body.encode()
         return response
 
+    def test_native_audit_blocks_external_decoder_before_network_and_restores_scope(self):
+        class Fixture(api.Base):
+            def extract(self, query):
+                api.request(api.DECODER + '/fixture', post='provider-response')
+                return []
+        provider = Fixture()
+        provider.cinestream_no_external_decoder = True
+        with patch.object(client, 'request') as network:
+            with self.assertRaises(PermissionError):
+                provider.sources('{}', [])
+            network.assert_not_called()
+            api.request('https://catalogue.example/public')
+            network.assert_called_once()
+
     def key(self, source, series=False):
         key = source.movie('tt1234', '123', 'A Film', 'A Film', [], '2020')
         return source.episode(key, 'tt1234', '123', '', 'Part', '', '2', '3') if series else key
@@ -304,8 +318,12 @@ class CineStreamTests(unittest.TestCase):
         provider = api.AllMovieLand()
         def request(url, **kw):
             if 'player.js' in url:
-                return "const AwsIndStreamDomain = 'https://player.example';"
+                self.assertEqual(url, provider.base_link + '/player.js')
+                self.assertEqual(kw['output'], 'extended')
+                return ("const AwsIndStreamDomain = 'https://player.example';", {}, {}, '',
+                        'https://current-catalogue.example/player.js')
             if '/play/' in url:
+                self.assertEqual(kw['referer'], 'https://current-catalogue.example/')
                 return 'var playlist = {"file":"/catalogue","key":"issued"};'
             if url.endswith('/catalogue'):
                 return json.dumps([dict(id='1', folder=[]), dict(id='2', folder=[dict(episode='3', folder=[dict(file='right', title='English')])])])
@@ -316,6 +334,7 @@ class CineStreamTests(unittest.TestCase):
             rows = provider.sources(self.key(provider, True), [])
         self.assertEqual(len(rows), 1)
         self.assertNotIn('X-CSRF', rows[0]['url'])
+        self.assertIn('Referer=https%3A%2F%2Fcurrent-catalogue.example%2F', rows[0]['url'])
 
     def test_doo_ajax_uses_exact_episode_and_skips_trailers(self):
         from moviehub_native.cinestream_embeds import Multimovies
