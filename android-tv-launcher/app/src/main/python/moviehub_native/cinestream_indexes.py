@@ -75,7 +75,8 @@ class Fibwatch(DownloadCatalogue):
     def extract(self, q):
         query = self.base_link + '/search?' + urlencode({'keyword': q['title'], 'page_id': 1})
         doc, actual, _ = self.page(query)
-        resolver = Links(self.name)
+        resolver = Links(self.name, {'Referer': 'https://urlshortlink.top/',
+                                     'Origin': 'https://urlshortlink.top'})
         for card in doc.all('div', cls='video-thumb'):
             anchor = card.first('a')
             label = card.first('p', cls='hptag')
@@ -84,6 +85,8 @@ class Fibwatch(DownloadCatalogue):
             if anchor is None or not title_matches(title, q['title']):
                 continue
             detail, final, _ = self.page(absolute(actual, anchor.attrs.get('href') or ''), actual)
+            if not self.verified(detail, q):
+                continue
             identity = detail.first('input', id='video-id')
             if identity is None:
                 continue

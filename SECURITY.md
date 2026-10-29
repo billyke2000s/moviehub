@@ -6,8 +6,11 @@ ordinary redirects are not grounds for removal. Eleven current roots exposed fil
 Vega exposed its gateway, TopMovies returned 503, and Zink/M4U returned browser challenges.
 M4U .lat contributes TV only to avoid duplicating existing movie adapters. Normal discovery now
 contains 74 websites / 77 adapters (39 added adapter protocols, three separately pending).
-Local validation: 131 Python tests and 34 core suites / 1,167 checks pass. Live extraction and
-native playback validation for these fifteen chains is pending; accessible HTML is not playback.
+Local validation: 136 Python tests and 34 core suites / 1,167 checks pass. At revision 89d2d80,
+Inception extraction yielded two HDHub4u and four SkyMovies sources; Breaking Bad S1E1 yielded
+twelve HindMoviez sources. The existing native player verified three SkyMovies Inception sources
+(video/audio, runtime and midpoint seek), recording relay socket errors. Other live checks and
+validation of subsequent parser corrections remain pending; accessible HTML is not playback.
 The preceding revision 7a38417 passed all six Android jobs in run 40869288216; its separate Vidy
 series audit failed and is not evidence of success for this follow-up.
 

@@ -5,7 +5,7 @@ the established source implementations or treat an intermediate page as media.
 """
 import json
 import re
-from urllib.parse import quote, urlencode, urljoin, urlparse
+from urllib.parse import parse_qs, quote, urlencode, urljoin, urlparse
 
 from moviehub_compat import client
 from .cinestream_api import Base, request
@@ -14,6 +14,9 @@ from .cinestream_links import CHALLENGE, Links, absolute, clean
 
 
 def matches_number(label, kind, number):
+    compact = re.search(r'\bS0*(\d+)E0*(\d+)(?![\d.])\b', label, re.I)
+    if compact:
+        return int(compact[1 if kind == 'season' else 2]) == int(number)
     names = r'(?:Season|S)' if kind == 'season' else r'(?:Episode|Ep|E)'
     return bool(re.search(r'\b' + names + r'\s*[-:]?\s*0*' + re.escape(str(number)) + r'(?![\d.])\b', label, re.I))
 
@@ -35,6 +38,9 @@ def links(node):
 
 
 def download_anchor(anchor):
+    parsed = urlparse(anchor.attrs.get('href') or '')
+    if '/category/' in parsed.path or set(parse_qs(parsed.query)) & {'s', 'search', 'keyword'}:
+        return False
     return bool(re.search(r'\b(?:480p|720p|1080p|2160p|4K|Download|Server|G-Drive|V-Cloud|Watch)\b',
                           anchor.text(), re.I))
 
@@ -107,6 +113,9 @@ class DownloadCatalogue(Base):
                    for label in titles)
 
     def content(self, doc):
+        body = doc.first('main', cls='page-body') or doc.first('article', cls='post-content')
+        if body is not None:
+            return body
         for cls in ('thecontent', 'entry-content', 'wp-content', 'single_post', 'mod', 'post-content'):
             found = doc.first('div', cls=cls)
             if found is not None:
@@ -137,7 +146,7 @@ class DownloadCatalogue(Base):
         season_ok = matches_number(page_title, 'season', q['season'])
         for heading in content.all('h2,h3,h4,h5,p'):
             label = heading.text()
-            if re.search(r'\b(?:Season\s*\d+|S\d{1,2}\b)', label, re.I):
+            if re.search(r'\b(?:Season\s*\d+|S\d{1,2}(?:E\d+|\b))', label, re.I):
                 season_ok = matches_number(label, 'season', q['season'])
             if not season_ok or not matches_number(label, 'episode', q['episode']):
                 continue

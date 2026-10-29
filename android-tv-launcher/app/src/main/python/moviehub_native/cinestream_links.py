@@ -69,8 +69,9 @@ def quality(filename):
 
 class Links:
     """One bounded, same-session traversal for a catalogue lookup."""
-    def __init__(self, name):
+    def __init__(self, name, playback_headers=None):
         self.name = name
+        self.playback_headers = dict(playback_headers or {})
         self.seen = set()
         self.blocked = set()
         self.pages = 0
@@ -104,7 +105,9 @@ class Links:
 
     def media(self, url, referer, info='', backend=''):
         label = self.name + ' · ' + (backend or urlparse(url).hostname or 'file')
-        row = item(url, {'Referer': referer or url, 'User-Agent': USER_AGENT},
+        headers = {'Referer': referer or url, 'User-Agent': USER_AGENT}
+        headers.update(self.playback_headers)
+        row = item(url, headers,
                    label, quality(info), clean(info))
         if row:
             row['filename'] = clean(info)
@@ -160,6 +163,9 @@ class Links:
         header = doc.first('div', cls='card-header') or doc.first('h1', cls='file-title')
         if metadata or header:
             info = clean(' · '.join(metadata) if metadata else header.text())
+        size = doc.first('i', id='size')
+        if size is not None and size.text():
+            info = clean(info + ' · ' + size.text())
         targets = []
 
         def add(value, direct=False, label=''):
@@ -187,6 +193,7 @@ class Links:
                 if match:
                     add(match[1])
 
+        current = url
         form = landing_form(doc)
         if form is not None:
             # Hrefli's two ordinary POST forms retain their issued cookie session.
@@ -218,7 +225,19 @@ class Links:
                         if match:
                             add(absolute(current, match[1].strip('\'"')))
 
-        if host_matches(host, ('gdflix.', 'gdlink.', 'driveleech.', 'driveseed.', 'hubcloud.', 'vcloud.')):
+        # Current lp-land chains populate their final ordinary link after the
+        # forms. Decode only the literal JSON string, never surrounding scripts.
+        if 'lp-btn-go' in page:
+            final_link = re.search(r"bg\.setAttribute\(\s*'href'\s*,\s*(\"(?:\\.|[^\"\\])*\")\s*\)", page)
+            if final_link:
+                add(same_origin(current, json.loads(final_link[1])))
+
+        if (host_matches(host, ('gdflix.', 'gdlink.', 'driveleech.', 'driveseed.', 'hubcloud.', 'vcloud.')) or
+                (urlparse(url).path == '/hubcloud.php' and
+                 parse_qs(urlparse(url).query).get('host', [''])[0] in ('hubcloud', 'vcloud'))):
+            pixel = re.search(r"\bvar\s+pxl\s*=\s*['\"]([^'\"]+)['\"]", page)
+            if pixel:
+                add(pixel[1])
             for anchor in doc.all('a'):
                 address = anchor.attrs.get('href') or ''
                 label = anchor.text()
@@ -283,6 +302,8 @@ class Links:
                 continue
             cls = anchor.attrs.get('class') or ''
             label = anchor.text()
+            if re.search(r'Telegram|Login|Tutorial|Dashboard', label, re.I):
+                continue
             is_host = host_matches(urlparse(urljoin(url, address)).hostname or '', HOSTS)
             if MEDIA.search(urlparse(address).path):
                 add(address, True)
@@ -298,7 +319,7 @@ class Links:
         # Fibwatch's player/iframe data. Literal packed strings are not executed.
         for frame in doc.all('iframe'):
             address = frame.attrs.get('src') or ''
-            if address and not re.search(r'youtube|googletag|doubleclick', address, re.I):
+            if address and not re.search(r'youtube|googletag|doubleclick|a-ads\.com|adsterra|effectivegatecpm', address, re.I):
                 add(address)
         for match in re.finditer(r'https?://[a-zA-Z0-9.-]+/[^\s"\'`<>]+\.(?:m3u8|mp4|mkv)(?:\?[^\s"\'`<>]*)?', page):
             if MEDIA.search(urlparse(match[0]).path):

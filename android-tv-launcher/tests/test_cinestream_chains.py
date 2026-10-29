@@ -152,10 +152,10 @@ class CineStreamChainTests(unittest.TestCase):
         from moviehub_native.cinestream_indexes import Fibwatch
         provider = Fibwatch()
         search = tree('<div class="video-thumb"><a href="/show"><p class="hptag">A Film 2020</p></a></div>')
-        detail = tree('<input id="video-id" value="show">')
+        detail = tree('<h1>A Film 2020</h1><input id="video-id" value="show">')
         with patch.object(provider, 'page', side_effect=[(search, provider.base_link, ''), (detail, provider.base_link, '')]), \
                 patch('moviehub_native.cinestream_indexes.get', return_value={'episodes': [{'title': 'S01E01', 'url': '/wrong'}]}) as request:
-            self.assertEqual(list(provider.extract({'title': 'A Film', 'year': '2020', 'season': '2', 'episode': '3'})), [])
+            self.assertEqual(list(provider.extract({'title': 'A Film', 'year': '2020', 'imdb': 'tt1234', 'season': '2', 'episode': '3'})), [])
         self.assertEqual(request.call_count, 1)
 
     def test_m4u_tv_uses_exact_episode_and_keeps_csrf_out_of_playback_headers(self):
@@ -170,3 +170,47 @@ class CineStreamChainTests(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertNotIn('issued', rows[0]['url'])
         self.assertNotIn('_token', rows[0]['url'])
+
+    def test_fibwatch_playback_profile_does_not_change_other_chain_headers(self):
+        from urllib.parse import parse_qs
+        headers = {'Referer': 'https://urlshortlink.top/', 'Origin': 'https://urlshortlink.top'}
+        fib = list(Links('Fibwatch', headers).follow('https://cdn.example/file.mp4', 'https://fibwatch.art/'))[0]
+        other = list(Links('Other').follow('https://cdn.example/file.mp4', 'https://other.example/'))[0]
+        self.assertEqual(parse_qs(fib['url'].split('|')[1])['Origin'], ['https://urlshortlink.top'])
+        self.assertNotIn('Origin', parse_qs(other['url'].split('|')[1]))
+
+    def test_moviesdrive_downloads_outside_intro_block_are_retained(self):
+        from moviehub_native.cinestream_downloads import MoviesDrive
+        doc = tree('<article class="post-content"><main class="page-body">'
+                   '<div class="entry-content"><h4>Inception 480p</h4><a href="/?s=480p">480p</a></div>'
+                   '<div><h5>Inception 2010 720p HEVC</h5><p><a href="https://mdrive.lol/archive/id">Download 720p</a></p></div>'
+                   '</main></article>')
+        provider = MoviesDrive()
+        self.assertEqual(list(provider.movie_entries(provider.content(doc))),
+                         [('https://mdrive.lol/archive/id', 'Inception 2010 720p HEVC')])
+
+    def test_current_final_landing_link_is_decoded_without_executing_script(self):
+        rows, calls = self.run_chain({
+            ('https://links.example/start', False): '<a id="lp-btn-go" href="#">Go to download</a><script>bg.setAttribute(\'href\',"https:\\/\\/links.example\\/?lp_go=issued");</script>',
+            ('https://links.example/?lp_go=issued', False): (302, {'Location': 'https://cdn.example/file.mkv'}, ''),
+        })
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(len(calls), 2)
+
+    def test_advertised_hubcloud_generator_exposes_extensionless_file_servers(self):
+        url = 'https://gamerxyt.example/hubcloud.php?host=hubcloud&id=public'
+        rows, calls = self.run_chain({
+            (url, False): '<div class="card-header">Film 1080p HEVC.mkv</div><i id="size">2.5 GB</i><h2><a href="https://cdn.example/opaque-file?signature=issued">Download [FSL Server]</a></h2>',
+        }, start=url)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(len(calls), 1)
+        self.assertIn('HEVC', rows[0]['info'])
+        self.assertIn('2.5 GB', rows[0]['info'])
+
+    def test_compact_episode_labels_retain_both_season_and_episode(self):
+        provider = DownloadCatalogue()
+        doc = tree('<h4>S01E03 720p</h4><a href="wrong.mp4">Download</a>'
+                   '<h4>S02E03 1080p</h4><a href="right.mp4">Download</a>'
+                   '<h4>S02E30 1080p</h4><a href="wrong2.mp4">Download</a>')
+        self.assertEqual(list(provider.episode_entries(doc, {'season': '2', 'episode': '3'})),
+                         [('right.mp4', 'S02E03 1080p')])
