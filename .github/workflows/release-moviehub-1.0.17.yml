@@ -1,0 +1,57 @@
+name: Publish MovieHub 1.0.17
+# One-off owner-authorized dispatch of the standard publisher; signing is not duplicated.
+on:
+    push:
+        branches: [main]
+        paths: [".github/workflows/release-moviehub-1.0.17.yml"]
+permissions:
+    contents: read
+    checks: read
+    actions: write
+jobs:
+    dispatch:
+        if: github.repository == 'billyke2000s/moviehub'
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - name: Require the combined candidate and dispatch the standard publisher
+              uses: actions/github-script@v8
+              with:
+                  script: |
+                      const candidate = 'b4ccff0227f2bf44b78d064ba44901daa6129bc2';
+                      const {owner, repo} = context.repo;
+                      const {data: comparison} = await github.rest.repos.compareCommits({
+                        owner, repo, base: candidate, head: context.sha
+                      });
+                      if (!['ahead', 'identical'].includes(comparison.status)) {
+                        throw new Error('Release does not contain the tested candidate');
+                      }
+                      const metadata = new Set(['CHANGELOG.md', '.github/workflows/release-moviehub-1.0.17.yml']);
+                      if (comparison.files.some(file => !metadata.has(file.filename))) {
+                        throw new Error('Release contains changes beyond the tested app and release metadata');
+                      }
+                      const required = ['apk', 'device-tests', 'experimental-device-tests', 'free-vod-live-probe', 'vod-recovery-tests'];
+                      let passed = false;
+                      for (let attempt = 0; attempt < 72; attempt++) {
+                        const {data: checks} = await github.rest.checks.listForRef({
+                          owner, repo, ref: candidate, filter: 'latest', per_page: 100
+                        });
+                        const selected = required.map(name => checks.check_runs.find(check => check.name === name));
+                        if (selected.some(check => check?.status === 'completed' && check.conclusion !== 'success')) {
+                          throw new Error('A required combined-candidate check failed');
+                        }
+                        if (selected.every(check => check?.conclusion === 'success')) {
+                          passed = true;
+                          break;
+                        }
+                        core.info('Waiting for combined app validation: ' + required.filter((name, i) => selected[i]?.conclusion !== 'success').join(', '));
+                        await new Promise(resolve => setTimeout(resolve, 15000));
+                      }
+                      if (!passed) throw new Error('Combined candidate validation did not complete');
+                      const {data: main} = await github.rest.repos.getBranch({owner, repo, branch: 'main'});
+                      if (main.commit.sha !== context.sha) throw new Error('Main moved before release dispatch');
+                      await github.rest.actions.createWorkflowDispatch({
+                        owner, repo, workflow_id: 'publish-android-launcher.yml', ref: 'main',
+                        inputs: {version_code: '117', version_name: '1.0.17'}
+                      });
+                      core.notice('Dispatched standard Android publisher for MovieHub 1.0.17 (117)');
