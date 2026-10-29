@@ -80,6 +80,7 @@ class Links:
         self.playback_headers = dict(playback_headers or {})
         self.seen = set()
         self.blocked = set()
+        self.origin_cookies = {}
         self.pages = 0
 
     def read(self, url, referer, post=None, json_body=False, ajax=True):
@@ -91,6 +92,14 @@ class Links:
             raise ValueError('Redirect page budget')
         self.pages += 1
         headers = {'Referer': referer or url, 'User-Agent': USER_AGENT}
+        scoped = self.origin_cookies.get((urlparse(url).scheme, host))
+        if scoped:
+            session = http_session()
+            cookie = (client.requests.cookies.get_cookie_header(
+                session.cookies, client.requests.Request('GET', url).prepare())
+                if session is not None else '')
+            headers['Cookie'] = '; '.join(value for value in
+                                         (cookie, '; '.join(k + '=' + v for k, v in scoped.items())) if value)
         if post is not None:
             headers['Origin'] = urlparse(url).scheme + '://' + host
             if ajax:
@@ -218,10 +227,10 @@ class Links:
                 form = landing_form(tree(body))
                 page = body
             go = re.search(r'\?go=([^\s"\']+)', page)
-            if go and http_session() is not None:
-                # Cookie is scoped to the issuing host, never copied to media hosts.
-                http_session().cookies.set(go[1], fields.get('_wp_http2', ''),
-                                           domain=urlparse(current).hostname, path='/')
+            if go:
+                # JS-issued wrapper cookies remain on their exact origin and
+                # never enter the media-header/session-cookie export path.
+                self.wrapper_cookie(current, go[1], fields.get('_wp_http2', ''))
                 add(absolute(current, '?' + urlencode({'go': go[1]})))
             else:
                 for node in tree(page).all('meta'):
@@ -235,7 +244,13 @@ class Links:
         if 'lp-btn-go' in page:
             final_link = re.search(r"bg\.setAttribute\(\s*'href'\s*,\s*(\"(?:\\.|[^\"\\])*\")\s*\)", page)
             if final_link:
-                add(same_origin(current, json.loads(final_link[1])))
+                target = same_origin(current, json.loads(final_link[1]))
+                key = parse_qs(urlparse(target).query).get('lp_go', [''])[0]
+                for cookie in re.finditer(r'\bsc\(\s*("(?:\\.|[^"\\])*")\s*,\s*("(?:\\.|[^"\\])*")\s*,\s*\d+\s*\)', page):
+                    name, value = json.loads(cookie[1]), json.loads(cookie[2])
+                    if name == key:
+                        self.wrapper_cookie(current, name, value)
+                add(target)
 
         if (host_matches(host, ('gdflix.', 'gdlink.', 'driveleech.', 'driveseed.', 'hubcloud.', 'vcloud.')) or
                 (urlparse(url).path == '/hubcloud.php' and
@@ -346,3 +361,9 @@ class Links:
                 yield from self.follow(target, url, info, depth + 1)
         if not targets:
             client.host_result(self.name + ' · ' + host, 'no_advertised_file_or_supported_terminal')
+
+    def wrapper_cookie(self, url, name, value):
+        if not re.fullmatch(r'[A-Za-z0-9_-]{1,128}', name) or not re.fullmatch(r'[A-Za-z0-9+/=_-]{1,8000}', value):
+            raise ValueError('Invalid wrapper cookie literal')
+        parsed = urlparse(url)
+        self.origin_cookies.setdefault((parsed.scheme, parsed.netloc), {})[name] = value

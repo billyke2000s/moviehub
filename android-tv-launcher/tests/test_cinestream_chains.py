@@ -246,3 +246,18 @@ class CineStreamChainTests(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertFalse(rows[0]['direct'])
         self.assertEqual(len(calls), 1)
+
+    def test_lp_go_sends_javascript_issued_cookie_only_to_exact_origin(self):
+        rows, calls = self.run_chain({
+            ('https://links.example/start', False): '<a id="lp-btn-go" href="#">Go to download</a><script>sc("lp-issued","opaquePayload==",5);bg.setAttribute(\'href\',"https://links.example/?lp_go=lp-issued");</script>',
+            ('https://links.example/?lp_go=lp-issued', False): (302, {'Location': 'https://cdn.example/file.mkv'}, ''),
+        })
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(calls[1][1]['Cookie'], 'lp-issued=opaquePayload==')
+        self.assertNotIn('opaquePayload', rows[0]['url'])
+        resolver = Links('Fixture')
+        resolver.wrapper_cookie('https://links.example/start', 'lp-issued', 'opaquePayload==')
+        self.assertNotIn(('https', 'cdn.links.example'), resolver.origin_cookies)
+        for value in ('bad; cookie=leak', 'bad\r\nCookie: leak'):
+            with self.assertRaises(ValueError):
+                resolver.wrapper_cookie('https://links.example/', 'lp-issued', value)

@@ -8,7 +8,7 @@ ordinary redirects are not grounds for removal. Eleven current roots exposed fil
 Vega exposed its gateway, TopMovies returned 503, and Zink/M4U returned browser challenges.
 M4U .lat contributes TV only to avoid duplicating existing movie adapters. Normal discovery now
 contains 74 websites / 77 adapters (39 added adapter protocols, three separately pending).
-Local validation: 139 Python tests and 34 core suites / 1,167 checks pass. At revision 89d2d80,
+Local validation: 140 Python tests and 34 core suites / 1,167 checks pass. At revision 89d2d80,
 Inception extraction yielded two HDHub4u and four SkyMovies sources; Breaking Bad S1E1 yielded
 twelve HindMoviez sources. The existing native player verified three SkyMovies Inception sources
 and all twelve HindMoviez episode sources (video/audio, runtime and midpoint seek), recording
@@ -63,8 +63,18 @@ a following episode. An intervening guarded Inception check at 4f2a6bd returned 
 c8c42cc check returned two, with other hosts refusing/timing out. MLSBD movie sections now allow
 the observed Download Links subheading, and plain mirror lists reuse existing exact host patterns.
 Ordinary landing forms no longer carry AJAX-only headers. Stage-only diagnostics record recognized
-form IDs and literal-final-link presence without response bodies or tokens. Final checks for these
-corrections remain pending.
+form IDs and literal-final-link presence without response bodies or tokens. The final 1,082-byte UHD page was subsequently identified as Session expired. Its preceding
+page issues the redirect payload through a literal sc(name,value,minutes) cookie call. The new
+resolver now sends that cookie only to the exact issuing origin; the value is never exported to
+media headers or logged. The fix has an explicit isolation/header-injection regression. Final
+checks for this correction remain pending.
+
+The completed 89d2d80 native movie group adds one HDHub4u Inception pass (1280×536,
+8,888 seconds, English audio, midpoint decode) and one failed HDHub4u source. That checkpoint's
+verified total is sixteen: twelve HindMoviez episodes, three SkyMovies movies and one HDHub4u
+movie. Six additional sources decoded video/audio but had no verified runtime/midpoint (five
+HindMoviez and one Bollyflix Spider-Man); three attempts had no decoded video. These counts are
+for that checkpoint and the named test titles, not all available site content.
 
 The sections below retain earlier revision evidence; their original counts and unimplemented
 lists describe that earlier checkpoint, superseded by this follow-up where explicitly stated.
