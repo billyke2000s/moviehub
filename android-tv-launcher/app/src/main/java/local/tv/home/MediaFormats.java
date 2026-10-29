@@ -1,6 +1,7 @@
 package local.tv.home;
 
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 /** Display names for explicit codec identifiers; no inference from resolution or channel count. */
 final class MediaFormats {
@@ -10,7 +11,10 @@ final class MediaFormats {
     static String codec(String value, boolean audio) {
         if (value == null) return "";
         String c = value.trim().toLowerCase(Locale.ROOT);
+        var tag = Pattern.compile("\\(([a-z0-9]{3,4})\\)$").matcher(c);
+        if (tag.find()) c = tag.group(1);
         if (audio) {
+            if (c.contains("e-ac-3") || c.contains("e-ac3")) return "E-AC-3";
             if (c.equals("eac3") || c.equals("e-ac-3") || c.equals("ec-3")) return "E-AC-3";
             if (c.equals("a52") || c.equals("ac3") || c.equals("ac-3")) return "AC-3";
             if (c.equals("mp4a") || c.equals("aac")) return "AAC";
@@ -26,10 +30,26 @@ final class MediaFormats {
             return "";
         }
         if (
-            c.equals("hevc") || c.equals("h265") || c.equals("hvc1") || c.equals("hev1")
+            c.contains("hevc") || c.contains("h265") || c.contains("hvc1") || c.contains("hev1")
         ) return "HEVC (H.265)";
-        if (c.equals("h264") || c.equals("avc1") || c.equals("avc3")) return "AVC (H.264)";
+        if (c.contains("h264") || c.contains("avc")) return "AVC (H.264)";
         return VideoDetails.codecName(c);
+    }
+
+    static String fourcc(int code) {
+        StringBuilder value = new StringBuilder(4);
+        for (int i = 0; i < 4; i++) {
+            int ch = (code >>> (8 * i)) & 255;
+            if (ch < 32 || ch > 126) return "";
+            value.append((char) ch);
+        }
+        return value.toString();
+    }
+
+    static String append(String name, int id, boolean audio, int fourcc, String codec, String original) {
+        String format = codec(fourcc(fourcc), audio);
+        if (format.isEmpty()) return append(name, id, audio, codec, original);
+        return id < 0 ? "Off" : name + " · " + format;
     }
 
     static String append(String name, int id, boolean audio, String codec, String original) {

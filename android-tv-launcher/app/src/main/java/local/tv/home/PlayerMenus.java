@@ -102,7 +102,14 @@ final class PlayerMenus {
             for (int i = 0; i < media.getTrackCount(); i++) {
                 IMedia.Track track = media.getTrack(i);
                 if (track != null && track.id == choice.id && track.type == nativeType) {
-                    return MediaFormats.append(name, choice.id, type == 1, track.codec, track.originalCodec);
+                    return MediaFormats.append(
+                        name,
+                        choice.id,
+                        type == 1,
+                        track.fourcc,
+                        track.codec,
+                        track.originalCodec
+                    );
                 }
             }
         } catch (RuntimeException error) {

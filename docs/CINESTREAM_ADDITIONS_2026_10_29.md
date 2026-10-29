@@ -99,7 +99,8 @@ not a universal file-header/decoder probe; some adapters hard-code quality. Movi
   correction during active playback retains the format suffix.
 - Separately reads LibVLC `IMedia.Track` objects from the **active player's** retained media.
   Matches native type + ID, never menu index or the current track for every option. Appends
-  known audio/video codec names to each original TrackDescription name. Unknown codecs or
+  known audio/video codec names to each original TrackDescription name, using the numeric
+  FourCC first and native codec descriptions as fallback. Unknown codecs or
   unavailable metadata leave the original name intact. Off, subtitles, headings, item IDs and
   selection callbacks remain unchanged. Retained media is released in `finally`.
 
@@ -108,7 +109,7 @@ request, source grouping, decoder menu, player replacement, automatic switch or 
 
 ## Validation
 
-- Local core runner: **34 suites, 1,163 checks**, including 15 new format-display cases.
+- Local core runner: **34 suites, 1,167 checks**, including 19 new format-display cases.
   This workspace has a JRE but no javac; Eclipse ECJ 3.42.0 compiled with Java 17 target, then
   the unchanged runner executed each suite on Java 17. Android CI uses the normal JDK compiler.
 - Local Python runner: **90 tests passed**, including 16 CineStream protocol/identity/metadata

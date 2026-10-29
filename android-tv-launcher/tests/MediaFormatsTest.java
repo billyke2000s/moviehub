@@ -34,6 +34,13 @@ public final class MediaFormatsTest {
         same("", SourceFormats.reported("Film HDRip 2020 1080p"));
         same("", SourceFormats.reported("upscaled264 audioUnknown"));
         same("Manifest codecs: AAC · Reported: DTS", SourceFormats.describe("Manifest codecs: AAC", "DTS"));
+        same("AAC", MediaFormats.codec("MPEG AAC Audio (mp4a)", true));
+        same("AVC (H.264)", MediaFormats.codec("H264 - MPEG-4 AVC (part 10)", false));
+        same("eac3", MediaFormats.fourcc(0x33636165));
+        same(
+            "Native track · E-AC-3",
+            MediaFormats.append("Native track", 7, true, 0x33636165, "A/52 B Audio", null)
+        );
         System.out.println(checks + " media format display checks passed");
     }
 }
