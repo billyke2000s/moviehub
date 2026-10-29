@@ -154,7 +154,7 @@ jobs:
           arch: x86_64
           profile: tv_1080p
           disable-animations: true
-          script: bash android-tv-launcher/tests/run-vod-recovery-tests.sh
+          script: ORG_GRADLE_PROJECT_moviehubAbi=x86_64 bash android-tv-launcher/tests/run-vod-recovery-tests.sh
       - name: List failed device tests
         if: failure()
         run: python3 android-tv-launcher/tests/report-test-failures.py android-tv-launcher/app/build/outputs/androidTest-results
