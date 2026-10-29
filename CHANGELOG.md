@@ -1,4 +1,4 @@
-## Unreleased
+## 1.0.17 (29 October 2026)
 
 - Refresh stale/expired movie and episode sources through their original adapter and playback host;
   retry resolution once before abandoning a failed source, with separate bounded lookup/startup.
