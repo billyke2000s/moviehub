@@ -20,6 +20,9 @@ and series fixtures remain required. Live provider/physical-TV success is not im
 `ProviderDashTransportTest`: a real TCP relay round trip verifies inherited segment templates,
 initialization/media requests and cookie isolation across advertised origins.
 
+The focused emulator job explicitly selects `moviehubAbi=x86_64`, matching the full device suites;
+release packaging retains the ARM64 default.
+
 The `vod-recovery-tests` CI job runs both new session classes plus the existing repeated-buffering
 and late-backup-after-short-clip regressions as a focused group. Each class/method filter runs
 separately and its XML report must contain the expected cases with no failures or skips; a green
