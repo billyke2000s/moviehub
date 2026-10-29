@@ -29,7 +29,7 @@ jobs:
       - uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
-      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'build-tools;36.0.0'
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'build-tools;36.0.0' 'ndk;27.2.12479018'
       - uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: '9.6.0'
@@ -47,7 +47,7 @@ jobs:
           arch: x86_64
           profile: tv_1080p
           disable-animations: true
-          script: bash android-tv-launcher/tests/run-device-tests.sh
+          script: ORG_GRADLE_PROJECT_moviehubAbi=x86_64 bash android-tv-launcher/tests/run-device-tests.sh
       - name: List failed device tests
         if: failure()
         run: python3 android-tv-launcher/tests/report-test-failures.py android-tv-launcher/app/build/outputs/androidTest-results
