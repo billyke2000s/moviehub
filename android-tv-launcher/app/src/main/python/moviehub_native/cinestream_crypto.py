@@ -9,7 +9,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from moviehub_compat import client
 from resolveurl.lib.aesgcm import python_aesgcm
 from resolveurl.lib import pyaes
-from .cinestream_api import Base, get, item
+from .cinestream_api import Base, get, item, USER_AGENT
 
 VIDROCK_FORMAT_KEY = bytes.fromhex('7f3e9c2a8b5d1f4e6a9c3b7d2e5f8a1c4b6d9e2f5a8c1b4d7e9f2a5c8b1d4e7f')
 PEACHIFY_FORMAT_KEY = bytes.fromhex('a8f2a1b5e9c470814f6b2c3a5d8e7f9c1a2b3c4d5e3f7a8b8cad1e2d0a4d5c5d')
@@ -54,7 +54,8 @@ class Peachify(Base):
     api = 'https://x.eat-peach.sbs'
 
     def extract(self, q):
-        headers = dict(self.headers(), Origin=self.base_link)
+        headers = dict(self.headers(), Origin=self.base_link, **{'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'})
         def backend(name):
             data = get(self.api + '/' + name + '/' + self.route(q), headers).get('data')
             if not isinstance(data, str):
@@ -74,7 +75,7 @@ class Peachify(Base):
                     args = parse_qs(urlparse(url).query)
                     url = args.get('url', [url])[0]
                     request_headers = json.loads(args.get('headers', ['{}'])[0])
-                media_headers = dict(headers)
+                media_headers = {'Referer': self.base_link + '/', 'Origin': self.base_link, 'User-Agent': USER_AGENT}
                 for key, value in request_headers.items():
                     media_headers = {k: v for k, v in media_headers.items() if k.lower() != key.lower()}
                     media_headers[key] = value
@@ -92,8 +93,10 @@ class Vidzee(Base):
             if 'season' in q:
                 args.update(ss=q['season'], ep=q['episode'])
             response = get(self.base_link + '/api/server?' + urlencode(args))
-            headers = dict(self.headers())
-            headers.update(response.get('headers') or {})
+            headers = {'User-Agent': USER_AGENT, 'referer': self.base_link + '/'}
+            for key, value in (response.get('headers') or {}).items():
+                headers = {k: v for k, v in headers.items() if k.lower() != key.lower()}
+                headers[key] = value
             for row in response.get('url', [])[:32]:
                 encoded = row.get('link')
                 if not encoded:

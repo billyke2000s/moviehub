@@ -283,3 +283,7 @@ Rive Citadel’s opt-in carrier path identifies raw TS from received bytes when 
 ## Movy response envelope
 
 Movy's short-lived anonymous seed is obtained for each delivery-route lookup and is not persisted. Its decoder processes data only, never downloaded JavaScript. No runtime dependency is added. Returned media still passes the existing public-address, HTTPS, header and media checks; account tokens, cookies and signed media URLs are not stored in the repository.
+
+CineStream token-server media can additionally carry X-CSRF-Token and X-Requested-With.
+The relay restricts X-CSRF-Token to the original media authority, as with Cookie/Authorization.
+Existing provider parsers, TLS verification and public-address validation remain in force.

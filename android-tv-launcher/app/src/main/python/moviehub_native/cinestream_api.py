@@ -10,8 +10,11 @@ import re
 from urllib.parse import quote, urlencode, urljoin, urlparse
 from moviehub_compat import client
 from .rive import positive
+from .cinestream_hls import streams as hls_streams, USER_AGENT
 
 DECODER = 'https://enc-dec.app/api'
+DESKTOP_138 = ('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
+               '(KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36')
 
 
 def get(url, headers=None):
@@ -27,7 +30,8 @@ def item(url, headers, backend, quality='', info=''):
     if not isinstance(url, str) or not url:
         return None
     client.safe(url)
-    allowed = {'referer', 'origin', 'user-agent', 'cookie', 'accept', 'authorization'}
+    allowed = {'referer', 'origin', 'user-agent', 'cookie', 'accept', 'authorization',
+               'x-csrf-token', 'x-requested-with'}
     clean = {k: v for k, v in headers.items() if k.lower() in allowed and isinstance(v, str)}
     return dict(url=url + '|' + urlencode(clean), direct=True, source=backend,
                 originProvider=backend, quality=quality or 'Auto', info=info)
@@ -58,7 +62,7 @@ class Base:
         return [row for row in self.extract(json.loads(key)) if row is not None]
 
     def headers(self):
-        return {'User-Agent': client.UserAgent, 'Referer': self.base_link + '/'}
+        return {'User-Agent': USER_AGENT, 'Referer': self.base_link + '/'}
 
     @staticmethod
     def route(q):
@@ -83,10 +87,10 @@ class VaPlayer(Base):
         args = dict(imdb=q['imdb'], type='tv' if 'season' in q else 'movie')
         if 'season' in q:
             args.update(season=q['season'], episode=q['episode'])
-        headers = {'Referer': 'https://nextgencloudfabric.com/'}
+        headers = {'Referer': 'https://nextgencloudfabric.com/', 'User-Agent': USER_AGENT}
         data = get(self.base_link + '/api.php?' + urlencode(args), headers)
         for url in (data.get('data') or {}).get('stream_urls', [])[:32]:
-            yield item(url, headers, 'VaPlayer')
+            yield from hls_streams(url, headers['Referer'], 'VaPlayer')
 
 
 class PrimeSrc(Base):
@@ -96,7 +100,8 @@ class PrimeSrc(Base):
         args = dict(imdb=q['imdb'], type='tv' if 'season' in q else 'movie')
         if 'season' in q:
             args.update(season=q['season'], episode=q['episode'])
-        data = get(self.base_link + '/api/v1/s?' + urlencode(args), self.headers())
+        data = client.request(self.base_link + '/api/v1/s?' + urlencode(args),
+                              headers=self.headers(), output='json', timeout=30)
         def backend(server):
             link = get(self.base_link + '/api/v1/l?' + urlencode({'key': server['key']}), self.headers()).get('link')
             if link:
@@ -126,7 +131,7 @@ class Fshare(Base):
         file = data.get('data', {}).get('file', {})
         rows = file.get('sources', []) + [r for group in file.get('alternatives', []) for r in group]
         for row in rows[:64]:
-            yield item(urljoin(self.base_link, row['src']), {'Referer': page_url}, 'Fshare', str(row.get('quality') or ''))
+            yield item(urljoin(self.base_link, row['src']), {'Referer': page_url, 'User-Agent': DESKTOP_138}, 'Fshare', str(row.get('quality') or ''))
 
 
 class Videasy(Base):
@@ -167,17 +172,36 @@ class TokenServers(Base):
     """Vidup, Vidcore and Vidfast use the same published two-stage server protocol."""
     decoder = ''
 
+    def request_headers(self):
+        headers = self.headers()
+        if self.decoder == 'vidfast':
+            headers['User-Agent'] = DESKTOP_138
+        else:
+            headers['X-Requested-With'] = 'XMLHttpRequest'
+        return headers
+
     def extract(self, q):
-        page = client.request(self.base_link + '/' + self.route(q))
+        path = self.base_link + '/' + self.route(q)
+        if self.decoder == 'vidfast':
+            path += '/'
+        page = client.request(path, headers=self.request_headers() if self.decoder == 'vidfast' else None)
         token = re.search(r'\\"(?:en|token)\\":\\"(.*?)\\"', page)
         if not token:
             return
-        result = get(DECODER + '/enc-' + self.decoder + '?' + urlencode(dict(text=token[1]))).get('result')
+        initial = get(DECODER + '/enc-' + self.decoder + '?' + urlencode(dict(text=token[1])),
+                      self.request_headers() if self.decoder == 'vidup' else None)
+        if self.decoder == 'vidup' and initial.get('status') != 200:
+            return
+        result = initial.get('result')
         if not isinstance(result, dict):
             return
-        headers = dict(self.headers(), **{'X-CSRF-Token': result['token'], 'X-Requested-With': 'XMLHttpRequest'})
-        encrypted = client.request(client.safe(result['servers']), headers=headers, post='')
-        servers = post_json(DECODER + '/dec-' + self.decoder, dict(text=encrypted)).get('result')
+        headers = dict(self.request_headers(), **{'X-CSRF-Token': result['token']})
+        encrypted = client.request(client.safe(result['servers']), headers=headers, post='', redirect=False)
+        decoded = post_json(DECODER + '/dec-' + self.decoder, dict(text=encrypted),
+                            headers if self.decoder == 'vidcore' else None)
+        if self.decoder == 'vidup' and decoded.get('status') != 200:
+            return
+        servers = decoded.get('result')
         if not isinstance(servers, list):
             return
         def backend(server):
@@ -185,9 +209,19 @@ class TokenServers(Base):
             # Do not send a site's CSRF token to a third-party decoder result origin.
             if urlparse(stream_url).netloc != urlparse(result['servers']).netloc:
                 raise ValueError('Stream token origin changed')
-            encrypted = client.request(client.safe(stream_url), headers=headers, post='')
-            stream = post_json(DECODER + '/dec-' + self.decoder, dict(text=encrypted)).get('result') or {}
-            yield item(stream.get('url'), self.headers(), self.decoder + ' ' + str(server.get('name') or 'server'))
+            encrypted = client.request(client.safe(stream_url), headers=headers, post='', redirect=False)
+            decoded = post_json(DECODER + '/dec-' + self.decoder, dict(text=encrypted))
+            if self.decoder == 'vidup' and decoded.get('status') != 200:
+                return
+            stream = decoded.get('result') or {}
+            if not stream.get('url'):
+                return
+            label = self.decoder + ' ' + str(server.get('name') or 'server')
+            if self.decoder == 'vidcore':
+                yield from hls_streams(stream['url'], self.base_link + '/', label)
+            else:
+                media_headers = headers if self.decoder == 'vidfast' else {'Referer': self.base_link + '/', 'User-Agent': USER_AGENT}
+                yield item(stream['url'], media_headers, label, info=str(server.get('description') or ''))
         yield from self.each(servers[:32], backend)
 
 
@@ -268,7 +302,7 @@ class Hexa(Base):
         encrypted = client.request(self.api + path, headers=headers)
         result = post_json(DECODER + '/dec-hexa', dict(text=encrypted, key=key)).get('result') or {}
         for row in result.get('sources', [])[:32]:
-            yield item(row.get('url'), {'Referer': self.base_link + '/'}, 'Hexa ' + str(row.get('server') or 'server'))
+            yield from hls_streams(row['url'], self.base_link + '/', 'Hexa ' + str(row.get('server') or 'server'))
 
 
 class AllMovieLand(Base):
@@ -299,6 +333,6 @@ class AllMovieLand(Base):
             rows = episode.get('folder', [])
         def backend(row):
             path = host.rstrip('/') + '/playlist/' + quote(str(row['file']), safe='') + '.txt'
-            url = client.request(path, headers=headers, post='').strip()
+            url = client.request(path, headers=headers, post='', redirect=False).strip()
             yield item(url, self.headers(), 'AllMovieLand ' + str(row.get('title') or 'server'))
         yield from self.each(rows[:32], backend)

@@ -3,10 +3,12 @@
 ## CineStream source/metadata candidate — 29 October 2026
 
 24 additional website protocols are staged as pending candidates, excluded from normal discovery.
-The new HLS audit hit a native LibVLC timestamp assertion. No new candidate is playback-verified.
+Earlier incomplete HLS ports hit a native timestamp assertion; this did not establish broken upstream sources.
+VaPlayer/Hexa/Vidcore now include HLS expansion and token-server request differences are corrected.
+Final Android/live validation of the correction is pending; no new playback success is claimed.
 This is a blocked expansion: account/build keys, an invalid root and unsupported custom player chains
 remain blockers. Source format reports and active LibVLC track suffixes use separate metadata paths.
-Local validation: 34 core suites / 1,167 checks and 90 Python tests pass. Android CI is pending;
+Local validation: 34 core suites / 1,167 checks and 94 Python tests pass. Android CI is pending;
 local provider DNS is restricted and no new real-provider playback result is claimed. See the
 [inventory and evidence](docs/CINESTREAM_ADDITIONS_2026_10_29.md). Not merged or published.
 

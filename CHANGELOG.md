@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Correct CineStream HLS helper expansion, per-provider token/browser headers and managed playback
+  audit startup; retain external audio with its master and scope new media CSRF headers.
+
 - Stage 24 CineStream movie/TV website adapters and their advertised playback routes as pending,
   excluded from normal discovery after native HLS timestamp assertions in the live audit;
   preserve existing implementations. Account/key-dependent and unsupported chains remain blocked.

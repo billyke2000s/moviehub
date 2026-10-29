@@ -7,6 +7,7 @@ import requests
 from moviehub_compat import client
 from moviehub_native import cinestream_api as api
 from moviehub_native import cinestream_catalogues as sites
+from moviehub_native import cinestream_hls as hls
 from moviehub_compat.source_metadata import describe
 
 
@@ -20,6 +21,13 @@ class CineStreamTests(unittest.TestCase):
         self.addCleanup(safe.stop)
         client.scope(lambda: False, timeout=30)
 
+    def playlist(self, body, url='https://cdn.example/master.m3u8'):
+        response = requests.Response()
+        response.status_code = 200
+        response.url = url
+        response._content = body.encode()
+        return response
+
     def key(self, source, series=False):
         key = source.movie('tt1234', '123', 'A Film', 'A Film', [], '2020')
         return source.episode(key, 'tt1234', '123', '', 'Part', '', '2', '3') if series else key
@@ -27,7 +35,7 @@ class CineStreamTests(unittest.TestCase):
     def test_vaplayer_movie_and_exact_episode_contract_preserves_referer(self):
         provider = api.VaPlayer()
         for series in (False, True):
-            with self.subTest(series=series), patch.object(client, 'request', return_value={
+            with self.subTest(series=series), patch.object(client, 'fetch', return_value=self.playlist('#EXTM3U\n#EXTINF:600,\na.ts')), patch.object(client, 'request', return_value={
                     'data': {'stream_urls': ['https://cdn.example/master.m3u8']}}) as request:
                 rows = provider.sources(self.key(provider, series), [])
             args = parse_qs(urlparse(request.call_args.args[0]).query)
@@ -72,20 +80,59 @@ class CineStreamTests(unittest.TestCase):
                     if '/tv/' in url:
                         return r'{\"token\":\"literal\"}'
                     if urlparse(url).path.startswith('/api/enc-'):
-                        return {'result': dict(token='csrf', servers=provider.base_link + '/servers', stream=provider.base_link + '/stream')}
+                        return {'status': 200, 'result': dict(token='csrf', servers=provider.base_link + '/servers', stream=provider.base_link + '/stream')}
                     if url.endswith('/servers') or '/stream/' in url:
                         self.assertEqual(kw['post'], '')
                         self.assertEqual(kw['headers']['X-CSRF-Token'], 'csrf')
                         return 'encrypted'
                     if urlparse(url).path.startswith('/api/dec-'):
                         posts = sum('/dec-' in u for u, k in calls)
-                        return {'result': [dict(name='one', data='hash')] if posts == 1 else dict(url='https://cdn.example/film.m3u8')}
+                        return {'status': 200, 'result': [dict(name='one', data='hash')] if posts == 1 else dict(url='https://cdn.example/film.m3u8')}
                     raise AssertionError(url)
-                with patch.object(client, 'request', side_effect=request):
+                with patch.object(client, 'fetch', return_value=self.playlist('#EXTM3U\n#EXTINF:600,\na.ts')), patch.object(client, 'request', side_effect=request):
                     rows = provider.sources(self.key(provider, True), [])
                 self.assertEqual(len(rows), 1)
-                self.assertTrue(calls[0][0].endswith('/tv/123/2/3'))
-                self.assertNotIn('csrf', rows[0]['url'])
+                self.assertTrue(calls[0][0].rstrip('/').endswith('/tv/123/2/3'))
+                self.assertEqual('X-CSRF-Token=csrf' in rows[0]['url'], cls is api.Vidfast)
+                self.assertEqual('X-Requested-With' in rows[0]['url'], False)
+
+    def test_hls_expands_variants_before_master_with_real_heights_and_referer(self):
+        body = '#EXTM3U\n#EXT-X-I-FRAME-STREAM-INF:URI="trick.m3u8"\n#EXT-X-STREAM-INF:RESOLUTION=1280x720,CODECS="avc1,mp4a"\n720/index.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=4\n//other.example/auto.m3u8'
+        with patch.object(client, 'fetch', return_value=self.playlist(body, 'https://cdn.example/path/master.m3u8')) as fetch:
+            rows = list(hls.streams('https://cdn.example/original.m3u8', 'https://site.example/', 'Site'))
+        self.assertEqual([r['url'].partition('|')[0] for r in rows], ['https://cdn.example/path/720/index.m3u8', 'https://other.example/auto.m3u8', 'https://cdn.example/original.m3u8'])
+        self.assertEqual([r['quality'] for r in rows], ['720p', 'Auto', 'Auto'])
+        self.assertTrue(all(parse_qs(r['url'].partition('|')[2])['Referer'] == ['https://site.example/'] for r in rows))
+        self.assertNotIn('Range', fetch.call_args.args[1])
+
+    def test_hls_keeps_external_audio_attached_and_rejects_error_documents(self):
+        body = '#EXTM3U\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="en",URI="en.m3u8"\n#EXT-X-STREAM-INF:RESOLUTION=1920x1080,AUDIO="en"\nvideo.m3u8'
+        for content, count in ((body, 1), ('#EXTM3U\n#EXTINF:600,\na.ts', 1), ('<html>refused</html>', 0), ('#EXTM3U\n#EXT-X-I-FRAME-STREAM-INF:URI="only-trick.m3u8"', 0)):
+            with self.subTest(content=content), patch.object(client, 'fetch', return_value=self.playlist(content)):
+                rows = list(hls.streams('https://cdn.example/master.m3u8', 'https://site.example/', 'Site'))
+            self.assertEqual(len(rows), count)
+            if rows:
+                self.assertTrue(rows[0]['url'].startswith('https://cdn.example/master.m3u8|'))
+
+    def test_media_csrf_is_not_sent_across_redirect_authorities(self):
+        from moviehub_vod import media_probe
+        first = self.playlist('')
+        first.status_code = 302
+        first.headers['Location'] = 'https://other.example/movie.m3u8'
+        last = self.playlist('#EXTM3U', 'https://other.example/movie.m3u8')
+        with patch.object(client, 'fetch', side_effect=[first, last]) as fetch:
+            self.assertIs(media_probe('https://cdn.example/movie.m3u8', {'X-CSRF-Token': 'issued', 'Referer': 'https://site.example/'}), last)
+        self.assertEqual(fetch.call_args_list[0].args[1]['X-CSRF-Token'], 'issued')
+        self.assertNotIn('X-CSRF-Token', fetch.call_args_list[1].args[1])
+        self.assertEqual(fetch.call_args_list[1].args[1]['Referer'], 'https://site.example/')
+
+    def test_hexa_expands_each_server_independently(self):
+        provider = api.Hexa()
+        with patch.object(client, 'request', side_effect=[{'result': {'token': 'issued'}}, 'encrypted', {'result': {'sources': [{'server': 'one', 'url': 'https://cdn.example/master.m3u8'}]}}]), patch.object(client, 'fetch', return_value=self.playlist('#EXTM3U\n#EXT-X-STREAM-INF:RESOLUTION=1920x1080\n1080.m3u8')):
+            rows = provider.sources(self.key(provider, True), [])
+        self.assertEqual([r['quality'] for r in rows], ['1080p', 'Auto'])
+        self.assertTrue(all(r['source'] == 'Hexa one' for r in rows))
+        self.assertTrue(all('Referer=https%3A%2F%2Fhexa.su%2F' in r['url'] for r in rows))
 
     def test_each_stops_on_cancellation_before_another_backend(self):
         provider = api.Meowtv()

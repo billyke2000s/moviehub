@@ -12,7 +12,8 @@ Only public, non-account roots were retained. No remotely downloaded code or dyn
 executes in MovieHub. These translations carry upstream's GPLv3-or-later terms.
 
 MovieHub baseline: `fab1f64`. Existing Scrubs/Free99 files, original inventory, the four
-established native adapters, ResolveURL and HTTP/relay implementations are unchanged.
+established native adapters, ResolveURL and existing HTTP behavior remain unchanged. The relay additionally scopes the new
+Vidfast X-CSRF-Token header to its original media authority, like Cookie/Authorization.
 Existing implementations are assumed working as instructed; this work does not audit or
 replace their parsers. Root and backend comparison is separate from name matching: ProjectFreeTV's
 new `.sx` `/data/browse`/`data/watch` protocol differs from existing `.cyou` HTML `/vembed`.
@@ -25,11 +26,14 @@ it returns the same CDN URL, using existing source/header identity rules.
 Actual Android audits on the new VaPlayer/Hexa HLS routes aborted inside LibVLC:
 `FakeESOut.cpp:535: applyTimestampContinuity: assertion ts >= VLC_TICK_INVALID failed`.
 The [redacted audit](https://github.com/billyke2000s/moviehub/actions/runs/40822400650)
-records the native crash. This is a blocker to enabling these routes, not successful playback.
+records the native crash. These runs used incomplete translations and do not establish that the upstream sites are broken.
+VaPlayer, Hexa and Vidcore were missing M3u8Helper variant expansion. Their adapters now expand
+playable quality links before retaining the original master. External audio groups stay attached
+to the master. HLS bytes and timestamps are not rewritten to hide decoder errors. New validation
+is pending; the old crash evidence is historical, not a verdict on these corrected adapters.
 All 24 unverified candidates have `pending=True`; default discovery stays on the original
 38 websites / 41 adapters. `search_providers(include_retired=True)` retains candidates for
-explicit audits without exposing them in the owner's source picker. No player or existing
-source transport is changed to work around the native failure.
+explicit audits without exposing them in the owner's source picker. The existing player and established source implementations are preserved.
 
 
 | Website / adapter | Retained playback backends / capabilities |
@@ -141,3 +145,27 @@ fatal timestamp assertion above; no new candidate is marked playback-verified. H
 an adapter TypeError in one episode lookup. Enabling candidates or changing the decoder requires
 further compatible-source work. Exact-head fixture CI and the baseline Rive live-audit comparison
 are recorded on the PR. Nothing was merged or published.
+
+## Loading-path correction after owner review
+
+The first ports omitted shared helpers and overgeneralized the three token-server protocols.
+The correction traces CineStream 487 call sites through CloudStream's `M3u8Helper2`
+(`recloudstream/cloudstream` commit `5024ace`, `library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/M3u8Helper.kt`).
+VaPlayer/Hexa/Vidcore now fetch and expand master variants, resolving relative links against the
+response URL and reporting only manifest heights. Trick-play entries are not offered as video.
+Media playlists retain their original URL. External AUDIO groups keep their master association.
+
+Vidfast uses its explicit Linux Chrome 138 profile, trailing-slash embed route and playback
+headers. Vidup preserves status checks and Referer-only playback; Vidcore uses HLS expansion.
+Fshare, Peachify and MovieBox retain their distinct upstream browser/request profiles. Vidzee
+merges supplied headers case-insensitively. No hard-coded upstream 1080p claim is promoted to
+verified metadata. Two explicitly allowed new media headers are X-CSRF-Token and
+X-Requested-With; the relay scopes the former to the media authority.
+
+The live audit now opens each returned source through the normal managed VOD path with its real
+source entry/headers and expected runtime; it still pins that source to avoid crediting a fallback.
+Explicit provider arguments can audit pending candidates without enabling them globally. Empty
+instrumentation arguments are omitted rather than shifted by adb. Offline regressions cover HLS
+variants, redirects, external audio, error documents, token protocol differences and exact episodes.
+Local checks: 94 Python tests; 34 core suites / 1,167 checks. Final Android and live results must
+be read from this correction's CI, not inherited from the earlier green build.

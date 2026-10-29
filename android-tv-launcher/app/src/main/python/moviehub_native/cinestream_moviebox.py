@@ -3,7 +3,7 @@ import json
 import re
 from urllib.parse import urlencode
 from moviehub_compat import client
-from .cinestream_api import Base, get, post_json, item
+from .cinestream_api import Base, get, post_json, item, DESKTOP_138
 
 
 def unwrap(data):
@@ -20,7 +20,8 @@ class MovieBox(Base):
         token = json.loads(response.headers.get('x-user', '{}')).get('token')
         if not isinstance(token, str) or not token:
             return
-        headers = dict(self.headers(), **{'Authorization': 'Bearer ' + token, 'Accept': 'application/json',
+        headers = dict(self.headers(), **{'User-Agent': DESKTOP_138, 'Referer': self.base_link,
+                                         'Accept-Language': 'en-US,en;q=0.5', 'Authorization': 'Bearer ' + token, 'Accept': 'application/json',
                                          'X-Client-Info': '{"timezone":"Africa/Nairobi"}'})
         data = post_json(self.base_link + '/wefeed-h5api-bff/subject/search', dict(
             keyword=q['title'], page=1, perPage=24, subjectType=2 if 'season' in q else 1), headers)

@@ -3,8 +3,7 @@
 ## CineStream additions and format metadata
 
 `moviehub_native/cinestream_*` contains 24 additional website protocols, registered with explicit
-factory names; pending candidates are excluded from normal discovery after live HLS native
-timestamp assertions. Established native/Kodi adapters remain unchanged. New data decoders reuse bundled
+factory names; pending candidates are excluded from normal discovery while corrected upstream helper paths are validated. Established native/Kodi adapters remain unchanged. New data decoders reuse bundled
 crypto and bounded transport. Some protocols depend on enc-dec.app as a data service. Missing
 account/build keys and unimplemented terminal chains are recorded in the
 [source report](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
