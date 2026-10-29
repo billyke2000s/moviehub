@@ -1,5 +1,19 @@
 # Security
 
+## Refreshable VOD sessions
+
+Refresh recipes and source header identities exist only in memory. They are not logged or written
+to provider files. Rediscovery uses the original bundled adapter and requested title/episode,
+retains the advertised host choice, and reruns normal target/media validation. Interruption and
+separate lookup/decoder deadlines bound abandoned refresh work. Each candidate has its own relay;
+replacing its cookies cannot change requests belonging to the healthy player.
+
+DASH uses the existing loopback secret and exact resource grants. Template fields accept only
+numeric values or bounded representation identifiers. XML input, nesting, representation count and
+inherited-template expansion have explicit memory limits; substituted targets still pass the public
+URL policy. Manifests cannot load XML entities, XLink references or DRM sessions. Cookies and
+Authorization remain restricted to their original authority, including across segment redirects.
+
 ## Optimization boundary
 
 Catalogue response reuse is memory-only, per repository instance, keyed by the complete TMDB

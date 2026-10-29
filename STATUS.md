@@ -1,5 +1,16 @@
 # Status
 
+## VOD link-session repair candidate — 28 October 2026
+
+Implements the link-handling review separately from the FreeLinks optimisation PR: retained source
+identity/header distinctions, bounded rediscovery and one refresh before abandoning a failed link,
+dynamically ranked independent-host backups, explicit provider identity evidence, DASH resource
+transport, managed next episodes, runtime-aware short-video validation and edition-safe restart.
+Core and Python fixtures pass locally; Android build/lint, signed compatibility and real LibVLC
+normal/experimental emulator suites must be read from the final PR commit before release.
+No update has been published. Missing provider metadata and matching-duration different cuts
+remain limits: this is stronger evidence handling, not proof that every website returned the title.
+
 ## Main-app optimization candidate — 28 October 2026
 
 Ported the FreeLinks optimization branch at d84df11460d4a3ff928eb0990ce119b062f8061d:

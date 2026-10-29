@@ -1,5 +1,34 @@
 # Testing
 
+## Managed VOD regression coverage
+
+`VodLinkPolicyTest` covers short/unknown/truncated runtimes, incompatible editions, dynamic backup
+ranking, independent-host preference, inherited DASH BaseURL/templates, constrained substitutions,
+XML entity rejection, protected manifests, nesting and representation limits. It runs in the existing core script.
+`test_vod_sessions.py` covers contradictory provider identity, same-host rediscovery with rotated
+headers/URLs, failed refresh and explicit epoch expiry. The Python media fixture permits a known
+60-second short while rejecting it as a substitute for a 90-minute movie.
+
+`VodSessionTest` covers distinct header identities, expiry-triggered refresh, retained logical
+identity and explicit lookup provenance. `VodSessionPlaybackTest` exercises real LibVLC initial
+managed opening, one expired-link refresh and cookie-protected DASH audio/video through relative
+segment templates. The six-second DASH asset is regenerated from the existing synthetic playback
+fixture; see its README. Full existing normal/experimental playback, cancellation, seek, short-clip
+and series fixtures remain required. Live provider/physical-TV success is not implied by fixtures.
+
+`provider-engine/tools/verify.sh` also compiles the DASH helper and runs
+`ProviderDashTransportTest`: a real TCP relay round trip verifies inherited segment templates,
+initialization/media requests and cookie isolation across advertised origins.
+
+The `vod-recovery-tests` CI job runs both new session classes plus the existing repeated-buffering
+and late-backup-after-short-clip regressions as a focused group. Each class/method filter runs
+separately and its XML report must contain the expected cases with no failures or skips; a green
+Gradle exit alone does not establish that every requested filter ran. The full normal and experimental
+suites still run independently. Candidate handoff requires decoded video and position alignment;
+audio is verified after selection by the DASH playback fixture rather than gating a muted decoder
+on native audio counters. Numeric preparation diagnostics are attached to timeout assertions and
+contain no source URLs, headers or credentials.
+
 ## Optimization checks
 
 The Android launcher workflow builds/lints ARM64 debug and release APKs, inspects the actual

@@ -29,7 +29,7 @@ class CurrentSiteTests(unittest.TestCase):
                              segmentContainers=True, boundedRanges=True) for host in ['Host One', 'Host Two']]
             def resolve(self, url): return url
         raw = json.dumps(dict(title='Film', year='2020', imdb='tt123', tmdb=1, season=-1, episode=-1))
-        def playable(url, quality): return dict(url=url, headers={}, verifiedQuality=None)
+        def playable(url, quality, expected_seconds=0): return dict(url=url, headers={}, verifiedQuality=None)
         with patch.object(module, 'source', return_value=Provider()), patch.object(vod, 'playable', side_effect=playable):
             result = json.loads(vod.query_site('free99:levidia_ch', raw, lambda: False))
         self.assertEqual({x['providerName'] for x in result['sources']},

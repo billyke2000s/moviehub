@@ -4,7 +4,7 @@ build=android-tv-launcher/app/build
 mkdir -p "$build"
 # The Gradle output is kept in a file so a failure that writes no test results (an app crash, an
 # install or emulator problem) can still be reported by report-test-failures.py.
-gradle -p android-tv-launcher --no-daemon testDebugUnitTest connectedDebugAndroidTest 2>&1 | tee "$build/device-tests.log"
+gradle -p android-tv-launcher --no-daemon testDebugUnitTest connectedDebugAndroidTest "$@" 2>&1 | tee "$build/device-tests.log"
 result=${PIPESTATUS[0]}
 # Print fixture-only handoff timing evidence; never dump provider playback logs.
 adb logcat -d -s MovieHubHandoff:I '*:S' || true

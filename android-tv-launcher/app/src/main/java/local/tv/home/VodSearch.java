@@ -15,6 +15,7 @@ final class VodSearch implements AutoCloseable {
     private final AtomicInteger pending = new AtomicInteger(1);
     private final SourceWindow<SourceRepository.Source> window;
     private final int target;
+    final int preferred;
     private final long deadline;
     private final List<java.util.function.Consumer<SourceRepository.Source>> observers = new ArrayList<>();
     private static volatile VodSearch current;
@@ -45,6 +46,7 @@ final class VodSearch implements AutoCloseable {
         );
         // Good enough to start at once: the preferred quality, but 1080p when 4K is preferred.
         target = Math.min(quality, 1080);
+        preferred = quality;
         Context app = context.getApplicationContext();
         // Runtime extraction and imports must never hold the UI thread.
         workers.submit(() -> {
@@ -69,7 +71,7 @@ final class VodSearch implements AutoCloseable {
                                     String state = host.optString("status");
                                     host.put("stage", "hosts");
                                     String label = state.equals("complete")
-                                        ? "Playable links found"
+                                        ? "Media responses verified"
                                         : state.equals("extracted")
                                           ? "Host links extracted"
                                           : providerOutcome(host);
@@ -116,9 +118,22 @@ final class VodSearch implements AutoCloseable {
                             query.getInt("episode"),
                             query.getString("title")
                         );
-                        if (pick >= 0) found(
-                            new SourceRepository.Source(source.title, source.uri, files, new JSONObject())
-                        );
+                        if (pick >= 0) {
+                            SourceRepository.Source ready = new SourceRepository.Source(
+                                source.title,
+                                source.uri,
+                                files,
+                                new JSONObject()
+                            );
+                            ready.refresh = () ->
+                                new SourceRepository.Source(
+                                    source.title,
+                                    source.uri,
+                                    repo.direct(source),
+                                    new JSONObject()
+                                );
+                            found(ready);
+                        }
                     }
                 } catch (Exception error) {
                     Diagnostics.recovered("Optional cloud search", error);
@@ -133,7 +148,7 @@ final class VodSearch implements AutoCloseable {
         String status = report.optString("status");
         switch (status) {
             case "complete":
-                return report.optJSONArray("sources").length() + " playable links";
+                return report.optJSONArray("sources").length() + " media links";
             case "no_matches":
                 return "No matching links returned";
             case "local_library":
@@ -201,7 +216,7 @@ final class VodSearch implements AutoCloseable {
     }
 
     static String sourceKey(SourceRepository.Source source) {
-        return SourcesScreen.provider(source.title) + "\n" + source.uri;
+        return source.key();
     }
 
     private synchronized void found(SourceRepository.Source source) {

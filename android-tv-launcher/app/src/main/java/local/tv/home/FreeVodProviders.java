@@ -54,64 +54,97 @@ public final class FreeVodProviders {
         Result callback = json -> {
             if (cancelled.get()) return;
             try {
-                JSONObject item = new JSONObject(json);
-                String link = Playlist.networkUrl(item.getString("url"), query.optBoolean("http"));
-                JSONObject headers = item.getJSONObject("headers");
-                String label = item.optString("quality", "SD");
-                String path =
-                    query.getString("title") +
-                    (query.getInt("season") < 0
-                        ? ""
-                        : String.format(
-                              Locale.ROOT,
-                              " S%02dE%02d",
-                              query.getInt("season"),
-                              query.getInt("episode")
-                          )) +
-                    ".mp4";
-                JSONArray files = new JSONArray().put(new JSONObject().put("path", path).put("link", link));
-                SourceRepository.Source source = new SourceRepository.Source(
-                    item.optString("providerName", id).replaceFirst("^www\\.", "") +
-                        "\n" +
-                        label +
-                        " · " +
-                        item.optString("info"),
-                    link,
-                    files,
-                    headers
-                );
-                source.confirmed = item.optBoolean("qualityVerified", false);
-                source.playlist = item.optBoolean("playlist", false);
-                source.site = item.optString("website", id);
-                source.claimed = item.optString("claimedQuality", label);
-                // A playlist's label is capped at the preferred quality, so only a file's own size
-                // can show that a website overstated it.
-                if (source.confirmed && !source.playlist) judge(
-                    context,
-                    source.site,
-                    source.claimed,
-                    SourceRanking.resolution(label)
-                );
-                source.ranking =
-                    QualityClaims.effective(label, source.confirmed, history(context, source.site)) +
-                    (SourceRanking.camera(item.optString("info")) ? " CAM" : "");
-                source.probeMbps = item.optDouble("probeMbps", 0);
-                source.responseMs = item.optLong("responseMs", Long.MAX_VALUE);
-                // Preserve native DASH base-URL handling; the relay rewrites HLS, not MPD templates.
-                if (!"dash".equals(item.optString("format")) || headers.length() > 0) source.stream =
-                    new EngineSources.Stream(
-                        new JSONObject()
-                            .put("url", link)
-                            .put("headers", headers)
-                            .put("segmentContainers", item.optBoolean("segmentContainers", false))
-                            .put("boundedRanges", item.optBoolean("boundedRanges", false))
-                    );
-                found.accept(source);
+                parse(context, id, query, new JSONObject(json), found);
             } catch (Exception error) {
                 Diagnostics.recovered("Free source result", error);
             }
         };
         return runtime(context).callAttr("query_site", id, query.toString(), cancelled, callback).toString();
+    }
+
+    public static final class RefreshCancellation {
+
+        public boolean get() {
+            return Thread.currentThread().isInterrupted();
+        }
+    }
+
+    private static void parse(
+        Context context,
+        String id,
+        JSONObject query,
+        JSONObject item,
+        Consumer<SourceRepository.Source> found
+    ) throws Exception {
+        String link = Playlist.networkUrl(item.getString("url"), query.optBoolean("http"));
+        JSONObject headers = item.getJSONObject("headers");
+        String label = item.optString("quality", "SD");
+        String path = item.optString("filename", "video.mp4");
+        JSONArray files = new JSONArray().put(
+            new JSONObject()
+                .put("path", path)
+                .put("link", link)
+                .put("lookupSeason", query.getInt("season"))
+                .put("lookupEpisode", query.getInt("episode"))
+                .put("identityEvidence", item.optString("identityEvidence", "provider_lookup"))
+        );
+        SourceRepository.Source source = new SourceRepository.Source(
+            item.optString("providerName", id).replaceFirst("^www\\.", "") +
+                "\n" +
+                label +
+                " · " +
+                item.optString("info"),
+            link,
+            files,
+            headers
+        );
+        source.confirmed = item.optBoolean("qualityVerified", false);
+        source.playlist = item.optBoolean("playlist", false);
+        source.site = item.optString("website", id);
+        source.claimed = item.optString("claimedQuality", label);
+        // A playlist's label is capped at the preferred quality, so only a file's own size
+        // can show that a website overstated it.
+        if (source.confirmed && !source.playlist) judge(
+            context,
+            source.site,
+            source.claimed,
+            SourceRanking.resolution(label)
+        );
+        source.ranking =
+            QualityClaims.effective(label, source.confirmed, history(context, source.site)) +
+            (SourceRanking.camera(item.optString("info")) ? " CAM" : "");
+        source.probeMbps = item.optDouble("probeMbps", 0);
+        source.responseMs = item.optLong("responseMs", Long.MAX_VALUE);
+        // Preserve native DASH base-URL handling; the relay rewrites HLS, not MPD templates.
+        if (!"dash".equals(item.optString("format")) || headers.length() > 0) source.stream =
+            new EngineSources.Stream(
+                new JSONObject()
+                    .put("url", link)
+                    .put("headers", headers)
+                    .put("segmentContainers", item.optBoolean("segmentContainers", false))
+                    .put("boundedRanges", item.optBoolean("boundedRanges", false))
+            );
+        source.expiresAt = item.optLong("expiresAtMs");
+        if (item.has("refresh")) {
+            JSONObject recipe = item.getJSONObject("refresh");
+            JSONObject snapshot = new JSONObject(query.toString());
+            source.refresh = () -> {
+                List<SourceRepository.Source> renewed = new ArrayList<>();
+                JSONObject replacement = new JSONObject(
+                    runtime(context)
+                        .callAttr(
+                            "refresh_source",
+                            recipe.toString(),
+                            snapshot.toString(),
+                            new RefreshCancellation()
+                        )
+                        .toString()
+                );
+                parse(context, id, snapshot, replacement, renewed::add);
+                return renewed.isEmpty() ? null : renewed.get(0);
+            };
+        }
+        found.accept(source);
     }
 
     private static final String TRUST = "quality_claims.";

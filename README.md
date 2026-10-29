@@ -4,6 +4,11 @@
 
 ### Films, series and live TV in one place.
 
+The managed VOD candidate refreshes temporary links, keeps each source's request headers,
+ranks backups and uses fresh source discovery for next episodes. Header-protected DASH shares
+the local media relay. Runtime evidence guides short-video checks and different-edition restarts.
+See [TESTING.md](TESTING.md) for verification scope.
+
 The optimization candidate packages ARM64 libraries for the S905X5M target, shares bounded
 one-minute TMDB catalogue replies and releases cache memory under pressure. UI, source providers,
 playback engines and update identity are preserved. Firmware must support ARM64 apps.

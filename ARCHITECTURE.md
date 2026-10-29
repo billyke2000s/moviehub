@@ -1,5 +1,35 @@
 # Architecture
 
+## Managed VOD links and transport
+
+The movie/episode identity stays in title metadata and ResumePoint title keys. Source identity
+includes the website/host label, URL and canonical request headers, so a shared CDN URL cannot
+collapse different cookies or provider routes. Free source results carry explicit provider-lookup
+provenance; synthetic filenames are no longer treated as independently verified episode names.
+The Python identity gate rejects conflicting IMDb/TMDB, season/episode and real filename evidence.
+Missing evidence remains a provider lookup, not independent title verification.
+
+Source refresh recipes keep the original adapter, playback host and immutable query in memory.
+Before managed playback, stale/near-expiry links are rediscovered; a failed attempt can refresh once
+before failover. Cloud results reacquire direct links. Native decoders use a new session transport
+for each replacement, keeping the original picture and headers until adoption. Lookup and decoder
+startup have separate budgets and cancellation tickets reject late results. Initial open, retry,
+resume and next episode use managed sessions; next episodes rediscover fresh sources instead of
+opening a saved pack URL without recovery.
+
+VodSourceFailover ranks remaining choices when recovery happens and prefers an independent host
+over aliases of a failed CDN. Positions/indices remain stable as discoveries arrive. VodMediaPolicy
+uses known title/episode runtime to allow legitimate short media and reject gross truncation; an
+unknown runtime retains the existing short-error-clip guard. Significantly different source durations
+are excluded from automatic timestamp handoff. Manual choice offers an explicit restart and clears
+old progress only on adoption. Matching durations cannot prove identical scene timing or editions.
+
+DashManifest materializes inherited segment addressing for each representation, resolves relative
+BaseURL/segment paths and grants only the advertised resources/templates through ProviderRelay.
+Template substitutions are limited to numeric fields and bounded representation identifiers. XML
+entities, external references and protected manifests are rejected. Existing credential-origin
+boundaries apply to manifest, initialization, audio/video segments and byte ranges.
+
 ## ARM64 and backend optimizations
 
 The default native ABI is ARM64. `moviehubAbi=x86_64` is an explicit emulator-build override, not

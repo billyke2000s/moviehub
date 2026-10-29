@@ -41,7 +41,11 @@ public class PlaybackTest {
             if (condition.getAsBoolean()) return;
             SystemClock.sleep(100);
         }
-        assertTrue("Playback condition timed out", condition.getAsBoolean());
+        String[] state = { "no session" };
+        instrumentation.runOnMainSync(() -> {
+            if (activity != null && activity.vod != null) state[0] = activity.vod.diagnosticState();
+        });
+        assertTrue("Playback condition timed out: " + state[0], condition.getAsBoolean());
     }
 
     /** A player control by its description (the controls are icons, not text buttons). */

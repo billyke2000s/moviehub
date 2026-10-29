@@ -1,5 +1,16 @@
 ## Unreleased
 
+- Refresh stale/expired movie and episode sources through their original adapter and playback host;
+  retry resolution once before abandoning a failed source, with separate bounded lookup/startup.
+- Preserve distinct provider/header identities even when links share a media URL; rank backups
+  when needed and prefer independent hosts over aliases of failed delivery hosts.
+- Validate conflicting provider IDs/episode filenames and retain honest lookup provenance.
+- Relay relative DASH manifests, inherited segment addressing and protected-header media requests.
+- Search fresh managed sources for each next episode, preserving recovery and title history keys.
+- Allow known short films/episodes, reject runtime mismatches and offer explicit restart for a
+  manual switch to a different-runtime edition instead of silently reusing its timestamp.
+- Add core, Python, Android session and real LibVLC/DASH regression fixtures.
+
 - Port the FreeLinks optimizations: ARM64-only APK packaging with pinned native stripping tools;
   x86_64 remains an explicit emulator build option.
 - Coalesce and briefly cache identical TMDB catalogue requests within bounded memory.

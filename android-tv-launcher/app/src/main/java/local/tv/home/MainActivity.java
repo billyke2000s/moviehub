@@ -664,6 +664,8 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
             stage.fullScreen(title, safe, id);
             return;
         }
+        if (sources != null && metadata != null) sources.expectedDuration =
+            FreeVodScreen.runtimeSeconds(metadata) * 1000L;
         SeriesPlayback.restore(metadata);
         SeriesPlayback.prefetch(this, metadata);
         try {

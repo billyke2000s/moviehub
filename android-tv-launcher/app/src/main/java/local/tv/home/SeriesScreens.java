@@ -261,7 +261,13 @@ final class SeriesScreens {
                         series == null
                             ? new JSONObject().put("id", tmdbId).put("media_type", "tv")
                             : new JSONObject(series.toString());
-                    metadata.put("season", season).put("episode", number).put("episodeKey", key);
+                    metadata
+                        .put("season", season)
+                        .put("episode", number)
+                        .put("episodeKey", key)
+                        .put("episodeTitle", name)
+                        .put("air_date", date)
+                        .put("runtime", runtime);
                     activity.playbackTitle = metadata;
                 } catch (JSONException e) {
                     Diagnostics.recovered("Preparing episode metadata", e);

@@ -5,7 +5,7 @@ import java.time.ZoneOffset;
 import java.util.*;
 import org.json.*;
 
-/** Continue within a pack, or discover the next aired episode across season boundaries. */
+/** Discover the next aired episode and open it through fresh managed sources. */
 final class SeriesPlayback {
 
     private final MainActivity activity;
@@ -191,6 +191,7 @@ final class SeriesPlayback {
             JSONObject item = episodes.getJSONObject(i);
             if (item.optInt("episode_number") == episode) {
                 metadata.put("episodeTitle", item.optString("name"));
+                metadata.put("runtime", item.optInt("runtime"));
                 metadata.put("air_date", item.optString("air_date", ""));
             }
         }
@@ -202,7 +203,6 @@ final class SeriesPlayback {
         int season = SourcesScreen.Binge.season,
             episode = SourcesScreen.Binge.episode;
         JSONObject current = SourcesScreen.Binge.metadata;
-        JSONArray pack = SourcesScreen.Binge.files;
         if (imdb == null || season < 0 || episode <= 0 || current == null) return;
         String kind = SourcesScreen.Binge.kind;
         String title = current.optString("name", "Series");
@@ -234,27 +234,7 @@ final class SeriesPlayback {
                 if (!next.metadata.optString("episodeTitle").isEmpty()) label +=
                     " · " + next.metadata.optString("episodeTitle");
                 final String nextTitle = label;
-                int pick = pack == null ? -1 : AutoPlayback.pick(pack, next.season, next.episode, title);
-                if (pick >= 0) {
-                    JSONObject file = pack.getJSONObject(pick);
-                    SourcesScreen.Binge.remember(
-                        imdb,
-                        next.season,
-                        next.episode,
-                        title,
-                        kind,
-                        next.metadata,
-                        pack
-                    );
-                    activity.play(
-                        nextTitle,
-                        file.getString("link"),
-                        activity.id(file.getString("link")),
-                        false,
-                        next.metadata
-                    );
-                    return;
-                }
+                // Every episode gets fresh links and the same managed backup session as Play/Resume.
                 String nextImdb = imdb(next.metadata);
                 if (nextImdb.isEmpty()) nextImdb = imdb;
                 final String sourceImdb = nextImdb;
@@ -268,9 +248,9 @@ final class SeriesPlayback {
                 } else {
                     activity.pageTitle(
                         activity.page,
-                        "Next episode not in this pack",
+                        "Next episode",
                         nextTitle,
-                        "Search other sources to continue watching."
+                        "Find a fresh source to continue watching."
                     );
                     activity.page.addView(activity.button("Search for the next episode", search));
                 }

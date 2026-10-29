@@ -24,6 +24,8 @@ final class VodSourceFailover {
         final String provider;
         /** Quality read from the file or stream (a tier such as 1080), 0 when only claimed. */
         int confirmed;
+        int rank;
+        String failureDomain = "";
         /** What the website claimed, and which website, for judging its labels. */
         String claimed = "",
             site = "";
@@ -48,6 +50,7 @@ final class VodSourceFailover {
 
     private final List<Source> sources = new ArrayList<>();
     private final Set<Integer> failed = new HashSet<>();
+    private final Set<String> failedDomains = new HashSet<>();
     private final List<Long> recentStalls = new ArrayList<>();
     private int current = -1;
     private long bufferingSince = -1;
@@ -70,6 +73,7 @@ final class VodSourceFailover {
             }
         }
         failed.clear();
+        failedDomains.clear();
         recentStalls.clear();
         current = sources.isEmpty() ? -1 : 0;
         resetPlayback();
@@ -159,14 +163,27 @@ final class VodSourceFailover {
     Source failover() {
         if (current < 0) return null;
         failed.add(current);
+        if (!sources.get(current).failureDomain.isEmpty()) failedDomains.add(
+            sources.get(current).failureDomain
+        );
+        int best = -1;
         for (int i = 0; i < sources.size(); i++) {
             if (i == current || failed.contains(i)) continue;
             Source candidate = sources.get(i);
             if (pinnedProvider != null && !pinnedProvider.equals(candidate.provider)) continue;
-            current = i;
+            boolean repeated = failedDomains.contains(candidate.failureDomain);
+            boolean bestRepeated = best >= 0 && failedDomains.contains(sources.get(best).failureDomain);
+            if (
+                best < 0 ||
+                (bestRepeated && !repeated) ||
+                (bestRepeated == repeated && candidate.rank > sources.get(best).rank)
+            ) best = i;
+        }
+        if (best >= 0) {
+            current = best;
             recentStalls.clear();
             resetPlayback();
-            return candidate;
+            return sources.get(best);
         }
         bufferingSince = -1;
         return null;

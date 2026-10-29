@@ -194,6 +194,10 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
         for item in candidates[:200]:
             try:
                 client.check()
+                from moviehub_identity import matches
+                if not matches(item, dict(info, imdb=imdb, season=int(season), episode=int(episode))):
+                    rejected += 1
+                    continue
                 stage = "resolution"
                 url=provider.resolve(item['url'])
                 if urlparse(url.partition('|')[0]).hostname == 'quickeemail.com':
@@ -217,7 +221,7 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
                 key = (url, source_host(host_name, item['url']))
                 if not isinstance(url,str) or key in seen: continue
                 stage = "media"
-                result=playable(url, info.get("maxQuality", 2160))
+                result=playable(url, info.get("maxQuality", 2160), info.get("runtimeSeconds", 0))
                 if result is None:
                     rejected += 1
                     client.host_result(item.get('originProvider') or item.get('source') or item['url'], 'rejected_media')
@@ -231,7 +235,11 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
                                'claimedQuality':str(item.get('quality','SD')),
                                'info':str(item.get('info','')), 'title': title,
                                'segmentContainers': bool(item.get('segmentContainers', False)),
-                               'boundedRanges': bool(item.get('boundedRanges', False))})
+                               'boundedRanges': bool(item.get('boundedRanges', False)),
+                               'identityEvidence': 'provider_lookup',
+                               'filename': str(item.get('filename') or item.get('file') or 'video.mp4'),
+                               'refresh': {'adapter': provider_id, 'host': source_host(host_name, item['url']),
+                                           'locator': item['url'].partition('|')[0], 'quality': str(item.get('quality','SD'))}})
                 client.host_result(result['sourceProvider'], 'complete')
                 sources.append(result)
                 if emit is not None: emit.ready(json.dumps(result))
@@ -255,7 +263,24 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
     except Exception as error:
         return json.dumps({'status':type(error).__name__,'sources':[],'stage':stage, **client.diagnostics()})
 
-def playable(raw, preferred=2160):
+def refresh_source(recipe_raw, raw, cancelled):
+    recipe = json.loads(recipe_raw)
+    found = []
+    class Emit:
+        def ready(self, value):
+            item = json.loads(value)
+            if item.get('sourceProvider') == recipe['host'] and (
+                not recipe.get('quality') or item.get('claimedQuality') == recipe['quality']):
+                found.append(item)
+    # Rediscover the same title through its original adapter; signed media URLs are not locators.
+    report = json.loads(query(recipe['adapter'], raw, cancelled, Emit(), time.monotonic() + 20))
+    if not found:
+        raise ValueError('Source refresh did not find the same playback host')
+    found.sort(key=lambda item: item.get('refresh', {}).get('locator') != recipe.get('locator'))
+    return json.dumps(found[0])
+
+
+def playable(raw, preferred=2160, expected_seconds=0):
     url, sep, suffix=raw.partition('|')
     client.safe(url)
     headers=dict(parse_qsl(suffix)) if sep else {}
@@ -309,7 +334,10 @@ def playable(raw, preferred=2160):
         if duration is None: duration = tail_duration
         # The file's own header outranks the website's quality claim.
         if size: verified = quality_label(*size)
-    if duration is not None and 0 < duration < 120: return None
+    if duration is not None and duration > 0:
+        if expected_seconds > 0:
+            if duration < expected_seconds - max(30, expected_seconds / 4): return None
+        elif duration < 120: return None
     # A manifest's byte size says nothing about its media throughput. Only compare media samples.
     rate=len(response.content)*8/(elapsed*1000000) if not playlist and len(response.content)>=32768 else 0
     # Keep header-free DASH native: a loopback URL would change relative MPD base paths.
@@ -317,8 +345,18 @@ def playable(raw, preferred=2160):
     return {'url':url,'headers':headers,'verifiedQuality':verified,
             'qualityVerified':verified is not None,'playlist':playlist,
             'videoWidth':size[0] if size else 0,'videoHeight':size[1] if size else 0,
+            'expiresAtMs': expiry_millis(url),
             'format':'dash' if '.mpd' in path or 'dash+xml' in kind else 'stream',
             'probeMbps':rate,'responseMs':round(elapsed*1000),'durationSeconds':duration}
+
+def expiry_millis(url):
+    # Only explicit epoch fields; opaque tokens and durations are never guessed to be expiry.
+    for name, value in parse_qsl(urlparse(url).query):
+        if name.lower() in ('expires', 'expiry', 'exp') and value.isdigit() and len(value) <= 13:
+            epoch = int(value)
+            if 1_000_000_000 <= epoch < 10_000_000_000: return epoch * 1000
+            if 1_000_000_000_000 <= epoch < 10_000_000_000_000: return epoch
+    return 0
 
 def quality_label(width, height):
     from moviehub_compat.media import quality_label as label
