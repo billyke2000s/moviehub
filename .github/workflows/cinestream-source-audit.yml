@@ -16,6 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         media: [movies, series]
+        scope: [all, downloads]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
@@ -25,12 +26,13 @@ jobs:
       - name: Trace candidate paths without changing ordinary discovery
         run: |
           args=()
+          if [ '${{ matrix.scope }}' = downloads ]; then args+=(--downloads); fi
           if [ '${{ matrix.media }}' = series ]; then args+=(--series); fi
           python android-tv-launcher/tests/trace-cinestream.py "${args[@]}" | tee cinestream-protocols.jsonl
       - uses: actions/upload-artifact@v6
         if: always()
         with:
-          name: cinestream-protocols-${{ matrix.media }}
+          name: cinestream-protocols-${{ matrix.scope }}-${{ matrix.media }}
           path: cinestream-protocols.jsonl
   decode:
     runs-on: ubuntu-latest
@@ -40,6 +42,9 @@ jobs:
       matrix:
         route:
           - {provider: 'native:videasy', names: 'Vidy Vegas,Vidy Phoenix'}
+          - {provider: 'native:bollyflix,native:topmovies,native:moviesmod,native:moviesdrive,native:uhdmovies', names: ''}
+          - {provider: 'native:dudefilms,native:vegamovies,native:rogmovies,native:hindmoviez,native:hdhub4u', names: ''}
+          - {provider: 'native:zinkmovies,native:fibwatch,native:mlsbd,native:skymovies,native:m4ufree_lat', names: ''}
         media: [movies, series]
     steps:
       - uses: actions/checkout@v5

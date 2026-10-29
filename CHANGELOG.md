@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Add fifteen CineStream catalogue/TV routes and bounded ordinary redirect chains; preserve existing sources and player. Current-site inspection and 131 offline Python tests pass; live chain/player checks are pending.
+
 - Follow current CineStream-site protocols: fresh MeowTV tickets, rotated token-server handshake,
   Cinejoy/KissKH/AnimeSalt domain moves and current Multimovies catalogue. Add Vidy’s other
   sixteen backends using the existing local decoder; preserve Movy Boise/Miami without duplicates.

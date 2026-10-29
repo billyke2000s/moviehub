@@ -1,5 +1,47 @@
 # CineStream sources and format display — 29 October 2026
 
+## Remaining fifteen chains — implementation follow-up
+
+Current follow-up adds the remaining fifteen catalogue adapters and bounded redirect/file-host
+protocols without modifying established sites or replacing the player. All fifteen stay registered;
+ordinary redirects are not grounds for removal. Eleven current roots exposed film catalogues;
+Vega exposed its gateway, TopMovies returned 503, and Zink/M4U returned browser challenges.
+M4U .lat contributes TV only to avoid duplicating existing movie adapters. Normal discovery now
+contains 74 websites / 77 adapters (39 added adapter protocols, three separately pending).
+Local validation: 131 Python tests and 34 core suites / 1,167 checks pass. Live extraction and
+native playback validation for these fifteen chains is pending; accessible HTML is not playback.
+The preceding revision 7a38417 passed all six Android jobs in run 40869288216; its separate Vidy
+series audit failed and is not evidence of success for this follow-up.
+
+| Site | Current public observation | Adapter / ordinary chain support |
+| --- | --- | --- |
+| Bollyflix | Catalogue and file-link page 200 | Quality sections, LinksMod, GDFlix and existing GoFile resolver |
+| TopMovies | Root/search 503 | Catalogue/season selection and shared file-host chains; live parser unconfirmed |
+| MoviesMod | Catalogue and download wrapper 200 | Quality sections, current lp-land/lp-s1 POST chain |
+| MoviesDrive | Old root redirects to new1.moviesdrive.cyou; catalogue 200 | IMDb JSON search, mdrive, HubCloud |
+| UHDMovies | Catalogue and landing form 200 | Title/year lookup, current multi-step same-origin forms |
+| DudeFilms | Catalogue and dflinks wrapper 200 | Quality/episode sections, advertised independent mirrors |
+| VegaMovies | Gateway 200; advertised catalogue redirects back; host config Cloudflare 403 | Literal advertised gateway followed once; unresolved gateway reported, adapter retained |
+| RogMovies | Catalogue and nexdrive 200 | IMDb JSON lookup, FastDL literal reurl, VCloud |
+| HindMoviez | Catalogue, wrapper and signing endpoint 200; file page 200 | Current same-origin hindshare_sign AJAX; no copied static signing key |
+| HDHub4u | Catalogue and HubDrive file page 200 | Public search, HubDrive/HubCloud, bounded wrapper data; excludes existing 4KHDHub link |
+| ZinkMovies | Cloudflare 403 | Archive token/worker protocol implemented; no browser-challenge bypass |
+| Fibwatch | Catalogue/detail 200 | Resolution AJAX, explicit episode identity, downstream literal media/host traversal |
+| Mlsbd | Catalogue/detail 200 | Download sections and explicit episodes only; no combined-pack fallback |
+| SkyMovies | Old root redirects to new4.skymovieshd.clinic; catalogue 200 | Current L/Let download rows and advertised downstream hosts |
+| M4UFree .lat | Cloudflare 403 | Missing TV CSRF/AJAX protocol; existing movie implementations unchanged |
+
+Fresh research fetched actual observed detail links and first download hops, rather than treating
+an intermediate page as a stream. Research used the available environment transport; it does not
+prove the application's guarded transport or native decoder succeeds. The audit workflow tests
+these routes separately with the application's existing transport and LibVLC player. All external
+decoder-upload restrictions remain in force. No ordinary redirect or temporary HTTP error is
+classified as permanent closure. Signed links, cookies and response bodies are not committed.
+
+The sections below retain earlier revision evidence; their original counts and unimplemented
+lists describe that earlier checkpoint, superseded by this follow-up where explicitly stated.
+
+
 ## Reference and preservation boundary
 
 Inspected **CineStream 487**, `SaurabhKaperwan/CSX` commit
@@ -80,7 +122,7 @@ New routes use current bounded transport, media checks, cancellation, refresh an
 Upstream's hard-coded 720p/1080p/4K defaults are deliberately not copied. A missing quality is Auto.
 Exact-source refresh and provider-report status remain available through existing mechanisms.
 
-## Remaining blockers and unimplemented routes
+## Initial blockers and unimplemented routes (historical baseline)
 
 This is a partial source expansion, not a claim that all CineStream websites were imported.
 

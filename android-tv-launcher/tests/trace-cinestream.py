@@ -60,9 +60,11 @@ def probe(record):
     cls.sources = sources
     series = '--series' in sys.argv
     query = dict(imdb='tt0903747' if series else 'tt0063350', tmdb=1396 if series else 10331,
-                 title='Breaking Bad' if series else 'Night of the Living Dead',
+                 title='Breaking Bad' if series else ('Inception' if '--downloads' in sys.argv else 'Night of the Living Dead'),
                  year='2008' if series else '1968', season=1 if series else -1,
                  episode=1 if series else -1, http=False, cinestreamAudit=True)
+    if not series and '--downloads' in sys.argv:
+        query.update(imdb='tt1375666', tmdb=27205, year='2010')
     started = time.monotonic()
     result = json.loads(vod.query_site(record['id'], json.dumps(query),
                                      lambda: time.monotonic() - started > 180))
@@ -72,7 +74,9 @@ def probe(record):
 
 
 records = [record for record in PROVIDERS if record.get('factory') and
-           record['series' if '--series' in sys.argv else 'movies']]
+           record['series' if '--series' in sys.argv else 'movies'] and
+           ('--downloads' not in sys.argv or record['module'] in
+            ('moviehub_native.cinestream_downloads', 'moviehub_native.cinestream_indexes'))]
 with concurrent.futures.ThreadPoolExecutor(max_workers=8) as workers:
     for result in workers.map(probe, records):
         print(json.dumps(result), flush=True)

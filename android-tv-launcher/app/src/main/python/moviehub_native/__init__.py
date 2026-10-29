@@ -58,6 +58,27 @@ for name, factory, site, series in (
 
 # Keep only concrete incomplete/unsafe paths pending. HTTP availability alone does not
 # establish a broken site. Hexa additionally gates its independently failing backends.
+for name, factory, site, module, movies in (
+    ('bollyflix', 'Bollyflix', 'bollyflix.co.za', 'cinestream_downloads', True),
+    ('topmovies', 'TopMovies', 'moviesleech.club', 'cinestream_downloads', True),
+    ('moviesmod', 'MoviesMod', 'moviesmod.meme', 'cinestream_downloads', True),
+    ('moviesdrive', 'MoviesDrive', 'new1.moviesdrive.cyou', 'cinestream_downloads', True),
+    ('uhdmovies', 'UHDMovies', 'uhdmovies.beauty', 'cinestream_downloads', True),
+    ('dudefilms', 'DudeFilms', 'dudefilms.red', 'cinestream_downloads', True),
+    ('vegamovies', 'VegaMovies', '1vegamovies.shop', 'cinestream_downloads', True),
+    ('rogmovies', 'RogMovies', 'rogmovies.im', 'cinestream_downloads', True),
+    ('hindmoviez', 'HindMoviez', 'hindmovie.tax', 'cinestream_downloads', True),
+    ('hdhub4u', 'HDHub4u', 'new10.hdhub4u.cl', 'cinestream_downloads', True),
+    ('zinkmovies', 'ZinkMovies', 'new6.zinkmovies.mobi', 'cinestream_downloads', True),
+    ('fibwatch', 'Fibwatch', 'fibwatch.art', 'cinestream_indexes', True),
+    ('mlsbd', 'Mlsbd', 'mlsbd.co', 'cinestream_indexes', True),
+    ('skymovies', 'SkyMovies', 'new4.skymovieshd.clinic', 'cinestream_indexes', True),
+    ('m4ufree_lat', 'M4ufreeLat', 'm4ufree.lat', 'cinestream_indexes', False),
+):
+    PROVIDERS.append(dict(id='native:' + name, module='moviehub_native.' + module,
+                          factory=factory, family='native', name=name, site=site,
+                          movies=movies, series=True))
+
 _PENDING = {'native:vaplayer', 'native:primesrc', 'native:asiaflix'}
 for record in PROVIDERS:
     if record['id'] in _PENDING:

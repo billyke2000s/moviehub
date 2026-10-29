@@ -1,5 +1,17 @@
 # Status
 
+Current follow-up adds the remaining fifteen catalogue adapters and bounded redirect/file-host
+protocols without modifying established sites or replacing the player. All fifteen stay registered;
+ordinary redirects are not grounds for removal. Eleven current roots exposed film catalogues;
+Vega exposed its gateway, TopMovies returned 503, and Zink/M4U returned browser challenges.
+M4U .lat contributes TV only to avoid duplicating existing movie adapters. Normal discovery now
+contains 74 websites / 77 adapters (39 added adapter protocols, three separately pending).
+Local validation: 131 Python tests and 34 core suites / 1,167 checks pass. Live extraction and
+native playback validation for these fifteen chains is pending; accessible HTML is not playback.
+The preceding revision 7a38417 passed all six Android jobs in run 40869288216; its separate Vidy
+series audit failed and is not evidence of success for this follow-up.
+
+
 Current follow-up: current-site inspection corrected the new adapters. Application revision
 47b22de passed all six Android jobs after an experimental retry (the first attempt raised
 DeadSystemException). Its native Vidy samples still failed and remain draft-PR blockers.

@@ -241,12 +241,12 @@ class CineStreamTests(unittest.TestCase):
         from moviehub_native import PROVIDERS
         import importlib
         new = [r for r in PROVIDERS if 'factory' in r]
-        self.assertEqual(len(new), 24)
+        self.assertEqual(len(new), 39)
         self.assertEqual(len({r['site'] for r in PROVIDERS}), len(PROVIDERS))
         import moviehub_vod as vod
         groups = json.loads(vod.search_providers())
         self.assertTrue(all(not any(a in {r['id'] for r in new} for a in g['adapters']) for g in groups[:38]))
-        self.assertEqual(len(groups), 59)
+        self.assertEqual(len(groups), 74)
         auditable = json.loads(vod.search_providers(include_retired=True))
         self.assertTrue({r['id'] for r in new} <= {a for g in auditable for a in g['adapters']})
         self.assertEqual({r['id'] for r in new if r.get('pending')}, {'native:vaplayer', 'native:primesrc', 'native:asiaflix'})
