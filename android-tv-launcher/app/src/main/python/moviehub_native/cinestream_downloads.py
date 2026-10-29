@@ -17,7 +17,7 @@ def matches_number(label, kind, number):
     compact = re.search(r'\bS0*(\d+)E0*(\d+)(?![\d.])\b', label, re.I)
     if compact:
         return int(compact[1 if kind == 'season' else 2]) == int(number)
-    names = r'(?:Season|S)' if kind == 'season' else r'(?:Episode|Ep|E)'
+    names = r'(?:Season|S)' if kind == 'season' else r'(?:Episode|Epi|Ep|E)'
     return bool(re.search(r'\b' + names + r'\s*[-:]?\s*0*' + re.escape(str(number)) + r'(?![\d.])\b', label, re.I))
 
 

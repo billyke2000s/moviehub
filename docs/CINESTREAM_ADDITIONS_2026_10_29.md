@@ -8,10 +8,11 @@ ordinary redirects are not grounds for removal. Eleven current roots exposed fil
 Vega exposed its gateway, TopMovies returned 503, and Zink/M4U returned browser challenges.
 M4U .lat contributes TV only to avoid duplicating existing movie adapters. Normal discovery now
 contains 74 websites / 77 adapters (39 added adapter protocols, three separately pending).
-Local validation: 136 Python tests and 34 core suites / 1,167 checks pass. At revision 89d2d80,
+Local validation: 137 Python tests and 34 core suites / 1,167 checks pass. At revision 89d2d80,
 Inception extraction yielded two HDHub4u and four SkyMovies sources; Breaking Bad S1E1 yielded
 twelve HindMoviez sources. The existing native player verified three SkyMovies Inception sources
-(video/audio, runtime and midpoint seek), recording relay socket errors. Other live checks and
+and all twelve HindMoviez episode sources (video/audio, runtime and midpoint seek), recording
+relay socket errors. Other live checks and
 validation of subsequent parser corrections remain pending; accessible HTML is not playback.
 The preceding revision 7a38417 passed all six Android jobs in run 40869288216; its separate Vidy
 series audit failed and is not evidence of success for this follow-up.
@@ -47,14 +48,18 @@ fifteen TV additions. Six movie sources from two sites and twelve episode source
 passed media validation. This is not a count of all films available on those sites. The existing
 player then verified three SkyMovies Inception sources at 1280×536, 8,887 seconds, with decoded
 video/audio and midpoint decoding. Relay socket errors were also recorded. Zink/Fibwatch/Vega
-returned browser challenges in that environment; TopMovies failed DNS. Other native groups were
-still running when these initial results were recorded. The Vidy movie audit failed before tests
+returned browser challenges in that environment; TopMovies failed DNS. All twelve HindMoviez S1E1 sources also passed native video/audio/runtime/midpoint checks:
+3,486 seconds, English audio, four 720×406 and eight 1280×722 samples. Each recorded relay socket
+errors as well. Bollyflix decoded one Spider-Man source at 1728×720 with audio, but its expected
+runtime was unknown and midpoint was not checked: runtime_unverified, excluded from the verified
+count of fifteen. The HDHub4u movie group was still running at this checkpoint. The Vidy movie audit failed before tests
 because SDK installation could not read its downloaded NDK ZIP; no playback result was produced.
 
 Inspection of MoviesDrive's actual Inception page subsequently identified its download content
 outside the introductory entry-content block. The correction also rejects quality-search links.
 UHD's final `lp_go` literal link and HubCloud's extensionless FSL file buttons were added from
-current public pages. These later corrections need their own final-revision live checks.
+current public pages. MLSBD now searches title/year and selects current Epi-NN download dividers without crossing into
+a following episode. These later corrections need their own final-revision live checks.
 
 The sections below retain earlier revision evidence; their original counts and unimplemented
 lists describe that earlier checkpoint, superseded by this follow-up where explicitly stated.

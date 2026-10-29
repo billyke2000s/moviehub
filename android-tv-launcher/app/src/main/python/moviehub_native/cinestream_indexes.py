@@ -19,6 +19,23 @@ class Mlsbd(DownloadCatalogue):
     name = 'Mlsbd'
     base_link = 'https://mlsbd.co'
 
+    def search(self, q):
+        yield from super().search(dict(q, imdb=''))
+
+    def episode_entries(self, content, q, page_title=''):
+        if not matches_number(page_title, 'season', q['season']):
+            return
+        for heading in content.all('div', cls='download'):
+            label = heading.text()
+            if not matches_number(label, 'episode', q['episode']):
+                continue
+            for block in heading.siblings():
+                if 'download' in (block.attrs.get('class') or '').split():
+                    break
+                for anchor in links(block):
+                    if download_anchor(anchor):
+                        yield anchor.attrs['href'], label + ' · ' + anchor.text()
+
     def movie_entries(self, content):
         from .cinestream_downloads import sections
         heading = next((node for node in content.all('h2,h3,div,p')

@@ -214,3 +214,19 @@ class CineStreamChainTests(unittest.TestCase):
                    '<h4>S02E30 1080p</h4><a href="wrong2.mp4">Download</a>')
         self.assertEqual(list(provider.episode_entries(doc, {'season': '2', 'episode': '3'})),
                          [('right.mp4', 'S02E03 1080p')])
+
+    def test_mlsbd_uses_title_year_search_and_current_episode_dividers(self):
+        from moviehub_native.cinestream_indexes import Mlsbd
+        provider = Mlsbd()
+        query = {'title': 'A Film', 'year': '2020', 'imdb': 'tt1234', 'season': '1', 'episode': '3'}
+        with patch.object(provider, 'page', return_value=(tree(''), provider.base_link, '')) as page:
+            self.assertEqual(list(provider.search(query)), [])
+        self.assertIn('A%20Film%202020', page.call_args.args[0])
+        self.assertNotIn('tt1234', page.call_args.args[0])
+        doc = tree('<div class="post-section-title download">Download Now Epi-03</div>'
+                   '<p><a href="right.mp4">Download in 720p quality</a></p>'
+                   '<div class="post-section-title download">Download Now Epi-02</div>'
+                   '<p><a href="wrong.mp4">Download in 1080p quality</a></p>')
+        self.assertEqual(list(provider.episode_entries(doc, query, 'A Film S01E03')),
+                         [('right.mp4', 'Download Now Epi-03 · Download in 720p quality')])
+        self.assertEqual(list(provider.episode_entries(doc, query, 'A Film S02E03')), [])
