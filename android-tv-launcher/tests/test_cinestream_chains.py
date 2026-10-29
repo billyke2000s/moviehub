@@ -261,3 +261,11 @@ class CineStreamChainTests(unittest.TestCase):
         for value in ('bad; cookie=leak', 'bad\r\nCookie: leak'):
             with self.assertRaises(ValueError):
                 resolver.wrapper_cookie('https://links.example/', 'lp-issued', value)
+
+    def test_mlsbd_each_movie_button_retains_its_own_reported_quality(self):
+        from moviehub_native.cinestream_indexes import Mlsbd
+        doc = tree('<div class="post-section-title download">Download Now</div><h3>Download Links</h3>'
+                   '<p><a href="low.mp4">Download in 480p quality</a>'
+                   '<a href="high.mp4">Download in 1080p quality</a></p>')
+        self.assertEqual(list(Mlsbd().movie_entries(doc)),
+                         [('low.mp4', 'Download in 480p quality'), ('high.mp4', 'Download in 1080p quality')])

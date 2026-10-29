@@ -50,7 +50,7 @@ class Mlsbd(DownloadCatalogue):
                 if href and download_anchor(anchor) and not re.search(
                         r'How To|Tutorial|telegram|facebook|youtube|imdb\.com',
                         anchor.text() + ' ' + href, re.I):
-                    yield href, paragraph.text()
+                    yield href, anchor.text()
 
 
 class SkyMovies(DownloadCatalogue):
