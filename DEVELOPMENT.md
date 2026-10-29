@@ -1,5 +1,11 @@
 # Development
 
+## AI-assisted changes
+
+Start with [AGENTS.md](AGENTS.md), the [AI working rules](docs/AI_WORKING_RULES.md) and
+the [change checklist](docs/AI_CHANGE_CHECKLIST.md). Tool-specific instruction files point to
+that same policy. Use the [task brief](docs/AI_TASK_TEMPLATE.md) in a plan or PR body.
+
 ## Requirements
 
 - JDK 17

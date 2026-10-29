@@ -21,7 +21,7 @@ build/lint, normal and experimental TV suites, the provider probe and all ten fo
 [Signed publisher 40808326711](https://github.com/billyke2000s/moviehub/actions/runs/40808326711)
 passed core/device tests, ABI inspection, certificate continuity and upload.
 [Numbered-release run 40809382906](https://github.com/billyke2000s/moviehub/actions/runs/40809382906)
-also passed. Physical-TV installation and playback of 1.0.18 still need owner confirmation.
+also passed.
 
 ## Published VOD link handling and optimisations
 

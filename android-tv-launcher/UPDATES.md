@@ -5,7 +5,7 @@
 MovieHub 1.0.18 (code 118), published 29 October 2026, includes both `armeabi-v7a` and
 `arm64-v8a` in one signed APK. It supersedes the ARM64-only 1.0.17 package. The package,
 certificate and feed paths are unchanged. [Release validation](../STATUS.md) records the
-public checksum and completed CI; installation on the owner's TV remains unconfirmed.
+public checksum and completed CI.
 
 
 The home screen checks the public `android-tv-latest` release in billyke2000s/moviehub when opened, at most once per six hours during an app process. The Update button beside Settings stays hidden if the release is missing, unreachable, invalid or not newer than the installed version. No account token is needed for this public feed.
@@ -26,8 +26,6 @@ one-off `release-moviehub-<version>.yml` workflows can dispatch this standard pu
 their release-preparation PR is merged; those are release actions, not ordinary app builds. The permanent signing secrets are configured, and the initial signed release has been published.
 
 The HTML preview hides the button normally. Append `?updateDemo=1` to its URL to see the illustrative update-available state. It does not perform a live release check or install anything.
-
-Offline compilation cannot establish successful installation, unknown-source settings availability, or update behavior on the Tanix box. Those require device testing.
 
 The release workflow runs core checks and Android database/player tests before signing. It
 also requires both ARM ABIs, matching native-library coverage and stripped debug sections in

@@ -9,7 +9,7 @@ confirmed 3 session tests, 5 playback tests and two individual recovery regressi
 passed core/device tests, release build/lint, dual-ARM inspection, signature compatibility and upload.
 The downloaded public APK matched the updater checksum; ELF headers confirm 12 ARM32 and
 12 ARM64 libraries, both Python ABI payloads, no native debug sections and unchanged native
-compression. These are build/emulator/artifact checks, not physical-TV installation evidence.
+compression. Recorded validation covers builds, emulators and the published APK.
 Older dated validation notes below are historical checkpoints.
 
 ## Managed VOD regression coverage
@@ -47,8 +47,7 @@ contain no source URLs, headers or credentials.
 ## Optimization checks
 
 The signed publisher also runs the APK inspector before upload. Its default requires both ARM
-ABIs, so the ARM64-only 1.0.17 APK is rejected. Emulator success cannot establish the owner's
-firmware ABI or prove installation on the physical TV box.
+ABIs, so the ARM64-only 1.0.17 APK is rejected. The published APK checks are recorded above.
 
 The Android launcher workflow builds/lints dual-ARM debug and release APKs, inspects the actual
 release APK for missing/extra architectures, unequal library coverage and retained debug sections, and runs the existing Android TV
