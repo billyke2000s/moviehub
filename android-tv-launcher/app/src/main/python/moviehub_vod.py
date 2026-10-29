@@ -44,7 +44,7 @@ UNVERIFIED_SITES = frozenset({
 def search_providers(include_retired=False):
     """One website per entry; include_retired also exposes unverified sites for audits."""
     groups = {}
-    for record in sorted(_RECORDS, key=lambda r: (r['family'] != 'free99', r['id'])):
+    for record in sorted(_RECORDS, key=lambda r: ('factory' in r, r['family'] != 'free99', r['id'])):
         if record['name'] in ('library', 'filepursuit'): continue
         if record['site'] in RETIRED_SITES | UNVERIFIED_SITES and not include_retired: continue
         site = record['site']

@@ -52,6 +52,9 @@ it returns the same CDN URL, using existing source/header identity rules.
 Inventory: 62 enabled website groups / 65 enabled adapters; 96 bundled constructors including
 excluded original websites. No previously excluded site is re-enabled. New factory names only
 apply to new modules; existing modules still instantiate their original `source` class.
+New website groups are appended after the unchanged established search order, so new backends
+do not take the initial worker slots from existing sites. The existing overall search deadline
+and worker count remain unchanged; queued sites can still be cancelled at that deadline.
 New routes use current bounded transport, media checks, cancellation, refresh and identity gates.
 Upstream's hard-coded 720p/1080p/4K defaults are deliberately not copied. A missing quality is Auto.
 Exact-source refresh and provider-report status remain available through existing mechanisms.

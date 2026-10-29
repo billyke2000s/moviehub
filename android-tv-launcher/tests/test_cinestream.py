@@ -131,6 +131,10 @@ class CineStreamTests(unittest.TestCase):
         new = [r for r in PROVIDERS if 'factory' in r]
         self.assertEqual(len(new), 24)
         self.assertEqual(len({r['site'] for r in PROVIDERS}), len(PROVIDERS))
+        import moviehub_vod as vod
+        groups = json.loads(vod.search_providers())
+        self.assertTrue(all(not any(a in {r['id'] for r in new} for a in g['adapters']) for g in groups[:38]))
+        self.assertEqual(len(groups[38:]), len(new))
         with patch.object(client, 'request') as request:
             for record in new:
                 provider = getattr(importlib.import_module(record['module']), record['factory'])()
