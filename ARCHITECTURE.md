@@ -30,10 +30,10 @@ Template substitutions are limited to numeric fields and bounded representation 
 entities, external references and protected manifests are rejected. Existing credential-origin
 boundaries apply to manifest, initialization, audio/video segments and byte ranges.
 
-## ARM64 and backend optimizations
+## ARM packaging and backend optimizations
 
-The default native ABI is ARM64. `moviehubAbi=x86_64` is an explicit emulator-build override, not
-a second bundled architecture. NDK 27.2.12479018 supplies native stripping tools. The APK inspector
+Default APKs contain both `armeabi-v7a` and `arm64-v8a`: a chip model does not establish the
+firmware's supported app ABIs. `moviehubAbi=x86_64` is an explicit emulator-build override. NDK 27.2.12479018 supplies native stripping tools. The APK inspector
 checks the actual native directory and rejects retained ELF debug sections. No shrinking/renaming
 of JNI or Python entry points is enabled as part of this change.
 

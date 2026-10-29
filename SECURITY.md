@@ -16,6 +16,10 @@ Authorization remain restricted to their original authority, including across se
 
 ## Optimization boundary
 
+Production APKs require matching native-library coverage for 32-bit and 64-bit ARM. The signed
+publisher checks that coverage before upload while retaining certificate, package and version
+verification. CPU model alone is not accepted as evidence of firmware app-ABI support.
+
 Catalogue response reuse is memory-only, per repository instance, keyed by the complete TMDB
 request, bounded to 64 responses/2 MiB payload weight and 60 seconds. Keys and bodies are not
 logged or persisted. Failed responses and invalid JSON are not retained. Mutable JSON objects

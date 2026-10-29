@@ -21,7 +21,7 @@ and series fixtures remain required. Live provider/physical-TV success is not im
 initialization/media requests and cookie isolation across advertised origins.
 
 The focused emulator job explicitly selects `moviehubAbi=x86_64`, matching the full device suites;
-release packaging retains the ARM64 default.
+release packaging includes both ARM app ABIs.
 
 The `vod-recovery-tests` CI job runs both new session classes plus the existing repeated-buffering
 and late-backup-after-short-clip regressions as a focused group. Each class/method filter runs
@@ -34,8 +34,12 @@ contain no source URLs, headers or credentials.
 
 ## Optimization checks
 
-The Android launcher workflow builds/lints ARM64 debug and release APKs, inspects the actual
-release APK for extra architectures and retained debug sections, and runs the existing Android TV
+The signed publisher also runs the APK inspector before upload. Its default requires both ARM
+ABIs, so the ARM64-only 1.0.17 APK is rejected. Emulator success cannot establish the owner's
+firmware ABI or prove installation on the physical TV box.
+
+The Android launcher workflow builds/lints dual-ARM debug and release APKs, inspects the actual
+release APK for missing/extra architectures, unequal library coverage and retained debug sections, and runs the existing Android TV
 fixture suites with an explicit x86_64 emulator build. The signed compatibility job still checks
 the installed updater package and signing certificate without publishing.
 

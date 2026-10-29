@@ -1,3 +1,9 @@
+## 1.0.18 (29 October 2026)
+
+- Restore 32-bit ARM app support alongside ARM64 for TV boxes whose firmware cannot install
+  ARM64-only APKs. Retain native stripping, cache optimisations and all player fixes.
+- Verify both ARM architectures and matching native libraries before publishing an update.
+
 ## 1.0.17 (29 October 2026)
 
 - Refresh stale/expired movie and episode sources through their original adapter and playback host;

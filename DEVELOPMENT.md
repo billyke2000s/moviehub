@@ -17,7 +17,9 @@ tried on the TV beside the real app. Those builds are published by `publish-expe
 
 ## Build
 
-Normal APKs target ARM64 only. Use `-PmoviehubAbi=x86_64` only for emulator builds.
+Normal APKs include 32-bit ARM (`armeabi-v7a`) and 64-bit ARM (`arm64-v8a`).
+Use `-PmoviehubAbi=x86_64` only for emulator builds. Single-ABI diagnostic builds may explicitly
+select `armeabi-v7a` or `arm64-v8a`; the default `moviehubAbi=arm` ships both.
 Install the pinned NDK with `sdkmanager 'ndk;27.2.12479018'` for native stripping.
 
 ```sh

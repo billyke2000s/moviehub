@@ -79,6 +79,7 @@ jobs:
           PY
           export APK_KEYSTORE="$RUNNER_TEMP/launcher-signing.jks"
           gradle -p android-tv-launcher --no-daemon assembleRelease lintRelease
+          python3 android-tv-launcher/tests/inspect-apk.py android-tv-launcher/app/build/outputs/apk/release/app-release.apk
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android-tv-launcher/app/build/outputs/apk/release/app-release.apk
           python - <<'PYVERIFY'
           import os,pathlib,subprocess,re,hashlib,json
