@@ -1,0 +1,58 @@
+name: Publish MovieHub 1.0.17 release page
+on:
+    push:
+        branches: [main]
+        paths: [".github/workflows/release-notes-1.0.17.yml"]
+permissions:
+    contents: read
+    actions: write
+jobs:
+    dispatch:
+        if: github.repository == 'billyke2000s/moviehub'
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - name: Wait for the authorised signed update
+              uses: actions/github-script@v8
+              with:
+                  script: |
+                      const {owner, repo} = context.repo;
+                      let passed = false;
+                      for (let attempt = 0; attempt < 72; attempt++) {
+                        const {data: run} = await github.rest.actions.getWorkflowRun({
+                          owner, repo, run_id: 40804688421
+                        });
+                        if (run.head_sha !== 'a1ec304c4184c80e2425ee0b057864ce0b20c798') {
+                          throw new Error('Unexpected signed release source');
+                        }
+                        if (run.status === 'completed') {
+                          if (run.conclusion !== 'success') throw new Error('Signed publication did not pass');
+                          passed = true;
+                          break;
+                        }
+                        core.info('Waiting for the signed 1.0.17 update to finish');
+                        await new Promise(resolve => setTimeout(resolve, 15000));
+                      }
+                      if (!passed) throw new Error('Signed publication did not complete');
+            - name: Confirm the updater feed is version 1.0.17
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
+              run: |
+                  gh release download android-tv-latest --pattern update.json --dir "$RUNNER_TEMP/moviehub-117-feed"
+                  python - <<'PY'
+                  import json,os,pathlib
+                  manifest=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'moviehub-117-feed/update.json').read_text())
+                  if (manifest['packageName'],manifest['versionCode'],manifest['versionName']) != ('local.tv.home',117,'1.0.17'):
+                      raise SystemExit('Refusing to publish a release page for a different update')
+                  PY
+            - name: Dispatch the existing numbered-release copier
+              uses: actions/github-script@v8
+              with:
+                  script: |
+                      const {owner, repo} = context.repo;
+                      await github.rest.actions.createWorkflowDispatch({
+                        owner, repo, workflow_id: 'release-android-launcher.yml', ref: 'main',
+                        inputs: {notes: ''}
+                      });
+                      core.notice('Dispatched the standard release page for the verified 1.0.17 feed');
