@@ -76,6 +76,7 @@ final class VodQuality {
             source.claimed,
             source.playlist
         );
+        if (!source.formatInfo.isEmpty()) source.label += " · " + source.formatInfo;
         // Only a file's real size judges the website: a playlist may play below what it offers
         // because of the connection, and a size already read from the file was judged then.
         if (free && source.confirmed == 0 && !source.playlist) {

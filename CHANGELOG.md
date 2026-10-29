@@ -1,3 +1,11 @@
+## Unreleased
+
+- Add 24 independent CineStream movie/TV website adapters and their advertised playback routes;
+  preserve existing implementations. Account/key-dependent and unsupported chains remain blocked.
+- Append explicit source format reports, advertised HLS codecs and known full-file sizes to existing
+  source labels. Append active LibVLC audio/video formats to existing track names by native ID/type.
+- See [source inventory, limits and validation](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+
 ## 1.0.18 (29 October 2026)
 
 - Restore 32-bit ARM app support alongside ARM64 for TV boxes whose firmware cannot install

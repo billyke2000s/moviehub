@@ -1,5 +1,18 @@
 # Security
 
+## Additional CineStream protocols
+
+New adapters use the existing bounded public-address transport and media/identity checks.
+No account secrets, private BuildConfig values, remote code execution or browser challenge runtime
+is imported. Published static player-format keys decode public Vidrock/Peachify/Vidzee payloads;
+they are not user credentials. MovieBox's anonymous issued token stays in memory and only its
+original API requests; VIP-locked links are skipped. Site CSRF tokens never become media headers.
+Some new adapters call enc-dec.app for public source data; this adds an external service dependency
+and discloses requested public media identifiers/payloads to that service. It receives no MovieHub
+account credentials. Formats are display-only, and manifest declarations/provider reports are not
+promoted into verified decoder/audio claims. Existing redirect credential restrictions remain.
+
+
 ## Refreshable VOD sessions
 
 Refresh recipes and source header identities exist only in memory. They are not logged or written

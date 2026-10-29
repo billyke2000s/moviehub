@@ -1,5 +1,9 @@
 <div align="center">
 
+CineStream source additions and source/player format display are staged separately from existing
+site implementations. See the [inventory, blockers and validation](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+
+
 # MOVIEHUB
 
 ### Films, series and live TV in one place.

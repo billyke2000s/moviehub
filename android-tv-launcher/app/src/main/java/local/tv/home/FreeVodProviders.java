@@ -98,6 +98,7 @@ public final class FreeVodProviders {
             files,
             headers
         );
+        source.formatInfo = item.optString("formatInfo");
         source.confirmed = item.optBoolean("qualityVerified", false);
         source.playlist = item.optBoolean("playlist", false);
         source.site = item.optString("website", id);

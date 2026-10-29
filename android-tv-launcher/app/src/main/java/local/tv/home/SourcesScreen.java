@@ -77,17 +77,20 @@ final class SourcesScreen {
         return ignored ? claimed + "?" : claimed;
     }
 
+    static String formats(SourceRepository.Source source) {
+        return SourceFormats.describe(source.formatInfo, release(source.title));
+    }
+
+    static String sourceLabel(SourceRepository.Source source) {
+        String formats = formats(source);
+        return badge(source) + (formats.isEmpty() ? "" : " · " + formats);
+    }
+
     /** Badges for a source: HDR or Dolby Vision, codec and file size, when the description says. */
     static List<String> details(String raw) {
-        String lower = raw.toLowerCase(Locale.ROOT);
         List<String> out = new ArrayList<>();
-        if (
-            lower.contains("dolby vision") ||
-            java.util.regex.Pattern.compile("\\b(?:dv|dovi)\\b").matcher(lower).find()
-        ) out.add("Dolby Vision");
-        else if (lower.contains("hdr")) out.add("HDR");
-        if (lower.contains("h265") || lower.contains("hevc") || lower.contains("x265")) out.add("HEVC");
-        else if (lower.contains("h264") || lower.contains("x264")) out.add("H.264");
+        String report = SourceFormats.reported(release(raw));
+        if (!report.isEmpty()) out.add("Reported: " + report);
         java.util.regex.Matcher size = java.util.regex.Pattern.compile(
             "(\\d+(?:[.,]\\d+)?)\\s?(TB|GB|MB)",
             java.util.regex.Pattern.CASE_INSENSITIVE

@@ -129,7 +129,7 @@ def source_label(website, host, url):
 def validate():
     """Import and instantiate every bundled adapter without contacting a provider."""
     for record in _RECORDS:
-        importlib.import_module(record['module']).source()
+        getattr(importlib.import_module(record['module']), record.get('factory', 'source'))()
     return len(_RECORDS)
 
 
@@ -148,7 +148,7 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
         family = 'scrubs' if record['family'] == 'native' else record['family']
         utils = importlib.import_module('moviehub_'+family+'.source_utils')
         utils._seen.websites = set()
-        provider = importlib.import_module(record['module']).source()
+        provider = getattr(importlib.import_module(record['module']), record.get('factory', 'source'))()
         # Several original scrapers keep client.dnt_headers itself as self.headers and then add
         # their own Origin/Referer/Host to it, which leaked into every later scraper's requests.
         if getattr(provider, 'headers', None) is client.dnt_headers:
@@ -342,7 +342,12 @@ def playable(raw, preferred=2160, expected_seconds=0):
     rate=len(response.content)*8/(elapsed*1000000) if not playlist and len(response.content)>=32768 else 0
     # Keep header-free DASH native: a loopback URL would change relative MPD base paths.
     if '.mpd' in path or 'dash+xml' in kind: headers = original_headers
-    return {'url':url,'headers':headers,'verifiedQuality':verified,
+    from moviehub_compat.source_metadata import describe
+    try:
+        format_info = describe(prefix, response.headers, playlist)
+    except (ValueError, TypeError, OverflowError):
+        format_info = ''
+    return {'formatInfo':format_info, 'url':url,'headers':headers,'verifiedQuality':verified,
             'qualityVerified':verified is not None,'playlist':playlist,
             'videoWidth':size[0] if size else 0,'videoHeight':size[1] if size else 0,
             'expiresAtMs': expiry_millis(url),

@@ -1,5 +1,16 @@
 # Testing
 
+## CineStream format/source regressions
+
+`MediaFormatsTest` adds 15 core cases for native codec names, unknown/Off behaviour and honest
+provider-report parsing. `test_cinestream.py` adds protocol, exact episode, backend identity,
+header/token boundary, cancellation, locked-link and metadata fixtures. The full Python runner
+has 90 tests; core has 34 suites / 1,163 checks. `PlaybackTest.trackFormatsAppendToNativeNamesWithoutChangingSelection`
+uses the existing H.264/AAC fixture to verify real native track suffixes and unchanged selections.
+These are fixtures, not evidence of live-provider decoding. See the
+[addition report](docs/CINESTREAM_ADDITIONS_2026_10_29.md) and final PR checks for current CI evidence.
+
+
 ## Published 1.0.18 validation — 29 October 2026
 
 [Main CI 40808318926](https://github.com/billyke2000s/moviehub/actions/runs/40808318926) passed

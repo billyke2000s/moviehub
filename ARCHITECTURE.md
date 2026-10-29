@@ -1,5 +1,20 @@
 # Architecture
 
+## CineStream additions and format metadata
+
+`moviehub_native/cinestream_*` contains 24 additional website protocols, registered with explicit
+factory names; established native/Kodi adapters remain unchanged. New data decoders reuse bundled
+crypto and bounded transport. Some protocols depend on enc-dec.app as a data service. Missing
+account/build keys and unimplemented terminal chains are recorded in the
+[source report](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+
+`moviehub_compat/source_metadata` reads HLS CODECS and non-playlist Content-Range totals from the
+existing probe bytes. `SourceFormats` labels release tokens as Reported; `MediaFormats` names known
+codec identifiers. `FreeVodProviders` carries formatInfo separately from identity/ranking; source
+labels retain it through `VodQuality` corrections. `PlayerMenus` independently matches active
+LibVLC media tracks by type/id and appends their codec to original names, releasing retained media.
+
+
 ## Managed VOD links and transport
 
 The movie/episode identity stays in title metadata and ResumePoint title keys. Source identity

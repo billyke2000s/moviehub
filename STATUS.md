@@ -1,5 +1,15 @@
 # Status
 
+## CineStream source/metadata candidate — 29 October 2026
+
+24 additional website protocols are staged separately from all established site implementations.
+This is a partial expansion: account/build keys, an invalid root and unsupported custom player chains
+remain blockers. Source format reports and active LibVLC track suffixes use separate metadata paths.
+Local validation: 34 core suites / 1,163 checks and 90 Python tests pass. Android CI is pending;
+local provider DNS is restricted and no new real-provider playback result is claimed. See the
+[inventory and evidence](docs/CINESTREAM_ADDITIONS_2026_10_29.md). Not merged or published.
+
+
 Last updated: 29 October 2026.
 
 ## Current release — MovieHub 1.0.18 (code 118)

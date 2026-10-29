@@ -59,6 +59,7 @@ final class SourceRepository {
         final JSONObject headers;
         EngineSources.Stream stream;
         String ranking;
+        String formatInfo = "";
         double probeMbps;
         long responseMs = Long.MAX_VALUE;
         /** The quality was read from the file or stream itself, not taken from the website. */

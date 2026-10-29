@@ -45,3 +45,10 @@ Python eval/exec calls were removed. Direct urllib host requests use the bounded
 Maintained patches (25 October 2026): both Levidia adapters skip yearless search entries and tolerate missing optional session-cookie markup. Free99 also accepts an empty initial cookie jar and preserves equals signs in cookie values. Inventory SHA-256 values identify the original upstream files, not these adapted files. Original attribution remains in each module.
 
 The Scrubs Levidia active path also delegates Wootly links to the bundled host resolver instead of its historical inline resolver and a second resolution.
+
+CineStream additions (29 October 2026): `moviehub_native/cinestream_*.py` translates protocols
+from SaurabhKaperwan/CSX, CineStream version 487, commit 13903aa. Upstream authors: megix and
+CSX contributors. GPLv3-or-later as stated in the upstream README; the existing
+Scrubs-GPL-3.0.txt supplies the full GPLv3 text. Original app MIT terms do not replace this licence.
+Reference: https://github.com/SaurabhKaperwan/CSX/tree/13903aa/CineStream .
+The implementation inventory and incomplete chains are documented in CINESTREAM_ADDITIONS_2026_10_29.md.
