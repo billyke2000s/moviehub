@@ -63,10 +63,14 @@ def item(url, headers, backend, quality='', info=''):
 
 
 class Base:
+    requires_imdb = False
+
     def movie(self, imdb, tmdb, title, localtitle, aliases, year):
-        if not positive(tmdb) or not re.fullmatch(r'tt\d+', str(imdb)):
+        if not positive(tmdb) or (self.requires_imdb and not imdb):
             return None
-        return json.dumps(dict(imdb=imdb, tmdb=str(tmdb), title=title, year=str(year)))
+        if imdb and not re.fullmatch(r'tt\d+', str(imdb)):
+            return None
+        return json.dumps(dict(imdb=imdb or '', tmdb=str(tmdb), title=title, year=str(year)))
 
     def tvshow(self, imdb, tmdb, tvdb, title, localtitle, aliases, year):
         return self.movie(imdb, tmdb, title, localtitle, aliases, year)
@@ -114,6 +118,7 @@ class Base:
 
 
 class VaPlayer(Base):
+    requires_imdb = True
     base_link = 'https://streamdata.vaplayer.ru'
 
     def extract(self, q):
@@ -128,6 +133,7 @@ class VaPlayer(Base):
 
 
 class PrimeSrc(Base):
+    requires_imdb = True
     base_link = 'https://primesrc.me'
 
     def extract(self, q):
@@ -148,6 +154,7 @@ class PrimeSrc(Base):
 
 
 class Fshare(Base):
+    requires_imdb = True
     base_link = 'https://fsharetv.cc'
 
     def extract(self, q):
@@ -344,6 +351,7 @@ class Hexa(Base):
 
 
 class AllMovieLand(Base):
+    requires_imdb = True
     base_link = 'https://allmovieland.one'
 
     def extract(self, q):

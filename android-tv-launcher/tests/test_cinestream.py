@@ -458,6 +458,16 @@ class CineStreamTests(unittest.TestCase):
                 rows = provider.sources(self.key(provider), [])
             self.assertEqual([row['source'] for row in rows], expected)
 
+    def test_tmdb_and_title_routes_do_not_require_an_unrelated_imdb_identifier(self):
+        provider = api.Meowtv()
+        key = provider.movie('', '123', 'A Film', 'A Film', [], '2020')
+        with patch.object(client, 'request', side_effect=[{}, {'result': {'url': 'https://cdn.example/film.m3u8'}}] * 5) as request:
+            rows = provider.sources(key, [])
+        self.assertEqual(len(rows), 5)
+        self.assertTrue(request.call_args_list[0].args[0].endswith('/movie/123?s=ipcloud'))
+        for cls in (api.VaPlayer, api.PrimeSrc, api.Fshare, api.AllMovieLand, sites.Akwam):
+            self.assertIsNone(cls().movie('', '123', 'A Film', 'A Film', [], '2020'))
+
     def test_source_metadata_is_advertised_not_selected_or_measured_audio(self):
         prefix = b'#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1,CODECS="avc1.640028,mp4a.40.2"\na.m3u8\n#EXT-X-STREAM-INF:CODECS="hvc1.1,ec-3",BANDWIDTH=2\nb.m3u8'
         self.assertEqual(describe(prefix, {}), 'Manifest codecs: AVC (H.264) / AAC / HEVC (H.265) / E-AC-3')

@@ -9,7 +9,7 @@ enabled, while other Hexa backends are explicitly auditable. No whole-site avail
 is claimed. Source/track metadata and the existing player/UI are preserved.
 
 New adapters now retain per-lookup cookies and upstream default/explicit browser profiles. Old
-provider requests keep the same behavior. Local checks: 106 Python tests; 34 core suites / 1,167
+provider requests keep the same behavior. Local checks: 107 Python tests; 34 core suites / 1,167
 checks. Final Android CI is pending for this head. The prior correction passed all six Android
 jobs in run 40827310153. See the [inventory and evidence](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
 Not merged or published.

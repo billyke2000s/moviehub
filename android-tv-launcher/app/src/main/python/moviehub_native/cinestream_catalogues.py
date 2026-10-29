@@ -46,6 +46,7 @@ class ProjectFreeTv(Base):
 
 
 class Akwam(Base):
+    requires_imdb = True
     base_link = 'https://akwam.it'
 
     def extract(self, q):

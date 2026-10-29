@@ -1,5 +1,3 @@
-<!-- CineStream correction: 106 Python tests; pending providers can be selected explicitly in
-FreeVodLiveAuditTest. The audit now uses managed VOD startup; it does not change production playback. -->
 # Testing
 
 ## CineStream format/source regressions
@@ -7,9 +5,11 @@ FreeVodLiveAuditTest. The audit now uses managed VOD startup; it does not change
 `MediaFormatsTest` adds 19 core cases for native codec names, unknown/Off behaviour and honest
 provider-report parsing. `test_cinestream.py` adds protocol, exact episode, backend identity,
 header/token boundary, cancellation, locked-link and metadata fixtures. The full Python runner
-has 90 tests; core has 34 suites / 1,167 checks. `PlaybackTest.trackFormatsAppendToNativeNamesWithoutChangingSelection`
+has 107 tests; core has 34 suites / 1,167 checks. `PlaybackTest.trackFormatsAppendToNativeNamesWithoutChangingSelection`
 uses the existing H.264/AAC fixture to verify real native track suffixes and unchanged selections.
-These are fixtures, not evidence of live-provider decoding. See the
+These are fixtures; live decode evidence is recorded separately below and in the source report.
+The live audit uses managed VOD startup and supports explicit pending providers. Normal Hexa
+audits exercise Alpha; `vodCineStreamAllBackends=true` is an explicit diagnostic override. See the
 [addition report](docs/CINESTREAM_ADDITIONS_2026_10_29.md) and final PR checks for current CI evidence.
 
 

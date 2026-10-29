@@ -30,8 +30,8 @@ The [redacted audit](https://github.com/billyke2000s/moviehub/actions/runs/40822
 records the native crash. These runs used incomplete translations and do not establish that the upstream sites are broken.
 VaPlayer, Hexa and Vidcore were missing M3u8Helper variant expansion. Their adapters now expand
 playable quality links before retaining the original master. External audio groups stay attached
-to the master. HLS bytes and timestamps are not rewritten to hide decoder errors. New validation
-is pending; the old crash evidence is historical, not a verdict on these corrected adapters.
+to the master. HLS bytes and timestamps are not rewritten to hide decoder errors. The later per-backend validation is recorded below; the old crash evidence is historical,
+not a verdict on every corrected adapter.
 Normal discovery now enables 21 new adapters, bringing it to 59 websites / 62 adapters.
 VaPlayer remains pending after repeat native timestamp assertions; PrimeSrc and Asiaflix remain
 pending because their upstream cfGet browser-challenge helper has no equivalent here. HTTP
@@ -130,6 +130,11 @@ request, source grouping, decoder menu, player replacement, automatic switch or 
 
 ## Validation
 
+Current local validation: **107 Python tests**, covering all translated adapter classes, and
+**34 core suites / 1,167 checks**. Android/live evidence is recorded per commit below.
+
+### Initial implementation evidence (historical)
+
 - Local core runner: **34 suites, 1,167 checks**, including 19 new format-display cases.
   This workspace has a JRE but no javac; Eclipse ECJ 3.42.0 compiled with Java 17 target, then
   the unchanged runner executed each suite on Java 17. Android CI uses the normal JDK compiler.
@@ -148,9 +153,9 @@ request, source grouping, decoder menu, player replacement, automatic switch or 
 The desktop runner probe at `7bdca2d` returned seven valid media responses across VaPlayer
 and Hexa for the sampled film. Other candidates returned refusals, unavailable endpoints,
 timeouts or no match. These were not decoder checks. The subsequent native audit exposed the
-fatal timestamp assertion above; no new candidate is marked playback-verified. Hexa also returned
-an adapter TypeError in one episode lookup. Enabling candidates or changing the decoder requires
-further compatible-source work. Exact-head fixture CI and the baseline Rive live-audit comparison
+fatal timestamp assertion above; at that checkpoint no new candidate was playback-verified. Hexa also returned
+an adapter TypeError in one episode lookup. The later corrections and selective enablement
+are described below; this older run does not establish their result. Exact-head fixture CI and the baseline Rive live-audit comparison
 are recorded on the PR. Nothing was merged or published.
 
 ## Loading-path correction after owner review
@@ -174,7 +179,7 @@ source entry/headers and expected runtime; it still pins that source to avoid cr
 Explicit provider arguments can audit pending candidates without enabling them globally. Empty
 instrumentation arguments are omitted rather than shifted by adb. Offline regressions cover HLS
 variants, redirects, external audio, error documents, token protocol differences and exact episodes.
-Local checks: 106 Python tests; 34 core suites / 1,167 checks. Final Android and live results must
+Local checks: 107 Python tests; 34 core suites / 1,167 checks. Final Android and live results must
 be read from this correction's CI, not inherited from the earlier green build.
 
 Correction run [40826640669](https://github.com/billyke2000s/moviehub/actions/runs/40826640669)
@@ -197,4 +202,8 @@ retain one isolated HTTP cookie session per lookup, and pass only domain/path-ma
 cookies into playback. Cookies do not persist across providers/lookups. The established client
 uses its unchanged default session handling; its optional new session argument is unused by old
 providers. New fixtures cover every translated adapter class, cookies, media cookie scoping and
-normal/audit backend separation. Local Python validation: 106 tests passed.
+normal/audit backend separation. Local Python validation: 107 tests passed.
+
+TMDB/title-only routes no longer require an IMDb ID they never use. VaPlayer, PrimeSrc, Fshare,
+AllMovieLand and IMDb-verified Akwam still require it. Missing catalogue identity is rejected;
+provider-supplied match/episode evidence and existing validation remain in place.
