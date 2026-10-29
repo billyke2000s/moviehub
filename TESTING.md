@@ -12,6 +12,15 @@ The live audit uses managed VOD startup and supports explicit pending providers.
 audits exercise Alpha; `vodCineStreamAllBackends=true` is an explicit diagnostic override. See the
 [addition report](docs/CINESTREAM_ADDITIONS_2026_10_29.md) and final PR checks for current CI evidence.
 
+Application revision `a9974b6` passed all six Android jobs in run 40856772393: build/lint/signing,
+normal/experimental suites, public provider checks and focused VOD recovery. The regular report
+has 209 entries: 208 passing plus the unchanged explicit-live-audit assumption (the HTML renderer
+lists it as a failure although Gradle/CI succeeds). The new native track-format regression passed.
+Experimental reports cover 7 + 20 unique cases, and focused VOD reports cover 3 + 5 + 1 + 1, with
+no failures/skips. Two new Hexa Alpha links passed live audio/video/runtime/midpoint checks in
+run 40856772425. VaPlayer diagnostics still crashed; these routes remain pending.
+
+
 
 ## Published 1.0.18 validation — 29 October 2026
 

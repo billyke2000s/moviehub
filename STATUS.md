@@ -10,8 +10,10 @@ is claimed. Source/track metadata and the existing player/UI are preserved.
 
 New adapters now retain per-lookup cookies and upstream default/explicit browser profiles. Old
 provider requests keep the same behavior. Local checks: 107 Python tests; 34 core suites / 1,167
-checks. Final Android CI is pending for this head. The prior correction passed all six Android
-jobs in run 40827310153. See the [inventory and evidence](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+checks. Application revision `a9974b6` passed all six Android CI jobs in run 40856772393,
+including 208 regular cases plus the opt-in audit assumption, 27 experimental cases and ten
+focused VOD cases. Its two normal Hexa Alpha live checks also passed. The separate Movy
+comparison on unchanged main passed 8/8; the feature audit had one unverified 4K audio sample. See the [inventory and evidence](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
 Not merged or published.
 
 

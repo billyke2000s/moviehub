@@ -207,3 +207,42 @@ normal/audit backend separation. Local Python validation: 107 tests passed.
 TMDB/title-only routes no longer require an IMDb ID they never use. VaPlayer, PrimeSrc, Fshare,
 AllMovieLand and IMDb-verified Akwam still require it. Missing catalogue identity is rejected;
 provider-supplied match/episode evidence and existing validation remain in place.
+
+## Final application revision a9974b6
+
+Local validation: 107 Python tests (33 CineStream regression methods) and 34 Java core suites /
+1,167 checks passed. The original source implementations and ResolveURL have no diff. The
+legacy client's only change is an optional session argument with identical default fetch calls.
+
+[CineStream run 40856772425](https://github.com/billyke2000s/moviehub/actions/runs/40856772425)
+verified both normal Hexa Alpha cases through managed LibVLC playback:
+
+| Title | Duration | Decoded video | Decoded audio | Played audio buffers | Midpoint |
+| --- | --- | --- | --- | --- | --- |
+| Inception | 8888 seconds | 1920×800, 115 frames | 209 | 104 | decoded |
+| Breaking Bad S1E1 | 3479 seconds | 1280×720, 121 frames | 602 | 120 | decoded |
+
+Both explicit pending VaPlayer diagnostics still failed in LibVLC timestamp continuity. The
+protocol trace visited 24 movie and 21 series adapters; the sampled titles yielded media only
+from VaPlayer/Hexa across the runs. Other results include HTTP refusals, unavailable API routes,
+decoder-service 400s, connection/DNS timeouts and no matches. These are recorded lookup results,
+not successful playback and not proof of permanent website failure.
+
+The existing-source audit at this head passed Movy episodes and 7/8 movie links. The Boise 4K
+movie lacked confirmed audio in that sample; Rive returned no selected Vanguard links. Neither
+provider implementation was modified. A separate comparison uses unchanged main with the same
+managed audit harness. Its result and the final Android suite outcome are recorded on the PR.
+
+All six Android CI jobs passed for application revision `a9974b6` in
+[40856772393](https://github.com/billyke2000s/moviehub/actions/runs/40856772393). Inspected
+reports: 208 ordinary cases passed, plus one unchanged opt-in audit assumption (rendered as a
+failure by the HTML report, accepted by Gradle); 27 unique experimental cases and ten focused
+VOD cases passed without skips. The real native track-format regression passed in 2.185 seconds.
+Build/lint, signing continuity, dual-ARM APK inspection, Python and provider checks passed.
+
+The unchanged-main comparison [40857723719](https://github.com/billyke2000s/moviehub/actions/runs/40857723719)
+used the same managed audit harness on `fab1f64` production code and verified all eight Movy
+movie links, including Boise 4K audio. Thus the one feature-run audio-unverified sample remains
+an unresolved individual audit result; neither it nor the baseline alone proves a production
+regression. Existing source/player logic is preserved. No other failures were hidden or gates
+weakened. This final documentation records already-tested application code; no APK is published.
