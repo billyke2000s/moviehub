@@ -1,5 +1,19 @@
 # CineStream sources and format display — 29 October 2026
 
+## Publication follow-up — MovieHub 1.0.19
+
+The owner subsequently requested publication for testing. PR #195 and release PR #196 were
+merged, and 1.0.19 (119) was published from `8759c88e0e2e72227c06bc1751ae1836ef241c53`
+through the existing signed publisher. The original player, both ARM ABIs, signing identity,
+accounts/data and updater paths remain intact. Public feed and numbered APKs were independently
+downloaded and verified: `97ad0a88b1cdb981655fdaca34006fcc02345a04bd5a0fa2bfe399b5fbbdac6d`. Package/version, native ELF/Python ABI
+coverage, stripped sections and signature continuity with 1.0.18 passed. Publisher 40958274305
+and copier 40960019599 succeeded. See [current status](../STATUS.md) for full release evidence.
+The existing Vidy/provider/audio failures are retained in the release notes; publication does not
+convert the unverified samples below into successes. Draft/unpublished descriptions below are
+historical checkpoints, predating the owner's publication request.
+
+
 ## Final resumed application validation — `925af7c`
 
 [Android CI 40913881846](https://github.com/billyke2000s/moviehub/actions/runs/40913881846)
@@ -55,8 +69,8 @@ files. All fifteen added routes remain registered. None of these results is a fu
 full-title reliability guarantee.
 
 This validation-only documentation follow-up changes no application, tests, workflow or packaging.
-Its evidence applies to the unchanged application tree above. PR #195 remains draft, unmerged and
-unpublished because the recorded live failures remain unresolved. Earlier sections below are
+Its evidence applies to the unchanged application tree above. At that checkpoint PR #195 was
+draft, unmerged and unpublished because the recorded live failures remained unresolved. Earlier sections below are
 checkpoint history, including pending labels and counts that were accurate when written.
 
 

@@ -1,6 +1,6 @@
 <div align="center">
 
-CineStream candidate: 74 websites / 77 enabled adapters, with all fifteen added catalogue
+CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
 say Stream instead of Download. LinksMod navigation is excluded from file traversal so it cannot
@@ -112,8 +112,9 @@ Additional information is available in [DEVELOPMENT.md](DEVELOPMENT.md), [ARCHIT
 
 ## Project status
 
-Current release: [MovieHub 1.0.18](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.18),
-with ARM32 and ARM64 in one APK. The optimisations and VOD recovery changes are published;
+Current release: [MovieHub 1.0.19](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.19),
+with ARM32 and ARM64 in one APK. The CineStream source/format additions, optimisations and VOD
+recovery changes are published;
 see [current status and release evidence](STATUS.md).
 
 Automated tests use synthetic data and do not establish that every external service, live channel or update path works on physical hardware. Device-specific behaviour, especially live video handoff and provider integrations, needs real-world testing. Experimental work and its evidence are described in the technical notes below.

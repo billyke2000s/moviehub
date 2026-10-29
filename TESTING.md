@@ -1,6 +1,24 @@
 # Testing
 
-CineStream candidate: 74 websites / 77 enabled adapters, with all fifteen added catalogue
+## Published 1.0.19 validation — 29 October 2026
+
+Source: `8759c88e0e2e72227c06bc1751ae1836ef241c53`. Signed publisher
+[40958274305](https://github.com/billyke2000s/moviehub/actions/runs/40958274305) passed core/device
+checks, release build/lint, actual dual-ARM inspection and certificate continuity before upload.
+Copier [40960019599](https://github.com/billyke2000s/moviehub/actions/runs/40960019599) passed.
+Both public APKs were downloaded and have SHA-256 `97ad0a88b1cdb981655fdaca34006fcc02345a04bd5a0fa2bfe399b5fbbdac6d`.
+Independent Android `aapt2` and `apksig` checks verified package/version 119 / 1.0.19, signature
+validity and signing identity matching 1.0.18. Actual native ELF classes/machine types, both Python
+payloads and absent native debug sections were also checked. APK size: 132,801,072 bytes.
+Post-merge [main CI 40958057391](https://github.com/billyke2000s/moviehub/actions/runs/40958057391)
+passed its build/lint, normal/experimental suites, provider probe and focused recovery. The initial
+normal-device attempt failed its emulator connection before running tests; its unchanged-code
+targeted retry passed. No gate or test was removed or weakened.
+The existing 23 full native-source passes and unresolved live failures remain separate evidence
+below and in the [source report](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+
+
+CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
 say Stream instead of Download. LinksMod navigation is excluded from file traversal so it cannot

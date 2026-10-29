@@ -1,15 +1,32 @@
 # Status
 
-## Prepared publication — MovieHub 1.0.19 (code 119)
+## Current release — MovieHub 1.0.19 (code 119)
 
-The owner authorised publication of PR #195 for testing. That PR is merged, including the source,
-redirect and format-label changes; main's newer Downloader-code edit is preserved. The release
-preparation changes only notes and a one-off dispatcher invoking the existing signed publisher
-and numbered-release copier. Publication is pending; the current public baseline below is 1.0.18.
-The recorded Vidy/audio/provider limitations remain in the release notes.
+[1.0.19 is published](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.19)
+from `8759c88e0e2e72227c06bc1751ae1836ef241c53`, following the owner's publication request.
+PR #195 and release preparation #196 are merged; main's Downloader-code edit is preserved.
+The updater feed and numbered release contain byte-identical APKs, independently downloaded
+and checked against both manifests. SHA-256:
+`97ad0a88b1cdb981655fdaca34006fcc02345a04bd5a0fa2bfe399b5fbbdac6d`.
 
+The 132.80 MB APK reports `local.tv.home` / 119 / 1.0.19. Actual ELF headers confirm twelve ARM32
+and twelve ARM64 libraries, with both Python payloads and no native debug sections. Android's
+APK signature verifier independently passed and the signing-certificate digest matches the public
+1.0.18 baseline. Compression, package identity and updater paths are unchanged.
 
-CineStream candidate: 74 websites / 77 enabled adapters, with all fifteen added catalogue
+[Signed publisher 40958274305](https://github.com/billyke2000s/moviehub/actions/runs/40958274305)
+passed core rules, the Android device suite, signed build/lint, ABI inspection, baseline signature
+continuity and asset upload. [Numbered-release copier 40960019599](https://github.com/billyke2000s/moviehub/actions/runs/40960019599)
+passed. [Post-merge CI 40958057391](https://github.com/billyke2000s/moviehub/actions/runs/40958057391)
+passed build/lint, normal and experimental device suites, the provider probe and focused VOD
+recovery. Its first normal-device attempt could not connect to the emulator before running tests;
+the targeted retry on unchanged code passed. The publisher's independent device suite also passed.
+
+The release retains the 23 recorded individual native-source passes and the source/track format
+changes, including ordinary redirect/file-host fixes and Stream wording. Vidy crashes and other
+provider/audio limitations remain documented; publication does not establish universal availability.
+
+CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
 say Stream instead of Download. LinksMod navigation is excluded from file traversal so it cannot
@@ -49,7 +66,7 @@ Not merged or published.
 
 Last updated: 29 October 2026.
 
-## Current release — MovieHub 1.0.18 (code 118)
+## Previous published release — MovieHub 1.0.18 (code 118)
 
 [1.0.18 is published](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.18)
 from `f8673c590d5edf2e18da1d7fa1a3b044f0e7634d`. The updater feed and numbered release contain
