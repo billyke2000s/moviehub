@@ -29,6 +29,28 @@ audio is verified after selection by the DASH playback fixture rather than gatin
 on native audio counters. Numeric preparation diagnostics are attached to timeout assertions and
 contain no source URLs, headers or credentials.
 
+## Optimization checks
+
+The Android launcher workflow builds/lints ARM64 debug and release APKs, inspects the actual
+release APK for extra architectures and retained debug sections, and runs the existing Android TV
+fixture suites with an explicit x86_64 emulator build. The signed compatibility job still checks
+the installed updater package and signing certificate without publishing.
+
+`CatalogueCacheTest` covers expiry, LRU/byte bounds, concurrent request coalescing, unrelated-key
+independence, failed-fetch retry and memory trimming during an in-flight fetch. ArtworkDiskCacheTest
+checks oversized entries and compatible cache filenames. Existing Java/Python/Node checks remain.
+
+```sh
+bash android-tv-launcher/tests/run-core-tests.sh
+gradle -p android-tv-launcher assembleDebug assembleRelease lintDebug
+python3 android-tv-launcher/tests/inspect-apk.py android-tv-launcher/app/build/outputs/apk/release/app-release-unsigned.apk
+ORG_GRADLE_PROJECT_moviehubAbi=x86_64 bash android-tv-launcher/tests/run-device-tests.sh
+```
+
+These fixtures do not establish physical-box installation, startup/RAM improvements or sustained
+provider playback. The FreeLinks source branch passed build/lint, offline and emulator checks;
+this port must pass its own final-commit CI before release.
+
 ## Continuous series and automatic playback
 
 `VideoFilesTest` includes episode ordering, future-date handling and source-resolution ranking. `SeriesAutoplayTest` uses catalogue and source fixtures to check season transitions, updated history keys, missing pack episodes, show endings, uncertain filenames, bounded source fallback and cancellation. `LiveGuideTest` covers colour keys from header focus and Back/arrow/OK controls; `LiveControlsTest` covers all four physical colours during playback, learned scan-code colours, and OK/click/◀ always showing the same banner. These do not verify a particular physical remote or real-provider playback.

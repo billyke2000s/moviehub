@@ -11,6 +11,17 @@ normal/experimental emulator suites must be read from the final PR commit before
 No update has been published. Missing provider metadata and matching-duration different cuts
 remain limits: this is stronger evidence handling, not proof that every website returned the title.
 
+## Main-app optimization candidate — 28 October 2026
+
+Ported the FreeLinks optimization branch at d84df11460d4a3ff928eb0990ce119b062f8061d:
+ARM64 default packaging, pinned stripping tools, bounded/coalesced TMDB requests, memory-pressure
+cache cleanup, idle artwork-thread retirement and test-only helper relocation. UI, providers,
+playback and update identity are preserved. The source PR passed its offline, Android build/lint
+and TV emulator checks. Local core suites (including 21 catalogue-cache checks), 68 Python provider fixtures and three
+Node engine tests passed. Java checks used Eclipse JDT targeting Java 17 because this workspace
+has a JRE without javac; Android build/lint and emulator verification require CI. This port requires its own CI; physical ARM64 firmware installation and
+sustained playback remain unverified. No release has been published by this change.
+
 ## Rolled back to 1.0.12 code — 1.0.16, 28 October 2026
 
 The owner reported 1.0.15 as broken and asked to return to 1.0.12. The source tree is restored exactly to the 1.0.12 publish commit `c36ff6c` (only this note and the changelog differ) and published as 1.0.16 (code 116), because the updater rejects lower version codes. The 1.0.13–1.0.15 work remains in Git history if any of it is wanted back later. Sections below describing 1.0.12 apply to this build.
