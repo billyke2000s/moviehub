@@ -20,6 +20,8 @@ tried on the TV beside the real app. Those builds are published by `publish-expe
 Normal APKs include 32-bit ARM (`armeabi-v7a`) and 64-bit ARM (`arm64-v8a`).
 Use `-PmoviehubAbi=x86_64` only for emulator builds. Single-ABI diagnostic builds may explicitly
 select `armeabi-v7a` or `arm64-v8a`; the default `moviehubAbi=arm` ships both.
+A chip model does not establish the firmware app ABI. APK download size and total installed
+storage are different measurements; native compression is unchanged in 1.0.18.
 Install the pinned NDK with `sdkmanager 'ndk;27.2.12479018'` for native stripping.
 
 ```sh

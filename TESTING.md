@@ -1,5 +1,17 @@
 # Testing
 
+## Published 1.0.18 validation — 29 October 2026
+
+[Main CI 40808318926](https://github.com/billyke2000s/moviehub/actions/runs/40808318926) passed
+build/lint, both TV emulator suites, the live probe and the focused VOD job. The focused reports
+confirmed 3 session tests, 5 playback tests and two individual recovery regressions, with none skipped.
+[Signed publisher 40808326711](https://github.com/billyke2000s/moviehub/actions/runs/40808326711)
+passed core/device tests, release build/lint, dual-ARM inspection, signature compatibility and upload.
+The downloaded public APK matched the updater checksum; ELF headers confirm 12 ARM32 and
+12 ARM64 libraries, both Python ABI payloads, no native debug sections and unchanged native
+compression. These are build/emulator/artifact checks, not physical-TV installation evidence.
+Older dated validation notes below are historical checkpoints.
+
 ## Managed VOD regression coverage
 
 `VodLinkPolicyTest` covers short/unknown/truncated runtimes, incompatible editions, dynamic backup
@@ -55,19 +67,20 @@ ORG_GRADLE_PROJECT_moviehubAbi=x86_64 bash android-tv-launcher/tests/run-device-
 ```
 
 These fixtures do not establish physical-box installation, startup/RAM improvements or sustained
-provider playback. The FreeLinks source branch passed build/lint, offline and emulator checks;
-this port must pass its own final-commit CI before release.
+provider playback. The FreeLinks port and VOD changes are published; the completed 1.0.18
+validation is recorded above. Physical installed storage and memory/performance improvements
+have not been measured.
 
 ## Continuous series and automatic playback
 
 `VideoFilesTest` includes episode ordering, future-date handling and source-resolution ranking. `SeriesAutoplayTest` uses catalogue and source fixtures to check season transitions, updated history keys, missing pack episodes, show endings, uncertain filenames, bounded source fallback and cancellation. `LiveGuideTest` covers colour keys from header focus and Back/arrow/OK controls; `LiveControlsTest` covers all four physical colours during playback, learned scan-code colours, and OK/click/◀ always showing the same banner. These do not verify a particular physical remote or real-provider playback.
 
-There are three layers of checks. CI runs all of them on every pull request that touches
+There are four layers of checks. CI runs all of them on every pull request that touches
 `android-tv-launcher/` (workflow: `.github/workflows/android-launcher.yml`).
 
 | Layer                          | Where                                      | Needs                                | Runs in CI step                                              |
 | ------------------------------ | ------------------------------------------ | ------------------------------------ | ------------------------------------------------------------ |
-| Core checks (932)              | `android-tv-launcher/tests/`               | Only a JDK                           | "Verify playlist, network, channel search and episode rules" |
+| Core rule checks              | `android-tv-launcher/tests/`               | Only a JDK                           | "Verify playlist, network, channel search and episode rules" |
 | Build and lint                 | Gradle                                     | Android SDK 35                       | "Build APK and run Android lint"                             |
 | Device tests (instrumentation) | `android-tv-launcher/app/src/androidTest/` | Android emulator                     | `device-tests` job                                           |
 | Signing compatibility          | release build vs published APK             | signing secrets (same-repo PRs only) | `signed-compatibility` job                                   |
