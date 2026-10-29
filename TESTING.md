@@ -3,8 +3,9 @@
 CineStream candidate: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
-say Stream instead of Download; the existing player and source-list layout are unchanged.
-Local validation: 143 Python tests and 34 core suites / 1,167 checks pass. At `d85b832`, all six
+say Stream instead of Download. LinksMod navigation is excluded from file traversal so it cannot
+consume the mirror budget; the existing player and source-list layout are unchanged.
+Local validation: 144 Python tests and 34 core suites / 1,167 checks pass. At `d85b832`, all six
 Android CI jobs passed and the fifteen-site audit verified 21 individual sources across four sites.
 The new redirect/button corrections still require final Android/live validation. Vidy episode
 playback crashes and other site/host failures remain unresolved; registration is not playback proof.

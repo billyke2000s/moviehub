@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Keep LinksMod Home/account/FAQ/policy navigation out of the new file-mirror traversal budget.
+
 - Decode escaped UHDMovies redirect URLs before following them; support the observed DriveSeed
   public cloud/file-button exchange with same-origin issued fields. Keep host-button server/size
   details while changing Download to Stream in the new source labels.

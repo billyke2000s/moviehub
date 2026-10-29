@@ -79,6 +79,22 @@ class CineStreamChainTests(unittest.TestCase):
             self.assertEqual(rows, [])
             self.assertLessEqual(len(calls), 2)
 
+    def test_linksmod_navigation_does_not_spend_the_file_mirror_budget(self):
+        navigation = ('Sign up', 'Log in', 'Home', 'Earn Money', 'Faqs', 'Contact us',
+                      'Save it', 'Privacy Policy', 'Terms', 'Dmca Copyright')
+        start = 'https://linksmod.example/view/public'
+        body = ''.join('<a href="/nav/' + str(i) + '">' + label + '</a>'
+                       for i, label in enumerate(navigation))
+        body += '<a href="/mirror/public">Download Server 1</a>'
+        rows, calls = self.run_chain({
+            (start, False): body,
+            ('https://linksmod.example/mirror/public', False):
+                '<a href="https://cdn.example/file.mkv">Download</a>',
+        }, start=start)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(len(calls), 2)
+        self.assertTrue(all('/nav/' not in call[0] for call in calls))
+
     def test_unrelated_ads_and_branding_are_not_download_entries(self):
         doc = tree('<h5>A Film 720p</h5><p><a href="https://brand.example">Movie Site</a>'
                    '<a href="https://links.example/file">Download 720p</a></p>')

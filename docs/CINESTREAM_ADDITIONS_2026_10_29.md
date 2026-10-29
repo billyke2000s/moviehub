@@ -37,7 +37,14 @@ preserving the server/file-size wording, actual media URL, headers and metadata.
 player opens the source. Existing provider implementations, UI, source selection and ARM packaging
 remain unchanged.
 
-Local checks for these corrections: 143 Python tests; 34 core suites / 1,167 checks; diff checks.
+Bollyflix public-page research also exposed LinksMod's Home, signup/login, FAQ and policy links
+on the same host as actual wrappers. The generic host matcher followed them and repeatedly spent
+its forty-page budget on site navigation. An exact LinksMod-only navigation-label filter now
+preserves that budget for advertised media mirrors. Its fixture requires the real wrapper/file path
+to succeed without issuing any navigation request. This does not establish that every downstream
+host or file is available.
+
+Local checks for these corrections: 144 Python tests; 34 core suites / 1,167 checks; diff checks.
 New fixtures cover escaped redirect traversal to a file host, same-page cloud POST/header isolation,
 login-only/unrelated-host rejection and Stream labeling with retained file metadata. Direct app
 transport in this workspace failed DNS before reaching UHDMovies. The public-page research used

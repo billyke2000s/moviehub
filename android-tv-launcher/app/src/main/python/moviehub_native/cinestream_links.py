@@ -343,6 +343,12 @@ class Links:
             label = anchor.text()
             if re.search(r'Telegram|Login|Tutorial|Dashboard', label, re.I):
                 continue
+            if host_matches(host, ('linksmod.',)) and re.fullmatch(
+                    r'Sign up|Log in|Home|Earn Money|Faqs?|Contact us|Save it|Privacy Policy|Terms|Dmca Copyright',
+                    label, re.I):
+                # These same-host navigation links otherwise look like wrappers
+                # and exhaust the shared page budget before the file mirrors.
+                continue
             is_host = host_matches(urlparse(urljoin(url, address)).hostname or '', HOSTS)
             if MEDIA.search(urlparse(address).path):
                 add(address, True)
