@@ -23,12 +23,16 @@ if [ -n "$source_names" ]; then audit_args+=(-e vodSourceNames "$source_names");
 if [ -n "${VOD_CINESTREAM_BACKENDS:-}" ]; then
     audit_args+=(-e vodCineStreamAllBackends true -e vodCineStreamBackends "$VOD_CINESTREAM_BACKENDS")
 fi
-adb shell am instrument -w -r \
+instrumentation=(am instrument -w -r \
   -e class local.tv.home.FreeVodLiveAuditTest \
   -e vodLiveAudit true -e vodShard "$shard" -e vodShards "$shards" \
   -e vodSeries "$series" \
   "${audit_args[@]}" \
-  local.tv.home.test/local.tv.home.MovieHubTestRunner
+  local.tv.home.test/local.tv.home.MovieHubTestRunner)
+# adb joins separate arguments into a remote shell command. Quote on that remote
+# boundary too, otherwise a source such as "Vidy Vegas" becomes a runner argument.
+remote_command=$(python -c 'import shlex, sys; print(shlex.join(sys.argv[1:]))' "${instrumentation[@]}")
+adb shell "$remote_command"
 adb exec-out run-as local.tv.home cat files/vod-live-audit.jsonl > vod-live-audit.jsonl
 python - "$shard" "$shards" <<'PY'
 import json, pathlib, sys

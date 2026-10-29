@@ -277,7 +277,7 @@ responses and one timeout. The 200s include an empty API root and an old Videasy
 | Vidrock | Root 503 | Unavailable from this environment; no evidence of permanent closure |
 | Peachify | Root 523, origin unreachable | Origin unavailable in this sample; no parser diagnosis possible |
 | Vidzee | Homepage 200; current embed frontend present, old /api/server 404 | Current client imports a WASM decoder; old CBC endpoint translation is stale. Replacement protocol remains unresolved; no remote script execution or fingerprint spoofing attempted |
-| MovieBox | API root 404; moviebox.com responds 200 | API root is not the viewer route; previous search success and media refusal do not prove closure. Link delivery remains unverified |
+| MovieBox | API root 404; moviebox.com responds 200 with a Site Unavailable page | API root is not the viewer route; previous search success and media refusal do not prove closure. Link delivery remains unverified |
 | AllMovieLand | .one redirects to .art, 403 | Access limited; catalogue/stream methods remain unverified |
 | Multimovies | Homepage and Attack on Titan detail/search 200 | Site replaced WordPress with /api/search, explicit season/episode paths and literal watchConfig. Added current parsing with episode equality checks. Advertised iframe hosts still require supported terminal resolution |
 | Toonstream | Homepage 200 | Catalogue exists; two-level terminal resolution remains unverified |
@@ -287,7 +287,7 @@ responses and one timeout. The 200s include an empty API root and an old Videasy
 
 No established site implementation, player loading/parsing/resolution, menu or selection behavior
 was changed by this follow-up. Existing Movy code is reused without edits. The native decoder audit
-now selects Vidy Vegas explicitly, keeping the normal production backend set intact.
+now selects Vidy Vegas/Phoenix explicitly, keeping the normal production backend set intact.
 
 Unattended Python audits now reject enc-dec.app requests **before** network transmission. Automatic
 approval review rejected a live probe because it would send provider-issued tokens and encrypted

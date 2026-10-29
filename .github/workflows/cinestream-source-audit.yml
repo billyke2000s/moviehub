@@ -39,7 +39,7 @@ jobs:
       fail-fast: false
       matrix:
         route:
-          - {provider: 'native:videasy', names: 'Vidy Vegas'}
+          - {provider: 'native:videasy', names: 'Vidy Vegas,Vidy Phoenix'}
         media: [movies, series]
     steps:
       - uses: actions/checkout@v5
