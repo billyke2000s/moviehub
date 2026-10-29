@@ -11,7 +11,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: [native:vaplayer, native:hexa]
+        route:
+          - {provider: 'native:vaplayer', names: 'VaPlayer'}
+          - {provider: 'native:hexa', names: 'Hexa'}
         media: [movies, series]
     steps:
       - uses: actions/checkout@v5
@@ -41,7 +43,7 @@ jobs:
           arch: x86_64
           profile: tv_1080p
           disable-animations: true
-          script: ORG_GRADLE_PROJECT_moviehubAbi=x86_64 bash android-tv-launcher/tests/run-live-vod-audit.sh 0 1 '${{ matrix.provider }}' '${{ matrix.media }}'
+          script: ORG_GRADLE_PROJECT_moviehubAbi=x86_64 bash android-tv-launcher/tests/run-live-vod-audit.sh 0 1 '${{ matrix.route.provider }}' '${{ matrix.media }}' '${{ matrix.route.names }}'
       - name: Summarize actual outcomes without asserting universal availability
         if: always()
         run: |
