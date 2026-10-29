@@ -7,15 +7,16 @@ say Stream instead of Download. LinksMod navigation is excluded from file traver
 consume the mirror budget; the existing player and source-list layout are unchanged.
 Local validation: 144 Python tests and 34 core suites / 1,167 checks pass. At `d85b832`, all six
 Android CI jobs passed and the fifteen-site audit verified 21 individual sources across four sites.
-The new redirect/button corrections still require final Android/live validation. Vidy episode
-playback crashes and other site/host failures remain unresolved; registration is not playback proof.
+Application revision `925af7c` passed all six Android jobs in run 40913881846. Final live checks
+include 23 verified sources (eleven movies and twelve episodes); the episode retry passed after an EGL crash.
+Vidy playback failures and other site/host errors remain unresolved; registration is not playback proof.
 See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
 
 
 ## CineStream additions and format metadata
 
-`moviehub_native/cinestream_*` contains 24 additional website protocols, registered with explicit
-factory names; 21 are enabled and three remain pending. Hexa exposes only its verified Alpha
+`moviehub_native/cinestream_*` contains 39 additional adapter protocols, registered with explicit
+factory names; 36 are enabled and three remain pending. Hexa exposes only its verified Alpha
 backend normally; explicit audits can inspect the others. New adapters use isolated cookie
 sessions and their upstream browser/header profiles. Established native/Kodi adapters remain unchanged. New data decoders reuse bundled
 crypto and bounded transport. Some protocols depend on enc-dec.app as a data service. Missing

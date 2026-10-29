@@ -1,5 +1,65 @@
 # CineStream sources and format display — 29 October 2026
 
+## Final resumed application validation — `925af7c`
+
+[Android CI 40913881846](https://github.com/billyke2000s/moviehub/actions/runs/40913881846)
+passed all six jobs at application revision `925af7c486789b1a8198eca4f25424fbfba1a473`:
+APK/build/lint and dual-ARM inspection, signed compatibility, normal device tests, experimental
+device tests, public provider checks and focused VOD recovery. The focused job verified 3 session,
+5 session-playback and two individual recovery cases, all passing with none skipped. Experimental
+filters verified 7 DlhdStartup and 20 ExoLive cases with none skipped. Local and CI Python runs
+passed 144 tests; local core checks passed 34 suites / 1,167 checks.
+[Standalone engine 40913882036](https://github.com/billyke2000s/moviehub/actions/runs/40913882036)
+also passed.
+
+[Final native audit 40913881854](https://github.com/billyke2000s/moviehub/actions/runs/40913881854)
+first verified eleven movie sources: three MoviesDrive, two HindMoviez, two HDHub4u and four
+SkyMovies. Nine further samples decoded video/audio without verified expected runtime/midpoint:
+three Bollyflix, four DudeFilms, one MoviesMod and one UHDMovies. The UHDMovies sample measured
+3832×1600 with decoded audio, but zero played-audio buffers were recorded. Audible output and
+its expected runtime/midpoint remain unverified. Five Bollyflix samples
+had unverified audio. Four Vidy movie attempts produced no decoded video, and Vidy episode
+playback reproduced the native adaptive timestamp-continuity assertion crash. Green individual
+audit jobs with zero sources or unsuccessful outcomes do not establish site health.
+
+The HindMoviez episode group failed before producing a report with EGL_BAD_ALLOC surface errors
+in both the Android launcher and MovieHub RenderThreads. Only that job was retried, on unchanged
+application code, and passed all twelve HindMoviez episode sources on the retry. The earlier
+failed attempt is retained as evidence. The final verified total is 23 sources: eleven movies
+and twelve episodes; earlier checkpoint totals below are not combined with it.
+
+| Added site | Verified movie sources | Verified episode sources |
+| --- | ---: | ---: |
+| MoviesDrive | 3 | 0 |
+| HindMoviez | 2 | 12 |
+| HDHub4u | 2 | 0 |
+| SkyMovies | 4 | 0 |
+| Total | 11 | 12 |
+
+These are distinct tested sources for the named audit titles, not each site's total catalogue.
+
+The final Bollyflix audit exposed eight media candidates after navigation filtering (versus one
+candidate in the earlier native checkpoint). Three decoded video/audio and five had unverified
+audio. Two advertised 1080p candidates actually decoded at 1728×720. File availability and source
+quality claims remain distinct from measured playback; relay I/O errors are still recorded.
+
+[Existing-provider audit 40913881954](https://github.com/billyke2000s/moviehub/actions/runs/40913881954)
+verified all eight Movy movie sources and seven of eight Movy episode sources; one 4K episode
+source had unverified audio. Rive returned three series links but none reached the audit's
+Vanguard-filtered playback pass. No existing Rive/Movy implementation was modified.
+
+All four final protocol jobs completed. Inception lookup returned sources from MoviesDrive,
+HindMoviez, HDHub4u and SkyMovies; Breaking Bad S1E1 returned twelve HindMoviez sources. Other
+samples had rate limits, browser challenges, DNS/TLS failures, timeouts, no matches or refused
+files. All fifteen added routes remain registered. None of these results is a full-site or
+full-title reliability guarantee.
+
+This validation-only documentation follow-up changes no application, tests, workflow or packaging.
+Its evidence applies to the unchanged application tree above. PR #195 remains draft, unmerged and
+unpublished because the recorded live failures remain unresolved. Earlier sections below are
+checkpoint history, including pending labels and counts that were accurate when written.
+
+
 ## Resumed checkpoint and current corrections
 
 Recovered branch `feat/cinestream-sources-metadata`, PR #195, at `d85b832`.

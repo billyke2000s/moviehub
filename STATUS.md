@@ -7,8 +7,9 @@ say Stream instead of Download. LinksMod navigation is excluded from file traver
 consume the mirror budget; the existing player and source-list layout are unchanged.
 Local validation: 144 Python tests and 34 core suites / 1,167 checks pass. At `d85b832`, all six
 Android CI jobs passed and the fifteen-site audit verified 21 individual sources across four sites.
-The new redirect/button corrections still require final Android/live validation. Vidy episode
-playback crashes and other site/host failures remain unresolved; registration is not playback proof.
+Application revision `925af7c` passed all six Android jobs in run 40913881846. Final live checks
+include 23 verified sources (eleven movies and twelve episodes); the episode retry passed after an EGL crash.
+Vidy playback failures and other site/host errors remain unresolved; registration is not playback proof.
 See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
 
 
@@ -20,7 +21,7 @@ public-ID-only API check; Android CI for that small final correction is pending.
 audits continue to block external decoder uploads of site tokens/encrypted responses.
 See the [direct-site findings](docs/CINESTREAM_ADDITIONS_2026_10_29.md#direct-website-and-current-client-investigation--follow-up-29-october).
 
-## CineStream source/metadata candidate — 29 October 2026
+## Earlier CineStream source/metadata checkpoint — 29 October 2026
 
 21 additional adapters enter normal discovery, for 59 websites / 62 adapters. VaPlayer remains
 pending after native timestamp crashes; PrimeSrc/Asiaflix need their upstream browser-challenge

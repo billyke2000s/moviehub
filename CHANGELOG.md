@@ -6,7 +6,7 @@
   public cloud/file-button exchange with same-origin issued fields. Keep host-button server/size
   details while changing Download to Stream in the new source labels.
 
-- Add fifteen CineStream catalogue/TV routes and bounded ordinary redirect chains; preserve existing sources and player. Current-site inspection and 141 offline Python tests pass; live chain/player checks are pending.
+- Add fifteen CineStream catalogue/TV routes and bounded ordinary redirect chains; preserve existing sources and player. Current-site inspection and 144 offline Python tests pass; final app build/regression CI passed. Live results and remaining failures are recorded in the source report.
 
 - Follow current CineStream-site protocols: fresh MeowTV tickets, rotated token-server handshake,
   Cinejoy/KissKH/AnimeSalt domain moves and current Multimovies catalogue. Add Vidy’s other
