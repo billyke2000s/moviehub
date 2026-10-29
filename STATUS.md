@@ -5,10 +5,12 @@
 24 additional website protocols are staged as pending candidates, excluded from normal discovery.
 Earlier incomplete HLS ports hit a native timestamp assertion; this did not establish broken upstream sources.
 VaPlayer/Hexa/Vidcore now include HLS expansion and token-server request differences are corrected.
-Final Android/live validation of the correction is pending; no new playback success is claimed.
+Correction run 40826640669 verified one Hexa alpha episode with decoded audio/video, runtime and seek.
+Other routes still hit the native timestamp assertion; no whole-site playback guarantee is claimed.
+Further exact-head diagnostics are pending.
 This is a blocked expansion: account/build keys, an invalid root and unsupported custom player chains
 remain blockers. Source format reports and active LibVLC track suffixes use separate metadata paths.
-Local validation: 34 core suites / 1,167 checks and 94 Python tests pass. Android CI is pending;
+Local validation: 34 core suites / 1,167 checks and 96 Python tests pass. Android CI is pending;
 local provider DNS is restricted and no new real-provider playback result is claimed. See the
 [inventory and evidence](docs/CINESTREAM_ADDITIONS_2026_10_29.md). Not merged or published.
 

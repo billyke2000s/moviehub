@@ -9,6 +9,7 @@ import json
 import re
 from urllib.parse import quote, urlencode, urljoin, urlparse
 from moviehub_compat import client
+from moviehub_scrubs import dom_parser
 from .rive import positive
 from .cinestream_hls import streams as hls_streams, USER_AGENT
 
@@ -89,8 +90,9 @@ class VaPlayer(Base):
             args.update(season=q['season'], episode=q['episode'])
         headers = {'Referer': 'https://nextgencloudfabric.com/', 'User-Agent': USER_AGENT}
         data = get(self.base_link + '/api.php?' + urlencode(args), headers)
-        for url in (data.get('data') or {}).get('stream_urls', [])[:32]:
+        def backend(url):
             yield from hls_streams(url, headers['Referer'], 'VaPlayer')
+        yield from self.each((data.get('data') or {}).get('stream_urls') or [], backend)
 
 
 class PrimeSrc(Base):
@@ -123,11 +125,12 @@ class Fshare(Base):
         page_url = self.base_link + '/w/' + slug
         page = client.request(page_url)
         token = re.search(r"Movie\.setSource\('([^']+)'", page)
-        trailer = re.search(r'<input\b[^>]*id=["\']trailer["\'][^>]*value=["\']([^"\']*)', page)
-        if not token or not trailer:
+        trailers = dom_parser.parse_dom(page, 'input', {'id': 'trailer'}, req='value')
+        trailer = trailers[0].attrs['value'] if trailers else None
+        if not token or trailer is None:
             return
         data = get(self.base_link + '/api/file/' + quote(token[1], safe='') + '/source?' +
-                   urlencode(dict(trailer=trailer[1], type='watch')))
+                   urlencode(dict(trailer=trailer, type='watch')))
         file = data.get('data', {}).get('file', {})
         rows = file.get('sources', []) + [r for group in file.get('alternatives', []) for r in group]
         for row in rows[:64]:
@@ -301,8 +304,9 @@ class Hexa(Base):
                        'X-Fingerprint-Lite': 'e9136c41504646444', 'X-Cap-Token': token})
         encrypted = client.request(self.api + path, headers=headers)
         result = post_json(DECODER + '/dec-hexa', dict(text=encrypted, key=key)).get('result') or {}
-        for row in result.get('sources', [])[:32]:
+        def backend(row):
             yield from hls_streams(row['url'], self.base_link + '/', 'Hexa ' + str(row.get('server') or 'server'))
+        yield from self.each(result.get('sources') or [], backend)
 
 
 class AllMovieLand(Base):

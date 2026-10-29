@@ -134,6 +134,29 @@ class CineStreamTests(unittest.TestCase):
         self.assertTrue(all(r['source'] == 'Hexa one' for r in rows))
         self.assertTrue(all('Referer=https%3A%2F%2Fhexa.su%2F' in r['url'] for r in rows))
 
+    def test_a_refused_hexa_playlist_does_not_discard_other_servers(self):
+        provider = api.Hexa()
+        with patch.object(client, 'request', side_effect=[{'result': {'token': 'issued'}}, 'encrypted', {'result': {'sources': [{'server': 'bad', 'url': 'https://cdn.example/bad.m3u8'}, {'server': 'good', 'url': 'https://cdn.example/good.m3u8'}]}}]), patch.object(client, 'fetch', side_effect=[requests.Timeout(), self.playlist('#EXTM3U\n#EXTINF:600,\na.ts')]):
+            rows = provider.sources(self.key(provider), [])
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['source'], 'Hexa good')
+
+    def test_peachify_proxy_keeps_source_header_fallbacks(self):
+        import base64
+        from urllib.parse import urlencode
+        from moviehub_native import cinestream_crypto as crypto
+        from resolveurl.lib.aesgcm import python_aesgcm
+        iv = bytearray(b'fixture12345')
+        url = 'https://proxy.example/m3u8-proxy?' + urlencode(dict(url='https://cdn.example/film.m3u8', headers=json.dumps({'origin': 'https://cdn.example'})))
+        clear = json.dumps({'sources': [dict(url=url, headers={'referer': 'https://source.example/', 'user-agent': 'source-player'})]}).encode()
+        encoded = bytes(python_aesgcm.new(bytearray(crypto.PEACHIFY_FORMAT_KEY)).seal(iv, bytearray(clear), bytearray()))
+        data = '.'.join(base64.urlsafe_b64encode(value).decode().rstrip('=') for value in (bytes(iv), encoded[:-16], encoded[-16:]))
+        provider = crypto.Peachify()
+        with patch.object(client, 'request', return_value={'data': data}):
+            rows = provider.sources(self.key(provider), [])
+        headers = parse_qs(rows[0]['url'].partition('|')[2])
+        self.assertEqual(headers, {'referer': ['https://source.example/'], 'origin': ['https://cdn.example'], 'user-agent': ['source-player']})
+
     def test_each_stops_on_cancellation_before_another_backend(self):
         provider = api.Meowtv()
         client.scope(lambda: True, timeout=30)
@@ -151,7 +174,7 @@ class CineStreamTests(unittest.TestCase):
 
     def test_fshare_is_movie_only_and_keeps_alternatives(self):
         provider = api.Fshare()
-        page = "<input id='trailer' value='t'><script>Movie.setSource('token')</script>"
+        page = "<input value='t' type='hidden' id='trailer'><script>Movie.setSource('token')</script>"
         data = {'data': {'file': {'sources': [dict(src='/a.mp4', quality='720')],
                                  'alternatives': [[dict(src='/b.mp4', quality='1080')]]}}}
         with patch.object(client, 'request', side_effect=[page, data]):

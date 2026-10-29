@@ -108,7 +108,9 @@ class KissKH(Base):
         match = next((r for r in rows if matches(r)), None)
         if not match:
             return
-        data = get(self.base_link + '/api/DramaList/Drama/' + str(match['id']) + '?isq=false', self.headers())
+        detail_headers = dict(self.headers(), Referer=self.base_link + '/Drama/' +
+                              re.sub(r'[^a-zA-Z\d]', '-', match['title']) + '?id=' + str(match['id']))
+        data = get(self.base_link + '/api/DramaList/Drama/' + str(match['id']) + '?isq=false', detail_headers)
         episodes = data.get('episodes') or []
         if 'season' in q:
             episode = next((r for r in episodes if str(r.get('number')) == q['episode']), None)
@@ -117,17 +119,18 @@ class KissKH(Base):
         if not episode:
             return
         identity = str(episode['id'])
-        key = get(DECODER + '/enc-kisskh?' + urlencode(dict(text=identity, type='vid'))).get('result')
+        key = get(DECODER + '/enc-kisskh?' + urlencode(dict(text=identity, type='vid')),
+                  {'Referer': self.base_link}).get('result')
         if not isinstance(key, str):
             return
         response = get(self.base_link + '/api/DramaList/Episode/' + identity + '.png?' +
-                       urlencode(dict(err='false', ts='', time='', kkey=key)), self.headers())
+                       urlencode(dict(err='false', ts='', time='', kkey=key)), {'Referer': self.base_link})
         for field in ('Video', 'ThirdParty'):
             value = response.get(field)
             if not isinstance(value, str) or not value:
                 continue
             url = client.safe(urljoin(self.base_link, value))
             if re.search(r'\.(?:m3u8|mp4)(?:$|\?)', url, re.I):
-                yield item(url, dict(self.headers(), Origin=self.base_link), 'KissKH ' + field)
+                yield item(url, dict(self.headers(), Referer=self.base_link, Origin=self.base_link), 'KissKH ' + field)
             else:
-                yield external(url, self.base_link + '/', 'KissKH ' + field)
+                yield external(url.partition('?')[0], self.base_link + '/', 'KissKH ' + field)

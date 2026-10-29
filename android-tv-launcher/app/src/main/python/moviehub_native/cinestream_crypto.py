@@ -69,16 +69,16 @@ class Peachify(Base):
                 url = row.get('url')
                 if not isinstance(url, str):
                     continue
-                request_headers = row.get('headers') or {}
+                source_headers = {k.lower(): v for k, v in (row.get('headers') or {}).items()}
+                proxy_headers = {}
                 # Upstream's proxy URLs explicitly carry the actual media URL and headers.
                 if urlparse(url).path in ('/m3u8-proxy', '/mp4-proxy'):
                     args = parse_qs(urlparse(url).query)
                     url = args.get('url', [url])[0]
-                    request_headers = json.loads(args.get('headers', ['{}'])[0])
-                media_headers = {'Referer': self.base_link + '/', 'Origin': self.base_link, 'User-Agent': USER_AGENT}
-                for key, value in request_headers.items():
-                    media_headers = {k: v for k, v in media_headers.items() if k.lower() != key.lower()}
-                    media_headers[key] = value
+                    proxy_headers = {k.lower(): v for k, v in json.loads(args.get('headers', ['{}'])[0]).items()}
+                defaults = {'referer': self.base_link + '/', 'origin': self.base_link, 'user-agent': USER_AGENT}
+                media_headers = {key: proxy_headers.get(key, source_headers.get(key, default))
+                                 for key, default in defaults.items()}
                 yield item(url, media_headers, 'Peachify ' + name + ' · ' + str(response.get('providerName') or name),
                            str(row.get('quality') or ''), str(row.get('dub') or ''))
         yield from self.each(('multi', 'hr', 'holly', 'air', 'moviebox'), backend)

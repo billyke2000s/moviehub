@@ -115,6 +115,7 @@ public final class FreeVodLiveAuditTest {
                         .put("episode", film.optInt("episode", -1))
                         .put("title", film.getString("title"))
                         .put("separateSource", separate);
+                    record(new JSONObject(result.toString()).put("kind", "starting"));
                     try {
                         play(source, film.optInt("runtimeMinutes"), result);
                     } catch (Exception error) {

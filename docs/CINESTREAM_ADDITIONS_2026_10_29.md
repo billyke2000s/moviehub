@@ -167,5 +167,14 @@ source entry/headers and expected runtime; it still pins that source to avoid cr
 Explicit provider arguments can audit pending candidates without enabling them globally. Empty
 instrumentation arguments are omitted rather than shifted by adb. Offline regressions cover HLS
 variants, redirects, external audio, error documents, token protocol differences and exact episodes.
-Local checks: 94 Python tests; 34 core suites / 1,167 checks. Final Android and live results must
+Local checks: 96 Python tests; 34 core suites / 1,167 checks. Final Android and live results must
 be read from this correction's CI, not inherited from the earlier green build.
+
+Correction run [40826640669](https://github.com/billyke2000s/moviehub/actions/runs/40826640669)
+at `c16889e` verified one Hexa alpha Breaking Bad S1E1 link: 3479 seconds, 1280×720,
+109 decoded video frames, 225 decoded audio frames, 112 played audio buffers and midpoint decode.
+Hexa delta decoded but reported 5690 seconds against the expected 58 minutes. Later Hexa and both
+VaPlayer audits still hit the native timestamp assertion. Hexa movie lookups produced timeout/
+TypeError responses; a green completed report with no links is not playback success.
+Further diagnostics record the starting backend before playback and trace all candidates'
+protocol failures/manifest structure without publishing URLs, headers, keys or response bodies.
