@@ -1,5 +1,15 @@
 # Status
 
+## Post-release provider re-audit — in progress
+
+The owner reports most new 1.0.19 sites failing. The prior 23-link evidence covered four sites,
+not the full addition. A fresh 39-root sweep found 31 HTTP 200 responses, without claiming
+playback. AllMovieLand's retired bootstrap script is corrected; current live playback is still
+unverified. The native matrix now covers all 39 additions and fails zero-source/unverified
+results. See [current findings and outstanding work](docs/CURRENT_PROVIDER_REAUDIT_2026_10_29.md).
+This work is unpublished; the public release below remains 1.0.19.
+
+
 ## Current release — MovieHub 1.0.19 (code 119)
 
 [1.0.19 is published](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.19)

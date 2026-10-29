@@ -1,5 +1,10 @@
 ## Unreleased
 
+- Follow AllMovieLand's current catalogue bootstrap redirect and retain its actual origin as Referer.
+- Audit all 39 added adapters by supported media mode; fail empty/unverified playback results and
+  retain the unattended external-decoder upload block in the native audit.
+- Provider re-audit is in progress; this is not a claim that all added sites work.
+
 ## 1.0.19 (29 October 2026)
 
 - Add 36 enabled CineStream adapter protocols for additional film and series sites and playback

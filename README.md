@@ -112,6 +112,9 @@ Additional information is available in [DEVELOPMENT.md](DEVELOPMENT.md), [ARCHIT
 
 ## Project status
 
+The owner reports failures across the new providers. A [current-site re-audit](docs/CURRENT_PROVIDER_REAUDIT_2026_10_29.md)
+is in progress; the earlier 23-link result covered four sites and does not establish all-site support.
+
 Current release: [MovieHub 1.0.19](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.19),
 with ARM32 and ARM64 in one APK. The CineStream source/format additions, optimisations and VOD
 recovery changes are published;

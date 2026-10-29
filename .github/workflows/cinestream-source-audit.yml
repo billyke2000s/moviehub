@@ -41,6 +41,12 @@ jobs:
       fail-fast: false
       matrix:
         route:
+          - {provider: 'native:vaplayer,native:primesrc,native:fshare,native:meowtv', names: ''}
+          - {provider: 'native:vidup,native:vidcore,native:vidfast,native:onetouchtv', names: ''}
+          - {provider: 'native:cinejoy,native:hexa,native:projectfreetv_sx,native:akwam', names: ''}
+          - {provider: 'native:asiaflix,native:vidrock,native:peachify,native:vidzee', names: ''}
+          - {provider: 'native:moviebox,native:allmovieland,native:multimovies,native:toonstream', names: ''}
+          - {provider: 'native:animesalt,native:rtally,native:kisskh', names: ''}
           - {provider: 'native:videasy', names: 'Vidy Vegas,Vidy Phoenix'}
           - {provider: 'native:bollyflix,native:topmovies,native:moviesmod,native:moviesdrive,native:uhdmovies', names: ''}
           - {provider: 'native:dudefilms,native:vegamovies,native:rogmovies,native:hindmoviez,native:hdhub4u', names: ''}
@@ -84,7 +90,17 @@ jobs:
           if not path.exists():
               raise SystemExit('No playback report produced')
           rows = [json.loads(line) for line in path.read_text().splitlines()]
-          print(json.dumps(dict(outcomes=dict(collections.Counter(row.get('status') for row in rows if row.get('kind') == 'playback')))))
+          sites = sorted({row['website'] for row in rows if row.get('kind') == 'lookup'})
+          outcomes = {}
+          for site in sites:
+              attempts = [row for row in rows if row.get('kind') == 'playback' and row.get('website') == site]
+              counts = dict(collections.Counter(row.get('status') for row in attempts))
+              outcomes[site] = dict(playback=counts, verified=counts.get('verified', 0))
+          print(json.dumps(dict(sites=outcomes)))
+          incomplete = [site for site, result in outcomes.items() if not result['verified']]
+          failed_links = [row for row in rows if row.get('kind') == 'playback' and row.get('status') != 'verified']
+          if not sites or incomplete or failed_links:
+              raise SystemExit('Playback verification incomplete: inspect per-site outcomes, including zero-source sites')
           PY
       - uses: actions/upload-artifact@v6
         if: always()

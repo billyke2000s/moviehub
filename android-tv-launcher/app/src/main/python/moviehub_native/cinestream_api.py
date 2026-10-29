@@ -27,6 +27,10 @@ DESKTOP_138 = ('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
 
 
 def request(url, headers=None, **kwargs):
+    host = (urlparse(url).hostname or '').lower()
+    if getattr(_HTTP, 'block_external_decoder', False) and (
+            host == 'enc-dec.app' or host.endswith('.enc-dec.app')):
+        raise PermissionError('External decoder uploads are blocked in this audit')
     # CloudStream's app client supplies its desktop profile even when an extractor
     # omits headers. Keep this local; existing MovieHub scrapers retain their own UA.
     supplied = dict(headers or {})
@@ -89,13 +93,16 @@ class Base:
         if key is None:
             return []
         previous = http_session()
+        previous_guard = getattr(_HTTP, 'block_external_decoder', False)
         session = client.requests.Session()
         session.trust_env = False
         _HTTP.session = session
+        _HTTP.block_external_decoder = getattr(self, 'cinestream_no_external_decoder', False)
         try:
             return [row for row in self.extract(json.loads(key)) if row is not None]
         finally:
             _HTTP.session = previous
+            _HTTP.block_external_decoder = previous_guard
             session.close()
 
     def headers(self):
@@ -420,19 +427,25 @@ class AllMovieLand(Base):
     base_link = 'https://allmovieland.one'
 
     def extract(self, q):
-        script = request('https://allmovieland.link/player.js?v=60%20128')
+        # Follow the catalogue's current script redirect instead of the retired
+        # .link host/version copied from CineStream. Its final origin is also
+        # the browser's catalogue Referer for this lookup.
+        script, _, _, _, script_url = request(self.base_link + '/player.js', output='extended')
+        parsed = urlparse(script_url)
+        catalogue_referer = parsed.scheme + '://' + parsed.netloc + '/'
+        media_headers = dict(self.headers(), Referer=catalogue_referer)
         host_match = re.search(r"const AwsIndStreamDomain[^\n]*?'(https://[^']+)'", script)
         if not host_match:
             return
         host = client.safe(host_match[1])
-        page = request(host.rstrip('/') + '/play/' + q['imdb'], referer=self.base_link + '/')
+        page = request(host.rstrip('/') + '/play/' + q['imdb'], referer=catalogue_referer)
         match = re.search(r'\bplaylist\s*[:=]\s*', page)
         if not match:
             return
         data, _ = json.JSONDecoder().raw_decode(page[match.end():].lstrip().lstrip('(').lstrip())
         if not isinstance(data, dict) or not isinstance(data.get('key'), str):
             return
-        headers = dict(self.headers(), **{'X-CSRF-TOKEN': data['key']})
+        headers = dict(media_headers, **{'X-CSRF-TOKEN': data['key']})
         catalogue = urljoin(host, data['file'])
         if urlparse(catalogue).netloc != urlparse(host).netloc:
             raise ValueError('Catalogue token origin changed')
@@ -445,5 +458,5 @@ class AllMovieLand(Base):
         def backend(row):
             path = host.rstrip('/') + '/playlist/' + quote(str(row['file']), safe='') + '.txt'
             url = request(path, headers=headers, post='', redirect=False).strip()
-            yield item(url, self.headers(), 'AllMovieLand ' + str(row.get('title') or 'server'))
+            yield item(url, media_headers, 'AllMovieLand ' + str(row.get('title') or 'server'))
         yield from self.each(rows[:32], backend)

@@ -1,5 +1,14 @@
 # Testing
 
+## Current provider re-audit
+
+The Python runner has 145 fixtures, including redirected AllMovieLand bootstrap/Referer behavior
+and a native-audit external-decoder block with restored thread scope. The native matrix covers
+all 39 added adapters, filters only unsupported media modes and fails sites with zero verified
+sources or unsuccessful individual playback outcomes. HTTP availability is recorded separately.
+Final revision CI/playback remains pending; see the [re-audit report](docs/CURRENT_PROVIDER_REAUDIT_2026_10_29.md).
+
+
 ## Published 1.0.19 validation — 29 October 2026
 
 Source: `8759c88e0e2e72227c06bc1751ae1836ef241c53`. Signed publisher
