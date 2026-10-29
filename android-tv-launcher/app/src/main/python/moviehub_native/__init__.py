@@ -55,3 +55,9 @@ for name, factory, site, series in (
     PROVIDERS.append(dict(id='native:' + name, module='moviehub_native.cinestream_embeds',
                           factory=factory, family='native', name=name, site=site,
                           movies=True, series=series))
+
+# Keep candidate protocols auditable without exposing unverified/crashing HLS routes in discovery.
+# The CineStream live audit hit LibVLC FakeESOut timestamp assertions; no engine change is in scope.
+for record in PROVIDERS:
+    if 'factory' in record:
+        record['pending'] = True

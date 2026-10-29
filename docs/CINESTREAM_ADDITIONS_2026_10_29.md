@@ -20,7 +20,17 @@ Levidia's `www.levidia.ch` is the existing `levidia.ch` website, and 4KHDHub's r
 present. Neither gets a duplicate adapter. A different backend label is retained even when
 it returns the same CDN URL, using existing source/header identity rules.
 
-## Added protocols (24 websites, not 24 verified working services)
+## Candidate protocols (24 adapters; disabled in normal discovery)
+
+Actual Android audits on the new VaPlayer/Hexa HLS routes aborted inside LibVLC:
+`FakeESOut.cpp:535: applyTimestampContinuity: assertion ts >= VLC_TICK_INVALID failed`.
+The [redacted audit](https://github.com/billyke2000s/moviehub/actions/runs/40822400650)
+records the native crash. This is a blocker to enabling these routes, not successful playback.
+All 24 unverified candidates have `pending=True`; default discovery stays on the original
+38 websites / 41 adapters. `search_providers(include_retired=True)` retains candidates for
+explicit audits without exposing them in the owner's source picker. No player or existing
+source transport is changed to work around the native failure.
+
 
 | Website / adapter | Retained playback backends / capabilities |
 | --- | --- |
@@ -49,11 +59,11 @@ it returns the same CDN URL, using existing source/header identity rules.
 | Rtally | Explicit direct resources and published lulustream/strmup/filemoon/vidhide/streamwish IDs; movies only |
 | KissKH | Exact title/season match, exact numbered episode, Video and ThirdParty separately |
 
-Inventory: 62 enabled website groups / 65 enabled adapters; 96 bundled constructors including
+Inventory: 38 enabled website groups / 41 enabled adapters; 24 pending candidates and 96 bundled constructors including
 excluded original websites. No previously excluded site is re-enabled. New factory names only
 apply to new modules; existing modules still instantiate their original `source` class.
-New website groups are appended after the unchanged established search order, so new backends
-do not take the initial worker slots from existing sites. The existing overall search deadline
+Pending website groups are available after the unchanged established order for explicit audits.
+They do not enter normal discovery or take its worker slots. The existing overall search deadline
 and worker count remain unchanged; queued sites can still be cancelled at that deadline.
 New routes use current bounded transport, media checks, cancellation, refresh and identity gates.
 Upstream's hard-coded 720p/1080p/4K defaults are deliberately not copied. A missing quality is Auto.
@@ -117,11 +127,17 @@ request, source grouping, decoder menu, player replacement, automatic switch or 
   Fixtures block accidental live HTTP. These prove protocol handling, not provider playback.
 - Fixture media inspected with ffprobe: existing playback.mp4 is H.264 + AAC. Added Android
   regression reads real LibVLC track labels and verifies suffixes, Off/subtitle preservation,
-  and unchanged audio/video selections. Android compilation/lint/device results are pending CI.
+  and unchanged audio/video selections. Android compilation/lint/device results and the HDR-label correction are tracked on the PR.
 - Initial direct movie probes for 14 new adapters all failed local DNS (`gaierror`) before
   usable provider responses; no live playback, duration, midpoint seek or decoded audio was
   established. Remaining new adapters share the same network limitation; no local success claimed.
 - Formatting and `git diff --check` run before submission. Existing provider and native-site
   regressions remain part of the Python run. No APK was published.
 
-Exact-head CI and any external probe findings are recorded on the PR before a completion claim.
+The desktop runner probe at `7bdca2d` returned seven valid media responses across VaPlayer
+and Hexa for the sampled film. Other candidates returned refusals, unavailable endpoints,
+timeouts or no match. These were not decoder checks. The subsequent native audit exposed the
+fatal timestamp assertion above; no new candidate is marked playback-verified. Hexa also returned
+an adapter TypeError in one episode lookup. Enabling candidates or changing the decoder requires
+further compatible-source work. Exact-head fixture CI and the baseline Rive live-audit comparison
+are recorded on the PR. Nothing was merged or published.

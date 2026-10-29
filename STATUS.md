@@ -2,8 +2,9 @@
 
 ## CineStream source/metadata candidate — 29 October 2026
 
-24 additional website protocols are staged separately from all established site implementations.
-This is a partial expansion: account/build keys, an invalid root and unsupported custom player chains
+24 additional website protocols are staged as pending candidates, excluded from normal discovery.
+The new HLS audit hit a native LibVLC timestamp assertion. No new candidate is playback-verified.
+This is a blocked expansion: account/build keys, an invalid root and unsupported custom player chains
 remain blockers. Source format reports and active LibVLC track suffixes use separate metadata paths.
 Local validation: 34 core suites / 1,167 checks and 90 Python tests pass. Android CI is pending;
 local provider DNS is restricted and no new real-provider playback result is claimed. See the

@@ -46,6 +46,7 @@ def search_providers(include_retired=False):
     groups = {}
     for record in sorted(_RECORDS, key=lambda r: ('factory' in r, r['family'] != 'free99', r['id'])):
         if record['name'] in ('library', 'filepursuit'): continue
+        if record.get('pending') and not include_retired: continue
         if record['site'] in RETIRED_SITES | UNVERIFIED_SITES and not include_retired: continue
         site = record['site']
         group = groups.setdefault(site, dict(id=record['id'], family=record['family'],

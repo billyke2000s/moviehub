@@ -1,6 +1,7 @@
 ## Unreleased
 
-- Add 24 independent CineStream movie/TV website adapters and their advertised playback routes;
+- Stage 24 CineStream movie/TV website adapters and their advertised playback routes as pending,
+  excluded from normal discovery after native HLS timestamp assertions in the live audit;
   preserve existing implementations. Account/key-dependent and unsupported chains remain blocked.
 - Append explicit source format reports, advertised HLS codecs and known full-file sizes to existing
   source labels. Append active LibVLC audio/video formats to existing track names by native ID/type.
