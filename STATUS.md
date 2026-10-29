@@ -1,5 +1,14 @@
 # Status
 
+## ARM firmware compatibility correction — 29 October 2026
+
+1.0.17 was published with only ARM64 libraries. The owner reports an incompatible-app error on
+their S905X5M box and confirmed its Android firmware is 32-bit. Dropping ARMv7 support is the
+introduced compatibility regression. Default packaging now restores both ARM app ABIs while
+keeping Intel emulator ABIs out of production. The signed publisher checks both architectures
+and matching native-library coverage before upload. APK compression is unchanged: the owner
+wants both ABIs together, not a download-only size reduction. Device installation still needs confirmation.
+
 ## VOD link-session repair candidate — 28 October 2026
 
 Implements the link-handling review separately from the FreeLinks optimisation PR: retained source

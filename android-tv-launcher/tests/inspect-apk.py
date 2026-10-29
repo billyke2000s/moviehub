@@ -29,14 +29,19 @@ def elf_sections(data):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("apk", type=Path)
-    parser.add_argument("--abi", default="arm64-v8a")
+    parser.add_argument("--abi", action="append", help="Expected ABI; repeat for multiple ABIs")
     args = parser.parse_args()
+    expected = set(args.abi or ["armeabi-v7a", "arm64-v8a"])
     with zipfile.ZipFile(args.apk) as archive:
         native = [entry for entry in archive.infolist()
                   if entry.filename.startswith("lib/") and entry.filename.endswith(".so")]
         architectures = {entry.filename.split("/")[1] for entry in native}
-        if architectures != {args.abi}:
-            raise SystemExit(f"Expected only {args.abi}; found {sorted(architectures)}")
+        if architectures != expected:
+            raise SystemExit(f"Expected {sorted(expected)}; found {sorted(architectures)}")
+        libraries = {abi: {entry.filename.split("/")[-1] for entry in native
+                           if entry.filename.split("/")[1] == abi} for abi in expected}
+        if len({frozenset(names) for names in libraries.values()}) != 1:
+            raise SystemExit("Native library coverage differs between the expected ABIs")
         unstripped = []
         for entry in native:
             sections = elf_sections(archive.read(entry))
@@ -45,7 +50,7 @@ def main():
         if unstripped:
             raise SystemExit("Debug sections retained: " + ", ".join(unstripped))
         print(f"APK: {args.apk.stat().st_size / 1_000_000:.2f} MB")
-        print(f"Native libraries: {len(native)}, architecture: {args.abi}, debug sections: none")
+        print(f"Native libraries: {len(native)}, architectures: {', '.join(sorted(expected))}, debug sections: none")
         print(f"Native bytes in APK: {sum(entry.compress_size for entry in native) / 1_000_000:.2f} MB")
 
 
