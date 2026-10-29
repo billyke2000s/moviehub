@@ -14,7 +14,7 @@ enabled, while other Hexa backends are explicitly auditable. No whole-site avail
 is claimed. Source/track metadata and the existing player/UI are preserved.
 
 New adapters now retain per-lookup cookies and upstream default/explicit browser profiles. Old
-provider requests keep the same behavior. Local checks: 115 Python tests; 34 core suites / 1,167
+provider requests keep the same behavior. Local checks: 116 Python tests; 34 core suites / 1,167
 checks. Application revision `a9974b6` passed all six Android CI jobs in run 40856772393,
 including 208 regular cases plus the opt-in audit assumption, 27 experimental cases and ten
 focused VOD cases. Its two normal Hexa Alpha live checks also passed. The separate Movy

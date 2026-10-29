@@ -191,10 +191,11 @@ class Videasy(Base):
         from .movy import decode
         headers = {'Origin': 'https://vidy.st', 'Referer': 'https://vidy.st/',
                    'User-Agent': USER_AGENT, 'Accept': '*/*'}
+        # CineStream obtains one anonymous seed for the complete backend lookup.
+        seed = get(self.api + '/seed?' + urlencode(dict(mediaId=q['tmdb'])), headers)['seed']
+        if not isinstance(seed, str) or not seed.isascii() or len(seed) > 256:
+            raise ValueError('Invalid Vidy seed')
         def backend(name):
-            seed = get(self.api + '/seed?' + urlencode(dict(mediaId=q['tmdb'])), headers)['seed']
-            if not isinstance(seed, str) or not seed.isascii() or len(seed) > 256:
-                raise ValueError('Invalid Vidy seed')
             args = dict(title=quote(q['title'], safe=''), mediaType='tv' if 'season' in q else 'movie',
                         year=q['year'], tmdbId=q['tmdb'], imdbId=q['imdb'], enc=2, seed=seed)
             if 'season' in q:
@@ -210,8 +211,15 @@ class Videasy(Base):
                 if name in ('austin', 'delhi') and claim != {'austin': 'English', 'delhi': 'Hindi'}[name]:
                     continue
                 quality = claim if re.fullmatch(r'(?:2160|1080|720|480|360)p', claim) else ''
-                yield item(row.get('url'), headers, 'Vidy ' + name.capitalize(), quality,
-                           info=claim if claim and not quality else '')
+                url = row.get('url')
+                label = 'Vidy ' + name.capitalize()
+                info = claim if claim and not quality else ''
+                if isinstance(url, str) and re.search(r'\.m3u8(?:$|\?)', url, re.I):
+                    for stream in hls_streams(url, headers['Referer'], label, media_headers=headers):
+                        stream['info'] = info
+                        yield stream
+                else:
+                    yield item(url, headers, label, quality, info=info)
         names = self.backends
         audit = getattr(self, 'cinestream_audit_backends', '')
         if isinstance(audit, str) and audit:

@@ -297,8 +297,31 @@ Explicit user approval is required before this blocked third-party validation ca
 The application's existing external-decoder dependency is disclosed in SECURITY.md; no production
 site or feature is silently removed by this diagnostic restriction.
 
-Follow-up local validation: 115 Python tests passed, including single-use guest tickets, one retry,
+Follow-up local validation: 116 Python tests passed, including single-use guest tickets, one retry,
 Acme language variants, optional PrimeSrc token, exact current Multimovies episodes, current AnimeSalt
 hosts, backend deduplication, token-origin rejection and the unattended audit guard. The 34 Java core
 suites / 1,167 checks passed. Android CI and the new Vidy native playback audit are pending for the
 follow-up commit; historical CI results above apply to the earlier code revision only.
+
+
+The initial native Vidy run at 28338fe did not run instrumentation: adb split the source label
+"Vidy Vegas" at its remote shell boundary. Revision e232f6f quotes that boundary correctly; a
+mock-adb check verified the exact remote argument and unchanged runner. Its movie audit then ran
+but returned no decoded video (relay IOException); its episode crashed inside LibVLC's adaptive
+timestamp continuity. Neither is a playback pass. The follow-up offers advertised HLS renditions
+before the master, preserving Vidy's complete Origin/Referer/UA headers and leaving external audio
+attached to its master. It reuses one seed per lookup, as CineStream does, instead of requesting a
+new seed for every backend. This reduces unnecessary requests; prior traces included HTTP 429s.
+Native validation of this last adapter correction is pending. Existing player and Movy code remain
+unchanged. The earlier direct-site findings still apply.
+
+Protocol runs at e232f6f yielded nine media-checked Vidy links (four film / five episode), across
+Reno, Seattle, Phoenix, Atlanta and Dallas. These are media checks, not native decode passes.
+Parsing the actual fetched AnimeSalt Naruto S1E1 HTML yielded seven hosts/language variants;
+parsing the actual Multimovies Attack on Titan player configuration yielded seven named backends.
+Those cached-page checks are parsing evidence, not live terminal resolution or playback.
+
+The fifteen remaining unimplemented candidate roots were also read from the current maintainer
+URL map and subjected to public-address DNS preflight. All fifteen hit this workspace's DNS
+restriction before a homepage request; no conclusion about their live health is possible here.
+No alternative resolver or private-address allowance was introduced.

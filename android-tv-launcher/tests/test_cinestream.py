@@ -68,7 +68,7 @@ class CineStreamTests(unittest.TestCase):
 
         payload = {'sources': [{'url': 'https://cdn.example/master.m3u8', 'quality': 'Streamwish'},
                                {'url': 'https://cdn.example/drm.mpd', 'drm': True}]}
-        with patch.object(client, 'request', side_effect=request), patch.object(movy, 'decode', return_value=payload) as decode:
+        with patch.object(client, 'fetch', return_value=self.playlist('#EXTM3U\n#EXTINF:600,\na.ts')), patch.object(client, 'request', side_effect=request), patch.object(movy, 'decode', return_value=payload) as decode:
             rows = provider.sources(self.key(provider, True), [])
         self.assertEqual(len(rows), 13)  # Reno failed; Austin/Delhi reject other languages.
         self.assertEqual(len({r['source'] for r in rows}), 13)
@@ -77,6 +77,7 @@ class CineStreamTests(unittest.TestCase):
         self.assertTrue(all('Origin=https%3A%2F%2Fvidy.st' in r['url'] for r in rows))
         self.assertFalse(any('/boise/' in url or '/miami/' in url for url in seen))
         decode.assert_called_with('encoded', 'issued', '123')
+        self.assertEqual(sum('/seed?' in url for url in seen), 1)
 
     def test_videasy_language_filters_and_diagnostic_subset(self):
         from moviehub_native import movy
@@ -84,7 +85,7 @@ class CineStreamTests(unittest.TestCase):
         provider.cinestream_audit_backends = 'austin,delhi,boise'
         payload = {'sources': [{'url': 'https://cdn.example/' + language + '.m3u8', 'quality': language}
                                for language in ('English', 'Hindi', 'German')]}
-        with patch.object(client, 'request', side_effect=lambda url, **kw: {'seed': 'issued'} if '/seed?' in url else 'encoded'), patch.object(movy, 'decode', return_value=payload):
+        with patch.object(client, 'fetch', return_value=self.playlist('#EXTM3U\n#EXTINF:600,\na.ts')), patch.object(client, 'request', side_effect=lambda url, **kw: {'seed': 'issued'} if '/seed?' in url else 'encoded'), patch.object(movy, 'decode', return_value=payload):
             rows = provider.sources(self.key(provider), [])
         self.assertEqual([row['info'] for row in rows], ['English', 'Hindi'])
         self.assertEqual([row['source'] for row in rows], ['Vidy Austin', 'Vidy Delhi'])
@@ -622,3 +623,18 @@ class CineStreamTests(unittest.TestCase):
         self.assertEqual([row['info'] for row in rows], ['English', 'Hindi'])
         self.assertEqual(sum('s=acme' in call for call in calls), 2)
         self.assertTrue(any('s=turkce' in call for call in calls))
+
+    def test_vidy_renditions_preserve_origin_and_external_audio_contract(self):
+        from moviehub_native import movy
+        provider = api.Videasy()
+        provider.cinestream_audit_backends = 'phoenix'
+        payload = {'sources': [dict(url='https://cdn.example/master.m3u8', quality='Streamwish')]}
+        body = '#EXTM3U\n#EXT-X-STREAM-INF:RESOLUTION=1280x720,CODECS="avc1,mp4a"\n720.m3u8'
+        with patch.object(client, 'request', side_effect=[{'seed': 'issued'}, 'encoded']), patch.object(movy, 'decode', return_value=payload), patch.object(client, 'fetch', return_value=self.playlist(body)) as fetch:
+            rows = provider.sources(self.key(provider), [])
+        self.assertEqual([row['quality'] for row in rows], ['720p', 'Auto'])
+        self.assertTrue(rows[0]['url'].startswith('https://cdn.example/720.m3u8|'))
+        self.assertEqual(fetch.call_args.args[1]['Origin'], 'https://vidy.st')
+        self.assertEqual(fetch.call_args.args[1]['Referer'], 'https://vidy.st/')
+        self.assertTrue(all(parse_qs(row['url'].partition('|')[2])['Origin'] == ['https://vidy.st'] for row in rows))
+        self.assertTrue(all(row['info'] == 'Streamwish' for row in rows))

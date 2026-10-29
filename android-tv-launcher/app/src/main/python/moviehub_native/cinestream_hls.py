@@ -17,9 +17,10 @@ def attributes(line):
             for match in re.finditer(r'([A-Z0-9-]+)=(?:"([^"]*)"|([^,]*))', line)}
 
 
-def streams(url, referer, backend):
+def streams(url, referer, backend, media_headers=None):
     from .cinestream_api import item, http_session
-    response = client.fetch(url, {'User-Agent': USER_AGENT, 'Accept': '*/*'}, session=http_session())
+    fetch_headers = dict(media_headers) if media_headers is not None else {'User-Agent': USER_AGENT, 'Accept': '*/*'}
+    response = client.fetch(url, fetch_headers, session=http_session())
     if response.status_code != 200:
         return
     body = response.content.decode('utf-8-sig').strip()
@@ -30,7 +31,7 @@ def streams(url, referer, backend):
     external_audio = {attributes(line).get('GROUP-ID') for line in lines
                       if line.startswith('#EXT-X-MEDIA:') and
                       attributes(line).get('TYPE') == 'AUDIO' and attributes(line).get('URI')}
-    headers = {'Referer': referer, 'User-Agent': USER_AGENT}
+    headers = dict(media_headers) if media_headers is not None else {'Referer': referer, 'User-Agent': USER_AGENT}
     pending = None
     seen = set()
     master = False
