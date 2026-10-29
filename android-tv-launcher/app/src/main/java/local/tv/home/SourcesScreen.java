@@ -88,9 +88,24 @@ final class SourcesScreen {
 
     /** Badges for a source: HDR or Dolby Vision, codec and file size, when the description says. */
     static List<String> details(String raw) {
+        String lower = raw.toLowerCase(Locale.ROOT);
         List<String> out = new ArrayList<>();
-        String report = SourceFormats.reported(release(raw));
-        if (!report.isEmpty()) out.add("Reported: " + report);
+        if (
+            lower.contains("dolby vision") ||
+            java.util.regex.Pattern.compile("\\b(?:dv|dovi)\\b").matcher(lower).find()
+        ) out.add("Dolby Vision");
+        else if (lower.contains("hdr")) out.add("HDR");
+        if (lower.contains("h265") || lower.contains("hevc") || lower.contains("x265")) out.add("HEVC");
+        else if (lower.contains("h264") || lower.contains("x264")) out.add("H.264");
+        List<String> reported = new ArrayList<>(
+            Arrays.asList(SourceFormats.reported(release(raw)).split(" · "))
+        );
+        reported.removeIf(String::isEmpty);
+        if (out.contains("HEVC")) reported.remove("HEVC (H.265)");
+        if (out.contains("H.264")) reported.remove("AVC (H.264)");
+        if (out.contains("HDR")) reported.remove("HDR");
+        if (out.contains("Dolby Vision")) reported.remove("Dolby Vision");
+        if (!reported.isEmpty()) out.add("Reported: " + String.join(" · ", reported));
         java.util.regex.Matcher size = java.util.regex.Pattern.compile(
             "(\\d+(?:[.,]\\d+)?)\\s?(TB|GB|MB)",
             java.util.regex.Pattern.CASE_INSENSITIVE
