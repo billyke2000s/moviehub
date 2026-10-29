@@ -3,7 +3,7 @@ import json
 import re
 from urllib.parse import urlencode
 from moviehub_compat import client
-from .cinestream_api import Base, get, post_json, item, DESKTOP_138
+from .cinestream_api import Base, get, post_json, item, DESKTOP_138, request, http_session, USER_AGENT
 
 
 def unwrap(data):
@@ -16,7 +16,7 @@ class MovieBox(Base):
 
     def extract(self, q):
         url = self.base_link + '/wefeed-h5api-bff/app/get-latest-app-pkgs?app_name=moviebox'
-        response = client.fetch(url)
+        response = client.fetch(url, {'User-Agent': USER_AGENT}, session=http_session())
         token = json.loads(response.headers.get('x-user', '{}')).get('token')
         if not isinstance(token, str) or not token:
             return

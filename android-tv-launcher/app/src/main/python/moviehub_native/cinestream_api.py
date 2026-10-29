@@ -7,24 +7,41 @@ existing public-address, cancellation, response-size and media validation gates.
 import base64
 import json
 import re
+import threading
 from urllib.parse import quote, urlencode, urljoin, urlparse
 from moviehub_compat import client
 from moviehub_scrubs import dom_parser
 from .rive import positive
 from .cinestream_hls import streams as hls_streams, USER_AGENT
 
+_HTTP = threading.local()
+
+
+def http_session():
+    return getattr(_HTTP, 'session', None)
+
+
 DECODER = 'https://enc-dec.app/api'
 DESKTOP_138 = ('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
                '(KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36')
 
 
+def request(url, headers=None, **kwargs):
+    # CloudStream's app client supplies its desktop profile even when an extractor
+    # omits headers. Keep this local; existing MovieHub scrapers retain their own UA.
+    supplied = dict(headers or {})
+    if not any(key.lower() == 'user-agent' for key in supplied):
+        supplied['User-Agent'] = USER_AGENT
+    return client.request(url, headers=supplied, session=http_session(), **kwargs)
+
+
 def get(url, headers=None):
-    return client.request(url, headers=headers, output='json')
+    return request(url, headers=headers, output='json')
 
 
 def post_json(url, data, headers=None):
     headers = dict(headers or {}, **{'Content-Type': 'application/json'})
-    return client.request(url, headers=headers, post=json.dumps(data), output='json')
+    return request(url, headers=headers, post=json.dumps(data), output='json')
 
 
 def item(url, headers, backend, quality='', info=''):
@@ -34,6 +51,13 @@ def item(url, headers, backend, quality='', info=''):
     allowed = {'referer', 'origin', 'user-agent', 'cookie', 'accept', 'authorization',
                'x-csrf-token', 'x-requested-with'}
     clean = {k: v for k, v in headers.items() if k.lower() in allowed and isinstance(v, str)}
+    session = http_session()
+    cookie = (client.requests.cookies.get_cookie_header(session.cookies,
+              client.requests.Request('GET', url).prepare()) if session is not None else None)
+    if cookie:
+        explicit = next((value for key, value in clean.items() if key.lower() == 'cookie'), '')
+        clean = {key: value for key, value in clean.items() if key.lower() != 'cookie'}
+        clean['Cookie'] = '; '.join(value for value in (explicit, cookie) if value)
     return dict(url=url + '|' + urlencode(clean), direct=True, source=backend,
                 originProvider=backend, quality=quality or 'Auto', info=info)
 
@@ -60,7 +84,15 @@ class Base:
     def sources(self, key, hosts):
         if key is None:
             return []
-        return [row for row in self.extract(json.loads(key)) if row is not None]
+        previous = http_session()
+        session = client.requests.Session()
+        session.trust_env = False
+        _HTTP.session = session
+        try:
+            return [row for row in self.extract(json.loads(key)) if row is not None]
+        finally:
+            _HTTP.session = previous
+            session.close()
 
     def headers(self):
         return {'User-Agent': USER_AGENT, 'Referer': self.base_link + '/'}
@@ -102,7 +134,7 @@ class PrimeSrc(Base):
         args = dict(imdb=q['imdb'], type='tv' if 'season' in q else 'movie')
         if 'season' in q:
             args.update(season=q['season'], episode=q['episode'])
-        data = client.request(self.base_link + '/api/v1/s?' + urlencode(args),
+        data = request(self.base_link + '/api/v1/s?' + urlencode(args),
                               headers=self.headers(), output='json', timeout=30)
         def backend(server):
             link = get(self.base_link + '/api/v1/l?' + urlencode({'key': server['key']}), self.headers()).get('link')
@@ -123,7 +155,7 @@ class Fshare(Base):
             return
         slug = re.sub(r'[^a-z0-9]+', '-', (q['title'] + ' episode 1 ' + q['imdb']).lower()).strip('-')
         page_url = self.base_link + '/w/' + slug
-        page = client.request(page_url)
+        page = request(page_url)
         token = re.search(r"Movie\.setSource\('([^']+)'", page)
         trailers = dom_parser.parse_dom(page, 'input', {'id': 'trailer'}, req='value')
         trailer = trailers[0].attrs['value'] if trailers else None
@@ -151,7 +183,7 @@ class Videasy(Base):
                         year=q['year'], tmdbId=q['tmdb'], imdbId=q['imdb'], enc=2, seed=seed)
             if 'season' in q:
                 args.update(episodeId=q['episode'], seasonId=q['season'])
-            encrypted = client.request(self.api + '/' + name + '/sources-with-title?' + urlencode(args), headers=headers)
+            encrypted = request(self.api + '/' + name + '/sources-with-title?' + urlencode(args), headers=headers)
             result = post_json(DECODER + '/dec-videasy', dict(text=encrypted, id=int(q['tmdb']), seed=seed))['result']
             for row in result.get('sources', [])[:32]:
                 yield item(row.get('url'), headers, 'Videasy ' + name, str(row.get('quality') or ''))
@@ -187,7 +219,7 @@ class TokenServers(Base):
         path = self.base_link + '/' + self.route(q)
         if self.decoder == 'vidfast':
             path += '/'
-        page = client.request(path, headers=self.request_headers() if self.decoder == 'vidfast' else None)
+        page = request(path, headers=self.request_headers() if self.decoder == 'vidfast' else None)
         token = re.search(r'\\"(?:en|token)\\":\\"(.*?)\\"', page)
         if not token:
             return
@@ -199,7 +231,7 @@ class TokenServers(Base):
         if not isinstance(result, dict):
             return
         headers = dict(self.request_headers(), **{'X-CSRF-Token': result['token']})
-        encrypted = client.request(client.safe(result['servers']), headers=headers, post='', redirect=False)
+        encrypted = request(client.safe(result['servers']), headers=headers, post='', redirect=False)
         decoded = post_json(DECODER + '/dec-' + self.decoder, dict(text=encrypted),
                             headers if self.decoder == 'vidcore' else None)
         if self.decoder == 'vidup' and decoded.get('status') != 200:
@@ -212,7 +244,7 @@ class TokenServers(Base):
             # Do not send a site's CSRF token to a third-party decoder result origin.
             if urlparse(stream_url).netloc != urlparse(result['servers']).netloc:
                 raise ValueError('Stream token origin changed')
-            encrypted = client.request(client.safe(stream_url), headers=headers, post='', redirect=False)
+            encrypted = request(client.safe(stream_url), headers=headers, post='', redirect=False)
             decoded = post_json(DECODER + '/dec-' + self.decoder, dict(text=encrypted))
             if self.decoder == 'vidup' and decoded.get('status') != 200:
                 return
@@ -248,13 +280,13 @@ class OneTouchTv(Base):
 
     def extract(self, q):
         title = q['title'] + (' Season ' + q['season'] if q.get('season', '1') != '1' else '') + ' (' + q['year'] + ')'
-        encrypted = client.request(self.base_link + '/vod/search?' + urlencode(dict(page=1, keyword=title)))
+        encrypted = request(self.base_link + '/vod/search?' + urlencode(dict(page=1, keyword=title)))
         rows = post_json(DECODER + '/dec-onetouchtv', dict(text=encrypted)).get('result') or []
         match = next((r for r in rows if r.get('title', '').casefold() == title.casefold()), None)
         if not match:
             return
         path = '/web/vod/' + quote(str(match['id']), safe='') + '/episode/' + q.get('episode', '0')
-        encrypted = client.request(self.base_link + path)
+        encrypted = request(self.base_link + path)
         data = post_json(DECODER + '/dec-onetouchtv', dict(text=encrypted)).get('result') or {}
         for row in data.get('sources', [])[:32]:
             yield item(row.get('url'), row.get('headers') or {}, 'OneTouchTv', str(row.get('quality') or ''))
@@ -275,7 +307,7 @@ class Cinejoy(Base):
             target = self.api + '/?' + urlencode(args)
             encoded = get(DECODER + '/enc-cinejoy?' + urlencode(dict(url=target)))['result']
             body = base64.urlsafe_b64decode(encoded['data'] + '===')
-            encrypted = client.request(self.api + '/g', headers=dict(headers, **{'Content-Type': 'application/octet-stream'}),
+            encrypted = request(self.api + '/g', headers=dict(headers, **{'Content-Type': 'application/octet-stream'}),
                                        post=body, as_bytes=True)
             clear = post_json(DECODER + '/dec-cinejoy', dict(
                 text=base64.urlsafe_b64encode(encrypted).decode().rstrip('='), state=encoded['state']))
@@ -302,9 +334,11 @@ class Hexa(Base):
                 if 'season' in q else '/api/tmdb/movie/' + q['tmdb'] + '/images')
         headers = dict(self.headers(), **{'Accept': 'text/plain', 'X-Api-Key': key,
                        'X-Fingerprint-Lite': 'e9136c41504646444', 'X-Cap-Token': token})
-        encrypted = client.request(self.api + path, headers=headers)
+        encrypted = request(self.api + path, headers=headers)
         result = post_json(DECODER + '/dec-hexa', dict(text=encrypted, key=key)).get('result') or {}
         def backend(row):
+            if not getattr(self, 'cinestream_audit', False) and str(row.get('server')).lower() != 'alpha':
+                return
             yield from hls_streams(row['url'], self.base_link + '/', 'Hexa ' + str(row.get('server') or 'server'))
         yield from self.each(result.get('sources') or [], backend)
 
@@ -313,12 +347,12 @@ class AllMovieLand(Base):
     base_link = 'https://allmovieland.one'
 
     def extract(self, q):
-        script = client.request('https://allmovieland.link/player.js?v=60%20128')
+        script = request('https://allmovieland.link/player.js?v=60%20128')
         host_match = re.search(r"const AwsIndStreamDomain[^\n]*?'(https://[^']+)'", script)
         if not host_match:
             return
         host = client.safe(host_match[1])
-        page = client.request(host.rstrip('/') + '/play/' + q['imdb'], referer=self.base_link + '/')
+        page = request(host.rstrip('/') + '/play/' + q['imdb'], referer=self.base_link + '/')
         match = re.search(r'\bplaylist\s*[:=]\s*', page)
         if not match:
             return
@@ -329,7 +363,7 @@ class AllMovieLand(Base):
         catalogue = urljoin(host, data['file'])
         if urlparse(catalogue).netloc != urlparse(host).netloc:
             raise ValueError('Catalogue token origin changed')
-        raw = client.request(catalogue, headers=headers)
+        raw = request(catalogue, headers=headers)
         rows = json.loads(re.sub(r',\s*\[\]', '', raw))
         if 'season' in q:
             season = next((r for r in rows if str(r.get('id')) == q['season']), {})
@@ -337,6 +371,6 @@ class AllMovieLand(Base):
             rows = episode.get('folder', [])
         def backend(row):
             path = host.rstrip('/') + '/playlist/' + quote(str(row['file']), safe='') + '.txt'
-            url = client.request(path, headers=headers, post='', redirect=False).strip()
+            url = request(path, headers=headers, post='', redirect=False).strip()
             yield item(url, self.headers(), 'AllMovieLand ' + str(row.get('title') or 'server'))
         yield from self.each(rows[:32], backend)

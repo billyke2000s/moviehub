@@ -2,17 +2,17 @@
 
 ## CineStream source/metadata candidate — 29 October 2026
 
-24 additional website protocols are staged as pending candidates, excluded from normal discovery.
-Earlier incomplete HLS ports hit a native timestamp assertion; this did not establish broken upstream sources.
-VaPlayer/Hexa/Vidcore now include HLS expansion and token-server request differences are corrected.
-Correction run 40826640669 verified one Hexa alpha episode with decoded audio/video, runtime and seek.
-Other routes still hit the native timestamp assertion; no whole-site playback guarantee is claimed.
-Further exact-head diagnostics are pending.
-This is a blocked expansion: account/build keys, an invalid root and unsupported custom player chains
-remain blockers. Source format reports and active LibVLC track suffixes use separate metadata paths.
-Local validation: 34 core suites / 1,167 checks and 96 Python tests pass. Android CI is pending;
-local provider DNS is restricted and no new real-provider playback result is claimed. See the
-[inventory and evidence](docs/CINESTREAM_ADDITIONS_2026_10_29.md). Not merged or published.
+21 additional adapters enter normal discovery, for 59 websites / 62 adapters. VaPlayer remains
+pending after native timestamp crashes; PrimeSrc/Asiaflix need their upstream browser-challenge
+helper. Hexa Alpha passed both movie and episode audio/video/runtime/seek checks; only Alpha is
+enabled, while other Hexa backends are explicitly auditable. No whole-site availability guarantee
+is claimed. Source/track metadata and the existing player/UI are preserved.
+
+New adapters now retain per-lookup cookies and upstream default/explicit browser profiles. Old
+provider requests keep the same behavior. Local checks: 106 Python tests; 34 core suites / 1,167
+checks. Final Android CI is pending for this head. The prior correction passed all six Android
+jobs in run 40827310153. See the [inventory and evidence](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+Not merged or published.
 
 
 Last updated: 29 October 2026.

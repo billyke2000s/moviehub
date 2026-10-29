@@ -18,8 +18,8 @@ def attributes(line):
 
 
 def streams(url, referer, backend):
-    from .cinestream_api import item
-    response = client.fetch(url, {'User-Agent': USER_AGENT, 'Accept': '*/*'})
+    from .cinestream_api import item, http_session
+    response = client.fetch(url, {'User-Agent': USER_AGENT, 'Accept': '*/*'}, session=http_session())
     if response.status_code != 200:
         return
     body = response.content.decode('utf-8-sig').strip()

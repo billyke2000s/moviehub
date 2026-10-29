@@ -12,7 +12,8 @@ Only public, non-account roots were retained. No remotely downloaded code or dyn
 executes in MovieHub. These translations carry upstream's GPLv3-or-later terms.
 
 MovieHub baseline: `fab1f64`. Existing Scrubs/Free99 files, original inventory, the four
-established native adapters, ResolveURL and existing HTTP behavior remain unchanged. The relay additionally scopes the new
+established native adapters, ResolveURL and existing HTTP behavior remain unchanged for existing callers. A new optional session argument is used
+only by CineStream adapters to retain cookies during a lookup; all old calls keep the same fetch arguments. The relay additionally scopes the new
 Vidfast X-CSRF-Token header to its original media authority, like Cookie/Authorization.
 Existing implementations are assumed working as instructed; this work does not audit or
 replace their parsers. Root and backend comparison is separate from name matching: ProjectFreeTV's
@@ -21,7 +22,7 @@ Levidia's `www.levidia.ch` is the existing `levidia.ch` website, and 4KHDHub's r
 present. Neither gets a duplicate adapter. A different backend label is retained even when
 it returns the same CDN URL, using existing source/header identity rules.
 
-## Candidate protocols (24 adapters; disabled in normal discovery)
+## Additional protocols (21 enabled adapters, 3 pending)
 
 Actual Android audits on the new VaPlayer/Hexa HLS routes aborted inside LibVLC:
 `FakeESOut.cpp:535: applyTimestampContinuity: assertion ts >= VLC_TICK_INVALID failed`.
@@ -31,9 +32,15 @@ VaPlayer, Hexa and Vidcore were missing M3u8Helper variant expansion. Their adap
 playable quality links before retaining the original master. External audio groups stay attached
 to the master. HLS bytes and timestamps are not rewritten to hide decoder errors. New validation
 is pending; the old crash evidence is historical, not a verdict on these corrected adapters.
-All 24 unverified candidates have `pending=True`; default discovery stays on the original
-38 websites / 41 adapters. `search_providers(include_retired=True)` retains candidates for
-explicit audits without exposing them in the owner's source picker. The existing player and established source implementations are preserved.
+Normal discovery now enables 21 new adapters, bringing it to 59 websites / 62 adapters.
+VaPlayer remains pending after repeat native timestamp assertions; PrimeSrc and Asiaflix remain
+pending because their upstream cfGet browser-challenge helper has no equivalent here. HTTP
+refusals do not establish that a whole site is broken. Hexa exposes only Alpha in normal discovery:
+Alpha passed movie and episode decode/audio/runtime/seek checks; Delta did not, and Echo crashed.
+Other Hexa backends remain auditable with `cinestreamAudit=true` but are not exposed normally.
+All 24 protocols remain available through `search_providers(include_retired=True)` for explicit
+audits. Enabling a translation is not a claim of live availability for every title. The existing
+player and established source implementations are preserved.
 
 
 | Website / adapter | Retained playback backends / capabilities |
@@ -47,7 +54,7 @@ explicit audits without exposing them in the owner's source picker. The existing
 | Vidcore | Every advertised server; enc-vidcore/dec-vidcore data protocol |
 | VidFastPro | Every advertised server; enc-vidfast/dec-vidfast data protocol |
 | Cinejoy | Advertised server list; HLS playlists and each explicit file quality |
-| Hexa | Every advertised server; public token/data protocol |
+| Hexa | Alpha enabled; Delta/Echo/Foxtrot retained for explicit audits; public token/data protocol |
 | OneTouchTV | Exact title/year/season search and requested episode, each returned source |
 | Vidrock | Every advertised server, locally authenticated AES-GCM data decoding |
 | Peachify | multi, hr, holly, air, moviebox; original per-source headers and proxy URL data |
@@ -63,11 +70,11 @@ explicit audits without exposing them in the owner's source picker. The existing
 | Rtally | Explicit direct resources and published lulustream/strmup/filemoon/vidhide/streamwish IDs; movies only |
 | KissKH | Exact title/season match, exact numbered episode, Video and ThirdParty separately |
 
-Inventory: 38 enabled website groups / 41 enabled adapters; 24 pending candidates and 96 bundled constructors including
+Inventory: 59 enabled website groups / 62 enabled adapters; 3 pending candidates and 96 bundled constructors including
 excluded original websites. No previously excluded site is re-enabled. New factory names only
 apply to new modules; existing modules still instantiate their original `source` class.
-Pending website groups are available after the unchanged established order for explicit audits.
-They do not enter normal discovery or take its worker slots. The existing overall search deadline
+New website groups follow the established order; pending groups are explicit-audit only.
+The three pending groups do not enter normal discovery or take its worker slots. The existing overall search deadline
 and worker count remain unchanged; queued sites can still be cancelled at that deadline.
 New routes use current bounded transport, media checks, cancellation, refresh and identity gates.
 Upstream's hard-coded 720p/1080p/4K defaults are deliberately not copied. A missing quality is Auto.
@@ -167,7 +174,7 @@ source entry/headers and expected runtime; it still pins that source to avoid cr
 Explicit provider arguments can audit pending candidates without enabling them globally. Empty
 instrumentation arguments are omitted rather than shifted by adb. Offline regressions cover HLS
 variants, redirects, external audio, error documents, token protocol differences and exact episodes.
-Local checks: 96 Python tests; 34 core suites / 1,167 checks. Final Android and live results must
+Local checks: 106 Python tests; 34 core suites / 1,167 checks. Final Android and live results must
 be read from this correction's CI, not inherited from the earlier green build.
 
 Correction run [40826640669](https://github.com/billyke2000s/moviehub/actions/runs/40826640669)
@@ -178,3 +185,16 @@ VaPlayer audits still hit the native timestamp assertion. Hexa movie lookups pro
 TypeError responses; a green completed report with no links is not playback success.
 Further diagnostics record the starting backend before playback and trace all candidates'
 protocol failures/manifest structure without publishing URLs, headers, keys or response bodies.
+
+The follow-up per-backend audit [40827310088](https://github.com/billyke2000s/moviehub/actions/runs/40827310088)
+at `f7a1e5d` also verified Hexa Alpha for Inception (8888 seconds, decoded video/audio, midpoint
+seek) and repeated the episode success. Starting records identify Echo as the native crash in
+both Hexa audits. VaPlayer still crashes on its first offered rendition. These results support
+the selective backend gates, not a universal claim about website health.
+
+All new adapters now use the upstream default browser profile even on implicit-header calls,
+retain one isolated HTTP cookie session per lookup, and pass only domain/path-matching media
+cookies into playback. Cookies do not persist across providers/lookups. The established client
+uses its unchanged default session handling; its optional new session argument is unused by old
+providers. New fixtures cover every translated adapter class, cookies, media cookie scoping and
+normal/audit backend separation. Local Python validation: 106 tests passed.

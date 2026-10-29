@@ -56,8 +56,9 @@ for name, factory, site, series in (
                           factory=factory, family='native', name=name, site=site,
                           movies=True, series=series))
 
-# Keep candidate protocols auditable without exposing unverified/crashing HLS routes in discovery.
-# The CineStream live audit hit LibVLC FakeESOut timestamp assertions; no engine change is in scope.
+# Keep only concrete incomplete/unsafe paths pending. HTTP availability alone does not
+# establish a broken site. Hexa additionally gates its independently failing backends.
+_PENDING = {'native:vaplayer', 'native:primesrc', 'native:asiaflix'}
 for record in PROVIDERS:
-    if 'factory' in record:
+    if record['id'] in _PENDING:
         record['pending'] = True

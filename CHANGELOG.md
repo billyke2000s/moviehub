@@ -3,9 +3,10 @@
 - Correct CineStream HLS helper expansion, per-provider token/browser headers and managed playback
   audit startup; retain external audio with its master and scope new media CSRF headers.
 
-- Stage 24 CineStream movie/TV website adapters and their advertised playback routes as pending,
-  excluded from normal discovery after native HLS timestamp assertions in the live audit;
-  preserve existing implementations. Account/key-dependent and unsupported chains remain blocked.
+- Add 21 CineStream movie/TV website adapters, retaining per-lookup cookies and upstream browser
+  profiles. Keep VaPlayer, PrimeSrc and Asiaflix pending; enable only Hexa Alpha after movie/episode
+  audio/video/runtime/seek checks. Preserve existing implementations and the player.
+  Account/key-dependent and unsupported chains remain blocked.
 - Append explicit source format reports, advertised HLS codecs and known full-file sizes to existing
   source labels. Append active LibVLC audio/video formats to existing track names by native ID/type.
 - See [source inventory, limits and validation](docs/CINESTREAM_ADDITIONS_2026_10_29.md).

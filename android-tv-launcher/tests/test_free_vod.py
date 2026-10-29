@@ -29,8 +29,8 @@ class FreeVodTests(unittest.TestCase):
         # Eleven confirmed retired/repurposed domains and 18 unverified restorations stay out of discovery.
         self.assertEqual(len(vod.RETIRED_SITES), 11)
         self.assertEqual(len(vod.UNVERIFIED_SITES), 18)
-        self.assertEqual(len(rows), 38)
-        self.assertEqual(sum(len(r['adapters']) for r in rows), 41)
+        self.assertEqual(len(rows), 59)
+        self.assertEqual(sum(len(r['adapters']) for r in rows), 62)
         excluded = vod.RETIRED_SITES | vod.UNVERIFIED_SITES
         self.assertFalse(any(r['site'] in excluded for r in rows))
         self.assertTrue(vod.RETIRED_SITES.isdisjoint(vod.UNVERIFIED_SITES))

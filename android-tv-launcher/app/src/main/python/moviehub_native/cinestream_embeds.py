@@ -9,7 +9,7 @@ from urllib.parse import quote, urlencode, urljoin
 from moviehub_compat import client
 from moviehub_scrubs import dom_parser, cleantitle
 from .fourkhdhub import anchors, text
-from .cinestream_api import Base, DECODER, get, item
+from .cinestream_api import Base, DECODER, get, item, request
 from .cinestream_catalogues import external
 
 
@@ -27,7 +27,7 @@ class Multimovies(Base):
 
     def extract(self, q):
         url = self.base_link + episode_path(q, 'episodes')
-        page = client.request(url)
+        page = request(url)
         lists = dom_parser.parse_dom(page, 'ul', {'id': 'playeroptionsul'})
         for group in lists:
             for row in dom_parser.parse_dom(group.content, 'li', req=['data-post', 'data-nume', 'data-type'])[:32]:
@@ -35,7 +35,7 @@ class Multimovies(Base):
                     continue
                 data = dict(action='doo_player_ajax', post=row.attrs['data-post'],
                             nume=row.attrs['data-nume'], type=row.attrs['data-type'])
-                result = client.request(self.base_link + '/wp-admin/admin-ajax.php', post=data,
+                result = request(self.base_link + '/wp-admin/admin-ajax.php', post=data,
                                         referer=url, XHR=True, output='json')
                 embed = result.get('embed_url', '')
                 frames = dom_parser.parse_dom(embed, 'iframe', req='src')
@@ -49,11 +49,11 @@ class Toonstream(Base):
 
     def extract(self, q):
         url = self.base_link + episode_path(q)
-        page = client.request(url, referer=self.base_link)
+        page = request(url, referer=self.base_link)
         for group in dom_parser.parse_dom(page, 'div', {'class': 'video'}):
             for frame in dom_parser.parse_dom(group.content, 'iframe', req='data-src')[:32]:
                 wrapper = client.safe(urljoin(url, frame.attrs['data-src']))
-                inner = client.request(wrapper)
+                inner = request(wrapper)
                 for container in dom_parser.parse_dom(inner, 'div', {'class': 'Video'}):
                     for child in dom_parser.parse_dom(container.content, 'iframe', req='src')[:32]:
                         yield external(urljoin(wrapper, child.attrs['src']), self.base_link + '/', 'Toonstream')
@@ -63,12 +63,12 @@ class AnimeSalt(Base):
     base_link = 'https://animesalt.ac'
 
     def extract(self, q):
-        page = client.request(self.base_link + episode_path(q), headers=self.headers())
+        page = request(self.base_link + episode_path(q), headers=self.headers())
         match = re.search(r'src="(https://as-cdn\d+\.top)/video/([a-f0-9]+)"', page)
         if not match:
             return
         host, identity = match.groups()
-        response = client.request(host + '/player/index.php?' + urlencode(dict(data=identity, do='getVideo')),
+        response = request(host + '/player/index.php?' + urlencode(dict(data=identity, do='getVideo')),
             post=dict(hash=identity, r=self.base_link + '/'),
             headers={'Referer': self.base_link + '/', 'Origin': host, 'X-Requested-With': 'XMLHttpRequest'}, output='json')
         yield item(response.get('videoSource') or response.get('securedLink'), self.headers(), 'AnimeSalt')
@@ -80,7 +80,7 @@ class Rtally(Base):
     def extract(self, q):
         if 'season' in q:
             return
-        page = client.request(self.base_link + '/post/' + slug(q['title']))
+        page = request(self.base_link + '/post/' + slug(q['title']))
         # Next/React stores this literal JSON in escaped strings; no script evaluation.
         page = page.replace('\\"', '"')
         for match in re.finditer(r'"(?:small|medium|large|extraLarge)":"(https?://[^"\\]+)"', page):

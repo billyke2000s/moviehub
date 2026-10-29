@@ -1,7 +1,7 @@
 <div align="center">
 
-CineStream source additions and source/player format display are staged separately from existing
-site implementations. See the [inventory, blockers and validation](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+CineStream adds 21 enabled website adapters; three further adapters and failing Hexa backends
+remain pending. Source/player format display preserves existing site implementations. See the [inventory, blockers and validation](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
 
 
 # MOVIEHUB

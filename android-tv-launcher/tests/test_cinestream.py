@@ -128,14 +128,15 @@ class CineStreamTests(unittest.TestCase):
 
     def test_hexa_expands_each_server_independently(self):
         provider = api.Hexa()
-        with patch.object(client, 'request', side_effect=[{'result': {'token': 'issued'}}, 'encrypted', {'result': {'sources': [{'server': 'one', 'url': 'https://cdn.example/master.m3u8'}]}}]), patch.object(client, 'fetch', return_value=self.playlist('#EXTM3U\n#EXT-X-STREAM-INF:RESOLUTION=1920x1080\n1080.m3u8')):
+        with patch.object(client, 'request', side_effect=[{'result': {'token': 'issued'}}, 'encrypted', {'result': {'sources': [{'server': 'alpha', 'url': 'https://cdn.example/master.m3u8'}]}}]), patch.object(client, 'fetch', return_value=self.playlist('#EXTM3U\n#EXT-X-STREAM-INF:RESOLUTION=1920x1080\n1080.m3u8')):
             rows = provider.sources(self.key(provider, True), [])
         self.assertEqual([r['quality'] for r in rows], ['1080p', 'Auto'])
-        self.assertTrue(all(r['source'] == 'Hexa one' for r in rows))
+        self.assertTrue(all(r['source'] == 'Hexa alpha' for r in rows))
         self.assertTrue(all('Referer=https%3A%2F%2Fhexa.su%2F' in r['url'] for r in rows))
 
     def test_a_refused_hexa_playlist_does_not_discard_other_servers(self):
         provider = api.Hexa()
+        provider.cinestream_audit = True
         with patch.object(client, 'request', side_effect=[{'result': {'token': 'issued'}}, 'encrypted', {'result': {'sources': [{'server': 'bad', 'url': 'https://cdn.example/bad.m3u8'}, {'server': 'good', 'url': 'https://cdn.example/good.m3u8'}]}}]), patch.object(client, 'fetch', side_effect=[requests.Timeout(), self.playlist('#EXTM3U\n#EXTINF:600,\na.ts')]):
             rows = provider.sources(self.key(provider), [])
         self.assertEqual(len(rows), 1)
@@ -204,10 +205,10 @@ class CineStreamTests(unittest.TestCase):
         import moviehub_vod as vod
         groups = json.loads(vod.search_providers())
         self.assertTrue(all(not any(a in {r['id'] for r in new} for a in g['adapters']) for g in groups[:38]))
-        self.assertEqual(len(groups), 38)
+        self.assertEqual(len(groups), 59)
         auditable = json.loads(vod.search_providers(include_retired=True))
         self.assertTrue({r['id'] for r in new} <= {a for g in auditable for a in g['adapters']})
-        self.assertTrue(all(r.get('pending') for r in new))
+        self.assertEqual({r['id'] for r in new if r.get('pending')}, {'native:vaplayer', 'native:primesrc', 'native:asiaflix'})
         with patch.object(client, 'request') as request:
             for record in new:
                 provider = getattr(importlib.import_module(record['module']), record['factory'])()
@@ -322,6 +323,140 @@ class CineStreamTests(unittest.TestCase):
         self.assertIn('/Episode/30.png?', request.call_args.args[0])
         self.assertEqual(rows[0]['source'], 'KissKH Video')
         self.assertEqual(rows[0]['quality'], 'Auto')
+
+    def test_akwam_follows_download_hops_only_after_matching_imdb(self):
+        provider = sites.Akwam()
+        pages = ['<a class="box" href="/film">A Film</a>', '<a href="https://imdb.com/title/tt1234/">IMDb</a><a class="link-download" href="/one">download</a>', '<a class="download-link" href="/two">next</a>', '<a class="link" href="https://cdn.example/film.mp4">file</a>']
+        with patch.object(client, 'request', side_effect=pages) as request:
+            rows = provider.sources(self.key(provider), [])
+        self.assertEqual(request.call_count, 4)
+        self.assertEqual(rows[0]['url'].partition('|')[0], 'https://cdn.example/film.mp4')
+        with patch.object(client, 'request', side_effect=[pages[0], pages[1].replace('tt1234', 'tt9999')]) as request:
+            self.assertEqual(provider.sources(self.key(provider), []), [])
+        self.assertEqual(request.call_count, 2)
+
+    def test_asiaflix_selects_requested_episode_from_nested_angular_state(self):
+        provider = sites.Asiaflix()
+        state = json.dumps({'nested': {'episodes': [dict(number=2, streamUrls=[dict(url='https://cdn.example/wrong.mp4')]), dict(number=3, streamUrls=[dict(url='//cdn.example/right.mp4')])]}})
+        with patch.object(client, 'request', side_effect=[{'body': [dict(name='A Film', _id='id')]}, '<script id="ng-state">' + state + '</script>']):
+            query = json.loads(self.key(provider, True)); query['season'] = '1'
+            rows = provider.sources(json.dumps(query), [])
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(rows[0]['url'].startswith('https://cdn.example/right.mp4|'))
+
+    def test_onetouchtv_retains_returned_media_headers_and_numbered_episode(self):
+        provider = api.OneTouchTv()
+        payload = dict(sources=[dict(url='https://cdn.example/film.m3u8', quality='720p', headers={'Referer': 'https://required.example/', 'Origin': 'https://required.example'})])
+        with patch.object(client, 'request', side_effect=['search', {'result': [dict(title='A Film Season 2 (2020)', id=55)]}, 'playback', {'result': payload}]) as request:
+            rows = provider.sources(self.key(provider, True), [])
+        self.assertTrue(request.call_args_list[2].args[0].endswith('/web/vod/55/episode/3'))
+        self.assertEqual(parse_qs(rows[0]['url'].partition('|')[2]), {'Referer': ['https://required.example/'], 'Origin': ['https://required.example']})
+        self.assertEqual(rows[0]['quality'], '720p')
+
+    def test_cinejoy_binary_state_and_separate_hls_file_qualities(self):
+        import base64
+        provider = api.Cinejoy()
+        def request(url, **kw):
+            if url.endswith('/servers'):
+                return {'servers': [dict(name='one')]}
+            if '/enc-cinejoy?' in url:
+                target = parse_qs(urlparse(url).query)['url'][0]
+                self.assertEqual(parse_qs(urlparse(target).query)['episode'], ['3'])
+                return {'result': {'data': base64.urlsafe_b64encode(b'request-body').decode(), 'state': 'issued'}}
+            if url.endswith('/g'):
+                self.assertEqual(kw['post'], b'request-body')
+                self.assertEqual(kw['headers']['Content-Type'], 'application/octet-stream')
+                return b'encrypted-response'
+            posted = json.loads(kw['post'])
+            self.assertEqual(posted['state'], 'issued')
+            self.assertEqual(base64.urlsafe_b64decode(posted['text'] + '==='), b'encrypted-response')
+            return {'result': {'data': {'stream': [dict(type='hls', playlist='https://cdn.example/master.m3u8'), dict(type='file', qualities={'4k': {'url': 'https://cdn.example/film.mkv'}, '720': {'url': 'https://cdn.example/film.mp4'}})]}}}
+        with patch.object(client, 'request', side_effect=request):
+            rows = provider.sources(self.key(provider, True), [])
+        self.assertEqual([r['quality'] for r in rows], ['Auto', '2160p', '720p'])
+        self.assertTrue(all(parse_qs(r['url'].partition('|')[2]) == {'Referer': ['https://cinejoy.to/']} for r in rows))
+
+    def test_vidzee_cbc_response_headers_override_defaults_case_insensitively(self):
+        import base64
+        from moviehub_native import cinestream_crypto as crypto
+        from resolveurl.lib import pyaes
+        iv = b'0123456789abcdef'
+        cipher = pyaes.Encrypter(pyaes.AESModeOfOperationCBC(crypto.VIDZEE_FORMAT_KEY, iv=iv))
+        encrypted = cipher.feed(b'https://cdn.example/film.m3u8') + cipher.feed()
+        inner = base64.b64encode(iv).decode() + ':' + base64.b64encode(encrypted).decode()
+        response = {'headers': {'Referer': 'https://required.example/'}, 'url': [dict(link=base64.b64encode(inner.encode()).decode())]}
+        provider = crypto.Vidzee()
+        with patch.object(client, 'request', return_value=response):
+            rows = provider.sources(self.key(provider, True), [])
+        self.assertEqual(len(rows), 7)
+        headers = parse_qs(rows[0]['url'].partition('|')[2])
+        self.assertEqual([v for k, v in headers.items() if k.lower() == 'referer'], [['https://required.example/']])
+
+    def test_rtally_keeps_distinct_backend_routes_and_direct_resources(self):
+        from moviehub_native.cinestream_embeds import Rtally
+        provider = Rtally()
+        with patch.object(client, 'request', return_value=r'{\"small\":\"https://cdn.example/film.mp4\",\"filemoonUrl\":\"one\",\"vidhideUrl\":\"two\"}'):
+            rows = provider.sources(self.key(provider), [])
+        self.assertEqual([r['url'].partition('|')[0] for r in rows], ['https://cdn.example/film.mp4', 'https://filemoon.sx/e/one', 'https://vidhideplus.com/v/two'])
+        self.assertEqual([r['direct'] for r in rows], [True, False, False])
+
+    def test_implicit_requests_use_upstream_profile_without_changing_legacy_client(self):
+        legacy = client.UserAgent
+        with patch.object(client, 'request', return_value='page') as request:
+            api.request('https://site.example/page')
+        self.assertEqual(request.call_args.kwargs['headers']['User-Agent'], hls.USER_AGENT)
+        self.assertEqual(client.UserAgent, legacy)
+        with patch.object(client, 'request', return_value='page') as request:
+            api.request('https://site.example/page', {'user-agent': 'specific-player'})
+        self.assertEqual(request.call_args.kwargs['headers'], {'user-agent': 'specific-player'})
+
+    def test_new_lookup_keeps_cookies_between_requests_and_isolates_other_lookups(self):
+        sessions = []
+        class Site(api.Base):
+            base_link = 'https://site.example'
+            def extract(self, query):
+                api.request(self.base_link + '/init')
+                api.request(self.base_link + '/play')
+                return []
+        def request(url, **kw):
+            session = kw['session']
+            if url.endswith('/init'):
+                self.assertIsNone(session.cookies.get('issued'))
+                session.cookies.set('issued', 'ephemeral', domain='site.example', path='/')
+                sessions.append(session)
+            else:
+                self.assertIs(session, sessions[-1])
+                self.assertEqual(session.cookies.get('issued'), 'ephemeral')
+            return 'page'
+        provider = Site()
+        with patch.object(client, 'request', side_effect=request):
+            provider.sources(self.key(provider), [])
+            provider.sources(self.key(provider), [])
+        self.assertIsNot(sessions[0], sessions[1])
+        self.assertIsNone(api.http_session())
+
+    def test_media_only_carries_cookies_matching_its_own_domain(self):
+        class Site(api.Base):
+            def extract(self, query):
+                session = api.http_session()
+                session.cookies.set('private', 'site-cookie', domain='site.example', path='/')
+                session.cookies.set('media', 'cdn-cookie', domain='cdn.example', path='/')
+                yield api.item('https://cdn.example/film.mp4', {}, 'one')
+                yield api.item('https://other.example/film.mp4', {}, 'two')
+        provider = Site()
+        rows = provider.sources(self.key(provider), [])
+        self.assertEqual(parse_qs(rows[0]['url'].partition('|')[2]), {'Cookie': ['media=cdn-cookie']})
+        self.assertNotIn('Cookie', parse_qs(rows[1]['url'].partition('|')[2]))
+        self.assertTrue(all('site-cookie' not in row['url'] for row in rows))
+
+    def test_hexa_excludes_failing_backends_only_from_normal_playback(self):
+        provider = api.Hexa()
+        response = {'result': {'sources': [{'server': name, 'url': 'https://cdn.example/' + name + '.m3u8'} for name in ('alpha', 'delta', 'echo', 'foxtrot')]}}
+        for audit, expected in ((False, ['Hexa alpha']), (True, ['Hexa alpha', 'Hexa delta', 'Hexa echo', 'Hexa foxtrot'])):
+            provider.cinestream_audit = audit
+            with patch.object(client, 'request', side_effect=[{'result': {'token': 'issued'}}, 'encrypted', response]), patch.object(client, 'fetch', return_value=self.playlist('#EXTM3U\n#EXTINF:600,\na.ts')):
+                rows = provider.sources(self.key(provider), [])
+            self.assertEqual([row['source'] for row in rows], expected)
 
     def test_source_metadata_is_advertised_not_selected_or_measured_audio(self):
         prefix = b'#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1,CODECS="avc1.640028,mp4a.40.2"\na.m3u8\n#EXT-X-STREAM-INF:CODECS="hvc1.1,ec-3",BANDWIDTH=2\nb.m3u8'

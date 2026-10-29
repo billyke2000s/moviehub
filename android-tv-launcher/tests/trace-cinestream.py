@@ -59,7 +59,7 @@ def probe(record):
     query = dict(imdb='tt0903747' if series else 'tt0063350', tmdb=1396 if series else 10331,
                  title='Breaking Bad' if series else 'Night of the Living Dead',
                  year='2008' if series else '1968', season=1 if series else -1,
-                 episode=1 if series else -1, http=False)
+                 episode=1 if series else -1, http=False, cinestreamAudit=True)
     started = time.monotonic()
     result = json.loads(vod.query_site(record['id'], json.dumps(query),
                                      lambda: time.monotonic() - started > 180))

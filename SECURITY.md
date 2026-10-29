@@ -287,3 +287,7 @@ Movy's short-lived anonymous seed is obtained for each delivery-route lookup and
 CineStream token-server media can additionally carry X-CSRF-Token and X-Requested-With.
 The relay restricts X-CSRF-Token to the original media authority, as with Cookie/Authorization.
 Existing provider parsers, TLS verification and public-address validation remain in force.
+
+New CineStream lookups use an isolated requests session for cookie continuity, closed at the end
+of extraction. Only cookies matching the actual media URL's domain/path enter playback. The
+legacy request API's new optional session defaults to None and preserves old fetch calls exactly.

@@ -139,7 +139,11 @@ public final class FreeVodLiveAuditTest {
             .put("runtimeMinutes", minutes)
             .put("season", -1)
             .put("episode", -1)
-            .put("http", false);
+            .put("http", false)
+            .put(
+                "cinestreamAudit",
+                "true".equals(InstrumentationRegistry.getArguments().getString("vodCineStreamAllBackends"))
+            );
     }
 
     private void record(JSONObject row) throws Exception {

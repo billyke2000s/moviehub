@@ -118,7 +118,8 @@ def scrapePage(url, referer=None, headers=None, post=None, cookie=None, timeout=
 
 def request(url, close=True, redirect=True, error=False, verify=True, post=None, headers=None,
             mobile=False, XHR=False, limit=None, referer=None, cookie=None, compression=False,
-            output='', timeout=8, as_bytes=False):
+            output='', timeout=8, as_bytes=False, session=None):
+    fetch_options = {'session': session} if session is not None else {}
     out=dict(dnt_headers); out.update(headers or {})
     if not any(key.lower() == 'referer' for key in out):
         parsed = urlparse(url)
@@ -132,7 +133,7 @@ def request(url, close=True, redirect=True, error=False, verify=True, post=None,
     if output=='file_size':
         # Kodi's client returns the size from the headers without downloading the file; fetching
         # the body here would hit the response limit on any real film (ValueError).
-        result=fetch(raw,out,post,timeout,redirect,max_bytes=0)
+        result=fetch(raw,out,post,timeout,redirect,max_bytes=0,**fetch_options)
         if result.status_code>=400: return 0
         total=(result.headers.get('Content-Range') or '').rpartition('/')[2]
         length=total if total.isdigit() else result.headers.get('Content-Length','')
@@ -140,9 +141,9 @@ def request(url, close=True, redirect=True, error=False, verify=True, post=None,
     # Redirect/header/cookie lookup must not download the destination video. Several
     # scrapers resolve directly to full files, which exceeded MAX_BODY before this.
     if output in ('geturl', 'headers', 'cookie'):
-        result=fetch(raw,out,post,timeout,redirect,max_bytes=0)
+        result=fetch(raw,out,post,timeout,redirect,max_bytes=0,**fetch_options)
     else:
-        result=fetch(raw,out,post,timeout,redirect)
+        result=fetch(raw,out,post,timeout,redirect,**fetch_options)
     if output=='cookie': return '; '.join(k+'='+v for k,v in result.cookies.items())
     if output=='geturl': return result.url
     if output=='headers': return result.headers

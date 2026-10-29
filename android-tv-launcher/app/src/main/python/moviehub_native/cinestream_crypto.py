@@ -9,7 +9,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from moviehub_compat import client
 from resolveurl.lib.aesgcm import python_aesgcm
 from resolveurl.lib import pyaes
-from .cinestream_api import Base, get, item, USER_AGENT
+from .cinestream_api import Base, get, item, USER_AGENT, request
 
 VIDROCK_FORMAT_KEY = bytes.fromhex('7f3e9c2a8b5d1f4e6a9c3b7d2e5f8a1c4b6d9e2f5a8c1b4d7e9f2a5c8b1d4e7f')
 PEACHIFY_FORMAT_KEY = bytes.fromhex('a8f2a1b5e9c470814f6b2c3a5d8e7f9c1a2b3c4d5e3f7a8b8cad1e2d0a4d5c5d')

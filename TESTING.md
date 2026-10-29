@@ -1,4 +1,4 @@
-<!-- CineStream correction: 96 Python tests; pending providers can be selected explicitly in
+<!-- CineStream correction: 106 Python tests; pending providers can be selected explicitly in
 FreeVodLiveAuditTest. The audit now uses managed VOD startup; it does not change production playback. -->
 # Testing
 

@@ -9,7 +9,7 @@ from urllib.parse import quote, urlencode, urljoin, urlparse
 from moviehub_compat import client
 from moviehub_scrubs import dom_parser, cleantitle
 from .fourkhdhub import anchors, text
-from .cinestream_api import Base, get, item
+from .cinestream_api import Base, get, item, request
 
 
 def nodes(page, tag, cls=None):
@@ -53,10 +53,10 @@ class Akwam(Base):
         if 'season' in q:
             return
         args = dict(q=q['title'], section='movie', year=q['year'], rating=0, formats=0, quality=0)
-        search = client.request(self.base_link + '/search?' + urlencode(args))
+        search = request(self.base_link + '/search?' + urlencode(args))
         for link in dom_parser.parse_dom(search, 'a', {'class': 'box'}, req='href')[:20]:
             url = urljoin(self.base_link, link.attrs['href'])
-            page = client.request(url, referer=self.base_link + '/')
+            page = request(url, referer=self.base_link + '/')
             if not any(re.search(r'/title/' + re.escape(q['imdb']) + r'(?:/|$)', a.attrs['href']) for a in anchors(page)):
                 continue
             for cls in ('link-download', 'download-link', 'link'):
@@ -67,7 +67,7 @@ class Akwam(Base):
                 if cls == 'link':
                     yield item(url, self.headers(), 'Akwam')
                 else:
-                    page = client.request(url, referer=self.base_link + '/')
+                    page = request(url, referer=self.base_link + '/')
 
 
 class Asiaflix(Base):
@@ -82,7 +82,7 @@ class Asiaflix(Base):
         if not match:
             return
         slug = quote(match['name'].replace(' ', '-'), safe='')
-        page = client.request(self.base_link + '/play/' + slug + '-1/' + quote(str(match['_id']), safe='') + '/1')
+        page = request(self.base_link + '/play/' + slug + '-1/' + quote(str(match['_id']), safe='') + '/1')
         scripts = dom_parser.parse_dom(page, 'script', {'id': 'ng-state'})
         if not scripts:
             return
