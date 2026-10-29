@@ -1,5 +1,13 @@
 # App updates
 
+## Current published update
+
+MovieHub 1.0.18 (code 118), published 29 October 2026, includes both `armeabi-v7a` and
+`arm64-v8a` in one signed APK. It supersedes the ARM64-only 1.0.17 package. The package,
+certificate and feed paths are unchanged. [Release validation](../STATUS.md) records the
+public checksum and completed CI; installation on the owner's TV remains unconfirmed.
+
+
 The home screen checks the public `android-tv-latest` release in billyke2000s/moviehub when opened, at most once per six hours during an app process. The Update button beside Settings stays hidden if the release is missing, unreachable, invalid or not newer than the installed version. No account token is needed for this public feed.
 
 Selecting Update asks before downloading, verifies the SHA-256 checksum, package name, increasing version code and matching signing certificate, then opens Android's installer. Android may first require permission to install updates from Home. No root or silent installation is used. A failed check is silent; a failed download/verification produces a retry message. APK downloads are limited to 300 MiB and use HTTPS.
@@ -13,13 +21,17 @@ The signed APK and update manifest are published in the `android-tv-latest` rele
 
 Keep and back up that signing key; use it for the first release installation and all future releases. Existing debug APKs are not a verified upgrade path to this release key. The updater refuses APKs signed with a different certificate; an initial move from a debug build may require a separate installation and data migration plan.
 
-Run Publish Android TV launcher update on the intended source branch, with a visible version name and an integer version code greater than every previous release. It builds and lints the release, verifies its signature, and publishes home.apk and update.json. Publishing is not triggered by ordinary debug builds or merges. The permanent signing secrets are configured, and the initial signed release has been published.
+Run Publish Android TV launcher update on the intended source branch, with a visible version name and an integer version code greater than every previous release. It builds and lints the release, verifies its signature, and publishes home.apk and update.json. Publishing is not triggered by ordinary debug builds or merges. Explicit owner-authorized
+one-off `release-moviehub-<version>.yml` workflows can dispatch this standard publisher when
+their release-preparation PR is merged; those are release actions, not ordinary app builds. The permanent signing secrets are configured, and the initial signed release has been published.
 
 The HTML preview hides the button normally. Append `?updateDemo=1` to its URL to see the illustrative update-available state. It does not perform a live release check or install anything.
 
 Offline compilation cannot establish successful installation, unknown-source settings availability, or update behavior on the Tanix box. Those require device testing.
 
-The release workflow now runs core checks and Android database/player tests before signing. It downloads the current updater baseline, verifies its checksum and refuses publication if the new certificate differs. Same-repository PRs also build a signed candidate and check package, increasing version code and signing continuity without publishing it. The package remains `local.tv.home`, and the existing `android-tv-latest/home.apk` and `update.json` paths and manifest fields are unchanged. Since 0.15, `update.json` may also carry an optional `notes` field: the CHANGELOG section headed with the published version name (for example `## 0.15 (date)`), shown as "What's new" in the update prompt. Older app versions ignore it.
+The release workflow runs core checks and Android database/player tests before signing. It
+also requires both ARM ABIs, matching native-library coverage and stripped debug sections in
+the signed APK before upload. It downloads the current updater baseline, verifies its checksum and refuses publication if the new certificate differs. Same-repository PRs also build a signed candidate and check package, increasing version code and signing continuity without publishing it. The package remains `local.tv.home`, and the existing `android-tv-latest/home.apk` and `update.json` paths and manifest fields are unchanged. Since 0.15, `update.json` may also carry an optional `notes` field: the CHANGELOG section headed with the published version name (for example `## 0.15 (date)`), shown as "What's new" in the update prompt. Older app versions ignore it.
 
 ## Numbered releases on the repository page
 

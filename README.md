@@ -4,7 +4,7 @@
 
 ### Films, series and live TV in one place.
 
-The managed VOD candidate refreshes temporary links, keeps each source's request headers,
+Movie and series playback refreshes temporary links, keeps each source's request headers,
 ranks backups and uses fresh source discovery for next episodes. Header-protected DASH shares
 the local media relay. Runtime evidence guides short-video checks and different-edition restarts.
 See [TESTING.md](TESTING.md) for verification scope.
@@ -90,6 +90,10 @@ Additional information is available in [DEVELOPMENT.md](DEVELOPMENT.md), [ARCHIT
 | [Design notes](docs/)                               | Interface and catalogue documentation              |
 
 ## Project status
+
+Current release: [MovieHub 1.0.18](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.18),
+with ARM32 and ARM64 in one APK. The optimisations and VOD recovery changes are published;
+see [current status and release evidence](STATUS.md).
 
 Automated tests use synthetic data and do not establish that every external service, live channel or update path works on physical hardware. Device-specific behaviour, especially live video handoff and provider integrations, needs real-world testing. Experimental work and its evidence are described in the technical notes below.
 
@@ -191,7 +195,7 @@ Live TV retries an established Pluto/direct connection within a bounded recovery
 
 ### Free movie and series sources
 
-The candidate source system bundles Scrubs V2 and Free99 provider modules with headless
+The source system bundles Scrubs V2 and Free99 provider modules with headless
 host resolution inside the APK. Premiumize is optional. Automatic play defaults on (existing
 explicit preferences remain): after three seconds, it selects the highest reported quality
 available within the configured quality preference. If none is ready, search continues until
@@ -204,7 +208,7 @@ See [provider provenance and licensing](docs/third-party/vod/NOTICE.md).
 
 Free movie and series controls show incoming traffic from the selected source. Automatic selection uses the configured resolution ceiling, manifest resolution where available, camera-recording penalties, and startup transfer evidence among equal-quality results. The selection window remains about three seconds; late results remain backups.
 
-Free movie searches include **Provider search details** with separate outcomes for timeouts, connection failures, unsupported hosts and no matching links. The player shows the selected source and incoming traffic, rejects known videos shorter than two minutes, and can try another free service after a failed manual choice. [Provider inventory and audit](docs/FREE_VOD_AUDIT.md).
+Free movie searches include **Provider search details** with separate outcomes for timeouts, connection failures, unsupported hosts and no matching links. The player shows the selected source and incoming traffic, uses expected title runtimes to reject substantially truncated videos (unknown runtimes retain the two-minute guard), and can try another free service after a failed manual choice. [Provider inventory and audit](docs/FREE_VOD_AUDIT.md).
 
 Free movie/episode searches use bundled provider title normalization and TMDB original/alternative
 titles, preserve session request methods and cookies, and continue collecting backups after the

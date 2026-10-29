@@ -1,35 +1,47 @@
 # Status
 
-## ARM firmware compatibility correction — 29 October 2026
+Last updated: 29 October 2026.
 
-1.0.17 was published with only ARM64 libraries. The owner reports an incompatible-app error on
-their S905X5M box and confirmed its Android firmware is 32-bit. Dropping ARMv7 support is the
-introduced compatibility regression. Default packaging now restores both ARM app ABIs while
-keeping Intel emulator ABIs out of production. The signed publisher checks both architectures
-and matching native-library coverage before upload. APK compression is unchanged: the owner
-wants both ABIs together, not a download-only size reduction. Device installation still needs confirmation.
+## Current release — MovieHub 1.0.18 (code 118)
 
-## VOD link-session repair candidate — 28 October 2026
+[1.0.18 is published](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.18)
+from `f8673c590d5edf2e18da1d7fa1a3b044f0e7634d`. The updater feed and numbered release contain
+identical APKs. The downloaded public APK matches the manifest SHA-256:
+`734563a456c0af8a81f37d6310b6b7a8b1ad4c980150a0522e2646e4f9df93d9`.
 
-Implements the link-handling review separately from the FreeLinks optimisation PR: retained source
-identity/header distinctions, bounded rediscovery and one refresh before abandoning a failed link,
-dynamically ranked independent-host backups, explicit provider identity evidence, DASH resource
-transport, managed next episodes, runtime-aware short-video validation and edition-safe restart.
-Core and Python fixtures pass locally; Android build/lint, signed compatibility and real LibVLC
-normal/experimental emulator suites must be read from the final PR commit before release.
-No update has been published. Missing provider metadata and matching-duration different cuts
-remain limits: this is stronger evidence handling, not proof that every website returned the title.
+The APK contains both ARM32 (`armeabi-v7a`) and ARM64 (`arm64-v8a`), with 12 verified native
+libraries and a Python payload for each ABI. The owner confirmed 32-bit firmware on the S905X5M
+box after the ARM64-only 1.0.17 APK failed to install. 1.0.18 restores ARM32 support. Native debug
+sections are removed; Intel ABIs remain emulator-only overrides. Compression is unchanged.
+The APK is 132.70 MB; total installed storage, app data and caches have not been measured on the
+owner's device. Download compression must not be presented as an installed-storage reduction.
 
-## Main-app optimization candidate — 28 October 2026
+[Main CI 40808318926](https://github.com/billyke2000s/moviehub/actions/runs/40808318926) passed
+build/lint, normal and experimental TV suites, the provider probe and all ten focused VOD tests.
+[Signed publisher 40808326711](https://github.com/billyke2000s/moviehub/actions/runs/40808326711)
+passed core/device tests, ABI inspection, certificate continuity and upload.
+[Numbered-release run 40809382906](https://github.com/billyke2000s/moviehub/actions/runs/40809382906)
+also passed. Physical-TV installation and playback of 1.0.18 still need owner confirmation.
 
-Ported the FreeLinks optimization branch at d84df11460d4a3ff928eb0990ce119b062f8061d:
-ARM64 default packaging, pinned stripping tools, bounded/coalesced TMDB requests, memory-pressure
-cache cleanup, idle artwork-thread retirement and test-only helper relocation. UI, providers,
-playback and update identity are preserved. The source PR passed its offline, Android build/lint
-and TV emulator checks. Local core suites (including 21 catalogue-cache checks), 68 Python provider fixtures and three
-Node engine tests passed. Java checks used Eclipse JDT targeting Java 17 because this workspace
-has a JRE without javac; Android build/lint and emulator verification require CI. This port requires its own CI; physical ARM64 firmware installation and
-sustained playback remain unverified. No release has been published by this change.
+## Published VOD link handling and optimisations
+
+1.0.17 introduced retained source/header identities, bounded rediscovery and one refresh before
+abandoning a failed link, dynamically ranked independent-host backups, explicit provider identity
+evidence, relative DASH resource transport, managed next episodes, runtime-aware short-video
+validation and edition-safe restart. 1.0.18 retains these fixes. Missing provider metadata and
+matching-duration different cuts remain limits; fixtures do not prove every website returns the title.
+
+The FreeLinks optimisation port also shipped in 1.0.17: bounded/coalesced TMDB requests,
+memory-pressure cache cleanup, idle artwork-thread retirement, bounded artwork disk reads,
+pinned native stripping and relocation of test-only helpers. 1.0.18 keeps those changes while
+replacing the ARM64-only packaging choice with both ARM ABIs. UI, provider definitions and
+update identity are preserved. Physical memory/performance improvements and sustained real-provider
+reliability have not been benchmarked.
+
+## Historical status entries
+
+The dated entries below record earlier release/development states. Their old pending-validation
+and unpublished labels are historical; use the current release and evidence above for 1.0.18.
 
 ## Rolled back to 1.0.12 code — 1.0.16, 28 October 2026
 
@@ -61,7 +73,7 @@ before playback (only once playing); a streaming playlist's label is what it off
 player may still choose a lower step on a slow connection; how often real websites mislabel links
 has not been measured. Not yet tried on a physical TV.
 
-## Current release — 27 October 2026
+## Historical release — 27 October 2026
 
 1.0.9 (code 109) is published from `release/moviehub-1.0.9` at
 `13c867e5a74c0224e913adcab8cb50056c571201`. The public APK download matched the update feed's
@@ -88,7 +100,7 @@ or unrelated gambling evidence. Historical notes below describe earlier snapshot
 
 New settings keep manual source selection as the default. Next-episode metadata is prefetched while watching; season transitions use catalogue episodes and air dates. Missing-pack episodes follow the selected manual/automatic mode. Guide colour shortcuts are handled independently of focused widgets, with Back revealing accessible controls. Physical TV, remote and real-account validation remain outstanding.
 
-Last updated: 25 October 2026 (1.0 promotes the experimental line into MovieHub).
+Historical checkpoint: 25 October 2026 (1.0 promoted the experimental line into MovieHub).
 
 ## Where things stand
 
