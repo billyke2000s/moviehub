@@ -1,5 +1,14 @@
 # Status
 
+## Prepared publication — MovieHub 1.0.19 (code 119)
+
+The owner authorised publication of PR #195 for testing. That PR is merged, including the source,
+redirect and format-label changes; main's newer Downloader-code edit is preserved. The release
+preparation changes only notes and a one-off dispatcher invoking the existing signed publisher
+and numbered-release copier. Publication is pending; the current public baseline below is 1.0.18.
+The recorded Vidy/audio/provider limitations remain in the release notes.
+
+
 CineStream candidate: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
