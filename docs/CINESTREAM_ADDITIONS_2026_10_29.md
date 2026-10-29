@@ -1,5 +1,50 @@
 # CineStream sources and format display — 29 October 2026
 
+## Resumed checkpoint and current corrections
+
+Recovered branch `feat/cinestream-sources-metadata`, PR #195, at `d85b832`.
+[Android run 40908951143](https://github.com/billyke2000s/moviehub/actions/runs/40908951143)
+passed all six jobs: APK/build/lint/dual-ARM inspection, signed compatibility, normal device tests,
+experimental device tests, focused VOD recovery and the public provider probe.
+
+[Native audit 40908951001](https://github.com/billyke2000s/moviehub/actions/runs/40908951001)
+verified 21 sources from the fifteen additions: three MoviesDrive Inception, two HDHub4u Inception,
+four SkyMovies Inception and twelve HindMoviez Breaking Bad S1E1. Each passed decoded video,
+audio, expected runtime and midpoint-seek checks. Five more sources decoded audio/video but had
+no expected runtime/midpoint verification (one Bollyflix, four DudeFilms); one MoviesDrive source
+failed video decoding. SkyMovies advertised one result as 1080p although the decoded picture was
+1280×536. Relay socket/I/O errors remain recorded; these checks do not establish full-title reliability.
+
+The same run's Vidy movie samples returned no decoded video, and the Vidy episode group crashed
+in LibVLC's adaptive timestamp-continuity assertion. A green individual audit job can contain
+zero sources or unsuccessful playback outcomes; it is not proof of site health. Separate existing
+FMHY audits at this head failed route requirements for Rive series and Movy series (two decoded
+4K episode sources had no verified audio). Those established providers have not been changed here.
+
+UHDMovies research identified an ordinary 1,425-byte redirect page after its existing forms/cookie
+steps. Its `window.location.replace` destination is a JSON string with escaped slashes. Treating
+that string literally requested the wrong address and returned 404. The new-only redirect reader
+now decodes quoted literals as data. Research then reached the actual DriveSeed file page and its
+public Resume Cloud button. Current file/cloud pages advertise same-page POST fields `action`,
+`key`, `action_token` and an `x-token` hostname header. Handling is limited to present public
+cloud/original/direct buttons and the exact issuing page. Issued values stay out of media headers,
+reports and repository files; downloaded scripts are never executed. The sampled 2160p cloud
+exchange returned `Unknown error`, so this is not a successful UHDMovies playback claim.
+
+Host-button labels such as Download File / Download FSL Server are copied website instructions,
+not a new app download feature. The new source-label path changes that word to Stream while
+preserving the server/file-size wording, actual media URL, headers and metadata. The same built-in
+player opens the source. Existing provider implementations, UI, source selection and ARM packaging
+remain unchanged.
+
+Local checks for these corrections: 143 Python tests; 34 core suites / 1,167 checks; diff checks.
+New fixtures cover escaped redirect traversal to a file host, same-page cloud POST/header isolation,
+login-only/unrelated-host rejection and Stream labeling with retained file metadata. Direct app
+transport in this workspace failed DNS before reaching UHDMovies. The public-page research used
+the environment's research transport and does not establish guarded Android extraction or playback.
+Final-revision Android and live audit results are pending; earlier evidence below is historical.
+
+
 ## Remaining fifteen chains — implementation follow-up
 
 Current follow-up adds the remaining fifteen catalogue adapters and bounded redirect/file-host

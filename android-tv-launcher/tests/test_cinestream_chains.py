@@ -124,6 +124,44 @@ class CineStreamChainTests(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertIn('cdn.example/file.mp4', rows[0]['url'])
 
+    def test_uhd_escaped_redirect_reaches_file_host_without_requesting_literal_backslashes(self):
+        destination = 'https://driveseed.example/file/id?key=issued&id=public'
+        encoded = json.dumps(destination).replace('/', r'\/')
+        rows, calls = self.run_chain({
+            ('https://links.example/start', False): '<title>Please wait...</title><script>'
+                'setTimeout(function(){window.location.replace(' + encoded + ');},350);</script>',
+            (destination, False): '<a href="https://cdn.example/file.mkv">DIRECT DL</a>',
+        })
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(calls[1][0], destination)
+        self.assertNotIn('key=issued', rows[0]['url'])
+
+    def test_current_driveseed_cloud_button_posts_only_to_issuing_page(self):
+        start = 'https://driveseed.example/zfile/public'
+        page = '''<button id="cloud">Generate Cloud Link</button><script>
+        var cf_token = "";
+        formData.append("key", "issued-key");
+        fetch(window.location.pathname, {method: "POST"});
+        generate("cloud");</script>'''
+        rows, calls = self.run_chain({
+            (start, False): page,
+            (start, True): json.dumps({'url': 'https://cdn.example/file.mkv'}),
+        }, start=start)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(calls[1][0], start)
+        self.assertEqual(calls[1][2]['post'],
+                         {'action': 'cloud', 'key': 'issued-key', 'action_token': ''})
+        self.assertEqual(calls[1][1]['x-token'], 'driveseed.example')
+        self.assertNotIn('X-Requested-With', calls[1][1])
+        self.assertNotIn('issued-key', rows[0]['url'])
+        self.assertNotIn('x-token', rows[0]['url'])
+        # A login-only page and lookalike host cannot trigger this exchange.
+        for url, content in ((start, page.replace('id="cloud"', 'id="login"')),
+                             ('https://other.example/file', page)):
+            rows, calls = self.run_chain({(url, False): content}, start=url)
+            self.assertEqual(rows, [])
+            self.assertEqual(len(calls), 1)
+
     def test_resume_worker_posts_token_to_issuing_origin(self):
         rows, calls = self.run_chain({
             ('https://driveleech.example/file/id', False): "<script>formData.append('token', 'issued');fetch('/download?id=one');</script>",
@@ -207,6 +245,8 @@ class CineStreamChainTests(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         self.assertIn('HEVC', rows[0]['info'])
         self.assertIn('2.5 GB', rows[0]['info'])
+        self.assertEqual(rows[0]['source'], 'Fixture · Stream [FSL Server]')
+        self.assertIn('signature=issued', rows[0]['url'])
 
     def test_compact_episode_labels_retain_both_season_and_episode(self):
         provider = DownloadCatalogue()

@@ -1,5 +1,9 @@
 ## Unreleased
 
+- Decode escaped UHDMovies redirect URLs before following them; support the observed DriveSeed
+  public cloud/file-button exchange with same-origin issued fields. Keep host-button server/size
+  details while changing Download to Stream in the new source labels.
+
 - Add fifteen CineStream catalogue/TV routes and bounded ordinary redirect chains; preserve existing sources and player. Current-site inspection and 141 offline Python tests pass; live chain/player checks are pending.
 
 - Follow current CineStream-site protocols: fresh MeowTV tickets, rotated token-server handshake,

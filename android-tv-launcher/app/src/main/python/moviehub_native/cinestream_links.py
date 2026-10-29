@@ -21,6 +21,7 @@ HOSTS = ('hubcloud.', 'vcloud.', 'hubdrive.', 'gdflix.', 'gdlink.', 'driveleech.
          'driveseed.', 'linksmod.', 'fastdlserver.', 'fastdl.', 'hblinks.', 'howblogs.',
          'pixeldrain.', 'pixeldra.', 'hshare.', 'hubcdn.')
 CHALLENGE = re.compile(r'cf-chl-|<title>\s*Just a moment|Verify you are human', re.I)
+SCRIPT_STRING = r'''("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')'''
 
 
 def host_matches(host, prefixes):
@@ -46,6 +47,13 @@ def decode64(value):
     if len(value) > 32000:
         raise ValueError('Redirect data limit')
     return base64.b64decode(value + '=' * (-len(value) % 4)).decode('utf-8')
+
+
+def script_string(value):
+    """Read a quoted URL as data, including JSON's escaped slashes; never eval."""
+    if value.startswith('"'):
+        return json.loads(value)
+    return re.sub(r'''\\(['"\\/])''', r'\1', value[1:-1])
 
 
 def landing(page):
@@ -83,7 +91,7 @@ class Links:
         self.origin_cookies = {}
         self.pages = 0
 
-    def read(self, url, referer, post=None, json_body=False, ajax=True):
+    def read(self, url, referer, post=None, json_body=False, ajax=True, host_token=False):
         client.check()
         host = urlparse(url).netloc
         if host in self.blocked:
@@ -92,6 +100,8 @@ class Links:
             raise ValueError('Redirect page budget')
         self.pages += 1
         headers = {'Referer': referer or url, 'User-Agent': USER_AGENT}
+        if host_token:
+            headers['x-token'] = urlparse(url).hostname
         scoped = self.origin_cookies.get((urlparse(url).scheme, host))
         if scoped:
             session = http_session()
@@ -120,6 +130,9 @@ class Links:
         return response, body
 
     def media(self, url, referer, info='', backend=''):
+        # Host buttons describe browser downloads; MovieHub opens these same
+        # media files in its player. Keep server/size details in the source row.
+        backend = re.sub(r'\bdownload\b', 'Stream', clean(backend), flags=re.I)
         label = self.name + ' · ' + (backend or urlparse(url).hostname or 'file')
         headers = {'Referer': referer or url, 'User-Agent': USER_AGENT}
         headers.update(self.playback_headers)
@@ -195,12 +208,14 @@ class Links:
             value = decode64(encoded_link[1])
             if value.startswith('https://'):
                 add(value)
-        for pattern in (r"\bvar\s+url\s*=\s*atob\(\s*atob\(\s*['\"]([^'\"]+)['\"]",
-                        r"\bvar\s+(?:url|reurl)\s*=\s*['\"]([^'\"]+)['\"]",
-                        r"(?:window\.)?location\.(?:replace|assign)\(\s*['\"]([^'\"]+)['\"]"):
+        encoded_url = re.search(r"\bvar\s+url\s*=\s*atob\(\s*atob\(\s*['\"]([^'\"]+)['\"]", page)
+        if encoded_url:
+            add(decode64(decode64(encoded_url[1])))
+        for pattern in (r"\bvar\s+(?:url|reurl)\s*=\s*" + SCRIPT_STRING,
+                        r"(?:window\.)?location\.(?:replace|assign)\(\s*" + SCRIPT_STRING):
             match = re.search(pattern, page)
             if match:
-                add(decode64(decode64(match[1])) if 'atob' in pattern else match[1])
+                add(script_string(match[1]))
         for node in doc.all('meta'):
             if (node.attrs.get('http-equiv') or '').lower() == 'refresh':
                 match = re.search(r'url\s*=\s*[\'\"]?(.+?)[\'\"]?$', node.attrs.get('content') or '', re.I)
@@ -275,6 +290,10 @@ class Links:
                 target = same_origin(url, endpoint[1])
                 _, body = self.read(target, url, {'token': token[1]})
                 add(json.loads(body).get('url'))
+
+        if host_matches(host, ('driveseed.', 'driveleech.')):
+            for target in self.generated_files(url, page, doc):
+                add(target)
 
         # Zink's archive pages advertise a public random-id exchange and worker API.
         random_id = re.search(r"generateDownloadLink\(['\"]([^'\"]+)", page)
@@ -361,6 +380,31 @@ class Links:
                 yield from self.follow(target, url, info, depth + 1)
         if not targets:
             client.host_result(self.name + ' · ' + host, 'no_advertised_file_or_supported_terminal')
+
+    def generated_files(self, url, page, doc):
+        """Current public file/cloud buttons post their issued fields to this page."""
+        key = re.search(r'''formData\.append\(["']key["']\s*,\s*''' + SCRIPT_STRING, page)
+        token = re.search(r'\bvar\s+cf_token\s*=\s*' + SCRIPT_STRING, page)
+        if not key or not token or not re.search(r'''fetch\(window\.location\.pathname''', page):
+            return
+        for button, action in (('cloud', 'cloud'), ('ddl', 'original'), ('drc', 'direct')):
+            if doc.first(id=button) is None or not re.search(
+                    r'''generate\(["']''' + action + r'''["']\)''', page):
+                continue
+            fields = {'action': action, 'key': script_string(key[1]),
+                      'action_token': script_string(token[1])}
+            try:
+                # Neither the issued fields nor x-token become playback headers.
+                _, body = self.read(url, url, fields, ajax=False, host_token=True)
+                data = json.loads(body)
+                target = data.get('visit_url') or data.get('url')
+                if isinstance(target, str) and target:
+                    yield target
+            except client.Cancelled:
+                raise
+            except Exception as error:
+                client.host_result(self.name + ' · ' + (urlparse(url).hostname or 'file'),
+                                   type(error).__name__)
 
     def wrapper_cookie(self, url, name, value):
         if not re.fullmatch(r'[A-Za-z0-9_-]{1,128}', name) or not re.fullmatch(r'[A-Za-z0-9+/=_-]{1,8000}', value):

@@ -1,22 +1,17 @@
 # Testing
 
-Current follow-up adds the remaining fifteen catalogue adapters and bounded redirect/file-host
-protocols without modifying established sites or replacing the player. All fifteen stay registered;
-ordinary redirects are not grounds for removal. Eleven current roots exposed film catalogues;
-Vega exposed its gateway, TopMovies returned 503, and Zink/M4U returned browser challenges.
-M4U .lat contributes TV only to avoid duplicating existing movie adapters. Normal discovery now
-contains 74 websites / 77 adapters (39 added adapter protocols, three separately pending).
-Local validation: 141 Python tests and 34 core suites / 1,167 checks pass. At revision 89d2d80,
-Inception extraction yielded two HDHub4u and four SkyMovies sources; Breaking Bad S1E1 yielded
-twelve HindMoviez sources. The existing native player verified three SkyMovies Inception sources
-and all twelve HindMoviez episode sources (video/audio, runtime and midpoint seek), recording
-relay socket errors. Other live checks and
-validation of subsequent parser corrections remain pending; accessible HTML is not playback.
-The preceding revision 7a38417 passed all six Android jobs in run 40869288216; its separate Vidy
-series audit failed and is not evidence of success for this follow-up.
+CineStream candidate: 74 websites / 77 enabled adapters, with all fifteen added catalogue
+routes retained. Current redirect fixes decode escaped URL literals and support the observed
+DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
+say Stream instead of Download; the existing player and source-list layout are unchanged.
+Local validation: 143 Python tests and 34 core suites / 1,167 checks pass. At `d85b832`, all six
+Android CI jobs passed and the fifteen-site audit verified 21 individual sources across four sites.
+The new redirect/button corrections still require final Android/live validation. Vidy episode
+playback crashes and other site/host failures remain unresolved; registration is not playback proof.
+See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
 
 
-Current follow-up: current-site inspection corrected the new adapters. Application revision
+Earlier checkpoint: current-site inspection corrected the new adapters. Application revision
 47b22de passed all six Android jobs after an experimental retry (the first attempt raised
 DeadSystemException). Its native Vidy samples still failed and remain draft-PR blockers.
 The final KissKH decimal episode-number correction passed the 116-test Python suite and a

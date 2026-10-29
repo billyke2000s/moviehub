@@ -310,3 +310,12 @@ Existing provider parsers, TLS verification and public-address validation remain
 New CineStream lookups use an isolated requests session for cookie continuity, closed at the end
 of extraction. Only cookies matching the actual media URL's domain/path enter playback. The
 legacy request API's new optional session defaults to None and preserves old fetch calls exactly.
+
+## CineStream public file-button follow-up — 29 October 2026
+
+New-only DriveSeed/Driveleech button handling posts the page-issued key/action token only to the
+exact page that supplied them, with the advertised hostname header. Only present public buttons
+and the observed cloud/original/direct actions are considered. These fields never become media
+headers; login-only pages and unrelated hosts cannot trigger the exchange. Redirect string
+literals are decoded as data, without running JavaScript. Existing URL, budget, cancellation and
+media-validation guards remain in force. External-decoder audit restrictions are unchanged.
