@@ -43,7 +43,7 @@ jobs:
           arch: x86_64
           profile: tv_1080p
           disable-animations: true
-          script: ORG_GRADLE_PROJECT_moviehubAbi=x86_64 bash android-tv-launcher/tests/run-live-vod-audit.sh 0 1 '${{ matrix.route.provider }}' '${{ matrix.media }}' '${{ matrix.route.names }}'
+          script: bash .github/scripts/cinestream-audit.sh '${{ matrix.route.provider }}' '${{ matrix.media }}' '${{ matrix.route.names }}'
       - name: Summarize actual outcomes without asserting universal availability
         if: always()
         run: |
@@ -59,5 +59,7 @@ jobs:
         if: always()
         with:
           name: cinestream-playback-${{ strategy.job-index }}-${{ matrix.media }}
-          path: vod-live-audit.jsonl
+          path: |
+            vod-live-audit.jsonl
+            cinestream-crash.log
           if-no-files-found: warn
