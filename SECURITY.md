@@ -10,7 +10,8 @@ original API requests; VIP-locked links are skipped. MeowTV guest tickets remain
 CSRF headers retain the existing relay authority restriction. Unattended audit scripts reject
 enc-dec.app calls before transmission; live decoder validation awaits explicit approval.
 Some new adapters call enc-dec.app for public source data; this adds an external service dependency
-and discloses requested public media identifiers/payloads to that service. It receives no MovieHub
+and discloses requested media identifiers, transient site-issued tokens and encrypted playback
+responses to that service. It receives no MovieHub
 account credentials. Formats are display-only, and manifest declarations/provider reports are not
 promoted into verified decoder/audio claims. Existing redirect credential restrictions remain.
 

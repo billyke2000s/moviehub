@@ -1,9 +1,12 @@
 # Testing
 
-Current follow-up: direct site inspection corrected new Vidy, MeowTV, token-server, Cinejoy,
-PrimeSrc, Multimovies, AnimeSalt and KissKH methods. Earlier CI evidence below predates these fixes;
-follow-up CI is pending. Unattended audits block external decoder uploads. See the
-[direct-site findings](docs/CINESTREAM_ADDITIONS_2026_10_29.md#direct-website-and-current-client-investigation--follow-up-29-october).
+Current follow-up: current-site inspection corrected the new adapters. Application revision
+47b22de passed all six Android jobs after an experimental retry (the first attempt raised
+DeadSystemException). Its native Vidy samples still failed and remain draft-PR blockers.
+The final KissKH decimal episode-number correction passed the 116-test Python suite and a
+public-ID-only API check; Android CI for that small final correction is pending. Unattended
+audits continue to block external decoder uploads of site tokens/encrypted responses.
+See the [direct-site findings](docs/CINESTREAM_ADDITIONS_2026_10_29.md#direct-website-and-current-client-investigation--follow-up-29-october).
 
 ## CineStream format/source regressions
 

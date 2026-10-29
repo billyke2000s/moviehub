@@ -95,7 +95,7 @@ This is a partial source expansion, not a claim that all CineStream websites wer
 | Fibwatch | Custom packed stream resolver; upstream can fall back to the first episode and labels combined content. Exact episode/duration evidence and a validated terminal are still needed. |
 | Mlsbd | Series path has no episode argument and labels combined content; film host chain remains unsupported. |
 | SkyMovies | Custom downstream download hosts; upstream combined-episode fallback cannot satisfy exact-episode selection. |
-| M4ufree `.lat` | M4u CSRF/AJAX family overlaps existing M4u routes. DNS restrictions prevent establishing whether this is an independent current site/backend or an alias. It is not added, and the existing implementation/exclusions stay intact. |
+| M4ufree `.lat` | M4u CSRF/AJAX family overlaps existing M4u routes. A public catalogue is readable through web retrieval, but independent playback-backend identity is unresolved. It is not added, and existing implementations/exclusions stay intact. |
 
 Anime-only registry entries, subtitle services and torrent providers are not new movie/TV
 website adapters. Existing Torrentio stays unchanged. Akwam series, Asiaflix seasons beyond 1
@@ -325,3 +325,89 @@ The fifteen remaining unimplemented candidate roots were also read from the curr
 URL map and subjected to public-address DNS preflight. All fifteen hit this workspace's DNS
 restriction before a homepage request; no conclusion about their live health is possible here.
 No alternative resolver or private-address allowance was introduced.
+
+
+## Follow-up outcomes at application revision 47b22de
+
+Local checks: 116 Python tests and 34 core suites / 1,167 checks passed. The remote-shell argument
+regression check also passed. Established source implementations remain unchanged.
+
+[CineStream native audit 40866160539](https://github.com/billyke2000s/moviehub/actions/runs/40866160539)
+did not establish an additional playback pass. The Inception lookup returned four Phoenix links;
+each failed with zero decoded frames/audio and a relay IOException. The Breaking Bad S1E1 lookup
+returned three links; its first Phoenix selection crashed in LibVLC's adaptive timestamp continuity,
+leaving only the starting record and no finished marker. HLS rendition expansion therefore did not
+resolve these samples. A successful audit job/report is not counted as successful playback.
+No additional native-playback success is claimed beyond the earlier two Hexa Alpha checks.
+These candidate failures remain draft-PR blockers; the existing player was not replaced or modified
+to hide them.
+
+A separate direct first-segment check of Phoenix/Inception obtained a 200 master with three
+variants, a 200 rendition with 1,776 segments, and a 200 first segment containing a TS sync byte.
+The segment's Content-Type was text/html despite binary media bytes. This is transport evidence,
+not a decoded-frame check or a proven cause of the native failure; the existing relay already
+sniffs TS. No player or MIME-validation behavior was changed on this hypothesis.
+
+[Android run 40866160526](https://github.com/billyke2000s/moviehub/actions/runs/40866160526) passed
+build/lint/dual-ARM inspection, signing compatibility, the public availability probe and focused
+VOD recovery. The experimental emulator job failed after 12 passing cases with
+android.os.DeadSystemException. This failure is retained; no claim is made that it is unrelated.
+The regular device suite was still running at this checkpoint. A retry of the failed job cannot
+start while the same workflow run is running (GitHub rejected that request); no test gate was
+weakened. Full Android validation is not claimed complete.
+
+Workspace DNS preflight could not reach the fifteen other candidate roots. Separate web retrieval
+could nevertheless read catalogue pages for **eight**: Bollyflix, MoviesMod, UHDMovies, DudeFilms,
+RogMovies, HindMovie, HDHub4u and M4UFree. The other seven returned fetch errors, access refusals or
+redirect-access limits through that retrieval service. The public pages prove that several of
+these catalogues are available; they do not prove file-host playback. The corresponding download
+and player chains remain unimplemented, as listed above. No inaccessible result is a permanent
+closure finding.
+
+
+The regular device suite subsequently passed: its HTML report contains 209 entries, with 208
+passing plus the unchanged Explicit live audit only assumption (rendered as one failure by the
+HTML generator, accepted by Gradle). The native track-format regression passed in 2.485 seconds.
+The experimental job is being retried on the same application revision after its recorded
+DeadSystemException; the first attempt is not erased or reclassified.
+
+FFprobe recognized the separately fetched Phoenix/Inception first segment as H.264 video
+(640×266) plus AAC audio, starting at zero. This is independent media-inspection evidence,
+not successful playback in MovieHub and not proof of the full stream's timestamps.
+
+The automatically triggered existing-source diagnostics at this revision verified all eight
+Movy movie links and seven of eight episode links; the last Miami episode link had unverified
+audio. Rive returned two links but none selected by that audit's Vanguard filter. Those are
+recorded diagnostic results, not grounds for replacing the established implementations.
+No established scraper, native source, ResolveURL code or player engine was changed to make
+these audits green. The earlier unchanged-main comparison remains recorded above.
+
+
+## Final follow-up checkpoint
+
+Application revision **47b22de** passed all six Android jobs in run 40866160526 after retrying
+the experimental job. Its retry report contains 27 unique passing cases (7 startup, 20 Exo
+lifecycle), with no failures/skips. The initial DeadSystemException remains recorded above.
+Regular native track metadata passed; source/native playback failures are separately retained
+and are not hidden by the green application build/test workflow.
+
+The real KissKH detail response exposes episode numbers as JSON decimals, such as 1.0.
+String equality against "1" incorrectly discarded the requested episode. The final adapter
+correction accepts only the requested integer with an optional all-zero fractional part;
+a 3.5 special does not match episode 3. The existing fixture now uses actual decimal-shaped
+numbers and passed in the full 116-test Python runner. Android CI for this last correction
+is pending; the six-job success above applies to revision 47b22de.
+
+A materially safer KissKH helper check sent **only its already-public numeric episode ID**
+to enc-kisskh. No site-issued token, cookie, authorization header, encrypted server response
+or request body was uploaded. The helper and provider episode API both returned 200, and
+the latter advertised two playback entries. A direct Video sample timed out; ThirdParty
+returned a 200 HTML embed, requiring terminal resolution. Neither is claimed as native
+playback. The opaque-token/response decoder probes for the other adapters remain blocked
+by automatic approval review pending explicit approval. The unattended audit guard was not
+relaxed to run this isolated public-ID-only check.
+
+The draft remains incomplete: ten new adapters received current-method corrections, sixteen
+nonduplicate Vidy backends are represented, fifteen further website chains remain unimplemented,
+and the native Vidy failures need resolution. Existing providers/player behavior was preserved.
+No merge or publication occurred.

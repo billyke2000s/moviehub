@@ -153,7 +153,8 @@ class KissKH(Base):
         data = get(self.base_link + '/api/DramaList/Drama/' + str(match['id']) + '?isq=false', detail_headers)
         episodes = data.get('episodes') or []
         if 'season' in q:
-            episode = next((r for r in episodes if str(r.get('number')) == q['episode']), None)
+            number = re.escape(q['episode']) + r'(?:\.0+)?'
+            episode = next((r for r in episodes if re.fullmatch(number, str(r.get('number')))), None)
         else:
             episode = episodes[0] if len(episodes) == 1 else None
         if not episode:

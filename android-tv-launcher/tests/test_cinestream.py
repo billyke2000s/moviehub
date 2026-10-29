@@ -356,7 +356,7 @@ class CineStreamTests(unittest.TestCase):
         provider = KissKH()
         with patch.object(client, 'request', side_effect=[
             [dict(id=1, title='Other'), dict(id=2, title='A Film Season 2')],
-            {'episodes': [dict(id=20, number=2), dict(id=30, number=3)]},
+            {'episodes': [dict(id=20, number=2), dict(id=25, number=3.5), dict(id=30, number=3.0)]},
             {'result': 'issued'}, {'Video': 'https://cdn.example/right.m3u8'}
         ]) as request:
             rows = provider.sources(self.key(provider, True), [])
