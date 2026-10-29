@@ -17,11 +17,14 @@ gradle -p android-tv-launcher --no-daemon assembleDebug assembleDebugAndroidTest
 # Install and invoke instrumentation explicitly, then validate the report before declaring success.
 adb install -r android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk
 adb install -r android-tv-launcher/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+audit_args=()
+if [ -n "$providers" ]; then audit_args+=(-e vodProviders "$providers"); fi
+if [ -n "$source_names" ]; then audit_args+=(-e vodSourceNames "$source_names"); fi
 adb shell am instrument -w -r \
   -e class local.tv.home.FreeVodLiveAuditTest \
-  -e vodLiveAudit true -e vodShard "$shard" -e vodShards "$shards" -e vodProviders "$providers" \
+  -e vodLiveAudit true -e vodShard "$shard" -e vodShards "$shards" \
   -e vodSeries "$series" \
-  -e vodSourceNames "$source_names" \
+  "${audit_args[@]}" \
   local.tv.home.test/local.tv.home.MovieHubTestRunner
 adb exec-out run-as local.tv.home cat files/vod-live-audit.jsonl > vod-live-audit.jsonl
 python - "$shard" "$shards" <<'PY'

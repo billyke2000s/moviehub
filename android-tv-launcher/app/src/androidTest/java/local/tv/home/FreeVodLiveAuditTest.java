@@ -39,11 +39,10 @@ public final class FreeVodLiveAuditTest {
             clear.write("");
         }
         boolean series = Boolean.parseBoolean(arguments.getString("vodSeries", "false"));
-        List<String> sites = FreeVodProviders.ids(context, series);
         String providers = arguments.getString("vodProviders", "");
-        if (!providers.isEmpty()) sites.removeIf(
-            site -> !java.util.Arrays.asList(providers.split(",")).contains(site)
-        );
+        List<String> sites = providers.isEmpty()
+            ? FreeVodProviders.ids(context, series)
+            : new ArrayList<>(java.util.Arrays.asList(providers.split(",")));
         org.junit.Assert.assertFalse("No matching enabled movie websites selected", sites.isEmpty());
         for (int index = shard; index < sites.size(); index += shards) {
             String site = sites.get(index);
@@ -116,6 +115,7 @@ public final class FreeVodLiveAuditTest {
                         .put("episode", film.optInt("episode", -1))
                         .put("title", film.getString("title"))
                         .put("separateSource", separate);
+                    record(new JSONObject(result.toString()).put("kind", "starting"));
                     try {
                         play(source, film.optInt("runtimeMinutes"), result);
                     } catch (Exception error) {
@@ -139,7 +139,11 @@ public final class FreeVodLiveAuditTest {
             .put("runtimeMinutes", minutes)
             .put("season", -1)
             .put("episode", -1)
-            .put("http", false);
+            .put("http", false)
+            .put(
+                "cinestreamAudit",
+                "true".equals(InstrumentationRegistry.getArguments().getString("vodCineStreamAllBackends"))
+            );
     }
 
     private void record(JSONObject row) throws Exception {
@@ -152,15 +156,13 @@ public final class FreeVodLiveAuditTest {
     private void play(SourceRepository.Source source, int expectedMinutes, JSONObject result)
         throws Exception {
         VodSources.Session session = new VodSources.Session(
-            java.util.Collections.singletonList(
-                new VodSourceFailover.Source("audit", "Public source audit", "Audit")
-            ),
-            index -> {
-                throw new IllegalStateException("No automatic fallback in individual audit");
-            },
+            java.util.Collections.singletonList(VodSources.entry(source)),
+            index -> new VodSources.Resolved(source.uri, new org.json.JSONArray()),
             true
         );
         session.free = true;
+        session.managed = true;
+        session.expectedDuration = expectedMinutes * 60000L;
         session.transport = index -> source.stream;
         VlcPlaybackActivity activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
             new Intent(context, VlcPlaybackActivity.class)
