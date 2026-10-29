@@ -1,5 +1,10 @@
 ## Unreleased
 
+- Follow current CineStream-site protocols: fresh MeowTV tickets, rotated token-server handshake,
+  Cinejoy/KissKH/AnimeSalt domain moves and current Multimovies catalogue. Add Vidy’s other
+  sixteen backends using the existing local decoder; preserve Movy Boise/Miami without duplicates.
+  Keep unattended validation from sending provider material to an external decoder.
+
 - Correct CineStream HLS helper expansion, per-provider token/browser headers and managed playback
   audit startup; retain external audio with its master and scope new media CSRF headers.
 

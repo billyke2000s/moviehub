@@ -13,13 +13,13 @@ _CINESTREAM = [
     ('vaplayer', 'VaPlayer', 'streamdata.vaplayer.ru', True, True),
     ('primesrc', 'PrimeSrc', 'primesrc.me', True, True),
     ('fshare', 'Fshare', 'fsharetv.cc', True, False),
-    ('videasy', 'Videasy', 'player.videasy.to', True, True),
+    ('videasy', 'Videasy', 'vidy.st', True, True),
     ('meowtv', 'Meowtv', 'meowtv.ru', True, True),
     ('vidup', 'Vidup', 'vidup.to', True, True),
     ('vidcore', 'Vidcore', 'vidcore.io', True, True),
     ('vidfast', 'Vidfast', 'vidfast.vc', True, True),
     ('onetouchtv', 'OneTouchTv', 'api3.devcorp.me', True, True),
-    ('cinejoy', 'Cinejoy', 'cinejoy.to', True, True),
+    ('cinejoy', 'Cinejoy', 'cinejoy.pk', True, True),
     ('hexa', 'Hexa', 'hexa.su', True, True),
 ]
 _CATALOGUES = [
@@ -48,9 +48,9 @@ PROVIDERS.append(dict(id='native:allmovieland', module='moviehub_native.cinestre
 for name, factory, site, series in (
     ('multimovies', 'Multimovies', 'm1.multimovies.courses', True),
     ('toonstream', 'Toonstream', 'toonstream.us', True),
-    ('animesalt', 'AnimeSalt', 'animesalt.ac', True),
+    ('animesalt', 'AnimeSalt', 'animesalt.cx', True),
     ('rtally', 'Rtally', 'rtally.lol', False),
-    ('kisskh', 'KissKH', 'kisskh.nl', True),
+    ('kisskh', 'KissKH', 'kisskh.do', True),
 ):
     PROVIDERS.append(dict(id='native:' + name, module='moviehub_native.cinestream_embeds',
                           factory=factory, family='native', name=name, site=site,

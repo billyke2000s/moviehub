@@ -46,55 +46,95 @@ class CineStreamTests(unittest.TestCase):
             self.assertEqual(rows[0]['quality'], 'Auto')
 
     def test_videasy_independent_backends_survive_refusal_without_assumed_quality(self):
+        from moviehub_native import movy
         provider = api.Videasy()
         seen = []
+
         def request(url, **kwargs):
-            seen.append((url, kwargs))
+            seen.append(url)
+            self.assertNotIn('enc-dec.app', url)
             if '/seed?' in url:
                 return {'seed': 'issued'}
-            if '/myflixerzupcloud/' in url:
+            if '/reno/' in url:
                 raise ValueError('refused')
-            if '/sources-with-title?' in url:
-                args = parse_qs(urlparse(url).query)
-                self.assertEqual(args['seasonId'], ['2'])
-                self.assertEqual(args['episodeId'], ['3'])
-                self.assertEqual(args['title'], ['A%20Film'])
-                return 'encoded'
-            return {'result': {'sources': [{'url': 'https://cdn.example/master.m3u8'}]}}
-        with patch.object(client, 'request', side_effect=request):
-            rows = provider.sources(self.key(provider, True), [])
-        self.assertEqual(len(rows), 10)
-        self.assertEqual(len({r['source'] for r in rows}), 10)
-        self.assertTrue(all(r['quality'] == 'Auto' for r in rows))
-        self.assertTrue(all('Origin=https%3A%2F%2Fplayer.videasy.to' in r['url'] for r in rows))
-        decoder_posts = [kw for url, kw in seen if '/dec-videasy' in url]
-        self.assertTrue(all(json.loads(kw['post']) == dict(text='encoded', id=123, seed='issued') for kw in decoder_posts))
+            args = parse_qs(urlparse(url).query)
+            self.assertEqual(args['seasonId'], ['2'])
+            self.assertEqual(args['episodeId'], ['3'])
+            self.assertEqual(args['title'], ['A%20Film'])
+            self.assertEqual(urlparse(url).path.split('/')[-1], 'sources')
+            if '/munich/' in url:
+                self.assertEqual(args['language'], ['german'])
+            return 'encoded'
 
-    def test_token_servers_use_exact_track_route_and_do_not_forward_csrf_to_media(self):
+        payload = {'sources': [{'url': 'https://cdn.example/master.m3u8', 'quality': 'Streamwish'},
+                               {'url': 'https://cdn.example/drm.mpd', 'drm': True}]}
+        with patch.object(client, 'request', side_effect=request), patch.object(movy, 'decode', return_value=payload) as decode:
+            rows = provider.sources(self.key(provider, True), [])
+        self.assertEqual(len(rows), 13)  # Reno failed; Austin/Delhi reject other languages.
+        self.assertEqual(len({r['source'] for r in rows}), 13)
+        self.assertTrue(all(r['quality'] == 'Auto' for r in rows))
+        self.assertTrue(all(r['info'] == 'Streamwish' for r in rows))
+        self.assertTrue(all('Origin=https%3A%2F%2Fvidy.st' in r['url'] for r in rows))
+        self.assertFalse(any('/boise/' in url or '/miami/' in url for url in seen))
+        decode.assert_called_with('encoded', 'issued', '123')
+
+    def test_videasy_language_filters_and_diagnostic_subset(self):
+        from moviehub_native import movy
+        provider = api.Videasy()
+        provider.cinestream_audit_backends = 'austin,delhi,boise'
+        payload = {'sources': [{'url': 'https://cdn.example/' + language + '.m3u8', 'quality': language}
+                               for language in ('English', 'Hindi', 'German')]}
+        with patch.object(client, 'request', side_effect=lambda url, **kw: {'seed': 'issued'} if '/seed?' in url else 'encoded'), patch.object(movy, 'decode', return_value=payload):
+            rows = provider.sources(self.key(provider), [])
+        self.assertEqual([row['info'] for row in rows], ['English', 'Hindi'])
+        self.assertEqual([row['source'] for row in rows], ['Vidy Austin', 'Vidy Delhi'])
+
+    def test_token_servers_use_rotated_token_and_exact_episode_route(self):
         for cls in (api.Vidup, api.Vidcore, api.Vidfast):
             with self.subTest(cls=cls.__name__):
                 provider = cls()
                 calls = []
+
                 def request(url, **kw):
                     calls.append((url, kw))
                     if '/tv/' in url:
                         return r'{\"token\":\"literal\"}'
                     if urlparse(url).path.startswith('/api/enc-'):
-                        return {'status': 200, 'result': dict(token='csrf', servers=provider.base_link + '/servers', stream=provider.base_link + '/stream')}
+                        args = parse_qs(urlparse(url).query)
+                        if args['stage'] == ['1']:
+                            self.assertEqual(args['text'], ['literal'])
+                            return {'status': 200, 'result': dict(token='bootstrap', stage1=provider.base_link + '/bootstrap')}
+                        self.assertEqual(args['stage'], ['2'])
+                        self.assertEqual(args['text'], ['bootstrap-response'])
+                        return {'status': 200, 'result': dict(token='rotated', servers=provider.base_link + '/servers', stream=provider.base_link + '/stream')}
+                    if url.endswith('/bootstrap'):
+                        self.assertEqual(kw['headers']['X-CSRF-Token'], 'bootstrap')
+                        self.assertEqual(kw['post'], '')
+                        return 'bootstrap-response'
                     if url.endswith('/servers') or '/stream/' in url:
                         self.assertEqual(kw['post'], '')
-                        self.assertEqual(kw['headers']['X-CSRF-Token'], 'csrf')
+                        self.assertEqual(kw['headers']['X-CSRF-Token'], 'rotated')
                         return 'encrypted'
                     if urlparse(url).path.startswith('/api/dec-'):
-                        posts = sum('/dec-' in u for u, k in calls)
+                        posts = sum(urlparse(u).path.startswith('/api/dec-') for u, k in calls)
                         return {'status': 200, 'result': [dict(name='one', data='hash')] if posts == 1 else dict(url='https://cdn.example/film.m3u8')}
                     raise AssertionError(url)
+
                 with patch.object(client, 'fetch', return_value=self.playlist('#EXTM3U\n#EXTINF:600,\na.ts')), patch.object(client, 'request', side_effect=request):
                     rows = provider.sources(self.key(provider, True), [])
                 self.assertEqual(len(rows), 1)
-                self.assertTrue(calls[0][0].rstrip('/').endswith('/tv/123/2/3'))
-                self.assertEqual('X-CSRF-Token=csrf' in rows[0]['url'], cls is api.Vidfast)
-                self.assertEqual('X-Requested-With' in rows[0]['url'], False)
+                self.assertTrue(calls[0][0].endswith('/tv/123/2/3/'))
+                self.assertEqual('X-CSRF-Token=rotated' in rows[0]['url'], cls is api.Vidfast)
+                self.assertNotIn('X-Requested-With', rows[0]['url'])
+                self.assertNotIn('bootstrap', rows[0]['url'])
+
+    def test_token_bootstrap_does_not_send_csrf_to_another_origin(self):
+        provider = api.Vidup()
+        with patch.object(client, 'request', side_effect=[r'{\"token\":\"literal\"}',
+                {'status': 200, 'result': dict(token='secret', stage1='https://other.example/bootstrap')}]) as request:
+            with self.assertRaisesRegex(ValueError, 'origin changed'):
+                provider.sources(self.key(provider), [])
+        self.assertEqual(request.call_count, 2)
 
     def test_hls_expands_variants_before_master_with_real_heights_and_referer(self):
         body = '#EXTM3U\n#EXT-X-I-FRAME-STREAM-INF:URI="trick.m3u8"\n#EXT-X-STREAM-INF:RESOLUTION=1280x720,CODECS="avc1,mp4a"\n720/index.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=4\n//other.example/auto.m3u8'
@@ -280,10 +320,10 @@ class CineStreamTests(unittest.TestCase):
         from moviehub_native.cinestream_embeds import Multimovies
         provider = Multimovies()
         page = '<ul id="playeroptionsul"><li data-post="12" data-nume="trailer" data-type="tv"></li><li data-post="12" data-nume="1" data-type="tv"></li></ul>'
-        with patch.object(client, 'request', side_effect=[page, {'embed_url': '<iframe src="https://cdn.example/master.m3u8"></iframe>'}]) as request:
+        with patch.object(client, 'request', side_effect=[{}, page, {'embed_url': '<iframe src="https://cdn.example/master.m3u8"></iframe>'}]) as request:
             rows = provider.sources(self.key(provider, True), [])
-        self.assertEqual(request.call_count, 2)
-        self.assertTrue(request.call_args_list[0].args[0].endswith('/episodes/a-film-2x3/'))
+        self.assertEqual(request.call_count, 3)
+        self.assertTrue(request.call_args_list[1].args[0].endswith('/episodes/a-film-2x3/'))
         self.assertEqual(request.call_args.kwargs['post'], dict(action='doo_player_ajax', post='12', nume='1', type='tv'))
         self.assertIn('Referer=https%3A%2F%2Fm1.multimovies.courses%2Fepisodes%2Fa-film-2x3%2F', rows[0]['url'])
 
@@ -374,7 +414,7 @@ class CineStreamTests(unittest.TestCase):
         with patch.object(client, 'request', side_effect=request):
             rows = provider.sources(self.key(provider, True), [])
         self.assertEqual([r['quality'] for r in rows], ['Auto', '2160p', '720p'])
-        self.assertTrue(all(parse_qs(r['url'].partition('|')[2]) == {'Referer': ['https://cinejoy.to/']} for r in rows))
+        self.assertTrue(all(parse_qs(r['url'].partition('|')[2]) == {'Referer': ['https://cinejoy.pk/']} for r in rows))
 
     def test_vidzee_cbc_response_headers_override_defaults_case_insensitively(self):
         import base64
@@ -458,14 +498,46 @@ class CineStreamTests(unittest.TestCase):
                 rows = provider.sources(self.key(provider), [])
             self.assertEqual([row['source'] for row in rows], expected)
 
-    def test_tmdb_and_title_routes_do_not_require_an_unrelated_imdb_identifier(self):
+    def test_meow_fresh_guest_ticket_per_backend_and_exact_episode(self):
         provider = api.Meowtv()
-        key = provider.movie('', '123', 'A Film', 'A Film', [], '2020')
-        with patch.object(client, 'request', side_effect=[{}, {'result': {'url': 'https://cdn.example/film.m3u8'}}] * 5) as request:
-            rows = provider.sources(key, [])
-        self.assertEqual(len(rows), 5)
-        self.assertTrue(request.call_args_list[0].args[0].endswith('/movie/123?s=ipcloud'))
-        for cls in (api.VaPlayer, api.PrimeSrc, api.Fshare, api.AllMovieLand, sites.Akwam):
+        calls = []
+        issued = []
+        consumed = []
+
+        def request(url, **kw):
+            calls.append((url, kw))
+            if url.endswith('/streams/ticket'):
+                ticket = 'single-use-' + str(len(issued))
+                issued.append(ticket)
+                return {'ticket': ticket}
+            if '/streams/tv/' in url:
+                self.assertIn('/tv/123/2/3?', url)
+                self.assertNotIn('turkce', url)
+                ticket = kw['headers']['x-stream-ticket']
+                self.assertEqual(ticket, issued[-1])
+                self.assertNotIn(ticket, consumed)
+                consumed.append(ticket)
+                return {'encrypted': 'fixture'}
+            self.assertNotIn('x-stream-ticket', kw['headers'])
+            return {'result': {'url': 'https://cdn.example/movie.m3u8', 'headers': {
+                'referer': 'https://media.example/', 'X-Stream-Ticket': 'never-forward'}, 'language': 'English'}}
+
+        with patch.object(client, 'request', side_effect=request):
+            rows = provider.sources(self.key(provider, True), [])
+        self.assertEqual(len(rows), 7)
+        self.assertEqual(len(issued), 7)
+        self.assertEqual(issued, consumed)
+        for row in rows:
+            headers = parse_qs(row['url'].partition('|')[2])
+            self.assertEqual(headers['referer'], ['https://media.example/'])
+            self.assertNotIn('Referer', headers)
+            self.assertNotIn('ticket', row['url'].lower())
+        self.assertEqual(rows[0]['info'], 'English')
+
+    def test_tmdb_routes_do_not_require_an_unrelated_imdb_identifier(self):
+        for cls in (api.Meowtv, api.PrimeSrc, api.Videasy):
+            self.assertIsNotNone(cls().movie('', '123', 'A Film', 'A Film', [], '2020'))
+        for cls in (api.VaPlayer, api.Fshare, api.AllMovieLand, sites.Akwam):
             self.assertIsNone(cls().movie('', '123', 'A Film', 'A Film', [], '2020'))
 
     def test_source_metadata_is_advertised_not_selected_or_measured_audio(self):
@@ -475,3 +547,78 @@ class CineStreamTests(unittest.TestCase):
         self.assertEqual(describe(b'<html>CODECS="avc1"</html>', {}), '')
         self.assertEqual(describe(b'file', {'Content-Length': '65536'}), '')
         self.assertEqual(describe(b'file', {'Content-Range': 'bytes 0-65535/1073741824'}), 'File: 1.00 GiB')
+
+    def test_current_multimovies_config_checks_episode_before_exposing_embeds(self):
+        from moviehub_native.cinestream_embeds import Multimovies
+        provider = Multimovies()
+        search = {'tv_shows': [dict(title='A Film', url='/series/a-film-99')]}
+        for episode, expected in ((3, 1), (2, 0)):
+            config = dict(season=2, episode=episode, initialServers=[
+                dict(name='Real backend', type='iframe', url='https://host.example/e/1')])
+            page = 'const watchConfig = ' + json.dumps(config) + ';'
+            with patch.object(client, 'request', side_effect=[search, page]) as request:
+                rows = provider.sources(self.key(provider, True), [])
+            self.assertEqual(len(rows), expected)
+            self.assertTrue(request.call_args.args[0].endswith('/series/a-film-99/season/2/episode/3'))
+            if rows:
+                self.assertEqual(rows[0]['source'], 'Multimovies Real backend')
+                self.assertFalse(rows[0]['direct'])
+
+    def test_current_animesalt_retains_advertised_hosts_and_languages(self):
+        import base64
+        from moviehub_native.cinestream_embeds import AnimeSalt
+        provider = AnimeSalt()
+        encoded = base64.b64encode(json.dumps([dict(language='English', link='https://host.example/e/english')]).encode()).decode()
+        page = ('<div class="video"><iframe data-src="https://other.example/e/1"></iframe></div>'
+                '<div class="video"><iframe data-src="https://animesalt.cx/wp-content/themes/torofilm/public/plyr/player.php?data=' + encoded + '"></iframe></div>')
+        with patch.object(client, 'request', return_value=page):
+            rows = provider.sources(self.key(provider, True), [])
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[1]['source'], 'AnimeSalt English')
+        self.assertEqual(rows[1]['url'], 'https://host.example/e/english')
+        self.assertTrue(all(not row['direct'] and row['quality'] == 'Auto' for row in rows))
+
+    def test_primesrc_forwards_only_advertised_server_token_and_accepts_tmdb(self):
+        provider = api.PrimeSrc()
+        key = provider.movie('', '123', 'A Film', 'A Film', [], '2020')
+        with patch.object(client, 'request', side_effect=[
+                {'servers': [dict(key='one', token='issued', name='Host A')]},
+                {'link': 'https://host.example/e/one'}]) as request:
+            rows = provider.sources(key, [])
+        self.assertEqual(parse_qs(urlparse(request.call_args_list[0].args[0]).query), {'type': ['movie'], 'tmdb': ['123']})
+        self.assertEqual(parse_qs(urlparse(request.call_args.args[0]).query), {'key': ['one'], 'token': ['issued']})
+        self.assertNotIn('issued', rows[0]['url'])
+
+    def test_unattended_audits_block_external_decoder_before_network(self):
+        from audit_transport import block_external_decoder
+        with patch.object(client, 'request', return_value={'public': True}) as request:
+            block_external_decoder()
+            with self.assertRaises(PermissionError):
+                client.request(api.DECODER + '/enc-vidfast?text=private-fixture')
+            request.assert_not_called()
+            self.assertEqual(client.request('https://site.example/'), {'public': True})
+
+    def test_meow_refreshes_a_rejected_ticket_once_and_preserves_acme_streams(self):
+        provider = api.Meowtv()
+        calls = []
+
+        def request(url, **kw):
+            calls.append(url)
+            if url.endswith('/streams/ticket'):
+                return {'ticket': str(len(calls))}
+            if '/streams/movie/' in url:
+                name = parse_qs(urlparse(url).query)['s'][0]
+                if name != 'acme':
+                    raise ValueError('backend unavailable')
+                self.assertEqual(parse_qs(urlparse(url).query)['list'], ['1'])
+                if sum('s=acme' in call for call in calls) == 1:
+                    return {'error': 'Ticket expired'}
+                return {'encrypted': 'fixture'}
+            return {'result': {'streams': [dict(url='https://cdn.example/en.m3u8', language='English'),
+                                          dict(url='https://cdn.example/hi.m3u8', language='Hindi')]}}
+
+        with patch.object(client, 'request', side_effect=request):
+            rows = provider.sources(self.key(provider), [])
+        self.assertEqual([row['info'] for row in rows], ['English', 'Hindi'])
+        self.assertEqual(sum('s=acme' in call for call in calls), 2)
+        self.assertTrue(any('s=turkce' in call for call in calls))

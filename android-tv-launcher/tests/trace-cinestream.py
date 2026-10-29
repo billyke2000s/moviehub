@@ -13,6 +13,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'app/src/main/pytho
 import moviehub_vod as vod
 from moviehub_compat import client
 from moviehub_native import PROVIDERS
+from audit_transport import block_external_decoder
+
+block_external_decoder()
 
 local = threading.local()
 original_fetch = client.fetch

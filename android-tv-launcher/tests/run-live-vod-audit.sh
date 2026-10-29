@@ -20,6 +20,9 @@ adb install -r android-tv-launcher/app/build/outputs/apk/androidTest/debug/app-d
 audit_args=()
 if [ -n "$providers" ]; then audit_args+=(-e vodProviders "$providers"); fi
 if [ -n "$source_names" ]; then audit_args+=(-e vodSourceNames "$source_names"); fi
+if [ -n "${VOD_CINESTREAM_BACKENDS:-}" ]; then
+    audit_args+=(-e vodCineStreamAllBackends true -e vodCineStreamBackends "$VOD_CINESTREAM_BACKENDS")
+fi
 adb shell am instrument -w -r \
   -e class local.tv.home.FreeVodLiveAuditTest \
   -e vodLiveAudit true -e vodShard "$shard" -e vodShards "$shards" \

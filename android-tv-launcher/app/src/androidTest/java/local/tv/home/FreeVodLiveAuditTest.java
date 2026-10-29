@@ -141,6 +141,10 @@ public final class FreeVodLiveAuditTest {
             .put("episode", -1)
             .put("http", false)
             .put(
+                "cinestreamAuditBackends",
+                InstrumentationRegistry.getArguments().getString("vodCineStreamBackends", "")
+            )
+            .put(
                 "cinestreamAudit",
                 "true".equals(InstrumentationRegistry.getArguments().getString("vodCineStreamAllBackends"))
             );

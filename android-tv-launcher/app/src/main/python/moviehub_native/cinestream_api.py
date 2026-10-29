@@ -133,17 +133,20 @@ class VaPlayer(Base):
 
 
 class PrimeSrc(Base):
-    requires_imdb = True
     base_link = 'https://primesrc.me'
 
     def extract(self, q):
-        args = dict(imdb=q['imdb'], type='tv' if 'season' in q else 'movie')
+        args = dict(type='tv' if 'season' in q else 'movie')
+        args['imdb' if q['imdb'] else 'tmdb'] = q['imdb'] or q['tmdb']
         if 'season' in q:
             args.update(season=q['season'], episode=q['episode'])
         data = request(self.base_link + '/api/v1/s?' + urlencode(args),
                               headers=self.headers(), output='json', timeout=30)
         def backend(server):
-            link = get(self.base_link + '/api/v1/l?' + urlencode({'key': server['key']}), self.headers()).get('link')
+            args = {'key': server['key']}
+            if server.get('token'):
+                args['token'] = server['token']
+            link = get(self.base_link + '/api/v1/l?' + urlencode(args), self.headers()).get('link')
             if link:
                 # Hosted pages still go through the existing headless ResolveURL runtime.
                 filename = server.get('file_name') if isinstance(server.get('file_name'), str) else ''
@@ -177,24 +180,44 @@ class Fshare(Base):
 
 
 class Videasy(Base):
-    base_link = 'https://player.videasy.to'
-    api = 'https://api.speedracelight.com'
-    backends = ('myflixerzupcloud', 'downloader2', 'm4uhd', 'hdmovie', 'cdn', 'superflix',
-                'lamovie', 'jett', 'tejo', 'neon2', 'ym')
+    base_link = 'https://www.vidy.st'
+    api = 'https://api.wecollege.net'
+    # Boise and Miami are already provided by Movy. Keep its implementation intact.
+    backends = ('vegas', 'reno', 'oakland', 'seattle', 'phoenix', 'atlanta', 'portland',
+                'austin', 'dallas', 'tampa', 'orlando', 'munich', 'berlin', 'paris',
+                'delhi', 'cancun')
 
     def extract(self, q):
-        headers = dict(self.headers(), Origin=self.base_link, Accept='*/*')
-        seed = get(self.api + '/seed?' + urlencode(dict(mediaId=q['tmdb'])), headers)['seed']
+        from .movy import decode
+        headers = {'Origin': 'https://vidy.st', 'Referer': 'https://vidy.st/',
+                   'User-Agent': USER_AGENT, 'Accept': '*/*'}
         def backend(name):
+            seed = get(self.api + '/seed?' + urlencode(dict(mediaId=q['tmdb'])), headers)['seed']
+            if not isinstance(seed, str) or not seed.isascii() or len(seed) > 256:
+                raise ValueError('Invalid Vidy seed')
             args = dict(title=quote(q['title'], safe=''), mediaType='tv' if 'season' in q else 'movie',
                         year=q['year'], tmdbId=q['tmdb'], imdbId=q['imdb'], enc=2, seed=seed)
             if 'season' in q:
                 args.update(episodeId=q['episode'], seasonId=q['season'])
-            encrypted = request(self.api + '/' + name + '/sources-with-title?' + urlencode(args), headers=headers)
-            result = post_json(DECODER + '/dec-videasy', dict(text=encrypted, id=int(q['tmdb']), seed=seed))['result']
+            if name == 'munich':
+                args['language'] = 'german'
+            encrypted = request(self.api + '/' + name + '/sources?' + urlencode(args), headers=headers)
+            result = decode(encrypted, seed, q['tmdb'])
             for row in result.get('sources', [])[:32]:
-                yield item(row.get('url'), headers, 'Videasy ' + name, str(row.get('quality') or ''))
-        yield from self.each(self.backends, backend)
+                if not isinstance(row, dict) or row.get('drm'):
+                    continue
+                claim = str(row.get('quality') or '')
+                if name in ('austin', 'delhi') and claim != {'austin': 'English', 'delhi': 'Hindi'}[name]:
+                    continue
+                quality = claim if re.fullmatch(r'(?:2160|1080|720|480|360)p', claim) else ''
+                yield item(row.get('url'), headers, 'Vidy ' + name.capitalize(), quality,
+                           info=claim if claim and not quality else '')
+        names = self.backends
+        audit = getattr(self, 'cinestream_audit_backends', '')
+        if isinstance(audit, str) and audit:
+            requested = set(audit.split(','))
+            names = tuple(name for name in names if name in requested)
+        yield from self.each(names, backend)
 
 
 class Meowtv(Base):
@@ -204,14 +227,41 @@ class Meowtv(Base):
     def extract(self, q):
         headers = dict(self.headers(), Origin=self.base_link)
         def backend(name):
-            data = get(self.api + '/streams/' + self.route(q) + '?' + urlencode(dict(s=name)), headers)
+            # The guest ticket is single use and bound to this session's UA. It is
+            # sent only to Meow's API, never to the decoder or media hosts.
+            args = dict(s=name)
+            if name == 'acme':
+                args['list'] = 1
+            for attempt in range(2):
+                ticket = post_json(self.api + '/streams/ticket', {}, headers)['ticket']
+                api_headers = dict(headers, **{'x-stream-ticket': ticket})
+                data = request(self.api + '/streams/' + self.route(q) + '?' + urlencode(args),
+                               headers=api_headers, output='json', timeout=30, redirect=False)
+                error = str(data.get('error') or data.get('message') or '')
+                if not attempt and re.search(r'ticket|signature|UA mismatch', error, re.I):
+                    continue
+                if error:
+                    raise ValueError('Meow stream request rejected')
+                break
             result = post_json(DECODER + '/dec-meowtv', dict(data=data)).get('result') or {}
-            yield item(result.get('url'), headers, 'Meowtv ' + name, info=str(result.get('language') or ''))
-        yield from self.each(('ipcloud', 'dcloud', 'tik', 'turkce', 'hindiv3'), backend)
+            for row in (result.get('streams') or [result])[:32]:
+                media_headers = dict(headers)
+                supplied = row.get('headers') or {}
+                if isinstance(supplied, dict):
+                    for key, value in supplied.items():
+                        if key.lower() in ('referer', 'origin', 'user-agent', 'accept') and isinstance(value, str):
+                            media_headers = {k: v for k, v in media_headers.items() if k.lower() != key.lower()}
+                            media_headers[key] = value
+                yield item(row.get('url'), media_headers, 'Meowtv ' + name,
+                           info=str(row.get('language') or ''))
+        names = ('dcloud', 'doppler', 'acme', 'tik', 'ipcloud', 'hindi', 'english')
+        if 'season' not in q:
+            names += ('turkce',)
+        yield from self.each(names, backend)
 
 
 class TokenServers(Base):
-    """Vidup, Vidcore and Vidfast use the same published two-stage server protocol."""
+    """Current server protocol: bootstrap, rotated CSRF token, server list, stream."""
     decoder = ''
 
     def request_headers(self):
@@ -223,24 +273,31 @@ class TokenServers(Base):
         return headers
 
     def extract(self, q):
-        path = self.base_link + '/' + self.route(q)
-        if self.decoder == 'vidfast':
-            path += '/'
+        path = self.base_link + '/' + self.route(q) + '/'
         page = request(path, headers=self.request_headers() if self.decoder == 'vidfast' else None)
         token = re.search(r'\\"(?:en|token)\\":\\"(.*?)\\"', page)
         if not token:
             return
-        initial = get(DECODER + '/enc-' + self.decoder + '?' + urlencode(dict(text=token[1])),
+        initial = get(DECODER + '/enc-' + self.decoder + '?' + urlencode(dict(text=token[1], stage=1)),
                       self.request_headers() if self.decoder == 'vidup' else None)
         if self.decoder == 'vidup' and initial.get('status') != 200:
             return
         result = initial.get('result')
         if not isinstance(result, dict):
             return
+        stage1 = client.safe(result['stage1'])
+        if urlparse(stage1).netloc != urlparse(self.base_link).netloc:
+            raise ValueError('Bootstrap token origin changed')
         headers = dict(self.request_headers(), **{'X-CSRF-Token': result['token']})
+        text = request(stage1, headers=headers, post='', redirect=False)
+        result = get(DECODER + '/enc-' + self.decoder + '?' + urlencode(dict(text=text, stage=2))).get('result')
+        if not isinstance(result, dict):
+            return
+        if urlparse(result['servers']).netloc != urlparse(self.base_link).netloc:
+            raise ValueError('Server token origin changed')
+        headers['X-CSRF-Token'] = result['token']
         encrypted = request(client.safe(result['servers']), headers=headers, post='', redirect=False)
-        decoded = post_json(DECODER + '/dec-' + self.decoder, dict(text=encrypted),
-                            headers if self.decoder == 'vidcore' else None)
+        decoded = post_json(DECODER + '/dec-' + self.decoder, dict(text=encrypted))
         if self.decoder == 'vidup' and decoded.get('status') != 200:
             return
         servers = decoded.get('result')
@@ -300,8 +357,8 @@ class OneTouchTv(Base):
 
 
 class Cinejoy(Base):
-    base_link = 'https://cinejoy.to'
-    api = 'https://api.shegu.st'
+    base_link = 'https://cinejoy.pk'
+    api = 'https://api.wing.st'
 
     def extract(self, q):
         headers = dict(self.headers(), Origin=self.base_link, Accept='*/*')

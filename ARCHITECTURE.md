@@ -554,3 +554,7 @@ Website labels such as "1080p" are claims. `moviehub_vod.playable` already reads
 ## Additional FMHY delivery routes (27 October 2026)
 
 `moviehub_native/movy.py` translates the public seed-bound response decoder and uses Boise and Miami only. Movie requests omit episode parameters; series retain the series title, TMDB identity and exact season/episode. Rive adds Vanguard for episodes only while retaining its existing routes; its movie audio/seek check failed. All adapters return the established `direct` contract, with distinct origin labels and ordinary header/media validation. The existing Java engine, relay, ranking and source keys are unchanged. Discovery now has 38 enabled websites and 41 adapters (72 bundled constructors, including excluded sites).
+
+The additional Vidy adapter reuses Movy’s pure data decoder without changing Movy’s existing
+Boise/Miami routes. Its other sixteen backend identities remain separate. MeowTV guest tickets
+are single use and API-only; the three token-server adapters perform bootstrap and CSRF rotation.

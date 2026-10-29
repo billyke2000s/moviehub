@@ -152,6 +152,8 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
         provider = getattr(importlib.import_module(record['module']), record.get('factory', 'source'))()
         if record.get('factory'):
             provider.cinestream_audit = info.get('cinestreamAudit') is True
+            if provider.cinestream_audit:
+                provider.cinestream_audit_backends = info.get('cinestreamAuditBackends', '')
         # Several original scrapers keep client.dnt_headers itself as self.headers and then add
         # their own Origin/Referer/Host to it, which leaked into every later scraper's requests.
         if getattr(provider, 'headers', None) is client.dnt_headers:

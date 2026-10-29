@@ -48,8 +48,8 @@ player and established source implementations are preserved.
 | VaPlayer | Every returned `stream_urls` entry, original nextgencloudfabric Referer; movies/episodes |
 | PrimeSrc | Every advertised server key/name; existing ResolveURL handles supported terminal hosts |
 | Fshare | `sources` and flattened `alternatives`; movies only |
-| Videasy | myflixerzupcloud, downloader2, m4uhd, hdmovie, cdn, superflix, lamovie, jett, tejo, neon2, ym |
-| Meowtv | ipcloud, dcloud, tik, turkce, hindiv3 |
+| Videasy / Vidy | Vegas, Reno, Oakland, Seattle, Phoenix, Atlanta, Portland, Austin, Dallas, Tampa, Orlando, Munich, Berlin, Paris, Delhi, Cancun; Boise/Miami already belong to existing Movy |
+| Meowtv | dcloud, doppler, acme (advertised languages), tik, ipcloud, hindi, english, movie-only turkce; single-use guest tickets |
 | Vidup | Every advertised server; enc-vidup/dec-vidup data protocol |
 | Vidcore | Every advertised server; enc-vidcore/dec-vidcore data protocol |
 | VidFastPro | Every advertised server; enc-vidfast/dec-vidfast data protocol |
@@ -64,9 +64,9 @@ player and established source implementations are preserved.
 | ProjectFreeTV `.sx` | Exact identity match and requested episode; supported hosted terminals |
 | Akwam | IMDb-verified films; series deferred because upstream does not establish the season |
 | Asiaflix | Exact title and explicit episode from `ng-state`; season 1 only |
-| Multimovies | Exact movie/episode slug, Doo AJAX player options excluding trailers |
+| Multimovies | Current search catalogue and watchConfig server names; exact episode checked; legacy Doo fallback |
 | Toonstream | Exact movie/episode slug, both iframe levels; supported hosted terminals |
-| AnimeSalt | Movie/episode slug and explicit CDN player protocol |
+| AnimeSalt | Current .cx episode frames and explicit multilingual player data; legacy CDN fallback |
 | Rtally | Explicit direct resources and published lulustream/strmup/filemoon/vidhide/streamwish IDs; movies only |
 | KissKH | Exact title/season match, exact numbered episode, Video and ThirdParty separately |
 
@@ -246,3 +246,59 @@ movie links, including Boise 4K audio. Thus the one feature-run audio-unverified
 an unresolved individual audit result; neither it nor the baseline alone proves a production
 regression. Existing source/player logic is preserved. No other failures were hidden or gates
 weakened. This final documentation records already-tested application code; no APK is published.
+
+
+## Direct website and current-client investigation — follow-up, 29 October
+
+The earlier all-adapter film/episode scrape did **not** establish website health. This follow-up
+requested the actual roots, inspected browser pages where available, read their current public
+frontend assets without executing downloaded scripts, and compared the maintained protocol samples
+at [EncDecEndpoints f260cc8](https://github.com/smy778/EncDecEndpoints/tree/f260cc8cfa968a113e53010e7f4c5c3f14c9b592/samples).
+An HTTP 200 alone is not working playback; an API root returning 404 is not a closed website.
+The original 24 roots produced 17 HTTP 200 responses, two API-root 404s, one 403, three 5xx
+responses and one timeout. The 200s include an empty API root and an old Videasy placeholder.
+
+| Candidate | Direct observations | Method finding / remaining limit |
+| --- | --- | --- |
+| VaPlayer | API root 200, empty body | Earlier native timestamp crash remains unresolved; pending |
+| PrimeSrc | Homepage/embed 200; list_servers 200 with real file/language metadata | list_servers has no playable keys; embed still uses /api/v1/s. Optional server token was missing from link request; now retained. Browser-protected extraction remains pending |
+| FshareTV | Homepage and Forrest Gump detail 200; watch route gives explicit Cloudflare challenge | Root is up; watch access is blocked here. No challenge bypass attempted |
+| Videasy / Vidy | Old sources-with-title 404; current vidy.st frontend and wecollege API respond | Updated to /sources and existing local Movy decoder. Sixteen additional backends; Boise/Miami excluded as duplicates. Inception Vegas decoded locally to a source and its HLS playlist returned 200; Reno source media returned 500. These are not native playback claims |
+| MeowTV | Homepage/browser film detail 200; guest ticket endpoint 200 | Frontend requires a fresh single-use x-stream-ticket per request, with one ticket-error refresh. Old adapter had none. Direct ipcloud/acme samples with fresh tickets returned 502; downstream decoder validation remains blocked |
+| Vidup | Homepage and current Game of Thrones S1E1 embed 200, bootstrap field present | Old adapter omitted stage=1 bootstrap POST and stage=2 rotated-token exchange; corrected against current published sample, fixture validated only |
+| Vidcore | Homepage and current TV embed 200, bootstrap field present | Same missing bootstrap exchange; corrected and no site CSRF forwarded in decoder headers. Live decoder validation blocked |
+| Vidfast | Homepage/browser docs and current TV embed 200, bootstrap field present | Same missing bootstrap/rotated-token exchange; fixture validated. A different movie embed had returned 403; that does not establish whole-site failure |
+| OneTouchTV | API root 404; public onetouchtv.xyz homepage 200 | API-root status was not evidence of closure; encrypted catalogue validation blocked |
+| Cinejoy | .to redirects to .pk; current API /servers 200 | Replaced stale api.shegu.st with current api.wing.st. Advertised servers: Nebula, secret, Lisbon, Solara, Athens. Encrypted downstream validation blocked |
+| Hexa | Homepage 200 | Previous Alpha movie/episode native playback evidence remains valid; no new external-decoder probe run |
+| ProjectFreeTV .sx | Direct timeout; browser returned 522 | Access/origin availability unresolved; no claim of permanent closure |
+| Akwam | Root 200 with domain-directory links | Root response does not prove current /search or film loading. Current catalogue chain remains unverified |
+| Asiaflix | Homepage 200 with actual drama card | Not a dead website; current API/challenge integration remains pending |
+| Vidrock | Root 503 | Unavailable from this environment; no evidence of permanent closure |
+| Peachify | Root 523, origin unreachable | Origin unavailable in this sample; no parser diagnosis possible |
+| Vidzee | Homepage 200; current embed frontend present, old /api/server 404 | Current client imports a WASM decoder; old CBC endpoint translation is stale. Replacement protocol remains unresolved; no remote script execution or fingerprint spoofing attempted |
+| MovieBox | API root 404; moviebox.com responds 200 | API root is not the viewer route; previous search success and media refusal do not prove closure. Link delivery remains unverified |
+| AllMovieLand | .one redirects to .art, 403 | Access limited; catalogue/stream methods remain unverified |
+| Multimovies | Homepage and Attack on Titan detail/search 200 | Site replaced WordPress with /api/search, explicit season/episode paths and literal watchConfig. Added current parsing with episode equality checks. Advertised iframe hosts still require supported terminal resolution |
+| Toonstream | Homepage 200 | Catalogue exists; two-level terminal resolution remains unverified |
+| AnimeSalt | .ac redirects .cx; Naruto Shippuden detail/S1E1 200 | Updated root and parsed actual video frames / multilingual player JSON; current hosts differ from old as-cdn*.top. Hosted terminal playback remains unverified |
+| Rtally | Homepage 200 | Current detail/host decoding still unverified; root success is not playback |
+| KissKH | Old .nl 503; maintained .do homepage, Lovely Runner search and episode details 200 | Updated root using maintained sample and live API evidence; encrypted stream-key validation blocked |
+
+No established site implementation, player loading/parsing/resolution, menu or selection behavior
+was changed by this follow-up. Existing Movy code is reused without edits. The native decoder audit
+now selects Vidy Vegas explicitly, keeping the normal production backend set intact.
+
+Unattended Python audits now reject enc-dec.app requests **before** network transmission. Automatic
+approval review rejected a live probe because it would send provider-issued tokens and encrypted
+responses to that external service. This restriction also applies to CI: the new playback matrix
+uses locally decoded Vidy only. Fixture tests of the handshake are not live decoder validation.
+Explicit user approval is required before this blocked third-party validation can be attempted.
+The application's existing external-decoder dependency is disclosed in SECURITY.md; no production
+site or feature is silently removed by this diagnostic restriction.
+
+Follow-up local validation: 115 Python tests passed, including single-use guest tickets, one retry,
+Acme language variants, optional PrimeSrc token, exact current Multimovies episodes, current AnimeSalt
+hosts, backend deduplication, token-origin rejection and the unattended audit guard. The 34 Java core
+suites / 1,167 checks passed. Android CI and the new Vidy native playback audit are pending for the
+follow-up commit; historical CI results above apply to the earlier code revision only.

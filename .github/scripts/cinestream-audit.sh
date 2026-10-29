@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -uo pipefail
-ORG_GRADLE_PROJECT_moviehubAbi=x86_64 bash android-tv-launcher/tests/run-live-vod-audit.sh 0 1 "$1" "$2" "$3"
+VOD_CINESTREAM_BACKENDS=vegas ORG_GRADLE_PROJECT_moviehubAbi=x86_64 bash android-tv-launcher/tests/run-live-vod-audit.sh 0 1 "$1" "$2" "$3"
 result=$?
 python - <<'PY'
 import pathlib, re, subprocess

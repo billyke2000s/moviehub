@@ -6,7 +6,9 @@ New adapters use the existing bounded public-address transport and media/identit
 No account secrets, private BuildConfig values, remote code execution or browser challenge runtime
 is imported. Published static player-format keys decode public Vidrock/Peachify/Vidzee payloads;
 they are not user credentials. MovieBox's anonymous issued token stays in memory and only its
-original API requests; VIP-locked links are skipped. Site CSRF tokens never become media headers.
+original API requests; VIP-locked links are skipped. MeowTV guest tickets remain API-only; bootstrap/server CSRF tokens are origin-bound. Vidfast media
+CSRF headers retain the existing relay authority restriction. Unattended audit scripts reject
+enc-dec.app calls before transmission; live decoder validation awaits explicit approval.
 Some new adapters call enc-dec.app for public source data; this adds an external service dependency
 and discloses requested public media identifiers/payloads to that service. It receives no MovieHub
 account credentials. Formats are display-only, and manifest declarations/provider reports are not

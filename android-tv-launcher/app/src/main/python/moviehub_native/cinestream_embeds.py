@@ -3,9 +3,10 @@
 Only explicitly labelled episodes are selected. Hosted embeds remain subject to the existing
 ResolveURL support and media validation; an extracted iframe is not proof of playback.
 """
+import base64
 import json
 import re
-from urllib.parse import quote, urlencode, urljoin
+from urllib.parse import parse_qs, quote, urlencode, urljoin, urlparse
 from moviehub_compat import client
 from moviehub_scrubs import dom_parser, cleantitle
 from .fourkhdhub import anchors, text
@@ -26,6 +27,29 @@ class Multimovies(Base):
     base_link = 'https://m1.multimovies.courses'
 
     def extract(self, q):
+        # The current site replaced WordPress/Doo with a searchable catalogue and
+        # literal watchConfig. Keep the old path as a fallback for older mirrors.
+        data = get(self.base_link + '/api/search?' + urlencode(dict(q=q['title'], limit=20)))
+        rows = data.get('tv_shows' if 'season' in q else 'movies') or []
+        matches = [row for row in rows if slug(row.get('title', '')) == slug(q['title']) and
+                   ('season' in q or str(row.get('year')) == q['year'])]
+        if len(matches) == 1:
+            url = urljoin(self.base_link, matches[0]['url'])
+            if urlparse(url).netloc != urlparse(self.base_link).netloc:
+                raise ValueError('Catalogue origin changed')
+            if 'season' in q:
+                url += '/season/' + q['season'] + '/episode/' + q['episode']
+            page = request(url)
+            match = re.search(r'\bconst\s+watchConfig\s*=\s*', page)
+            if match:
+                config, _ = json.JSONDecoder().raw_decode(page[match.end():])
+                if 'season' in q and (str(config.get('season')) != q['season'] or
+                                      str(config.get('episode')) != q['episode']):
+                    return
+                for row in (config.get('initialServers') or [])[:32]:
+                    if row.get('type') == 'iframe' and row.get('url'):
+                        yield external(row['url'], url, 'Multimovies ' + str(row.get('name') or 'server'))
+                return
         url = self.base_link + episode_path(q, 'episodes')
         page = request(url)
         lists = dom_parser.parse_dom(page, 'ul', {'id': 'playeroptionsul'})
@@ -60,12 +84,28 @@ class Toonstream(Base):
 
 
 class AnimeSalt(Base):
-    base_link = 'https://animesalt.ac'
+    base_link = 'https://animesalt.cx'
 
     def extract(self, q):
         page = request(self.base_link + episode_path(q), headers=self.headers())
         match = re.search(r'src="(https://as-cdn\d+\.top)/video/([a-f0-9]+)"', page)
         if not match:
+            for group in dom_parser.parse_dom(page, 'div', {'class': 'video'}):
+                for frame in dom_parser.parse_dom(group.content, 'iframe')[:32]:
+                    link = frame.attrs.get('data-src') or frame.attrs.get('src')
+                    if not link:
+                        continue
+                    url = urljoin(self.base_link, link)
+                    parsed = urlparse(url)
+                    if parsed.netloc == urlparse(self.base_link).netloc and parsed.path.endswith('/plyr/player.php'):
+                        encoded = parse_qs(parsed.query).get('data', [''])[0]
+                        rows = json.loads(base64.b64decode(encoded + '=' * (-len(encoded) % 4), validate=True))
+                        for row in rows[:32]:
+                            if row.get('link'):
+                                yield external(row['link'], self.base_link + '/',
+                                               'AnimeSalt ' + str(row.get('language') or 'server'))
+                    else:
+                        yield external(url, self.base_link + '/', 'AnimeSalt')
             return
         host, identity = match.groups()
         response = request(host + '/player/index.php?' + urlencode(dict(data=identity, do='getVideo')),
@@ -94,7 +134,7 @@ class Rtally(Base):
 
 
 class KissKH(Base):
-    base_link = 'https://kisskh.nl'
+    base_link = 'https://kisskh.do'
 
     def extract(self, q):
         args = dict(q=q['title'], type='1' if 'season' in q else '2')

@@ -39,8 +39,7 @@ jobs:
       fail-fast: false
       matrix:
         route:
-          - {provider: 'native:vaplayer', names: 'VaPlayer'}
-          - {provider: 'native:hexa', names: 'Hexa'}
+          - {provider: 'native:videasy', names: 'Vidy Vegas'}
         media: [movies, series]
     steps:
       - uses: actions/checkout@v5
