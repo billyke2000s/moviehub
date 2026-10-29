@@ -85,7 +85,10 @@ Additional information is available in [DEVELOPMENT.md](DEVELOPMENT.md), [ARCHIT
 | [Security](SECURITY.md)                             | Account storage, networking and update protections |
 | [Status](STATUS.md)                                 | Known issues and work in progress                  |
 | [Changelog](CHANGELOG.md)                           | Version history                                    |
-| [AI contributor rules](AGENTS.md)                   | Repository editing instructions                    |
+| [AI contributor rules](AGENTS.md)                   | Mandatory repository instructions                  |
+| [AI working rules](docs/AI_WORKING_RULES.md)          | Scope, compatibility, evidence and release boundaries |
+| [AI change checklist](docs/AI_CHANGE_CHECKLIST.md)    | Checks before editing, submitting and delivering    |
+| [AI task template](docs/AI_TASK_TEMPLATE.md)          | A concrete work brief and PR description            |
 | [Update publishing](android-tv-launcher/UPDATES.md) | Signed release process                             |
 | [Design notes](docs/)                               | Interface and catalogue documentation              |
 

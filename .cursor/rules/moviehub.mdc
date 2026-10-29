@@ -1,0 +1,11 @@
+---
+description: MovieHub project scope, compatibility and release rules
+alwaysApply: true
+---
+
+Before editing, read AGENTS.md, docs/AI_WORKING_RULES.md and docs/AI_CHANGE_CHECKLIST.md.
+They are the canonical project instructions. Read current architecture, status and testing docs.
+
+Preserve the requested scope, existing UI, providers and saved data. Production APKs contain ARM32
+and ARM64 together. Questions do not grant permission to rewrite or publish. Reuse current user
+authorisation, stop on request, and report only actual evidence.
