@@ -37,16 +37,19 @@ class Mlsbd(DownloadCatalogue):
                         yield anchor.attrs['href'], label + ' · ' + anchor.text()
 
     def movie_entries(self, content):
-        from .cinestream_downloads import sections
         heading = next((node for node in content.all('h2,h3,div,p')
                         if 'download' in (node.attrs.get('class') or '').split() and
                         'download now' in node.text().casefold()), None)
         if heading is None:
             return
-        for paragraph in sections(heading):
+        for paragraph in heading.siblings():
+            if 'download' in (paragraph.attrs.get('class') or '').split():
+                break
             for anchor in paragraph.all('a'):
                 href = anchor.attrs.get('href') or ''
-                if href and not re.search(r'telegram|facebook|youtube|imdb\.com', href, re.I):
+                if href and download_anchor(anchor) and not re.search(
+                        r'How To|Tutorial|telegram|facebook|youtube|imdb\.com',
+                        anchor.text() + ' ' + href, re.I):
                     yield href, paragraph.text()
 
 

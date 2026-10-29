@@ -13,12 +13,31 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'app/src/main/pytho
 import moviehub_vod as vod
 from moviehub_compat import client
 from moviehub_native import PROVIDERS
+from moviehub_native.cinestream_links import Links
+from urllib.parse import urlparse
 from audit_transport import block_external_decoder
 
 block_external_decoder()
 
 local = threading.local()
 original_fetch = client.fetch
+original_read = Links.read
+
+
+def chain_read(self, url, referer, *args, **kwargs):
+    response, body = original_read(self, url, referer, *args, **kwargs)
+    if len(local.chain_pages) < 80:
+        # Recognized public protocol stages only: no URLs, token values, text or
+        # arbitrary element IDs from a provider response enter the report.
+        forms = [value for value in ('landing', 'lp-land', 'lp-s1-form', 'lp-s2-form', 'lp-s3-form')
+                 if re.search(r'\bid\s*=\s*[\'\"]' + value + r'[\'\"]', body)]
+        local.chain_pages.append(dict(host=urlparse(url).hostname, status=response.status_code,
+                                      bytes=len(body), forms=forms, finalButton='lp-btn-go' in body,
+                                      finalLiteral=bool(re.search(r"bg\.setAttribute\(\s*'href'", body))))
+    return response, body
+
+
+Links.read = chain_read
 
 
 def fetch(*args, **kwargs):
@@ -43,6 +62,7 @@ client.fetch = fetch
 
 def probe(record):
     local.playlists = []
+    local.chain_pages = []
     frames = []
     module = importlib.import_module(record['module'])
     cls = getattr(module, record['factory'])
@@ -70,7 +90,8 @@ def probe(record):
                                      lambda: time.monotonic() - started > 180))
     return dict(provider=record['id'], status=result.get('status'),
                 sources=len(result.get('sources', [])), attempts=result.get('attempts'),
-                hostAttempts=result.get('hostAttempts'), stack=frames, playlists=local.playlists)
+                hostAttempts=result.get('hostAttempts'), stack=frames, playlists=local.playlists,
+                chainPages=local.chain_pages)
 
 
 records = [record for record in PROVIDERS if record.get('factory') and

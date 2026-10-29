@@ -67,6 +67,12 @@ def quality(filename):
     return match[1] + 'p' if match else ''
 
 
+def supported_terminal(url):
+    import resolveurl
+    return resolveurl.HostedMediaFile(url=url, include_universal=False,
+                                     include_popups=False).valid_url()
+
+
 class Links:
     """One bounded, same-session traversal for a catalogue lookup."""
     def __init__(self, name, playback_headers=None):
@@ -76,7 +82,7 @@ class Links:
         self.blocked = set()
         self.pages = 0
 
-    def read(self, url, referer, post=None, json_body=False):
+    def read(self, url, referer, post=None, json_body=False, ajax=True):
         client.check()
         host = urlparse(url).netloc
         if host in self.blocked:
@@ -87,7 +93,8 @@ class Links:
         headers = {'Referer': referer or url, 'User-Agent': USER_AGENT}
         if post is not None:
             headers['Origin'] = urlparse(url).scheme + '://' + host
-            headers['X-Requested-With'] = 'XMLHttpRequest'
+            if ajax:
+                headers['X-Requested-With'] = 'XMLHttpRequest'
         if json_body:
             headers['Content-Type'] = 'application/json'
             post = json.dumps(post)
@@ -140,9 +147,7 @@ class Links:
             yield self.media(media, referer, info, 'Pixeldrain')
             return
         if not host_matches(host, HOSTS):
-            import resolveurl
-            terminal = resolveurl.HostedMediaFile(url=url, include_universal=False, include_popups=False)
-            if terminal.valid_url():
+            if supported_terminal(url):
                 row = external(url, referer or url, self.name + ' · ' + host)
                 row.update(info=clean(info), filename=clean(info))
                 yield row
@@ -205,7 +210,7 @@ class Links:
                 fields = {n.attrs['name']: n.attrs.get('value') or ''
                           for n in form.all('input') if n.attrs.get('name')}
                 action = same_origin(current, form.attrs.get('action') or current)
-                result, body = self.read(action, current, fields)
+                result, body = self.read(action, current, fields, ajax=False)
                 if result.status_code in (301, 302, 303):
                     add(absolute(action, result.headers.get('Location', '')))
                     break
@@ -316,6 +321,10 @@ class Links:
                 add(address)
             elif 'watch2=1' in address:
                 add(parse_qs(urlparse(address).query).get('url', [address])[0])
+            elif anchor.parent.tag == 'li' and supported_terminal(urljoin(url, address)):
+                # MLSBD's intermediate page lists file hosts as plain li > a.
+                # Use existing exact host patterns, not arbitrary navigation links.
+                add(address)
         # Fibwatch's player/iframe data. Literal packed strings are not executed.
         for frame in doc.all('iframe'):
             address = frame.attrs.get('src') or ''

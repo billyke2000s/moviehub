@@ -8,7 +8,7 @@ ordinary redirects are not grounds for removal. Eleven current roots exposed fil
 Vega exposed its gateway, TopMovies returned 503, and Zink/M4U returned browser challenges.
 M4U .lat contributes TV only to avoid duplicating existing movie adapters. Normal discovery now
 contains 74 websites / 77 adapters (39 added adapter protocols, three separately pending).
-Local validation: 137 Python tests and 34 core suites / 1,167 checks pass. At revision 89d2d80,
+Local validation: 139 Python tests and 34 core suites / 1,167 checks pass. At revision 89d2d80,
 Inception extraction yielded two HDHub4u and four SkyMovies sources; Breaking Bad S1E1 yielded
 twelve HindMoviez sources. The existing native player verified three SkyMovies Inception sources
 and all twelve HindMoviez episode sources (video/audio, runtime and midpoint seek), recording
@@ -59,7 +59,12 @@ Inspection of MoviesDrive's actual Inception page subsequently identified its do
 outside the introductory entry-content block. The correction also rejects quality-search links.
 UHD's final `lp_go` literal link and HubCloud's extensionless FSL file buttons were added from
 current public pages. MLSBD now searches title/year and selects current Epi-NN download dividers without crossing into
-a following episode. These later corrections need their own final-revision live checks.
+a following episode. An intervening guarded Inception check at 4f2a6bd returned five MoviesDrive sources; the final
+c8c42cc check returned two, with other hosts refusing/timing out. MLSBD movie sections now allow
+the observed Download Links subheading, and plain mirror lists reuse existing exact host patterns.
+Ordinary landing forms no longer carry AJAX-only headers. Stage-only diagnostics record recognized
+form IDs and literal-final-link presence without response bodies or tokens. Final checks for these
+corrections remain pending.
 
 The sections below retain earlier revision evidence; their original counts and unimplemented
 lists describe that earlier checkpoint, superseded by this follow-up where explicitly stated.

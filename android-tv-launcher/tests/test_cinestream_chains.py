@@ -56,6 +56,7 @@ class CineStreamChainTests(unittest.TestCase):
         })
         self.assertEqual(len(rows), 1)
         self.assertEqual(calls[1][2]['post'], {'_lp_http': 'issued'})
+        self.assertNotIn('X-Requested-With', calls[1][1])
         self.assertNotIn('issued', rows[0]['url'])
         with self.assertRaises(ValueError):
             same_origin('https://links.example/', 'https://other.example/post')
@@ -230,3 +231,18 @@ class CineStreamChainTests(unittest.TestCase):
         self.assertEqual(list(provider.episode_entries(doc, query, 'A Film S01E03')),
                          [('right.mp4', 'Download Now Epi-03 · Download in 720p quality')])
         self.assertEqual(list(provider.episode_entries(doc, query, 'A Film S02E03')), [])
+
+    def test_mlsbd_download_links_subheading_does_not_hide_movie_buttons(self):
+        from moviehub_native.cinestream_indexes import Mlsbd
+        doc = tree('<div class="post-section-title download">Download Now</div>'
+                   '<h3>Download Links</h3><p><a href="https://links.example/file">Download in 720p quality</a></p>'
+                   '<a href="https://vimeo.example/tutorial">How To Download From MLSBD</a>')
+        self.assertEqual(list(Mlsbd().movie_entries(doc)),
+                         [('https://links.example/file', 'Download in 720p quality')])
+
+    def test_plain_mirror_list_uses_existing_terminal_patterns_only(self):
+        pages = {('https://links.example/start', False): '<ul><li><a href="https://gofile.io/d/Fixture">Mirror</a></li><li><a href="https://nav.example/home">Home</a></li></ul>'}
+        rows, calls = self.run_chain(pages)
+        self.assertEqual(len(rows), 1)
+        self.assertFalse(rows[0]['direct'])
+        self.assertEqual(len(calls), 1)
