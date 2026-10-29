@@ -1,28 +1,18 @@
 ## Unreleased
 
-- Keep LinksMod Home/account/FAQ/policy navigation out of the new file-mirror traversal budget.
+## 1.0.19 (29 October 2026)
 
-- Decode escaped UHDMovies redirect URLs before following them; support the observed DriveSeed
-  public cloud/file-button exchange with same-origin issued fields. Keep host-button server/size
-  details while changing Download to Stream in the new source labels.
-
-- Add fifteen CineStream catalogue/TV routes and bounded ordinary redirect chains; preserve existing sources and player. Current-site inspection and 144 offline Python tests pass; final app build/regression CI passed. Live results and remaining failures are recorded in the source report.
-
-- Follow current CineStream-site protocols: fresh MeowTV tickets, rotated token-server handshake,
-  Cinejoy/KissKH/AnimeSalt domain moves and current Multimovies catalogue. Add Vidy’s other
-  sixteen backends using the existing local decoder; preserve Movy Boise/Miami without duplicates.
-  Keep unattended validation from sending provider material to an external decoder.
-
-- Correct CineStream HLS helper expansion, per-provider token/browser headers and managed playback
-  audit startup; retain external audio with its master and scope new media CSRF headers.
-
-- Add 21 CineStream movie/TV website adapters, retaining per-lookup cookies and upstream browser
-  profiles. Keep VaPlayer, PrimeSrc and Asiaflix pending; enable only Hexa Alpha after movie/episode
-  audio/video/runtime/seek checks. Preserve existing implementations and the player.
-  Account/key-dependent and unsupported chains remain blocked.
-- Append explicit source format reports, advertised HLS codecs and known full-file sizes to existing
-  source labels. Append active LibVLC audio/video formats to existing track names by native ID/type.
-- See [source inventory, limits and validation](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+- Add 36 enabled CineStream adapter protocols for additional film and series sites and playback
+  backends. Preserve existing provider implementations and the built-in LibVLC player.
+- Show genuine advertised or provider-reported audio/video formats and known file sizes in source
+  information. Append native codec formats to existing audio/video track names in the player.
+- Improve ordinary redirect, cookie, form and file-host handling, including UHDMovies/DriveSeed.
+  Keep LinksMod navigation out of the file-mirror request budget.
+- Use Stream wording for copied host-button instructions while preserving original file evidence.
+- Retain ARM32 and ARM64 together, existing accounts, history, settings and update compatibility.
+- Known limitations: some provider links fail or lack verified audio; Vidy episode playback can
+  crash. VaPlayer, PrimeSrc and Asiaflix remain pending. Availability varies by site and title.
+- Detailed validation: [CineStream source report](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
 
 ## 1.0.18 (29 October 2026)
 
