@@ -1,5 +1,43 @@
 # Status
 
+CineStream candidate: 74 websites / 77 enabled adapters, with all fifteen added catalogue
+routes retained. Current redirect fixes decode escaped URL literals and support the observed
+DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
+say Stream instead of Download. LinksMod navigation is excluded from file traversal so it cannot
+consume the mirror budget; the existing player and source-list layout are unchanged.
+Local validation: 144 Python tests and 34 core suites / 1,167 checks pass. At `d85b832`, all six
+Android CI jobs passed and the fifteen-site audit verified 21 individual sources across four sites.
+Application revision `925af7c` passed all six Android jobs in run 40913881846. Final live checks
+include 23 verified sources (eleven movies and twelve episodes); the episode retry passed after an EGL crash.
+Vidy playback failures and other site/host errors remain unresolved; registration is not playback proof.
+See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+
+
+Earlier checkpoint: current-site inspection corrected the new adapters. Application revision
+47b22de passed all six Android jobs after an experimental retry (the first attempt raised
+DeadSystemException). Its native Vidy samples still failed and remain draft-PR blockers.
+The final KissKH decimal episode-number correction passed the 116-test Python suite and a
+public-ID-only API check; Android CI for that small final correction is pending. Unattended
+audits continue to block external decoder uploads of site tokens/encrypted responses.
+See the [direct-site findings](docs/CINESTREAM_ADDITIONS_2026_10_29.md#direct-website-and-current-client-investigation--follow-up-29-october).
+
+## Earlier CineStream source/metadata checkpoint — 29 October 2026
+
+21 additional adapters enter normal discovery, for 59 websites / 62 adapters. VaPlayer remains
+pending after native timestamp crashes; PrimeSrc/Asiaflix need their upstream browser-challenge
+helper. Hexa Alpha passed both movie and episode audio/video/runtime/seek checks; only Alpha is
+enabled, while other Hexa backends are explicitly auditable. No whole-site availability guarantee
+is claimed. Source/track metadata and the existing player/UI are preserved.
+
+New adapters now retain per-lookup cookies and upstream default/explicit browser profiles. Old
+provider requests keep the same behavior. Local checks: 116 Python tests; 34 core suites / 1,167
+checks. Application revision `a9974b6` passed all six Android CI jobs in run 40856772393,
+including 208 regular cases plus the opt-in audit assumption, 27 experimental cases and ten
+focused VOD cases. Its two normal Hexa Alpha live checks also passed. The separate Movy
+comparison on unchanged main passed 8/8; the feature audit had one unverified 4K audio sample. See the [inventory and evidence](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+Not merged or published.
+
+
 Last updated: 29 October 2026.
 
 ## Current release — MovieHub 1.0.18 (code 118)

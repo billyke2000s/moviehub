@@ -1,5 +1,37 @@
 # Security
 
+Current follow-up adds the remaining fifteen catalogue adapters and bounded redirect/file-host
+protocols without modifying established sites or replacing the player. All fifteen stay registered;
+ordinary redirects are not grounds for removal. Eleven current roots exposed film catalogues;
+Vega exposed its gateway, TopMovies returned 503, and Zink/M4U returned browser challenges.
+M4U .lat contributes TV only to avoid duplicating existing movie adapters. Normal discovery now
+contains 74 websites / 77 adapters (39 added adapter protocols, three separately pending).
+Local validation: 141 Python tests and 34 core suites / 1,167 checks pass. At revision 89d2d80,
+Inception extraction yielded two HDHub4u and four SkyMovies sources; Breaking Bad S1E1 yielded
+twelve HindMoviez sources. The existing native player verified three SkyMovies Inception sources
+and all twelve HindMoviez episode sources (video/audio, runtime and midpoint seek), recording
+relay socket errors. Other live checks and
+validation of subsequent parser corrections remain pending; accessible HTML is not playback.
+The preceding revision 7a38417 passed all six Android jobs in run 40869288216; its separate Vidy
+series audit failed and is not evidence of success for this follow-up.
+
+
+## Additional CineStream protocols
+
+New adapters use the existing bounded public-address transport and media/identity checks.
+No account secrets, private BuildConfig values, remote code execution or browser challenge runtime
+is imported. Published static player-format keys decode public Vidrock/Peachify/Vidzee payloads;
+they are not user credentials. MovieBox's anonymous issued token stays in memory and only its
+original API requests; VIP-locked links are skipped. MeowTV guest tickets remain API-only; bootstrap/server CSRF tokens are origin-bound. Vidfast media
+CSRF headers retain the existing relay authority restriction. Unattended audit scripts reject
+enc-dec.app calls before transmission; live decoder validation awaits explicit approval.
+Some new adapters call enc-dec.app for public source data; this adds an external service dependency
+and discloses requested media identifiers, transient site-issued tokens and encrypted playback
+responses to that service. It receives no MovieHub
+account credentials. Formats are display-only, and manifest declarations/provider reports are not
+promoted into verified decoder/audio claims. Existing redirect credential restrictions remain.
+
+
 ## Refreshable VOD sessions
 
 Refresh recipes and source header identities exist only in memory. They are not logged or written
@@ -270,3 +302,20 @@ Rive Citadel’s opt-in carrier path identifies raw TS from received bytes when 
 ## Movy response envelope
 
 Movy's short-lived anonymous seed is obtained for each delivery-route lookup and is not persisted. Its decoder processes data only, never downloaded JavaScript. No runtime dependency is added. Returned media still passes the existing public-address, HTTPS, header and media checks; account tokens, cookies and signed media URLs are not stored in the repository.
+
+CineStream token-server media can additionally carry X-CSRF-Token and X-Requested-With.
+The relay restricts X-CSRF-Token to the original media authority, as with Cookie/Authorization.
+Existing provider parsers, TLS verification and public-address validation remain in force.
+
+New CineStream lookups use an isolated requests session for cookie continuity, closed at the end
+of extraction. Only cookies matching the actual media URL's domain/path enter playback. The
+legacy request API's new optional session defaults to None and preserves old fetch calls exactly.
+
+## CineStream public file-button follow-up — 29 October 2026
+
+New-only DriveSeed/Driveleech button handling posts the page-issued key/action token only to the
+exact page that supplied them, with the advertised hostname header. Only present public buttons
+and the observed cloud/original/direct actions are considered. These fields never become media
+headers; login-only pages and unrelated hosts cannot trigger the exchange. Redirect string
+literals are decoded as data, without running JavaScript. Existing URL, budget, cancellation and
+media-validation guards remain in force. External-decoder audit restrictions are unchanged.

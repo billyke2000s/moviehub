@@ -1,5 +1,23 @@
 <div align="center">
 
+CineStream candidate: 74 websites / 77 enabled adapters, with all fifteen added catalogue
+routes retained. Current redirect fixes decode escaped URL literals and support the observed
+DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
+say Stream instead of Download. LinksMod navigation is excluded from file traversal so it cannot
+consume the mirror budget; the existing player and source-list layout are unchanged.
+Local validation: 144 Python tests and 34 core suites / 1,167 checks pass. At `d85b832`, all six
+Android CI jobs passed and the fifteen-site audit verified 21 individual sources across four sites.
+Application revision `925af7c` passed all six Android jobs in run 40913881846. Final live checks
+include 23 verified sources (eleven movies and twelve episodes); the episode retry passed after an EGL crash.
+Vidy playback failures and other site/host errors remain unresolved; registration is not playback proof.
+See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+
+
+CineStream adds 36 enabled adapter protocols; three further adapters and failing Hexa backends
+remain pending. Source/player format display preserves existing site implementations. New adapter follow-up
+tracks current site protocols and excludes Vidy’s duplicate Movy backends. See the [inventory, blockers and validation](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+
+
 # MOVIEHUB
 
 ### Films, series and live TV in one place.

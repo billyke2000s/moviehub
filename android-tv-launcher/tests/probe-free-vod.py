@@ -8,6 +8,9 @@ import threading
 import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'app/src/main/python'))
 import moviehub_vod as vod
+from audit_transport import block_external_decoder
+
+block_external_decoder()
 
 parser=argparse.ArgumentParser()
 media = parser.add_mutually_exclusive_group()

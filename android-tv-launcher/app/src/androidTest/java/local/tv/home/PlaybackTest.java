@@ -206,6 +206,38 @@ public class PlaybackTest {
     }
 
     @Test
+    public void trackFormatsAppendToNativeNamesWithoutChangingSelection() {
+        await(() -> player() != null && player().isPlaying() && player().getTime() > 500, 30000);
+        instrumentation.runOnMainSync(() -> {
+            int audio = player().getAudioTrack();
+            int video = player().getVideoTrack();
+            int namedAudio = 0;
+            int namedVideo = 0;
+            for (MediaPlayer.TrackDescription choice : player().getAudioTracks()) {
+                String name = activity.menus.trackName(choice, 1);
+                if (choice.id < 0) assertEquals("Off", name);
+                else {
+                    assertEquals(choice.name + " · AAC", name);
+                    namedAudio++;
+                }
+                assertEquals(choice.id < 0 ? "Off" : choice.name, activity.menus.trackName(choice, 2));
+            }
+            for (MediaPlayer.TrackDescription choice : player().getVideoTracks()) {
+                String name = activity.menus.trackName(choice, 0);
+                if (choice.id < 0) assertEquals("Off", name);
+                else {
+                    assertEquals(choice.name + " · AVC (H.264)", name);
+                    namedVideo++;
+                }
+            }
+            assertTrue(namedAudio > 0);
+            assertTrue(namedVideo > 0);
+            assertEquals(audio, player().getAudioTrack());
+            assertEquals(video, player().getVideoTrack());
+        });
+    }
+
+    @Test
     public void playsSeeksAndHonoursMediaKeysAfterControlsHide() throws Exception {
         await(() -> {
             try {

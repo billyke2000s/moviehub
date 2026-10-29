@@ -5,7 +5,7 @@ import json
 import re
 import threading
 import time
-from urllib.parse import parse_qsl, urlparse
+from urllib.parse import parse_qsl, urlparse, urljoin
 import moviehub_compat
 from moviehub_compat import client
 import resolveurl
@@ -44,8 +44,9 @@ UNVERIFIED_SITES = frozenset({
 def search_providers(include_retired=False):
     """One website per entry; include_retired also exposes unverified sites for audits."""
     groups = {}
-    for record in sorted(_RECORDS, key=lambda r: (r['family'] != 'free99', r['id'])):
+    for record in sorted(_RECORDS, key=lambda r: ('factory' in r, r['family'] != 'free99', r['id'])):
         if record['name'] in ('library', 'filepursuit'): continue
+        if record.get('pending') and not include_retired: continue
         if record['site'] in RETIRED_SITES | UNVERIFIED_SITES and not include_retired: continue
         site = record['site']
         group = groups.setdefault(site, dict(id=record['id'], family=record['family'],
@@ -129,7 +130,7 @@ def source_label(website, host, url):
 def validate():
     """Import and instantiate every bundled adapter without contacting a provider."""
     for record in _RECORDS:
-        importlib.import_module(record['module']).source()
+        getattr(importlib.import_module(record['module']), record.get('factory', 'source'))()
     return len(_RECORDS)
 
 
@@ -148,7 +149,11 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
         family = 'scrubs' if record['family'] == 'native' else record['family']
         utils = importlib.import_module('moviehub_'+family+'.source_utils')
         utils._seen.websites = set()
-        provider = importlib.import_module(record['module']).source()
+        provider = getattr(importlib.import_module(record['module']), record.get('factory', 'source'))()
+        if record.get('factory'):
+            provider.cinestream_audit = info.get('cinestreamAudit') is True
+            if provider.cinestream_audit:
+                provider.cinestream_audit_backends = info.get('cinestreamAuditBackends', '')
         # Several original scrapers keep client.dnt_headers itself as self.headers and then add
         # their own Origin/Referer/Host to it, which leaked into every later scraper's requests.
         if getattr(provider, 'headers', None) is client.dnt_headers:
@@ -280,24 +285,43 @@ def refresh_source(recipe_raw, raw, cancelled):
     return json.dumps(found[0])
 
 
+def media_probe(url, headers):
+    # Established sources keep their original transport. Only the newly supported media
+    # CSRF header needs an explicit redirect boundary (client already scopes Cookie/Auth).
+    if not any(key.lower() == 'x-csrf-token' for key in headers):
+        return client.fetch(url, dict(headers, Range='bytes=0-65535'), timeout=8, max_bytes=65536)
+    current = url
+    scoped = dict(headers, Range='bytes=0-65535')
+    for _ in range(6):
+        response = client.fetch(current, scoped, timeout=8, max_bytes=65536, redirect=False)
+        if not response.is_redirect:
+            return response
+        target = client.safe(urljoin(current, response.headers['Location']))
+        if urlparse(target).netloc != urlparse(current).netloc:
+            scoped = {key: value for key, value in scoped.items()
+                      if key.lower() not in ('x-csrf-token', 'authorization', 'cookie')}
+        current = target
+    raise ValueError('Media redirect limit')
+
+
 def playable(raw, preferred=2160, expected_seconds=0):
     url, sep, suffix=raw.partition('|')
     client.safe(url)
     headers=dict(parse_qsl(suffix)) if sep else {}
     original_headers = dict(headers)
     if not any(k.lower() == 'user-agent' for k in headers): headers['User-Agent'] = client.UserAgent
-    allowed={'user-agent','referer','origin','cookie','accept','authorization'}
+    allowed={'user-agent','referer','origin','cookie','accept','authorization','x-csrf-token','x-requested-with'}
     if any(k.lower() not in allowed or '\r' in v or '\n' in v for k,v in headers.items()): return None
     # A host page or expired error response must not win the three-second window.
     path=urlparse(url).path.lower()
     started=time.monotonic()
-    response=client.fetch(url, dict(headers, Range='bytes=0-65535'), timeout=8, max_bytes=65536)
+    response=media_probe(url, headers)
     # Keep cookies issued by the media host, scoped to the final URL after redirects.
     final_url = response.url or url
     client.safe(final_url)
     if urlparse(final_url).netloc != urlparse(url).netloc:
-        headers = {k:v for k,v in headers.items() if k.lower() not in ('cookie','authorization')}
-        original_headers = {k:v for k,v in original_headers.items() if k.lower() not in ('cookie','authorization')}
+        headers = {k:v for k,v in headers.items() if k.lower() not in ('cookie','authorization','x-csrf-token')}
+        original_headers = {k:v for k,v in original_headers.items() if k.lower() not in ('cookie','authorization','x-csrf-token')}
     cookie = client.requests.cookies.get_cookie_header(response.cookies,
         client.requests.Request('GET', final_url).prepare())
     if cookie:
@@ -342,7 +366,12 @@ def playable(raw, preferred=2160, expected_seconds=0):
     rate=len(response.content)*8/(elapsed*1000000) if not playlist and len(response.content)>=32768 else 0
     # Keep header-free DASH native: a loopback URL would change relative MPD base paths.
     if '.mpd' in path or 'dash+xml' in kind: headers = original_headers
-    return {'url':url,'headers':headers,'verifiedQuality':verified,
+    from moviehub_compat.source_metadata import describe
+    try:
+        format_info = describe(prefix, response.headers, playlist)
+    except (ValueError, TypeError, OverflowError):
+        format_info = ''
+    return {'formatInfo':format_info, 'url':url,'headers':headers,'verifiedQuality':verified,
             'qualityVerified':verified is not None,'playlist':playlist,
             'videoWidth':size[0] if size else 0,'videoHeight':size[1] if size else 0,
             'expiresAtMs': expiry_millis(url),

@@ -22,15 +22,15 @@ class FreeVodTests(unittest.TestCase):
 
     def test_search_inventory_counts_websites_without_losing_bundled_adapters(self):
         everything = json.loads(vod.search_providers(include_retired=True))
-        self.assertEqual(len(everything), 67)
-        self.assertEqual(len({r['site'] for r in everything}), 67)
-        self.assertEqual(sum(len(r['adapters']) for r in everything), 70)
+        self.assertEqual(len(everything), 106)
+        self.assertEqual(len({r['site'] for r in everything}), 106)
+        self.assertEqual(sum(len(r['adapters']) for r in everything), 109)
         rows = json.loads(vod.search_providers())
         # Eleven confirmed retired/repurposed domains and 18 unverified restorations stay out of discovery.
         self.assertEqual(len(vod.RETIRED_SITES), 11)
         self.assertEqual(len(vod.UNVERIFIED_SITES), 18)
-        self.assertEqual(len(rows), 38)
-        self.assertEqual(sum(len(r['adapters']) for r in rows), 41)
+        self.assertEqual(len(rows), 74)
+        self.assertEqual(sum(len(r['adapters']) for r in rows), 77)
         excluded = vod.RETIRED_SITES | vod.UNVERIFIED_SITES
         self.assertFalse(any(r['site'] in excluded for r in rows))
         self.assertTrue(vod.RETIRED_SITES.isdisjoint(vod.UNVERIFIED_SITES))
@@ -39,7 +39,7 @@ class FreeVodTests(unittest.TestCase):
         levidia = next(r for r in rows if r['site'] == 'levidia.ch')
         self.assertEqual(levidia['adapters'], ['free99:levidia_ch', 'scrubs:levidia_ch'])
         self.assertTrue(levidia['movies'] and levidia['series'])
-        self.assertEqual(vod.validate(), 72)
+        self.assertEqual(vod.validate(), 111)
 
     def test_only_levidia_is_restored_from_the_original_26_exclusions(self):
         originally_excluded = set(('123-movies.golf 123moviestv.me 1movies.la 9pm.to cinebox.cc '
@@ -356,7 +356,7 @@ class FreeVodTests(unittest.TestCase):
                'year':'1968','season':-1,'episode':-1}
         for row in json.loads(vod.providers()):
             module=importlib.import_module(row['module'])
-            provider=module.source()
+            provider=getattr(module,row.get('factory','source'))()
             for series in (False,True):
                 with self.subTest(provider=row['id'],series=series):
                     info=dict(query,season=1 if series else -1,episode=1 if series else -1)
@@ -369,7 +369,7 @@ class FreeVodTests(unittest.TestCase):
                             inspect.signature(getattr(provider,method)).bind(*args)
                             calls[method]=Mock(return_value=[] if method=='sources' else 'key')
                     for name,call in calls.items():setattr(provider,name,call)
-                    with patch.object(module,'source',return_value=provider):
+                    with patch.object(module,row.get('factory','source'),return_value=provider):
                         result=json.loads(vod.query(row['id'],json.dumps(info),lambda:False))
                     if row['name'] in ('library','filepursuit'):
                         self.assertEqual(result['status'],'local_library' if row['name']=='library' else 'requires_api_key')
@@ -571,11 +571,11 @@ class FreeVodTests(unittest.TestCase):
 
     def test_all_bundled_provider_constructors_import(self):
         rows=json.loads(vod.providers())
-        self.assertEqual(len(rows),72)
-        self.assertEqual(len({r['id'] for r in rows}),72)
+        self.assertEqual(len(rows),111)
+        self.assertEqual(len({r['id'] for r in rows}),111)
         for row in rows:
             with self.subTest(provider=row['id']):
-                self.assertTrue(hasattr(importlib.import_module(row['module']).source(),'sources'))
+                self.assertTrue(hasattr(getattr(importlib.import_module(row['module']), row.get('factory','source'))(),'sources'))
 
     def test_mp4hydra_real_provider_emits_multiple_servers(self):
         query={'imdb':'tt1234567','tmdb':12,'title':'Fixture Film','year':'2020','season':-1,'episode':-1}
@@ -636,6 +636,8 @@ class FreeVodTests(unittest.TestCase):
         for expression in ["__import__('os').getcwd()", "(1).__class__", "[x for x in []]", "2**1000", "'a'*99999999"]:
             with self.subTest(expression=expression),self.assertRaises(ValueError):evaluate(expression)
 
+from test_cinestream import CineStreamTests
+from test_cinestream_chains import CineStreamChainTests
 from test_vod_sessions import SessionTests
 from test_current_vod_sites import CurrentSiteTests
 from test_native_vod_sites import NativeSiteTests

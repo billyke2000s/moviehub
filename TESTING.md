@@ -1,5 +1,48 @@
 # Testing
 
+CineStream candidate: 74 websites / 77 enabled adapters, with all fifteen added catalogue
+routes retained. Current redirect fixes decode escaped URL literals and support the observed
+DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
+say Stream instead of Download. LinksMod navigation is excluded from file traversal so it cannot
+consume the mirror budget; the existing player and source-list layout are unchanged.
+Local validation: 144 Python tests and 34 core suites / 1,167 checks pass. At `d85b832`, all six
+Android CI jobs passed and the fifteen-site audit verified 21 individual sources across four sites.
+Application revision `925af7c` passed all six Android jobs in run 40913881846. Final live checks
+include 23 verified sources (eleven movies and twelve episodes); the episode retry passed after an EGL crash.
+Vidy playback failures and other site/host errors remain unresolved; registration is not playback proof.
+See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+
+
+Earlier checkpoint: current-site inspection corrected the new adapters. Application revision
+47b22de passed all six Android jobs after an experimental retry (the first attempt raised
+DeadSystemException). Its native Vidy samples still failed and remain draft-PR blockers.
+The final KissKH decimal episode-number correction passed the 116-test Python suite and a
+public-ID-only API check; Android CI for that small final correction is pending. Unattended
+audits continue to block external decoder uploads of site tokens/encrypted responses.
+See the [direct-site findings](docs/CINESTREAM_ADDITIONS_2026_10_29.md#direct-website-and-current-client-investigation--follow-up-29-october).
+
+## CineStream format/source regressions
+
+`MediaFormatsTest` adds 19 core cases for native codec names, unknown/Off behaviour and honest
+provider-report parsing. `test_cinestream.py` adds protocol, exact episode, backend identity,
+header/token boundary, cancellation, locked-link and metadata fixtures. The full Python runner
+has 144 tests; core has 34 suites / 1,167 checks. `PlaybackTest.trackFormatsAppendToNativeNamesWithoutChangingSelection`
+uses the existing H.264/AAC fixture to verify real native track suffixes and unchanged selections.
+These are fixtures; live decode evidence is recorded separately below and in the source report.
+The live audit uses managed VOD startup and supports explicit pending providers. Normal Hexa
+audits exercise Alpha; `vodCineStreamAllBackends=true` is an explicit diagnostic override. See the
+[addition report](docs/CINESTREAM_ADDITIONS_2026_10_29.md) and final PR checks for current CI evidence.
+
+Application revision `a9974b6` passed all six Android jobs in run 40856772393: build/lint/signing,
+normal/experimental suites, public provider checks and focused VOD recovery. The regular report
+has 209 entries: 208 passing plus the unchanged explicit-live-audit assumption (the HTML renderer
+lists it as a failure although Gradle/CI succeeds). The new native track-format regression passed.
+Experimental reports cover 7 + 20 unique cases, and focused VOD reports cover 3 + 5 + 1 + 1, with
+no failures/skips. Two new Hexa Alpha links passed live audio/video/runtime/midpoint checks in
+run 40856772425. VaPlayer diagnostics still crashed; these routes remain pending.
+
+
+
 ## Published 1.0.18 validation — 29 October 2026
 
 [Main CI 40808318926](https://github.com/billyke2000s/moviehub/actions/runs/40808318926) passed

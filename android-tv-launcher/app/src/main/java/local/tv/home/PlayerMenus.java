@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.videolan.libvlc.Media;
 import org.videolan.libvlc.MediaPlayer;
+import org.videolan.libvlc.interfaces.IMedia;
 
 /**
  * The player's side panels: audio and subtitle tracks, video track, playback speed, picture size,
@@ -73,7 +74,7 @@ final class PlayerMenus {
         String[] names = new String[choices.length];
         int selected = -1;
         for (int i = 0; i < names.length; i++) {
-            names[i] = choices[i].id < 0 ? "Off" : choices[i].name;
+            names[i] = trackName(choices[i], type);
             if (choices[i].id == current) selected = i;
         }
         a.dialogOpen = true;
@@ -88,6 +89,35 @@ final class PlayerMenus {
             })
             .onDismiss(a::panelClosed)
             .show();
+    }
+
+    /** Match the native track ID and type, never the menu position or current track. */
+    String trackName(MediaPlayer.TrackDescription choice, int type) {
+        String name = choice.id < 0 ? "Off" : choice.name;
+        if (choice.id < 0 || type == 2 || !ready()) return name;
+        IMedia media = a.player.getMedia();
+        if (media == null) return name;
+        try {
+            int nativeType = type == 1 ? IMedia.Track.Type.Audio : IMedia.Track.Type.Video;
+            for (int i = 0; i < media.getTrackCount(); i++) {
+                IMedia.Track track = media.getTrack(i);
+                if (track != null && track.id == choice.id && track.type == nativeType) {
+                    return MediaFormats.append(
+                        name,
+                        choice.id,
+                        type == 1,
+                        track.fourcc,
+                        track.codec,
+                        track.originalCodec
+                    );
+                }
+            }
+        } catch (RuntimeException error) {
+            Diagnostics.recovered("Reading track format", error);
+        } finally {
+            media.release();
+        }
+        return name;
     }
 
     /** The More button: the film's playback options. */

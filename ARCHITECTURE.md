@@ -1,5 +1,35 @@
 # Architecture
 
+CineStream candidate: 74 websites / 77 enabled adapters, with all fifteen added catalogue
+routes retained. Current redirect fixes decode escaped URL literals and support the observed
+DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
+say Stream instead of Download. LinksMod navigation is excluded from file traversal so it cannot
+consume the mirror budget; the existing player and source-list layout are unchanged.
+Local validation: 144 Python tests and 34 core suites / 1,167 checks pass. At `d85b832`, all six
+Android CI jobs passed and the fifteen-site audit verified 21 individual sources across four sites.
+Application revision `925af7c` passed all six Android jobs in run 40913881846. Final live checks
+include 23 verified sources (eleven movies and twelve episodes); the episode retry passed after an EGL crash.
+Vidy playback failures and other site/host errors remain unresolved; registration is not playback proof.
+See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+
+
+## CineStream additions and format metadata
+
+`moviehub_native/cinestream_*` contains 39 additional adapter protocols, registered with explicit
+factory names; 36 are enabled and three remain pending. Hexa exposes only its verified Alpha
+backend normally; explicit audits can inspect the others. New adapters use isolated cookie
+sessions and their upstream browser/header profiles. Established native/Kodi adapters remain unchanged. New data decoders reuse bundled
+crypto and bounded transport. Some protocols depend on enc-dec.app as a data service. Missing
+account/build keys and unimplemented terminal chains are recorded in the
+[source report](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+
+`moviehub_compat/source_metadata` reads HLS CODECS and non-playlist Content-Range totals from the
+existing probe bytes. `SourceFormats` labels release tokens as Reported; `MediaFormats` names known
+codec identifiers. `FreeVodProviders` carries formatInfo separately from identity/ranking; source
+labels retain it through `VodQuality` corrections. `PlayerMenus` independently matches active
+LibVLC media tracks by type/id and appends their codec to original names, releasing retained media.
+
+
 ## Managed VOD links and transport
 
 The movie/episode identity stays in title metadata and ResumePoint title keys. Source identity
@@ -537,3 +567,7 @@ Website labels such as "1080p" are claims. `moviehub_vod.playable` already reads
 ## Additional FMHY delivery routes (27 October 2026)
 
 `moviehub_native/movy.py` translates the public seed-bound response decoder and uses Boise and Miami only. Movie requests omit episode parameters; series retain the series title, TMDB identity and exact season/episode. Rive adds Vanguard for episodes only while retaining its existing routes; its movie audio/seek check failed. All adapters return the established `direct` contract, with distinct origin labels and ordinary header/media validation. The existing Java engine, relay, ranking and source keys are unchanged. Discovery now has 38 enabled websites and 41 adapters (72 bundled constructors, including excluded sites).
+
+The additional Vidy adapter reuses Movy’s pure data decoder without changing Movy’s existing
+Boise/Miami routes. Its other sixteen backend identities remain separate. MeowTV guest tickets
+are single use and API-only; the three token-server adapters perform bootstrap and CSRF rotation.

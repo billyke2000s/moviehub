@@ -468,6 +468,7 @@ final class ProviderRelay implements AutoCloseable {
             for (Map.Entry<String, String> header : headers.entrySet()) {
                 boolean sensitive =
                     header.getKey().equalsIgnoreCase("Authorization") ||
+                    header.getKey().equalsIgnoreCase("X-CSRF-Token") ||
                     header.getKey().equalsIgnoreCase("Cookie");
                 if (
                     !sensitive || credentialAuthority.equalsIgnoreCase(target.getAuthority())

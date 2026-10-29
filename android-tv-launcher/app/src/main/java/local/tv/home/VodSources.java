@@ -139,9 +139,10 @@ final class VodSources {
     static VodSourceFailover.Source entry(SourceRepository.Source source) {
         VodSourceFailover.Source entry = new VodSourceFailover.Source(
             source.key(),
-            SourcesScreen.provider(source.title) + " · " + SourcesScreen.badge(source),
+            SourcesScreen.provider(source.title) + " · " + SourcesScreen.sourceLabel(source),
             SourcesScreen.provider(source.title)
         );
+        entry.formatInfo = SourcesScreen.formats(source);
         // A camera copy's picture size is real but it is never a better source to suggest.
         if (source.confirmed && source.ranking != null && !SourceRanking.camera(source.ranking)) {
             entry.confirmed = SourceRanking.resolution(source.ranking);
