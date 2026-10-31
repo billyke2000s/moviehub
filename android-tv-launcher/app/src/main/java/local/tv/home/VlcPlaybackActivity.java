@@ -21,6 +21,13 @@ import org.videolan.libvlc.util.VLCVideoLayout;
  */
 public class VlcPlaybackActivity extends Activity {
 
+    /** Phone layout: the same scale as the rest of MovieHub (see DeviceMode). */
+    @Override
+    protected void attachBaseContext(android.content.Context base) {
+        super.attachBaseContext(base);
+        DeviceMode.scaleForPhone(this, base);
+    }
+
     final Handler overlayHandler = new Handler(Looper.getMainLooper());
     /** Where the picture is drawn. */
     FrameLayout video;

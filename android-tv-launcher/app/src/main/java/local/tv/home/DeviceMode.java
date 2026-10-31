@@ -6,8 +6,8 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 
 /**
- * Whether MovieHub shows its TV layout (remote, 10-foot screens) or its phone layout (touch,
- * portrait). Asked when MovieHub first opens, because some TV boxes report themselves as phones;
+ * Whether MovieHub shows its TV layout (remote, 10-foot screens) or its phone layout (the same
+ * pages, held sideways and scaled to fit, by touch). Asked when MovieHub first opens, because some TV boxes report themselves as phones;
  * the question starts on the best guess. Changeable later in Settings and from the phone menu.
  */
 final class DeviceMode {
@@ -25,6 +25,21 @@ final class DeviceMode {
 
     static boolean phone(Context context) {
         return PHONE.equals(chosen(context));
+    }
+
+    /**
+     * Phone layout: before the screen is built, scales it so the TV pages fit the phone held
+     * sideways ({@link PhoneScale}). Call from an activity's attachBaseContext. Does nothing for
+     * the TV layout, which keeps the device's own density.
+     */
+    static void scaleForPhone(android.app.Activity activity, Context base) {
+        if (!phone(base)) return;
+        android.util.DisplayMetrics metrics = base.getResources().getDisplayMetrics();
+        int dpi = PhoneScale.densityDpi(Math.min(metrics.widthPixels, metrics.heightPixels));
+        if (dpi <= 0) return;
+        Configuration override = new Configuration();
+        override.densityDpi = dpi;
+        activity.applyOverrideConfiguration(override);
     }
 
     static void choose(Context context, String mode) {

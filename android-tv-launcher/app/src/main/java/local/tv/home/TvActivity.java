@@ -20,6 +20,13 @@ import org.json.*;
  */
 abstract class TvActivity extends Activity {
 
+    /** Phone layout: the TV pages scaled to fit a phone held sideways (see DeviceMode). */
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        DeviceMode.scaleForPhone(this, base);
+    }
+
     SharedPreferences prefs;
 
     int accent() {
