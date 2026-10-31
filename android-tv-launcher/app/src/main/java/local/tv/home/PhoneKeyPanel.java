@@ -104,11 +104,14 @@ final class PhoneKeyPanel {
     ) {
         PhoneEntry.Page page = page(service);
         if (page == null || page.labels.length != inputs.size()) return;
-        parent.addView(activity.text("Or use your phone", 18));
-        TextView note = activity.compactText("Starting\u2026", 13);
-        note.setTextColor(0xffaab4c4);
+        // Two ways in: scan the code, or type a short address and a 6-digit code.
+        TextView scan = activity.compactText("Scan with your phone's camera", 15);
         ImageView picture = new ImageView(activity);
         picture.setContentDescription("QR code for typing these details on a phone");
+        TextView typed = activity.compactText("Starting\u2026", 15);
+        TextView code = activity.text("", 30);
+        TextView note = activity.compactText("", 13);
+        note.setTextColor(0xffaab4c4);
         int request = activity.generation;
         activity.async(
             () -> {
@@ -124,24 +127,30 @@ final class PhoneKeyPanel {
             },
             entry -> {
                 if (entry == null) {
-                    note.setText(
-                        "Phone entry needs the TV on Wi-Fi or Ethernet, and could not start. " +
+                    scan.setVisibility(android.view.View.GONE);
+                    picture.setVisibility(android.view.View.GONE);
+                    typed.setText(
+                        "This needs the TV on Wi-Fi or Ethernet, and could not start. " +
                             "Type the details instead."
                     );
                     return;
                 }
-                Bitmap code = qr(entry.url(), activity.dp(200));
-                if (code != null) picture.setImageBitmap(code);
+                Bitmap qr = qr(entry.url(), activity.dp(180));
+                if (qr != null) picture.setImageBitmap(qr);
+                typed.setText("Or open " + entry.address() + " in your phone's browser and enter");
+                code.setText(entry.code().substring(0, 3) + " " + entry.code().substring(3));
                 note.setText(
-                    "Scan with a phone on the same Wi-Fi, fill in the page and press Send. " +
-                        "Works for 5 minutes while this screen is open."
+                    "Your phone must be on the same Wi-Fi as the TV. " + "Works for 5 minutes on this screen."
                 );
             }
         );
-        LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(activity.dp(200), activity.dp(200));
-        size.topMargin = activity.dp(8);
-        size.bottomMargin = activity.dp(8);
+        parent.addView(scan);
+        LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(activity.dp(180), activity.dp(180));
+        size.topMargin = activity.dp(6);
+        size.bottomMargin = activity.dp(10);
         parent.addView(picture, size);
+        parent.addView(typed);
+        parent.addView(code);
         parent.addView(note);
     }
 

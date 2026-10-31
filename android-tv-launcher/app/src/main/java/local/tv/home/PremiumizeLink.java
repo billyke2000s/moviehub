@@ -112,27 +112,34 @@ final class PremiumizeLink {
         throw new Exception(error.isEmpty() ? "No token" : error);
     }
 
-    /** Adds "Sign in with your phone" to the Premiumize account screen (shown while not connected). */
+    /** Adds Premiumize's own sign-in to the "Use your phone" card (shown while not connected). */
     static void add(MainActivity activity, LinearLayout parent) {
-        parent.addView(activity.text("Or sign in with your phone", 18));
         TextView note = activity.compactText(
-            "Approve MovieHub on premiumize.me from your phone. No key to type.",
+            "Sign in on premiumize.me from your phone or computer. No key to type.",
             13
         );
         note.setTextColor(0xffaab4c4);
         ImageView picture = new ImageView(activity);
         picture.setContentDescription("QR code for Premiumize sign-in");
+        TextView typed = activity.compactText("", 15);
+        TextView code = activity.text("", 30);
         Button show = activity.button("Show sign-in code", () -> {});
-        show.setOnClickListener(v -> begin(activity, show, picture, note));
-        parent.addView(show, new LinearLayout.LayoutParams(-1, activity.dp(44)));
-        LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(activity.dp(200), activity.dp(200));
+        show.setOnClickListener(v -> begin(activity, show, picture, new TextView[] { typed, code, note }));
+        parent.addView(note);
+        LinearLayout.LayoutParams button = new LinearLayout.LayoutParams(-1, activity.dp(44));
+        button.topMargin = activity.dp(8);
+        parent.addView(show, button);
+        LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(activity.dp(180), activity.dp(180));
         size.topMargin = activity.dp(8);
         size.bottomMargin = activity.dp(8);
         parent.addView(picture, size);
-        parent.addView(note);
+        parent.addView(typed);
+        parent.addView(code);
     }
 
-    private static void begin(MainActivity activity, Button show, ImageView picture, TextView note) {
+    /** {@code texts}: the "or go to" line, the big code, and the status note. */
+    private static void begin(MainActivity activity, Button show, ImageView picture, TextView[] texts) {
+        TextView note = texts[2];
         show.setEnabled(false);
         note.setText("Asking Premiumize for a code…");
         int request = activity.generation;
@@ -151,15 +158,15 @@ final class PremiumizeLink {
             }
             activity.runOnUiThread(() -> {
                 if (activity.isDestroyed() || activity.generation != request) return;
-                Bitmap qr = PhoneKeyPanel.qr(code.address, activity.dp(200));
+                Bitmap qr = PhoneKeyPanel.qr(code.address, activity.dp(180));
                 if (qr != null) picture.setImageBitmap(qr);
-                note.setText(
-                    "Scan the code, or go to " +
+                texts[0].setText(
+                    "Scan with your phone's camera, or go to " +
                         code.address.replaceFirst("^https://", "") +
-                        ", and enter " +
-                        code.user +
-                        ". This screen updates once you approve."
+                        " and enter"
                 );
+                texts[1].setText(code.user);
+                note.setText("This screen updates by itself once you approve.");
                 show.setText("New code");
                 show.setEnabled(true);
                 current = code;

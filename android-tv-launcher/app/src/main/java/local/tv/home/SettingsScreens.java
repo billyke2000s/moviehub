@@ -203,13 +203,11 @@ final class SettingsScreens {
         String key = accountKey(service);
         boolean connected = activity.secrets.has(key);
         activity.screen(service, this::settings);
-        LinearLayout layout = activity.row();
-        layout.setGravity(Gravity.TOP);
-        activity.page.addView(layout);
+        // What this account is, across the top; then two ways to enter it, side by side.
         LinearLayout explanation = activity.vertical();
-        explanation.setPadding(0, activity.dp(10), activity.dp(40), 0);
-        layout.addView(explanation, new LinearLayout.LayoutParams(activity.dp(290), -2));
-        explanation.addView(activity.text(connected ? "Manage connection" : "Connect " + service, 26));
+        explanation.setPadding(0, activity.dp(4), 0, activity.dp(12));
+        activity.page.addView(explanation);
+        explanation.addView(activity.text(connected ? "Manage " + service : "Connect " + service, 26));
         String description = service.equals("Xtream")
             ? "Live TV\nEnter the server address, username and password supplied by your TV provider."
             : service.equals("Masqueradarr")
@@ -219,13 +217,32 @@ final class SettingsScreens {
                 : service.equals("TMDB")
                   ? "Movies, series & artwork\nUse the API Key (v3 auth) from your TMDB account’s API settings."
                   : "Playback & cloud library\nUse the API key from your Premiumize account.";
-        explanation.addView(activity.text(description, 16));
-        if (service.equals("TMDB")) explanation.addView(activity.text("themoviedb.org/settings/api", 14));
-        if (service.equals("Premiumize")) explanation.addView(activity.text("premiumize.me/account", 14));
+        explanation.addView(activity.text(description.replace("\n", " \u00b7 "), 16));
+        LinearLayout layout = activity.row();
+        layout.setGravity(Gravity.TOP);
+        activity.page.addView(layout);
+        // Phone sign-in or entry; Premiumize offers it only until connected.
+        LinearLayout phone = null;
+        if (!(service.equals("Premiumize") && connected)) {
+            phone = activity.vertical();
+            phone.setPadding(activity.dp(20), activity.dp(10), activity.dp(20), activity.dp(20));
+            phone.setBackground(activity.box(0xff131b27));
+            LinearLayout.LayoutParams phoneSize = new LinearLayout.LayoutParams(activity.dp(320), -2);
+            phoneSize.rightMargin = activity.dp(16);
+            layout.addView(phone, phoneSize);
+            phone.addView(activity.text("Use your phone", 20));
+        }
         LinearLayout form = activity.vertical();
         form.setPadding(activity.dp(20), activity.dp(10), activity.dp(20), activity.dp(20));
         form.setBackground(activity.box(0xff131b27));
         layout.addView(form, new LinearLayout.LayoutParams(0, -2, 1));
+        form.addView(activity.text("Type it here", 20));
+        if (service.equals("TMDB")) form.addView(
+            activity.compactText("Find your key at themoviedb.org/settings/api", 13)
+        );
+        if (service.equals("Premiumize")) form.addView(
+            activity.compactText("Find your API key at premiumize.me/account", 13)
+        );
         TextView status = activity.compactText(
             connected
                 ? "Connected · saved credentials are kept until a replacement is verified"
@@ -372,10 +389,11 @@ final class SettingsScreens {
                 });
             });
         });
-        // Long keys, links and passwords: offer typing them on a phone instead of with the remote.
-        if (service.equals("Premiumize")) {
-            if (!connected) PremiumizeLink.add(activity, explanation);
-        } else PhoneKeyPanel.add(activity, explanation, service, inputs, save);
+        // Long keys, links and passwords: offer a phone instead of the remote.
+        if (phone != null) {
+            if (service.equals("Premiumize")) PremiumizeLink.add(activity, phone);
+            else PhoneKeyPanel.add(activity, phone, service, inputs, save);
+        }
         if (connected) form.addView(
             activity.button("Disconnect", () ->
                 SidePanel.of(activity, "Disconnect " + service + "?")
