@@ -103,22 +103,32 @@ MovieHub stores provider accounts and installs its own updates, so these rules m
   about the viewer or their accounts. The "Internet" connection check asks the same host for
   nothing.
 
-## Entering a TMDB key from a phone
+## Entering account details from a phone
 
-Settings → Accounts → TMDB shows a QR code for pasting the API key on a phone (`PhoneEntry`,
-`PhoneKeyPanel`). While that screen is open the TV runs a small web page:
+Settings → Accounts → TMDB, Xtream, M3U playlist and Masqueradarr show a QR code for typing the
+details on a phone (`PhoneEntry`, `PhoneKeyPanel`). While that screen is open the TV runs a small
+web page:
 
 - Bound only to the TV's private home-network IPv4 address (Wi-Fi or Ethernet), on a random port.
   No address is offered when the TV has none, so it is never reachable on a public address.
 - Answers only a random 128-bit path carried in the QR code, and only clients with private or
   link-local addresses. Other paths get 404; other clients get 403.
-- Requests are limited to 8 KB. The page closes after one accepted key, after 20 rejected tries,
-  after 5 minutes, or when the TV leaves that screen.
-- The key travels over the home network as plain HTTP. Anyone able to watch that network's
-  traffic during those minutes could read it, so this suits a private home network, not shared
-  Wi-Fi. Typing the key with the remote remains available.
-- A received key goes through the same check and encrypted storage as a typed key. Nothing is
-  sent to any server other than TMDB's usual key check.
+- Requests are limited to 8 KB. The page closes after one accepted set of details, after 20
+  rejected tries, after 5 minutes, or when the TV leaves that screen.
+- Keys, links and passwords travel over the home network as plain HTTP. Anyone able to watch that
+  network's traffic during those minutes could read them, so this suits a private home network,
+  not shared Wi-Fi. Typing with the remote remains available.
+- Received details go through the same check and encrypted storage as typed ones. Nothing is
+  sent anywhere except that account's usual connection check.
+
+## Premiumize sign-in
+
+Settings → Accounts → Premiumize offers Premiumize's own device sign-in (`PremiumizeLink`):
+"Show sign-in code" asks `https://www.premiumize.me/token` for a code, the TV shows a QR code for
+premiumize.me and the short code, and the user approves there on any device. The returned login
+token is checked (`account/info`) and stored encrypted under the same key as an API key; it is
+sent as the same HTTPS Bearer header. It uses ResolveURL's public client ID (already in the
+bundled ResolveURL), so Premiumize's approval page may name ResolveURL. No local server is used.
 
 ## App updates
 

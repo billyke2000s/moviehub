@@ -1,8 +1,11 @@
 ## Unreleased
 
-- Settings → Accounts → TMDB shows a QR code. Scan it with a phone on the same Wi-Fi, paste your
-  own TMDB key and press Send; the TV checks and saves it as if typed. Each user still uses their
-  own key. The page works for 5 minutes, once, and only while that screen is open.
+- Settings → Accounts → TMDB, Xtream, M3U playlist and Masqueradarr show a QR code. Scan it with a
+  phone on the same Wi-Fi, type or paste the details there and press Send; the TV checks and saves
+  them as if typed. Each user still uses their own TMDB key. The page works for 5 minutes, once,
+  and only while that screen is open.
+- Premiumize: "Show sign-in code" uses Premiumize's own sign-in. Scan the QR code (or visit
+  premiumize.me/device), enter the short code, approve, and the TV connects with no key typed.
 
 ## 1.0.19 (29 October 2026)
 

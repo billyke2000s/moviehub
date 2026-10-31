@@ -265,11 +265,13 @@ Historical checkpoint: 25 October 2026 (1.0 promoted the experimental line into 
     core tests and emulator CI only; awaiting the owner's check on the box. [Unverified] whether the
     👍/👎 symbols draw on every box's font.
 
-15. **TMDB key from a phone (31 October 2026, unreleased).** A QR code on the TMDB account screen
-    opens a one-use page served by the TV on the home network (`PhoneEntry`). Core tests run the
-    real server over local sockets. [Unverified] on a phone, the TV box, or home routers that
-    isolate Wi-Fi clients from each other (the page cannot work there). Premiumize, Xtream and
-    M3U still need typing.
+15. **Account details from a phone (31 October 2026, unreleased).** TMDB, Xtream, M3U and
+    Masqueradarr show a QR code for a one-use page served by the TV on the home network
+    (`PhoneEntry`); Premiumize uses its own device sign-in (`PremiumizeLink`). Core tests run the
+    phone page over local sockets. The Premiumize sign-in has no automated test and has not been
+    run against Premiumize. [Unverified] on a phone, the TV box, or routers that isolate Wi-Fi
+    clients from each other (the phone page cannot work there). [Unverified] whether Premiumize
+    login tokens expire; if they do, the account will need signing in again.
 
 ## Decisions
 
