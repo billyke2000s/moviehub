@@ -66,6 +66,8 @@ public class SettingsStyleTest {
             View child = body.getChildAt(i);
             assertFalse(tab + ": no bare switches", child instanceof Switch);
             assertFalse(tab + ": no full-width buttons", child instanceof Button);
+            // A section heading (Playback's "Audio and subtitles", System's "About") between cards.
+            if (child instanceof TextView) continue;
             assertTrue(tab + ": every setting is a card", child instanceof LinearLayout);
             LinearLayout card = (LinearLayout) child;
             assertEquals(tab + ": cards are rows", LinearLayout.HORIZONTAL, card.getOrientation());

@@ -358,17 +358,17 @@ public class LiveGuideTest {
         );
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> assertAllRowsOnScreen(6));
-        // BACK: the main menu again; 9 opens Music in the grid.
+        // BACK: the main menu again.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         await("main menu", () -> activity.liveTv.menu.rows.size() == 10);
-        // The satellite box's order: 8 is Music, 9 Radio.
+        // A number opens its row: with Favourites second, 8 is Kids (9 is Options).
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_8);
-        await("music", () -> activity.liveTv.filter.equals("section:Music"));
+        await("kids", () -> activity.liveTv.filter.equals("section:Kids"));
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         await(
-            "menu after music",
+            "menu after kids",
             () -> activity.liveTv.menu.rows.size() == 10 && activity.liveTv.menu.rows.get(0).hasFocus()
         );
         // Up from the first row: the parts along the top; right to Reminders, which opens.
