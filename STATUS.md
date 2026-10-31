@@ -266,8 +266,8 @@ Historical checkpoint: 25 October 2026 (1.0 promoted the experimental line into 
     👍/👎 symbols draw on every box's font.
 
 15. **Account details from a phone (31 October 2026, unreleased).** TMDB, Xtream, M3U and
-    Masqueradarr show a QR code for a one-use page served by the TV on the home network
-    (`PhoneEntry`); Premiumize uses its own device sign-in (`PremiumizeLink`). Core tests run the
+    Masqueradarr show a QR code, or a short address and 6-digit code to type, for a one-use page
+    served by the TV on the home network (`PhoneEntry`); Premiumize uses its own device sign-in (`PremiumizeLink`). Core tests run the
     phone page over local sockets. The Premiumize sign-in has no automated test and has not been
     run against Premiumize. [Unverified] on a phone, the TV box, or routers that isolate Wi-Fi
     clients from each other (the phone page cannot work there). [Unverified] whether Premiumize

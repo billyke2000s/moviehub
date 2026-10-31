@@ -111,8 +111,10 @@ web page:
 
 - Bound only to the TV's private home-network IPv4 address (Wi-Fi or Ethernet), on a random port.
   No address is offered when the TV has none, so it is never reachable on a public address.
-- Answers only a random 128-bit path carried in the QR code, and only clients with private or
-  link-local addresses. Other paths get 404; other clients get 403.
+- Answers a random 128-bit path carried in the QR code, or the plain address shown on the TV
+  after the 6-digit code also shown there, and only clients with private or link-local
+  addresses. Other paths get 404; other clients get 403. Wrong codes and rejected details share
+  one limit of 20 tries, after which the page closes (a 1 in 50,000 chance of guessing a code).
 - Requests are limited to 8 KB. The page closes after one accepted set of details, after 20
   rejected tries, after 5 minutes, or when the TV leaves that screen.
 - Keys, links and passwords travel over the home network as plain HTTP. Anyone able to watch that
