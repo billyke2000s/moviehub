@@ -136,10 +136,12 @@ public class VlcPlaybackActivity extends Activity {
                     SourcesScreen.Binge.imdb != null
                 ) {
                     nextPromptShown = true;
+                    dialogOpen = true;
                     SidePanel.of(VlcPlaybackActivity.this, "Up next")
                         .message("Ready for the next episode?")
                         .action("Play next episode", () -> launchNextEpisode())
                         .action("Keep watching", () -> nextCancelled = true)
+                        .onDismiss(VlcPlaybackActivity.this::panelClosed)
                         .show();
                 }
                 // A programme reminder that is due shows over the picture (checked every 15 s).
@@ -438,6 +440,8 @@ public class VlcPlaybackActivity extends Activity {
             Timings.finish("play", "Press play to picture");
             Timings.finish("stall", "Buffering pause while watching");
             playedOnce = true;
+            pendingError = null;
+            failed = false;
             if (vod != null) vod.onPlaying();
             player.setRate(playbackRate);
             if (aspect != null) player.setAspectRatio(aspect);
@@ -506,8 +510,44 @@ public class VlcPlaybackActivity extends Activity {
         }
     }
 
+    /** Set by VodPlayback when the picture stopped moving without a buffering or error event. */
+    void sourceFrozen() {
+        showError("This source stopped: the picture has not moved for a while.");
+    }
+
+    /** VLC is in a buffering pause (between a Buffering event under 100% and the next full one). */
+    boolean bufferingNow() {
+        return buffering;
+    }
+
+    /** A failure that happened while a menu was open, handled when the menu closes. */
+    private String pendingError;
+
+    void clearPendingError() {
+        pendingError = null;
+    }
+
+    /** "Can't play this" is showing or was dismissed, and nothing has played since. */
+    private boolean failed;
+
+    boolean playbackFailed() {
+        return failed;
+    }
+
+    private final Runnable retryPendingError = () -> {
+        // The closed menu may have opened another one; wait for that one to close too.
+        if (pendingError == null || dialogOpen) return;
+        String message = pendingError;
+        pendingError = null;
+        showError(message);
+    };
+
     private void showError(String message) {
-        if (!foreground || isFinishing() || dialogOpen) return;
+        if (!foreground || isFinishing()) return;
+        if (dialogOpen) {
+            pendingError = message;
+            return;
+        }
         if (vod != null && vod.failover()) return;
         overlayHandler.removeCallbacks(stalled);
         if (player != null) {
@@ -519,17 +559,19 @@ public class VlcPlaybackActivity extends Activity {
         status.setText("Playback unavailable");
         status.setVisibility(View.VISIBLE);
         dialogOpen = true;
-        SidePanel.of(this, "Can't play this")
+        failed = true;
+        SidePanel panel = SidePanel.of(this, "Can't play this")
             .message(message)
-            .action("Try again", this::startPlayer)
-            .action("Back to sources", this::finish)
-            .onDismiss(this::panelClosed)
-            .show();
+            .action("Try again", this::startPlayer);
+        if (vod != null && vod.hasChoices()) panel.action("Choose another source", menus::chooseVodSource);
+        panel.action("Close player", this::finish).onDismiss(this::panelClosed).show();
     }
 
     /** A side panel over the video closed: show the controls again. */
     void panelClosed() {
         dialogOpen = false;
+        // After the chosen action (which may open another menu) has run.
+        if (pendingError != null) overlayHandler.post(retryPendingError);
         revealControls();
     }
 

@@ -139,7 +139,8 @@ final class ExoMenus implements LiveMenus {
                 else if (label.equals("Audio & subtitles")) audioAndSubtitles();
                 else if (label.equals("Player event log")) eventLog();
                 else if (label.equals("Programme information")) zapper.information();
-                else if (label.startsWith("Sources")) chooseSource();
+                // The row reads "Source: Auto · …" (LiveZapper.sourceText).
+                else if (label.startsWith("Source")) chooseSource();
                 else if (label.equals("Reconnect channel")) reconnect.run();
                 else Toast.makeText(screen.activity(), ExoLive.status(), Toast.LENGTH_LONG).show();
             });
