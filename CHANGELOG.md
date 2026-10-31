@@ -1,5 +1,9 @@
 ## Unreleased
 
+- Settings → Accounts → TMDB shows a QR code. Scan it with a phone on the same Wi-Fi, paste your
+  own TMDB key and press Send; the TV checks and saves it as if typed. Each user still uses their
+  own key. The page works for 5 minutes, once, and only while that screen is open.
+
 ## 1.0.19 (29 October 2026)
 
 - Add 36 enabled CineStream adapter protocols for additional film and series sites and playback

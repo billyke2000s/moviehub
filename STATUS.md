@@ -265,6 +265,12 @@ Historical checkpoint: 25 October 2026 (1.0 promoted the experimental line into 
     core tests and emulator CI only; awaiting the owner's check on the box. [Unverified] whether the
     👍/👎 symbols draw on every box's font.
 
+15. **TMDB key from a phone (31 October 2026, unreleased).** A QR code on the TMDB account screen
+    opens a one-use page served by the TV on the home network (`PhoneEntry`). Core tests run the
+    real server over local sockets. [Unverified] on a phone, the TV box, or home routers that
+    isolate Wi-Fi clients from each other (the page cannot work there). Premiumize, Xtream and
+    M3U still need typing.
+
 ## Decisions
 
 - Version 7 → 8 channel upgrades must add `main` before renumbering the preferred copies.

@@ -372,6 +372,8 @@ final class SettingsScreens {
                 });
             });
         });
+        // TMDB keys are long: offer pasting it on a phone instead of typing it with the remote.
+        if (service.equals("TMDB")) PhoneKeyPanel.add(activity, explanation, inputs.get(0), save);
         if (connected) form.addView(
             activity.button("Disconnect", () ->
                 SidePanel.of(activity, "Disconnect " + service + "?")

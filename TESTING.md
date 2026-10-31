@@ -162,6 +162,11 @@ done
 Expected output: 17 playlist, 9 network, 110 episode/file, 13 channel-query, 18 programme-guide
 matching, 17 satellite numbering, 15 guide order, 11 film skip, 13 troubleshooting and 36 channel matching/category checks passed.
 
+`PhoneEntryTest` (core) runs the phone key page over local sockets: secret path, 404/403/405/400
+responses, 8 KB limit, invalid values kept on the phone, one trimmed value delivered, closing
+after use, after 20 tries, on expiry and when the screen is left. It does not show the QR code or
+test a real phone.
+
 ## Device tests
 
 `ChannelDatabaseTest.versionSevenWithoutMainUpgradesAndKeepsChannelsAndFavourites` reconstructs

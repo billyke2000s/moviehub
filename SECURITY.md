@@ -103,6 +103,23 @@ MovieHub stores provider accounts and installs its own updates, so these rules m
   about the viewer or their accounts. The "Internet" connection check asks the same host for
   nothing.
 
+## Entering a TMDB key from a phone
+
+Settings → Accounts → TMDB shows a QR code for pasting the API key on a phone (`PhoneEntry`,
+`PhoneKeyPanel`). While that screen is open the TV runs a small web page:
+
+- Bound only to the TV's private home-network IPv4 address (Wi-Fi or Ethernet), on a random port.
+  No address is offered when the TV has none, so it is never reachable on a public address.
+- Answers only a random 128-bit path carried in the QR code, and only clients with private or
+  link-local addresses. Other paths get 404; other clients get 403.
+- Requests are limited to 8 KB. The page closes after one accepted key, after 20 rejected tries,
+  after 5 minutes, or when the TV leaves that screen.
+- The key travels over the home network as plain HTTP. Anyone able to watch that network's
+  traffic during those minutes could read it, so this suits a private home network, not shared
+  Wi-Fi. Typing the key with the remote remains available.
+- A received key goes through the same check and encrypted storage as a typed key. Nothing is
+  sent to any server other than TMDB's usual key check.
+
 ## App updates
 
 - Updates come from the public `android-tv-latest` GitHub release. No token is sent to it.
