@@ -16,16 +16,19 @@ final class ExoLiveTracks {
 
     private ExoLiveTracks() {}
 
-    /** Audio tracks of the channel playing, as "Language · codec · channels". */
+    /** Audio tracks of the channel playing, in words: "English · Stereo · AAC" (see TrackNames). */
     static List<String> audioTracks() {
         List<String> names = new ArrayList<>();
-        for (Format format : formats(C.TRACK_TYPE_AUDIO)) {
-            String language = format.language == null ? "Unknown language" : format.language;
-            String codec =
-                format.sampleMimeType == null ? "" : " · " + format.sampleMimeType.replace("audio/", "");
-            String layout = format.channelCount > 0 ? " · " + format.channelCount + " ch" : "";
-            names.add(language + codec + layout);
-        }
+        for (Format format : formats(C.TRACK_TYPE_AUDIO))
+            names.add(
+                TrackNames.audio(
+                    names.size() + 1,
+                    format.language,
+                    format.label,
+                    format.channelCount,
+                    format.sampleMimeType
+                )
+            );
         return names;
     }
 
@@ -37,13 +40,11 @@ final class ExoLiveTracks {
         select(C.TRACK_TYPE_AUDIO, wanted);
     }
 
-    /** Subtitle tracks, as "Language" (with a label when the stream gives one). */
+    /** Subtitle tracks, as "English" (with the stream's label when it gives one). */
     static List<String> subtitleTracks() {
         List<String> names = new ArrayList<>();
-        for (Format format : formats(C.TRACK_TYPE_TEXT)) {
-            String language = format.language == null ? "Unknown language" : format.language;
-            names.add(format.label == null ? language : language + " · " + format.label);
-        }
+        for (Format format : formats(C.TRACK_TYPE_TEXT))
+            names.add(TrackNames.subtitle(names.size() + 1, format.language, format.label));
         return names;
     }
 
