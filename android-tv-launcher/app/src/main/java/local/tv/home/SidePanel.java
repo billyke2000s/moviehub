@@ -41,6 +41,8 @@ final class SidePanel {
     private String[] choiceNames;
     private int choiceSelected = -1;
     private IntConsumer choicePick;
+    /** Several choice lists on one panel, each under a small heading (see {@link #group}). */
+    private final List<Object[]> groups = new ArrayList<>();
     private Runnable dismissed;
     /** The last panel shown; tests read it. */
     static Dialog current;
@@ -76,6 +78,16 @@ final class SidePanel {
         choiceNames = names;
         choiceSelected = selected;
         choicePick = pick;
+        return this;
+    }
+
+    /**
+     * A choice list under a heading, beside other groups on the same panel (such as Audio and
+     * Subtitles together). The current choice is ticked; the first group's is focused. An empty
+     * {@code names} shows {@code empty} as a plain line instead.
+     */
+    SidePanel group(String heading, String[] names, int selected, String empty, IntConsumer pick) {
+        groups.add(new Object[] { heading, names, selected, empty, pick });
         return this;
     }
 
@@ -155,6 +167,36 @@ final class SidePanel {
             });
             list.addView(row, rowLayout());
             if (i == choiceSelected || (focus == null && i == 0)) focus = row;
+        }
+        for (Object[] group : groups) {
+            TextView label = new TextView(activity);
+            label.setText((String) group[0]);
+            label.setTextSize(15);
+            label.setTextColor(0xff8a9eff);
+            label.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+            label.setPadding(dp(4), dp(10), 0, dp(4));
+            list.addView(label);
+            String[] names = (String[]) group[1];
+            int selected = (Integer) group[2];
+            IntConsumer pick = (IntConsumer) group[4];
+            if (names.length == 0) {
+                TextView none = new TextView(activity);
+                none.setText((String) group[3]);
+                none.setTextSize(16);
+                none.setTextColor(0xffb4bfd2);
+                none.setPadding(dp(4), 0, 0, dp(6));
+                list.addView(none);
+                continue;
+            }
+            for (int i = 0; i < names.length; i++) {
+                int which = i;
+                View row = row(names[i], i == selected, () -> {
+                    after[0] = () -> pick.accept(which);
+                    dialog.dismiss();
+                });
+                list.addView(row, rowLayout());
+                if (focus == null && (i == selected || (selected < 0 && i == 0))) focus = row;
+            }
         }
         ScrollView scroll = new ScrollView(activity);
         scroll.setVerticalScrollBarEnabled(false);
