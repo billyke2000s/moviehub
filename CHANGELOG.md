@@ -1,5 +1,11 @@
 ## Unreleased
 
+- Phone layout: the same pages as the TV (Home, Movies, Series, My list, Continue watching,
+  Settings, Live TV guide and the players), held sideways and scaled to fit the phone's height.
+  Touch works throughout; the Live TV player keeps its touch buttons. Changing the layout in
+  Settings → System rebuilds the screen in the chosen layout. The portrait phone channel list is
+  no longer used.
+
 - Settings → Accounts lists every account, including Masqueradarr (moved from Free channels →
   Advanced). Back from an account screen returns to where it was opened (Home, a film list,
   Search), not always to Settings.
