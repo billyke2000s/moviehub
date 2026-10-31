@@ -32,29 +32,13 @@ final class SubtitleSettings {
                     )
                     .show()
         );
-        String[] backgrounds = { "Off", "On" };
-        TextView[] background = new TextView[1];
-        background[0] = settings.settingCard(
+        // On/off like every other switch in Settings.
+        settings.toggle(
             body,
             "Subtitle background",
             "A dark box behind subtitles, easier to read over bright pictures",
-            activity.prefs.getBoolean(SubtitleStyle.BACKGROUND, false) ? "On" : "Off",
-            false,
-            "Change",
-            () ->
-                SidePanel.of(activity, "Subtitle background")
-                    .choices(
-                        backgrounds,
-                        activity.prefs.getBoolean(SubtitleStyle.BACKGROUND, false) ? 1 : 0,
-                        which -> {
-                            activity.prefs
-                                .edit()
-                                .putBoolean(SubtitleStyle.BACKGROUND, which == 1)
-                                .apply();
-                            background[0].setText(backgrounds[which]);
-                        }
-                    )
-                    .show()
+            SubtitleStyle.BACKGROUND,
+            false
         );
     }
 }

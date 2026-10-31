@@ -113,7 +113,11 @@ final class PremiumizeLink {
     }
 
     /** Adds Premiumize's own sign-in to the "Use your phone" card (shown while not connected). */
-    static void add(MainActivity activity, LinearLayout parent) {
+    /** Reopens the account screen, keeping where its Back goes (set by {@link #add}). */
+    private static volatile Runnable reopen;
+
+    static void add(MainActivity activity, LinearLayout parent, Runnable reopenScreen) {
+        reopen = reopenScreen;
         TextView note = activity.compactText(
             "Sign in on premiumize.me from your phone or computer. No key to type.",
             13
@@ -211,7 +215,8 @@ final class PremiumizeLink {
                 return;
             }
             activity.toast("Premiumize connected");
-            activity.settingsScreens.accountScreen("Premiumize");
+            Runnable screen = reopen;
+            if (screen != null) screen.run();
         });
     }
 }
