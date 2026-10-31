@@ -91,16 +91,17 @@ public class PhoneModeTest {
         return null;
     }
 
-    /** The MainActivity on screen now (choosing the phone layout rebuilds the screen). */
-    MainActivity resumed() {
-        AtomicReference<MainActivity> found = new AtomicReference<>();
-        remote.runOnMainSync(() -> {
-            for (android.app.Activity each : ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(
-                Stage.RESUMED
-            ))
-                if (each instanceof MainActivity) found.set((MainActivity) each);
-        });
-        return found.get();
+    /**
+     * The MainActivity on screen now (choosing the phone layout rebuilds the screen). Call on the
+     * main thread, as {@link #await}'s checks are.
+     */
+    static MainActivity resumed() {
+        MainActivity found = null;
+        for (android.app.Activity each : ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(
+            Stage.RESUMED
+        ))
+            if (each instanceof MainActivity) found = (MainActivity) each;
+        return found;
     }
 
     static boolean shows(View view, String text) {
