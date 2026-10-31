@@ -161,7 +161,6 @@ final class LibraryScreens {
         activity.resumeRefresh = this::continueWatching;
         activity.page.addView(activity.muted("Select to resume · Hold Select for more", 13));
         LinearLayout controls = activity.horizontal(activity.page);
-        activity.chip(controls, "My list", this::watchlist);
         activity.chip(controls, "Clear history", () ->
             SidePanel.of(activity, "Clear viewing history?")
                 .message("This removes saved playback progress on this device. My List is kept.")
@@ -381,7 +380,7 @@ final class LibraryScreens {
         name.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
         copy.addView(name);
         card.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
-        card.addView(activity.rowText("▶  Resume   ⋯", 15, false, 1));
+        card.addView(activity.rowText("▶  Resume", 15, false, 1));
         activity.styleListRow(card, false);
         card.setOnClickListener(v -> resume.run());
         Runnable more = () -> {
@@ -496,7 +495,7 @@ final class LibraryScreens {
     }
 
     void savedLibrary(String kind) {
-        activity.screen("My " + kind, () -> library(kind));
+        activity.screen(kind + " links you added", () -> library(kind));
         LinearLayout tools = activity.horizontal(activity.page);
         activity.chip(tools, "Browse catalogue", () -> activity.catalogues.catalogueMenu(kind));
         activity.chip(tools, "Add source", () -> activity.settingsScreens.addSource(kind, "", ""));
