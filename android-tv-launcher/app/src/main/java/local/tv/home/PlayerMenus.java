@@ -1,7 +1,6 @@
 package local.tv.home;
 
 import android.os.SystemClock;
-import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 import org.videolan.libvlc.Media;
@@ -24,14 +23,49 @@ final class PlayerMenus {
         return a.player != null;
     }
 
-    /** One panel for both, as streaming apps do: pick which one to change. */
+    /** Audio and subtitles on one panel, as streaming apps do: both lists, the current ones ticked. */
     void audioAndSubtitles() {
+        if (!ready()) return;
+        MediaPlayer.TrackDescription[] audio = tracksOrNone(a.player.getAudioTracks());
+        MediaPlayer.TrackDescription[] subtitles = tracksOrNone(a.player.getSpuTracks());
         a.dialogOpen = true;
         SidePanel.of(a, "Audio & Subtitles")
-            .option("Audio", () -> tracks(false))
-            .option("Subtitles", () -> tracks(true))
+            .group(
+                "Audio",
+                names(audio, 1),
+                indexOf(audio, a.player.getAudioTrack()),
+                "No audio tracks reported yet",
+                which -> {
+                    if (ready()) a.player.setAudioTrack(audio[which].id);
+                }
+            )
+            .group(
+                "Subtitles",
+                names(subtitles, 2),
+                indexOf(subtitles, a.player.getSpuTrack()),
+                "This video has no subtitles",
+                which -> {
+                    if (ready()) a.player.setSpuTrack(subtitles[which].id);
+                }
+            )
             .onDismiss(a::panelClosed)
             .show();
+    }
+
+    private static MediaPlayer.TrackDescription[] tracksOrNone(MediaPlayer.TrackDescription[] tracks) {
+        return tracks == null ? new MediaPlayer.TrackDescription[0] : tracks;
+    }
+
+    private String[] names(MediaPlayer.TrackDescription[] tracks, int type) {
+        String[] names = new String[tracks.length];
+        for (int i = 0; i < names.length; i++) names[i] = trackName(tracks[i], type);
+        return names;
+    }
+
+    /** The menu position of the native track {@code id}, or -1. */
+    private static int indexOf(MediaPlayer.TrackDescription[] tracks, int id) {
+        for (int i = 0; i < tracks.length; i++) if (tracks[i].id == id) return i;
+        return -1;
     }
 
     void resolution() {
@@ -52,23 +86,6 @@ final class PlayerMenus {
             return;
         }
         chooseTracks(choices, a.player.getVideoTrack(), 0, "Video · " + size);
-    }
-
-    void tracks(boolean subtitles) {
-        if (!ready()) return;
-        MediaPlayer.TrackDescription[] choices = subtitles
-            ? a.player.getSpuTracks()
-            : a.player.getAudioTracks();
-        if (choices == null || choices.length == 0) {
-            Toast.makeText(a, "No tracks available", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        chooseTracks(
-            choices,
-            subtitles ? a.player.getSpuTrack() : a.player.getAudioTrack(),
-            subtitles ? 2 : 1,
-            subtitles ? "Subtitles" : "Audio"
-        );
     }
 
     void chooseTracks(MediaPlayer.TrackDescription[] choices, int current, int type, String title) {
@@ -182,26 +199,44 @@ final class PlayerMenus {
     }
 
     void subtitleTiming() {
+        subtitleTiming(0);
+    }
+
+    /** Stays open while adjusting (Back closes it), with the current offset in the title. */
+    private void subtitleTiming(int focus) {
         if (!ready()) return;
         long delay = a.player.getSpuDelay();
+        long ms = delay / 1000;
         options(
-            "Subtitle timing · " + delay / 1000 + " ms",
+            "Subtitle timing \u00b7 " +
+                (ms == 0
+                    ? "in sync"
+                    : String.format(java.util.Locale.ROOT, "%+d ms", ms) +
+                      (ms < 0 ? " (earlier)" : " (later)")),
             new String[] { "Earlier by 250 ms", "Later by 250 ms", "Reset timing" },
-            -1,
+            focus,
             which -> {
-                if (ready()) a.player.setSpuDelay(which == 2 ? 0 : delay + (which == 0 ? -250000 : 250000));
+                if (!ready()) return;
+                a.player.setSpuDelay(which == 2 ? 0 : delay + (which == 0 ? -250000 : 250000));
+                subtitleTiming(which);
             }
         );
     }
 
+    /** The sleep timer choice last made (0 = Off), so the list ticks it while it runs. */
+    private int sleepChoice;
+
     void chooseSleep() {
+        if (a.sleepAt == 0) sleepChoice = 0;
+        long left = a.sleepAt == 0 ? 0 : Math.max(1, (a.sleepAt - SystemClock.elapsedRealtime()) / 60000);
         options(
-            "Sleep timer",
+            a.sleepAt == 0 ? "Sleep timer" : "Sleep timer \u00b7 " + left + " min left",
             new String[] { "Off", "15 minutes", "30 minutes", "60 minutes", "90 minutes" },
-            a.sleepAt == 0 ? 0 : -1,
+            sleepChoice,
             which -> {
                 a.overlayHandler.removeCallbacks(a.sleep);
                 int[] minutes = { 0, 15, 30, 60, 90 };
+                sleepChoice = which;
                 a.sleepAt = which == 0 ? 0 : SystemClock.elapsedRealtime() + minutes[which] * 60000L;
                 if (a.sleepAt > 0) a.overlayHandler.postDelayed(a.sleep, minutes[which] * 60000L);
             }
@@ -218,10 +253,10 @@ final class PlayerMenus {
         // Picking a source by hand keeps later switches to that provider's links (VodPlayback.select),
         // so say so, and how to go back to switching between every source.
         names[0] = a.vod.automaticSources()
-            ? "Automatic · switch if a source fails"
+            ? "Automatic (recommended) \u00b7 switches if a source fails"
             : "Manual · only switches between this provider's links · choose to make it Automatic";
         for (int i = 0; i < entries.size(); i++) names[i + 1] =
-            (i == a.vod.activeIndex() ? "▶ " : "") + entries.get(i).label;
+            entries.get(i).label + (i == a.vod.activeIndex() ? " \u00b7 Playing" : "");
         options("Sources", names, a.vod.automaticSources() ? 0 : a.vod.activeIndex() + 1, which -> {
             if (a.vod == null) return;
             if (which > entries.size()) {
