@@ -637,6 +637,20 @@ final class SettingsScreens {
                 "Change",
                 () -> LayoutChooser.show(activity)
             );
+            boolean lockOn = ParentalLock.hasPin(activity);
+            settingCard(
+                body,
+                "Parental lock",
+                "A PIN for chosen Live TV channels and guide sections, or for all films and series",
+                !lockOn
+                    ? "Off"
+                    : ParentalLock.filmsLocked(activity)
+                      ? "On \u00b7 films and series locked"
+                      : "On",
+                lockOn,
+                "Manage",
+                () -> activity.liveTv.panels.parentalLock(this::settings)
+            );
             settingCard(
                 body,
                 SafetyNotice.TITLE,

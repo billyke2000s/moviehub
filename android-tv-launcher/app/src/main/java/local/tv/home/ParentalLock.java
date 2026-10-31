@@ -15,15 +15,21 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A satellite-box style parental lock for Live TV: a four-digit PIN, and locked channels and
- * guide sections that ask for it before they play. Only a hash of the PIN is stored. A forgotten
- * PIN is cleared by clearing the app's data.
+ * A satellite-box style parental lock: a four-digit PIN, and locked channels, guide sections and
+ * (optionally) all films and series, which ask for it before they play. Only a hash of the PIN is
+ * stored. A forgotten PIN is cleared by clearing the app's data.
  */
 final class ParentalLock {
 
     static final String PIN = "livePinHash",
         CHANNELS = "lockedChannels",
-        SECTIONS = "lockedSections";
+        SECTIONS = "lockedSections",
+        FILMS = "lockedFilmsSeries";
+
+    /** After the PIN is typed for a film or episode, more films and episodes play for this long. */
+    static final long FILMS_UNLOCK_MS = 3 * 60 * 60 * 1000L;
+
+    private static long filmsUnlockedUntil;
 
     private ParentalLock() {}
 
@@ -65,6 +71,41 @@ final class ParentalLock {
         toggle(activity, SECTIONS, section, lock);
     }
 
+    /** Whether films and series need the PIN (only while a PIN is set). */
+    static boolean filmsLocked(Context activity) {
+        return hasPin(activity) && prefs(activity).getBoolean(FILMS, false);
+    }
+
+    static void setFilmsLocked(Context activity, boolean lock) {
+        prefs(activity).edit().putBoolean(FILMS, lock).apply();
+        if (!lock) filmsUnlockedUntil = 0;
+    }
+
+    /** True when a film or episode must ask for the PIN before it plays now. */
+    static boolean filmsNeedPin(Context activity) {
+        return filmsLocked(activity) && android.os.SystemClock.elapsedRealtime() >= filmsUnlockedUntil;
+    }
+
+    /**
+     * Asks for the PIN before a film or episode; the right PIN plays it and leaves films and series
+     * unlocked for {@link #FILMS_UNLOCK_MS}, so the next episode does not ask again.
+     */
+    static void checkFilms(Activity activity, Runnable play) {
+        if (!filmsNeedPin(activity)) {
+            play.run();
+            return;
+        }
+        check(
+            activity,
+            "Films and series",
+            () -> {
+                filmsUnlockedUntil = android.os.SystemClock.elapsedRealtime() + FILMS_UNLOCK_MS;
+                play.run();
+            },
+            null
+        );
+    }
+
     private static void toggle(Context activity, String pref, String value, boolean on) {
         Set<String> values = new HashSet<>(prefs(activity).getStringSet(pref, Collections.emptySet()));
         if (on) values.add(value);
@@ -91,9 +132,10 @@ final class ParentalLock {
         prefs(activity).edit().putString(PIN, hash(pin)).apply();
     }
 
-    /** Turns the lock off: forgets the PIN and every locked channel and section. */
+    /** Turns the lock off: forgets the PIN, every locked channel and section, and the films lock. */
     static void clear(Context activity) {
-        prefs(activity).edit().remove(PIN).remove(CHANNELS).remove(SECTIONS).apply();
+        prefs(activity).edit().remove(PIN).remove(CHANNELS).remove(SECTIONS).remove(FILMS).apply();
+        filmsUnlockedUntil = 0;
     }
 
     static boolean matches(Context activity, String pin) {
@@ -196,7 +238,7 @@ final class ParentalLock {
         ask(
             activity,
             "Choose a PIN",
-            "Choose four digits. You will need them to watch locked channels and to change the lock.",
+            "Choose four digits. You will need them to watch anything locked and to change the lock.",
             first -> {
                 if (!valid(first)) {
                     Toast.makeText(activity, "The PIN must be four digits", Toast.LENGTH_SHORT).show();
