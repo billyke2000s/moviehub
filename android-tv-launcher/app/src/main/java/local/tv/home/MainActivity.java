@@ -622,6 +622,10 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
         JSONObject metadata,
         VodSources.Session sources
     ) {
+        if (!live && ParentalLock.filmsNeedPin(this)) {
+            ParentalLock.checkFilms(this, () -> play(title, url, id, false, metadata, sources));
+            return;
+        }
         final String safe;
         try {
             safe = Playlist.networkUrl(url, http());

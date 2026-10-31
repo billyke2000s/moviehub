@@ -273,7 +273,7 @@ final class PhoneLive {
     private void menu() {
         SidePanel.of(activity, "Live TV")
             .option("Reminders", tv.panels::reminders)
-            .option("Parental lock", tv.panels::parentalLock)
+            .option("Parental lock", () -> tv.panels.parentalLock(this::reload))
             .option("Refresh channels", () -> {
                 ChannelSync.refreshNow(activity);
                 reload();

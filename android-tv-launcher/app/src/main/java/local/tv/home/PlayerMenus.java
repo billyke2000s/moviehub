@@ -41,13 +41,14 @@ final class PlayerMenus {
         MediaPlayer.TrackDescription[] choices = a.player.getVideoTracks();
         if (choices == null || choices.length < 2) {
             a.dialogOpen = true;
-            SidePanel.of(a, "Video · " + size)
-                .message(
-                    "This source has one picture quality. Choose a different source for another resolution."
-                )
-                .action("Close", null)
-                .onDismiss(a::panelClosed)
-                .show();
+            SidePanel panel = SidePanel.of(a, "Video · " + size).message(
+                "This source has one picture quality. Choose a different source for another resolution."
+            );
+            if (a.vod != null && a.vod.hasChoices()) panel.action(
+                "Choose another source",
+                this::chooseVodSource
+            );
+            panel.action("Close", null).onDismiss(a::panelClosed).show();
             return;
         }
         chooseTracks(choices, a.player.getVideoTrack(), 0, "Video · " + size);
@@ -214,15 +215,22 @@ final class PlayerMenus {
         String report = a.vod.providerReport();
         String[] names = new String[entries.size() + (report.isEmpty() ? 1 : 2)];
         if (!report.isEmpty()) names[names.length - 1] = "Provider search details";
-        names[0] = "Automatic · switch if a source fails";
+        // Picking a source by hand keeps later switches to that provider's links (VodPlayback.select),
+        // so say so, and how to go back to switching between every source.
+        names[0] = a.vod.automaticSources()
+            ? "Automatic · switch if a source fails"
+            : "Manual · only switches between this provider's links · choose to make it Automatic";
         for (int i = 0; i < entries.size(); i++) names[i + 1] =
             (i == a.vod.activeIndex() ? "▶ " : "") + entries.get(i).label;
         options("Sources", names, a.vod.automaticSources() ? 0 : a.vod.activeIndex() + 1, which -> {
             if (a.vod == null) return;
-            if (which > entries.size()) SidePanel.of(a, "Provider search details")
-                .message(a.vod.providerReport())
-                .show();
-            else if (which == 0) a.vod.automatic();
+            if (which > entries.size()) {
+                a.dialogOpen = true;
+                SidePanel.of(a, "Provider search details")
+                    .message(a.vod.providerReport())
+                    .onDismiss(a::panelClosed)
+                    .show();
+            } else if (which == 0) a.vod.automatic();
             else a.vod.select(which - 1);
         });
     }

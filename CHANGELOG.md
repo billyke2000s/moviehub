@@ -1,5 +1,17 @@
 ## Unreleased
 
+- Films and series switch to another source when the picture freezes for 12 seconds without the
+  player reporting buffering or an error. A failure that happens while a menu is open is handled
+  when the menu closes instead of being ignored.
+- "Can't play this" and the one-quality Video panel offer "Choose another source"; "Back to
+  sources" is now "Close player", which is what it did. Choosing Automatic after a failure moves on.
+- The Sources menu says when it is on manual (only that provider's links are tried) and how to go
+  back to Automatic. Up next and Provider search details close like the other player panels.
+- Live TV: Options → "Source: …" opens the source list instead of a status message.
+- Parental lock can lock all films and series (one PIN, then three hours unlocked so episodes
+  continue). The lock is also in Settings → System, its help no longer suggests that locking the
+  Movies guide section locks the films library, and its phone menu no longer draws the TV guide.
+
 ## 1.0.19 (29 October 2026)
 
 - Add 36 enabled CineStream adapter protocols for additional film and series sites and playback
