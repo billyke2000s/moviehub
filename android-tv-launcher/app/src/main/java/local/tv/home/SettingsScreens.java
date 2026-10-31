@@ -372,8 +372,10 @@ final class SettingsScreens {
                 });
             });
         });
-        // TMDB keys are long: offer pasting it on a phone instead of typing it with the remote.
-        if (service.equals("TMDB")) PhoneKeyPanel.add(activity, explanation, inputs.get(0), save);
+        // Long keys, links and passwords: offer typing them on a phone instead of with the remote.
+        if (service.equals("Premiumize")) {
+            if (!connected) PremiumizeLink.add(activity, explanation);
+        } else PhoneKeyPanel.add(activity, explanation, service, inputs, save);
         if (connected) form.addView(
             activity.button("Disconnect", () ->
                 SidePanel.of(activity, "Disconnect " + service + "?")

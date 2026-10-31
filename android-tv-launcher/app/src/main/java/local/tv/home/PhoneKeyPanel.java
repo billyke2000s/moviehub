@@ -15,33 +15,100 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * Settings → Accounts → TMDB: a QR code that opens a page on a phone (same Wi-Fi) where the API
- * key can be pasted instead of typed with the remote ({@link PhoneEntry}). The key lands in the
- * screen's own field and goes through the same Connect check as a typed key.
+ * Settings → Accounts: a QR code that opens a page on a phone (same Wi-Fi) for typing the account
+ * details there instead of with the remote ({@link PhoneEntry}). TMDB, Xtream, M3U playlist and
+ * Masqueradarr use it; Premiumize has its own sign-in ({@link PremiumizeLink}). What arrives fills
+ * the screen's own boxes and goes through the same Connect check as typed details.
  */
 final class PhoneKeyPanel {
 
     private PhoneKeyPanel() {}
 
     static final PhoneEntry.Page TMDB = new PhoneEntry.Page(
-        "MovieHub · TMDB API key",
-        "Paste your TMDB API Key (v3 auth)",
+        "MovieHub \u00b7 TMDB API key",
+        new String[] { "Paste your TMDB API Key (v3 auth)" },
+        new boolean[] { false },
         "Open your TMDB API settings to copy the key",
         "https://www.themoviedb.org/settings/api",
+        "",
         "That is not a TMDB API Key (v3 auth). It has 32 letters and numbers."
     );
 
+    static final PhoneEntry.Page XTREAM = new PhoneEntry.Page(
+        "MovieHub \u00b7 Xtream login",
+        new String[] { "Server address", "Username", "Password" },
+        new boolean[] { false, false, true },
+        "",
+        "",
+        "Use the details from your TV provider. The server address starts with http:// or https:// " +
+            "and may end with a port, such as :8080.",
+        "Fill in all three. The server address must start with http:// or https://."
+    );
+
+    static PhoneEntry.Page playlist(String service) {
+        return new PhoneEntry.Page(
+            "MovieHub \u00b7 " + service,
+            new String[] { "Playlist link" },
+            new boolean[] { false },
+            "",
+            "",
+            "Paste the full link, starting with http:// or https://.",
+            "That is not a link. It must start with http:// or https://."
+        );
+    }
+
+    /** The phone page for an account screen, or null when that account signs in another way. */
+    static PhoneEntry.Page page(String service) {
+        switch (service) {
+            case "TMDB":
+                return TMDB;
+            case "Xtream":
+                return XTREAM;
+            case "M3U playlist":
+            case "Masqueradarr":
+                return playlist(service);
+            default:
+                return null;
+        }
+    }
+
+    /** What each page accepts: the same rules the TV form applies, so a bad value stays on the phone. */
+    static boolean valid(String service, String[] values) {
+        for (String value : values)
+            if (value == null || value.isEmpty() || value.length() > 2048) return false;
+        switch (service) {
+            case "TMDB":
+                return values[0].matches("[0-9a-fA-F]{32}");
+            case "Xtream":
+                return link(values[0]) && values[1].length() <= 256 && values[2].length() <= 256;
+            default:
+                return link(values[0]);
+        }
+    }
+
+    private static boolean link(String value) {
+        String lower = value.toLowerCase(java.util.Locale.ROOT);
+        return (lower.startsWith("http://") || lower.startsWith("https://")) && !value.contains(" ");
+    }
+
     /**
-     * Adds the QR code to {@code parent}. A key sent from the phone fills {@code field}, then
-     * presses {@code connect}, so it is checked exactly like a typed key.
+     * Adds the QR code to {@code parent}. Details sent from the phone fill {@code inputs} in order,
+     * then press {@code connect}, so they are checked exactly like typed details.
      */
-    static void add(MainActivity activity, LinearLayout parent, EditText field, Button connect) {
-        TextView heading = activity.text("Or use your phone", 18);
-        parent.addView(heading);
-        TextView note = activity.compactText("Starting…", 13);
+    static void add(
+        MainActivity activity,
+        LinearLayout parent,
+        String service,
+        java.util.List<EditText> inputs,
+        Button connect
+    ) {
+        PhoneEntry.Page page = page(service);
+        if (page == null || page.labels.length != inputs.size()) return;
+        parent.addView(activity.text("Or use your phone", 18));
+        TextView note = activity.compactText("Starting\u2026", 13);
         note.setTextColor(0xffaab4c4);
         ImageView picture = new ImageView(activity);
-        picture.setContentDescription("QR code for entering the key on a phone");
+        picture.setContentDescription("QR code for typing these details on a phone");
         int request = activity.generation;
         activity.async(
             () -> {
@@ -49,7 +116,7 @@ final class PhoneKeyPanel {
                 if (address == null) return null;
                 // A failure here must not replace the account screen with an error page.
                 try {
-                    return start(activity, address, field, connect, request);
+                    return start(activity, address, service, page, inputs, connect, request);
                 } catch (Exception e) {
                     Diagnostics.recovered("Starting phone entry", e);
                     return null;
@@ -59,14 +126,14 @@ final class PhoneKeyPanel {
                 if (entry == null) {
                     note.setText(
                         "Phone entry needs the TV on Wi-Fi or Ethernet, and could not start. " +
-                            "Type the key instead."
+                            "Type the details instead."
                     );
                     return;
                 }
                 Bitmap code = qr(entry.url(), activity.dp(200));
                 if (code != null) picture.setImageBitmap(code);
                 note.setText(
-                    "Scan with a phone on the same Wi-Fi, paste your key and press Send. " +
+                    "Scan with a phone on the same Wi-Fi, fill in the page and press Send. " +
                         "Works for 5 minutes while this screen is open."
                 );
             }
@@ -81,21 +148,23 @@ final class PhoneKeyPanel {
     private static PhoneEntry start(
         MainActivity activity,
         InetAddress address,
-        EditText field,
+        String service,
+        PhoneEntry.Page page,
+        java.util.List<EditText> inputs,
         Button connect,
         int request
     ) throws java.io.IOException {
         return new PhoneEntry(
             address,
-            TMDB,
-            value -> value.matches("[0-9a-fA-F]{32}"),
-            value ->
+            page,
+            values -> valid(service, values),
+            values ->
                 activity.runOnUiThread(() -> {
                     if (
                         activity.isFinishing() || activity.isDestroyed() || activity.generation != request
                     ) return;
-                    field.setText(value);
-                    activity.toast("Key received from your phone");
+                    for (int i = 0; i < values.length; i++) inputs.get(i).setText(values[i]);
+                    activity.toast("Details received from your phone");
                     connect.performClick();
                 }),
             () -> !activity.isDestroyed() && activity.generation == request,
