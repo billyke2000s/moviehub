@@ -123,13 +123,27 @@ public final class PhoneEntryTest {
         check(path.matches("/[0-9a-f]{32}"), "128-bit secret path");
 
         // Only the secret path answers.
+        // The short address asks for the TV's 6-digit code before showing the page.
+        check(entry.code().matches("[0-9]{6}"), "6-digit code");
+        check(uri.getAuthority().equals(entry.address()), "short address is host and port");
         String response = get(uri, "/");
-        check(response != null && response.startsWith("HTTP/1.1 404"), "root is 404");
+        check(response != null && response.startsWith("HTTP/1.1 200"), "code page");
+        check(response.contains("name=\"code\"") && !response.contains(path), "code page hides the path");
+        String wrong = entry.code().equals("000000") ? "111111" : "000000";
+        response = post(uri, "/", "code=" + wrong);
+        check(response.contains("That code is not right") && !response.contains(path), "wrong code refused");
+        String spaced = entry.code().substring(0, 3) + "+" + entry.code().substring(3);
+        response = post(uri, "/", "code=" + spaced);
+        check(response.contains("action=\"" + path + "\""), "right code (with a space) opens the page");
+        response = send(uri, "PUT / HTTP/1.1\r\n\r\n");
+        check(response.startsWith("HTTP/1.1 405"), "PUT on the short address refused");
+        response = get(uri, "/other");
+        check(response.startsWith("HTTP/1.1 404"), "other path is 404");
         response = get(uri, "/" + "0".repeat(32));
         check(response.startsWith("HTTP/1.1 404"), "wrong token is 404");
         response = get(uri, path + "?x=1");
         check(response.startsWith("HTTP/1.1 200"), "form page");
-        check(response.contains("<form method=\"post\">"), "has a form");
+        check(response.contains("<form method=\"post\" action=\"" + path + "\">"), "form posts to the path");
         check(response.contains("https://www.themoviedb.org/settings/api"), "help link");
         check(response.contains("MovieHub &lt;test&gt;"), "title escaped");
         check(response.contains("Cache-Control: no-store"), "not cached");
@@ -196,6 +210,17 @@ public final class PhoneEntryTest {
         check(response.contains("Too many tries"), "try limit message");
         waitClosed(guesses, 3000);
         check(guesses.closed() && calls.get() == 0, "closed at the try limit");
+
+        // Guessing the short code is limited too, and shares the same try count.
+        PhoneEntry codes = start(got, calls, wanted, 60_000, true);
+        URI codeUri = URI.create(codes.url());
+        String notIt = codes.code().equals("000000") ? "111111" : "000000";
+        for (int i = 1; i < PhoneEntry.MAX_POSTS; i++) post(codeUri, "/", "code=" + notIt);
+        check(!codes.closed(), "open below the code try limit");
+        response = post(codeUri, "/", "code=" + notIt);
+        check(response.contains("Too many tries"), "code try limit");
+        waitClosed(codes, 3000);
+        check(codes.closed(), "closed after too many codes");
 
         // Several boxes: all required, passwords hidden and kept exactly as typed.
         AtomicReference<String[]> login = new AtomicReference<>();

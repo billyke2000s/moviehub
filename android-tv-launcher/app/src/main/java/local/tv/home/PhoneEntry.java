@@ -26,7 +26,8 @@ import java.util.function.Predicate;
  *
  * <ul>
  *   <li>Listens only on the TV's own home-network address, on a random port.
- *   <li>Answers only the secret path in the QR code, and only devices on the local network.
+ *   <li>Answers the secret path in the QR code, or the plain address after the 6-digit code shown
+ *       on the TV, and only devices on the local network.
  *   <li>Closes after one accepted set of values, after {@code lifetimeMs}, after 20 tries, or when the screen
  *       that opened it no longer wants it.
  * </ul>
@@ -67,7 +68,7 @@ final class PhoneEntry implements Closeable {
     }
 
     private final ServerSocket server;
-    private final String token;
+    private final String token, code;
     private final Page page;
     private final Predicate<String[]> valid;
     private final Consumer<String[]> received;
@@ -97,6 +98,7 @@ final class PhoneEntry implements Closeable {
         StringBuilder hex = new StringBuilder();
         for (byte b : bytes) hex.append(String.format(Locale.ROOT, "%02x", b));
         token = hex.toString();
+        code = String.format(Locale.ROOT, "%06d", new SecureRandom().nextInt(1_000_000));
         this.page = page;
         this.valid = valid;
         this.received = received;
@@ -110,8 +112,17 @@ final class PhoneEntry implements Closeable {
 
     /** The address to put in the QR code. */
     String url() {
-        String host = server.getInetAddress().getHostAddress();
-        return "http://" + host + ":" + server.getLocalPort() + "/" + token;
+        return "http://" + address() + "/" + token;
+    }
+
+    /** The short address to type instead of scanning, such as 192.168.1.50:41234. */
+    String address() {
+        return server.getInetAddress().getHostAddress() + ":" + server.getLocalPort();
+    }
+
+    /** The 6-digit code that opens the page from the short address. */
+    String code() {
+        return code;
     }
 
     boolean closed() {
@@ -184,6 +195,10 @@ final class PhoneEntry implements Closeable {
             respond(out, 400, "Bad request");
             return;
         }
+        if (request.path.equals("/")) {
+            unlock(out, request);
+            return;
+        }
         if (!request.path.equals("/" + token)) {
             respond(out, 404, "Not found");
             return;
@@ -216,6 +231,41 @@ final class PhoneEntry implements Closeable {
         respond(out, 200, done("Sent to your TV. You can close this page."));
         close();
         received.accept(values);
+    }
+
+    /** The short address: asks for the TV's code, then shows the same page as the QR code. */
+    private void unlock(OutputStream out, Request request) throws IOException {
+        if (request.method.equals("GET")) {
+            respond(out, 200, codePage(""));
+            return;
+        }
+        if (!request.method.equals("POST")) {
+            respond(out, 405, "Method not allowed");
+            return;
+        }
+        String typed = field(request.body, "code");
+        if (typed != null && typed.replaceAll("[\\s-]", "").equals(code)) {
+            respond(out, 200, form(""));
+            return;
+        }
+        if (++posts >= MAX_POSTS) {
+            respond(out, 200, done("Too many tries. Open this screen again on the TV."));
+            close();
+            return;
+        }
+        respond(out, 200, codePage("That code is not right. Check the number on the TV."));
+    }
+
+    private String codePage(String error) {
+        return shell(
+            "<h1>" +
+                escape(page.title) +
+                "</h1><p>Enter the 6-digit code shown on the TV.</p>" +
+                (error.isEmpty() ? "" : "<p class=\"error\">" + escape(error) + "</p>") +
+                "<form method=\"post\" action=\"/\"><label>Code<input name=\"code\" inputmode=\"numeric\" " +
+                "autocomplete=\"one-time-code\" maxlength=\"7\"></label>" +
+                "<button type=\"submit\">Continue</button></form>"
+        );
     }
 
     /** One value from an application/x-www-form-urlencoded body, as typed; null when absent. */
@@ -283,7 +333,9 @@ final class PhoneEntry implements Closeable {
                       "</a></p>") +
                 (page.note.isEmpty() ? "" : "<p>" + escape(page.note) + "</p>") +
                 (error.isEmpty() ? "" : "<p class=\"error\">" + escape(error) + "</p>") +
-                "<form method=\"post\">" +
+                "<form method=\"post\" action=\"/" +
+                token +
+                "\">" +
                 boxes +
                 "<button type=\"submit\">Send to TV</button></form>"
         );
