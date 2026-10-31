@@ -273,6 +273,14 @@ Historical checkpoint: 25 October 2026 (1.0 promoted the experimental line into 
     films-and-series lock asks for the PIN in `MainActivity.play`, after sources are found; a
     cancelled PIN leaves the screen that started playback as it was. [Unverified] on the TV box.
 
+16. **Account details from a phone (31 October 2026, unreleased).** TMDB, Xtream, M3U and
+    Masqueradarr show a QR code, or a short address and 6-digit code to type, for a one-use page
+    served by the TV on the home network (`PhoneEntry`); Premiumize uses its own device sign-in
+    (`PremiumizeLink`). Core tests run the phone page over local sockets. The Premiumize sign-in has no automated test and has not been
+    run against Premiumize. [Unverified] on a phone, the TV box, or routers that isolate Wi-Fi
+    clients from each other (the phone page cannot work there). [Unverified] whether Premiumize
+    login tokens expire; if they do, the account will need signing in again.
+
 ## Decisions
 
 - Version 7 → 8 channel upgrades must add `main` before renumbering the preferred copies.

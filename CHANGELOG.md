@@ -1,5 +1,12 @@
 ## Unreleased
 
+- Account screens now show two choices side by side: "Use your phone" and "Type it here".
+- TMDB, Xtream, M3U playlist and Masqueradarr: scan the QR code, or open the short address shown
+  in a phone browser and enter the 6-digit code. Type or paste the details there and press Send;
+  the TV checks and saves them as if typed. Each user still uses their own TMDB key. The page
+  works for 5 minutes, once, and only while that screen is open.
+- Premiumize: "Show sign-in code" uses Premiumize's own sign-in. Scan the QR code (or visit
+  premiumize.me/device), enter the short code, approve, and the TV connects with no key typed.
 - Player menus: Audio & Subtitles shows both lists on one panel with the current choices ticked,
   in Live TV and in films and series. Live TV track names are in words ("English · Stereo · AAC"
   instead of "eng · mp4a-latm · 2 ch"); film track names are unchanged.
