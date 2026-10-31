@@ -1,5 +1,26 @@
 ## Unreleased
 
+- Settings → Accounts lists every account, including Masqueradarr (moved from Free channels →
+  Advanced). Back from an account screen returns to where it was opened (Home, a film list,
+  Search), not always to Settings.
+- Settings → Playback is grouped into Films and series, Audio and subtitles, and Connections.
+  "Allow http:// links" is a card there and says it applies to the whole app; the account forms
+  keep the same switch, labelled the same way. Subtitle background is an on/off switch like the
+  others.
+- Live TV now follows the Audio track and Subtitles languages in Settings → Playback, as films
+  and series already did. "Off" leaves subtitles as the channel sets them.
+- Settings → System: Automatic updates says what Off does; Safety notice and Metadata are under
+  About. Green status text means on or connected only.
+- Free channels: turning services on and off refreshes the channel list once, a few seconds after
+  the last change. Service updates shows no actions when updates are not set up.
+- Live TV guide: "Next day" moves one day (it moved the whole week); Options lists Search, the day
+  choices that apply, Reminders, Parental lock, Picture in the guide, coloured buttons and Refresh
+  (All channels, Favourites and Guide menu are in the guide menu). Favourites and Options are on
+  the guide menu's first page. Cancelling a reminder asks first.
+- Movies and Series → Library: "Links you added" (was "My library"); Premiumize entries appear only
+  with a Premiumize account. Continue watching cards read "▶ Resume" and the extra My list button
+  is gone.
+
 - Account screens now show two choices side by side: "Use your phone" and "Type it here".
 - TMDB, Xtream, M3U playlist and Masqueradarr: scan the QR code, or open the short address shown
   in a phone browser and enter the 6-digit code. Type or paste the details there and press Send;

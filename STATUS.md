@@ -281,6 +281,12 @@ Historical checkpoint: 25 October 2026 (1.0 promoted the experimental line into 
     clients from each other (the phone page cannot work there). [Unverified] whether Premiumize
     login tokens expire; if they do, the account will need signing in again.
 
+17. **Menu clean-up (31 October 2026, unreleased).** Settings grouping, account Back, one channel
+    refresh after Free channels changes, guide Options and day steps, Library and Continue
+    watching labels. Live TV applies the Settings languages when each channel opens and clears the
+    previous channel's manual track choice. Emulator CI only; [Unverified] on the TV box and on
+    real channels with several audio or subtitle languages.
+
 ## Decisions
 
 - Version 7 → 8 channel upgrades must add `main` before renumbering the preferred copies.
