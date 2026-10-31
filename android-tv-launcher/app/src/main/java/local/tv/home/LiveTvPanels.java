@@ -85,13 +85,16 @@ final class LiveTvPanels {
     /** Everything the colour keys do, for remotes without colour keys, and the guide's settings. */
     void options() {
         boolean picture = activity.prefs.getBoolean(LiveTvScreen.PICTURE, true);
-        SidePanel.of(activity, "Live TV")
-            .option("All channels", () -> guide.show("all", ""))
-            .option("Favourites", () -> guide.show("favourites", ""))
-            .option("Guide menu", guide.menu::show)
-            .option("Tomorrow (+24 hours)", () -> guide.nextDay(guide.focusedRow()))
-            .option("Back to today", () -> guide.previousDay(guide.focusedRow()))
-            .option("Search", this::searchPanel)
+        // Lists and sections are in the guide menu and on the colour keys; this panel only holds
+        // what has no other home. A day choice is shown only when it would change something.
+        SidePanel panel = SidePanel.of(activity, "Live TV").option("Search", this::searchPanel);
+        if (guide.windowOffset < LiveTvScreen.MAX_OFFSET) panel.option("Next day (+24 hours)", () ->
+            guide.nextDay(guide.focusedRow())
+        );
+        if (guide.windowOffset > 0) panel.option("Previous day (\u221224 hours)", () ->
+            guide.previousDay(guide.focusedRow())
+        );
+        panel
             .option("Reminders", this::reminders)
             .option("Parental lock", this::parentalLock)
             .option(picture ? "Picture in the guide · On" : "Picture in the guide · Off", () -> {
@@ -227,30 +230,38 @@ final class LiveTvPanels {
                 "  ·  " +
                 item.channel;
         }
-        SidePanel.of(activity, "Reminders · choose one to cancel it")
+        SidePanel.of(activity, "Reminders")
             .choices(names, -1, which -> {
                 Reminders.Reminder item = all.get(which);
-                ChannelDatabase.Row row = new ChannelDatabase.Row(
-                    0,
-                    item.channel,
-                    "",
-                    "",
-                    item.key,
-                    "",
-                    "",
-                    item.number,
-                    ""
-                );
-                Reminders.set(
-                    activity,
-                    row,
-                    new ChannelDatabase.Programme(item.start, item.start, item.title, "", ""),
-                    false
-                );
-                activity.toast("Reminder cancelled");
-                guide.guide(guide.pageStart, 0);
+                SidePanel.of(activity, item.title)
+                    .message(names[which])
+                    .action("Cancel reminder", () -> cancelReminder(item))
+                    .action("Keep it", null)
+                    .show();
             })
             .show();
+    }
+
+    private void cancelReminder(Reminders.Reminder item) {
+        ChannelDatabase.Row row = new ChannelDatabase.Row(
+            0,
+            item.channel,
+            "",
+            "",
+            item.key,
+            "",
+            "",
+            item.number,
+            ""
+        );
+        Reminders.set(
+            activity,
+            row,
+            new ChannelDatabase.Programme(item.start, item.start, item.title, "", ""),
+            false
+        );
+        activity.toast("Reminder cancelled");
+        guide.guide(guide.pageStart, 0);
     }
 
     // ---- Parental lock ------------------------------------------------------------------------
@@ -279,7 +290,8 @@ final class LiveTvPanels {
         if (!ParentalLock.hasPin(activity)) {
             SidePanel.of(activity, "Parental lock")
                 .message(
-                    "Lock Live TV channels, whole guide sections (such as Sports), or all films and series, " +
+                    "Lock Live TV channels, whole guide sections (such as Sports), " +
+                        "or all films and series, " +
                         "so they need a four-digit PIN to watch. " +
                         "Lock one channel from its programme information (\u25b6 in the guide)."
                 )

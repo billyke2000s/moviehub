@@ -266,11 +266,11 @@ public class LiveGuideTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_INFO);
         await("programme information", () -> SidePanel.current != null && SidePanel.current.isShowing());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
-        // Options → Tomorrow: the same time tomorrow; Back to today returns.
+        // Options → Next day: the same time tomorrow (one day, not the whole week); Previous day returns.
         remote.runOnMainSync(() -> activity.liveTv.nextDay(2));
         await(
             "tomorrow",
-            () -> activity.liveTv.windowOffset == LiveTvScreen.MAX_OFFSET && activity.liveTv.cells.size() == 5
+            () -> activity.liveTv.windowOffset == LiveTvScreen.DAY && activity.liveTv.cells.size() == 5
         );
         UiEvidence.capture("live-guide-tomorrow");
         remote.runOnMainSync(() -> activity.liveTv.previousDay(2));
@@ -413,18 +413,21 @@ public class LiveGuideTest {
     }
 
     @Test
-    public void theGuideMenuFollowsTheSatelliteBoxOrderOverTwoPages() {
+    public void theGuideMenuKeepsSectionsInBoxOrderWithFavouritesAndOptionsFirst() {
         remote.runOnMainSync(() -> activity.liveTv.start());
         await("menu", () -> activity.liveTv.menu.rows.size() == 10);
         String[][] first = GuideMenu.pageItems(0),
             second = GuideMenu.pageItems(1);
+        // Favourites and Options are on the first page; the sections keep the box's order.
         assertEquals("All Channels", first[0][0]);
-        assertEquals("Entertainment", first[1][0]);
-        assertEquals("Music", first[7][0]);
-        assertEquals("Radio", first[8][0]);
+        assertEquals("Favourites", first[1][0]);
+        assertEquals("Entertainment", first[2][0]);
+        assertEquals("Kids", first[7][0]);
+        assertEquals("Options", first[8][0]);
         assertEquals("More…", first[9][0]);
-        assertEquals("Favourites", second[0][0]);
-        assertEquals("Options", second[second.length - 1][0]);
+        assertEquals("Music", second[0][0]);
+        assertEquals("Radio", second[1][0]);
+        assertEquals("Channel groups from your lists", second[second.length - 1][0]);
         // 0 is More…; BACK goes up a page.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_0);
         await("second page", () -> activity.liveTv.menu.page == 1 && activity.liveTv.menu.rows.size() == 6);
