@@ -21,13 +21,13 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * A one-use page on the home network for typing one value (such as a TMDB API key) on a phone
- * instead of with the remote. The TV shows its address as a QR code.
+ * A one-use page on the home network for typing account details (a TMDB key, a playlist link, an
+ * Xtream login) on a phone instead of with the remote. The TV shows its address as a QR code.
  *
  * <ul>
  *   <li>Listens only on the TV's own home-network address, on a random port.
  *   <li>Answers only the secret path in the QR code, and only devices on the local network.
- *   <li>Closes after one accepted value, after {@code lifetimeMs}, after 20 tries, or when the screen
+ *   <li>Closes after one accepted set of values, after {@code lifetimeMs}, after 20 tries, or when the screen
  *       that opened it no longer wants it.
  * </ul>
  *
@@ -39,16 +39,29 @@ final class PhoneEntry implements Closeable {
     static final int MAX_REQUEST = 8 * 1024,
         MAX_POSTS = 20;
 
-    /** What the phone page shows. */
+    /** What the phone page shows: one box per label, in order. */
     static final class Page {
 
-        final String title, label, helpText, helpUrl, invalid;
+        final String title, helpText, helpUrl, note, invalid;
+        final String[] labels;
+        /** Password boxes: hidden while typed and never trimmed (spaces can be part of them). */
+        final boolean[] secret;
 
-        Page(String title, String label, String helpText, String helpUrl, String invalid) {
+        Page(
+            String title,
+            String[] labels,
+            boolean[] secret,
+            String helpText,
+            String helpUrl,
+            String note,
+            String invalid
+        ) {
             this.title = title;
-            this.label = label;
+            this.labels = labels;
+            this.secret = secret;
             this.helpText = helpText;
             this.helpUrl = helpUrl;
+            this.note = note;
             this.invalid = invalid;
         }
     }
@@ -56,8 +69,8 @@ final class PhoneEntry implements Closeable {
     private final ServerSocket server;
     private final String token;
     private final Page page;
-    private final Predicate<String> valid;
-    private final Consumer<String> received;
+    private final Predicate<String[]> valid;
+    private final Consumer<String[]> received;
     private final BooleanSupplier wanted;
     private final boolean allowLoopback;
     private final long deadline;
@@ -65,14 +78,14 @@ final class PhoneEntry implements Closeable {
     private int posts;
 
     /**
-     * Starts listening on {@code address}. {@code valid} checks the typed value; {@code received}
-     * gets it once (on this server's thread). {@code allowLoopback} is for tests only.
+     * Starts listening on {@code address}. {@code valid} checks the typed values (one per box);
+     * {@code received} gets them once (on this server's thread). {@code allowLoopback} is for tests.
      */
     PhoneEntry(
         InetAddress address,
         Page page,
-        Predicate<String> valid,
-        Consumer<String> received,
+        Predicate<String[]> valid,
+        Consumer<String[]> received,
         BooleanSupplier wanted,
         long lifetimeMs,
         boolean allowLoopback
@@ -183,8 +196,15 @@ final class PhoneEntry implements Closeable {
             respond(out, 405, "Method not allowed");
             return;
         }
-        String value = field(request.body, "value");
-        if (value == null || !valid.test(value)) {
+        String[] values = new String[page.labels.length];
+        boolean complete = true;
+        for (int i = 0; i < values.length; i++) {
+            String value = field(request.body, "f" + i);
+            if (value != null && !page.secret[i]) value = value.trim();
+            values[i] = value;
+            if (value == null || value.isEmpty()) complete = false;
+        }
+        if (!complete || !valid.test(values)) {
             if (++posts >= MAX_POSTS) {
                 respond(out, 200, done("Too many tries. Open the QR code again on the TV."));
                 close();
@@ -195,10 +215,10 @@ final class PhoneEntry implements Closeable {
         }
         respond(out, 200, done("Sent to your TV. You can close this page."));
         close();
-        received.accept(value);
+        received.accept(values);
     }
 
-    /** One value from an application/x-www-form-urlencoded body, trimmed; null when absent. */
+    /** One value from an application/x-www-form-urlencoded body, as typed; null when absent. */
     static String field(String body, String name) {
         if (body == null) return null;
         for (String pair : body.split("&")) {
@@ -206,7 +226,7 @@ final class PhoneEntry implements Closeable {
             if (equals < 0) continue;
             try {
                 if (!URLDecoder.decode(pair.substring(0, equals), "UTF-8").equals(name)) continue;
-                return URLDecoder.decode(pair.substring(equals + 1), "UTF-8").trim();
+                return URLDecoder.decode(pair.substring(equals + 1), "UTF-8");
             } catch (Exception e) {
                 return null;
             }
@@ -241,6 +261,15 @@ final class PhoneEntry implements Closeable {
     }
 
     String form(String error) {
+        StringBuilder boxes = new StringBuilder();
+        for (int i = 0; i < page.labels.length; i++) boxes
+            .append("<label>")
+            .append(escape(page.labels[i]))
+            .append("<input name=\"f")
+            .append(i)
+            .append("\" type=\"")
+            .append(page.secret[i] ? "password" : "text")
+            .append("\" autocomplete=\"off\" autocapitalize=\"off\" spellcheck=\"false\"></label>");
         return shell(
             "<h1>" +
                 escape(page.title) +
@@ -252,11 +281,11 @@ final class PhoneEntry implements Closeable {
                       "\" target=\"_blank\" rel=\"noopener\">" +
                       escape(page.helpText) +
                       "</a></p>") +
+                (page.note.isEmpty() ? "" : "<p>" + escape(page.note) + "</p>") +
                 (error.isEmpty() ? "" : "<p class=\"error\">" + escape(error) + "</p>") +
-                "<form method=\"post\"><label>" +
-                escape(page.label) +
-                "<input name=\"value\" autocomplete=\"off\" autocapitalize=\"off\" spellcheck=\"false\">" +
-                "</label><button type=\"submit\">Send to TV</button></form>"
+                "<form method=\"post\">" +
+                boxes +
+                "<button type=\"submit\">Send to TV</button></form>"
         );
     }
 
