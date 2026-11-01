@@ -15,8 +15,12 @@ FFmpeg sample decoded both tracks (573 audio/video frame rows); the inspected fr
 Sports Main Event's Toto Wolff interview, not a site-message card. FreeShot's outer channel/embed
 pages returned Site Unavailable here, so the full current chain remains unverified. ZLive's updated
 resolver returned HTTP 200; F1 UK2's media URL returned 404, while F1 UK3 returned a sliding HLS
-playlist with wrapped segments. Direct FFmpeg decoding of those containers failed; that alone is
-not a production-relay playback result. Final validation evidence belongs in the pull request.
+playlist with wrapped segments. A downloaded UK3 segment passed the production carrier decoder and a four-second FFmpeg
+audio/video sample; the inspected picture showed the actual Sky Sports F1 broadcast. Full live
+relay playback was blocked here by upstream DNS lookup failure. This sample is not a sustained
+Android playback test. All 35 core suites, 3 Node tests and provider verification passed locally
+(21 engine checks, 48 multi-provider checks, 17 PNG checks, 9 carrier checks, TCP/DASH relay
+checks and 6 fast-runtime checks). Android CI is tracked in PR #210.
 
 
 ## Published 1.0.19 validation — 29 October 2026
