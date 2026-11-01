@@ -13,7 +13,7 @@ jobs:
         timeout-minutes: 5
         steps:
             - name: Dispatch the existing signed publisher for this release commit
-              uses: actions/github-script@v8
+              uses: actions/github-script@v9
               with:
                   script: |
                       const {owner, repo} = context.repo;
@@ -30,7 +30,7 @@ jobs:
         timeout-minutes: 35
         steps:
             - name: Require successful signed publication from this commit
-              uses: actions/github-script@v8
+              uses: actions/github-script@v9
               with:
                   script: |
                       const {owner, repo} = context.repo;
@@ -63,7 +63,7 @@ jobs:
                       raise SystemExit('Updater feed is not MovieHub 1.0.18')
                   PY
             - name: Dispatch the existing numbered-release copier
-              uses: actions/github-script@v8
+              uses: actions/github-script@v9
               with:
                   script: |
                       const {owner, repo} = context.repo;
