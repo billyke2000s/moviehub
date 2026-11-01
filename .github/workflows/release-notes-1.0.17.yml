@@ -13,7 +13,7 @@ jobs:
         timeout-minutes: 20
         steps:
             - name: Wait for the authorised signed update
-              uses: actions/github-script@v8
+              uses: actions/github-script@v9
               with:
                   script: |
                       const {owner, repo} = context.repo;
@@ -47,7 +47,7 @@ jobs:
                       raise SystemExit('Refusing to publish a release page for a different update')
                   PY
             - name: Dispatch the existing numbered-release copier
-              uses: actions/github-script@v8
+              uses: actions/github-script@v9
               with:
                   script: |
                       const {owner, repo} = context.repo;
