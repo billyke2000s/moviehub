@@ -82,6 +82,28 @@ public final class ProviderRelayTransportTest {
         byte[] ts = new byte[188 * 5];
         for (int at = 0; at < ts.length; at += 188) ts[at] = 0x47;
         rawTsWithImageMime(ts);
+        String shortWindow = "#EXTM3U\n#EXTINF:6,\none.ts\n";
+        for (boolean live : new boolean[] { true, false }) {
+            EngineSources.Stream sports = new EngineSources.Stream(
+                new JSONObject()
+                    .put("url", "https://8.8.8.8/index.m3u8")
+                    .put("headers", new JSONObject())
+                    .put("livePlaylist", live)
+            );
+            try (ProviderRelay relay = new ProviderRelay(sports)) {
+                if (
+                    !relay.rewrite(shortWindow, URI.create(sports.url)).contains("127.0.0.1")
+                ) throw new AssertionError("Healthy short live window rejected");
+                try {
+                    String result = relay.rewrite(shortWindow + "#EXT-X-ENDLIST\n", URI.create(sports.url));
+                    if (live || !result.contains("127.0.0.1")) throw new AssertionError(
+                        "Live clip policy scope"
+                    );
+                } catch (IOException expected) {
+                    if (!live) throw expected;
+                }
+            }
+        }
         ByteArrayOutputStream image = new ByteArrayOutputStream();
         DataOutputStream png = new DataOutputStream(image);
         png.write(new byte[] { (byte) 137, 80, 78, 71, 13, 10, 26, 10 });

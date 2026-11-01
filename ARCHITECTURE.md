@@ -1,5 +1,17 @@
 # Architecture
 
+## Sports player compatibility — 1 November 2026
+
+ZLive's bundled resolver follows public client `D4Mt3-Uz.js`'s current v6 key. FreeShot accepts
+both the observed exact `cdn.wideiptv.top` host and the existing single-label Bluetier hosts;
+`PlaylistSession` retains origin/channel-bound renewal at the existing anonymous endpoint.
+Package capability `sportsPlayers: 1` prevents older signed modules overriding either fix.
+`AdapterSources` marks these two sources for `LivePlaylistPolicy`, applied to each HLS child in
+`ProviderRelay.rewrite`: completed clips of at most 120 seconds are rejected, while sliding live
+windows and longer finished recordings remain valid. This is a structural check, not recognition
+of text burned into a continuous feed. DaddyLive and VOD do not receive this policy.
+
+
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names

@@ -84,7 +84,11 @@ function __run(operation, row) {
             var url = new URL(JSON.parse(literal[1]));
             if (
                 url.protocol !== "https:" ||
-                !/^[A-Za-z0-9-]+\.bluetier\.top$/.test(url.hostname) ||
+                (url.host !== url.hostname && url.host !== url.hostname + ":443") ||
+                url.hash ||
+                !(
+                    url.hostname === "cdn.wideiptv.top" || /^[A-Za-z0-9-]+\.bluetier\.top$/.test(url.hostname)
+                ) ||
                 url.pathname.indexOf("/" + playerSlug + "/") !== 0
             )
                 throw new Error("FreeShot stream scope rejected");
