@@ -47,7 +47,7 @@ jobs:
               run: SPORTS_PROBE_ONLY=freeshot RHINO_JAR="$RUNNER_TEMP/rhino.jar" JSON_JAR="$RUNNER_TEMP/json.jar" node provider-engine/tools/dlhd-playback.mjs
             - name: Upload numerical results only
               if: always()
-              uses: actions/upload-artifact@v6
+              uses: actions/upload-artifact@v7
               with:
                   name: dlhd-playback-diagnostic
                   path: build/provider-tests/dlhd-playback.json

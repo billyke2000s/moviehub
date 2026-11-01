@@ -64,7 +64,7 @@ jobs:
             - name: Compare HTTP identity on challenge-blocked reachable websites
               if: matrix.media == 'movies'
               run: python android-tv-launcher/tests/probe-vod-http.py | tee http-identity-audit.jsonl
-            - uses: actions/upload-artifact@v6
+            - uses: actions/upload-artifact@v7
               if: always()
               with:
                   name: free-vod-provider-audit-${{ matrix.media }}
