@@ -127,7 +127,10 @@ public final class ProviderEngineDeviceTest {
         pkg.put("version", 2);
         pkg.getJSONObject("capabilities").remove("sportsPlayers");
         for (String id : new String[] { "zlive", "freeshot" }) {
-            pkg.getJSONObject("modules").put(id, "function invoke(){return 'obsolete';}");
+            pkg.getJSONObject("modules").put(
+                id,
+                "function invoke(){return {provider:'" + id + "',runtime:2,marker:'obsolete'};}"
+            );
         }
         byte[] bytes = pkg.toString().getBytes(StandardCharsets.UTF_8);
         ProviderPackages.install(context, bytes, signature(keys, bytes));
@@ -137,7 +140,10 @@ public final class ProviderEngineDeviceTest {
         pkg.put("version", 3).getJSONObject("capabilities").put("sportsPlayers", 1);
         bytes = pkg.toString().getBytes(StandardCharsets.UTF_8);
         ProviderPackages.install(context, bytes, signature(keys, bytes));
-        assertEquals("function invoke(){return 'obsolete';}", ProviderPackages.module(context, "freeshot"));
+        assertEquals(
+            pkg.getJSONObject("modules").getString("freeshot"),
+            ProviderPackages.module(context, "freeshot")
+        );
     }
 
     @Test
