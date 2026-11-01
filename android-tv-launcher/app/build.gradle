@@ -46,7 +46,7 @@ dependencies {
     // DASH (.mpd) channels: without it ExoPlayer cannot load DashMediaSource and the app crashes.
     implementation 'androidx.media3:media3-exoplayer-dash:1.5.1'
     implementation 'androidx.media3:media3-ui:1.5.1'
-    implementation 'org.mozilla:rhino:1.9.1'
+    implementation 'org.mozilla:rhino:1.9.2'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     androidTestImplementation 'androidx.test:runner:1.6.2'
