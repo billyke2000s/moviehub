@@ -1,5 +1,15 @@
 # Security
 
+## Sports CDN compatibility — 1 November 2026
+
+FreeShot permits the exact observed `cdn.wideiptv.top` media origin alongside single-label
+Bluetier hosts. The resolver rejects credentials, fragments, nonstandard ports and mismatched
+channel paths; token renewal remains fixed to WideIPTV's existing anonymous endpoint and cannot
+send a channel token to a different media origin/path. No broad `*.wideiptv.top` grant is added.
+ZLive's protocol update preserves refusal cooldowns and public-address validation. Older signed
+packages without `sportsPlayers: 1` use the APK-bundled sports loaders.
+
+
 Current follow-up adds the remaining fifteen catalogue adapters and bounded redirect/file-host
 protocols without modifying established sites or replacing the player. All fifteen stay registered;
 ordinary redirects are not grounds for removal. Eleven current roots exposed film catalogues;

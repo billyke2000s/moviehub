@@ -1,5 +1,28 @@
 # Testing
 
+## Sports loader regression checks — 1 November 2026
+
+New fixtures decrypt ZLive v6 requests using the current public client key, resolve FreeShot on
+both CDN families, and reject lookalike hosts, mismatched channel paths, userinfo and custom ports.
+`PlaylistSessionTest` verifies new-CDN renewal and scope. `ProviderEngineDeviceTest` verifies
+old signed sports modules fall back to bundled implementations until the matching capability exists.
+`LivePlaylistPolicyTest` checks short completed clips, legitimate live windows, master playlists,
+longer recordings and invalid durations. The production relay fixture checks policy scope independently
+of VOD. These fixtures do not establish real provider availability.
+
+Live inspection: FreeShot's WideIPTV Main Event configuration advertised the new CDN. An eight-second
+FFmpeg sample decoded both tracks (573 audio/video frame rows); the inspected frame showed Sky
+Sports Main Event's Toto Wolff interview, not a site-message card. FreeShot's outer channel/embed
+pages returned Site Unavailable here, so the full current chain remains unverified. ZLive's updated
+resolver returned HTTP 200; F1 UK2's media URL returned 404, while F1 UK3 returned a sliding HLS
+playlist with wrapped segments. A downloaded UK3 segment passed the production carrier decoder and a four-second FFmpeg
+audio/video sample; the inspected picture showed the actual Sky Sports F1 broadcast. Full live
+relay playback was blocked here by upstream DNS lookup failure. This sample is not a sustained
+Android playback test. All 35 core suites, 3 Node tests and provider verification passed locally
+(21 engine checks, 48 multi-provider checks, 17 PNG checks, 9 carrier checks, TCP/DASH relay
+checks and 6 fast-runtime checks). Android CI is tracked in PR #210.
+
+
 ## Published 1.0.19 validation — 29 October 2026
 
 Source: `8759c88e0e2e72227c06bc1751ae1836ef241c53`. Signed publisher

@@ -17,7 +17,7 @@ json="${JSON_JAR:-build/provider-tests/json.jar}"
 if [ ! -f "$json" ]; then
   curl --fail --location --output "$json" https://repo.maven.apache.org/maven2/org/json/json/20250517/json-20250517.jar
 fi
-javac -cp "$json" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderUrls,ProviderSegments,ProviderFileRanges,ProviderRelay,DashManifest,StreamRate,PlaylistSession,ProviderPngSegments,ProviderContainerSegments}.java android-tv-launcher/tests/{ProviderRelayProbe,ProviderRelayTransportTest,ProviderDashTransportTest}.java
+javac -cp "$json" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderUrls,ProviderSegments,ProviderFileRanges,LivePlaylistPolicy,ProviderRelay,DashManifest,StreamRate,PlaylistSession,ProviderPngSegments,ProviderContainerSegments}.java android-tv-launcher/tests/{ProviderRelayProbe,ProviderRelayTransportTest,ProviderDashTransportTest}.java
 java -Xmx96m -cp "$json:build/provider-tests" local.tv.home.ProviderRelayTransportTest
 java -Xmx96m -cp "$json:build/provider-tests" local.tv.home.ProviderDashTransportTest
 

@@ -47,7 +47,7 @@ function invoke(operation, payload) {
 `;
 const pkg = {
     runtime: 2,
-    capabilities: { zliveSources: 1 },
+    capabilities: { zliveSources: 1, sportsPlayers: 1 },
     version: Number(process.env.PROVIDER_VERSION || "1"),
     upstream: process.env.UPSTREAM_SHA || "3b860294ecb4a9ebca8819adfc061162fbbb7f99",
     modules: { freelivesports: prelude + compiled.outputText + wrapper },

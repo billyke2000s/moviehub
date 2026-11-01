@@ -99,6 +99,11 @@ final class ProviderPackages {
         if (
             id.equals("zlive") && (capabilities == null || capabilities.optInt("zliveSources") < 1)
         ) return builtinModule(c, id);
+        // Do not let an older installed package restore the obsolete resolver key/CDN scope.
+        if (
+            (id.equals("zlive") || id.equals("freeshot")) &&
+            (capabilities == null || capabilities.optInt("sportsPlayers") < 1)
+        ) return builtinModule(c, id);
         if (modules.has(id)) return modules.getString(id);
         // Older signed runtime-1 packages cannot remove the newer APK's built-in capabilities.
         return validate(asset(c, "builtin.json").getBytes(StandardCharsets.UTF_8))

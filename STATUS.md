@@ -1,5 +1,16 @@
 # Status
 
+## Sports loader repair — 1 November 2026 (unpublished)
+
+Current-player inspection found ZLive's changed public v6 key and FreeShot's new exact WideIPTV
+CDN, both incompatible with the bundled loaders. The repair updates those two protocols, retains
+legacy CDN/session support, and prevents older signed sports modules overriding the fixes.
+A scoped relay guard rejects short finished HLS clips but cannot identify every continuous decoy.
+DaddyLive, UI and saved data are unchanged. See TESTING.md and the associated PR for evidence and
+remaining limits: FreeShot outer pages are unavailable here and ZLive F1 UK2 currently returns 404.
+This work is not a published TV update.
+
+
 ## Current release — MovieHub 1.0.19 (code 119)
 
 [1.0.19 is published](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.19)

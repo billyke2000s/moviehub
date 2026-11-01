@@ -1,5 +1,11 @@
 ## Unreleased
 
+- Update ZLive's public player key and FreeShot's current WideIPTV CDN scope without changing
+  DaddyLive, channel identities or saved data. Preserve anonymous token renewal on the new CDN.
+- Reject short finished HLS clips on ZLive/FreeShot so a placeholder can fail over; ordinary
+  short sliding live windows remain valid. Continuous message feeds still need visual verification.
+- Keep the bundled sports loaders when an older installed provider package lacks this protocol.
+
 ## 1.0.19 (29 October 2026)
 
 - Add 36 enabled CineStream adapter protocols for additional film and series sites and playback
