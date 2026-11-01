@@ -77,7 +77,7 @@ jobs:
                           raise SystemExit(f'{name} did not return a verified source')
                   print(f'All {len(links)} returned new-provider links passed individual playback checks')
                   PYTHON
-            - uses: actions/upload-artifact@v6
+            - uses: actions/upload-artifact@v7
               if: always()
               with:
                   name: fmhy-new-source-audit-${{ matrix.media }}-${{ strategy.job-index }}
