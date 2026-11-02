@@ -21,6 +21,7 @@ jobs:
                     - { provider: "free99:seriesloaded_ng", media: movies }
                     - { provider: "native:meowtv", media: series }
         env:
+            ORG_GRADLE_PROJECT_moviehubAbi: x86_64
             QEMU_AUDIO_DRV: pa
             PULSE_SINK: moviehub_audit
         steps:
@@ -47,6 +48,8 @@ jobs:
                   pulseaudio --start --exit-idle-time=-1
                   pactl load-module module-null-sink sink_name=moviehub_audit rate=16000 channels=2
                   pactl set-default-sink moviehub_audit
+                  pactl load-module module-native-protocol-unix socket="$RUNNER_TEMP/moviehub-pulse.sock"
+                  echo "PULSE_SERVER=unix:$RUNNER_TEMP/moviehub-pulse.sock" >> "$GITHUB_ENV"
                   sudo chmod 666 /dev/kvm
             - name: Capture known-tone calibration and real playback evidence
               uses: reactivecircus/android-emulator-runner@v2
