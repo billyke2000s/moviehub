@@ -1,9 +1,12 @@
 # Testing
 
+## Rendered-content and actual-audio evidence — in progress
+
+The prior emulator used `-noaudio`; its played-buffer counters did not prove an audible signal. The new opt-in pilot removes that flag, records only a dedicated virtual output sink and requires a separately generated 440 Hz tone to be present in the recording before evaluating source audio. It exports short audio windows and actual rendered frames at multiple positions for content review. A candidate remains `needs_content_review` until its frames are reviewed; runtime, decoder counters and a poster alone cannot establish the requested movie. This is calibration work, not a claim that all sites have passed.
+
 ## Complete VOD site audit — 2 November 2026
 
 `audit-all-vod-sites.py` emits a row for every enabled site and media type, including unsupported adapter types, and verifies its completion count. The full Android audit uses eight shards for each media type. It records each shard inventory and per-site completion so missing cases cannot appear complete. Each site tries up to three distinct sources until one passes. Verification requires plausible runtime, decoded and displayed video, played audio buffers, sustained progress at startup/midpoint/90-percent seek, and bounded gaps. Default all-source audit commands retain exhaustive source traversal; the new full-site workflow explicitly opts into representative sampling. A passed sample is not a full-catalogue guarantee.
-
 
 ## Published 1.0.19 validation — 29 October 2026
 
@@ -22,7 +25,6 @@ targeted retry passed. No gate or test was removed or weakened.
 The existing 23 full native-source passes and unresolved live failures remain separate evidence
 below and in the [source report](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
 
-
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
@@ -34,7 +36,6 @@ Application revision `925af7c` passed all six Android jobs in run 40913881846. F
 include 23 verified sources (eleven movies and twelve episodes); the episode retry passed after an EGL crash.
 Vidy playback failures and other site/host errors remain unresolved; registration is not playback proof.
 See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
-
 
 Earlier checkpoint: current-site inspection corrected the new adapters. Application revision
 47b22de passed all six Android jobs after an experimental retry (the first attempt raised
@@ -63,8 +64,6 @@ lists it as a failure although Gradle/CI succeeds). The new native track-format 
 Experimental reports cover 7 + 20 unique cases, and focused VOD reports cover 3 + 5 + 1 + 1, with
 no failures/skips. Two new Hexa Alpha links passed live audio/video/runtime/midpoint checks in
 run 40856772425. VaPlayer diagnostics still crashed; these routes remain pending.
-
-
 
 ## Published 1.0.18 validation — 29 October 2026
 
@@ -145,7 +144,7 @@ There are four layers of checks. CI runs all of them on every pull request that 
 
 | Layer                          | Where                                      | Needs                                | Runs in CI step                                              |
 | ------------------------------ | ------------------------------------------ | ------------------------------------ | ------------------------------------------------------------ |
-| Core rule checks              | `android-tv-launcher/tests/`               | Only a JDK                           | "Verify playlist, network, channel search and episode rules" |
+| Core rule checks               | `android-tv-launcher/tests/`               | Only a JDK                           | "Verify playlist, network, channel search and episode rules" |
 | Build and lint                 | Gradle                                     | Android SDK 35                       | "Build APK and run Android lint"                             |
 | Device tests (instrumentation) | `android-tv-launcher/app/src/androidTest/` | Android emulator                     | `device-tests` job                                           |
 | Signing compatibility          | release build vs published APK             | signing secrets (same-repo PRs only) | `signed-compatibility` job                                   |

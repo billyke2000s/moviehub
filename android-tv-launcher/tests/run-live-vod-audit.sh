@@ -18,6 +18,7 @@ gradle -p android-tv-launcher --no-daemon assembleDebug assembleDebugAndroidTest
 adb install -r android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk
 adb install -r android-tv-launcher/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 audit_args=(-e vodStopAfterVerified "${VOD_STOP_AFTER_VERIFIED:-false}" -e vodSourceLimit "${VOD_SOURCE_LIMIT:-200}" -e vodSampleSeconds "${VOD_SAMPLE_SECONDS:-20}")
+audit_args+=(-e vodCaptureEvidence "${VOD_CAPTURE_EVIDENCE:-false}")
 if [ -n "$providers" ]; then audit_args+=(-e vodProviders "$providers"); fi
 if [ -n "$source_names" ]; then audit_args+=(-e vodSourceNames "$source_names"); fi
 if [ -n "${VOD_CINESTREAM_BACKENDS:-}" ]; then

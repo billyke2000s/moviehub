@@ -27,6 +27,8 @@ public final class FreeVodLiveAuditTest {
     private final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
     private final Context context = instrumentation.getTargetContext();
     private File output;
+    private VodAuditEvidence evidence;
+    private int evidenceIndex;
 
     @Test
     public void auditEveryDiscoveredPlaybackSource() throws Exception {
@@ -50,6 +52,10 @@ public final class FreeVodLiveAuditTest {
                 .put("media", series ? "series" : "movies")
                 .put("sites", new org.json.JSONArray(sites))
         );
+        if (Boolean.parseBoolean(arguments.getString("vodCaptureEvidence", "false"))) {
+            evidence = new VodAuditEvidence(instrumentation, context);
+            record(evidence.audioFixture(context));
+        }
         int sourceLimit = Integer.parseInt(arguments.getString("vodSourceLimit", "200"));
         boolean stopAfterVerified = Boolean.parseBoolean(
             arguments.getString("vodStopAfterVerified", "false")
@@ -131,6 +137,9 @@ public final class FreeVodLiveAuditTest {
                         .put("episode", film.optInt("episode", -1))
                         .put("title", film.getString("title"))
                         .put("separateSource", separate);
+                    if (evidence != null) result
+                        .put("evidenceId", String.format(java.util.Locale.ROOT, "%04d", ++evidenceIndex))
+                        .put("contentReview", "pending");
                     record(new JSONObject(result.toString()).put("kind", "starting"));
                     try {
                         play(source, film.optInt("runtimeMinutes"), sampleSeconds, result);
@@ -270,6 +279,12 @@ public final class FreeVodLiveAuditTest {
                 .put("decoded", decoded)
                 .put("plausibleRuntime", plausible);
             boolean smoothStart = decoded && plausible && observe(activity, sampleSeconds, result, "start");
+            if (
+                evidence != null &&
+                decoded &&
+                plausible &&
+                seekAndDecode(activity, Math.min(duration / 20, 150000))
+            ) evidence.capture(result, "early");
             boolean seek = decoded && plausible && seekAndDecode(activity, duration / 2);
             boolean smoothMiddle = seek && observe(activity, sampleSeconds, result, "middle");
             boolean lateSeek = seek && seekAndDecode(activity, (duration * 9) / 10);
@@ -356,6 +371,7 @@ public final class FreeVodLiveAuditTest {
         long start = SystemClock.elapsedRealtime(),
             videoAt = start,
             audioAt = start;
+        if (evidence != null) result.put(label + "EpochMs", System.currentTimeMillis());
         long videoFrames = 0,
             audioBuffers = 0;
         long maxVideoGap = 0,
@@ -396,6 +412,7 @@ public final class FreeVodLiveAuditTest {
             .put(label + "AudioGapMs", maxAudioGap)
             .put(label + "ProgressMs", progress)
             .put(label + "PlayedAudioBuffers", audioBuffers);
+        if (evidence != null) evidence.capture(result, label);
         return smooth;
     }
 

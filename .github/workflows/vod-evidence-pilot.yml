@@ -1,0 +1,68 @@
+name: Calibrate real VOD audio and rendered-content evidence
+on:
+    push:
+        branches: [fix/all-vod-site-audit]
+        paths:
+            - ".github/workflows/vod-evidence-pilot.yml"
+            - ".github/scripts/vod-evidence-audit.sh"
+            - "android-tv-launcher/tests/review-vod-evidence.py"
+            - "android-tv-launcher/app/src/androidTest/java/local/tv/home/VodAuditEvidence.java"
+    workflow_dispatch:
+permissions:
+    contents: read
+jobs:
+    evidence:
+        runs-on: ubuntu-latest
+        timeout-minutes: 35
+        strategy:
+            fail-fast: false
+            matrix:
+                route:
+                    - { provider: "free99:seriesloaded_ng", media: movies }
+                    - { provider: "native:meowtv", media: series }
+        env:
+            QEMU_AUDIO_DRV: pa
+            PULSE_SINK: moviehub_audit
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/setup-java@v5
+              with:
+                  distribution: temurin
+                  java-version: "17"
+            - uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+            - run: python -m pip install Pillow
+            - uses: android-actions/setup-android@v4
+              with:
+                  packages: platform-tools
+            - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'build-tools;36.0.0' 'ndk;27.2.12479018'
+            - uses: gradle/actions/setup-gradle@v5
+              with:
+                  gradle-version: "9.6.0"
+            - name: Prepare isolated emulator audio output
+              run: |
+                  sudo apt-get update -qq
+                  sudo apt-get install -y -qq ffmpeg pulseaudio
+                  pulseaudio --start --exit-idle-time=-1
+                  pactl load-module module-null-sink sink_name=moviehub_audit rate=16000 channels=2
+                  pactl set-default-sink moviehub_audit
+                  sudo chmod 666 /dev/kvm
+            - name: Capture known-tone calibration and real playback evidence
+              uses: reactivecircus/android-emulator-runner@v2
+              with:
+                  api-level: 28
+                  arch: x86_64
+                  profile: tv_1080p
+                  emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -audio pa
+                  disable-animations: true
+                  script: VOD_SOURCE_LIMIT=2 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=true bash .github/scripts/vod-evidence-audit.sh 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}'
+            - uses: actions/upload-artifact@v6
+              if: always()
+              with:
+                  name: rendered-vod-evidence-${{ matrix.route.media }}
+                  path: |
+                      vod-live-audit.jsonl
+                      vod-evidence/
+                      vod-audio-recorder.log
+                  retention-days: 7
