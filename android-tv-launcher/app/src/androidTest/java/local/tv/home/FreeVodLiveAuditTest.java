@@ -44,13 +44,26 @@ public final class FreeVodLiveAuditTest {
             ? FreeVodProviders.ids(context, series)
             : new ArrayList<>(java.util.Arrays.asList(providers.split(",")));
         org.junit.Assert.assertFalse("No matching enabled movie websites selected", sites.isEmpty());
+        record(
+            new JSONObject()
+                .put("kind", "inventory")
+                .put("media", series ? "series" : "movies")
+                .put("sites", new org.json.JSONArray(sites))
+        );
+        int sourceLimit = Integer.parseInt(arguments.getString("vodSourceLimit", "200"));
+        boolean stopAfterVerified = Boolean.parseBoolean(
+            arguments.getString("vodStopAfterVerified", "false")
+        );
+        int sampleSeconds = Integer.parseInt(arguments.getString("vodSampleSeconds", "20"));
+        if (
+            sourceLimit < 1 || sourceLimit > 200 || sampleSeconds < 10 || sampleSeconds > 120
+        ) throw new IllegalArgumentException("Invalid audit sample limits");
         for (int index = shard; index < sites.size(); index += shards) {
             String site = sites.get(index);
             // Full, unambiguous catalogue identities. Runtime tolerance allows credits and alternate cuts.
             JSONObject[] films = {
                 film("Inception", "2010", "tt1375666", 27205, 148),
-                film("Night of the Living Dead", "1968", "tt0063350", 10331, 96),
-                film("Spider-Man: Brand New Day", "2026", "tt22084616", 969681, 0),
+                film("Dune: Part Two", "2024", "tt15239678", 693134, 166),
             };
             if (series) films = new JSONObject[] {
                 film("Breaking Bad", "2008", "tt0903747", 1396, 58)
@@ -62,6 +75,8 @@ public final class FreeVodLiveAuditTest {
             if (!series && site.equals("scrubs:rarefilmm_com")) films = new JSONObject[] {
                 film("Anna", "1967", "", 45486, 87),
             };
+            int tested = 0;
+            boolean verified = false;
             for (JSONObject film : films) {
                 List<SourceRepository.Source> sources = new ArrayList<>();
                 AtomicBoolean cancelled = new AtomicBoolean();
@@ -105,6 +120,7 @@ public final class FreeVodLiveAuditTest {
                 Set<String> keys = new HashSet<>();
                 for (SourceRepository.Source source : sources) {
                     boolean separate = keys.add(VodSearch.sourceKey(source));
+                    if (!separate) continue;
                     JSONObject result = new JSONObject()
                         .put("kind", "playback")
                         .put("website", site)
@@ -117,15 +133,30 @@ public final class FreeVodLiveAuditTest {
                         .put("separateSource", separate);
                     record(new JSONObject(result.toString()).put("kind", "starting"));
                     try {
-                        play(source, film.optInt("runtimeMinutes"), result);
+                        play(source, film.optInt("runtimeMinutes"), sampleSeconds, result);
                     } catch (Exception error) {
                         // Exception messages and native logs may contain signed URLs: retain type only.
                         result.put("status", error.getClass().getSimpleName());
                     }
                     record(result);
+                    tested++;
+                    verified = "verified".equals(result.optString("status"));
+                    if ((stopAfterVerified && verified) || tested >= sourceLimit) break;
                 }
-                if (!sources.isEmpty()) break;
+                if (
+                    (stopAfterVerified && verified) ||
+                    tested >= sourceLimit ||
+                    "unsupported_type".equals(lookup.optString("status"))
+                ) break;
             }
+            record(
+                new JSONObject()
+                    .put("kind", "site_finished")
+                    .put("website", site)
+                    .put("media", series ? "series" : "movies")
+                    .put("testedSources", tested)
+                    .put("verified", verified)
+            );
         }
         record(new JSONObject().put("kind", "finished").put("shard", shard).put("shards", shards));
     }
@@ -157,8 +188,12 @@ public final class FreeVodLiveAuditTest {
         }
     }
 
-    private void play(SourceRepository.Source source, int expectedMinutes, JSONObject result)
-        throws Exception {
+    private void play(
+        SourceRepository.Source source,
+        int expectedMinutes,
+        int sampleSeconds,
+        JSONObject result
+    ) throws Exception {
         VodSources.Session session = new VodSources.Session(
             java.util.Collections.singletonList(VodSources.entry(source)),
             index -> new VodSources.Resolved(source.uri, new org.json.JSONArray()),
@@ -203,8 +238,10 @@ public final class FreeVodLiveAuditTest {
                 .put("height", sample[4])
                 .put("decoded", decoded)
                 .put("plausibleRuntime", plausible);
+            boolean smoothStart = decoded && plausible && observe(activity, sampleSeconds, result, "start");
             boolean seek = false;
             if (decoded && plausible) {
+                snapshot(activity, sample);
                 long target = duration / 2;
                 long previousFrames = sample[2];
                 instrumentation.runOnMainSync(() -> {
@@ -222,7 +259,34 @@ public final class FreeVodLiveAuditTest {
                     SystemClock.sleep(250);
                 }
             }
+            boolean smoothMiddle = seek && observe(activity, sampleSeconds, result, "middle");
+            boolean lateSeek = false;
+            if (smoothMiddle) {
+                snapshot(activity, sample);
+                long target = (duration * 9) / 10;
+                long previous = sample[2];
+                instrumentation.runOnMainSync(() -> {
+                    if (activity.player != null && activity.player.isSeekable()) activity.player.setTime(
+                        target
+                    );
+                });
+                deadline = SystemClock.elapsedRealtime() + 20000;
+                while (SystemClock.elapsedRealtime() < deadline) {
+                    snapshot(activity, sample);
+                    if (Math.abs(sample[1] - target) < 15000 && sample[2] > previous + 5) {
+                        lateSeek = true;
+                        break;
+                    }
+                    SystemClock.sleep(250);
+                }
+            }
+            boolean smoothLate = lateSeek && observe(activity, 10, result, "late");
+            snapshot(activity, sample);
             result
+                .put("smoothStart", smoothStart)
+                .put("smoothMiddle", smoothMiddle)
+                .put("lateSeekDecoded", lateSeek)
+                .put("smoothLate", smoothLate)
                 .put("decodedFrames", sample[2])
                 .put("decodedAudio", sample[5])
                 .put("playedAudioBuffers", sample[6])
@@ -244,7 +308,11 @@ public final class FreeVodLiveAuditTest {
                               ? "runtime_mismatch"
                               : !seek
                                 ? "seek_unverified"
-                                : "verified"
+                                : !lateSeek
+                                  ? "late_seek_unverified"
+                                  : !(smoothStart && smoothMiddle && smoothLate)
+                                    ? "playback_stall_or_audio_output_unverified"
+                                    : "verified"
                 );
         } finally {
             org.json.JSONArray errors = new org.json.JSONArray();
@@ -259,6 +327,53 @@ public final class FreeVodLiveAuditTest {
             while (!activity.isDestroyed() && SystemClock.elapsedRealtime() < deadline)
                 SystemClock.sleep(100);
         }
+    }
+
+    private boolean observe(VlcPlaybackActivity activity, int seconds, JSONObject result, String label)
+        throws Exception {
+        long[] sample = new long[7];
+        snapshot(activity, sample);
+        long firstTime = sample[1],
+            firstVideo = sample[2],
+            firstAudio = sample[6];
+        long video = firstVideo,
+            audio = firstAudio;
+        long start = SystemClock.elapsedRealtime(),
+            videoAt = start,
+            audioAt = start;
+        long maxVideoGap = 0,
+            maxAudioGap = 0;
+        while (SystemClock.elapsedRealtime() - start < seconds * 1000L) {
+            SystemClock.sleep(250);
+            snapshot(activity, sample);
+            long now = SystemClock.elapsedRealtime();
+            if (sample[2] > video) {
+                video = sample[2];
+                videoAt = now;
+            }
+            if (sample[6] > audio) {
+                audio = sample[6];
+                audioAt = now;
+            }
+            maxVideoGap = Math.max(maxVideoGap, now - videoAt);
+            maxAudioGap = Math.max(maxAudioGap, now - audioAt);
+        }
+        long elapsed = SystemClock.elapsedRealtime() - start,
+            progress = sample[1] - firstTime;
+        boolean smooth =
+            maxVideoGap <= 4000 &&
+            maxAudioGap <= 4000 &&
+            sample[2] > firstVideo + 5 &&
+            sample[6] > firstAudio &&
+            progress >= elapsed * .8 &&
+            progress <= elapsed * 1.3;
+        result
+            .put(label + "ObservationSeconds", elapsed / 1000)
+            .put(label + "VideoGapMs", maxVideoGap)
+            .put(label + "AudioGapMs", maxAudioGap)
+            .put(label + "ProgressMs", progress)
+            .put(label + "PlayedAudioBuffers", sample[6] - firstAudio);
+        return smooth;
     }
 
     private String audioLanguage(VlcPlaybackActivity activity) {

@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Use the same enabled free-site list for Movies and Series; keep unsupported content types explicit.
+- Expand the site audit to check complete coverage, sustained video/audio output, runtime and two seek positions.
+
 ## 1.0.19 (29 October 2026)
 
 - Add 36 enabled CineStream adapter protocols for additional film and series sites and playback

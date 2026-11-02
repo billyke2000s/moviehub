@@ -27,13 +27,9 @@ public final class FreeVodProviders {
     }
 
     static List<String> ids(Context context, boolean series) throws Exception {
-        JSONArray rows = new JSONArray(runtime(context).callAttr("search_providers").toString());
-        List<String> ids = new ArrayList<>();
-        for (int i = 0; i < rows.length(); i++) {
-            JSONObject row = rows.getJSONObject(i);
-            if (row.optBoolean(series ? "series" : "movies")) ids.add(row.getString("id"));
-        }
-        return ids;
+        // Enabling a website applies to both screens. Adapter capabilities are checked
+        // during lookup and reported explicitly, rather than silently hiding the site.
+        return ids(context);
     }
 
     static int validate(Context context) {

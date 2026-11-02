@@ -1,5 +1,10 @@
 # Architecture
 
+## Shared VOD site selection
+
+`FreeVodProviders.ids(context, series)` uses the same enabled website IDs as `ids(context)`. Python adapter movie/series flags remain capability facts for safe content routing. `query_site` reports unsupported types explicitly; it does not substitute a film for an episode. Retired and parked sites remain excluded.
+
+
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names

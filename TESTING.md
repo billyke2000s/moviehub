@@ -1,5 +1,10 @@
 # Testing
 
+## Complete VOD site audit — 2 November 2026
+
+`audit-all-vod-sites.py` emits a row for every enabled site and media type, including unsupported adapter types, and verifies its completion count. The full Android audit uses eight shards for each media type. It records each shard inventory and per-site completion so missing cases cannot appear complete. Each site tries up to three distinct sources until one passes. Verification requires plausible runtime, decoded video, played audio buffers, sustained progress at startup/midpoint/90-percent seek, and bounded gaps. Default all-source audit commands retain exhaustive source traversal; the new full-site workflow explicitly opts into representative sampling. A passed sample is not a full-catalogue guarantee.
+
+
 ## Published 1.0.19 validation — 29 October 2026
 
 Source: `8759c88e0e2e72227c06bc1751ae1836ef241c53`. Signed publisher

@@ -1,5 +1,8 @@
 <div align="center">
 
+Movies and Series now use the same enabled free-site inventory. A site with no supported adapter for a media type reports that limitation during lookup. The full site and sustained-playback audit is tracked in the current audit PR.
+
+
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
