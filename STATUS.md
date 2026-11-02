@@ -191,9 +191,9 @@ Historical checkpoint: 25 October 2026 (1.0 promoted the experimental line into 
 
 ## Known issues
 
-1. **Not verified on real accounts or the target TV.** Automated tests use fixtures. Real TMDB,
-   Premiumize, Xtream and M3U accounts, real app banners, and installing and updating on the TV box
-   need a manual check.
+1. **The owner uses MovieHub on the target TV box** (installing, updating and playback confirmed by
+   the owner, 27 October 2026). Automated tests still use fixtures only, so each new change below is
+   listed as awaiting the owner's check until the owner reports it, not as untested on the box.
 2. **Recovered errors are logged, screen loads explained.** Failed screen loads show a plain
    explanation (`ErrorMessages`); other recovered failures only log the location and exception
    type to logcat (tag `MovieHub`).

@@ -52,6 +52,9 @@ Read [AI working rules](docs/AI_WORKING_RULES.md), [ARCHITECTURE.md](ARCHITECTUR
   calling it unrelated.
 - Never claim something was tested on a real TV or a real provider account unless it was. The
   fixtures do not prove live provider behaviour.
+- The owner tests every published version on the TV box. Do not write that MovieHub as a whole is
+  unverified on the box. For a new change, say it awaits the owner's check, and when the owner
+  reports a result, record it in STATUS.md with the date rather than leaving the old caveat.
 - If you could not run something, say so in the PR description.
 
 ## Tests and app members
