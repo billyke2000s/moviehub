@@ -6,8 +6,11 @@ import android.graphics.Bitmap;
 import android.os.SystemClock;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.videolan.libvlc.MediaPlayer;
 
 /** Opt-in actual rendered frames and bounded native media samples for content/audio review. */
 final class VodAuditEvidence {
@@ -33,75 +36,139 @@ final class VodAuditEvidence {
         if (!file.delete()) throw new Exception("Old evidence could not be cleared");
     }
 
-    private File activeDirectory;
-    private String activeLabel;
-    private boolean recording;
-    private boolean capped;
+    private static final class Recording {
+
+        final File directory;
+        final String label;
+        final MediaPlayer player;
+        final long baselineBytes;
+        final CountDownLatch started = new CountDownLatch(1);
+        final CountDownLatch stopped = new CountDownLatch(1);
+        volatile String path;
+        volatile boolean active;
+        boolean accepted, stopRequested, capped;
+
+        Recording(File directory, String label, MediaPlayer player, long baselineBytes) {
+            this.directory = directory;
+            this.label = label;
+            this.player = player;
+            this.baselineBytes = baselineBytes;
+        }
+    }
+
+    private Recording current;
+
+    void sample(VlcPlaybackActivity activity, JSONObject result, String label) throws Exception {
+        begin(activity, result, label);
+        long deadline = SystemClock.elapsedRealtime() + 8000;
+        while (
+            result.optBoolean(label + "NativeRecordingStarted") && SystemClock.elapsedRealtime() < deadline
+        ) {
+            limit(activity);
+            SystemClock.sleep(250);
+        }
+        finish(activity, result);
+    }
+
+    private long size(File file) {
+        if (file.isFile()) return file.length();
+        long bytes = 0;
+        File[] children = file.listFiles();
+        if (children != null) for (File child : children) bytes += size(child);
+        return bytes;
+    }
 
     void begin(VlcPlaybackActivity activity, JSONObject result, String label) throws Exception {
-        activeLabel = label;
-        activeDirectory = new File(directory, result.getString("evidenceId") + "-" + label);
-        if (!activeDirectory.isDirectory() && !activeDirectory.mkdirs()) throw new Exception(
-            "Clip directory unavailable"
-        );
-        boolean[] started = { false };
+        File path = new File(directory, result.getString("evidenceId") + "-" + label);
+        if (!path.isDirectory() && !path.mkdirs()) throw new Exception("Clip directory unavailable");
+        Recording capture = new Recording(path, label, activity.player, size(directory));
+        current = capture;
         instrumentation.runOnMainSync(() -> {
-            if (activity.player != null) started[0] = activity.player.record(
-                activeDirectory.getAbsolutePath()
-            );
+            if (activity.player != capture.player || capture.player == null) return;
+            capture.player.setEventListener(event -> {
+                // Preserve the app's active-player event routing. No stale player can drive its UI.
+                if (activity.player == capture.player) activity.onPlayerEvent(event);
+                if (event.type == MediaPlayer.Event.RecordChanged) {
+                    if (event.getRecording()) {
+                        capture.active = true;
+                        capture.started.countDown();
+                    } else if (capture.started.getCount() == 0) {
+                        capture.active = false;
+                        capture.path = event.getRecordPath();
+                        capture.stopped.countDown();
+                    }
+                }
+            });
+            capture.accepted = capture.player.record(path.getAbsolutePath());
         });
-        recording = started[0];
-        capped = false;
-        result.put(label + "NativeRecordingStarted", recording);
+        boolean started = capture.accepted && capture.started.await(5, TimeUnit.SECONDS);
+        result.put(label + "NativeRecordingStarted", started);
+    }
+
+    private void stop(VlcPlaybackActivity activity, Recording capture) {
+        if (capture.stopRequested || !capture.accepted || capture.stopped.getCount() == 0) return;
+        capture.stopRequested = true;
+        instrumentation.runOnMainSync(() -> {
+            if (activity.player == capture.player) capture.player.record(null);
+        });
     }
 
     void limit(VlcPlaybackActivity activity) {
-        if (!recording || activeDirectory == null) return;
-        long bytes = 0;
-        File[] files = activeDirectory.listFiles();
-        if (files != null) for (File file : files) bytes += file.length();
-        if (bytes >= 8 * 1024 * 1024) {
-            instrumentation.runOnMainSync(() -> {
-                if (activity.player != null) activity.player.record(null);
-            });
-            recording = false;
-            capped = true;
+        Recording capture = current;
+        if (capture == null || !capture.active || capture.stopRequested) return;
+        if (size(directory) - capture.baselineBytes >= 8 * 1024 * 1024) {
+            stop(activity, capture);
+            capture.capped = true;
         }
     }
 
     void finish(VlcPlaybackActivity activity, JSONObject result) throws Exception {
-        if (activeDirectory == null) return;
-        if (recording) instrumentation.runOnMainSync(() -> {
-            if (activity.player != null) activity.player.record(null);
-        });
-        recording = false;
-        // Native recording stops asynchronously. Allow its container to flush before export.
-        SystemClock.sleep(1000);
+        Recording capture = current;
+        if (capture == null) return;
+        current = null;
+        stop(activity, capture);
+        boolean stopped = capture.accepted && capture.stopped.await(5, TimeUnit.SECONDS);
         JSONArray clips = result.optJSONArray("recordedClips");
         if (clips == null) {
             clips = new JSONArray();
             result.put("recordedClips", clips);
         }
+        // RecordChanged supplies the actual closed-file path; do not guess from a timed directory scan.
+        if (capture.path != null) {
+            File nativeFile = new File(capture.path);
+            if (
+                nativeFile.getCanonicalPath().startsWith(directory.getCanonicalPath() + File.separator) &&
+                nativeFile.isFile() &&
+                nativeFile.length() > 0
+            ) {
+                File target = new File(capture.directory, "sample-0.media");
+                if (!nativeFile.equals(target) && !nativeFile.renameTo(target)) throw new Exception(
+                    "Clip sanitization failed"
+                );
+            }
+        }
         JSONArray names = new JSONArray();
-        File[] files = activeDirectory.listFiles();
+        File[] files = capture.directory.listFiles();
         if (files != null) for (int index = 0; index < files.length; index++) {
             File file = files[index];
             if (!file.isFile() || file.length() == 0) continue;
-            String name = "sample-" + index + ".media";
-            // VLC's default filename can contain its input name. Export only neutral filenames.
-            if (!file.renameTo(new File(activeDirectory, name))) throw new Exception(
+            String name = file.getName().matches("sample-[0-9]+\\.media")
+                ? file.getName()
+                : "sample-" + (index + 1) + ".media";
+            File target = new File(capture.directory, name);
+            if (!file.equals(target) && !file.renameTo(target)) throw new Exception(
                 "Clip sanitization failed"
             );
             names.put(name);
         }
         clips.put(
             new JSONObject()
-                .put("position", activeLabel)
-                .put("directory", activeDirectory.getName())
+                .put("position", capture.label)
+                .put("directory", capture.directory.getName())
                 .put("files", names)
-                .put("capped", capped)
+                .put("capped", capture.capped)
+                .put("eventsConfirmed", capture.started.getCount() == 0 && stopped)
         );
-        activeDirectory = null;
     }
 
     void capture(JSONObject result, String label) throws Exception {

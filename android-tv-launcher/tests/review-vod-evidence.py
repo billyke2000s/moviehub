@@ -147,7 +147,9 @@ def review(report, raw, directory):
             if len(tracks) == 1:
                 matching = tracks
             windows[label] = dict(tracks=tracks, capped=clip.get('capped', False), errors=errors,
-                                  selectedAudioSignalVerified=any(track['signalDetected'] for track in matching))
+                                  recordingEventsConfirmed=clip.get('eventsConfirmed', False),
+                                  selectedAudioSignalVerified=clip.get('eventsConfirmed', False) and
+                                  any(track['signalDetected'] for track in matching))
         evidence['capturedSourceAudio'] = windows
         for frame in raw.glob(identity + '-*.jpg'):
             if re.fullmatch(identity + r'-(start|early|middle|late)-[01]\.jpg', frame.name):

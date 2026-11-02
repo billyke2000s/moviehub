@@ -392,7 +392,6 @@ public final class FreeVodLiveAuditTest {
             audioAt = start;
         if (evidence != null) {
             result.put(label + "EpochMs", System.currentTimeMillis());
-            evidence.begin(activity, result, label);
         }
         long videoFrames = 0,
             audioBuffers = 0;
@@ -401,7 +400,6 @@ public final class FreeVodLiveAuditTest {
         while (SystemClock.elapsedRealtime() - start < seconds * 1000L) {
             SystemClock.sleep(250);
             snapshot(activity, sample);
-            if (evidence != null) evidence.limit(activity);
             long now = SystemClock.elapsedRealtime();
             if (sample[7] > video) {
                 videoFrames += sample[7] - video;
@@ -436,7 +434,7 @@ public final class FreeVodLiveAuditTest {
             .put(label + "ProgressMs", progress)
             .put(label + "PlayedAudioBuffers", audioBuffers);
         if (evidence != null) {
-            evidence.finish(activity, result);
+            evidence.sample(activity, result, label);
             evidence.capture(result, label);
         }
         return smooth;

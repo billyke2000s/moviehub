@@ -432,7 +432,7 @@ public class VlcPlaybackActivity extends Activity {
     }
 
     /** The player's events: playing, buffering, the end, and errors (which try the other format). */
-    private void onPlayerEvent(MediaPlayer.Event event) {
+    void onPlayerEvent(MediaPlayer.Event event) {
         if (!foreground || player == null) return;
         if (event.type == MediaPlayer.Event.Playing) {
             Timings.finish("play", "Press play to picture");
