@@ -15,12 +15,12 @@ class EvidenceTests(unittest.TestCase):
         return array.array('h', (int(8000 * math.sin(2 * math.pi * frequency * (i // 2) / 16000))
                                 for i in range(64000)))
 
-    def test_disabled_output_cannot_pass_calibration(self):
+    def test_silent_samples_cannot_pass_signal_calibration(self):
         checked = evidence.calibration(self.tone(0))
         self.assertFalse(checked['valid'])
         self.assertFalse(checked['signalDetected'])
 
-    def test_known_emulator_tone_is_required_not_just_any_sound(self):
+    def test_known_decoder_calibration_tone_is_required_not_just_any_sound(self):
         self.assertTrue(evidence.calibration(self.tone(440))['valid'])
         self.assertFalse(evidence.calibration(self.tone(1000))['valid'])
 

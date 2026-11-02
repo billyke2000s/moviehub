@@ -28,18 +28,15 @@ def main():
             parser.error('Unknown enabled provider ids: ' + ', '.join(sorted(unknown)))
         rows = [row for row in rows if row['id'] in args.provider]
     media = ('movies', 'series') if args.media == 'both' else (args.media,)
+    cases = json.loads((Path(__file__).resolve().parents[1] /
+                        'app/src/androidTest/assets/vod-audit-cases.json').read_text())
     jobs = [(row, kind) for row in rows for kind in media]
     print(json.dumps(dict(kind='inventory', sites=len(rows), cases=len(jobs), media=media)), flush=True)
 
     def audit(row, kind):
         start = time.monotonic()
-        query = dict(title='Inception', year='2010', imdb='tt1375666', tmdb=27205,
-                     runtimeMinutes=148, season=-1, episode=-1, http=False)
-        if kind == 'series':
-            query.update(title='Breaking Bad', year='2008', imdb='tt0903747', tmdb=1396,
-                         runtimeMinutes=58, season=1, episode=1, episodeTitle='Pilot', premiered='2008-01-20')
-        if row['id'] == 'scrubs:rarefilmm_com' and kind == 'movies':
-            query.update(title='Anna', year='1967', imdb='', tmdb=45486, runtimeMinutes=87)
+        profile = cases['sites'].get(row['id'], 'general')
+        query = dict(cases['profiles'][profile][kind][0], http=False)
         result = dict(kind='lookup', website=row['id'], site=row['site'], media=kind,
                       title=query['title'], adapterSupportsType=row[kind])
         try:

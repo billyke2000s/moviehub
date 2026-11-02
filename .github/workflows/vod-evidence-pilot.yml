@@ -1,4 +1,4 @@
-name: Calibrate real VOD audio and rendered-content evidence
+name: VOD rendered content and captured source audio
 on:
     push:
         branches: [fix/all-vod-site-audit]
@@ -8,6 +8,9 @@ on:
             - "android-tv-launcher/tests/review-vod-evidence.py"
             - "android-tv-launcher/app/src/androidTest/java/local/tv/home/VodAuditEvidence.java"
     workflow_dispatch:
+concurrency:
+    group: vod-evidence-pilot-${{ github.ref }}
+    cancel-in-progress: true
 permissions:
     contents: read
 jobs:
@@ -24,9 +27,6 @@ jobs:
                     - { provider: "native:vidzee", media: series }
         env:
             ORG_GRADLE_PROJECT_moviehubAbi: x86_64
-            QEMU_AUDIO_DRV: pa
-            QEMU_PA_SINK: moviehub_audit
-            PULSE_SINK: moviehub_audit
         steps:
             - uses: actions/checkout@v5
             - uses: actions/setup-java@v5
@@ -44,30 +44,22 @@ jobs:
             - uses: gradle/actions/setup-gradle@v5
               with:
                   gradle-version: "9.6.0"
-            - name: Prepare isolated emulator audio output
+            - name: Prepare bounded media-sample decoder
               run: |
                   sudo apt-get update -qq
-                  sudo apt-get install -y -qq ffmpeg pulseaudio
-                  export XDG_RUNTIME_DIR="$RUNNER_TEMP/moviehub-audio-runtime"
-                  mkdir -p "$XDG_RUNTIME_DIR"
-                  chmod 700 "$XDG_RUNTIME_DIR"
-                  echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
-                  pulseaudio --start --exit-idle-time=-1
-                  pactl load-module module-null-sink sink_name=moviehub_audit rate=16000 channels=2
-                  pactl set-default-sink moviehub_audit
-                  pactl load-module module-native-protocol-unix socket="$RUNNER_TEMP/moviehub-pulse.sock"
-                  echo "PULSE_SERVER=unix:$RUNNER_TEMP/moviehub-pulse.sock" >> "$GITHUB_ENV"
-                  echo "QEMU_PA_SERVER=unix:$RUNNER_TEMP/moviehub-pulse.sock" >> "$GITHUB_ENV"
+                  sudo apt-get install -y -qq ffmpeg
                   sudo chmod 666 /dev/kvm
-            - name: Capture known-tone calibration and real playback evidence
+            - name: Capture rendered video and native media samples
               uses: reactivecircus/android-emulator-runner@v2
               with:
                   api-level: 28
                   arch: x86_64
                   profile: tv_1080p
-                  emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -audio pa
+                  cores: 4
+                  ram-size: 4096M
+                  emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -noaudio
                   disable-animations: true
-                  script: VOD_SOURCE_LIMIT=2 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=true bash .github/scripts/vod-evidence-audit.sh 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}'
+                  script: VOD_SOURCE_LIMIT=2 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=false bash .github/scripts/vod-evidence-audit.sh 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}'
             - uses: actions/upload-artifact@v6
               if: always()
               with:
@@ -75,5 +67,4 @@ jobs:
                   path: |
                       vod-live-audit.jsonl
                       vod-evidence/
-                      vod-audio-recorder.log
                   retention-days: 7

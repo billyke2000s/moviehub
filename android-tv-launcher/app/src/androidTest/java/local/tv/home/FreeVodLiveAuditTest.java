@@ -29,6 +29,7 @@ public final class FreeVodLiveAuditTest {
     private File output;
     private VodAuditEvidence evidence;
     private int evidenceIndex;
+    private JSONObject auditCases;
 
     @Test
     public void auditEveryDiscoveredPlaybackSource() throws Exception {
@@ -41,6 +42,12 @@ public final class FreeVodLiveAuditTest {
             clear.write("");
         }
         boolean series = Boolean.parseBoolean(arguments.getString("vodSeries", "false"));
+        try (
+            java.io.InputStream input = instrumentation.getContext().getAssets().open("vod-audit-cases.json");
+            java.util.Scanner reader = new java.util.Scanner(input, "UTF-8")
+        ) {
+            auditCases = new JSONObject(reader.useDelimiter("\\A").next());
+        }
         String providers = arguments.getString("vodProviders", "");
         List<String> sites = providers.isEmpty()
             ? FreeVodProviders.ids(context, series)
@@ -54,7 +61,6 @@ public final class FreeVodLiveAuditTest {
         );
         if (Boolean.parseBoolean(arguments.getString("vodCaptureEvidence", "false"))) {
             evidence = new VodAuditEvidence(instrumentation, context);
-            record(evidence.audioFixture(context));
         }
         int sourceLimit = Integer.parseInt(arguments.getString("vodSourceLimit", "200"));
         boolean stopAfterVerified = Boolean.parseBoolean(
@@ -66,21 +72,7 @@ public final class FreeVodLiveAuditTest {
         ) throw new IllegalArgumentException("Invalid audit sample limits");
         for (int index = shard; index < sites.size(); index += shards) {
             String site = sites.get(index);
-            // Full, unambiguous catalogue identities. Runtime tolerance allows credits and alternate cuts.
-            JSONObject[] films = {
-                film("Inception", "2010", "tt1375666", 27205, 148),
-                film("Dune: Part Two", "2024", "tt15239678", 693134, 166),
-            };
-            if (series) films = new JSONObject[] {
-                film("Breaking Bad", "2008", "tt0903747", 1396, 58)
-                    .put("season", 1)
-                    .put("episode", 1)
-                    .put("premiered", "2008-01-20")
-                    .put("episodeTitle", "Pilot"),
-            };
-            if (!series && site.equals("scrubs:rarefilmm_com")) films = new JSONObject[] {
-                film("Anna", "1967", "", 45486, 87),
-            };
+            JSONObject[] films = samples(site, series);
             int tested = 0;
             boolean verified = false;
             for (JSONObject film : films) {
@@ -139,7 +131,8 @@ public final class FreeVodLiveAuditTest {
                         .put("separateSource", separate);
                     if (evidence != null) result
                         .put("evidenceId", String.format(java.util.Locale.ROOT, "%04d", ++evidenceIndex))
-                        .put("contentReview", "pending");
+                        .put("contentReview", "pending")
+                        .put("physicalAudioOutputTested", false);
                     record(new JSONObject(result.toString()).put("kind", "starting"));
                     try {
                         play(source, film.optInt("runtimeMinutes"), sampleSeconds, result);
@@ -190,6 +183,28 @@ public final class FreeVodLiveAuditTest {
                 "cinestreamAudit",
                 "true".equals(InstrumentationRegistry.getArguments().getString("vodCineStreamAllBackends"))
             );
+    }
+
+    private JSONObject[] samples(String site, boolean series) throws Exception {
+        String profile = auditCases.getJSONObject("sites").optString(site, "general");
+        org.json.JSONArray rows = auditCases
+            .getJSONObject("profiles")
+            .getJSONObject(profile)
+            .getJSONArray(series ? "series" : "movies");
+        JSONObject[] result = new JSONObject[rows.length()];
+        for (int index = 0; index < rows.length(); index++) {
+            JSONObject sample = rows.getJSONObject(index);
+            result[index] = film(
+                sample.getString("title"),
+                sample.getString("year"),
+                sample.getString("imdb"),
+                sample.getInt("tmdb"),
+                sample.getInt("runtimeMinutes")
+            );
+            for (String field : new String[] { "season", "episode", "premiered", "episodeTitle" })
+                if (sample.has(field)) result[index].put(field, sample.get(field));
+        }
+        return result;
     }
 
     private void record(JSONObject row) throws Exception {
@@ -333,7 +348,11 @@ public final class FreeVodLiveAuditTest {
             result.put("transportErrors", errors);
             result.put("transportFailureOrigins", new org.json.JSONArray(transportFailures));
             ProviderRelay.testFailures = null;
-            instrumentation.runOnMainSync(activity::finish);
+            try {
+                if (evidence != null) evidence.finish(activity, result);
+            } finally {
+                instrumentation.runOnMainSync(activity::finish);
+            }
             instrumentation.waitForIdleSync();
             long deadline = SystemClock.elapsedRealtime() + 10000;
             while (!activity.isDestroyed() && SystemClock.elapsedRealtime() < deadline)
@@ -371,7 +390,10 @@ public final class FreeVodLiveAuditTest {
         long start = SystemClock.elapsedRealtime(),
             videoAt = start,
             audioAt = start;
-        if (evidence != null) result.put(label + "EpochMs", System.currentTimeMillis());
+        if (evidence != null) {
+            result.put(label + "EpochMs", System.currentTimeMillis());
+            evidence.begin(activity, result, label);
+        }
         long videoFrames = 0,
             audioBuffers = 0;
         long maxVideoGap = 0,
@@ -379,6 +401,7 @@ public final class FreeVodLiveAuditTest {
         while (SystemClock.elapsedRealtime() - start < seconds * 1000L) {
             SystemClock.sleep(250);
             snapshot(activity, sample);
+            if (evidence != null) evidence.limit(activity);
             long now = SystemClock.elapsedRealtime();
             if (sample[7] > video) {
                 videoFrames += sample[7] - video;
@@ -412,7 +435,10 @@ public final class FreeVodLiveAuditTest {
             .put(label + "AudioGapMs", maxAudioGap)
             .put(label + "ProgressMs", progress)
             .put(label + "PlayedAudioBuffers", audioBuffers);
-        if (evidence != null) evidence.capture(result, label);
+        if (evidence != null) {
+            evidence.finish(activity, result);
+            evidence.capture(result, label);
+        }
         return smooth;
     }
 

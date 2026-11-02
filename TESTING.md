@@ -1,8 +1,8 @@
 # Testing
 
-## Rendered-content and actual-audio evidence — in progress
+## Rendered-content and source-audio evidence — in progress
 
-The prior emulator used `-noaudio`; its played-buffer counters did not prove an audible signal. The new opt-in pilot removes that flag, records only a dedicated virtual output sink and requires a separately generated 440 Hz tone to be present in the recording before evaluating source audio. It exports short audio windows and actual rendered frames at multiple positions for content review. A candidate remains `needs_content_review` until its frames are reviewed; runtime, decoder counters and a poster alone cannot establish the requested movie. This is calibration work, not a claim that all sites have passed.
+The earlier emulator's `-noaudio` setting means its played-buffer counters did not prove audible output. Attempts to initialize a PulseAudio output sink failed calibration before provider testing. The current opt-in pilot instead captures actual rendered screenshots and bounded native `MediaPlayer.record()` clips from MovieHub's existing player. The source audio in those clips is independently decoded and checked for a non-silent signal and selected-track language; a known encoded tone checks the analysis pipeline. This verifies source audio data, not physical speaker output. Neutral filenames are exported, raw media stays out of uploaded review artifacts, and no downloaded player code is executed. Content identity remains pending until frames/dialogue are reviewed. The shared audit-case asset uses suitable classic/anime/Asian/regional titles instead of requiring every catalogue to contain Inception. No prior six-sample result certifies the actual movie visually or audibly.
 
 ## Complete VOD site audit — 2 November 2026
 

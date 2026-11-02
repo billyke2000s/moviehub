@@ -3,16 +3,13 @@ package local.tv.home;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.AudioTrack;
 import android.os.SystemClock;
 import java.io.File;
 import java.io.FileOutputStream;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/** Opt-in rendered frames and an independent host-audio calibration marker. */
+/** Opt-in actual rendered frames and bounded native media samples for content/audio review. */
 final class VodAuditEvidence {
 
     private final Instrumentation instrumentation;
@@ -26,45 +23,85 @@ final class VodAuditEvidence {
         );
         File[] old = directory.listFiles();
         if (old != null) for (File file : old) {
-            if (file.isFile() && !file.delete()) throw new Exception("Old evidence could not be cleared");
+            clear(file);
         }
     }
 
-    JSONObject audioFixture(Context context) throws Exception {
-        AudioManager manager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-        manager.setStreamVolume(
-            AudioManager.STREAM_MUSIC,
-            manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
-            0
+    private void clear(File file) throws Exception {
+        File[] children = file.listFiles();
+        if (children != null) for (File child : children) clear(child);
+        if (!file.delete()) throw new Exception("Old evidence could not be cleared");
+    }
+
+    private File activeDirectory;
+    private String activeLabel;
+    private boolean recording;
+    private boolean capped;
+
+    void begin(VlcPlaybackActivity activity, JSONObject result, String label) throws Exception {
+        activeLabel = label;
+        activeDirectory = new File(directory, result.getString("evidenceId") + "-" + label);
+        if (!activeDirectory.isDirectory() && !activeDirectory.mkdirs()) throw new Exception(
+            "Clip directory unavailable"
         );
-        short[] samples = new short[44100 * 2];
-        for (int i = 0; i < samples.length; i++) samples[i] = (short) (8000 *
-            Math.sin((2 * Math.PI * 440 * i) / 44100));
-        AudioTrack track = new AudioTrack(
-            AudioManager.STREAM_MUSIC,
-            44100,
-            AudioFormat.CHANNEL_OUT_MONO,
-            AudioFormat.ENCODING_PCM_16BIT,
-            samples.length * 2,
-            AudioTrack.MODE_STATIC
-        );
-        if (track.getState() != AudioTrack.STATE_INITIALIZED) throw new Exception(
-            "Audio fixture could not initialize"
-        );
-        JSONObject result = new JSONObject().put("kind", "audio_fixture").put("frequencyHz", 440);
-        try {
-            if (track.write(samples, 0, samples.length) != samples.length) throw new Exception(
-                "Audio fixture write failed"
+        boolean[] started = { false };
+        instrumentation.runOnMainSync(() -> {
+            if (activity.player != null) started[0] = activity.player.record(
+                activeDirectory.getAbsolutePath()
             );
-            result.put("startEpochMs", System.currentTimeMillis());
-            track.play();
-            SystemClock.sleep(2500);
-            result.put("endEpochMs", System.currentTimeMillis());
-        } finally {
-            track.stop();
-            track.release();
+        });
+        recording = started[0];
+        capped = false;
+        result.put(label + "NativeRecordingStarted", recording);
+    }
+
+    void limit(VlcPlaybackActivity activity) {
+        if (!recording || activeDirectory == null) return;
+        long bytes = 0;
+        File[] files = activeDirectory.listFiles();
+        if (files != null) for (File file : files) bytes += file.length();
+        if (bytes >= 8 * 1024 * 1024) {
+            instrumentation.runOnMainSync(() -> {
+                if (activity.player != null) activity.player.record(null);
+            });
+            recording = false;
+            capped = true;
         }
-        return result;
+    }
+
+    void finish(VlcPlaybackActivity activity, JSONObject result) throws Exception {
+        if (activeDirectory == null) return;
+        if (recording) instrumentation.runOnMainSync(() -> {
+            if (activity.player != null) activity.player.record(null);
+        });
+        recording = false;
+        // Native recording stops asynchronously. Allow its container to flush before export.
+        SystemClock.sleep(1000);
+        JSONArray clips = result.optJSONArray("recordedClips");
+        if (clips == null) {
+            clips = new JSONArray();
+            result.put("recordedClips", clips);
+        }
+        JSONArray names = new JSONArray();
+        File[] files = activeDirectory.listFiles();
+        if (files != null) for (int index = 0; index < files.length; index++) {
+            File file = files[index];
+            if (!file.isFile() || file.length() == 0) continue;
+            String name = "sample-" + index + ".media";
+            // VLC's default filename can contain its input name. Export only neutral filenames.
+            if (!file.renameTo(new File(activeDirectory, name))) throw new Exception(
+                "Clip sanitization failed"
+            );
+            names.put(name);
+        }
+        clips.put(
+            new JSONObject()
+                .put("position", activeLabel)
+                .put("directory", activeDirectory.getName())
+                .put("files", names)
+                .put("capped", capped)
+        );
+        activeDirectory = null;
     }
 
     void capture(JSONObject result, String label) throws Exception {

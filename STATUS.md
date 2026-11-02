@@ -2,7 +2,7 @@
 
 ## Full VOD site audit — in progress, 2 November 2026
 
-The owner clarified that each site needs actual-content, audible-signal, duration and smoothness verification. Existing automated passes are technical samples only. Work now adds captured rendered frames and calibrated emulator-output audio before full content review; no prior six-sample result certifies the actual movie visually or audibly.
+The owner clarified that each site needs actual-content, audible-signal, duration and smoothness verification. Existing automated passes are technical samples only. PulseAudio calibration could not initialize in CI. Work now uses captured rendered frames and bounded native player recordings with independently decoded source audio before full content review; no prior six-sample result certifies the actual movie visually or audibly.
 
 The enabled inventory has 74 websites, previously filtered to 69 for Movies and 61 for Series. Both screens now schedule the same 74-site list, with unsupported adapter types reported explicitly. Current-site inspection found omitted series support on 4KHDHub, Akwam and Rtally; their missing paths are implemented on PR #211. Multimovies also needs its dubbed-title catalogue alias, exact TMDB/episode evidence and explicitly advertised wrapper hosts. The stricter follow-up audit finds valid-length decoded sources which still stall or fail seeking; those remain unverified rather than counted as working. The first complete 148-case baseline is recorded in Actions run 41397448329; successful audit execution is distinct from successful playback. No all-site success or publication is claimed.
 
