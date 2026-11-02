@@ -4,6 +4,7 @@ Only explicitly labelled episodes are selected. Hosted embeds remain subject to 
 ResolveURL support and media validation; an extracted iframe is not proof of playback.
 """
 import base64
+import html
 import json
 import re
 from urllib.parse import parse_qs, quote, urlencode, urljoin, urlparse
@@ -26,12 +27,52 @@ def episode_path(q, segment='episode'):
 class Multimovies(Base):
     base_link = 'https://m1.multimovies.courses'
 
+    @staticmethod
+    def server_url(value):
+        # watchConfig sometimes escapes its URL twice. Decode data, never execute page scripts.
+        return html.unescape(html.unescape(value))
+
+    def server(self, row, referer):
+        if row.get('type') != 'iframe' or not row.get('url'):
+            return
+        url = client.safe(self.server_url(row['url']))
+        label = 'Multimovies ' + str(row.get('name') or 'server')
+        if urlparse(url).hostname == 'rozgarlelo.modiplay.xyz':
+            page = request(url, referer=referer)
+            # The wrapper's explicit server controls carry hosted media. Other page URLs
+            # include ads, recommendations and a proxy player; do not scan them for streams.
+            seen = set()
+            for server in dom_parser.parse_dom(page, 'div', {'class': 'srv-item'}, req='data-url')[:32]:
+                link = client.safe(urljoin(url, self.server_url(server.attrs['data-url'])))
+                if urlparse(link).hostname == urlparse(url).hostname or link in seen:
+                    continue
+                seen.add(link)
+                yield external(link, url, label + ' ' + server.attrs.get('data-pname', 'host'))
+        else:
+            yield external(url, referer, label)
+
+    def config_identity(self, config, q):
+        identities = []
+        for row in (config.get('initialServers') or [])[:32]:
+            parsed = urlparse(self.server_url(str(row.get('url') or '')))
+            args = parse_qs(parsed.query)
+            if parsed.hostname == 'rozgarlelo.modiplay.xyz' and parsed.path.startswith('/embed/tmdb/'):
+                identities.append((args.get('id', [''])[0], args.get('s', [''])[0], args.get('e', [''])[0],
+                                   parsed.path.rsplit('/', 1)[-1]))
+        wanted = (q['tmdb'], q.get('season', ''), q.get('episode', ''), 'tv' if 'season' in q else 'movie')
+        return bool(identities) and all(value == wanted for value in identities)
+
     def extract(self, q):
         # The current site replaced WordPress/Doo with a searchable catalogue and
         # literal watchConfig. Keep the old path as a fallback for older mirrors.
         data = get(self.base_link + '/api/search?' + urlencode(dict(q=q['title'], limit=20)))
         rows = data.get('tv_shows' if 'season' in q else 'movies') or []
-        matches = [row for row in rows if slug(row.get('title', '')) == slug(q['title']) and
+        def title_match(row):
+            name = row.get('title', '')
+            if 'season' in q:
+                name = re.sub(r'\s*\(Now in Hindi\)\s*$', '', name, flags=re.I)
+            return slug(name) == slug(q['title'])
+        matches = [row for row in rows if title_match(row) and
                    ('season' in q or str(row.get('year')) == q['year'])]
         if len(matches) == 1:
             url = urljoin(self.base_link, matches[0]['url'])
@@ -46,9 +87,9 @@ class Multimovies(Base):
                 if 'season' in q and (str(config.get('season')) != q['season'] or
                                       str(config.get('episode')) != q['episode']):
                     return
-                for row in (config.get('initialServers') or [])[:32]:
-                    if row.get('type') == 'iframe' and row.get('url'):
-                        yield external(row['url'], url, 'Multimovies ' + str(row.get('name') or 'server'))
+                if slug(matches[0].get('title', '')) != slug(q['title']) and not self.config_identity(config, q):
+                    return
+                yield from self.each((config.get('initialServers') or [])[:32], lambda row: self.server(row, url))
                 return
         url = self.base_link + episode_path(q, 'episodes')
         page = request(url)

@@ -2,8 +2,7 @@
 
 ## Full VOD site audit — in progress, 2 November 2026
 
-The enabled inventory has 74 websites, previously filtered to 69 for Movies and 61 for Series. Both screens now schedule the same 74-site list, with unsupported adapter types reported explicitly. Current-site inspection found omitted series support on 4KHDHub, Akwam and Rtally; their missing paths are implemented locally and now await full playback revalidation. The first complete 148-case baseline is recorded in Actions run 41397448329; successful audit execution is distinct from successful playback. No all-site success or publication is claimed.
-
+The enabled inventory has 74 websites, previously filtered to 69 for Movies and 61 for Series. Both screens now schedule the same 74-site list, with unsupported adapter types reported explicitly. Current-site inspection found omitted series support on 4KHDHub, Akwam and Rtally; their missing paths are implemented on PR #211. Multimovies also needs its dubbed-title catalogue alias, exact TMDB/episode evidence and explicitly advertised wrapper hosts. The stricter follow-up audit finds valid-length decoded sources which still stall or fail seeking; those remain unverified rather than counted as working. The first complete 148-case baseline is recorded in Actions run 41397448329; successful audit execution is distinct from successful playback. No all-site success or publication is claimed.
 
 ## Current release — MovieHub 1.0.19 (code 119)
 
@@ -43,7 +42,6 @@ include 23 verified sources (eleven movies and twelve episodes); the episode ret
 Vidy playback failures and other site/host errors remain unresolved; registration is not playback proof.
 See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
 
-
 Earlier checkpoint: current-site inspection corrected the new adapters. Application revision
 47b22de passed all six Android jobs after an experimental retry (the first attempt raised
 DeadSystemException). Its native Vidy samples still failed and remain draft-PR blockers.
@@ -67,7 +65,6 @@ including 208 regular cases plus the opt-in audit assumption, 27 experimental ca
 focused VOD cases. Its two normal Hexa Alpha live checks also passed. The separate Movy
 comparison on unchanged main passed 8/8; the feature audit had one unverified 4K audio sample. See the [inventory and evidence](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
 Not merged or published.
-
 
 Last updated: 29 October 2026.
 

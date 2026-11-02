@@ -613,6 +613,28 @@ class CineStreamTests(unittest.TestCase):
                 self.assertEqual(rows[0]['source'], 'Multimovies Real backend')
                 self.assertFalse(rows[0]['direct'])
 
+    def test_multimovies_dubbed_alias_requires_exact_tmdb_and_episode_and_unwraps_hosts(self):
+        from moviehub_native.cinestream_embeds import Multimovies
+        provider = Multimovies()
+        search = {'tv_shows': [dict(title='A Film (Now in Hindi)', year=2023, url='/series/dub-99')]}
+        for identity, season, episode, count in (('123', 2, 3, 1), ('999', 2, 3, 0),
+                                                  ('123', 1, 3, 0), ('123', 2, 1, 0)):
+            config = dict(season=2, episode=3, initialServers=[dict(name='ModiPlay', type='iframe',
+                url='https://rozgarlelo.modiplay.xyz/embed/tmdb/tv?id=' + identity +
+                    '&amp;amp;s=' + str(season) + '&amp;amp;e=' + str(episode))])
+            page = 'const watchConfig = ' + json.dumps(config) + ';'
+            wrapper = ('<div class="srv-item" data-pname="Host" data-url="https://host.example/e/real"></div>'
+                       '<div class="srv-item" data-url="/proxy.php?p=1"></div>'
+                       '<a href="https://ads.example/e/ad">Ad</a>'
+                       '<div class="recommendation" data-url="https://host.example/e/wrong"></div>')
+            with patch.object(client, 'request', side_effect=[search, page, wrapper]) as request:
+                rows = provider.sources(self.key(provider, True), [])
+            self.assertEqual(len(rows), count)
+            if rows:
+                self.assertEqual(rows[0]['url'], 'https://host.example/e/real')
+                self.assertEqual(parse_qs(urlparse(request.call_args.args[0]).query),
+                                 dict(id=['123'], s=['2'], e=['3']))
+
     def test_current_animesalt_retains_advertised_hosts_and_languages(self):
         import base64
         from moviehub_native.cinestream_embeds import AnimeSalt

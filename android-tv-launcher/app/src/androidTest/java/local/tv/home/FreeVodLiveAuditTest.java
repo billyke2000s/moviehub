@@ -272,7 +272,7 @@ public final class FreeVodLiveAuditTest {
             boolean smoothStart = decoded && plausible && observe(activity, sampleSeconds, result, "start");
             boolean seek = decoded && plausible && seekAndDecode(activity, duration / 2);
             boolean smoothMiddle = seek && observe(activity, sampleSeconds, result, "middle");
-            boolean lateSeek = smoothMiddle && seekAndDecode(activity, (duration * 9) / 10);
+            boolean lateSeek = seek && seekAndDecode(activity, (duration * 9) / 10);
             boolean smoothLate = lateSeek && observe(activity, 10, result, "late");
             snapshot(activity, sample);
             result

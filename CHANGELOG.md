@@ -1,6 +1,7 @@
 ## Unreleased
 
 - Add exact season/episode handling to 4KHDHub, Rtally and Akwam; follow Akwam's advertised current catalogue domain.
+- Repair Multimovies dubbed-series discovery with exact TMDB/episode checks and unwrap its advertised ModiPlay host controls.
 - Scope Rtally media to the matched post, excluding unrelated recommendation cards and season packs.
 - Audit displayed video and played audio progress, handle statistics resets on seeking, and use normal signed-link refresh.
 
