@@ -1,5 +1,9 @@
 ## Unreleased
 
+- Add exact season/episode handling to 4KHDHub, Rtally and Akwam; follow Akwam's advertised current catalogue domain.
+- Scope Rtally media to the matched post, excluding unrelated recommendation cards and season packs.
+- Audit displayed video and played audio progress, handle statistics resets on seeking, and use normal signed-link refresh.
+
 - Use the same enabled free-site list for Movies and Series; keep unsupported content types explicit.
 - Expand the site audit to check complete coverage, sustained video/audio output, runtime and two seek positions.
 

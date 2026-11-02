@@ -2,6 +2,13 @@
 
 ## Shared VOD site selection
 
+4KHDHub selects real individual episode filenames. Rtally reads only literal JSON for the matched
+post and follows the site's numbered episode-player mapping. Akwam uses its advertised `.ss`
+catalogue, matching IMDb identity and labelled season/episode before the existing media hops.
+Provider/site identities remain stable. Audit seeks tolerate statistics resets but require new
+displayed frames; sustained windows check presented pictures and played audio buffers. Normal
+source refresh is enabled in the audit, matching production managed VOD startup/recovery.
+
 `FreeVodProviders.ids(context, series)` uses the same enabled website IDs as `ids(context)`. Python adapter movie/series flags remain capability facts for safe content routing. `query_site` reports unsupported types explicitly; it does not substitute a film for an episode. Retired and parked sites remain excluded.
 
 

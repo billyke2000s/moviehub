@@ -137,6 +137,8 @@ public final class FreeVodLiveAuditTest {
                     } catch (Exception error) {
                         // Exception messages and native logs may contain signed URLs: retain type only.
                         result.put("status", error.getClass().getSimpleName());
+                    } finally {
+                        ProviderRelay.testFailures = null;
                     }
                     record(result);
                     tested++;
@@ -194,15 +196,44 @@ public final class FreeVodLiveAuditTest {
         int sampleSeconds,
         JSONObject result
     ) throws Exception {
+        java.util.concurrent.atomic.AtomicReference<SourceRepository.Source> current =
+            new java.util.concurrent.atomic.AtomicReference<>(source);
+        java.util.concurrent.atomic.AtomicInteger refreshes = new java.util.concurrent.atomic.AtomicInteger();
         VodSources.Session session = new VodSources.Session(
             java.util.Collections.singletonList(VodSources.entry(source)),
-            index -> new VodSources.Resolved(source.uri, new org.json.JSONArray()),
+            index -> {
+                SourceRepository.Source next = current.get().fresh(false);
+                current.set(next);
+                return new VodSources.Resolved(next.uri, new org.json.JSONArray());
+            },
             true
         );
         session.free = true;
         session.managed = true;
         session.expectedDuration = expectedMinutes * 60000L;
-        session.transport = index -> source.stream;
+        session.refreshable = index -> current.get().refresh != null;
+        session.refresh = index -> {
+            refreshes.incrementAndGet();
+            SourceRepository.Source next = current.get().fresh(true);
+            current.set(next);
+            return new VodSources.Resolved(next.uri, new org.json.JSONArray());
+        };
+        session.transport = index -> current.get().stream;
+        List<String> transportFailures = new java.util.concurrent.CopyOnWriteArrayList<>();
+        ProviderRelay.testFailures = error -> {
+            // Class and source location only. Exception messages may contain signed URLs.
+            StackTraceElement[] stack = error.getStackTrace();
+            String origin =
+                stack.length == 0
+                    ? "unknown"
+                    : stack[0].getClassName().replaceAll("[^A-Za-z0-9_.]", "_") +
+                      ":" +
+                      stack[0].getLineNumber();
+            String code = error.getClass().getSimpleName() + ":" + origin;
+            if (!transportFailures.contains(code) && transportFailures.size() < 20) transportFailures.add(
+                code
+            );
+        };
         VlcPlaybackActivity activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
             new Intent(context, VlcPlaybackActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -213,11 +244,11 @@ public final class FreeVodLiveAuditTest {
         ErrorLog.clear();
         try {
             long deadline = SystemClock.elapsedRealtime() + 45000;
-            long[] sample = new long[7];
+            long[] sample = new long[8];
             boolean decoded = false;
             while (SystemClock.elapsedRealtime() < deadline) {
                 snapshot(activity, sample);
-                if (sample[0] > 0 && sample[1] > 500 && sample[2] > 5) {
+                if (sample[0] > 0 && sample[1] > 500 && sample[2] > 5 && sample[7] > 5) {
                     decoded = true;
                     break;
                 }
@@ -239,50 +270,13 @@ public final class FreeVodLiveAuditTest {
                 .put("decoded", decoded)
                 .put("plausibleRuntime", plausible);
             boolean smoothStart = decoded && plausible && observe(activity, sampleSeconds, result, "start");
-            boolean seek = false;
-            if (decoded && plausible) {
-                snapshot(activity, sample);
-                long target = duration / 2;
-                long previousFrames = sample[2];
-                instrumentation.runOnMainSync(() -> {
-                    if (activity.player != null && activity.player.isSeekable()) activity.player.setTime(
-                        target
-                    );
-                });
-                deadline = SystemClock.elapsedRealtime() + 20000;
-                while (SystemClock.elapsedRealtime() < deadline) {
-                    snapshot(activity, sample);
-                    if (Math.abs(sample[1] - target) < 15000 && sample[2] > previousFrames + 5) {
-                        seek = true;
-                        break;
-                    }
-                    SystemClock.sleep(250);
-                }
-            }
+            boolean seek = decoded && plausible && seekAndDecode(activity, duration / 2);
             boolean smoothMiddle = seek && observe(activity, sampleSeconds, result, "middle");
-            boolean lateSeek = false;
-            if (smoothMiddle) {
-                snapshot(activity, sample);
-                long target = (duration * 9) / 10;
-                long previous = sample[2];
-                instrumentation.runOnMainSync(() -> {
-                    if (activity.player != null && activity.player.isSeekable()) activity.player.setTime(
-                        target
-                    );
-                });
-                deadline = SystemClock.elapsedRealtime() + 20000;
-                while (SystemClock.elapsedRealtime() < deadline) {
-                    snapshot(activity, sample);
-                    if (Math.abs(sample[1] - target) < 15000 && sample[2] > previous + 5) {
-                        lateSeek = true;
-                        break;
-                    }
-                    SystemClock.sleep(250);
-                }
-            }
+            boolean lateSeek = smoothMiddle && seekAndDecode(activity, (duration * 9) / 10);
             boolean smoothLate = lateSeek && observe(activity, 10, result, "late");
             snapshot(activity, sample);
             result
+                .put("refreshes", refreshes.get())
                 .put("smoothStart", smoothStart)
                 .put("smoothMiddle", smoothMiddle)
                 .put("lateSeekDecoded", lateSeek)
@@ -290,6 +284,7 @@ public final class FreeVodLiveAuditTest {
                 .put("decodedFrames", sample[2])
                 .put("decodedAudio", sample[5])
                 .put("playedAudioBuffers", sample[6])
+                .put("displayedPictures", sample[7])
                 .put("receivedBytes", activity.vod == null ? 0 : activity.vod.incomingBytes())
                 .put("selectedAudioLanguage", audioLanguage(activity))
                 .put("width", sample[3])
@@ -321,6 +316,8 @@ public final class FreeVodLiveAuditTest {
                 uniqueErrors.add(error.where + ": " + error.type);
             for (String error : uniqueErrors) errors.put(error);
             result.put("transportErrors", errors);
+            result.put("transportFailureOrigins", new org.json.JSONArray(transportFailures));
+            ProviderRelay.testFailures = null;
             instrumentation.runOnMainSync(activity::finish);
             instrumentation.waitForIdleSync();
             long deadline = SystemClock.elapsedRealtime() + 10000;
@@ -329,32 +326,54 @@ public final class FreeVodLiveAuditTest {
         }
     }
 
+    private boolean seekAndDecode(VlcPlaybackActivity activity, long target) {
+        instrumentation.runOnMainSync(() -> {
+            if (activity.player != null && activity.player.isSeekable()) activity.player.setTime(target);
+        });
+        long[] sample = new long[8];
+        snapshot(activity, sample);
+        long frames = sample[7],
+            deadline = SystemClock.elapsedRealtime() + 20000;
+        while (SystemClock.elapsedRealtime() < deadline) {
+            SystemClock.sleep(250);
+            snapshot(activity, sample);
+            // Some demuxers reset statistics on seek. Require fresh frames after that reset.
+            if (sample[7] < frames) frames = sample[7];
+            if (Math.abs(sample[1] - target) < 15000 && sample[7] > frames + 5) return true;
+        }
+        return false;
+    }
+
     private boolean observe(VlcPlaybackActivity activity, int seconds, JSONObject result, String label)
         throws Exception {
-        long[] sample = new long[7];
+        long[] sample = new long[8];
         snapshot(activity, sample);
         long firstTime = sample[1],
-            firstVideo = sample[2],
+            firstVideo = sample[7],
             firstAudio = sample[6];
         long video = firstVideo,
             audio = firstAudio;
         long start = SystemClock.elapsedRealtime(),
             videoAt = start,
             audioAt = start;
+        long videoFrames = 0,
+            audioBuffers = 0;
         long maxVideoGap = 0,
             maxAudioGap = 0;
         while (SystemClock.elapsedRealtime() - start < seconds * 1000L) {
             SystemClock.sleep(250);
             snapshot(activity, sample);
             long now = SystemClock.elapsedRealtime();
-            if (sample[2] > video) {
-                video = sample[2];
+            if (sample[7] > video) {
+                videoFrames += sample[7] - video;
                 videoAt = now;
             }
             if (sample[6] > audio) {
-                audio = sample[6];
+                audioBuffers += sample[6] - audio;
                 audioAt = now;
             }
+            video = sample[7];
+            audio = sample[6];
             maxVideoGap = Math.max(maxVideoGap, now - videoAt);
             maxAudioGap = Math.max(maxAudioGap, now - audioAt);
         }
@@ -363,16 +382,18 @@ public final class FreeVodLiveAuditTest {
         boolean smooth =
             maxVideoGap <= 4000 &&
             maxAudioGap <= 4000 &&
-            sample[2] > firstVideo + 5 &&
-            sample[6] > firstAudio &&
+            videoFrames > 5 &&
+            audioBuffers > 0 &&
             progress >= elapsed * .8 &&
             progress <= elapsed * 1.3;
         result
             .put(label + "ObservationSeconds", elapsed / 1000)
+            .put(label + "DisplayedPictures", videoFrames)
+            .put(label + "DisplayedFps", (videoFrames * 1000.0) / Math.max(1, elapsed))
             .put(label + "VideoGapMs", maxVideoGap)
             .put(label + "AudioGapMs", maxAudioGap)
             .put(label + "ProgressMs", progress)
-            .put(label + "PlayedAudioBuffers", sample[6] - firstAudio);
+            .put(label + "PlayedAudioBuffers", audioBuffers);
         return smooth;
     }
 
@@ -414,6 +435,7 @@ public final class FreeVodLiveAuditTest {
                 sample[2] = stats == null ? 0 : stats.decodedVideo;
                 sample[5] = stats == null ? 0 : stats.decodedAudio;
                 sample[6] = stats == null ? 0 : stats.playedAbuffers;
+                sample[7] = stats == null ? 0 : stats.displayedPictures;
                 for (int index = 0; index < media.getTrackCount(); index++) if (
                     media.getTrack(index) instanceof IMedia.VideoTrack
                 ) {

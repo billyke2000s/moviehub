@@ -47,28 +47,82 @@ class ProjectFreeTv(Base):
 
 class Akwam(Base):
     requires_imdb = True
-    base_link = 'https://akwam.it'
+    # The old .it address now advertises this canonical catalogue and redirects searches to its hub.
+    base_link = 'https://akwam.ss'
+
+    @staticmethod
+    def season_number(label):
+        label = label.translate(str.maketrans('أإآ٠١٢٣٤٥٦٧٨٩', 'ااا0123456789'))
+        number = re.search(r'(?:\bSeason\s*|الموسم\s*)(\d+)(?!\d)', label, re.I)
+        if number:
+            return int(number[1])
+        ordinals = ('الاول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس',
+                    'السابع', 'الثامن', 'التاسع', 'العاشر')
+        return next((i for i, word in enumerate(ordinals, 1)
+                     if re.search(r'الموسم\s+' + word + r'(?![\w])', label)), None)
+
+    @staticmethod
+    def verified(page, imdb):
+        return any(re.search(r'/title/' + re.escape(imdb) + r'(?:/|$)', anchor.attrs['href'])
+                   for anchor in anchors(page))
+
+    def media(self, url, page=None):
+        page = request(url, referer=self.base_link + '/') if page is None else page
+        for cls in ('link-download', 'download-link', 'link'):
+            candidates = dom_parser.parse_dom(page, 'a', {'class': cls}, req='href')
+            if not candidates:
+                return
+            url = client.safe(urljoin(url, candidates[0].attrs['href']))
+            if cls == 'link':
+                yield item(url, self.headers(), 'Akwam')
+            else:
+                page = request(url, referer=self.base_link + '/')
 
     def extract(self, q):
-        # Upstream never verifies the requested season on its series page. Keep films only.
-        if 'season' in q:
-            return
-        args = dict(q=q['title'], section='movie', year=q['year'], rating=0, formats=0, quality=0)
+        series = 'season' in q
+        args = dict(q=q['title'], section='series' if series else 'movie', year=q['year'],
+                    rating=0, formats=0, quality=0)
         search = request(self.base_link + '/search?' + urlencode(args))
-        for link in dom_parser.parse_dom(search, 'a', {'class': 'box'}, req='href')[:20]:
-            url = urljoin(self.base_link, link.attrs['href'])
-            page = request(url, referer=self.base_link + '/')
-            if not any(re.search(r'/title/' + re.escape(q['imdb']) + r'(?:/|$)', a.attrs['href']) for a in anchors(page)):
+        seen = set()
+        for anchor in anchors(search):
+            url = urljoin(self.base_link, anchor.attrs['href'])
+            if not re.search(r'/(?:series|movie)/\d+/', url) or url in seen:
                 continue
-            for cls in ('link-download', 'download-link', 'link'):
-                candidates = dom_parser.parse_dom(page, 'a', {'class': cls}, req='href')
-                if not candidates:
-                    break
-                url = client.safe(urljoin(url, candidates[0].attrs['href']))
-                if cls == 'link':
-                    yield item(url, self.headers(), 'Akwam')
-                else:
-                    page = request(url, referer=self.base_link + '/')
+            seen.add(url)
+            if len(seen) > 20:
+                break
+            page = request(url, referer=self.base_link + '/')
+            if not self.verified(page, q['imdb']):
+                continue
+            if not series:
+                yield from self.media(url, page)
+                return
+            wanted = int(q['season'])
+            title = dom_parser.parse_dom(page, 'h1')
+            actual = self.season_number(text(title[0].content)) if title else None
+            if actual != wanted:
+                # Navigate only a labelled season; recheck IMDb and h1 after following it.
+                for season in anchors(page):
+                    if self.season_number(text(season.content)) != wanted:
+                        continue
+                    candidate = client.safe(urljoin(url, season.attrs['href']))
+                    if not re.search(r'/series/\d+/', candidate):
+                        continue
+                    selected = request(candidate, referer=url)
+                    heading = dom_parser.parse_dom(selected, 'h1')
+                    if self.verified(selected, q['imdb']) and heading and self.season_number(text(heading[0].content)) == wanted:
+                        page, url, actual = selected, candidate, wanted
+                        break
+            if actual != wanted:
+                continue
+            for episode in anchors(page):
+                number = re.search(r'(?:حلقة|Episode)\s*(\d+)(?!\d)', text(episode.content), re.I)
+                if not number or int(number[1]) != int(q['episode']):
+                    continue
+                target = client.safe(urljoin(url, episode.attrs['href']))
+                if re.search(r'/episode/\d+/', target):
+                    yield from self.media(target)
+                    return
 
 
 class Asiaflix(Base):

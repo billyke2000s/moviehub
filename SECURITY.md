@@ -1,5 +1,14 @@
 # Security
 
+## VOD audit and catalogue updates — 2 November 2026
+
+Rtally post payloads are parsed as JSON literals, never executed, and recommendation media is
+excluded from the selected title. Episode links require the selected show/season identity.
+Akwam's new canonical host is advertised by its existing homepage; the old provider ID remains.
+The audit's transport observer retains exception class and source-code location only, without
+messages, signed URLs, cookies or account details. The observer is never assigned by app code.
+Existing public-address, HTTPS, redirect and credential-origin checks remain active.
+
 Current follow-up adds the remaining fifteen catalogue adapters and bounded redirect/file-host
 protocols without modifying established sites or replacing the player. All fifteen stay registered;
 ordinary redirects are not grounds for removal. Eleven current roots exposed film catalogues;

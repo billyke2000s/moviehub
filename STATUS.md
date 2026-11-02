@@ -2,7 +2,7 @@
 
 ## Full VOD site audit — in progress, 2 November 2026
 
-The enabled inventory has 74 websites, previously filtered to 69 for Movies and 61 for Series. Both screens now schedule the same 74-site list, with unsupported adapter types reported explicitly. Current-site inspection found omitted series support on 4KHDHub, Akwam and Rtally; implementation and live playback verification are ongoing. No all-site success or publication is claimed.
+The enabled inventory has 74 websites, previously filtered to 69 for Movies and 61 for Series. Both screens now schedule the same 74-site list, with unsupported adapter types reported explicitly. Current-site inspection found omitted series support on 4KHDHub, Akwam and Rtally; their missing paths are implemented locally and now await full playback revalidation. The first complete 148-case baseline is recorded in Actions run 41397448329; successful audit execution is distinct from successful playback. No all-site success or publication is claimed.
 
 
 ## Current release — MovieHub 1.0.19 (code 119)

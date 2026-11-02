@@ -114,23 +114,8 @@ class AnimeSalt(Base):
         yield item(response.get('videoSource') or response.get('securedLink'), self.headers(), 'AnimeSalt')
 
 
-class Rtally(Base):
-    base_link = 'https://rtally.lol'
-
-    def extract(self, q):
-        if 'season' in q:
-            return
-        page = request(self.base_link + '/post/' + slug(q['title']))
-        # Next/React stores this literal JSON in escaped strings; no script evaluation.
-        page = page.replace('\\"', '"')
-        for match in re.finditer(r'"(?:small|medium|large|extraLarge)":"(https?://[^"\\]+)"', page):
-            yield external(match[1], self.base_link, 'Rtally direct')
-        hosts = {'vidhide': 'https://vidhideplus.com/v/', 'lulustream': 'https://lulustream.com/e/',
-                 'filemoon': 'https://filemoon.sx/e/', 'streamwish': 'https://playerwish.com/e/',
-                 'strmup': 'https://strmup.cc/'}
-        for match in re.finditer(r'"(lulustream|strmup|filemoon|vidhide|streamwish)Url":"([^"\\]+)"', page):
-            if match[2] != 'null':
-                yield external(hosts[match[1]] + quote(match[2], safe=''), self.base_link, 'Rtally ' + match[1])
+# Kept as a re-export for existing registry/import callers.
+from .cinestream_rtally import Rtally
 
 
 class KissKH(Base):

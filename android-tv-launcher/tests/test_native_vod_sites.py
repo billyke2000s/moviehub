@@ -58,6 +58,31 @@ class NativeSiteTests(unittest.TestCase):
         self.assertIn('Film%20%2B%20Cut.mkv', rows[0]['url'])
         self.assertFalse(any(x.endswith('/wrong') for x in calls))
 
+    def test_fourkhdhub_series_selects_exact_episode_files_and_rejects_packs(self):
+        provider = fourkhdhub.source()
+        search = '<a class="movie-card" href="/show"><h3 class="movie-card-title">Show</h3><p class="movie-card-meta">2020 • S01-S02</p></a>'
+        detail = ''.join('<div class="episode-download-item"><div class="episode-file-title">' + filename +
+            '</div><a href="/landing">Download HubCloud</a></div>' for filename in (
+                'Show.S02E03.1080p.mkv', 'Show.S01E03.1080p.mkv', 'Show.S02E04.1080p.mkv',
+                'Show.S02E03E04.1080p.mkv', 'Show.S02E03.1080p.zip', 'Show Season 2 Batch.zip'))
+        calls = []
+        def request(url, **kwargs):
+            calls.append(url)
+            if '?s=' in url: return search
+            if url.endswith('/show'): return detail
+            if url.endswith('/landing'): return "s('o','" + self.payload('https://hubcloud.ist/video/episode') + "',180000)"
+            if url.endswith('/video/episode'): return "var url = 'https://hubcloud.ist/files/episode';"
+            if url.endswith('/files/episode'): return '<a href="https://cdn.example/Show.S02E03.mkv">Download File</a>'
+            raise AssertionError('Unexpected episode path')
+        with patch.object(client, 'request', side_effect=request), patch.object(client, 'safe', side_effect=lambda x:x):
+            show = provider.tvshow('tt1', '1', '', 'Show', 'Show', [{'title':'Show'}], '2020')
+            key = provider.episode(show, 'tt1', '1', '', 'Episode', '', '2', '3')
+            rows = provider.sources(key, [])
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['filename'], 'Show.S02E03.1080p.mkv')
+        self.assertEqual(sum(url.endswith('/landing') for url in calls), 1)
+        self.assertIsNone(provider.episode(show, '', '', '', '', '', '2', '0'))
+
     def test_missing_matching_year_does_not_guess_a_detail_url(self):
         provider = fourkhdhub.source()
         with patch.object(client, 'request', return_value='<a class="movie-card" href="/wrong">Film 2021</a>') as call:
