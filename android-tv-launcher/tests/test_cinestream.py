@@ -376,6 +376,17 @@ class CineStreamTests(unittest.TestCase):
             self.assertEqual(provider.sources(self.key(provider), []), [])
         self.assertEqual(request.call_count, 2)
 
+    def test_akwam_current_download_page_can_contain_final_file_without_extra_hop(self):
+        provider = sites.Akwam()
+        pages = ['<a href="/movie/123/film">A Film</a>',
+                 '<a href="https://imdb.com/title/tt1234/">IMDb</a>'
+                 '<a class="link-download" href="/download/123">download</a>',
+                 '<a class="link btn btn-light" download href="https://cdn.example/film.mp4">file</a>']
+        with patch.object(client, 'request', side_effect=pages) as request:
+            rows = provider.sources(self.key(provider), [])
+        self.assertEqual(request.call_count, 3)
+        self.assertEqual(rows[0]['url'].partition('|')[0], 'https://cdn.example/film.mp4')
+
     def test_akwam_series_verifies_imdb_season_and_episode_on_current_domain(self):
         provider = sites.Akwam()
         imdb = '<a href="https://www.imdb.com/title/tt1234/">IMDb</a>'

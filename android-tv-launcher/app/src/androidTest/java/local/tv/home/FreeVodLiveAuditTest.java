@@ -244,7 +244,7 @@ public final class FreeVodLiveAuditTest {
         ErrorLog.clear();
         try {
             long deadline = SystemClock.elapsedRealtime() + 45000;
-            long[] sample = new long[8];
+            long[] sample = new long[9];
             boolean decoded = false;
             while (SystemClock.elapsedRealtime() < deadline) {
                 snapshot(activity, sample);
@@ -330,7 +330,7 @@ public final class FreeVodLiveAuditTest {
         instrumentation.runOnMainSync(() -> {
             if (activity.player != null && activity.player.isSeekable()) activity.player.setTime(target);
         });
-        long[] sample = new long[8];
+        long[] sample = new long[9];
         snapshot(activity, sample);
         long frames = sample[7],
             deadline = SystemClock.elapsedRealtime() + 20000;
@@ -346,7 +346,7 @@ public final class FreeVodLiveAuditTest {
 
     private boolean observe(VlcPlaybackActivity activity, int seconds, JSONObject result, String label)
         throws Exception {
-        long[] sample = new long[8];
+        long[] sample = new long[9];
         snapshot(activity, sample);
         long firstTime = sample[1],
             firstVideo = sample[7],
@@ -382,12 +382,14 @@ public final class FreeVodLiveAuditTest {
         boolean smooth =
             maxVideoGap <= 4000 &&
             maxAudioGap <= 4000 &&
-            videoFrames > 5 &&
+            (videoFrames * 1000.0) / Math.max(1, elapsed) >=
+                (sample[8] > 0 ? (sample[8] / 1000.0) * .8 : 12) &&
             audioBuffers > 0 &&
             progress >= elapsed * .8 &&
             progress <= elapsed * 1.3;
         result
             .put(label + "ObservationSeconds", elapsed / 1000)
+            .put(label + "NominalFps", sample[8] / 1000.0)
             .put(label + "DisplayedPictures", videoFrames)
             .put(label + "DisplayedFps", (videoFrames * 1000.0) / Math.max(1, elapsed))
             .put(label + "VideoGapMs", maxVideoGap)
@@ -442,6 +444,8 @@ public final class FreeVodLiveAuditTest {
                     IMedia.VideoTrack video = (IMedia.VideoTrack) media.getTrack(index);
                     sample[3] = video.width;
                     sample[4] = video.height;
+                    sample[8] =
+                        video.frameRateDen > 0 ? (1000L * video.frameRateNum) / video.frameRateDen : 0;
                 }
             } finally {
                 media.release();

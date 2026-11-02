@@ -5,6 +5,7 @@ which choose the first unrelated search result or first episode.
 """
 import json
 import re
+from html.parser import HTMLParser
 from urllib.parse import quote, urlencode, urljoin, urlparse
 from moviehub_compat import client
 from moviehub_scrubs import dom_parser, cleantitle
@@ -69,10 +70,28 @@ class Akwam(Base):
     def media(self, url, page=None):
         page = request(url, referer=self.base_link + '/') if page is None else page
         for cls in ('link-download', 'download-link', 'link'):
-            candidates = dom_parser.parse_dom(page, 'a', {'class': cls}, req='href')
+            class DownloadLinks(HTMLParser):
+                def __init__(self):
+                    super().__init__()
+                    self.urls = []
+
+                def handle_starttag(self, tag, attrs):
+                    values = dict(attrs)
+                    if tag == 'a' and cls in (values.get('class') or '').split() and values.get('href'):
+                        self.urls.append(values['href'])
+
+            # Current final anchors have a boolean `download` attribute, which the
+            # vendored regex DOM parser cannot parse. Keep this scoped to file navigation.
+            links = DownloadLinks()
+            links.feed(page)
+            candidates = links.urls
             if not candidates:
+                # The current canonical catalogue serves the final file on /download/;
+                # older mirrors still insert a separate download-link page.
+                if cls == 'download-link':
+                    continue
                 return
-            url = client.safe(urljoin(url, candidates[0].attrs['href']))
+            url = client.safe(urljoin(url, candidates[0]))
             if cls == 'link':
                 yield item(url, self.headers(), 'Akwam')
             else:
