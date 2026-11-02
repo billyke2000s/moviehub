@@ -448,21 +448,42 @@ class CineStreamTests(unittest.TestCase):
         self.assertEqual([r['quality'] for r in rows], ['Auto', '2160p', '720p'])
         self.assertTrue(all(parse_qs(r['url'].partition('|')[2]) == {'Referer': ['https://cinejoy.pk/']} for r in rows))
 
-    def test_vidzee_cbc_response_headers_override_defaults_case_insensitively(self):
-        import base64
+    def test_vidzee_current_locator_and_exact_episode_routes_preserve_headers(self):
         from moviehub_native import cinestream_crypto as crypto
-        from resolveurl.lib import pyaes
-        iv = b'0123456789abcdef'
-        cipher = pyaes.Encrypter(pyaes.AESModeOfOperationCBC(crypto.VIDZEE_FORMAT_KEY, iv=iv))
-        encrypted = cipher.feed(b'https://cdn.example/film.m3u8') + cipher.feed()
-        inner = base64.b64encode(iv).decode() + ':' + base64.b64encode(encrypted).decode()
-        response = {'headers': {'Referer': 'https://required.example/'}, 'url': [dict(link=base64.b64encode(inner.encode()).decode())]}
+        encoded = 'JHdmKJxbY01g15bnCKQtdTv5LiUdu0TtFN30RxcoizpAWpmS9hiqJOz8mx0NXwK2H+FpnFe/rmcMF4BT4fS6vM+GAoyayYyriqfmVfCiMsTiKzGpTqvV1g4oIvB0CKtG+CbgqvWIvfb9RfIVZaY='
         provider = crypto.Vidzee()
-        with patch.object(client, 'request', return_value=response):
+        def request(url, **kwargs):
+            self.assertNotIn('/api/server', url)
+            self.assertIn('/tv/123/2/3', url)
+            if '/languages/' in url:
+                return {'languages': ['English', 'Hindi', 'English', '../wrong', 42]}
+            self.assertEqual(parse_qs(urlparse(url).query)['e'], ['1'])
+            return {'c': encoded}
+        with patch.object(client, 'request', side_effect=request) as call:
             rows = provider.sources(self.key(provider, True), [])
-        self.assertEqual(len(rows), 7)
+        self.assertEqual(len(rows), 6)
+        self.assertTrue(any('s=v4%3AEnglish' in entry.args[0] for entry in call.call_args_list))
+        self.assertEqual(rows[0]['url'].partition('|')[0], 'https://cdn.example/film.m3u8')
         headers = parse_qs(rows[0]['url'].partition('|')[2])
         self.assertEqual([v for k, v in headers.items() if k.lower() == 'referer'], [['https://required.example/']])
+        self.assertEqual(rows[0]['info'], 'English')
+
+    def test_vidzee_unavailable_backend_does_not_hide_independent_movie_servers(self):
+        from moviehub_native import cinestream_crypto as crypto
+        provider = crypto.Vidzee()
+        def request(url, **kwargs):
+            self.assertIn('/movie/123', url)
+            if '/languages/' in url:
+                raise ValueError('Unavailable languages')
+            if 's=dcloud' in url:
+                raise ValueError('Unavailable server')
+            return {'url': 'https://cdn.example/film.m3u8', 'language': 'English'}
+        with patch.object(client, 'request', side_effect=request):
+            rows = provider.sources(self.key(provider), [])
+        self.assertEqual(len(rows), 3)
+        for invalid in ('!', 'A' * 262145, None):
+            with self.subTest(invalid_type=type(invalid).__name__), self.assertRaises((ValueError, TypeError)):
+                crypto.vidzee_locator(invalid)
 
     def test_rtally_keeps_distinct_backend_routes_and_direct_resources(self):
         from moviehub_native.cinestream_embeds import Rtally

@@ -1,5 +1,9 @@
 # Security
 
+## Vidzee public locator protocol — 2 November 2026
+
+The current first-party client uses `https://core.vidzee.wtf/streams/` with exact movie/TMDB or TV/TMDB/season/episode routes. Its optional `c` field is an obfuscated JSON locator. The observed public `streams-BHpSC3gU.js` embeds a data decoder with RC4-drop-2048 and a published 32-byte format constant. MovieHub ports only that bounded data format through its already-bundled RC4 helper; it does not execute downloaded JavaScript or WebAssembly, decrypt DRM media, or acquire licence/account keys. Normal HTTPS/public-address, media, header and cancellation checks remain active. First-party asset SHA-256 values: `Ads-BlxpIcYy.js` = `c5ea2f5bbdb19759d8aea06d10b667bfa2efc942c60701da05d7f7107513d4a0`; `streams-BHpSC3gU.js` = `62e30a5483ef9906c3c5c4ab8e9e8067bc5d5c00f87c94100158c9815e5636f5`.
+
 ## VOD audit and catalogue updates — 2 November 2026
 
 Rtally post payloads are parsed as JSON literals, never executed, and recommendation media is
@@ -24,7 +28,6 @@ validation of subsequent parser corrections remain pending; accessible HTML is n
 The preceding revision 7a38417 passed all six Android jobs in run 40869288216; its separate Vidy
 series audit failed and is not evidence of success for this follow-up.
 
-
 ## Additional CineStream protocols
 
 New adapters use the existing bounded public-address transport and media/identity checks.
@@ -39,7 +42,6 @@ and discloses requested media identifiers, transient site-issued tokens and encr
 responses to that service. It receives no MovieHub
 account credentials. Formats are display-only, and manifest declarations/provider reports are not
 promoted into verified decoder/audio claims. Existing redirect credential restrictions remain.
-
 
 ## Refreshable VOD sessions
 

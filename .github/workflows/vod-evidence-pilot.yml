@@ -20,6 +20,8 @@ jobs:
                 route:
                     - { provider: "free99:seriesloaded_ng", media: movies }
                     - { provider: "native:meowtv", media: series }
+                    - { provider: "native:vidzee", media: movies }
+                    - { provider: "native:vidzee", media: series }
         env:
             ORG_GRADLE_PROJECT_moviehubAbi: x86_64
             QEMU_AUDIO_DRV: pa
@@ -45,6 +47,10 @@ jobs:
               run: |
                   sudo apt-get update -qq
                   sudo apt-get install -y -qq ffmpeg pulseaudio
+                  export XDG_RUNTIME_DIR="$RUNNER_TEMP/moviehub-audio-runtime"
+                  mkdir -p "$XDG_RUNTIME_DIR"
+                  chmod 700 "$XDG_RUNTIME_DIR"
+                  echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
                   pulseaudio --start --exit-idle-time=-1
                   pactl load-module module-null-sink sink_name=moviehub_audit rate=16000 channels=2
                   pactl set-default-sink moviehub_audit
@@ -63,7 +69,7 @@ jobs:
             - uses: actions/upload-artifact@v6
               if: always()
               with:
-                  name: rendered-vod-evidence-${{ matrix.route.media }}
+                  name: rendered-vod-evidence-${{ strategy.job-index }}-${{ matrix.route.media }}
                   path: |
                       vod-live-audit.jsonl
                       vod-evidence/

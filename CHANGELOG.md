@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Repair Vidzee’s current movie/episode stream service, advertised language servers and public JSON locator format; retain source headers and URL/media validation.
+- Add opt-in rendered frames and calibrated real emulator audio capture; content identity remains pending visual review.
+
 - Add exact season/episode handling to 4KHDHub, Rtally and Akwam; follow Akwam's advertised current catalogue domain.
 - Repair Multimovies dubbed-series discovery with exact TMDB/episode checks and unwrap its advertised ModiPlay host controls.
 - Support Akwam’s current two-hop download page as well as older mirrors.
