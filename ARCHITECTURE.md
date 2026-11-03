@@ -2,6 +2,12 @@
 
 ## Shared VOD site selection
 
+AnyMovies' existing Free99/Scrubs loaders share `moviehub_compat/anymovies_series.py` for
+current series cards. The parser requires a series card and player link with the requested
+IMDb identity, then uses VidSrc's documented exact-episode route. Runtime capability is
+extended without changing upstream manifest provenance. Existing movie extraction and
+host resolution remain in place; unsupported hosts do not become direct media links.
+
 4KHDHub selects real individual episode filenames. Rtally reads only literal JSON for the matched
 post and follows the site's numbered episode-player mapping. Akwam uses its advertised `.ss`
 catalogue, matching IMDb identity and labelled season/episode before the existing media hops.

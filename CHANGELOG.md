@@ -1,5 +1,9 @@
 ## Unreleased
 
+- Add AnyMovies' current IMDb-scoped TV lookup to both existing loaders, preserving movie
+  extraction and reporting downstream unsupported players honestly. Playback verification is pending.
+- Resume the Android evidence audit one site at a time, saving code and checklist checkpoints.
+
 - Repair Vidzee’s current movie/episode stream service, advertised language servers and public JSON locator format; retain source headers and URL/media validation.
 - Add opt-in rendered frames and bounded native media recordings with independent audio-signal checks; content identity remains pending visual review.
 - Use shared genre-appropriate audit identities for classic, anime, Asian and regional catalogues.

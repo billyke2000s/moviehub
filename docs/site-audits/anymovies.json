@@ -1,0 +1,30 @@
+{
+    "site": "free99:anymovies_co",
+    "date": "2026-11-03",
+    "status": "in_progress",
+    "existingAdapters": ["free99:anymovies_co", "scrubs:anymovies_co"],
+    "siteInspection": {
+        "movie": "Current Inception search card and player buttons retained.",
+        "series": "Current search returns Breaking Bad series card with matching IMDb tt0903747.",
+        "episode": "Documented specific episode route checked for S01E01.",
+        "downstream": "Current VidSrc player config advertises turnstile=true; no bypass attempted."
+    },
+    "repair": "Shared IMDb-scoped exact-episode lookup added to both existing catalogue loaders; existing host resolver retained.",
+    "localValidation": {
+        "pythonTests": 159,
+        "coreSuites": 34,
+        "siteMoviePlaybackConfirmed": false,
+        "siteSeriesPlaybackConfirmed": false
+    },
+    "androidBaseline": {
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41722195176",
+        "commit": "d8ed0cc164668793f5ac3754357b8b6158d8de81",
+        "seriesLookup": "unsupported_type",
+        "seriesSources": 0,
+        "movie": "Inception decoded at 1280x720 with plausible 8888-second runtime; smoothness failed at all three positions; middle video gap 4787 ms; Dune Part Two resolution failed.",
+        "audio": "Middle and late clips decoded non-silent English AAC; opening clip decoded zero audio samples. No full audio pass.",
+        "content": "Contact sheet explicitly reviewed: studio logo at start, buffering overlay at early position, real Inception scenes at middle and late positions. The early frame is not usable content evidence."
+    },
+    "fullPlaybackVerified": false,
+    "next": "Inspect repaired-code Android results and all available source evidence before updating final site status."
+}

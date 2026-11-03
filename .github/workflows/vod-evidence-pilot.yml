@@ -7,6 +7,7 @@ on:
             - ".github/scripts/vod-evidence-audit.sh"
             - "android-tv-launcher/tests/review-vod-evidence.py"
             - "android-tv-launcher/app/src/androidTest/java/local/tv/home/VodAuditEvidence.java"
+            - "android-tv-launcher/app/src/main/python/**"
     workflow_dispatch:
 concurrency:
     group: vod-evidence-pilot-${{ github.ref }}

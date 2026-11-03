@@ -9,10 +9,11 @@ from moviehub_free99 import cleantitle
 from moviehub_free99 import client
 from moviehub_free99 import client_utils
 from moviehub_free99 import scrape_sources
+from moviehub_compat.anymovies_series import SeriesLookup
 #from moviehub_free99 import log_utils
 
 
-class source:
+class source(SeriesLookup):
     def __init__(self):
         self.results = []
         self.domains = ['downloads-anymovies.co', 'downloads-anymovies.com']
@@ -33,6 +34,8 @@ class source:
                 return self.results
             data = parse_qs(url)
             data = dict([(i, data[i][0]) if data[i] else (i, '') for i in data])
+            if 'season' in data:
+                return self.series_sources(data, client)
             aliases = literal_eval(data['aliases'])
             title = data['title']
             year = data['year']

@@ -1,5 +1,16 @@
 # Status
 
+## One-site-at-a-time audit resumed — 3 November 2026
+
+The owner requires each site's code/evidence checkpoint to be saved before moving to the
+next site. All 74 VOD sites remain in `SITE_FIX_STATUS.md`; unchecked results stay blank.
+AnyMovies is first. Its current website returns a matching Breaking Bad series card, but
+the old loaders report unsupported type (confirmed by Android run 41722195176). The current
+exact-episode lookup is added to both existing loaders; the downstream VidSrc player advertises
+a Turnstile requirement and remains a playback blocker. No challenge bypass is implemented.
+Local checks pass: 159 Python tests and 34 core suites. Fresh Android playback evidence for
+the repaired code is pending. No site is marked fully verified and no APK is published.
+
 ## Full VOD site audit — in progress, 2 November 2026
 
 The owner clarified that each site needs actual-content, audible-signal, duration and smoothness verification. Existing automated passes are technical samples only. PulseAudio calibration could not initialize in CI. Work now uses captured rendered frames and bounded native player recordings with independently decoded source audio before full content review; no prior six-sample result certifies the actual movie visually or audibly.

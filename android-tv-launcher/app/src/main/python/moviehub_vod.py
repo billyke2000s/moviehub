@@ -14,6 +14,11 @@ from pathlib import Path
 _RECORDS = json.loads(Path(__file__).with_name('moviehub_providers.json').read_text())
 from moviehub_native import PROVIDERS as _NATIVE_PROVIDERS
 _RECORDS += _NATIVE_PROVIDERS
+# Maintained AnyMovies loaders add the current site's IMDb-scoped TV search.
+# Keep the upstream manifest and original hashes as provenance, not runtime capabilities.
+for _record in _RECORDS:
+    if _record['name'] == 'anymovies_co':
+        _record['series'] = True
 _MODULES = {r['id']: r for r in _RECORDS}
 # Keep host selection headless and free-only. Never authorize a cloud service or open a popup.
 _HOSTS = sorted({d.lower() for cls in resolveurl.relevant_resolvers(include_universal=False, include_popups=False)

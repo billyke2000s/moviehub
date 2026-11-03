@@ -1,5 +1,15 @@
 # Testing
 
+## AnyMovies checkpoint — 3 November 2026
+
+Four current-site regressions cover both existing loaders, IMDb/type isolation, conflicting
+player identities, lookalike/credential-bearing hosts, exact episode locators, unchanged
+current movie-card/player-button extraction, and one shared website identity. The full Python
+suite passes 159 tests; all 34 core suites pass locally. The focused evidence workflow now
+checks AnyMovies alone for movies and series, with the existing Android/LibVLC recorder and
+all returned candidates up to the existing 200-source cap. Read final CI and evidence before
+claiming playback success. A fresh checklist result remains blank until that part is checked.
+
 ## Rendered-content and source-audio evidence — in progress
 
 The earlier emulator's `-noaudio` setting means its played-buffer counters did not prove audible output. Attempts to initialize a PulseAudio output sink failed calibration before provider testing. The current opt-in pilot instead captures actual rendered screenshots and bounded native `MediaPlayer.record()` clips from MovieHub's existing player. Smoothness windows run without recording, then an eight-second clip is captured independently at that position. Recording-state events confirm start, stop and the actual closed-file path rather than a timed directory scan. The source audio in those clips is independently decoded and checked for a non-silent signal and selected-track language; a known encoded tone checks the analysis pipeline. This verifies source audio data, not physical speaker output. Neutral filenames are exported, raw media stays out of uploaded review artifacts, and no downloaded player code is executed. Content identity remains pending until frames/dialogue are reviewed. The shared audit-case asset uses suitable classic/anime/Asian/regional titles instead of requiring every catalogue to contain Inception. No prior six-sample result certifies the actual movie visually or audibly.

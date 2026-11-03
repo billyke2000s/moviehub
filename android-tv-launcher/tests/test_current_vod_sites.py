@@ -13,6 +13,67 @@ from moviehub_scrubs import client as scraper_client
 
 
 class CurrentSiteTests(unittest.TestCase):
+    def test_anymovies_series_uses_matching_imdb_card_and_exact_requested_episode(self):
+        page = ('<div class="result_block" data-kind="movie" data-imdb="tt0903747">'
+                '<a href="https://vidsrc.sh/embed/tv?imdb=tt0903747">Wrong type</a></div>'
+                '<div class="result_block" data-kind="series" data-imdb="tt9999999">'
+                '<a href="https://vidsrc.sh/embed/tv?imdb=tt9999999">Wrong show</a></div>'
+                '<div class="result_block" data-kind="series" data-imdb="tt0903747">'
+                '<div class="result_image"><a href="https://vidsrc.sh/embed/tv?imdb=tt0903747">'
+                '<img alt="Breaking Bad"></a></div><div class="series_title">Breaking Bad</div></div>')
+        for family in ('free99', 'scrubs'):
+            module = importlib.import_module('moviehub_' + family + '.providers.anymovies_co')
+            provider = module.source()
+            key = provider.tvshow('tt0903747', '1396', '', 'Breaking Bad', 'Breaking Bad', [], '2008')
+            key = provider.episode(key, 'tt0903747', '1396', '', '', '', '2', '3')
+            with patch.object(module.client, 'scrapePage', return_value=SimpleNamespace(text=page)):
+                result = provider.sources(key, [])
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[0]['url'], 'https://vidsrc.sh/embed/tv/tt0903747/2/3')
+            self.assertEqual((result[0]['season'], result[0]['episode']), (2, 3))
+            self.assertFalse(result[0]['direct'])
+            self.assertNotIn('filename', result[0])
+
+    def test_anymovies_rejects_conflicting_player_identity_and_lookalike_hosts(self):
+        from moviehub_free99.providers.anymovies_co import source
+        provider = source()
+        key = provider.tvshow('tt0903747', '1396', '', 'Breaking Bad', '', [], '2008')
+        key = provider.episode(key, '', '', '', '', '', '1', '1')
+        for player in ('https://vidsrc.sh.evil.example/embed/tv?imdb=tt0903747',
+                       'https://vidsrc.sh/embed/tv?imdb=tt9999999',
+                       'https://user:pass@vidsrc.sh/embed/tv?imdb=tt0903747',
+                       'https://vidsrc.sh/embed/movie?imdb=tt0903747'):
+            page = ('<div class="result_block" data-kind="series" data-imdb="tt0903747">'
+                    '<a href="' + player + '">Show</a></div>')
+            with self.subTest(player=player), patch.object(scraper_client, 'scrapePage',
+                    return_value=SimpleNamespace(text=page)):
+                # Free99 and Scrubs expose separate compatibility module aliases.
+                from moviehub_free99 import client as free_client
+                with patch.object(free_client, 'scrapePage', return_value=SimpleNamespace(text=page)):
+                    self.assertEqual(provider.sources(key, []), [])
+
+    def test_anymovies_current_movie_search_and_player_buttons_are_preserved(self):
+        for family in ('free99', 'scrubs'):
+            module = importlib.import_module('moviehub_' + family + '.providers.anymovies_co')
+            page = ('<div class="result_title"><a href="/movie/Inception_2010">'
+                    '<span>Inception</span><span>(2010)</span></a></div>')
+            responses = [SimpleNamespace(text=page), SimpleNamespace(text=
+                '<button onclick="_loadP(this,\'https://playmogo.com/e/example\')">Play</button>')]
+            provider = module.source()
+            key = provider.movie('tt1375666', '27205', 'Inception', 'Inception',
+                                 [{'title': 'Inception'}], '2010')
+            with patch.object(module.client, 'scrapePage', side_effect=responses) as pages, \
+                    patch.object(module.scrape_sources, 'process', return_value=[]) as process:
+                provider.sources(key, [])
+            self.assertEqual(pages.call_args.args[0], provider.base_link + '/movie/Inception_2010')
+            self.assertEqual(process.call_args.args[1], 'https://playmogo.com/e/example')
+
+    def test_anymovies_series_is_scheduled_without_adding_a_duplicate_website(self):
+        rows = json.loads(vod.search_providers())
+        row = next(row for row in rows if row['id'] == 'free99:anymovies_co')
+        self.assertTrue(row['series'])
+        self.assertEqual(row['adapters'], ['free99:anymovies_co', 'scrubs:anymovies_co'])
+
     def setUp(self):
         transport = patch.object(requests.Session, 'request', side_effect=AssertionError('Unexpected network'))
         transport.start()
