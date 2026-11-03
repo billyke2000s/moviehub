@@ -1,4 +1,4 @@
-name: VOD rendered content and captured source audio
+name: VOD single-site rendered content and captured source audio
 on:
     push:
         branches: [fix/all-vod-site-audit]
@@ -16,15 +16,13 @@ permissions:
 jobs:
     evidence:
         runs-on: ubuntu-latest
-        timeout-minutes: 35
+        timeout-minutes: 75
         strategy:
             fail-fast: false
             matrix:
                 route:
-                    - { provider: "free99:seriesloaded_ng", media: movies }
-                    - { provider: "native:meowtv", media: series }
-                    - { provider: "native:vidzee", media: movies }
-                    - { provider: "native:vidzee", media: series }
+                    - { provider: "free99:anymovies_co", media: movies }
+                    - { provider: "free99:anymovies_co", media: series }
         env:
             ORG_GRADLE_PROJECT_moviehubAbi: x86_64
         steps:
@@ -59,7 +57,7 @@ jobs:
                   ram-size: 4096M
                   emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -noaudio
                   disable-animations: true
-                  script: VOD_SOURCE_LIMIT=2 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=false bash .github/scripts/vod-evidence-audit.sh 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}'
+                  script: VOD_SOURCE_LIMIT=200 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=false bash .github/scripts/vod-evidence-audit.sh 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}'
             - uses: actions/upload-artifact@v6
               if: always()
               with:
