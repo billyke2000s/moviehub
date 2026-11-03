@@ -23,7 +23,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | cinejoy (`native:cinejoy`) | | | | |
 | dudefilms (`native:dudefilms`) | | | | |
 | fibwatch (`native:fibwatch`) | | | | |
-| 4KHDHub (`native:fourkhdhub`) | | | | |
+| 4KHDHub (`native:fourkhdhub`) | 7 sources tested; 0 technical passes; 2 complete | 1 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/native-fourkhdhub.json) at ee57d83 |
 | fshare (`native:fshare`) | | | | |
 | hdhub4u (`native:hdhub4u`) | | | | |
 | hexa (`native:hexa`) | | | | |

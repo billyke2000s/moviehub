@@ -1,0 +1,46 @@
+{
+    "site": "native:fourkhdhub",
+    "sourceCommit": "ee57d83925fdf07016f3829df7134adfb908fc0d",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41726423062",
+    "fullPlaybackVerified": false,
+    "contentReview": "pending",
+    "media": {
+        "movies": {
+            "complete": true,
+            "lookupOutcomes": {
+                "complete": 2
+            },
+            "candidatesTested": 7,
+            "playbackOutcomes": {
+                "late_seek_unverified": 1,
+                "seek_unverified": 3,
+                "playback_stall_or_audio_output_unverified": 1,
+                "no_decoded_video": 2
+            },
+            "technicalPasses": 0,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {
+                "technical_failure": 7
+            },
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        },
+        "series": {
+            "complete": true,
+            "lookupOutcomes": {
+                "complete": 1
+            },
+            "candidatesTested": 1,
+            "playbackOutcomes": {
+                "no_decoded_video": 1
+            },
+            "technicalPasses": 0,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {
+                "technical_failure": 1
+            },
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        }
+    }
+}
