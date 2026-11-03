@@ -40,7 +40,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | onetouchtv (`native:onetouchtv`) | | | | |
 | peachify (`native:peachify`) | | | | |
 | projectfreetv.sx (`native:projectfreetv_sx`) | | | | |
-| rive (`native:rive`) | | | | |
+| rive (`native:rive`) | 18 sources tested; 1 technical passes; 2 complete | 3 sources tested; 1 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/native-rive.json) at 06f2660 |
 | rogmovies (`native:rogmovies`) | | | | |
 | Rtally (`native:rtally`) | | | | |
 | skymovies (`native:skymovies`) | | | | |
