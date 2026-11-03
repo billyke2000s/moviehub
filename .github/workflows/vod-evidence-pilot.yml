@@ -5,6 +5,7 @@ on:
         paths:
             - ".github/workflows/vod-evidence-pilot.yml"
             - ".github/scripts/vod-evidence-audit.sh"
+            - ".github/scripts/vod-evidence-mode.sh"
             - "android-tv-launcher/tests/review-vod-evidence.py"
             - "android-tv-launcher/app/src/androidTest/java/local/tv/home/VodAuditEvidence.java"
             - "android-tv-launcher/app/src/main/python/moviehub_compat/anymovies_series.py"
@@ -62,12 +63,7 @@ jobs:
                   ram-size: 4096M
                   emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -noaudio
                   disable-animations: true
-                  script: |
-                      if [ '${{ matrix.route.capture }}' = true ]; then
-                          VOD_SOURCE_LIMIT=200 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=false bash .github/scripts/vod-evidence-audit.sh 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}'
-                      else
-                          VOD_SOURCE_LIMIT=200 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=false bash android-tv-launcher/tests/run-live-vod-audit.sh 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}'
-                      fi
+                  script: VOD_SOURCE_LIMIT=200 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=false bash .github/scripts/vod-evidence-mode.sh '${{ matrix.route.capture }}' 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}'
             - uses: actions/upload-artifact@v6
               if: always()
               with:
