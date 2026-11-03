@@ -1,5 +1,18 @@
 # Testing
 
+## Opening-position audit correction — 3 November 2026
+
+Explicit review of the AnyMovies retest found some frames labelled start were near the end:
+the audit omitted the player ID, reusing `media` and its saved resume position. Each source
+now opens with an independent temporary ID, records `initialPositionMs` and
+`startedAtBeginning`, and cannot pass if its initial position exceeds 15 seconds. Temporary
+audit positions are cleared after closing. Production resume behavior is unchanged.
+`VodSessionPlaybackTest.auditSourcesStartIndependentlyWithoutChangingSavedUserProgress`
+opens real fixture media while both legacy and prior-audit progress exist; it requires a
+fresh opening and preservation of those saved positions. The focused runner now requires
+six cases from that class, with none skipped. Android execution is pending; previous start
+labels must not be treated as proof of opening footage.
+
 ## Durable per-site audit checkpoints — 3 November 2026
 
 The all-site workflow reads the same 74-site runtime inventory and runs one website at a time.

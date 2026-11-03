@@ -2,6 +2,13 @@
 
 ## One-site-at-a-time audit resumed — 3 November 2026
 
+Fresh AnyMovies run 41723642563 tested five movie candidates with no complete technical pass;
+series lookup reports unsupported_host after the discovery repair. Five contact sheets show
+real Inception/Dune scenes and buffering, but also exposed a test bug: some start samples
+inherited the default media resume key. Unique per-source audit IDs and an explicit initial
+timestamp check are now added, with a native regression pending execution. Earlier start
+labels are not reliable opening evidence. Rechecks must precede any all-good status.
+
 AnyMovies repair checkpoint `12fe2c2` is pushed. Fresh Android run 41723642563 now reaches the
 series player and reports `unsupported_host`, replacing the old incorrect `unsupported_type`.
 The downstream player advertises Turnstile; playback remains blocked. The baseline movie

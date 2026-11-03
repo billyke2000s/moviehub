@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Isolate each audited source from saved resume positions and record/check its initial
+  timestamp, preventing an end-of-film sample from counting as opening footage.
+
 - Save each website's movie/series audit evidence and checklist checkpoint before advancing
   to another site, preserving failures and requiring explicit content review before certification.
 

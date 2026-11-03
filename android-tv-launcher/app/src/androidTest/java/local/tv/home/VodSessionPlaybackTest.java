@@ -178,6 +178,51 @@ public final class VodSessionPlaybackTest {
     }
 
     @Test
+    public void auditSourcesStartIndependentlyWithoutChangingSavedUserProgress() throws Exception {
+        Context context = instrumentation.getTargetContext();
+        android.content.SharedPreferences positions = context.getSharedPreferences("positions", 0);
+        android.content.SharedPreferences ui = context.getSharedPreferences("ui", 0);
+        boolean oldResume = ui.getBoolean("resume", true);
+        boolean hadLegacy = positions.contains("media");
+        long oldLegacy = positions.getLong("media", 0);
+        String url = "http://127.0.0.1:" + server.getLocalPort() + "/vod.mp4";
+        Intent previous = FreeVodLiveAuditTest.sourceIntent(context, url, "unused");
+        String previousId = previous.getStringExtra("id");
+        token = VodSources.remember(session(index -> new VodSources.Resolved(url, null)));
+        Intent current = FreeVodLiveAuditTest.sourceIntent(context, url, token);
+        String currentId = current.getStringExtra("id");
+        assertNotEquals(previousId, currentId);
+        assertNotEquals("media", currentId);
+        positions.edit().putLong("media", 90_000).putLong(previousId, 120_000).commit();
+        ui.edit().putBoolean("resume", true).commit();
+        try {
+            activity = (VlcPlaybackActivity) instrumentation.startActivitySync(current);
+            await(
+                () ->
+                    activity.player != null && activity.player.isPlaying() && activity.player.getTime() > 300
+            );
+            assertTrue("Audit resumed an unrelated source", activity.player.getTime() < 15_000);
+            assertEquals(90_000, positions.getLong("media", 0));
+            assertEquals(120_000, positions.getLong(previousId, 0));
+        } finally {
+            if (activity != null) {
+                instrumentation.runOnMainSync(activity::finish);
+                await(activity::isDestroyed);
+            }
+            ResumePoint.clear(context, previousId, null);
+            ResumePoint.clear(context, currentId, null);
+            positions
+                .edit()
+                .remove(previousId + ":duration")
+                .remove(currentId + ":duration")
+                .commit();
+            if (hadLegacy) positions.edit().putLong("media", oldLegacy).commit();
+            else positions.edit().remove("media").commit();
+            ui.edit().putBoolean("resume", oldResume).commit();
+        }
+    }
+
+    @Test
     public void initialPlayUsesSessionResolutionAndRefreshesOneExpiredLink() throws Exception {
         AtomicInteger refreshes = new AtomicInteger();
         String origin = "http://127.0.0.1:" + server.getLocalPort();

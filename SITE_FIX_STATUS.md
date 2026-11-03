@@ -8,7 +8,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 
 | Site / provider ID | Movie result | Series result | Status | Evidence / notes |
 | --- | --- | --- | --- | --- |
-| anymovies.co (`free99:anymovies_co`) | Inception decoded; smoothness failed; opening audio unverified | Exact-episode lookup added; downstream player unsupported | In progress | [Saved checkpoint](docs/site-audits/anymovies.json); repaired-code Android evidence pending. |
+| anymovies.co (`free99:anymovies_co`) | Five movie candidates tested; no complete pass; opening-position rerun required | Exact-episode lookup runs; unsupported downstream host | Needs fixes / retest | [Saved checkpoint](docs/site-audits/anymovies.json); audit resume isolation corrected. |
 | bnwmovies.com (`free99:bnwmovies_com`) | | | | |
 | fzmovies.live (`free99:fzmovies_live`) | | | | |
 | levidia.ch (`free99:levidia_ch`) | | | | |

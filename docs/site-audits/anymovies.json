@@ -26,5 +26,17 @@
         "content": "Contact sheet explicitly reviewed: studio logo at start, buffering overlay at early position, real Inception scenes at middle and late positions. The early frame is not usable content evidence."
     },
     "fullPlaybackVerified": false,
-    "next": "Inspect repaired-code Android results and all available source evidence before updating final site status."
+    "next": "Rerun with isolated audit IDs and explicit opening-position assertions, then diagnose remaining movie audio/transport/smoothness failures.",
+    "androidRetest": {
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41723642563",
+        "sourceCommit": "12fe2c215c9d176cbdad2893aaf2c539a1598959",
+        "movieCandidates": 5,
+        "movieTechnicalPasses": 0,
+        "series": "unsupported_host; exact-episode lookup now runs",
+        "audio": "Mixdrop had non-silent AAC in all three recorded clips; other candidates had missing/partial recorded audio.",
+        "content": "All five contact sheets reviewed: actual Inception and Dune Part Two scenes are present, with buffering overlays. This does not establish smooth playback.",
+        "auditDefect": "Some start captures resumed a previous audit source because the player ID defaulted to media. Position labels must be rechecked after unique-ID repair.",
+        "openingEvidenceReliable": false,
+        "fullPlaybackVerified": false
+    }
 }

@@ -31,6 +31,15 @@ public final class FreeVodLiveAuditTest {
     private int evidenceIndex;
     private JSONObject auditCases;
 
+    static Intent sourceIntent(Context context, String url, String session) {
+        return new Intent(context, VlcPlaybackActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            .putExtra("url", url)
+            .putExtra("id", "vod-audit-" + java.util.UUID.randomUUID())
+            .putExtra("title", "Individual source audit")
+            .putExtra("vodSession", session);
+    }
+
     @Test
     public void auditEveryDiscoveredPlaybackSource() throws Exception {
         var arguments = InstrumentationRegistry.getArguments();
@@ -258,13 +267,9 @@ public final class FreeVodLiveAuditTest {
                 code
             );
         };
-        VlcPlaybackActivity activity = (VlcPlaybackActivity) instrumentation.startActivitySync(
-            new Intent(context, VlcPlaybackActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                .putExtra("url", source.uri)
-                .putExtra("title", "Individual source audit")
-                .putExtra("vodSession", VodSources.remember(session))
-        );
+        Intent intent = sourceIntent(context, source.uri, VodSources.remember(session));
+        String auditId = intent.getStringExtra("id");
+        VlcPlaybackActivity activity = (VlcPlaybackActivity) instrumentation.startActivitySync(intent);
         ErrorLog.clear();
         try {
             long deadline = SystemClock.elapsedRealtime() + 45000;
@@ -279,6 +284,7 @@ public final class FreeVodLiveAuditTest {
                 SystemClock.sleep(250);
             }
             long duration = sample[0];
+            boolean startedAtBeginning = decoded && sample[1] <= 15000;
             boolean plausible =
                 expectedMinutes > 0 &&
                 duration >= expectedMinutes * 60000L * .85 &&
@@ -292,8 +298,11 @@ public final class FreeVodLiveAuditTest {
                 .put("width", sample[3])
                 .put("height", sample[4])
                 .put("decoded", decoded)
+                .put("initialPositionMs", sample[1])
+                .put("startedAtBeginning", startedAtBeginning)
                 .put("plausibleRuntime", plausible);
-            boolean smoothStart = decoded && plausible && observe(activity, sampleSeconds, result, "start");
+            boolean smoothStart =
+                startedAtBeginning && plausible && observe(activity, sampleSeconds, result, "start");
             if (
                 evidence != null &&
                 decoded &&
@@ -325,19 +334,21 @@ public final class FreeVodLiveAuditTest {
                     "status",
                     !decoded
                         ? "no_decoded_video"
-                        : sample[5] == 0 && sample[6] == 0
-                          ? "audio_unverified"
-                          : expectedMinutes == 0
-                            ? "runtime_unverified"
-                            : !plausible
-                              ? "runtime_mismatch"
-                              : !seek
-                                ? "seek_unverified"
-                                : !lateSeek
-                                  ? "late_seek_unverified"
-                                  : !(smoothStart && smoothMiddle && smoothLate)
-                                    ? "playback_stall_or_audio_output_unverified"
-                                    : "verified"
+                        : !startedAtBeginning
+                          ? "unexpected_resume_position"
+                          : sample[5] == 0 && sample[6] == 0
+                            ? "audio_unverified"
+                            : expectedMinutes == 0
+                              ? "runtime_unverified"
+                              : !plausible
+                                ? "runtime_mismatch"
+                                : !seek
+                                  ? "seek_unverified"
+                                  : !lateSeek
+                                    ? "late_seek_unverified"
+                                    : !(smoothStart && smoothMiddle && smoothLate)
+                                      ? "playback_stall_or_audio_output_unverified"
+                                      : "verified"
                 );
         } finally {
             org.json.JSONArray errors = new org.json.JSONArray();
@@ -357,6 +368,7 @@ public final class FreeVodLiveAuditTest {
             long deadline = SystemClock.elapsedRealtime() + 10000;
             while (!activity.isDestroyed() && SystemClock.elapsedRealtime() < deadline)
                 SystemClock.sleep(100);
+            ResumePoint.clear(context, auditId, null);
         }
     }
 
