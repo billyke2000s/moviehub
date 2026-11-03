@@ -1,5 +1,19 @@
 # Testing
 
+## Durable per-site audit checkpoints — 3 November 2026
+
+The all-site workflow reads the same 74-site runtime inventory and runs one website at a time.
+Each job checks movies and series using the existing Android/LibVLC evidence runner, preserves
+each media report even when playback fails, then atomically saves a redacted report and only
+that website's checklist row. A checkpoint/upload failure stops the remaining jobs; ordinary
+playback failures remain recorded outcomes. The final review gate does not equate saved
+checkpoints with completed playback/content verification.
+
+Validation: 165 Python tests, including six coverage/failure-preservation checkpoint cases;
+one Node test exercises concurrent-ref retry and preservation of other rows/manual edits.
+Shell syntax, JavaScript syntax, formatter and diff checks pass. Existing application code
+still has 34 passing core suites. Full runner execution is pending GitHub validation.
+
 ## AnyMovies checkpoint — 3 November 2026
 
 Four current-site regressions cover both existing loaders, IMDb/type isolation, conflicting

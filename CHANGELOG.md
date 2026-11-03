@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Save each website's movie/series audit evidence and checklist checkpoint before advancing
+  to another site, preserving failures and requiring explicit content review before certification.
+
 - Add AnyMovies' current IMDb-scoped TV lookup to both existing loaders, preserving movie
   extraction and reporting downstream unsupported players honestly. Playback verification is pending.
 - Resume the Android evidence audit one site at a time, saving code and checklist checkpoints.

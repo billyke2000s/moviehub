@@ -1,5 +1,18 @@
 # Architecture
 
+## Per-site audit persistence
+
+`all-vod-sites-audit.yml` schedules one enabled website per matrix job with concurrency one.
+`audit-one-vod-site.sh` reuses the existing player/evidence scripts for both media types and
+preserves failed reports separately. `site-audit-checkpoint.py` emits only redacted coverage
+and outcome counts, never a content certification. `save-site-audit-checkpoint.cjs` writes
+that report plus one checklist row in one commit, re-reading the latest branch on conflicts.
+The source commit is recorded separately from the later evidence commit. Reports are retained
+under a run-specific path; source changes still require explicit repair commits. Each queued
+site checks out the latest audit branch when it starts and records that exact commit, so saving
+a provider repair does not restart the whole queue. This is a sequence of dated site snapshots,
+not a claim that all sites passed on one application revision.
+
 ## Shared VOD site selection
 
 AnyMovies' existing Free99/Scrubs loaders share `moviehub_compat/anymovies_series.py` for

@@ -5,6 +5,9 @@ Movies and Series now use the same enabled free-site inventory. A site with no s
 Per-site progress is saved in [the site checklist](SITE_FIX_STATUS.md). AnyMovies' current
 IMDb-scoped series lookup is being checked; a saved lookup repair is not a playback pass.
 
+The all-site audit saves an individual report/checklist commit after each website, so completed
+checks survive an interrupted chat. Automatic technical results still require explicit content review.
+
 
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed

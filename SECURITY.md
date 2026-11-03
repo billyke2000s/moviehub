@@ -1,5 +1,13 @@
 # Security
 
+## Audit checkpoint writer
+
+The per-site CI job uses repository contents-write permission only to save its redacted report
+and one checklist row on `fix/all-vod-site-audit`. The writer rejects other branches and invalid
+site IDs, preserves the latest tree, retries concurrent updates and never force-pushes. Reports
+whitelist counts/status codes and omit media URLs, tokens, headers and exception messages.
+Rendered frames and bounded audio remain in the existing seven-day Actions evidence artifacts.
+
 ## AnyMovies series lookup — 3 November 2026
 
 TV lookup accepts only a matching IMDb series card and its exact HTTPS `vidsrc.sh` player

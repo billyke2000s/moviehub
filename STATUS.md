@@ -2,6 +2,17 @@
 
 ## One-site-at-a-time audit resumed — 3 November 2026
 
+AnyMovies repair checkpoint `12fe2c2` is pushed. Fresh Android run 41723642563 now reaches the
+series player and reports `unsupported_host`, replacing the old incorrect `unsupported_type`.
+The downstream player advertises Turnstile; playback remains blocked. The baseline movie
+decoded real Inception scenes, but showed buffering, failed smoothness, and produced an empty
+opening audio sample (middle/late samples contain non-silent English AAC). It is not certified.
+
+The all-site workflow is being changed from end-of-shard uploads to one-site jobs with immediate
+atomic report/checklist commits. It retains all 74 VOD sites, leaves other rows untouched and
+never writes “should be all good g” automatically. Local validation passes 165 Python tests and
+the checkpoint-writer concurrency test. Live checkpoint-writer validation is pending.
+
 The owner requires each site's code/evidence checkpoint to be saved before moving to the
 next site. All 74 VOD sites remain in `SITE_FIX_STATUS.md`; unchecked results stay blank.
 AnyMovies is first. Its current website returns a matching Breaking Bad series card, but
