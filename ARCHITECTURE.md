@@ -19,6 +19,10 @@ not a claim that all sites passed on one application revision.
 
 ## Shared VOD site selection
 
+Both existing BnWMovies loaders check explicit target-page `itemprop=name` title/year
+metadata before extracting media. Conflicting named-film years are rejected; unrelated
+recommendation dates are not identity evidence. Both advertised video formats remain available.
+
 AnyMovies' existing Free99/Scrubs loaders share `moviehub_compat/anymovies_series.py` for
 current series cards. The parser requires a series card and player link with the requested
 IMDb identity, then uses VidSrc's documented exact-episode route. Runtime capability is

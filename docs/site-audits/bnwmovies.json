@@ -1,0 +1,17 @@
+{
+    "site": "free99:bnwmovies_com",
+    "date": "2026-11-03",
+    "status": "fix_saved_playback_pending",
+    "existingAdapters": ["free99:bnwmovies_com", "scrubs:bnwmovies_com"],
+    "siteInspection": "Current The Stranger page explicitly identifies its target as The Stranger (1946) and advertises Ogg and MP4 formats. Recommendation text is excluded from identity matching.",
+    "defect": "Both existing loaders accepted a same-named film without checking the explicit target-page year.",
+    "repair": "Reject conflicting target title/year metadata before extracting sources; retain both advertised formats and the existing unknown-metadata behavior.",
+    "validation": {
+        "pythonTests": 166,
+        "currentCapturedPages": "Both real loaders retained two source locators for 1946 and rejected a conflicting 1955 lookup. This is extraction validation, not decoded playback.",
+        "androidPlayback": "pending in one-site queue"
+    },
+    "series": "No series route in these existing loaders; current-site capability review remains pending.",
+    "fullPlaybackVerified": false,
+    "next": "Inspect Android movie/series outcomes and rendered/audio evidence; repair further failures before any all-good status."
+}

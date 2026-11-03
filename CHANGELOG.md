@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Reject conflicting BnWMovies target-page film years in both existing loaders while
+  retaining both advertised video formats; playback checks remain pending.
+
 - Isolate each audited source from saved resume positions and record/check its initial
   timestamp, preventing an end-of-film sample from counting as opening footage.
 

@@ -13,6 +13,26 @@ from moviehub_scrubs import client as scraper_client
 
 
 class CurrentSiteTests(unittest.TestCase):
+    def test_bnwmovies_rejects_another_year_without_losing_both_advertised_formats(self):
+        search = '<div class="post"><h3><a href="https://bnwmovies.com/the-stranger.html">The Stranger</a></h3></div>'
+        page = ('<span itemprop="name">The Stranger (1946)</span>'
+                '<source src="https://archive.org/download/film/movie.ogv">'
+                '<source src="https://archive.org/download/film/movie.mp4">'
+                '<div class="tombstone">Another film (1955)</div>')
+        for family in ('free99', 'scrubs'):
+            module = importlib.import_module('moviehub_' + family + '.providers.bnwmovies_com')
+            for year, count in [('1946', 2), ('1955', 0)]:
+                provider = module.source()
+                key = provider.movie('tt0038991', '20246', 'The Stranger', 'The Stranger',
+                                     [{'title': 'The Stranger'}], year)
+                responses = [SimpleNamespace(text=search), SimpleNamespace(text=page)]
+                with self.subTest(family=family, year=year), \
+                        patch.object(module.client, 'scrapePage', side_effect=responses), \
+                        patch.object(module.scrape_sources, 'make_direct_item',
+                            side_effect=lambda hosts, link, **kwargs: dict(source='archive.org', url=link)), \
+                        patch.object(module.scrape_sources, 'check_host_limit', return_value=False):
+                    self.assertEqual(len(provider.sources(key, [])), count)
+
     def test_anymovies_series_uses_matching_imdb_card_and_exact_requested_episode(self):
         page = ('<div class="result_block" data-kind="movie" data-imdb="tt0903747">'
                 '<a href="https://vidsrc.sh/embed/tv?imdb=tt0903747">Wrong type</a></div>'

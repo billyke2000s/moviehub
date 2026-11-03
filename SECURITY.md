@@ -1,5 +1,8 @@
 # Security
 
+BnWMovies identity checks use the target page's explicit title/year metadata, excluding
+unrelated recommendations. No transport, credential or public-address restriction is relaxed.
+
 ## Audit checkpoint writer
 
 The per-site CI job uses repository contents-write permission only to save its redacted report

@@ -1,5 +1,13 @@
 # Testing
 
+## BnWMovies identity checkpoint — 3 November 2026
+
+The full Python suite passes 166 tests. The added regression drives both original loaders,
+retains both advertised formats for a matching target year, and rejects a same-named film's
+conflicting year despite unrelated recommendation dates. Captured current search/detail pages
+also return two locators for The Stranger (1946) and none for a conflicting 1955 query in both
+loaders. This verifies extraction/identity handling only; Android playback remains pending.
+
 ## Opening-position audit correction — 3 November 2026
 
 Explicit review of the AnyMovies retest found some frames labelled start were near the end:

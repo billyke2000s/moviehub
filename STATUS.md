@@ -1,5 +1,12 @@
 # Status
 
+## BnWMovies checkpoint — 3 November 2026
+
+Both existing loaders now reject conflicting target-page title/year metadata instead of
+offering another year's same-named film. Both Ogg/MP4 routes are retained. All 166 Python
+tests pass, and captured current pages exercise both loaders. The individual code/checkpoint
+is saved before advancing; Android playback and site certification remain pending.
+
 ## One-site-at-a-time audit resumed — 3 November 2026
 
 Fresh AnyMovies run 41723642563 tested five movie candidates with no complete technical pass;

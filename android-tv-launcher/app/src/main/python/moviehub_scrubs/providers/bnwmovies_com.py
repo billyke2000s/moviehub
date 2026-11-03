@@ -1,5 +1,6 @@
 from ast import literal_eval
 # -*- coding: utf-8 -*-
+import re
 
 from six.moves.urllib_parse import parse_qs, urlencode
 
@@ -42,6 +43,15 @@ class source:
             result = [(i[0][0], i[1][0]) for i in result if len(i[0]) > 0 and len(i[1]) > 0]
             page_url = [i[0] for i in result if cleantitle.match_alias(i[1], aliases)][0]
             page_html = client.scrapePage(page_url).text
+            # The current target page supplies its title/year separately from
+            # recommendations. Do not substitute another year's same-named film.
+            names = client_utils.parseDOM(page_html, 'span', attrs={'itemprop': 'name'})
+            identities = [re.fullmatch(r'\s*(.*?)\s*\((\d{4})\)\s*',
+                                      client_utils.remove_tags(name)) for name in names]
+            identities = [match for match in identities if match]
+            if identities and not any(cleantitle.match_alias(match[1], aliases) and
+                                      match[2] == year for match in identities):
+                return self.results
             links = client_utils.parseDOM(page_html, 'source', ret='src')
             for link in links:
                 try:
