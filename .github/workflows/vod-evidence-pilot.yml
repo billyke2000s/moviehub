@@ -25,8 +25,9 @@ jobs:
             fail-fast: false
             matrix:
                 route:
-                    - { provider: "free99:anymovies_co", media: movies }
-                    - { provider: "free99:anymovies_co", media: series }
+                    - { provider: "free99:anymovies_co", media: movies, capture: true }
+                    - { provider: "free99:anymovies_co", media: series, capture: true }
+                    - { provider: "free99:anymovies_co", media: movies, capture: false }
         env:
             ORG_GRADLE_PROJECT_moviehubAbi: x86_64
         steps:
@@ -61,7 +62,12 @@ jobs:
                   ram-size: 4096M
                   emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -noaudio
                   disable-animations: true
-                  script: VOD_SOURCE_LIMIT=200 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=false bash .github/scripts/vod-evidence-audit.sh 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}'
+                  script: |
+                      if [ '${{ matrix.route.capture }}' = true ]; then
+                          VOD_SOURCE_LIMIT=200 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=false bash .github/scripts/vod-evidence-audit.sh 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}'
+                      else
+                          VOD_SOURCE_LIMIT=200 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=false bash android-tv-launcher/tests/run-live-vod-audit.sh 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}'
+                      fi
             - uses: actions/upload-artifact@v6
               if: always()
               with:
