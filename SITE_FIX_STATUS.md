@@ -54,7 +54,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | vidrock (`native:vidrock`) | | | | |
 | vidup (`native:vidup`) | | | | |
 | Vidzee (`native:vidzee`) | | | | |
-| vixsrc (`native:vixsrc`) | | | | |
+| vixsrc (`native:vixsrc`) | Incomplete check; see evidence | Incomplete check; see evidence | Incomplete; needs follow-up | [Evidence](docs/site-audits/runs/41726423062/native-vixsrc.json) at 503669b |
 | zinkmovies (`native:zinkmovies`) | | | | |
 | bluray7.com (`scrubs:bluray7_com`) | | | | |
 | bstsrs.one (`scrubs:bstsrs_one`) | | | | |
