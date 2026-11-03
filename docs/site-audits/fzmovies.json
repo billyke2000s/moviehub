@@ -1,0 +1,18 @@
+{
+    "site": "free99:fzmovies_live",
+    "date": "2026-11-03",
+    "status": "parser_and_capability_fixes_saved_playback_pending",
+    "siteInspection": "Current homepage describes a movie catalogue and links TV shows to a separate MobileTVshows website. Current Inception search contains one exact IMDb tt1375666 card.",
+    "repairs": [
+        "Match the actual IMDb data-title value rather than a substring in the whole card.",
+        "Resolve root-relative and protocol-relative entry/download hops through the existing URL validation.",
+        "Do not turn a WebM format label into a fabricated 720p quality claim.",
+        "Report the existing movie-only capability explicitly while retaining this site in both screens shared 74-site inventory."
+    ],
+    "validation": {
+        "pythonTests": 168,
+        "coverage": "Exact IMDb prefix-collision rejection, advertised-hop handling, original format-label preservation and explicit unsupported TV status; no inventory loss."
+    },
+    "fullPlaybackVerified": false,
+    "next": "Read the Android movie audit and review its audio/rendered footage; do not mark all good from extraction tests."
+}

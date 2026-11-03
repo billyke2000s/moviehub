@@ -10,7 +10,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | --- | --- | --- | --- | --- |
 | anymovies.co (`free99:anymovies_co`) | 1 sources tested; 0 technical passes; 1 complete, 1 resolution_failed | 0 sources tested; 0 technical passes; 1 unsupported_host | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/free99-anymovies_co.json) at f67c3f5 |
 | bnwmovies.com (`free99:bnwmovies_com`) | 2 sources tested; 0 technical passes; 1 complete | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/free99-bnwmovies_com.json) at 3cd21dd |
-| fzmovies.live (`free99:fzmovies_live`) | | | | |
+| fzmovies.live (`free99:fzmovies_live`) | Exact IMDb / link / format handling repaired; playback pending | Movie-only capability reported explicitly | Fix saved; Android pending | [Saved checkpoint](docs/site-audits/fzmovies.json) |
 | levidia.ch (`free99:levidia_ch`) | | | | |
 | naijavault.com (`free99:naijavault_com`) | | | | |
 | SeriesLoaded (`free99:seriesloaded_ng`) | | | | |

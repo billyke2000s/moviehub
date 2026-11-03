@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Correct FZMovies IMDb matching and relative download hops; preserve original format labels
+  instead of assuming WebM is 720p, and report unsupported TV capability without hiding the site.
+
 - Reject conflicting BnWMovies target-page film years in both existing loaders while
   retaining both advertised video formats; playback checks remain pending.
 

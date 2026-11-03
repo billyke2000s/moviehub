@@ -1,5 +1,11 @@
 # Status
 
+## FZMovies checkpoint — 3 November 2026
+
+Exact IMDb matching, relative download-hop handling, honest WebM format labels and explicit
+movie-only capability are corrected in the existing loader. All 74 movie/series inventory
+entries remain. The 168 Python tests pass; native playback/content review remains pending.
+
 ## BnWMovies checkpoint — 3 November 2026
 
 Both existing loaders now reject conflicting target-page title/year metadata instead of

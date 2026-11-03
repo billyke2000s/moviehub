@@ -19,6 +19,11 @@ not a claim that all sites passed on one application revision.
 
 ## Shared VOD site selection
 
+FZMovies' existing loader requires an exact IMDb badge, resolves advertised relative hops,
+and retains original format labels instead of assuming WebM means 720p. Its upstream TV
+methods are stubs; current-site inspection confirms TV is linked to a separate site. The
+runtime reports unsupported type while the shared movie/series site inventory remains intact.
+
 Both existing BnWMovies loaders check explicit target-page `itemprop=name` title/year
 metadata before extracting media. Conflicting named-film years are rejected; unrelated
 recommendation dates are not identity evidence. Both advertised video formats remain available.

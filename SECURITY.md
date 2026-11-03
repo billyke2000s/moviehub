@@ -1,5 +1,8 @@
 # Security
 
+FZMovies matching now compares the explicit IMDb badge exactly. Advertised relative links
+still pass the existing URL/public-address/redirect checks; no unsafe target is newly allowed.
+
 BnWMovies identity checks use the target page's explicit title/year metadata, excluding
 unrelated recommendations. No transport, credential or public-address restriction is relaxed.
 

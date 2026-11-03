@@ -1,5 +1,12 @@
 # Testing
 
+## FZMovies checkpoint — 3 November 2026
+
+The 168-test Python suite passes. Added cases reject an IMDb prefix collision, follow exact
+root/protocol-relative download hops, preserve a WebM label without inventing 720p, and report
+the movie-only TV limitation while retaining all 74 shared sites. Current homepage/search
+inspection confirms the catalogue and IMDb markup. These checks do not certify playback.
+
 ## BnWMovies identity checkpoint — 3 November 2026
 
 The full Python suite passes 166 tests. The added regression drives both original loaders,

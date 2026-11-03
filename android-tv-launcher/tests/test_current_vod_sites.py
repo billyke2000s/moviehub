@@ -13,6 +13,52 @@ from moviehub_scrubs import client as scraper_client
 
 
 class CurrentSiteTests(unittest.TestCase):
+    def test_fzmovies_uses_exact_imdb_and_resolves_root_relative_download_hops(self):
+        from moviehub_free99.providers import fzmovies_live
+        search = ('<div class="mainbox"><a id="wrong" href="/movie/wrong">Film</a>'
+                  '<span class="imdbRatingPlugin" data-title="tt13756660"></span></div>'
+                  '<div class="mainbox"><a id="correct" href="/movie/correct">Film</a>'
+                  '<span class="imdbRatingPlugin" data-title="tt1375666"></span></div>')
+        calls = []
+        def page(url, **kwargs):
+            calls.append(url)
+            if 'advancedsearch.php' in url:
+                return SimpleNamespace(text=search)
+            self.assertEqual(url, 'https://www.fzmovies.live/movie/correct')
+            return SimpleNamespace(text='<a id="dlink" href="/hop/one">WebM</a>')
+        def request(url, **kwargs):
+            calls.append(url)
+            if kwargs.get('output') == 'cookie':
+                return 'fixture-cookie'
+            if url.endswith('/hop/one'):
+                return '<a id="dlink" href="/hop/two">MP4</a>'
+            if url.endswith('/hop/two'):
+                return '<a id="dlink" href="//www.fzmovies.live/hop/three">MP4</a>'
+            self.assertEqual(url, 'https://www.fzmovies.live/hop/three')
+            return '<input name="download" value="https://media.example/movie.mp4">'
+        provider = fzmovies_live.source()
+        key = provider.movie('tt1375666', '27205', 'Inception', '', [], '2010')
+        with patch.object(fzmovies_live.client, 'scrapePage', side_effect=page), \
+                patch.object(fzmovies_live.client, 'request', side_effect=request), \
+                patch.object(fzmovies_live.scrape_sources, 'make_direct_item',
+                    side_effect=lambda hosts, link, **kwargs: dict(source='Direct', url=link)) as direct:
+            result = provider.sources(key, [])
+        self.assertEqual([item['url'] for item in result], ['https://media.example/movie.mp4'])
+        self.assertFalse(any('/movie/wrong' in call for call in calls))
+        self.assertEqual(direct.call_args.kwargs['info'], 'WebM')
+
+    def test_fzmovies_stays_in_shared_inventory_with_explicit_unsupported_tv_result(self):
+        rows = json.loads(vod.search_providers())
+        self.assertEqual(len(rows), 74)
+        row = next(row for row in rows if row['id'] == 'free99:fzmovies_live')
+        self.assertTrue(row['movies'])
+        self.assertFalse(row['series'])
+        query = dict(title='Breaking Bad', year='2008', imdb='tt0903747', tmdb=1396,
+                     season=1, episode=1)
+        result = json.loads(vod.query_site(row['id'], json.dumps(query), lambda: False))
+        self.assertEqual(result['status'], 'unsupported_type')
+        self.assertEqual(result['sources'], [])
+
     def test_bnwmovies_rejects_another_year_without_losing_both_advertised_formats(self):
         search = '<div class="post"><h3><a href="https://bnwmovies.com/the-stranger.html">The Stranger</a></h3></div>'
         page = ('<span itemprop="name">The Stranger (1946)</span>'
