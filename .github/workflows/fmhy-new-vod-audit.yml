@@ -15,6 +15,9 @@ on:
             - ".github/workflows/fmhy-new-vod-audit.yml"
 permissions:
     contents: read
+concurrency:
+    group: fmhy-new-vod-audit-${{ github.ref }}
+    cancel-in-progress: true
 jobs:
     decode:
         runs-on: ubuntu-latest
