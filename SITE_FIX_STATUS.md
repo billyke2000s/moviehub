@@ -14,7 +14,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | levidia.ch (`free99:levidia_ch`) | Incomplete check; see evidence | Incomplete check; see evidence | Incomplete; needs follow-up | [Evidence](docs/site-audits/runs/41726423062/free99-levidia_ch.json) at 32ec197 |
 | naijavault.com (`free99:naijavault_com`) | 0 sources tested; 0 technical passes; 2 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/free99-naijavault_com.json) at b386a07 |
 | SeriesLoaded (`free99:seriesloaded_ng`) | 1 sources tested; 0 technical passes; 1 complete, 1 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/free99-seriesloaded_ng.json) at 9e73074 |
-| stagatv.com (`free99:stagatv_com`) | | | | |
+| stagatv.com (`free99:stagatv_com`) | 0 sources tested; 0 technical passes; 1 no_matches, 1 http_500 | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/free99-stagatv_com.json) at 6f0e2fd |
 | tvseries.in (`free99:tvseries_in`) | | | | |
 | Akwam (`native:akwam`) | | | | |
 | allmovieland (`native:allmovieland`) | | | | |
