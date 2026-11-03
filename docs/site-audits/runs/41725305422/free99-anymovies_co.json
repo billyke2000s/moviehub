@@ -1,0 +1,40 @@
+{
+    "site": "free99:anymovies_co",
+    "sourceCommit": "f04e4b2715a731463ac088dfcbb12ab6e7569822",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41725305422",
+    "fullPlaybackVerified": false,
+    "contentReview": "pending",
+    "media": {
+        "movies": {
+            "complete": true,
+            "lookupOutcomes": {
+                "complete": 1,
+                "resolution_failed": 1
+            },
+            "candidatesTested": 1,
+            "playbackOutcomes": {
+                "playback_stall_or_audio_output_unverified": 1
+            },
+            "technicalPasses": 0,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {
+                "technical_failure": 1
+            },
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        },
+        "series": {
+            "complete": true,
+            "lookupOutcomes": {
+                "unsupported_host": 1
+            },
+            "candidatesTested": 0,
+            "playbackOutcomes": {},
+            "technicalPasses": 0,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {},
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        }
+    }
+}

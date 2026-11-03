@@ -8,7 +8,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 
 | Site / provider ID | Movie result | Series result | Status | Evidence / notes |
 | --- | --- | --- | --- | --- |
-| anymovies.co (`free99:anymovies_co`) | Five movie candidates tested; no complete pass; opening-position rerun required | Exact-episode lookup runs; unsupported downstream host | Needs fixes / retest | [Saved checkpoint](docs/site-audits/anymovies.json); audit resume isolation corrected. |
+| anymovies.co (`free99:anymovies_co`) | 1 sources tested; 0 technical passes; 1 complete, 1 resolution_failed | 0 sources tested; 0 technical passes; 1 unsupported_host | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41725305422/free99-anymovies_co.json) at f04e4b2 |
 | bnwmovies.com (`free99:bnwmovies_com`) | | | | |
 | fzmovies.live (`free99:fzmovies_live`) | | | | |
 | levidia.ch (`free99:levidia_ch`) | | | | |
