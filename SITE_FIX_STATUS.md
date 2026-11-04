@@ -38,7 +38,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | mlsbd (`native:mlsbd`) | 0 sources tested; 0 technical passes; 1 http_404 | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-mlsbd.json) at 90c488a |
 | moviebox (`native:moviebox`) | 0 sources tested; 0 technical passes; 1 http_403, 1 no_matches | 0 sources tested; 0 technical passes; 1 http_403 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-moviebox.json) at 39904e8 |
 | moviesdrive (`native:moviesdrive`) | | | | |
-| moviesmod (`native:moviesmod`) | | | | |
+| moviesmod (`native:moviesmod`) | 1 sources tested; 0 technical passes; 1 http_404, 1 complete | 1 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-moviesmod.json) at 2e2d257 |
 | movy (`native:movy`) | 0 sources tested; 0 technical passes; 2 http_403 | 0 sources tested; 0 technical passes; 1 http_403 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/native-movy.json) at e65f8a9 |
 | Multimovies (`native:multimovies`) | | | | |
 | onetouchtv (`native:onetouchtv`) | | | | |
