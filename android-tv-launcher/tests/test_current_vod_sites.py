@@ -227,6 +227,21 @@ class CurrentSiteTests(unittest.TestCase):
                         patch.object(module.scrape_sources, 'check_host_limit', return_value=False):
                     self.assertEqual(len(provider.sources(key, [])), count)
 
+    def test_current_mxdrop_click_movie_link_reaches_existing_resolver(self):
+        from resolveurl.plugins.mixdrop import MixDropResolver
+        self.assertIn('mxdrop.click', vod._HOSTS)
+        resolver = MixDropResolver()
+        self.assertTrue(resolver.valid_url('https://mxdrop.click/f/fixture123', None))
+        self.assertFalse(resolver.valid_url('https://mxdrop.click.evil.example/f/fixture123', None))
+        with patch.object(resolver.net, 'http_GET', return_value=SimpleNamespace(
+                content='wurl="//media.example/feature.mp4";')) as request:
+            url = resolver.get_media_url('mxdrop.click', 'fixture123')
+        self.assertEqual(request.call_args.args[0], 'https://mxdrop.click/e/fixture123')
+        media, _, headers = url.partition('|')
+        self.assertEqual(media, 'https://media.example/feature.mp4')
+        from urllib.parse import parse_qs
+        self.assertEqual(parse_qs(headers)['Referer'], ['https://mxdrop.click/e/fixture123'])
+
     def test_anymovies_advertised_players_reuse_existing_exact_episode_protocols(self):
         from moviehub_compat.anymovies_series import resolve_player
         from moviehub_native.cinestream_api import Vidfast

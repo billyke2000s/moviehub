@@ -74,11 +74,12 @@
         "search": "Current exact-IMDb Breaking Bad card points to VidSrc; current search page also advertises /js/series_info_box_for_movie.js.",
         "seriesScript": "Actual first-party UI script publishes VidSrc, VidFast, Peachify and MoviesAPI exact-episode templates plus two download alternatives. Existing loader followed only the default VidSrc anchor.",
         "repair": "Parse literal advertised templates without executing JavaScript, retain exact IMDb/season/episode scope, use both existing catalogue loaders and existing host processing, retain primary locator if optional script fails. MoviesAPI shared handler accepts the current slash-format episode route and retains legacy hyphen routes. Advertised VidFast/Peachify tabs reuse their existing native protocols with the original validated IMDb, TMDB, season and episode; conflicting returned identity/filename evidence is rejected.",
-        "validation": "First four regressions plus core checks pass the CI stages at d1335ea; final protocol-reuse regression and native playback remain pending. Local execution is unavailable after the workspace disconnected.",
+        "validation": "202 Python regressions pass for the series repair. One host-registration/embed-resolution regression added for the movie repair; new native movie/audio evidence remains pending.",
         "baselineRun": "https://github.com/billyke2000s/moviehub/actions/runs/41894438198",
         "baselineSeries": "Native lookup returned unsupported_host with one VidSrc locator in each adapter; no episode played.",
         "baselineMovie": "Runner media-tool setup failed before movie playback; no new movie evidence.",
-        "otherObservations": "Following VidSrc's actual API-supplied episode player returned HTTP 403 with Expired title. MoviesAPI's actual script supplied the public player API; its IMDb episode request returned HTTP 404/result false. No challenge bypass attempted."
+        "otherObservations": "Following VidSrc's actual API-supplied episode player returned HTTP 403 with Expired title. MoviesAPI's actual script supplied the public player API; its IMDb episode request returned HTTP 404/result false. No challenge bypass attempted.",
+        "movieHostRepair": "Register the currently advertised mxdrop.click domain with the existing MixDrop resolver. The resolver's URL pattern and public embed flow already support this spelling; it was absent from the shared host inventory. Preserve the actual host and headers rather than rewriting to another domain."
     },
     "seriesPlaybackVerified": true,
     "currentNativeReview": {

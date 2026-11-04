@@ -73,8 +73,16 @@ jobs:
                   python - <<'PY'
                   import base64
                   import io
+                  import json
                   from pathlib import Path
                   from PIL import Image
+                  report = Path('vod-evidence/review.jsonl')
+                  if report.is_file():
+                      for line in report.read_text().splitlines():
+                          row = json.loads(line)
+                          if row.get('kind') == 'playback':
+                              fields = ('evidenceId', 'verification', 'capturedSourceAudio', 'audioEvidenceVersion', 'physicalAudioOutputTested')
+                              print('VOD_REVIEW_SUMMARY ' + json.dumps({key: row.get(key) for key in fields}))
                   for path in sorted(Path('vod-evidence').glob('*-contact.jpg'))[:8]:
                       with Image.open(path) as frame:
                           frame.thumbnail((960, 660))
