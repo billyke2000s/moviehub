@@ -22,7 +22,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | tvseries.in (`free99:tvseries_in`) | 0 sources tested; 0 technical passes; 2 no_matches | 0 sources tested; 0 technical passes; 1 ReadTimeout | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/free99-tvseries_in.json) at 5a647c5 |
 | Akwam (`native:akwam`) | Incomplete check; see evidence | Incomplete check; see evidence | Incomplete; needs follow-up | [Evidence](docs/site-audits/runs/41763869027/native-akwam.json) at 4bbfde1 |
 | allmovieland (`native:allmovieland`) | 0 sources tested; 0 technical passes; 1 http_404 | Incomplete check; see evidence | Incomplete; needs follow-up | [Evidence](docs/site-audits/runs/41763869027/native-allmovieland.json) at e088281 |
-| animesalt (`native:animesalt`) | | | | |
+| animesalt (`native:animesalt`) | Incomplete check; see evidence | Incomplete check; see evidence | Incomplete; needs follow-up | [Evidence](docs/site-audits/runs/41763869027/native-animesalt.json) at c64069e |
 | bollyflix (`native:bollyflix`) | | | | |
 | cinejoy (`native:cinejoy`) | | | | |
 | dudefilms (`native:dudefilms`) | | | | |
