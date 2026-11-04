@@ -36,7 +36,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | m4ufree.lat (`native:m4ufree_lat`) | 0 sources tested; 0 technical passes; 1 unsupported_type | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-m4ufree_lat.json) at 85f455c |
 | MeowTV (`native:meowtv`) | | | | |
 | mlsbd (`native:mlsbd`) | 0 sources tested; 0 technical passes; 1 http_404 | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-mlsbd.json) at 90c488a |
-| moviebox (`native:moviebox`) | | | | |
+| moviebox (`native:moviebox`) | 0 sources tested; 0 technical passes; 1 http_403, 1 no_matches | 0 sources tested; 0 technical passes; 1 http_403 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-moviebox.json) at 39904e8 |
 | moviesdrive (`native:moviesdrive`) | | | | |
 | moviesmod (`native:moviesmod`) | | | | |
 | movy (`native:movy`) | 0 sources tested; 0 technical passes; 2 http_403 | 0 sources tested; 0 technical passes; 1 http_403 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/native-movy.json) at e65f8a9 |
