@@ -1,7 +1,7 @@
 {
     "site": "free99:bnwmovies_com",
     "date": "2026-11-04",
-    "status": "advertised_alternative_routes_implemented_playback_in_progress",
+    "status": "verified_movie_route",
     "existingAdapters": ["free99:bnwmovies_com", "scrubs:bnwmovies_com"],
     "siteInspection": "Current The Stranger page explicitly identifies its target as The Stranger (1946) and advertises Ogg and MP4 formats. Recommendation text is excluded from identity matching.",
     "defect": "Both existing loaders accepted a same-named film without checking the explicit target-page year.",
@@ -9,17 +9,17 @@
     "validation": {
         "pythonTests": 197,
         "currentCapturedPages": "Both real loaders retained two source locators for 1946 and rejected a conflicting 1955 lookup. This is extraction validation, not decoded playback.",
-        "androidPlayback": "Four discovered routes tested. Two MP4 files pass technical playback/audio at 720p output, but captured picture is cropped with the display override; full-frame native-profile retest pending.",
+        "androidPlayback": "Native tv_720p profile: full uncropped picture, plausible 5472-second film, smooth playback, midpoint/late seeks and all three captured source-audio windows verified for full MP4 and small MP4.",
         "regressionCI": {
-            "sourceCommit": "057be18fb0118f7bc0e9ca26408f5c6a283a1b95",
-            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41888488550",
+            "sourceCommit": "92ad8f3a02a071f1d06b92149c565e472afbec71",
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41892024081",
             "jobsPassed": 6,
             "jobsFailed": 0
         }
     },
-    "series": "No series route in these existing loaders; current-site capability review remains pending.",
-    "fullPlaybackVerified": false,
-    "next": "Retest the identical film files on the actual tv_720p device profile, with no wm size override. Verify the full uncropped picture alongside unchanged smoothness, runtime, seeking and audio criteria before certification.",
+    "series": "Existing BnWMovies adapters are movie-only; prior native series lookup returned unsupported_type. No series playback is claimed.",
+    "fullPlaybackVerified": true,
+    "next": "Verified movie route saved. Continue to the next website; retain the explicit unsupported series capability and failing legacy-file results.",
     "alternativeRouteAttempt": {
         "siteEvidence": "The current selected film page advertises an Archive download directory. Its current listing contains the full MP4 and original MPEG as well as the two embedded derivatives.",
         "implementation": "Both existing loaders now read only the advertised directory for the same embedded Archive item and exact film filename stem. Additional files come from actual links, not invented filenames. Optional listing failure retains embedded sources.",
@@ -467,12 +467,156 @@
             "sourceCommit": "92ad8f3a02a071f1d06b92149c565e472afbec71",
             "run": "https://github.com/billyke2000s/moviehub/actions/runs/41892016460",
             "device": "tv_720p; no display override",
-            "status": "in_progress",
+            "status": "completed",
             "previousSetupAttempt": {
                 "run": "https://github.com/billyke2000s/moviehub/actions/runs/41890911139",
                 "status": "cancelled",
                 "result": "No playback evidence: media-tool package installation stalled. Restarted with package-index refresh and explicit acquisition/step timeouts."
-            }
+            },
+            "artifactId": 13354383433,
+            "technicalPasses": 2,
+            "reviewedMovies": [
+                {
+                    "evidenceId": "0001",
+                    "status": "verified",
+                    "durationSeconds": 5472,
+                    "width": 640,
+                    "height": 480,
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "displayedFps": {
+                        "start": 29.452875399361023,
+                        "middle": 29.25109257052046,
+                        "late": 29.634803432448614
+                    },
+                    "contentReview": "matching_film_full_frame",
+                    "audio": {
+                        "start": {
+                            "recordingEventsConfirmed": true,
+                            "tracks": [
+                                {
+                                    "seconds": 5.6424375,
+                                    "signalDetected": true,
+                                    "language": "eng",
+                                    "codec": "aac",
+                                    "channelCount": 2
+                                }
+                            ]
+                        },
+                        "middle": {
+                            "recordingEventsConfirmed": true,
+                            "tracks": [
+                                {
+                                    "seconds": 6.57125,
+                                    "signalDetected": true,
+                                    "language": "eng",
+                                    "codec": "aac",
+                                    "channelCount": 2
+                                }
+                            ]
+                        },
+                        "late": {
+                            "recordingEventsConfirmed": true,
+                            "tracks": [
+                                {
+                                    "seconds": 4.45825,
+                                    "signalDetected": true,
+                                    "language": "eng",
+                                    "codec": "aac",
+                                    "channelCount": 2
+                                }
+                            ]
+                        }
+                    },
+                    "visualReview": "Full 4:3 picture fits the display. Opening cast credits identify The Stranger; middle and late frames match the same black-and-white film. No site-message replacement or playback-error overlay in reviewed MP4 frames. The small MP4 has ordinary player controls visible.",
+                    "reviewedPass": true
+                },
+                {
+                    "evidenceId": "0002",
+                    "status": "playback_stall_or_audio_output_unverified",
+                    "durationSeconds": 5472,
+                    "width": 640,
+                    "height": 480,
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "displayedFps": {
+                        "start": 29.29784487039428,
+                        "middle": 29.948502574871256,
+                        "late": 29.262086513994912
+                    },
+                    "reviewedPass": false
+                },
+                {
+                    "evidenceId": "0003",
+                    "status": "seek_unverified",
+                    "durationSeconds": 5472,
+                    "width": 400,
+                    "height": 300,
+                    "midpointDecoded": false,
+                    "lateSeekDecoded": false,
+                    "displayedFps": {
+                        "start": 25.979854393138528,
+                        "middle": null,
+                        "late": null
+                    },
+                    "reviewedPass": false
+                },
+                {
+                    "evidenceId": "0004",
+                    "status": "verified",
+                    "durationSeconds": 5472,
+                    "width": 320,
+                    "height": 240,
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "displayedFps": {
+                        "start": 29.23367083581497,
+                        "middle": 29.241805320314835,
+                        "late": 28.960987261146496
+                    },
+                    "contentReview": "matching_film_full_frame",
+                    "audio": {
+                        "start": {
+                            "recordingEventsConfirmed": true,
+                            "tracks": [
+                                {
+                                    "seconds": 8.0,
+                                    "signalDetected": true,
+                                    "language": "eng",
+                                    "codec": "aac",
+                                    "channelCount": 2
+                                }
+                            ]
+                        },
+                        "middle": {
+                            "recordingEventsConfirmed": true,
+                            "tracks": [
+                                {
+                                    "seconds": 7.52325,
+                                    "signalDetected": true,
+                                    "language": "eng",
+                                    "codec": "aac",
+                                    "channelCount": 2
+                                }
+                            ]
+                        },
+                        "late": {
+                            "recordingEventsConfirmed": true,
+                            "tracks": [
+                                {
+                                    "seconds": 7.73225,
+                                    "signalDetected": true,
+                                    "language": "eng",
+                                    "codec": "aac",
+                                    "channelCount": 2
+                                }
+                            ]
+                        }
+                    },
+                    "visualReview": "Full 4:3 picture fits the display. Opening cast credits identify The Stranger; middle and late frames match the same black-and-white film. No site-message replacement or playback-error overlay in reviewed MP4 frames. The small MP4 has ordinary player controls visible.",
+                    "reviewedPass": true
+                }
+            ]
         },
         "nativeDisplayControls": {
             "run": "https://github.com/billyke2000s/moviehub/actions/runs/41890911170",
@@ -563,5 +707,10 @@
             },
             "finding": "Identical 30 fps 1280x720 synthetic source meets all existing criteria on native tv_720p but fails displayed-frame criteria on tv_1080p. This supports a software emulator output rendering bottleneck; it does not certify the film."
         }
-    }
+    },
+    "samplePlaybackVerified": true,
+    "playbackAuditVersion": 2,
+    "audioEvidenceVersion": 3,
+    "verificationScope": "The Stranger (1946), one supported movie route, tested at opening, midpoint and late seek. Both MP4 files pass. This does not claim uninterrupted whole-film playback, physical-speaker output, every catalogue title or working legacy MPEG/Ogg files. Existing adapters are movie-only.",
+    "uninterruptedFullFilmTested": false
 }

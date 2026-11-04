@@ -1,5 +1,17 @@
 # Status
 
+## BnWMovies verified movie route — 4 November 2026
+
+Native run [41892016460](https://github.com/billyke2000s/moviehub/actions/runs/41892016460)
+at `92ad8f3` verifies both MP4 files for The Stranger (1946): 5472-second runtime,
+full 4:3 picture, approximately 29 fps, midpoint/late seeking and non-silent AAC captures
+at opening, midpoint and late seek. All six Android CI jobs passed at the same revision
+in run 41892024081. The native tv_720p profile resolves the test-display clipping; no
+production display, source-quality or playback threshold changed. The checklist records
+**should be all good g** for the verified movie route. Legacy MPEG/Ogg failures remain
+explicit; this is sampled movie playback, not every title or uninterrupted full-film testing.
+Continue one site at a time with AnyMovies next.
+
 ## BnWMovies display review — 4 November 2026
 
 The 720p display-override run returned four sources; both MP4s meet the unchanged native

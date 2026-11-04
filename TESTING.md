@@ -1,5 +1,15 @@
 # Testing
 
+## BnWMovies native full-frame verification — 4 November 2026
+
+Run 41892016460 at `92ad8f3` found four actual file routes. Full MP4 renders
+29.45/29.25/29.63 fps and has 5.64/6.57/4.46 seconds of non-silent English AAC
+in the three recorded windows; all recordings confirm start/stop events. Both seeks pass,
+and visual review confirms the entire matching film picture fits. Small MP4 also passes;
+MPEG fails a playback/output criterion and Ogg fails midpoint seeking. Six Android
+regression jobs pass in run 41892024081. Scope is one verified movie with sampled
+opening/midpoint/late playback, not uninterrupted viewing or physical speakers.
+
 ## BnWMovies 30 fps investigation — 4 November 2026
 
 The new full MP4 has correct runtime, matching film frames, decoded source-audio windows

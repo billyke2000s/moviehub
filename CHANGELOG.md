@@ -294,6 +294,8 @@ MovieHub 1.0: everything tested in MovieHub Experimental, up to exp-15, is now p
 
 # Changelog
 
+- BnWMovies discovers the selected film’s explicitly advertised full MP4 and original MPEG alongside embedded files, and uses its current search RSS feed when primary search fails. Native verification now confirms a full-picture, 91-minute movie with smooth MP4 playback, audio and seeking; legacy MPEG/Ogg failures remain recorded.
+
 ## Unreleased
 
 - Live TV: OK brings the banner up ready to use, as on the satellite box, with Audio & subtitles highlighted; ◀ ▶ move along and OK presses. ▲ ▼ still show it only briefly while zapping. Removed the temporary button diagnostics (Last button lines, Button not used and recognised-but-ignored messages).
