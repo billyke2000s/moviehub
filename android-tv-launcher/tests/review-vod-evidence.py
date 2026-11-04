@@ -102,6 +102,8 @@ def audio_tracks(path):
 
 def language(value):
     value = str(value or '').lower()
+    if value in ('und', 'mis'):
+        return ''
     groups = [('en', 'eng', 'english'), ('hi', 'hin', 'hindi'), ('ja', 'jpn', 'japanese'),
               ('ko', 'kor', 'korean'), ('it', 'ita', 'italian'), ('fr', 'fra', 'fre', 'french'),
               ('ar', 'ara', 'arabic'), ('ta', 'tam', 'tamil'), ('te', 'tel', 'telugu')]
@@ -111,7 +113,7 @@ def language(value):
 def selected_audio_signal(tracks, selected_language, events_confirmed):
     selected = language(selected_language)
     matching = [track for track in tracks if selected and language(track['language']) == selected]
-    if len(tracks) == 1:
+    if len(tracks) == 1 and (not selected or not language(tracks[0]['language'])):
         matching = tracks
     # Native recording requests eight seconds; tiny closed-file fragments cannot
     # establish sustained source audio even if one fragment contains a signal.
@@ -130,7 +132,7 @@ def review(report, raw, directory):
         identity = row['evidenceId']
         if not re.fullmatch(r'[0-9]{4}', identity):
             raise ValueError('Invalid evidence filename')
-        evidence = dict(row, physicalAudioOutputTested=False, audioEvidenceVersion=2)
+        evidence = dict(row, physicalAudioOutputTested=False, audioEvidenceVersion=3)
         windows = {}
         for clip in row.get('recordedClips', []):
             label = clip['position']

@@ -1,5 +1,11 @@
 # Status
 
+## Audio language review correction — 4 November 2026
+
+The PR review reproduced a false positive in single-track language selection. Audio evidence
+version 3 now rejects known language conflicts while retaining honest unknown-language signal
+checks. All 190 Python regressions pass locally; fresh CI is pending. No site certification changes.
+
 ## All-site checking pass saved — 4 November 2026
 
 All 74 VOD sites have completed lookup/playback receipts across the saved audit runs.

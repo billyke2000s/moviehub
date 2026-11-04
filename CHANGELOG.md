@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Reject known selected/captured language conflicts in single-track audit recordings.
+
 - Require complete source-audio capture windows in audit evidence and measure partial PCM
   blocks accurately; tiny recordings no longer count as sustained audio verification.
 

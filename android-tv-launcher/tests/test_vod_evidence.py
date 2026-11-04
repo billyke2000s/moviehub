@@ -52,3 +52,18 @@ class EvidenceTests(unittest.TestCase):
                   dict(seconds=8, signalDetected=True, language='hin')]
         self.assertFalse(evidence.selected_audio_signal(tracks, 'en', True))
         self.assertTrue(evidence.selected_audio_signal(tracks, 'hi', True))
+
+    def test_single_known_other_language_cannot_verify_selected_audio(self):
+        track = dict(seconds=8, signalDetected=True, language='hin')
+        self.assertFalse(evidence.selected_audio_signal([track], 'eng', True))
+        self.assertTrue(evidence.selected_audio_signal([track], 'hi', True))
+
+    def test_single_unlabelled_track_remains_usable_without_claiming_its_language(self):
+        for label in ('', 'und', 'mis'):
+            track = dict(seconds=8, signalDetected=True, language=label)
+            with self.subTest(language=label):
+                self.assertTrue(evidence.selected_audio_signal([track], 'eng', True))
+
+    def test_single_track_with_unknown_selection_can_establish_signal(self):
+        track = dict(seconds=8, signalDetected=True, language='hin')
+        self.assertTrue(evidence.selected_audio_signal([track], '', True))

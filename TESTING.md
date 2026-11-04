@@ -1,5 +1,12 @@
 # Testing
 
+## Audio language review correction — 4 November 2026
+
+Audio evidence version 3 rejects a single recorded track when its known language conflicts
+with the selected language. A sole track with missing/undefined language, or an unknown player
+selection, can establish a source signal without proving its language. Regressions cover the
+known mismatch and both unknown cases; the four-second duration/event checks remain active.
+
 ## Audio capture completeness correction — 4 November 2026
 
 Audio evidence version 2 measures the actual length of the final partial PCM block instead
