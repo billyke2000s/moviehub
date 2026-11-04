@@ -330,6 +330,103 @@ public final class VodSessionPlaybackTest {
         assertEquals(0, activity.vod.activeIndex());
     }
 
+    void measureKnownFixture() throws Exception {
+        String url = "http://127.0.0.1:" + server.getLocalPort() + "/vod.mp4";
+        VodSources.Session calibration = session(index -> new VodSources.Resolved(url, null));
+        calibration.free = true;
+        calibration.expectedDuration = 180_000;
+        open(calibration);
+        long[] initial = calibrationSnapshot();
+        assertEquals(1280, initial[4]);
+        assertEquals(720, initial[5]);
+        org.json.JSONArray windows = new org.json.JSONArray();
+        for (long target : new long[] { 0, 90_000, 162_000 }) {
+            if (target > 0) {
+                instrumentation.runOnMainSync(() -> FreeVodLiveAuditTest.seekSource(activity, target));
+                await(() -> activity.player.getTime() >= target - 1000);
+            }
+            long[] before = calibrationSnapshot();
+            long start = SystemClock.elapsedRealtime(),
+                videoAt = start,
+                audioAt = start;
+            long video = before[1],
+                audio = before[2],
+                frames = 0,
+                buffers = 0;
+            long videoGap = 0,
+                audioGap = 0;
+            long[] sample = before;
+            while (SystemClock.elapsedRealtime() - start < (target == 162_000 ? 10_000 : 20_000)) {
+                SystemClock.sleep(250);
+                sample = calibrationSnapshot();
+                long now = SystemClock.elapsedRealtime();
+                if (sample[1] > video) {
+                    frames += sample[1] - video;
+                    videoAt = now;
+                }
+                if (sample[2] > audio) {
+                    buffers += sample[2] - audio;
+                    audioAt = now;
+                }
+                video = sample[1];
+                audio = sample[2];
+                videoGap = Math.max(videoGap, now - videoAt);
+                audioGap = Math.max(audioGap, now - audioAt);
+            }
+            long elapsed = SystemClock.elapsedRealtime() - start;
+            assertTrue("Fixture must display video", frames > 0);
+            assertTrue("Fixture must play audio buffers", buffers > 0);
+            windows.put(
+                new JSONObject()
+                    .put("targetMs", target)
+                    .put("elapsedMs", elapsed)
+                    .put("displayedFps", (frames * 1000.0) / elapsed)
+                    .put("nominalFps", 24)
+                    .put("videoGapMs", videoGap)
+                    .put("audioGapMs", audioGap)
+                    .put("progressMs", sample[0] - before[0])
+                    .put("audioBuffers", buffers)
+            );
+        }
+        JSONObject report = new JSONObject()
+            .put("kind", "runner_calibration")
+            .put("width", initial[4])
+            .put("height", initial[5])
+            .put("windows", windows)
+            .put("providerPlaybackVerified", false);
+        try (
+            FileWriter writer = new FileWriter(
+                new File(instrumentation.getTargetContext().getFilesDir(), "vod-runner-calibration.json")
+            )
+        ) {
+            writer.write(report.toString());
+        }
+    }
+
+    private long[] calibrationSnapshot() {
+        long[] sample = new long[6];
+        instrumentation.runOnMainSync(() -> {
+            sample[0] = activity.player.getTime();
+            IMedia media = activity.player.getMedia();
+            if (media == null) return;
+            try {
+                IMedia.Stats stats = media.getStats();
+                sample[1] = stats == null ? 0 : stats.displayedPictures;
+                sample[2] = stats == null ? 0 : stats.playedAbuffers;
+                for (int index = 0; index < media.getTrackCount(); index++) if (
+                    media.getTrack(index) instanceof IMedia.VideoTrack
+                ) {
+                    IMedia.VideoTrack video = (IMedia.VideoTrack) media.getTrack(index);
+                    sample[4] = video.width;
+                    sample[5] = video.height;
+                }
+            } finally {
+                media.release();
+            }
+        });
+        return sample;
+    }
+
     @After
     public void cleanup() throws Exception {
         if (activity != null) {

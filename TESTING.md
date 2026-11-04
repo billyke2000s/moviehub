@@ -1,5 +1,15 @@
 # Testing
 
+## Independent runner throughput control — 4 November 2026
+
+An opt-in calibration job generates a synthetic 1280×720/24 fps H.264/AAC tone fixture
+only in its runner workspace. It reuses the existing managed-player fixture and corrected
+seek helper, measuring displayed frames, audio buffers, clock progress and gaps at opening,
+midpoint and late seek. It makes no provider requests, changes no production assets or
+thresholds, and cannot certify a provider. The new calibration test skips unless explicitly
+selected with vodRunnerCalibration=true; the required six focused fixture cases are unchanged.
+This control is needed before attributing low displayed frame rates to a website or to CI.
+
 ## Audit seek guard correction — 4 November 2026
 
 The live audit previously called VLC setTime directly, bypassing MovieHub’s normal
