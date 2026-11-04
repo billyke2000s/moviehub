@@ -464,10 +464,104 @@
             ]
         },
         "nativeDisplayRetest": {
-            "sourceCommit": "aaea9ca7e7bf8d31d8f773626dd498b72e0e1790",
-            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41890911139",
+            "sourceCommit": "92ad8f3a02a071f1d06b92149c565e472afbec71",
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41892016460",
             "device": "tv_720p; no display override",
-            "status": "in_progress"
+            "status": "in_progress",
+            "previousSetupAttempt": {
+                "run": "https://github.com/billyke2000s/moviehub/actions/runs/41890911139",
+                "status": "cancelled",
+                "result": "No playback evidence: media-tool package installation stalled. Restarted with package-index refresh and explicit acquisition/step timeouts."
+            }
+        },
+        "nativeDisplayControls": {
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41890911170",
+            "sourceCommit": "aaea9ca7e7bf8d31d8f773626dd498b72e0e1790",
+            "native720": {
+                "kind": "runner_calibration",
+                "width": 1280,
+                "height": 720,
+                "windows": [
+                    {
+                        "targetMs": 0,
+                        "elapsedMs": 20175,
+                        "displayedFps": 29.39281288723668,
+                        "nominalFps": 30,
+                        "videoGapMs": 273,
+                        "audioGapMs": 273,
+                        "progressMs": 20002,
+                        "audioBuffers": 939,
+                        "meetsExistingPlaybackCriteria": true
+                    },
+                    {
+                        "targetMs": 90000,
+                        "elapsedMs": 20010,
+                        "displayedFps": 29.835082458770614,
+                        "nominalFps": 30,
+                        "videoGapMs": 269,
+                        "audioGapMs": 269,
+                        "progressMs": 19584,
+                        "audioBuffers": 1016,
+                        "meetsExistingPlaybackCriteria": true
+                    },
+                    {
+                        "targetMs": 162000,
+                        "elapsedMs": 10129,
+                        "displayedFps": 29.32174943232303,
+                        "nominalFps": 30,
+                        "videoGapMs": 267,
+                        "audioGapMs": 267,
+                        "progressMs": 9834,
+                        "audioBuffers": 550,
+                        "meetsExistingPlaybackCriteria": true
+                    }
+                ],
+                "providerPlaybackVerified": false,
+                "emulatorCanvas": "1280x720"
+            },
+            "native1080": {
+                "kind": "runner_calibration",
+                "width": 1280,
+                "height": 720,
+                "windows": [
+                    {
+                        "targetMs": 0,
+                        "elapsedMs": 20141,
+                        "displayedFps": 17.576088575542425,
+                        "nominalFps": 30,
+                        "videoGapMs": 341,
+                        "audioGapMs": 341,
+                        "progressMs": 19999,
+                        "audioBuffers": 931,
+                        "meetsExistingPlaybackCriteria": false
+                    },
+                    {
+                        "targetMs": 90000,
+                        "elapsedMs": 20074,
+                        "displayedFps": 18.53143369532729,
+                        "nominalFps": 30,
+                        "videoGapMs": 310,
+                        "audioGapMs": 310,
+                        "progressMs": 19590,
+                        "audioBuffers": 1003,
+                        "meetsExistingPlaybackCriteria": false
+                    },
+                    {
+                        "targetMs": 162000,
+                        "elapsedMs": 10138,
+                        "displayedFps": 18.445452752022096,
+                        "nominalFps": 30,
+                        "videoGapMs": 341,
+                        "audioGapMs": 341,
+                        "progressMs": 9840,
+                        "audioBuffers": 545,
+                        "meetsExistingPlaybackCriteria": false
+                    }
+                ],
+                "providerPlaybackVerified": false,
+                "emulatorCanvas": "1920x1080"
+            },
+            "finding": "Identical 30 fps 1280x720 synthetic source meets all existing criteria on native tv_720p but fails displayed-frame criteria on tv_1080p. This supports a software emulator output rendering bottleneck; it does not certify the film."
         }
     }
 }
