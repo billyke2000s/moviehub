@@ -39,5 +39,29 @@
         "Only bounded sample windows and captured frames reviewed; no uninterrupted full-film watch.",
         "Audio signal/metadata inspected; no physical speaker or dialogue-listening claim."
     ],
-    "next": "Retest Iwaatch with recording disabled to investigate the visible buffering and backup failure, then obtain sustained audio evidence before certification."
+    "next": "Retest Iwaatch with recording disabled to investigate the visible buffering and backup failure, then obtain sustained audio evidence before certification.",
+    "recordingComparison": {
+        "sourceCommit": "df8d8f3c91c2242811a3cede68f8c26404139fbc",
+        "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41760241840",
+        "captureArtifactId": 13290501310,
+        "normalPlaybackArtifactId": 13290168690,
+        "captureEnabled": {
+            "candidates": 2,
+            "technicalWindowPasses": 2,
+            "capturedAudio": "720p start/middle/late signal exists, but late clip is only 0.171 seconds. 1080p late clip still has no decoded audio."
+        },
+        "captureDisabled": {
+            "candidates": 2,
+            "technicalWindowPasses": 0,
+            "outcomes": [
+                "playback_stall_or_audio_output_unverified",
+                "playback_stall_or_audio_output_unverified"
+            ],
+            "displayedFpsWindows": [
+                [17.99, 19.97, 17.75],
+                [16.95, 17.75, 10.59]
+            ]
+        },
+        "interpretation": "The normal-playback control did not resolve the technical failures. These separate runs do not establish recording as the cause of buffering, nor prove an environment-only fault."
+    }
 }
