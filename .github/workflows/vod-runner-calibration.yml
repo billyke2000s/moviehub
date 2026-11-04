@@ -6,6 +6,7 @@ on:
             - ".github/workflows/vod-runner-calibration.yml"
             - ".github/scripts/vod-runner-calibration.sh"
             - "android-tv-launcher/app/src/androidTest/java/local/tv/home/VodRunnerCalibrationTest.java"
+            - "android-tv-launcher/app/src/androidTest/java/local/tv/home/VodSessionPlaybackTest.java"
     workflow_dispatch:
 permissions:
     contents: read
