@@ -41,7 +41,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | moviesmod (`native:moviesmod`) | 1 sources tested; 0 technical passes; 1 http_404, 1 complete | 1 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-moviesmod.json) at 2e2d257 |
 | movy (`native:movy`) | 0 sources tested; 0 technical passes; 2 http_403 | 0 sources tested; 0 technical passes; 1 http_403 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/native-movy.json) at e65f8a9 |
 | Multimovies (`native:multimovies`) | 0 sources tested; 0 technical passes; 1 rejected_media, 1 http_404 | 0 sources tested; 0 technical passes; 1 rejected_media | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-multimovies.json) at 2a202c1 |
-| onetouchtv (`native:onetouchtv`) | | | | |
+| onetouchtv (`native:onetouchtv`) | 0 sources tested; 0 technical passes; 1 http_404 | 1 sources tested; 1 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-onetouchtv.json) at 4c01b03 |
 | peachify (`native:peachify`) | | | | |
 | projectfreetv.sx (`native:projectfreetv_sx`) | | | | |
 | rive (`native:rive`) | 18 sources tested; 0 technical passes; 2 complete | 3 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-rive.json) at 2e136f0 |
