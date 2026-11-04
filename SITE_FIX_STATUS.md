@@ -56,7 +56,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | Vidzee (`native:vidzee`) | | | | |
 | vixsrc (`native:vixsrc`) | Incomplete check; see evidence | Incomplete check; see evidence | Incomplete; needs follow-up | [Evidence](docs/site-audits/runs/41726423062/native-vixsrc.json) at 503669b |
 | zinkmovies (`native:zinkmovies`) | | | | |
-| bluray7.com (`scrubs:bluray7_com`) | | | | |
+| bluray7.com (`scrubs:bluray7_com`) | 0 sources tested; 0 technical passes; 1 no_matches, 1 http_403 | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-bluray7_com.json) at 8e81bab |
 | bstsrs.one (`scrubs:bstsrs_one`) | | | | |
 | doomovies.ga (`scrubs:doomovies_ga`) | | | | |
 | gdriveplayer.us (`scrubs:gdriveplayer_us`) | | | | |
