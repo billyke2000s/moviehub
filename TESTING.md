@@ -8,7 +8,9 @@ and successful midpoint/late seeks, but the 1080p software-rendered emulator dis
 synthetic input and compares 1920x1080 versus 1280x720 emulator output. Its nominal rate
 comes from the real VLC track metadata, not a hardcoded 24. Reports record whether each
 window meets the existing 80-percent frame/progress and four-second gap requirements.
-The same BnWMovies files are retested at 1280x720 output; their source dimensions, codecs,
+The first 1280x720 override run passes both MP4 technical/audio checks but its screenshots
+are clipped. The next comparison uses native tv_1080p/tv_720p profiles without wm overrides.
+The same BnWMovies files are retested at native 1280x720 output; their source dimensions, codecs,
 player, relay and acceptance thresholds do not change. No production display setting changes.
 
 ## BnWMovies advertised alternatives — 4 November 2026

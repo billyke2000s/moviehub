@@ -1,5 +1,13 @@
 # Status
 
+## BnWMovies display review — 4 November 2026
+
+The 720p display-override run returned four sources; both MP4s meet the unchanged native
+frame/progress/seek gates and all three captured-audio checks. Visual review found the
+picture clipped at the right and bottom. This blocks certification. Commit `aaea9ca` uses
+the native `tv_720p` device profile without an override to recheck the complete picture.
+All six Android regression jobs passed at `057be18`; those results do not certify a site.
+
 ## BnWMovies native alternatives — 4 November 2026
 
 The second Android attempt found all four routes. Full MP4 playback decoded the correct

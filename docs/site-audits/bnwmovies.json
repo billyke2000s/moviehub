@@ -7,13 +7,19 @@
     "defect": "Both existing loaders accepted a same-named film without checking the explicit target-page year.",
     "repair": "Reject conflicting target title/year metadata before extracting sources; retain both advertised formats and the existing unknown-metadata behavior.",
     "validation": {
-        "pythonTests": 166,
+        "pythonTests": 197,
         "currentCapturedPages": "Both real loaders retained two source locators for 1946 and rejected a conflicting 1955 lookup. This is extraction validation, not decoded playback.",
-        "androidPlayback": "pending in one-site queue"
+        "androidPlayback": "Four discovered routes tested. Two MP4 files pass technical playback/audio at 720p output, but captured picture is cropped with the display override; full-frame native-profile retest pending.",
+        "regressionCI": {
+            "sourceCommit": "057be18fb0118f7bc0e9ca26408f5c6a283a1b95",
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41888488550",
+            "jobsPassed": 6,
+            "jobsFailed": 0
+        }
     },
     "series": "No series route in these existing loaders; current-site capability review remains pending.",
     "fullPlaybackVerified": false,
-    "next": "Compare an actual 30 fps synthetic control at 1920x1080 and 1280x720 emulator output, alongside the same BnWMovies files at 1280x720 output. Source input resolution and all playback gates remain unchanged. Use those measurements to diagnose the remaining frame-rate failure before certification.",
+    "next": "Retest the identical film files on the actual tv_720p device profile, with no wm size override. Verify the full uncropped picture alongside unchanged smoothness, runtime, seeking and audio criteria before certification.",
     "alternativeRouteAttempt": {
         "siteEvidence": "The current selected film page advertises an Archive download directory. Its current listing contains the full MP4 and original MPEG as well as the two embedded derivatives.",
         "implementation": "Both existing loaders now read only the advertised directory for the same embedded Archive item and exact film filename stem. Additional files come from actual links, not invented filenames. Optional listing failure retains embedded sources.",
@@ -68,7 +74,7 @@
             ],
             "visualReview": "Opening credits name Edward G. Robinson, Loretta Young and Orson Welles. Midpoint and late frames show the matching black-and-white feature, rather than a website-message video.",
             "androidEvidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41883351432",
-            "androidStatus": "running; inspect results before certification"
+            "androidStatus": "First Android attempt returned http_502; later attempts and their outcomes are recorded below."
         },
         "firstAndroidAttempt": {
             "run": "https://github.com/billyke2000s/moviehub/actions/runs/41883351432",
@@ -112,6 +118,356 @@
             "decodedAudioSeconds": 7.9924375,
             "signalDetected": true,
             "frameReview": "Matching Orson Welles film footage. Desktop decode only; not an Android pass."
+        },
+        "displayOverrideAttempt": {
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41888479731",
+            "sourceCommit": "057be18fb0118f7bc0e9ca26408f5c6a283a1b95",
+            "device": "tv_1080p with wm size 1280x720 override",
+            "sourcesReturned": 4,
+            "technicalPasses": 2,
+            "result": "Both MP4 routes pass the unchanged technical and captured-audio criteria. Screenshot review finds clipping on the right and bottom; this remains a blocker. No site pass claimed.",
+            "files": [
+                {
+                    "evidenceId": "0001",
+                    "verification": "needs_content_review",
+                    "durationSeconds": 5472,
+                    "width": 640,
+                    "height": 480,
+                    "displayedFps": {
+                        "start": 30.09834111453263,
+                        "middle": 29.593705151680112,
+                        "late": 30.36556603773585
+                    },
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "capturedSourceAudio": {
+                        "start": {
+                            "tracks": [
+                                {
+                                    "seconds": 5.6424375,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -15.23,
+                                            "activeSeconds": 5.6424375
+                                        },
+                                        {
+                                            "rmsDbfs": -15.23,
+                                            "activeSeconds": 5.6424375
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0001-start-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "middle": {
+                            "tracks": [
+                                {
+                                    "seconds": 6.57125,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -20.76,
+                                            "activeSeconds": 6.57125
+                                        },
+                                        {
+                                            "rmsDbfs": -20.76,
+                                            "activeSeconds": 6.57125
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0001-middle-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "late": {
+                            "tracks": [
+                                {
+                                    "seconds": 4.736875,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -15.86,
+                                            "activeSeconds": 4.736875
+                                        },
+                                        {
+                                            "rmsDbfs": -15.86,
+                                            "activeSeconds": 4.736875
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0001-late-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        }
+                    }
+                },
+                {
+                    "evidenceId": "0002",
+                    "verification": "technical_failure",
+                    "durationSeconds": 5472,
+                    "width": 640,
+                    "height": 480,
+                    "displayedFps": {
+                        "start": 29.914952531645568,
+                        "middle": 29.449805989453786,
+                        "late": 28.388998035363457
+                    },
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "capturedSourceAudio": {
+                        "start": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.758375,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -14.97,
+                                            "activeSeconds": 7.758375
+                                        },
+                                        {
+                                            "rmsDbfs": -14.98,
+                                            "activeSeconds": 7.758375
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "mp2",
+                                    "language": "",
+                                    "channelCount": 2,
+                                    "file": "0002-start-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "middle": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.7845,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -22.34,
+                                            "activeSeconds": 7.7844999999999995
+                                        },
+                                        {
+                                            "rmsDbfs": -22.35,
+                                            "activeSeconds": 7.7844999999999995
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "mp2",
+                                    "language": "",
+                                    "channelCount": 2,
+                                    "file": "0002-middle-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "late": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.862875,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -17.5,
+                                            "activeSeconds": 7.862875
+                                        },
+                                        {
+                                            "rmsDbfs": -17.51,
+                                            "activeSeconds": 7.862875
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "mp2",
+                                    "language": "",
+                                    "channelCount": 2,
+                                    "file": "0002-late-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        }
+                    }
+                },
+                {
+                    "evidenceId": "0003",
+                    "verification": "technical_failure",
+                    "durationSeconds": 5472,
+                    "width": 400,
+                    "height": 300,
+                    "displayedFps": {
+                        "start": 28.815737445630685,
+                        "middle": null,
+                        "late": null
+                    },
+                    "midpointDecoded": false,
+                    "lateSeekDecoded": false,
+                    "capturedSourceAudio": {
+                        "start": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.36075,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -15.02,
+                                            "activeSeconds": 7.36075
+                                        },
+                                        {
+                                            "rmsDbfs": -15.02,
+                                            "activeSeconds": 7.36075
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "vorbis",
+                                    "language": "",
+                                    "channelCount": 2,
+                                    "file": "0003-start-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        }
+                    }
+                },
+                {
+                    "evidenceId": "0004",
+                    "verification": "needs_content_review",
+                    "durationSeconds": 5472,
+                    "width": 320,
+                    "height": 240,
+                    "displayedFps": {
+                        "start": 29.92297057080782,
+                        "middle": 30.07257182622527,
+                        "late": 29.07488986784141
+                    },
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "capturedSourceAudio": {
+                        "start": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.7090625,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -14.97,
+                                            "activeSeconds": 7.7090625
+                                        },
+                                        {
+                                            "rmsDbfs": -14.98,
+                                            "activeSeconds": 7.7090625
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0004-start-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "middle": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.7555,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -20.34,
+                                            "activeSeconds": 7.7555
+                                        },
+                                        {
+                                            "rmsDbfs": -20.35,
+                                            "activeSeconds": 7.7555
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0004-middle-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "late": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.73225,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -16.95,
+                                            "activeSeconds": 7.73225
+                                        },
+                                        {
+                                            "rmsDbfs": -16.96,
+                                            "activeSeconds": 7.73225
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0004-late-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        }
+                    }
+                }
+            ]
+        },
+        "nativeDisplayRetest": {
+            "sourceCommit": "aaea9ca7e7bf8d31d8f773626dd498b72e0e1790",
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41890911139",
+            "device": "tv_720p; no display override",
+            "status": "in_progress"
         }
     }
 }

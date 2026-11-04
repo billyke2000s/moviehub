@@ -8,7 +8,7 @@ Playback method correction (4 November): older candidate checks bypassed the app
 guard. Their seek/smoothness failures and backup overlays require a corrected-method retest.
 New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remain valid.
 
-Current saved pass: 143 candidates tested, 16 technical sample passes across ten sites.
+Historical checking baseline: 143 candidates tested, 16 technical sample passes across ten sites.
 All ten have individual evidence reviews; incomplete audio, failed sources and unconfirmed
 content remain explicit. No whole site is certified. Audio evidence version 2 now requires
 at least four decoded seconds per requested eight-second recording and measures partial
@@ -21,7 +21,7 @@ regional tags match, and missing language remains unknown rather than becoming a
 | Site / provider ID | Movie result | Series result | Status | Evidence / notes |
 | --- | --- | --- | --- | --- |
 | anymovies.co (`free99:anymovies_co`) | Corrected-seek check: real Inception scenes and audio signal; about 15 displayed fps, below the smoothness requirement | unsupported_host; no episode source played | Partial verification; frame-rate cause unresolved | [Current review](docs/site-audits/anymovies.json), playback method 2 |
-| bnwmovies.com (`free99:bnwmovies_com`) | 4 sources tested; full MP4 runtime/content/audio/seeks confirmed; displayed-frame rate below requirement | 0 sources tested; 0 technical passes; 1 unsupported_type | Remaining frame-rate failure under investigation | [Current attempts and evidence](docs/site-audits/bnwmovies.json), native run 41885723184 |
+| bnwmovies.com (`free99:bnwmovies_com`) | 4 routes tested; 2 MP4 technical/audio passes at 720p output; captured picture cropped | 0 sources tested; 0 technical passes; 1 unsupported_type | Full-frame display retest in progress | [Current attempts and evidence](docs/site-audits/bnwmovies.json), native runs 41885723184 / 41888479731 |
 | fzmovies.live (`free99:fzmovies_live`) | Corrected-seek check: 8 tested, 0 technical passes; real Inception/Dune frames; Dune audio at all positions; remaining FPS/late-audio/decoder failures | Movie-only adapter; unsupported_type | Partial verification; playback failures remain | [Current review](docs/site-audits/fzmovies.json), playback method 2 |
 | levidia.ch (`free99:levidia_ch`) | 7 sources tested; 0 technical passes; 2 complete | 9 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/free99-levidia_ch.json) at 9a92abd |
 | naijavault.com (`free99:naijavault_com`) | 0 sources tested; 0 technical passes; 2 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/free99-naijavault_com.json) at b386a07 |
