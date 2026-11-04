@@ -1,0 +1,35 @@
+{
+    "site": "scrubs:tvseries_video",
+    "sourceCommit": "926cfb57e0c725cbfd2465af402175a3c8c5559f",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41763869027",
+    "fullPlaybackVerified": false,
+    "contentReview": "pending",
+    "media": {
+        "movies": {
+            "complete": true,
+            "lookupOutcomes": {
+                "gaierror": 2
+            },
+            "candidatesTested": 0,
+            "playbackOutcomes": {},
+            "technicalPasses": 0,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {},
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        },
+        "series": {
+            "complete": true,
+            "lookupOutcomes": {
+                "gaierror": 1
+            },
+            "candidatesTested": 0,
+            "playbackOutcomes": {},
+            "technicalPasses": 0,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {},
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        }
+    }
+}

@@ -75,7 +75,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | tubitv.com (`scrubs:tubitv_com`) | 0 sources tested; 0 technical passes; 2 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/scrubs-tubitv_com.json) at b512652 |
 | tvids.net (`scrubs:tvids_net`) | 0 sources tested; 0 technical passes; 2 gaierror | 0 sources tested; 0 technical passes; 1 gaierror | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/scrubs-tvids_net.json) at 667950f |
 | tvmovieflix.com (`scrubs:tvmovieflix_com`) | | | | |
-| tvseries.video (`scrubs:tvseries_video`) | | | | |
+| tvseries.video (`scrubs:tvseries_video`) | 0 sources tested; 0 technical passes; 2 gaierror | 0 sources tested; 0 technical passes; 1 gaierror | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/scrubs-tvseries_video.json) at 926cfb5 |
 | upmovies.net (`scrubs:upmovies_net`) | | | | |
 | vumoo.mx (`scrubs:vumoo_mx`) | | | | |
 | watchseries.cyou (`scrubs:watchseries_cyou`) | | | | |
