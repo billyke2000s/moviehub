@@ -31,7 +31,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | fshare (`native:fshare`) | 0 sources tested; 0 technical passes; 2 http_403 | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-fshare.json) at dc1c152 |
 | hdhub4u (`native:hdhub4u`) | 0 sources tested; 0 technical passes; 2 http_403 | 0 sources tested; 0 technical passes; 1 http_404 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-hdhub4u.json) at fa777d7 |
 | hexa (`native:hexa`) | 1 sources tested; 1 technical passes; 1 complete, 1 http_403 | 0 sources tested; 0 technical passes; 1 ReadTimeout | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-hexa.json) at fa777d7 |
-| hindmoviez (`native:hindmoviez`) | | | | |
+| hindmoviez (`native:hindmoviez`) | 0 sources tested; 0 technical passes; 1 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-hindmoviez.json) at f1e8b59 |
 | kisskh (`native:kisskh`) | | | | |
 | m4ufree.lat (`native:m4ufree_lat`) | | | | |
 | MeowTV (`native:meowtv`) | | | | |
