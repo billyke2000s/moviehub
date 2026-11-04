@@ -65,7 +65,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | goojara.to (`scrubs:goojara_to`) | 0 sources tested; 0 technical passes; 2 http_403 | 0 sources tested; 0 technical passes; 1 http_403 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-goojara_to.json) at 2341572 |
 | iwaatch.com (`scrubs:iwaatch_com`) | Inception 720p/1080p: real scenes and 148-minute runtime; technical windows pass; buffering/backup overlays and late 1080p audio unresolved | Movie-only adapter; unsupported_type | Partial verification; follow-up required | [Reviewed evidence](docs/site-audits/iwaatch.json), 4 November 2026 |
 | m4uhd.tv (`scrubs:m4uhd_tv`) | 2 sources tested; 0 technical passes; 2 complete | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-m4uhd_tv.json) at 944ee5f |
-| moviesnipipay.me (`scrubs:moviesnipipay_me`) | | | | |
+| moviesnipipay.me (`scrubs:moviesnipipay_me`) | 0 sources tested; 0 technical passes; 1 resolution_failed | 0 sources tested; 0 technical passes; 1 unsupported_host | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-moviesnipipay_me.json) at 82ea65d |
 | myflixer.it (`scrubs:myflixer_it`) | | | | |
 | noxx.to (`scrubs:noxx_to`) | | | | |
 | PressPlayZ (`scrubs:pressplay_top`) | | | | |
