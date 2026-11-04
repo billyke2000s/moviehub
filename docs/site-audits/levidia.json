@@ -1,7 +1,7 @@
 {
     "site": "free99:levidia_ch",
     "date": "2026-11-04",
-    "status": "episode_selection_repaired_playback_retest_pending",
+    "status": "episode_selection_repaired_all_live_candidates_failed",
     "fullPlaybackVerified": false,
     "siteInspection": "Current public search lists Inception (2010) and Breaking Bad (2008). Season 2 is selected with s=2; its page advertises S2E1 through S2E13, including S2E10 which collides with the previous substring test.",
     "repairs": [
@@ -15,5 +15,20 @@
         "cases": "Both original loaders tested with episode 10 ordered before episode 1, wrong-season links, missing requested episodes, uppercase/padded tokens, and replacement of a previous season query."
     },
     "previousAttempt": "Run 41726423062 did not reach Levidia playback: emulator boot timed out. That incomplete report remains historical evidence.",
-    "next": "Rerun Levidia movies and series on the repaired source and review decoded footage/audio; do not certify from parser tests."
+    "next": "Investigate downstream Wootly/Luluvdo audio, seeking and smoothness failures. Exact episode parsing is repaired, but the live site is not certified.",
+    "liveRetest": {
+        "sourceCommit": "df8d8f3c91c2242811a3cede68f8c26404139fbc",
+        "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41760241840",
+        "movieArtifactId": 13291480499,
+        "seriesArtifactId": 13290956660,
+        "moviesCandidatesTested": 8,
+        "seriesCandidatesTested": 9,
+        "technicalPasses": 0,
+        "reviewedContactSheets": [
+            "movies/0001 Inception: actual matching opening, midpoint and late film scenes.",
+            "movies/0008 Dune: Part Two: matching studio opening and actual film scenes.",
+            "series/0001 and 0002 Breaking Bad S1E1: matching pilot RV/desert and midpoint scenes; visible buffering and no-working-backup overlays."
+        ],
+        "limits": "Only these four contact sheets were visually reviewed. All 17 candidates have machine outcomes; no whole-title uninterrupted watch or physical speaker test."
+    }
 }
