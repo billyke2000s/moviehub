@@ -87,7 +87,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 
 | Site | Playback result | Status | Evidence / notes |
 | --- | --- | --- | --- |
-| ZLive | | | |
+| ZLive | Website F1 backup shows actual 1080p programme footage; primary manifest failed; direct media request refused | Partial verification; app chain/audio still unverified | [Current checks and separate repair](docs/site-audits/zlive.json), 4 November 2026 |
 | FreeShot | Football page returned Site Unavailable; no player iframe | Blocked here; full chain unverified | [Current check and separate repair](docs/site-audits/freeshot.json), 4 November 2026 |
 
 ## Updating results
