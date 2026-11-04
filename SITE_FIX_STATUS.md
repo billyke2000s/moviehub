@@ -55,7 +55,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | vidcore (`native:vidcore`) | 0 sources tested; 0 technical passes; 1 http_400, 1 http_404 | 0 sources tested; 0 technical passes; 1 http_404 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-vidcore.json) at 4374d26 |
 | videasy (`native:videasy`) | 0 sources tested; 0 technical passes; 2 JSONDecodeError | 0 sources tested; 0 technical passes; 1 JSONDecodeError | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-videasy.json) at 62cbdb1 |
 | vidfast (`native:vidfast`) | | | | |
-| vidrock (`native:vidrock`) | | | | |
+| vidrock (`native:vidrock`) | 0 sources tested; 0 technical passes; 2 ConnectionError | 0 sources tested; 0 technical passes; 1 ConnectionError | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-vidrock.json) at a49c3c6 |
 | vidup (`native:vidup`) | | | | |
 | Vidzee (`native:vidzee`) | | | | |
 | vixsrc (`native:vixsrc`) | 2 sources tested; 0 technical passes; 2 complete | 1 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-vixsrc.json) at 4de6b23 |

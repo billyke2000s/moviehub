@@ -1,0 +1,36 @@
+{
+    "site": "native:vidrock",
+    "sourceCommit": "a49c3c6dc933126b086ab989ae54f287b33d51d5",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41766998519",
+    "playbackAuditVersion": 2,
+    "fullPlaybackVerified": false,
+    "contentReview": "pending",
+    "media": {
+        "movies": {
+            "complete": true,
+            "lookupOutcomes": {
+                "ConnectionError": 2
+            },
+            "candidatesTested": 0,
+            "playbackOutcomes": {},
+            "technicalPasses": 0,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {},
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        },
+        "series": {
+            "complete": true,
+            "lookupOutcomes": {
+                "ConnectionError": 1
+            },
+            "candidatesTested": 0,
+            "playbackOutcomes": {},
+            "technicalPasses": 0,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {},
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        }
+    }
+}
