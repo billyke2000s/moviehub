@@ -20,7 +20,9 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                canvas: ["1920x1080", "1280x720"]
+                include:
+                    - { canvas: "1920x1080", profile: tv_1080p }
+                    - { canvas: "1280x720", profile: tv_720p }
         env:
             ORG_GRADLE_PROJECT_moviehubAbi: x86_64
             VOD_CALIBRATION_CANVAS: ${{ matrix.canvas }}
@@ -50,14 +52,14 @@ jobs:
               with:
                   api-level: 28
                   arch: x86_64
-                  profile: tv_1080p
+                  profile: ${{ matrix.profile }}
                   cores: 4
                   ram-size: 4096M
                   emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -noaudio
                   disable-animations: true
                   script: |
-                      adb shell wm size "${{ matrix.canvas }}"
                       adb shell wm size
+                      adb shell wm density
                       bash .github/scripts/vod-runner-calibration.sh
             - uses: actions/upload-artifact@v6
               if: always()

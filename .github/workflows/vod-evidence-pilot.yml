@@ -61,14 +61,14 @@ jobs:
               with:
                   api-level: 28
                   arch: x86_64
-                  profile: tv_1080p
+                  profile: tv_720p
                   cores: 4
                   ram-size: 4096M
                   emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -noaudio
                   disable-animations: true
                   script: |
-                      adb shell wm size 1280x720
                       adb shell wm size
+                      adb shell wm density
                       VOD_SOURCE_LIMIT=200 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=false bash .github/scripts/vod-evidence-mode.sh '${{ matrix.route.capture }}' 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}'
             - uses: actions/upload-artifact@v6
               if: always()
