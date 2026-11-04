@@ -1,7 +1,7 @@
 {
     "site": "free99:anymovies_co",
-    "date": "2026-11-03",
-    "status": "in_progress",
+    "date": "2026-11-04",
+    "status": "corrected_seek_retest_still_below_frame_rate_requirement",
     "existingAdapters": ["free99:anymovies_co", "scrubs:anymovies_co"],
     "siteInspection": {
         "movie": "Current Inception search card and player buttons retained.",
@@ -26,7 +26,7 @@
         "content": "Contact sheet explicitly reviewed: studio logo at start, buffering overlay at early position, real Inception scenes at middle and late positions. The early frame is not usable content evidence."
     },
     "fullPlaybackVerified": false,
-    "next": "Rerun with isolated audit IDs and explicit opening-position assertions, then diagnose remaining movie audio/transport/smoothness failures.",
+    "next": "Compare the independent 720p runner control before attributing the remaining low displayed frame rate to the site. Playback certification remains blocked; keep investigating the series downstream host separately.",
     "androidRetest": {
         "run": "https://github.com/billyke2000s/moviehub/actions/runs/41723642563",
         "sourceCommit": "12fe2c215c9d176cbdad2893aaf2c539a1598959",
@@ -38,5 +38,20 @@
         "auditDefect": "Some start captures resumed a previous audit source because the player ID defaulted to media. Position labels must be rechecked after unique-ID repair.",
         "openingEvidenceReliable": false,
         "fullPlaybackVerified": false
+    },
+    "correctedSeekRetest": {
+        "playbackAuditVersion": 2,
+        "sourceCommit": "966d6ad7de4a151f487c8b557fd450daadbbc2b8",
+        "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41766998519",
+        "artifactId": 13293835051,
+        "moviesCandidates": 1,
+        "movieTechnicalPasses": 0,
+        "initialPositionMs": 1154,
+        "durationSeconds": 8888,
+        "displayedFpsByPosition": [15.4225, 15.5762, 14.9633],
+        "videoGapMsByPosition": [314, 343, 322],
+        "nonSilentAudioSecondsByPosition": [0.7466875, 0.96, 1.5786875],
+        "contentReview": "Current contact sheet shows the matching Inception opening and real midpoint/late scenes. Early screenshot shows buffering; the earlier no-working-backup overlay is absent from these reviewed midpoint/late frames.",
+        "series": "unsupported_host; no source played."
     }
 }

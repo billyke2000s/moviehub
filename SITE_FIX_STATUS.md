@@ -12,7 +12,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 
 | Site / provider ID | Movie result | Series result | Status | Evidence / notes |
 | --- | --- | --- | --- | --- |
-| anymovies.co (`free99:anymovies_co`) | 1 sources tested; 0 technical passes; 1 complete, 1 resolution_failed | 0 sources tested; 0 technical passes; 1 unsupported_host | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/free99-anymovies_co.json) at 966d6ad |
+| anymovies.co (`free99:anymovies_co`) | Corrected-seek check: real Inception scenes and audio signal; about 15 displayed fps, below the smoothness requirement | unsupported_host; no episode source played | Partial verification; frame-rate cause unresolved | [Current review](docs/site-audits/anymovies.json), playback method 2 |
 | bnwmovies.com (`free99:bnwmovies_com`) | 2 sources tested; 0 technical passes; 1 complete | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/free99-bnwmovies_com.json) at 966d6ad |
 | fzmovies.live (`free99:fzmovies_live`) | 8 sources tested; 0 technical passes; 2 complete | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/free99-fzmovies_live.json) at 966d6ad |
 | levidia.ch (`free99:levidia_ch`) | 8 sources tested; 1 technical passes; 2 complete | 8 sources tested; 1 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/free99-levidia_ch.json) at b512652 |
