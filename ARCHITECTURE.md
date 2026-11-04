@@ -6,7 +6,7 @@ The live audit assigns a unique player ID to every individual candidate, so it c
 the default `media` resume position or another candidate's history. It records the actual
 initial timestamp and rejects resumed openings; this changes only test code, not app resume.
 
-`all-vod-sites-audit.yml` schedules one enabled website per matrix job with concurrency one.
+`all-vod-sites-audit.yml` schedules one enabled website per matrix job with maximum concurrency three.
 `audit-one-vod-site.sh` reuses the existing player/evidence scripts for both media types and
 preserves failed reports separately. `site-audit-checkpoint.py` emits only redacted coverage
 and outcome counts, never a content certification. `save-site-audit-checkpoint.cjs` writes

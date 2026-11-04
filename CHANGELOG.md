@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Require complete source-audio capture windows in audit evidence and measure partial PCM
+  blocks accurately; tiny recordings no longer count as sustained audio verification.
+
 - Correct FZMovies IMDb matching and relative download hops; preserve original format labels
   instead of assuming WebM is 720p, and report unsupported TV capability without hiding the site.
 

@@ -1,5 +1,17 @@
 # Testing
 
+## Audio capture completeness correction — 4 November 2026
+
+Audio evidence version 2 measures the actual length of the final partial PCM block instead
+of rounding every fragment up to half a second. Each selected source-audio window must
+decode at least four seconds of the requested eight seconds, contain a measured non-silent
+signal and have confirmed recording events. Short captures remain unverified even when
+they contain sound. Historical technical playback counts remain dated evidence; their old
+audio flags do not establish this stronger requirement. This changes the offline evidence
+checker, not production playback or smoothness thresholds. The regression suite covers a
+50 ms fragment, missing events, the duration boundary, silence and track-language selection.
+
+
 ## Independent runner throughput control — 4 November 2026
 
 An opt-in calibration job generates a synthetic 1280×720/24 fps H.264/AAC tone fixture

@@ -27,9 +27,11 @@ def levels(pcm):
         samples = pcm[index::2]
         energy = sum(value * value for value in samples) / max(1, len(samples))
         rms = math.sqrt(energy) / 32768
-        active = sum(math.sqrt(sum(x * x for x in samples[i:i + 8000]) /
-                               max(1, len(samples[i:i + 8000]))) / 32768 > .001
-                     for i in range(0, len(samples), 8000)) * .5
+        active = 0
+        for offset in range(0, len(samples), 8000):
+            block = samples[offset:offset + 8000]
+            if math.sqrt(sum(value * value for value in block) / len(block)) / 32768 > .001:
+                active += len(block) / 16000
         channels.append(dict(rmsDbfs=round(20 * math.log10(max(rms, 1e-6)), 2),
                              activeSeconds=active))
     return dict(seconds=len(pcm) / 32000, channels=channels,
@@ -106,6 +108,17 @@ def language(value):
     return next((group[0] for group in groups if value in group), value)
 
 
+def selected_audio_signal(tracks, selected_language, events_confirmed):
+    selected = language(selected_language)
+    matching = [track for track in tracks if selected and language(track['language']) == selected]
+    if len(tracks) == 1:
+        matching = tracks
+    # Native recording requests eight seconds; tiny closed-file fragments cannot
+    # establish sustained source audio even if one fragment contains a signal.
+    return events_confirmed and any(track['seconds'] >= 4 and track['signalDetected']
+                                    for track in matching)
+
+
 def review(report, raw, directory):
     import shutil
     directory.mkdir(exist_ok=True)
@@ -117,7 +130,7 @@ def review(report, raw, directory):
         identity = row['evidenceId']
         if not re.fullmatch(r'[0-9]{4}', identity):
             raise ValueError('Invalid evidence filename')
-        evidence = dict(row, physicalAudioOutputTested=False)
+        evidence = dict(row, physicalAudioOutputTested=False, audioEvidenceVersion=2)
         windows = {}
         for clip in row.get('recordedClips', []):
             label = clip['position']
@@ -142,14 +155,11 @@ def review(report, raw, directory):
                         tracks.append(stats)
                 except (subprocess.SubprocessError, OSError, ValueError) as error:
                     errors.append(type(error).__name__)
-            selected = language(row.get('selectedAudioLanguage'))
-            matching = [track for track in tracks if selected and language(track['language']) == selected]
-            if len(tracks) == 1:
-                matching = tracks
             windows[label] = dict(tracks=tracks, capped=clip.get('capped', False), errors=errors,
                                   recordingEventsConfirmed=clip.get('eventsConfirmed', False),
-                                  selectedAudioSignalVerified=clip.get('eventsConfirmed', False) and
-                                  any(track['signalDetected'] for track in matching))
+                                  minimumDecodedSeconds=4,
+                                  selectedAudioSignalVerified=selected_audio_signal(
+                                      tracks, row.get('selectedAudioLanguage'), clip.get('eventsConfirmed', False)))
         evidence['capturedSourceAudio'] = windows
         for frame in raw.glob(identity + '-*.jpg'):
             if re.fullmatch(identity + r'-(start|early|middle|late)-[01]\.jpg', frame.name):

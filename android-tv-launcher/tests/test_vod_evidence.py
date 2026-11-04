@@ -31,3 +31,24 @@ class EvidenceTests(unittest.TestCase):
         self.assertTrue(checked['signalDetected'])
         self.assertGreater(checked['channels'][0]['activeSeconds'], 0)
         self.assertEqual(checked['channels'][1]['activeSeconds'], 0)
+
+    def test_short_fragment_does_not_round_up_to_half_second_of_signal(self):
+        checked = evidence.levels(self.tone(440)[:1600])
+        self.assertAlmostEqual(checked['seconds'], .05)
+        self.assertAlmostEqual(checked['channels'][0]['activeSeconds'], .05)
+        self.assertFalse(checked['signalDetected'])
+
+    def test_selected_audio_requires_half_the_requested_eight_second_window(self):
+        track = dict(seconds=.6613, signalDetected=True, language='eng')
+        self.assertFalse(evidence.selected_audio_signal([track], 'eng', True))
+        track['seconds'] = 4
+        self.assertTrue(evidence.selected_audio_signal([track], 'eng', True))
+        self.assertFalse(evidence.selected_audio_signal([track], 'eng', False))
+        track['signalDetected'] = False
+        self.assertFalse(evidence.selected_audio_signal([track], 'eng', True))
+
+    def test_other_language_cannot_supply_selected_tracks_missing_signal(self):
+        tracks = [dict(seconds=8, signalDetected=False, language='eng'),
+                  dict(seconds=8, signalDetected=True, language='hin')]
+        self.assertFalse(evidence.selected_audio_signal(tracks, 'en', True))
+        self.assertTrue(evidence.selected_audio_signal(tracks, 'hi', True))

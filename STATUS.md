@@ -1,5 +1,17 @@
 # Status
 
+## All-site checking pass saved — 4 November 2026
+
+All 74 VOD sites have completed lookup/playback receipts across the saved audit runs.
+Candidate-bearing checks use corrected seek handling (playback audit version 2). The final
+review gate remains blocked because repairs and content/audio verification are incomplete;
+completed checking does not mean all sites work. Vidzee, MeowTV and Cinejoy have individual
+current content reviews linked in `SITE_FIX_STATUS.md`. Short or empty native audio captures
+remain explicit blockers. The offline checker now rejects captures shorter than four seconds
+and measures partial signal blocks without rounding them up. No site is certified, merged or
+published by this checkpoint.
+
+
 ## FZMovies checkpoint — 3 November 2026
 
 Exact IMDb matching, relative download-hop handling, honest WebM format labels and explicit
