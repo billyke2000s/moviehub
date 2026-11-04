@@ -1,7 +1,7 @@
 {
     "site": "free99:anymovies_co",
     "date": "2026-11-04",
-    "status": "additional_advertised_series_players_implemented_native_verification_pending",
+    "status": "series_sample_verified_movie_audio_repair_in_progress",
     "existingAdapters": [
         "free99:anymovies_co",
         "scrubs:anymovies_co"
@@ -17,7 +17,7 @@
         "pythonTests": 159,
         "coreSuites": 34,
         "siteMoviePlaybackConfirmed": false,
-        "siteSeriesPlaybackConfirmed": false
+        "siteSeriesPlaybackConfirmed": true
     },
     "androidBaseline": {
         "run": "https://github.com/billyke2000s/moviehub/actions/runs/41722195176",
@@ -29,7 +29,7 @@
         "content": "Contact sheet explicitly reviewed: studio logo at start, buffering overlay at early position, real Inception scenes at middle and late positions. The early frame is not usable content evidence."
     },
     "fullPlaybackVerified": false,
-    "next": "Test the newly discovered first-party series tabs and current slash-format MoviesAPI episode route. Continue investigating actual playback and complete source audio for movies and episodes; do not certify this site yet.",
+    "next": "Save verified episode routes immediately. Repair the observed mxdrop.click movie-host registration and retest real movie duration, picture, audio and seeking; do not mark the whole site good yet.",
     "androidRetest": {
         "run": "https://github.com/billyke2000s/moviehub/actions/runs/41723642563",
         "sourceCommit": "12fe2c215c9d176cbdad2893aaf2c539a1598959",
@@ -79,5 +79,56 @@
         "baselineSeries": "Native lookup returned unsupported_host with one VidSrc locator in each adapter; no episode played.",
         "baselineMovie": "Runner media-tool setup failed before movie playback; no new movie evidence.",
         "otherObservations": "Following VidSrc's actual API-supplied episode player returned HTTP 403 with Expired title. MoviesAPI's actual script supplied the public player API; its IMDb episode request returned HTTP 404/result false. No challenge bypass attempted."
+    },
+    "seriesPlaybackVerified": true,
+    "currentNativeReview": {
+        "sourceCommit": "a7e4bab58eefe2bd633a99c6a581359677da0348",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41897152969",
+        "playbackAuditVersion": 2,
+        "audioEvidenceVersion": 3,
+        "pythonTestsPassed": 202,
+        "movies": {
+            "tested": 1,
+            "technicalPasses": 1,
+            "completeAudioAndFramePasses": 0,
+            "title": "Inception",
+            "durationSeconds": 8888,
+            "displayedFps": [
+                23.849915178125936,
+                23.762474063827685,
+                23.242013648501633
+            ],
+            "visualReview": "Matching studio opening, Cillian Murphy at midpoint and Cobb/Mal at late seek. Early frame shows buffering. Movie audio evidence remains unverified.",
+            "otherTitle": "Dune: Part Two has an actually advertised mxdrop.click download link rejected as unsupported; investigate missing resolver domain registration."
+        },
+        "series": {
+            "tested": 4,
+            "technicalPasses": 2,
+            "completeAudioAndFramePasses": 2,
+            "title": "Breaking Bad",
+            "season": 1,
+            "episode": 1,
+            "durationSeconds": 3501,
+            "reviewedRoutes": [
+                "vidfast vRapid",
+                "vidfast vBlaze"
+            ],
+            "displayedFps": [
+                [
+                    23.0673626646781,
+                    23.86182108626198,
+                    24.251906903970273
+                ],
+                [
+                    23.288355822088956,
+                    23.98533128499926,
+                    23.81184736996194
+                ]
+            ],
+            "audioEvidence": "The live evidence reviewer reports two usable candidates; exactly two candidates pass technical playback. Thus both reviewed routes pass all three version-3 source-audio checks. Recording start/stop events are confirmed for all six clips.",
+            "visualReview": "Both reviewed contacts show the pilot cold open with Jesse in the RV, Jesse at midpoint and Walter in the desert late in the episode. Full picture fits. Early seek frames show transient buffering; required start/midpoint/late observations pass.",
+            "remainingRoutes": "Titan fails seeking; Horizon does not decode."
+        },
+        "verificationScope": "Selected opening/midpoint/late windows, not uninterrupted complete-film/episode viewing or physical-speaker testing."
     }
 }
