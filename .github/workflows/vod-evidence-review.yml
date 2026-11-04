@@ -1,0 +1,49 @@
+name: Review saved VOD contact sheets remotely
+on:
+    push:
+        branches: [fix/all-vod-site-audit]
+        paths: [".github/workflows/vod-evidence-review.yml"]
+    workflow_dispatch:
+permissions:
+    contents: read
+    actions: read
+jobs:
+    review:
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        strategy:
+            fail-fast: false
+            max-parallel: 2
+            matrix:
+                artifact: [site-evidence-1, site-evidence-2, site-evidence-5]
+        steps:
+            - uses: actions/github-script@v8
+              env:
+                  EVIDENCE_ARTIFACT: ${{ matrix.artifact }}
+              with:
+                  script: |
+                      const fs = require('node:fs');
+                      const os = require('node:os');
+                      const path = require('node:path');
+                      const {spawnSync} = require('node:child_process');
+                      const {owner, repo} = context.repo;
+                      const runId = 41766998519;
+                      const name = process.env.EVIDENCE_ARTIFACT;
+                      if (!/^site-evidence-[0-9]+$/.test(name)) throw new Error('Invalid evidence artifact');
+                      const run = await github.rest.actions.getWorkflowRun({owner, repo, run_id: runId});
+                      if (run.data.head_branch !== 'fix/all-vod-site-audit') throw new Error('Audit branch required');
+                      const artifacts = await github.rest.actions.listWorkflowRunArtifacts({owner, repo, run_id: runId, per_page: 100});
+                      const artifact = artifacts.data.artifacts.find(row => row.name === name && !row.expired);
+                      if (!artifact) throw new Error('Requested saved artifact is not available yet');
+                      if (artifact.size_in_bytes > 50000000) throw new Error('Artifact exceeds review bound');
+                      const archive = await github.rest.actions.downloadArtifact({owner, repo, artifact_id: artifact.id, archive_format: 'zip'});
+                      const file = path.join(os.tmpdir(), 'moviehub-review-' + artifact.id + '.zip');
+                      fs.writeFileSync(file, Buffer.from(archive.data), {mode: 0o600});
+                      const script = "import base64, json, re, sys, zipfile\nselected = {'0001', '0002', '0006', '0008'}\nwith zipfile.ZipFile(sys.argv[1]) as archive:\n    for name in archive.namelist():\n        image = re.fullmatch(r'(?:(movies|series)/)?vod-evidence/(\\d{4})-contact\\.jpg', name)\n        if image and image[2] in selected:\n            info = archive.getinfo(name)\n            if info.file_size > 600000: raise ValueError('Contact sheet exceeds review limit')\n            print('EVIDENCE_JPEG ' + name + ' ' + base64.b64encode(archive.read(name)).decode())\n        if re.fullmatch(r'(?:(movies|series)/)?vod-evidence/review\\.jsonl', name):\n            if archive.getinfo(name).file_size > 2000000: raise ValueError('Review exceeds limit')\n            for line in archive.read(name).decode().splitlines():\n                row = json.loads(line)\n                if row.get('kind') != 'playback': continue\n                keys = ('evidenceId','title','season','episode','status','verification','durationSeconds','width','height','initialPositionMs','startDisplayedFps','middleDisplayedFps','lateDisplayedFps','startVideoGapMs','middleVideoGapMs','lateVideoGapMs')\n                safe = {key:row.get(key) for key in keys}\n                safe['media'] = name.split('/')[0] if name.startswith(('movies/','series/')) else 'pilot'\n                safe['audio'] = {key:[{'seconds':t.get('seconds'),'signalDetected':t.get('signalDetected'),'codec':t.get('codec'),'language':t.get('language')} for t in value.get('tracks',[])] for key,value in row.get('capturedSourceAudio',{}).items()}\n                print('EVIDENCE_RECORD ' + json.dumps(safe, separators=(',',':')))";
+                      try {
+                          const result = spawnSync('python3', ['-c', script, file], {encoding: 'utf8', maxBuffer: 8000000, timeout: 30000});
+                          if (result.status !== 0) throw new Error('Bounded evidence extraction failed');
+                          process.stdout.write(result.stdout);
+                      } finally {
+                          fs.unlinkSync(file);
+                      }
