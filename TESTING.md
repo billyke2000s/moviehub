@@ -2,6 +2,8 @@
 
 ## Levidia episode checkpoint — 4 November 2026
 
+The focused evidence pilot now retests Levidia movies/series and compares Iwaatch movies with
+and without native recording. Its results remain separate from the saved all-site queue.
 The full Python suite passes 170 tests; all 34 Java core suites pass. Both original Levidia
 loaders now use exact advertised episode tokens; Free99 requests the selected season.
 Regressions put episode 10 before episode 1 and cover wrong-season, missing-episode, padded

@@ -8,9 +8,10 @@ on:
             - ".github/scripts/vod-evidence-mode.sh"
             - "android-tv-launcher/tests/review-vod-evidence.py"
             - "android-tv-launcher/app/src/androidTest/java/local/tv/home/VodAuditEvidence.java"
-            - "android-tv-launcher/app/src/main/python/moviehub_compat/anymovies_series.py"
-            - "android-tv-launcher/app/src/main/python/moviehub_free99/providers/anymovies_co.py"
-            - "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/anymovies_co.py"
+            - "android-tv-launcher/app/src/main/python/moviehub_compat/levidia_episode.py"
+            - "android-tv-launcher/app/src/main/python/moviehub_free99/providers/levidia_ch.py"
+            - "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/levidia_ch.py"
+            - "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/iwaatch_com.py"
             - "android-tv-launcher/app/src/main/python/moviehub_vod.py"
     workflow_dispatch:
 concurrency:
@@ -26,9 +27,10 @@ jobs:
             fail-fast: false
             matrix:
                 route:
-                    - { provider: "free99:anymovies_co", media: movies, capture: true }
-                    - { provider: "free99:anymovies_co", media: series, capture: true }
-                    - { provider: "free99:anymovies_co", media: movies, capture: false }
+                    - { provider: "free99:levidia_ch", media: movies, capture: true }
+                    - { provider: "free99:levidia_ch", media: series, capture: true }
+                    - { provider: "scrubs:iwaatch_com", media: movies, capture: true }
+                    - { provider: "scrubs:iwaatch_com", media: movies, capture: false }
         env:
             ORG_GRADLE_PROJECT_moviehubAbi: x86_64
         steps:
