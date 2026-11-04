@@ -70,7 +70,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | noxx.to (`scrubs:noxx_to`) | 0 sources tested; 0 technical passes; 1 unsupported_type | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-noxx_to.json) at 81361c5 |
 | PressPlayZ (`scrubs:pressplay_top`) | 0 sources tested; 0 technical passes; 2 http_404 | 0 sources tested; 0 technical passes; 1 http_500 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-pressplay_top.json) at c4cff88 |
 | projectfreetv.cyou (`scrubs:projectfreetv_cyou`) | 0 sources tested; 0 technical passes; 2 http_403 | 0 sources tested; 0 technical passes; 1 http_403 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-projectfreetv_cyou.json) at 33595bc |
-| rarefilmm.com (`scrubs:rarefilmm_com`) | | | | |
+| rarefilmm.com (`scrubs:rarefilmm_com`) | 1 sources tested; 0 technical passes; 1 complete | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-rarefilmm_com.json) at 636a1e8 |
 | series9movies.com (`scrubs:series9movies_com`) | | | | |
 | tubitv.com (`scrubs:tubitv_com`) | | | | |
 | tvids.net (`scrubs:tvids_net`) | | | | |
