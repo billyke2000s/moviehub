@@ -44,7 +44,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | onetouchtv (`native:onetouchtv`) | | | | |
 | peachify (`native:peachify`) | | | | |
 | projectfreetv.sx (`native:projectfreetv_sx`) | | | | |
-| rive (`native:rive`) | 18 tested, 1 technical pass; Inception footage confirmed, late audio missing and language label conflicts | 3 tested, 1 technical pass; correct Breaking Bad pilot footage; late audio capture under half a second | Partial verification; source failures remain | [Reviewed evidence](docs/site-audits/rive.json), 4 November 2026 |
+| rive (`native:rive`) | 18 sources tested; 0 technical passes; 2 complete | 3 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-rive.json) at 2e136f0 |
 | rogmovies (`native:rogmovies`) | | | | |
 | Rtally (`native:rtally`) | | | | |
 | skymovies (`native:skymovies`) | | | | |
