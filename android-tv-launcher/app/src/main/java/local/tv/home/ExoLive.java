@@ -373,6 +373,7 @@ final class ExoLive {
         String locator = url;
         if (locator == null || player == null) return;
         player.stop();
+        applyLanguages();
         closeRelay();
         status = "Finding the stream";
         long started = SystemClock.elapsedRealtime();
@@ -548,6 +549,32 @@ final class ExoLive {
         if (app != null) ensurePlayer();
         if (view != null && view.getPlayer() != player) view.setPlayer(player);
         if (view != null) styleSubtitles(view);
+    }
+
+    /**
+     * Settings → Playback's audio and subtitle languages, as films and series use them: audio
+     * prefers the chosen language ("Original / default" leaves the stream's own choice), and
+     * subtitles in the chosen language are shown when a channel has them. "Off" leaves subtitles
+     * as the stream sets them, so forced subtitles still appear. A choice made in the player's
+     * menu lasts until the next channel opens.
+     */
+    private static void applyLanguages() {
+        if (player == null || app == null) return;
+        android.content.SharedPreferences prefs = app.getSharedPreferences("ui", Context.MODE_PRIVATE);
+        String audio = prefs.getString("audioLanguage", "eng,en"),
+            subtitles = prefs.getString("subtitleLanguage", "none");
+        androidx.media3.common.TrackSelectionParameters.Builder wanted = player
+            .getTrackSelectionParameters()
+            .buildUpon()
+            .clearOverrides()
+            .setPreferredAudioLanguages(audio.isEmpty() ? new String[0] : audio.split(","));
+        if (subtitles.equals("none")) wanted
+            .setPreferredTextLanguages()
+            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false);
+        else wanted
+            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+            .setPreferredTextLanguages(subtitles.split(","));
+        player.setTrackSelectionParameters(wanted.build());
     }
 
     /** Subtitle size and background from Settings → Playback ({@link SubtitleStyle}). */

@@ -142,7 +142,7 @@ final class SettingsScreens {
             connected ? "Connected" : "Not connected",
             connected,
             connected ? "Manage" : "Connect",
-            () -> accountScreen(service)
+            () -> accountScreen(service, this::settings)
         );
     }
 
@@ -198,18 +198,27 @@ final class SettingsScreens {
         body.addView(activity.compactText(text, 23));
     }
 
-    /** A single-purpose form keeps credentials separate from settings and other providers. */
+    /**
+     * A single-purpose form keeps credentials separate from settings and other providers. Opened
+     * from outside Settings (Home, a catalogue, Search, the cloud), Back returns to that screen.
+     */
     void accountScreen(String service) {
+        accountScreen(
+            service,
+            activity.destination == null ? activity.homeScreen::home : activity.destination
+        );
+    }
+
+    /** {@code back} is where Back, Disconnect and leaving go: Settings, or the screen it came from. */
+    void accountScreen(String service, Runnable back) {
         String key = accountKey(service);
         boolean connected = activity.secrets.has(key);
-        activity.screen(service, this::settings);
-        LinearLayout layout = activity.row();
-        layout.setGravity(Gravity.TOP);
-        activity.page.addView(layout);
+        activity.screen(service, back);
+        // What this account is, across the top; then two ways to enter it, side by side.
         LinearLayout explanation = activity.vertical();
-        explanation.setPadding(0, activity.dp(10), activity.dp(40), 0);
-        layout.addView(explanation, new LinearLayout.LayoutParams(activity.dp(290), -2));
-        explanation.addView(activity.text(connected ? "Manage connection" : "Connect " + service, 26));
+        explanation.setPadding(0, activity.dp(4), 0, activity.dp(12));
+        activity.page.addView(explanation);
+        explanation.addView(activity.text(connected ? "Manage " + service : "Connect " + service, 26));
         String description = service.equals("Xtream")
             ? "Live TV\nEnter the server address, username and password supplied by your TV provider."
             : service.equals("Masqueradarr")
@@ -219,13 +228,32 @@ final class SettingsScreens {
                 : service.equals("TMDB")
                   ? "Movies, series & artwork\nUse the API Key (v3 auth) from your TMDB account’s API settings."
                   : "Playback & cloud library\nUse the API key from your Premiumize account.";
-        explanation.addView(activity.text(description, 16));
-        if (service.equals("TMDB")) explanation.addView(activity.text("themoviedb.org/settings/api", 14));
-        if (service.equals("Premiumize")) explanation.addView(activity.text("premiumize.me/account", 14));
+        explanation.addView(activity.text(description.replace("\n", " \u00b7 "), 16));
+        LinearLayout layout = activity.row();
+        layout.setGravity(Gravity.TOP);
+        activity.page.addView(layout);
+        // Phone sign-in or entry; Premiumize offers it only until connected.
+        LinearLayout phone = null;
+        if (!(service.equals("Premiumize") && connected)) {
+            phone = activity.vertical();
+            phone.setPadding(activity.dp(20), activity.dp(10), activity.dp(20), activity.dp(20));
+            phone.setBackground(activity.box(0xff131b27));
+            LinearLayout.LayoutParams phoneSize = new LinearLayout.LayoutParams(activity.dp(320), -2);
+            phoneSize.rightMargin = activity.dp(16);
+            layout.addView(phone, phoneSize);
+            phone.addView(activity.text("Use your phone", 20));
+        }
         LinearLayout form = activity.vertical();
         form.setPadding(activity.dp(20), activity.dp(10), activity.dp(20), activity.dp(20));
         form.setBackground(activity.box(0xff131b27));
         layout.addView(form, new LinearLayout.LayoutParams(0, -2, 1));
+        form.addView(activity.text("Type it here", 20));
+        if (service.equals("TMDB")) form.addView(
+            activity.compactText("Find your key at themoviedb.org/settings/api", 13)
+        );
+        if (service.equals("Premiumize")) form.addView(
+            activity.compactText("Find your API key at premiumize.me/account", 13)
+        );
         TextView status = activity.compactText(
             connected
                 ? "Connected · saved credentials are kept until a replacement is verified"
@@ -276,7 +304,7 @@ final class SettingsScreens {
         }
         if (
             service.equals("Xtream") || service.equals("M3U playlist") || service.equals("Masqueradarr")
-        ) formSwitch(form, "Allow HTTP provider connections", "http", false);
+        ) formSwitch(form, "Allow http:// links (for the whole app)", "http", false);
         if (!service.equals("M3U playlist") && !service.equals("Masqueradarr")) {
             CheckBox reveal = new CheckBox(activity);
             reveal.setText("Show " + (service.equals("Xtream") ? "password" : "key"));
@@ -359,7 +387,7 @@ final class SettingsScreens {
                             service.equals("M3U playlist") ||
                             service.equals("Masqueradarr")
                         ) ChannelSync.refreshNow(activity);
-                        accountScreen(service);
+                        accountScreen(service, back);
                         activity.toast(
                             "Connected" +
                                 (service.equals("Xtream") ||
@@ -372,6 +400,13 @@ final class SettingsScreens {
                 });
             });
         });
+        // Long keys, links and passwords: offer a phone instead of the remote.
+        if (phone != null) {
+            if (service.equals("Premiumize")) PremiumizeLink.add(activity, phone, () ->
+                accountScreen(service, back)
+            );
+            else PhoneKeyPanel.add(activity, phone, service, inputs, save);
+        }
         if (connected) form.addView(
             activity.button("Disconnect", () ->
                 SidePanel.of(activity, "Disconnect " + service + "?")
@@ -383,7 +418,7 @@ final class SettingsScreens {
                             service.equals("M3U playlist") ||
                             service.equals("Masqueradarr")
                         ) ChannelSync.refreshNow(activity);
-                        settings();
+                        back.run();
                     })
                     .action("Cancel", null)
                     .show()
@@ -402,7 +437,8 @@ final class SettingsScreens {
         parent.addView(s);
     }
 
-    private void toggle(LinearLayout parent, String title, String description, String key, boolean fallback) {
+    /** An on/off card: the value, then Turn on or Turn off. */
+    void toggle(LinearLayout parent, String title, String description, String key, boolean fallback) {
         boolean[] on = { activity.prefs.getBoolean(key, fallback) };
         TextView[] value = new TextView[1];
         Button[] button = new Button[1];
@@ -506,8 +542,8 @@ final class SettingsScreens {
             parent,
             title,
             subtitles
-                ? "Subtitle language chosen automatically when a video starts"
-                : "Audio language chosen automatically when a video starts",
+                ? "Chosen automatically for films, series and Live TV, when the video has them"
+                : "Chosen automatically for films, series and Live TV, when the video has it",
             names[chosen],
             !names[chosen].equals("Off"),
             "Change",
@@ -534,6 +570,7 @@ final class SettingsScreens {
             accountCard(body, "M3U playlist", "Your own IPTV playlist");
             accountCard(body, "TMDB", "Movie and series discovery, details and artwork");
             accountCard(body, "Premiumize", "Playback sources and your cloud library");
+            accountCard(body, "Masqueradarr", "Your own Masqueradarr server's playlist, if you run one");
         } else if (tab.equals(FreeChannelsPage.TAB)) {
             new FreeChannelsPage(activity).fill(body, null);
         } else if (tab.equals("Appearance")) {
@@ -567,7 +604,7 @@ final class SettingsScreens {
             );
             accentValue[0].setTextColor(activity.accent());
         } else if (tab.equals("Playback")) {
-            heading(body, "Playback preferences");
+            heading(body, "Films and series");
             toggle(body, "Resume playback", "Continue from where you stopped", "resume", true);
             toggle(
                 body,
@@ -604,15 +641,25 @@ final class SettingsScreens {
                         .show();
                 }
             );
+            heading(body, "Audio and subtitles");
+            languagePreference(body, "Audio track", "audioLanguage", "eng,en", false);
             languagePreference(body, "Subtitles", "subtitleLanguage", "none", true);
             SubtitleSettings.cards(this, activity, body);
-            languagePreference(body, "Audio track", "audioLanguage", "eng,en", false);
+            heading(body, "Connections");
+            toggle(
+                body,
+                "Allow http:// links",
+                "For providers without https://. Applies to the whole app: accounts, channels and films",
+                "http",
+                false
+            );
         } else {
             heading(body, "System");
             toggle(
                 body,
                 "Automatic updates",
-                "Offer new MovieHub versions when they are published",
+                "Pop up when a new MovieHub version is published. " +
+                    "When off, Home still shows an Update button",
                 "autoUpdates",
                 true
             );
@@ -621,7 +668,7 @@ final class SettingsScreens {
                 "MovieHub",
                 "Check now for a newer version of MovieHub",
                 versionName(),
-                true,
+                false,
                 "Check",
                 () -> {
                     activity.updates.lastUpdateCheck = 0;
@@ -653,15 +700,6 @@ final class SettingsScreens {
             );
             settingCard(
                 body,
-                SafetyNotice.TITLE,
-                "Messages in a stream telling you to leave the app aren't from us",
-                null,
-                false,
-                "Read",
-                () -> SafetyNotice.show(activity)
-            );
-            settingCard(
-                body,
                 "Troubleshooting",
                 "Speed test, connection checks, playback timings and recent errors",
                 null,
@@ -687,6 +725,16 @@ final class SettingsScreens {
                         activity.toast("Android Settings is unavailable");
                     }
                 }
+            );
+            heading(body, "About");
+            settingCard(
+                body,
+                SafetyNotice.TITLE,
+                "Messages in a stream telling you to leave the app aren't from us",
+                null,
+                false,
+                "Read",
+                () -> SafetyNotice.show(activity)
             );
             settingCard(
                 body,

@@ -90,7 +90,7 @@ public class DiagnosticsTest {
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
             button(activity.getWindow().getDecorView(), "Playback").performClick();
-            assertTrue(shows(activity.getWindow().getDecorView(), "Playback preferences"));
+            assertTrue(shows(activity.getWindow().getDecorView(), "Films and series"));
         });
     }
 

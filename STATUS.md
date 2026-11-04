@@ -1,5 +1,16 @@
 # Status
 
+## Phone entry expiry correction — 4 November 2026
+
+Phone-entry requests now share the original monotonic five-minute deadline, including partial
+headers and bodies. Expired requests cannot deliver account details; closing the page also
+disconnects its active client. The local socket regression reproduced late acceptance before
+the fix and now passes. Existing one-use entry, attempt limits and exact password handling
+remain intact. [Android CI 41866897273](https://github.com/billyke2000s/moviehub/actions/runs/41866897273)
+at code revision `f62b3eb` passed all six jobs. All 35 local core suites pass, including
+62 phone-entry checks.
+The settings stack at `9ebfca1` also passed all six jobs in [CI 41867094618](https://github.com/billyke2000s/moviehub/actions/runs/41867094618), plus all 36 local core suites.
+
 ## Current release — MovieHub 1.0.19 (code 119)
 
 [1.0.19 is published](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.19)
@@ -272,6 +283,20 @@ Historical checkpoint: 25 October 2026 (1.0 promoted the experimental line into 
     provider. A picture that freezes while the clock keeps moving is still not detected. The
     films-and-series lock asks for the PIN in `MainActivity.play`, after sources are found; a
     cancelled PIN leaves the screen that started playback as it was. [Unverified] on the TV box.
+
+16. **Account details from a phone (31 October 2026, unreleased).** TMDB, Xtream, M3U and
+    Masqueradarr show a QR code, or a short address and 6-digit code to type, for a one-use page
+    served by the TV on the home network (`PhoneEntry`); Premiumize uses its own device sign-in
+    (`PremiumizeLink`). Core tests run the phone page over local sockets. The Premiumize sign-in has no automated test and has not been
+    run against Premiumize. [Unverified] on a phone, the TV box, or routers that isolate Wi-Fi
+    clients from each other (the phone page cannot work there). [Unverified] whether Premiumize
+    login tokens expire; if they do, the account will need signing in again.
+
+17. **Menu clean-up (31 October 2026, unreleased).** Settings grouping, account Back, one channel
+    refresh after Free channels changes, guide Options and day steps, Library and Continue
+    watching labels. Live TV applies the Settings languages when each channel opens and clears the
+    previous channel's manual track choice. Emulator CI only; [Unverified] on the TV box and on
+    real channels with several audio or subtitle languages.
 
 ## Decisions
 

@@ -78,8 +78,9 @@ final class LiveTvScreen {
     long cursorTime;
     /** How far the time slots have moved on from now (multiples of half an hour). */
     long windowOffset;
-    /** The slots go up to a day ahead, as far as the programme guide reaches. */
+    /** The slots go up to a week ahead, as far as the programme guide reaches. */
     static final long MAX_OFFSET = 7L * 24 * 60 * 60 * 1000,
+        DAY = 24L * 60 * 60 * 1000,
         HALF_HOUR = 30L * 60 * 1000;
     private int loadTicket;
     private long displayedGuideRevision;
@@ -498,7 +499,8 @@ final class LiveTvScreen {
 
     /** Yellow (+24 hours): the same time tomorrow, as far as the programme guide reaches. */
     void nextDay(int row) {
-        long step = Math.min(MAX_OFFSET, MAX_OFFSET - windowOffset);
+        // One day at a time (it once moved the whole week, from when the guide reached one day).
+        long step = Math.min(DAY, MAX_OFFSET - windowOffset);
         if (step <= 0) return;
         windowOffset += step;
         cursorTime += step;
@@ -508,7 +510,7 @@ final class LiveTvScreen {
     /** Blue (−24 hours): the same time a day earlier, not before now. */
     void previousDay(int row) {
         if (windowOffset == 0) return;
-        long step = Math.min(MAX_OFFSET, windowOffset);
+        long step = Math.min(DAY, windowOffset);
         windowOffset -= step;
         cursorTime = Math.max(nowSlot(), cursorTime - step);
         guide(pageStart, row);
