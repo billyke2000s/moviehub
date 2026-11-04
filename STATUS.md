@@ -1,5 +1,12 @@
 # Status
 
+## BnWMovies advertised alternatives — 4 November 2026
+
+BnWMovies now follows the selected film's advertised Archive file directory and discovers
+the full 640x480 MP4 and original MPEG, in addition to both embedded choices. Current file
+probes report about 91 minutes and audio tracks for both alternatives. Android playback
+verification is in progress for this site alone; no site is marked all good.
+
 ## Audio language review correction — 4 November 2026
 
 The PR review reproduced a false positive in single-track language selection. Audio evidence

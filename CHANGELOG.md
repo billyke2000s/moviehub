@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Read BnWMovies' advertised same-film download listing to retain full MP4/MPEG alternatives
+  alongside its embedded derivatives; validate actual playback before certification.
+
 - Reject known selected/captured language conflicts in single-track audit recordings.
 
 - Require complete source-audio capture windows in audit evidence and measure partial PCM

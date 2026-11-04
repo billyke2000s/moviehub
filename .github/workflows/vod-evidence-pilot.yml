@@ -8,8 +8,9 @@ on:
             - ".github/scripts/vod-evidence-mode.sh"
             - "android-tv-launcher/tests/review-vod-evidence.py"
             - "android-tv-launcher/app/src/androidTest/java/local/tv/home/VodAuditEvidence.java"
-            - "android-tv-launcher/app/src/main/python/moviehub_compat/pressplay_page.py"
-            - "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/pressplay_top.py"
+            - "android-tv-launcher/app/src/main/python/moviehub_compat/bnwmovies_archive.py"
+            - "android-tv-launcher/app/src/main/python/moviehub_free99/providers/bnwmovies_com.py"
+            - "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/bnwmovies_com.py"
             - "android-tv-launcher/app/src/main/python/moviehub_vod.py"
     workflow_dispatch:
 concurrency:
@@ -25,8 +26,7 @@ jobs:
             fail-fast: false
             matrix:
                 route:
-                    - { provider: "scrubs:pressplay_top", media: movies, capture: true }
-                    - { provider: "scrubs:pressplay_top", media: series, capture: true }
+                    - { provider: "free99:bnwmovies_com", media: movies, capture: true }
         env:
             ORG_GRADLE_PROJECT_moviehubAbi: x86_64
         steps:

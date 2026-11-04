@@ -1,6 +1,7 @@
 from ast import literal_eval
 # -*- coding: utf-8 -*-
 import re
+from moviehub_compat.bnwmovies_archive import additional_files
 
 from six.moves.urllib_parse import parse_qs, urlencode
 
@@ -52,13 +53,13 @@ class source:
             if identities and not any(cleantitle.match_alias(match[1], aliases) and
                                       match[2] == year for match in identities):
                 return self.results
-            links = client_utils.parseDOM(page_html, 'source', ret='src')
-            for link in links:
+            embedded = client_utils.parseDOM(page_html, 'source', ret='src')
+            links = additional_files(page_html, lambda url: client.scrapePage(url).text) + embedded
+            for link in links[:10]:
                 try:
                     item = scrape_sources.make_direct_item(hostDict, link, host=None, info=None, referer=page_url, prep=True)
-                    if item:
-                        if not scrape_sources.check_host_limit(item['source'], self.results):
-                            self.results.append(item)
+                    if item and not any(row['url'] == item['url'] for row in self.results):
+                        self.results.append(item)
                 except:
                     #log_utils.log('sources', 1)
                     pass

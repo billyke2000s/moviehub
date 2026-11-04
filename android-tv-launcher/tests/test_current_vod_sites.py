@@ -13,6 +13,60 @@ from moviehub_scrubs import client as scraper_client
 
 
 class CurrentSiteTests(unittest.TestCase):
+    def test_bnwmovies_discovers_advertised_full_files_in_both_existing_loaders(self):
+        search = '<div class="post"><a href="https://bnwmovies.com/the-stranger.html">The Stranger</a></div>'
+        directory = 'https://archive.org/download/TheStranger_0/'
+        page = ('<span itemprop="name">The Stranger (1946)</span>'
+                '<source src="' + directory + 'The_Stranger.ogv">'
+                '<source src="' + directory + 'The_Stranger_512kb.mp4">'
+                '<a href="' + directory + '">Download</a>')
+        listing = ('<a href="The_Stranger.MPEG">Original</a>'
+                   '<a href="The_Stranger.mp4">Full MP4</a>'
+                   '<a href="The_Stranger.ogv">Ogg</a>'
+                   '<a href="The_Stranger_512kb.mp4">Small MP4</a>')
+        for family in ('free99', 'scrubs'):
+            module = importlib.import_module('moviehub_' + family + '.providers.bnwmovies_com')
+            provider = module.source()
+            key = provider.movie('tt0038991', '20246', 'The Stranger', 'The Stranger',
+                                 [{'title': 'The Stranger'}], '1946')
+            with self.subTest(family=family), \
+                    patch.object(module.client, 'scrapePage', side_effect=[
+                        SimpleNamespace(text=search), SimpleNamespace(text=page), SimpleNamespace(text=listing)]) as fetch, \
+                    patch.object(module.scrape_sources, 'make_direct_item',
+                        side_effect=lambda hosts, link, **kwargs: dict(source='archive.org', url=link)), \
+                    patch.object(module.scrape_sources, 'check_host_limit',
+                        side_effect=lambda host, rows: len(rows) >= 3):
+                links = [row['url'] for row in provider.sources(key, [])]
+                self.assertEqual(links, [directory + name for name in [
+                    'The_Stranger.mp4', 'The_Stranger.MPEG', 'The_Stranger.ogv', 'The_Stranger_512kb.mp4']])
+                self.assertEqual(fetch.call_args.args[0], directory)
+
+    def test_bnwmovies_download_route_is_scoped_to_the_embedded_film(self):
+        from moviehub_compat.bnwmovies_archive import additional_files
+        directory = 'https://archive.org/download/film/'
+        page = ('<source src="' + directory + 'Movie.ogv">'
+                '<a href="' + directory + '">Download</a>'
+                '<a href="https://archive.org/download/another/">Other</a>'
+                '<a href="https://user:pass@archive.org/download/film/">Bad</a>')
+        listing = ''.join('<a href="' + link + '">File</a>' for link in [
+            'Movie.mp4', 'Movie.mp4', 'Movie.MPEG', 'Movie_trailer.mp4', 'Another.mp4',
+            '../another/Movie.mp4', 'https://example.com/Movie.mp4',
+            'https://archive.org/download/film/Movie.mp4?token=bad', '%2e%2e%2fMovie.mp4',
+            'Movie.mp3', 'https://[bad'])
+        calls = []
+        result = additional_files(page, lambda url: calls.append(url) or listing)
+        self.assertEqual(calls, [directory])
+        self.assertEqual(result, [directory + 'Movie.mp4', directory + 'Movie.MPEG'])
+
+    def test_bnwmovies_does_not_guess_or_require_a_download_directory(self):
+        from moviehub_compat.bnwmovies_archive import additional_files
+        page = '<source src="https://archive.org/download/film/Movie.ogv">'
+        self.assertEqual(additional_files(page, lambda url: self.fail('Guessed directory')), [])
+        def failed(url):
+            raise OSError('Optional listing unavailable')
+        self.assertEqual(additional_files(page + '<a href="https://archive.org/download/film/">Files</a>',
+                                          failed), [])
+
     def test_levidia_loaders_select_exact_advertised_episode_on_requested_season(self):
         for family in ('free99', 'scrubs'):
             for present in (True, False):

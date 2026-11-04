@@ -12,7 +12,7 @@ import sys
 def decode(path, start, seconds, stream=0):
     command = ['ffmpeg', '-v', 'error', '-ss', str(max(0, start)),
                '-protocol_whitelist', 'file,pipe', '-format_whitelist',
-               'mpegts,mov,matroska,avi,aac,wav,mp3,ogg,flac', '-i', str(path),
+               'mpegts,mpeg,mov,matroska,avi,aac,wav,mp3,ogg,flac', '-i', str(path),
                '-t', str(seconds), '-map', '0:a:' + str(stream), '-ac', '2', '-ar', '16000', '-f', 's16le', 'pipe:1']
     result = subprocess.run(command, capture_output=True, timeout=45, check=True)
     pcm = array.array('h', result.stdout)
@@ -94,7 +94,7 @@ def decoder_calibration(directory):
 
 def audio_tracks(path):
     result = subprocess.run(['ffprobe', '-v', 'error', '-format_whitelist',
-                             'mpegts,mov,matroska,avi,aac,wav,mp3,ogg,flac', '-select_streams', 'a',
+                             'mpegts,mpeg,mov,matroska,avi,aac,wav,mp3,ogg,flac', '-select_streams', 'a',
                              '-show_entries', 'stream=codec_name,channels:stream_tags=language',
                              '-of', 'json', str(path)], capture_output=True, timeout=30, check=True)
     return json.loads(result.stdout).get('streams', [])[:8]

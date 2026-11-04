@@ -1,5 +1,14 @@
 # Testing
 
+## BnWMovies advertised alternatives — 4 November 2026
+
+BnWMovies regressions exercise both real loaders returning full MP4/original MPEG plus
+existing embeds. Separate cases reject foreign files/items, trailers, credentials, traversal
+and malformed URLs, avoid guessing unadvertised directories and retain embeds when the
+optional listing is unavailable. All 194 Python tests pass. MPEG-program-stream evidence
+decoding is checked with an actual generated MPEG2/MP2 control; live verification remains
+separate and uses all four returned choices for the same film.
+
 ## Audio language review correction — 4 November 2026
 
 Audio evidence version 3 rejects a single recorded track when its known language conflicts

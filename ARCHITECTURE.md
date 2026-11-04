@@ -1,5 +1,13 @@
 # Architecture
 
+## BnWMovies advertised alternatives — 4 November 2026
+
+`moviehub_compat/bnwmovies_archive.py` shares advertised Archive-directory discovery between
+both existing BnWMovies loaders. The directory must be linked by the matched film page and
+match an embedded Archive item. Only listed video files with an existing film filename stem
+are accepted; unrelated items, trailers, foreign hosts and credential/query links are excluded.
+Listing failure preserves embedded choices.
+
 ## Per-site audit persistence
 
 The live audit assigns a unique player ID to every individual candidate, so it cannot inherit
