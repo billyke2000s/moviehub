@@ -28,7 +28,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | dudefilms (`native:dudefilms`) | 1 sources tested; 0 technical passes; 1 no_matches, 1 complete | 0 sources tested; 0 technical passes; 1 ReadTimeout | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-dudefilms.json) at c8ed973 |
 | fibwatch (`native:fibwatch`) | 0 sources tested; 0 technical passes; 2 ValueError | 0 sources tested; 0 technical passes; 1 ValueError | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-fibwatch.json) at 9368691 |
 | 4KHDHub (`native:fourkhdhub`) | 5 sources tested; 0 technical passes; 2 complete | 1 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-fourkhdhub.json) at 33b6cec |
-| fshare (`native:fshare`) | | | | |
+| fshare (`native:fshare`) | 0 sources tested; 0 technical passes; 2 http_403 | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-fshare.json) at dc1c152 |
 | hdhub4u (`native:hdhub4u`) | | | | |
 | hexa (`native:hexa`) | | | | |
 | hindmoviez (`native:hindmoviez`) | | | | |
