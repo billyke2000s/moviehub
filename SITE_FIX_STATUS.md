@@ -76,7 +76,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | tvids.net (`scrubs:tvids_net`) | 0 sources tested; 0 technical passes; 2 gaierror | 0 sources tested; 0 technical passes; 1 gaierror | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/scrubs-tvids_net.json) at 667950f |
 | tvmovieflix.com (`scrubs:tvmovieflix_com`) | 1 sources tested; 0 technical passes; 1 http_403, 1 complete | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/scrubs-tvmovieflix_com.json) at e147736 |
 | tvseries.video (`scrubs:tvseries_video`) | 0 sources tested; 0 technical passes; 2 gaierror | 0 sources tested; 0 technical passes; 1 gaierror | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/scrubs-tvseries_video.json) at 926cfb5 |
-| upmovies.net (`scrubs:upmovies_net`) | | | | |
+| upmovies.net (`scrubs:upmovies_net`) | 0 sources tested; 0 technical passes; 2 SSLError | 0 sources tested; 0 technical passes; 1 SSLError | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/scrubs-upmovies_net.json) at f0b0e71 |
 | vumoo.mx (`scrubs:vumoo_mx`) | | | | |
 | watchseries.cyou (`scrubs:watchseries_cyou`) | | | | |
 | watchserieshd.stream (`scrubs:watchserieshd_stream`) | | | | |
