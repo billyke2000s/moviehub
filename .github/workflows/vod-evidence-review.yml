@@ -17,9 +17,12 @@ jobs:
             matrix:
                 artifact: [site-evidence-1, site-evidence-2, site-evidence-5]
         steps:
+            - uses: actions/checkout@v5
+            - name: Verify remote review file formatting
+              run: npx --yes prettier@3 --check .github/workflows/vod-evidence-review.yml docs/site-audits/review-requests.json
             - uses: actions/github-script@v8
               env:
-                  EVIDENCE_ARTIFACT: ${{ matrix.artifact }}
+                  EVIDENCE_SLOT: ${{ matrix.artifact }}
               with:
                   script: |
                       const fs = require('node:fs');
@@ -27,11 +30,19 @@ jobs:
                       const path = require('node:path');
                       const {spawnSync} = require('node:child_process');
                       const {owner, repo} = context.repo;
-                      const runId = 41766998519;
-                      const name = process.env.EVIDENCE_ARTIFACT;
-                      if (!/^site-evidence-[0-9]+$/.test(name)) throw new Error('Invalid evidence artifact');
+                      const branch = 'fix/all-vod-site-audit';
+                      const fileData = await github.rest.repos.getContent({owner, repo, path: 'docs/site-audits/review-requests.json', ref: branch});
+                      const config = JSON.parse(Buffer.from(fileData.data.content, 'base64').toString('utf8'));
+                      const request = config[process.env.EVIDENCE_SLOT];
+                      if (!request || !Number.isSafeInteger(request.runId) || request.runId < 1) throw new Error('Invalid review request');
+                      const runId = request.runId;
+                      const name = request.artifact;
+                      const ids = request.evidenceIds;
+                      if (!/^(site-evidence-[0-9]+|rendered-vod-evidence-[0-9]+-(movies|series))$/.test(name)) throw new Error('Invalid evidence artifact');
+                      if (!Array.isArray(ids) || ids.length < 1 || ids.length > 4 || !ids.every(id => typeof id === 'string' && /^[0-9]{4}$/.test(id))) throw new Error('Invalid image selection');
                       const run = await github.rest.actions.getWorkflowRun({owner, repo, run_id: runId});
-                      if (run.data.head_branch !== 'fix/all-vod-site-audit') throw new Error('Audit branch required');
+                      const names = new Set(['Every enabled VOD site — individual saved checkpoints', 'VOD single-site rendered content and captured source audio']);
+                      if (run.data.head_branch !== branch || !names.has(run.data.name)) throw new Error('Authorized audit run required');
                       const artifacts = await github.rest.actions.listWorkflowRunArtifacts({owner, repo, run_id: runId, per_page: 100});
                       const artifact = artifacts.data.artifacts.find(row => row.name === name && !row.expired);
                       if (!artifact) throw new Error('Requested saved artifact is not available yet');
@@ -39,9 +50,9 @@ jobs:
                       const archive = await github.rest.actions.downloadArtifact({owner, repo, artifact_id: artifact.id, archive_format: 'zip'});
                       const file = path.join(os.tmpdir(), 'moviehub-review-' + artifact.id + '.zip');
                       fs.writeFileSync(file, Buffer.from(archive.data), {mode: 0o600});
-                      const script = "import base64, json, re, sys, zipfile\nselected = {'0001', '0002', '0006', '0008'}\nwith zipfile.ZipFile(sys.argv[1]) as archive:\n    for name in archive.namelist():\n        image = re.fullmatch(r'(?:(movies|series)/)?vod-evidence/(\\d{4})-contact\\.jpg', name)\n        if image and image[2] in selected:\n            info = archive.getinfo(name)\n            if info.file_size > 600000: raise ValueError('Contact sheet exceeds review limit')\n            print('EVIDENCE_JPEG ' + name + ' ' + base64.b64encode(archive.read(name)).decode())\n        if re.fullmatch(r'(?:(movies|series)/)?vod-evidence/review\\.jsonl', name):\n            if archive.getinfo(name).file_size > 2000000: raise ValueError('Review exceeds limit')\n            for line in archive.read(name).decode().splitlines():\n                row = json.loads(line)\n                if row.get('kind') != 'playback': continue\n                keys = ('evidenceId','title','season','episode','status','verification','durationSeconds','width','height','initialPositionMs','startDisplayedFps','middleDisplayedFps','lateDisplayedFps','startVideoGapMs','middleVideoGapMs','lateVideoGapMs')\n                safe = {key:row.get(key) for key in keys}\n                safe['media'] = name.split('/')[0] if name.startswith(('movies/','series/')) else 'pilot'\n                safe['audio'] = {key:[{'seconds':t.get('seconds'),'signalDetected':t.get('signalDetected'),'codec':t.get('codec'),'language':t.get('language')} for t in value.get('tracks',[])] for key,value in row.get('capturedSourceAudio',{}).items()}\n                print('EVIDENCE_RECORD ' + json.dumps(safe, separators=(',',':')))";
+                      const script = "import base64, json, re, sys, zipfile\nselected = set(sys.argv[2].split(','))\nwith zipfile.ZipFile(sys.argv[1]) as archive:\n    for name in archive.namelist():\n        image = re.fullmatch(r'(?:(movies|series)/)?vod-evidence/(\\d{4})-contact\\.jpg', name)\n        if image and image[2] in selected:\n            if archive.getinfo(name).file_size > 600000: raise ValueError('Contact sheet exceeds review limit')\n            print('EVIDENCE_JPEG ' + name + ' ' + base64.b64encode(archive.read(name)).decode())\n        if re.fullmatch(r'(?:(movies|series)/)?vod-evidence/review\\.jsonl', name):\n            if archive.getinfo(name).file_size > 2000000: raise ValueError('Review exceeds limit')\n            for line in archive.read(name).decode().splitlines():\n                row = json.loads(line)\n                if row.get('kind') != 'playback': continue\n                keys = ('evidenceId','title','season','episode','status','verification','durationSeconds','width','height','initialPositionMs','startDisplayedFps','middleDisplayedFps','lateDisplayedFps','startVideoGapMs','middleVideoGapMs','lateVideoGapMs')\n                safe = {key:row.get(key) for key in keys}\n                safe['media'] = name.split('/')[0] if name.startswith(('movies/','series/')) else 'pilot'\n                safe['audio'] = {key:[{'seconds':t.get('seconds'),'signalDetected':t.get('signalDetected'),'codec':t.get('codec'),'language':t.get('language')} for t in value.get('tracks',[])] for key,value in row.get('capturedSourceAudio',{}).items()}\n                print('EVIDENCE_RECORD ' + json.dumps(safe, separators=(',',':')))";
                       try {
-                          const result = spawnSync('python3', ['-c', script, file], {encoding: 'utf8', maxBuffer: 8000000, timeout: 30000});
+                          const result = spawnSync('python3', ['-c', script, file, ids.join(',')], {encoding: 'utf8', maxBuffer: 8000000, timeout: 30000});
                           if (result.status !== 0) throw new Error('Bounded evidence extraction failed');
                           process.stdout.write(result.stdout);
                       } finally {

@@ -1,0 +1,17 @@
+{
+    "site-evidence-1": {
+        "runId": 41766998519,
+        "artifact": "site-evidence-1",
+        "evidenceIds": ["0001", "0002"]
+    },
+    "site-evidence-2": {
+        "runId": 41766998519,
+        "artifact": "site-evidence-2",
+        "evidenceIds": ["0001", "0006"]
+    },
+    "site-evidence-5": {
+        "runId": 41766998519,
+        "artifact": "site-evidence-5",
+        "evidenceIds": ["0001", "0002", "0006"]
+    }
+}
