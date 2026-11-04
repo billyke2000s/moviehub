@@ -12,7 +12,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 
 | Site / provider ID | Movie result | Series result | Status | Evidence / notes |
 | --- | --- | --- | --- | --- |
-| anymovies.co (`free99:anymovies_co`) | 1 sources tested; 0 technical passes; 1 complete, 1 resolution_failed | 0 sources tested; 0 technical passes; 1 unsupported_host | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/free99-anymovies_co.json) at f67c3f5 |
+| anymovies.co (`free99:anymovies_co`) | 1 sources tested; 0 technical passes; 1 complete, 1 resolution_failed | 0 sources tested; 0 technical passes; 1 unsupported_host | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/free99-anymovies_co.json) at 966d6ad |
 | bnwmovies.com (`free99:bnwmovies_com`) | 2 sources tested; 0 technical passes; 1 complete | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/free99-bnwmovies_com.json) at 3cd21dd |
 | fzmovies.live (`free99:fzmovies_live`) | 8 tested; 1 technical pass with real Dune footage and non-silent audio at all positions; backup-error overlay and other failures remain | Movie-only adapter; unsupported_type | Partial verification; playback errors unresolved | [Reviewed evidence](docs/site-audits/fzmovies.json), 4 November 2026 |
 | levidia.ch (`free99:levidia_ch`) | 8 sources tested; 1 technical passes; 2 complete | 8 sources tested; 1 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/free99-levidia_ch.json) at b512652 |
