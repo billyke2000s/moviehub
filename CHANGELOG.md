@@ -1,5 +1,15 @@
 ## Unreleased
 
+- Enforce phone sign-in expiry during incomplete requests and disconnect pending clients on close.
+
+- Account screens now show two choices side by side: "Use your phone" and "Type it here".
+- TMDB, Xtream, M3U playlist and Masqueradarr: scan the QR code, or open the short address shown
+  in a phone browser and enter the 6-digit code. Type or paste the details there and press Send; the TV checks and saves
+  them as if typed. Each user still uses their own TMDB key. The page works for 5 minutes, once,
+  and only while that screen is open.
+- Premiumize: "Show sign-in code" uses Premiumize's own sign-in. Scan the QR code (or visit
+  premiumize.me/device), enter the short code, approve, and the TV connects with no key typed.
+
 ## 1.0.19 (29 October 2026)
 
 - Add 36 enabled CineStream adapter protocols for additional film and series sites and playback
