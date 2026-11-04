@@ -49,8 +49,8 @@ jobs:
               timeout-minutes: 8
               run: |
                   if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
-                    sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
-                    sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y -qq --no-install-recommends ffmpeg
+                    sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+                    sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends ffmpeg
                   fi
                   sudo chmod 666 /dev/kvm
             - name: Capture rendered video and native media samples
@@ -67,6 +67,22 @@ jobs:
                       adb shell wm size
                       adb shell wm density
                       VOD_SOURCE_LIMIT=200 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=false bash .github/scripts/vod-evidence-mode.sh '${{ matrix.route.capture }}' 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}'
+            - name: Expose bounded review frames in diagnostics
+              if: always()
+              run: |
+                  python - <<'PY'
+                  import base64
+                  import io
+                  from pathlib import Path
+                  from PIL import Image
+                  for path in sorted(Path('vod-evidence').glob('*-contact.jpg'))[:8]:
+                      with Image.open(path) as frame:
+                          frame.thumbnail((960, 660))
+                          encoded = io.BytesIO()
+                          frame.convert('RGB').save(encoded, format='JPEG', quality=65)
+                      if len(encoded.getvalue()) <= 100000:
+                          print('VOD_REVIEW_IMAGE ' + path.stem + ' ' + base64.b64encode(encoded.getvalue()).decode('ascii'))
+                  PY
             - uses: actions/upload-artifact@v6
               if: always()
               with:
