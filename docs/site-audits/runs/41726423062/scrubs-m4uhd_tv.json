@@ -1,24 +1,33 @@
 {
     "site": "scrubs:m4uhd_tv",
-    "sourceCommit": "638d1eff5ea992454081f601daaf7648aaba2df3",
+    "sourceCommit": "944ee5ff2a17ea1e901066c89e54672486dac930",
     "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41726423062",
     "fullPlaybackVerified": false,
     "contentReview": "pending",
     "media": {
         "movies": {
-            "complete": false,
-            "lookupOutcomes": {},
-            "candidatesTested": 0,
-            "playbackOutcomes": {},
+            "complete": true,
+            "lookupOutcomes": {
+                "complete": 2
+            },
+            "candidatesTested": 2,
+            "playbackOutcomes": {
+                "playback_stall_or_audio_output_unverified": 1,
+                "audio_unverified": 1
+            },
             "technicalPasses": 0,
             "sourceLimitMayHaveBeenReached": false,
-            "evidenceOutcomes": {},
+            "evidenceOutcomes": {
+                "technical_failure": 2
+            },
             "candidatesAwaitingContentReview": 0,
             "fullPlaybackVerified": false
         },
         "series": {
-            "complete": false,
-            "lookupOutcomes": {},
+            "complete": true,
+            "lookupOutcomes": {
+                "unsupported_type": 1
+            },
             "candidatesTested": 0,
             "playbackOutcomes": {},
             "technicalPasses": 0,
