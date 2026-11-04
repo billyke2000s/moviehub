@@ -88,7 +88,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | Site | Playback result | Status | Evidence / notes |
 | --- | --- | --- | --- |
 | ZLive | | | |
-| FreeShot | | | |
+| FreeShot | Football page returned Site Unavailable; no player iframe | Blocked here; full chain unverified | [Current check and separate repair](docs/site-audits/freeshot.json), 4 November 2026 |
 
 ## Updating results
 
