@@ -19,8 +19,18 @@ jobs:
         steps:
             - uses: actions/checkout@v5
             - name: Verify remote review file formatting
-              run: npx --yes prettier@3 --check .github/workflows/vod-evidence-review.yml docs/site-audits/review-requests.json
+              run: |
+                  npm install --no-save prettier@3 prettier-plugin-java
+                  npx prettier --write .github/workflows/vod-evidence-review.yml docs/site-audits/review-requests.json
+                  node - <<'JS'
+                  const fs = require("node:fs");
+                  for (const file of [".github/workflows/vod-evidence-review.yml", "docs/site-audits/review-requests.json"]) {
+                      console.log("FORMATTED_FILE " + file + " " + JSON.stringify(fs.readFileSync(file, "utf8")));
+                  }
+                  JS
+                  git diff --exit-code -- .github/workflows/vod-evidence-review.yml docs/site-audits/review-requests.json
             - uses: actions/github-script@v8
+              if: always()
               env:
                   EVIDENCE_SLOT: ${{ matrix.artifact }}
               with:
