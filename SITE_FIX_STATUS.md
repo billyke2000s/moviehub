@@ -35,7 +35,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | kisskh (`native:kisskh`) | 1 sources tested; 0 technical passes; 1 complete | 1 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-kisskh.json) at acf19f9 |
 | m4ufree.lat (`native:m4ufree_lat`) | 0 sources tested; 0 technical passes; 1 unsupported_type | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-m4ufree_lat.json) at 85f455c |
 | MeowTV (`native:meowtv`) | | | | |
-| mlsbd (`native:mlsbd`) | | | | |
+| mlsbd (`native:mlsbd`) | 0 sources tested; 0 technical passes; 1 http_404 | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-mlsbd.json) at 90c488a |
 | moviebox (`native:moviebox`) | | | | |
 | moviesdrive (`native:moviesdrive`) | | | | |
 | moviesmod (`native:moviesmod`) | | | | |
