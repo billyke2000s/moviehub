@@ -1,7 +1,7 @@
 {
     "site": "scrubs:pressplay_top",
     "date": "2026-11-04",
-    "status": "page_and_seven_server_fallback_parsers_repaired_retest_pending",
+    "status": "fallback_parser_repaired_live_lookup_still_failed",
     "fullPlaybackVerified": false,
     "inspection": "Current site uses /explore search cards and Astro player props. The selector still requests /api/player-servers but its own client falls back to a bundled server list when that endpoint fails.",
     "repairs": [
@@ -25,12 +25,35 @@
         "Seven bundled choices are now enumerated; live resolution/playback of every choice remains to be retested.",
         "Published player links are extraction evidence, not decoded playback."
     ],
-    "next": "Run the Android movie/series evidence audit and review correct content, sustained audio, runtime, smoothness and seeking. Keep certification pending.",
+    "next": "Trace the remaining catalogue/downstream HTTP failures and unavailable/unsupported hosts before claiming playback. Do not mark all good from the repaired parser.",
     "liveRetestBeforeFallbackRepair": {
         "sourceCommit": "c4cff888ee6ac7722b6b5b980d747586143ab878",
         "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41726423062",
         "movies": "Two http_404 results, no playback candidates.",
         "series": "One http_500 result, no playback candidates."
     },
-    "currentDefaultHostCheck": "The current MoviesAPI page loads and publishes the expected script/key pattern, but its Inception API response is HTTP 404 with result false and zero sources. The selector fallback repair avoids relying on that single default."
+    "currentDefaultHostCheck": "The current MoviesAPI page loads and publishes the expected script/key pattern, but its Inception API response is HTTP 404 with result false and zero sources. The selector fallback repair avoids relying on that single default.",
+    "latestRetest": {
+        "sourceCommit": "62b1e0b4de7b8a18dd1749b4e457732cc07afb5f",
+        "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41764770855",
+        "movieArtifactId": 13292680713,
+        "seriesArtifactId": 13292196383,
+        "movies": {
+            "titles": ["Inception", "Dune: Part Two"],
+            "lookupOutcomes": {
+                "http_404": 2
+            },
+            "playbackCandidates": 0
+        },
+        "series": {
+            "title": "Breaking Bad",
+            "season": 1,
+            "episode": 1,
+            "lookupOutcomes": {
+                "http_404": 1
+            },
+            "playbackCandidates": 0
+        },
+        "conclusion": "The seven-choice extraction tests do not establish live source availability. Both media checks completed but no playback candidate was produced; rendered/audio review cannot pass."
+    }
 }
