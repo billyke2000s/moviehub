@@ -57,7 +57,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | vidfast (`native:vidfast`) | | | | |
 | vidrock (`native:vidrock`) | 0 sources tested; 0 technical passes; 2 ConnectionError | 0 sources tested; 0 technical passes; 1 ConnectionError | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-vidrock.json) at a49c3c6 |
 | vidup (`native:vidup`) | | | | |
-| Vidzee (`native:vidzee`) | | | | |
+| Vidzee (`native:vidzee`) | 5 sources tested; 1 technical passes; 2 complete | 3 sources tested; 2 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-vidzee.json) at 4814146 |
 | vixsrc (`native:vixsrc`) | 2 sources tested; 0 technical passes; 2 complete | 1 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-vixsrc.json) at 4de6b23 |
 | zinkmovies (`native:zinkmovies`) | | | | |
 | bluray7.com (`scrubs:bluray7_com`) | 0 sources tested; 0 technical passes; 1 no_matches, 1 http_403 | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-bluray7_com.json) at 8e81bab |
