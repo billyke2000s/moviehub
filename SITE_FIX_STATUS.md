@@ -80,7 +80,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | vumoo.mx (`scrubs:vumoo_mx`) | 0 sources tested; 0 technical passes; 2 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/scrubs-vumoo_mx.json) at 8c8dafc |
 | watchseries.cyou (`scrubs:watchseries_cyou`) | 0 sources tested; 0 technical passes; 2 http_403 | 0 sources tested; 0 technical passes; 1 http_403 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/scrubs-watchseries_cyou.json) at f19ffc4 |
 | watchserieshd.stream (`scrubs:watchserieshd_stream`) | 0 sources tested; 0 technical passes; 1 ValueError, 1 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/scrubs-watchserieshd_stream.json) at 0f39fa9 |
-| watchtvseries.net (`scrubs:watchtvseries_net`) | | | | |
+| watchtvseries.net (`scrubs:watchtvseries_net`) | 0 sources tested; 0 technical passes; 2 gaierror | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/scrubs-watchtvseries_net.json) at 58812bc |
 | winnoise.com (`scrubs:winnoise_com`) | | | | |
 
 ## Sports
