@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Enforce phone sign-in expiry during incomplete requests and disconnect pending clients on close.
+
 - Account screens now show two choices side by side: "Use your phone" and "Type it here".
 - TMDB, Xtream, M3U playlist and Masqueradarr: scan the QR code, or open the short address shown
   in a phone browser and enter the 6-digit code. Type or paste the details there and press Send; the TV checks and saves
