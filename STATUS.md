@@ -1,5 +1,14 @@
 # Status
 
+## BnWMovies native alternatives — 4 November 2026
+
+The second Android attempt found all four routes. Full MP4 playback decoded the correct
+91-minute film, both seeks and non-silent audio at all three positions, but failed smoothness
+with 18–20 displayed fps against a 29.97 fps source. No whole-site pass is recorded. Work
+continues on this site with matched 30 fps local controls at two emulator display sizes,
+keeping source quality and playback thresholds unchanged. Results and attempts are saved
+in `docs/site-audits/bnwmovies.json`.
+
 ## BnWMovies advertised alternatives — 4 November 2026
 
 BnWMovies now follows the selected film's advertised Archive file directory and discovers

@@ -388,7 +388,7 @@ public final class VodSessionPlaybackTest {
                     .put("targetMs", target)
                     .put("elapsedMs", elapsed)
                     .put("displayedFps", (frames * 1000.0) / elapsed)
-                    .put("nominalFps", 24)
+                    .put("nominalFps", sample[6] / 1000.0)
                     .put("videoGapMs", videoGap)
                     .put("audioGapMs", audioGap)
                     .put("progressMs", sample[0] - before[0])
@@ -411,7 +411,7 @@ public final class VodSessionPlaybackTest {
     }
 
     private long[] calibrationSnapshot() {
-        long[] sample = new long[6];
+        long[] sample = new long[7];
         instrumentation.runOnMainSync(() -> {
             sample[0] = activity.player.getTime();
             IMedia media = activity.player.getMedia();
@@ -426,6 +426,8 @@ public final class VodSessionPlaybackTest {
                     IMedia.VideoTrack video = (IMedia.VideoTrack) media.getTrack(index);
                     sample[4] = video.width;
                     sample[5] = video.height;
+                    sample[6] =
+                        video.frameRateDen > 0 ? (1000L * video.frameRateNum) / video.frameRateDen : 0;
                 }
             } finally {
                 media.release();

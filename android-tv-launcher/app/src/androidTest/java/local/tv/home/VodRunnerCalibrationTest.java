@@ -11,7 +11,7 @@ import org.junit.runner.RunWith;
 public final class VodRunnerCalibrationTest {
 
     @Test
-    public void measureSynthetic720p24FpsThroughTheExistingPlayer() throws Exception {
+    public void measureSynthetic720pThroughTheExistingPlayer() throws Exception {
         Assume.assumeTrue(
             "Explicit calibration only",
             "true".equals(InstrumentationRegistry.getArguments().getString("vodRunnerCalibration"))

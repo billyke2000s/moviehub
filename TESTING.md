@@ -1,5 +1,16 @@
 # Testing
 
+## BnWMovies 30 fps investigation — 4 November 2026
+
+The new full MP4 has correct runtime, matching film frames, decoded source-audio windows
+and successful midpoint/late seeks, but the 1080p software-rendered emulator displays only
+18–20 fps for its 29.97 fps input. The calibration now generates an actual 30 fps 720p
+synthetic input and compares 1920x1080 versus 1280x720 emulator output. Its nominal rate
+comes from the real VLC track metadata, not a hardcoded 24. Reports record whether each
+window meets the existing 80-percent frame/progress and four-second gap requirements.
+The same BnWMovies files are retested at 1280x720 output; their source dimensions, codecs,
+player, relay and acceptance thresholds do not change. No production display setting changes.
+
 ## BnWMovies advertised alternatives — 4 November 2026
 
 BnWMovies regressions exercise both real loaders returning full MP4/original MPEG plus
@@ -32,7 +43,7 @@ checker, not production playback or smoothness thresholds. The regression suite 
 
 ## Independent runner throughput control — 4 November 2026
 
-An opt-in calibration job generates a synthetic 1280×720/24 fps H.264/AAC tone fixture
+The original opt-in calibration job generated a synthetic 1280×720/24 fps H.264/AAC tone fixture
 only in its runner workspace. The production relay connects to the existing loopback fixture
 through the established test connection seam; no public upstream is contacted. It reuses the
 managed-player fixture and corrected
