@@ -4,7 +4,9 @@
 
 The PR review reproduced a false positive in single-track language selection. Audio evidence
 version 3 now rejects known language conflicts while retaining honest unknown-language signal
-checks. Regional language aliases are normalized. All 191 Python regressions pass locally; fresh CI is pending. No site certification changes.
+checks. Regional language aliases are normalized. All 191 Python regressions pass locally; [Android CI 41867603165](https://github.com/billyke2000s/moviehub/actions/runs/41867603165)
+at code revision `3496379` passed all six jobs. CI also ran all 191 Python checks and the
+eleven focused native recovery cases, with none of those eleven skipped. No site certification changes.
 
 ## All-site checking pass saved — 4 November 2026
 
