@@ -1,0 +1,92 @@
+{
+    "site": "native:hexa",
+    "sourceCommit": "fa777d7ce46fec5e44bff647f0ad23cee2963195",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41766998519",
+    "playbackAuditVersion": 2,
+    "date": "2026-11-04",
+    "artifactId": 13296092792,
+    "status": "inception_sample_verified_other_title_and_series_blocked",
+    "fullPlaybackVerified": false,
+    "samplePlaybackVerified": true,
+    "audioEvidenceVersion": 2,
+    "candidatesTested": 1,
+    "technicalPasses": 1,
+    "reviewedSample": {
+        "evidenceId": "0001",
+        "title": "Inception",
+        "durationSeconds": 8888,
+        "initialPositionMs": 535,
+        "displayedFps": {
+            "start": 23.129455161756642,
+            "middle": 24.02791625124626,
+            "late": 22.535763276504017
+        },
+        "audio": {
+            "start": {
+                "tracks": [
+                    {
+                        "seconds": 6.57125,
+                        "channels": [
+                            {
+                                "rmsDbfs": -37.44,
+                                "activeSeconds": 6.57125
+                            },
+                            {
+                                "rmsDbfs": -35.9,
+                                "activeSeconds": 6.57125
+                            }
+                        ],
+                        "signalDetected": true,
+                        "language": "eng",
+                        "codec": "aac"
+                    }
+                ],
+                "completeSignal": true
+            },
+            "middle": {
+                "tracks": [
+                    {
+                        "seconds": 7.848375,
+                        "channels": [
+                            {
+                                "rmsDbfs": -46.99,
+                                "activeSeconds": 7.848375
+                            },
+                            {
+                                "rmsDbfs": -46.74,
+                                "activeSeconds": 7.848375
+                            }
+                        ],
+                        "signalDetected": true,
+                        "language": "eng",
+                        "codec": "aac"
+                    }
+                ],
+                "completeSignal": true
+            },
+            "late": {
+                "tracks": [
+                    {
+                        "seconds": 7.848375,
+                        "channels": [
+                            {
+                                "rmsDbfs": -47.18,
+                                "activeSeconds": 6.348375
+                            },
+                            {
+                                "rmsDbfs": -47.72,
+                                "activeSeconds": 6.848375
+                            }
+                        ],
+                        "signalDetected": true,
+                        "language": "eng",
+                        "codec": "aac"
+                    }
+                ],
+                "completeSignal": true
+            }
+        }
+    },
+    "visualReview": "Correct Inception studio opening, Saito early scene, Browning at midpoint and Cobb/Mal late scene. No buffering or playback-error overlay in selected contacts. All three stored English AAC audio captures remeasured with corrected partial-block measurement pass the four-second duration/signal gate.",
+    "next": "Dune lookup returned HTTP 403 and the episode request timed out; no site-wide certification. Selected opening/middle/late windows are not uninterrupted whole-title playback or physical-speaker evidence."
+}
