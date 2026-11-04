@@ -6,7 +6,11 @@ Phone-entry requests now share the original monotonic five-minute deadline, incl
 headers and bodies. Expired requests cannot deliver account details; closing the page also
 disconnects its active client. The local socket regression reproduced late acceptance before
 the fix and now passes. Existing one-use entry, attempt limits and exact password handling
-remain intact. Fresh Android CI is pending.
+remain intact. [Android CI 41866897273](https://github.com/billyke2000s/moviehub/actions/runs/41866897273)
+at code revision `f62b3eb` passed all six jobs. All 35 local core suites pass, including
+62 phone-entry checks.
+The settings stack at `9ebfca1` also passed all six jobs in [CI 41867094618](https://github.com/billyke2000s/moviehub/actions/runs/41867094618), plus all 36 local core suites.
+The phone-layout stack at `e64f49f` passed all six jobs in [CI 41867359952](https://github.com/billyke2000s/moviehub/actions/runs/41867359952), plus all 37 local core suites, including 12 phone-scale checks.
 
 ## Current release — MovieHub 1.0.19 (code 119)
 
