@@ -53,7 +53,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | uhdmovies (`native:uhdmovies`) | 0 sources tested; 0 technical passes; 2 http_404 | 0 sources tested; 0 technical passes; 1 http_404 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-uhdmovies.json) at 2616d2d |
 | vegamovies (`native:vegamovies`) | 0 sources tested; 0 technical passes; 2 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-vegamovies.json) at e144cfc |
 | vidcore (`native:vidcore`) | 0 sources tested; 0 technical passes; 1 http_400, 1 http_404 | 0 sources tested; 0 technical passes; 1 http_404 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-vidcore.json) at 4374d26 |
-| videasy (`native:videasy`) | | | | |
+| videasy (`native:videasy`) | 0 sources tested; 0 technical passes; 2 JSONDecodeError | 0 sources tested; 0 technical passes; 1 JSONDecodeError | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-videasy.json) at 62cbdb1 |
 | vidfast (`native:vidfast`) | | | | |
 | vidrock (`native:vidrock`) | | | | |
 | vidup (`native:vidup`) | | | | |
