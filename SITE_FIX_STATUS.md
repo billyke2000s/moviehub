@@ -40,7 +40,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | moviesdrive (`native:moviesdrive`) | 5 sources tested; 1 technical passes; 2 complete | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-moviesdrive.json) at 7b1c7b8 |
 | moviesmod (`native:moviesmod`) | 1 sources tested; 0 technical passes; 1 http_404, 1 complete | 1 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-moviesmod.json) at 2e2d257 |
 | movy (`native:movy`) | 0 sources tested; 0 technical passes; 2 http_403 | 0 sources tested; 0 technical passes; 1 http_403 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/native-movy.json) at e65f8a9 |
-| Multimovies (`native:multimovies`) | | | | |
+| Multimovies (`native:multimovies`) | 0 sources tested; 0 technical passes; 1 rejected_media, 1 http_404 | 0 sources tested; 0 technical passes; 1 rejected_media | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-multimovies.json) at 2a202c1 |
 | onetouchtv (`native:onetouchtv`) | | | | |
 | peachify (`native:peachify`) | | | | |
 | projectfreetv.sx (`native:projectfreetv_sx`) | | | | |
