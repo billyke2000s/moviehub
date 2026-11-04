@@ -1,12 +1,18 @@
 # Site fix checklist
 
 All 74 movie/series sites and the two sports sites are listed below.
-Results are intentionally blank for the fresh audit. Fill each row only after checking that site.
+All 74 now have completed checking receipts. Fill any new result only after checking that site.
 Use **should be all good g** after the required repair and playback checks pass.
 
 Playback method correction (4 November): older candidate checks bypassed the app’s seek
 guard. Their seek/smoothness failures and backup overlays require a corrected-method retest.
 New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remain valid.
+
+Current saved pass: 143 candidates tested, 16 technical sample passes across ten sites.
+All ten have individual evidence reviews; incomplete audio, failed sources and unconfirmed
+content remain explicit. No whole site is certified. Audio evidence version 2 now requires
+at least four decoded seconds per requested eight-second recording and measures partial
+signal blocks accurately; earlier tiny-fragment flags do not meet that requirement.
 
 ## Movies and series
 

@@ -27,5 +27,5 @@
         }
     },
     "visualReview": "Real Breaking Bad pilot RV opening, Jesse midpoint and Walter White late scenes. Early frame shows buffering at 16 percent; no no-working-backup overlay in selected contact.",
-    "next": "Late source-audio capture is 3.90094 seconds, below the four-second completeness requirement. Eight remaining sources fail playback checks. Retain the movie-only unsupported-type result for this series adapter; no full-site certification."
+    "next": "Late source-audio capture is 3.90094 seconds, below the four-second completeness requirement. Eight remaining sources fail playback checks. Retain the unsupported movie result for this series-only adapter; no full-site certification."
 }
