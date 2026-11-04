@@ -1,0 +1,29 @@
+{
+    "site": "native:moviesdrive",
+    "sourceCommit": "7b1c7b8b0deebb2f8ce320fc60c283f5bf1107ab",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41766998519",
+    "playbackAuditVersion": 2,
+    "date": "2026-11-04",
+    "artifactId": 13296513966,
+    "status": "dune_content_confirmed_midpoint_audio_missing",
+    "fullPlaybackVerified": false,
+    "candidatesTested": 5,
+    "technicalPasses": 1,
+    "reviewedSample": {
+        "evidenceId": "0004",
+        "title": "Dune: Part Two",
+        "durationSeconds": 10016,
+        "displayedFps": {
+            "start": 20.64734925938856,
+            "middle": 21.255363736154077,
+            "late": 19.94889937106918
+        },
+        "capturedAudioSeconds": {
+            "start": [4.2666875],
+            "middle": [0.0],
+            "late": [7.7226875]
+        }
+    },
+    "visualReview": "Dune: Part Two studio opening, arena scene at midpoint and desert gathering at late position. Normal player controls remain visible; no playback-error overlay is visible in selected contacts.",
+    "next": "Midpoint recording decodes zero source-audio seconds despite non-silent opening/late captures. Four other candidates fail playback or decoding and the episode search has no matches. Capture failure does not establish that source audio is silent; site certification remains blocked."
+}
