@@ -315,5 +315,17 @@
             }
         ],
         "completeAudioPasses": 0
+    },
+    "activeRetest": {
+        "sourceCommit": "c20b7ef6f4ca514c4769b3a4a210d1d204166185",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41935755045",
+        "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41935761675",
+        "status": "in_progress",
+        "scope": "Newly enabled advertised VidFast/Peachify movie routes plus existing episode routes. Local Python: 205 pass; core suites: 34 pass."
+    },
+    "recordingInvestigation": {
+        "status": "hypothesis_not_a_playback_pass",
+        "source": "https://github.com/videolan/vlc/blob/c128d1f15c3c858e452535b0573d38f22e91ff37/modules/stream_out/record.c",
+        "finding": "VLC waits for video keyframes and aligns recording start timestamps across tracks. That can explain short audio extracted from an eight-second wall-clock capture. Current short MP4 captures remain unverified; no threshold or production playback setting was changed."
     }
 }
