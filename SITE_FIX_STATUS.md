@@ -26,7 +26,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | bollyflix (`native:bollyflix`) | 0 sources tested; 0 technical passes; 1 ConnectTimeout | 0 sources tested; 0 technical passes; 1 ConnectTimeout | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-bollyflix.json) at 8fa7d7a |
 | cinejoy (`native:cinejoy`) | 2 sources tested; 1 technical passes; 2 complete | 1 sources tested; 1 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-cinejoy.json) at b86f8fe |
 | dudefilms (`native:dudefilms`) | 1 sources tested; 0 technical passes; 1 no_matches, 1 complete | 0 sources tested; 0 technical passes; 1 ReadTimeout | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-dudefilms.json) at c8ed973 |
-| fibwatch (`native:fibwatch`) | | | | |
+| fibwatch (`native:fibwatch`) | 0 sources tested; 0 technical passes; 2 ValueError | 0 sources tested; 0 technical passes; 1 ValueError | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-fibwatch.json) at 9368691 |
 | 4KHDHub (`native:fourkhdhub`) | 5 sources tested; 0 technical passes; 2 complete | 1 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-fourkhdhub.json) at 33b6cec |
 | fshare (`native:fshare`) | | | | |
 | hdhub4u (`native:hdhub4u`) | | | | |
