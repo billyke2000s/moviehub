@@ -35,7 +35,7 @@ class source(SeriesLookup):
             data = parse_qs(url)
             data = dict([(i, data[i][0]) if data[i] else (i, '') for i in data])
             if 'season' in data:
-                return self.series_sources(data, client)
+                return self.series_sources(data, client, lambda link: scrape_sources.process(hostDict, link))
             aliases = literal_eval(data['aliases'])
             title = data['title']
             year = data['year']

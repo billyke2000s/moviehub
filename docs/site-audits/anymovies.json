@@ -1,8 +1,11 @@
 {
     "site": "free99:anymovies_co",
     "date": "2026-11-04",
-    "status": "corrected_seek_retest_still_below_frame_rate_requirement",
-    "existingAdapters": ["free99:anymovies_co", "scrubs:anymovies_co"],
+    "status": "additional_advertised_series_players_implemented_native_verification_pending",
+    "existingAdapters": [
+        "free99:anymovies_co",
+        "scrubs:anymovies_co"
+    ],
     "siteInspection": {
         "movie": "Current Inception search card and player buttons retained.",
         "series": "Current search returns Breaking Bad series card with matching IMDb tt0903747.",
@@ -26,7 +29,7 @@
         "content": "Contact sheet explicitly reviewed: studio logo at start, buffering overlay at early position, real Inception scenes at middle and late positions. The early frame is not usable content evidence."
     },
     "fullPlaybackVerified": false,
-    "next": "Compare the independent 720p runner control before attributing the remaining low displayed frame rate to the site. Playback certification remains blocked; keep investigating the series downstream host separately.",
+    "next": "Test the newly discovered first-party series tabs and current slash-format MoviesAPI episode route. Continue investigating actual playback and complete source audio for movies and episodes; do not certify this site yet.",
     "androidRetest": {
         "run": "https://github.com/billyke2000s/moviehub/actions/runs/41723642563",
         "sourceCommit": "12fe2c215c9d176cbdad2893aaf2c539a1598959",
@@ -48,10 +51,33 @@
         "movieTechnicalPasses": 0,
         "initialPositionMs": 1154,
         "durationSeconds": 8888,
-        "displayedFpsByPosition": [15.4225, 15.5762, 14.9633],
-        "videoGapMsByPosition": [314, 343, 322],
-        "nonSilentAudioSecondsByPosition": [0.7466875, 0.96, 1.5786875],
+        "displayedFpsByPosition": [
+            15.4225,
+            15.5762,
+            14.9633
+        ],
+        "videoGapMsByPosition": [
+            314,
+            343,
+            322
+        ],
+        "nonSilentAudioSecondsByPosition": [
+            0.7466875,
+            0.96,
+            1.5786875
+        ],
         "contentReview": "Current contact sheet shows the matching Inception opening and real midpoint/late scenes. Early screenshot shows buffering; the earlier no-working-backup overlay is absent from these reviewed midpoint/late frames.",
         "series": "unsupported_host; no source played."
+    },
+    "currentInvestigation": {
+        "date": "2026-11-04",
+        "search": "Current exact-IMDb Breaking Bad card points to VidSrc; current search page also advertises /js/series_info_box_for_movie.js.",
+        "seriesScript": "Actual first-party UI script publishes VidSrc, VidFast, Peachify and MoviesAPI exact-episode templates plus two download alternatives. Existing loader followed only the default VidSrc anchor.",
+        "repair": "Parse literal advertised templates without executing JavaScript, retain exact IMDb/season/episode scope, use both existing catalogue loaders and existing host processing, retain primary locator if optional script fails. MoviesAPI shared handler accepts the current slash-format episode route and retains legacy hyphen routes.",
+        "validation": "Four focused regressions added; local workspace disconnected before execution. GitHub CI must run all Python/core/native checks before any success claim.",
+        "baselineRun": "https://github.com/billyke2000s/moviehub/actions/runs/41894438198",
+        "baselineSeries": "Native lookup returned unsupported_host with one VidSrc locator in each adapter; no episode played.",
+        "baselineMovie": "Runner media-tool setup failed before movie playback; no new movie evidence.",
+        "otherObservations": "Following VidSrc's actual API-supplied episode player returned HTTP 403 with Expired title. MoviesAPI's actual script supplied the public player API; its IMDb episode request returned HTTP 404/result false. No challenge bypass attempted."
     }
 }

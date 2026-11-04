@@ -1,7 +1,7 @@
 """AnyMovies' current series cards, shared by its existing two catalogue loaders."""
 from html.parser import HTMLParser
 import re
-from urllib.parse import parse_qs, urlencode, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse, urljoin
 
 
 class _SeriesCards(HTMLParser):
@@ -11,9 +11,12 @@ class _SeriesCards(HTMLParser):
         self.depth = 0
         self.matched = False
         self.links = []
+        self.scripts = []
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if tag == 'script' and attrs.get('src'):
+            self.scripts.append(attrs['src'])
         if tag == 'div':
             if self.depth:
                 self.depth += 1
@@ -32,6 +35,40 @@ class _SeriesCards(HTMLParser):
                 self.matched = False
 
 
+def advertised_players(script, imdb, season, episode):
+    """Read only literal, exact-episode routes in the site's player switch."""
+    found = []
+    marker = chr(96)
+    pattern = r'case\s+[0-9]+:\s*return\s+' + marker + r'(https://[^' + marker + r'\r\n]+)' + marker
+    suffix = '/{}/{}/{}'.format(imdb, season, episode)
+    for template in re.findall(pattern, script[:2 * 1024 * 1024]):
+        url = template.replace('${imdbId}', imdb).replace('${season}', str(season)).replace(
+            '${episode}', str(episode))
+        if '${' in url or len(url) > 2048:
+            continue
+        try:
+            parts = urlparse(url)
+        except ValueError:
+            continue
+        if parts.scheme != 'https' or parts.fragment:
+            continue
+        query = parse_qs(parts.query, keep_blank_values=True)
+        label = None
+        if (parts.netloc == 'vidsrc.sh' and parts.path == '/embed/tv' and
+                query == dict(imdb=[imdb], season=[str(season)], episode=[str(episode)])):
+            label = 'VidSrc'
+        elif parts.netloc == 'moviesapi.to' and parts.path == '/tv' + suffix and not query:
+            label = 'MoviesAPI'
+        elif (parts.netloc == 'vidfast.vc' and parts.path == '/tv' + suffix and
+              query == dict(nextButton=['true'], autoNext=['true'])):
+            label = 'VidFast'
+        elif (parts.netloc == 'peachify.top' and parts.path == '/embed/tv' + suffix and
+              query == dict(showNextBtn=['true'], autoNext=['true'])):
+            label = 'Peachify'
+        if label and not any(row['url'] == url for row in found):
+            found.append(dict(url=url, source=label, direct=False, quality='SD'))
+    return found
+
 class SeriesLookup:
     def tvshow(self, imdb, tmdb, tvdb, title, localtitle, aliases, year):
         return urlencode(dict(imdb=imdb, title=title, year=year))
@@ -41,7 +78,7 @@ class SeriesLookup:
         data.update(season=season, episode=episode)
         return urlencode(data)
 
-    def series_sources(self, data, scraper):
+    def series_sources(self, data, scraper, resolve=None):
         imdb = data.get('imdb', '')
         if not re.fullmatch(r'tt[0-9]{5,10}', imdb):
             return []
@@ -58,7 +95,35 @@ class SeriesLookup:
                     parse_qs(parsed.query).get('imdb') == [imdb]):
                 # The player documents this exact-episode route. It is a lookup
                 # locator, not a filename or proof of the eventual media identity.
-                return [dict(url='https://vidsrc.sh/embed/tv/{}/{}/{}'.format(imdb, season, episode),
-                             source='VidSrc', quality='SD', direct=False, imdb=imdb,
-                             season=season, episode=episode)]
+                identity = dict(imdb=imdb, season=season, episode=episode)
+                results = [dict(url='https://vidsrc.sh/embed/tv/{}/{}/{}'.format(imdb, season, episode),
+                                source='VidSrc', quality='SD', direct=False, **identity)]
+                # The card anchor is only the default tab. Read the other tabs
+                # from the first-party script explicitly advertised by this page.
+                for script in cards.scripts[:20]:
+                    script_url = urljoin(self.base_link + '/', script)
+                    parsed_script = urlparse(script_url)
+                    if (parsed_script.scheme != 'https' or
+                            parsed_script.netloc != urlparse(self.base_link).netloc or
+                            parsed_script.path != '/js/series_info_box_for_movie.js' or
+                            parsed_script.fragment):
+                        continue
+                    try:
+                        players = advertised_players(scraper.scrapePage(script_url).text,
+                                                     imdb, season, episode)
+                    except Exception:
+                        continue
+                    for player in players:
+                        if player['source'] == 'VidSrc':
+                            continue
+                        try:
+                            resolved = resolve(player['url']) if resolve else []
+                        except Exception:
+                            resolved = []
+                        for item in resolved or [player]:
+                            item = dict(item, **identity)
+                            if not any(row['url'] == item['url'] for row in results):
+                                results.append(item)
+                    break
+                return results
         return []
