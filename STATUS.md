@@ -1,5 +1,14 @@
 # Status
 
+## AnyMovies alternate series routes in progress — 4 November 2026
+
+The site advertises four series player tabs in its first-party UI script; the loader
+previously followed only VidSrc. Both existing loaders now discover those actual templates,
+retain exact episode identity and reuse existing host/native protocols. MoviesAPI's current
+slash episode format is accepted. The initial native series baseline returned unsupported_host;
+movie tool setup timed out before playback. Current movie/episode verification continues on
+this site; no AnyMovies pass is recorded. Code and attempts are saved after each repair.
+
 ## BnWMovies verified movie route — 4 November 2026
 
 Native run [41892016460](https://github.com/billyke2000s/moviehub/actions/runs/41892016460)

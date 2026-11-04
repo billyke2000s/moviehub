@@ -70,9 +70,23 @@ def advertised_players(script, imdb, season, episode):
             found.append(dict(url=url, source=label, direct=False, quality='SD'))
     return found
 
+def resolve_player(player, data, resolve):
+    """Reuse an existing protocol only after this site advertises that player."""
+    tmdb = str(data.get('tmdb', ''))
+    if player['source'] in ('VidFast', 'Peachify') and re.fullmatch(r'[1-9][0-9]{0,9}', tmdb):
+        if player['source'] == 'VidFast':
+            from moviehub_native.cinestream_api import Vidfast as Player
+        else:
+            from moviehub_native.cinestream_crypto import Peachify as Player
+        provider = Player()
+        key = provider.tvshow(data['imdb'], tmdb, '', data['title'], data['title'], [], data.get('year', ''))
+        key = provider.episode(key, data['imdb'], tmdb, '', '', '', data['season'], data['episode'])
+        return provider.sources(key, [])
+    return resolve(player['url']) if resolve else []
+
 class SeriesLookup:
     def tvshow(self, imdb, tmdb, tvdb, title, localtitle, aliases, year):
-        return urlencode(dict(imdb=imdb, title=title, year=year))
+        return urlencode(dict(imdb=imdb, tmdb=tmdb, title=title, year=year))
 
     def episode(self, url, imdb, tmdb, tvdb, title, premiered, season, episode):
         data = {key: values[0] for key, values in parse_qs(url).items()}
@@ -117,11 +131,13 @@ class SeriesLookup:
                                                      imdb, season, episode)
                     except Exception:
                         continue
+                    # Try the small public API before protocols with several backends.
+                    players.sort(key=lambda row: {'MoviesAPI': 0, 'Peachify': 1, 'VidFast': 2}.get(row['source'], 3))
                     for player in players:
                         if player['source'] == 'VidSrc':
                             continue
                         try:
-                            resolved = resolve(player['url']) if resolve else []
+                            resolved = resolve_player(player, data, resolve)
                         except Exception:
                             resolved = []
                         for item in resolved or [player]:

@@ -1,5 +1,11 @@
 # Architecture
 
+AnyMovies series lookup keeps its IMDb-scoped catalogue selection, then reads only the
+first-party script actually advertised by that page. Literal exact-episode tab templates
+feed the existing host resolver; advertised VidFast/Peachify tabs reuse their existing
+native protocol classes with the original requested IDs. This adds no website identity or
+player engine. Conflicting downstream identity and filename evidence is rejected.
+
 ## BnWMovies advertised alternatives — 4 November 2026
 
 `moviehub_compat/bnwmovies_archive.py` shares advertised Archive-directory discovery between

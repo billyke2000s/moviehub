@@ -1,5 +1,15 @@
 # Testing
 
+## AnyMovies alternate series players — 4 November 2026
+
+Current first-party series UI publishes four player tabs. Regressions cover literal template
+parsing, exact requested show/episode, both catalogue loaders, optional-script failure,
+foreign or credentialled players, conflicting returned identity/filenames, and MoviesAPI's
+current slash route alongside legacy routes. A further case verifies the advertised
+VidFast/Peachify tabs call existing native protocols with the original IDs and episode.
+The first four new Python cases and core CI stages pass at `d1335ea`; final native results
+remain pending. No AnyMovies playback pass is claimed.
+
 ## BnWMovies native full-frame verification — 4 November 2026
 
 Run 41892016460 at `92ad8f3` found four actual file routes. Full MP4 renders

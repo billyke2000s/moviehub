@@ -294,6 +294,8 @@ MovieHub 1.0: everything tested in MovieHub Experimental, up to exp-15, is now p
 
 # Changelog
 
+- AnyMovies series lookup now discovers the other player tabs advertised by its first-party interface and reuses existing host protocols for the exact requested episode. Shared MoviesAPI handling accepts current slash episode URLs as well as legacy URLs; native playback verification remains in progress.
+
 - BnWMovies discovers the selected film’s explicitly advertised full MP4 and original MPEG alongside embedded files, and uses its current search RSS feed when primary search fails. Native verification now confirms a full-picture, 91-minute movie with smooth MP4 playback, audio and seeking; legacy MPEG/Ogg failures remain recorded.
 
 ## Unreleased

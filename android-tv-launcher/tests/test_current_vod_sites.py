@@ -227,6 +227,22 @@ class CurrentSiteTests(unittest.TestCase):
                         patch.object(module.scrape_sources, 'check_host_limit', return_value=False):
                     self.assertEqual(len(provider.sources(key, [])), count)
 
+    def test_anymovies_advertised_players_reuse_existing_exact_episode_protocols(self):
+        from moviehub_compat.anymovies_series import resolve_player
+        from moviehub_native.cinestream_api import Vidfast
+        from moviehub_native.cinestream_crypto import Peachify
+        data = dict(imdb='tt0903747', tmdb='1396', title='Breaking Bad', year='2008', season='2', episode='3')
+        for label, provider in [('VidFast', Vidfast), ('Peachify', Peachify)]:
+            with self.subTest(player=label), patch.object(provider, 'sources', return_value=[]) as sources:
+                resolve_player(dict(source=label, url='https://player.example/unused'), data, None)
+            key = json.loads(sources.call_args.args[0])
+            self.assertEqual((key['imdb'], key['tmdb'], key['season'], key['episode']),
+                             ('tt0903747', '1396', '2', '3'))
+        with patch.object(Vidfast, 'sources') as sources:
+            resolve_player(dict(source='VidFast', url='https://player.example/unused'),
+                           dict(data, tmdb='not-an-id'), None)
+            sources.assert_not_called()
+
     def test_anymovies_reads_only_published_exact_episode_player_templates(self):
         from moviehub_compat.anymovies_series import advertised_players
         marker = chr(96)
