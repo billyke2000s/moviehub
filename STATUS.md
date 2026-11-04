@@ -4,7 +4,7 @@
 
 The PR review reproduced a false positive in single-track language selection. Audio evidence
 version 3 now rejects known language conflicts while retaining honest unknown-language signal
-checks. All 190 Python regressions pass locally; fresh CI is pending. No site certification changes.
+checks. Regional language aliases are normalized. All 191 Python regressions pass locally; fresh CI is pending. No site certification changes.
 
 ## All-site checking pass saved — 4 November 2026
 

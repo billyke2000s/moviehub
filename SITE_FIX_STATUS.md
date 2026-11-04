@@ -13,6 +13,8 @@ All ten have individual evidence reviews; incomplete audio, failed sources and u
 content remain explicit. No whole site is certified. Audio evidence version 2 now requires
 at least four decoded seconds per requested eight-second recording and measures partial
 signal blocks accurately; earlier tiny-fragment flags do not meet that requirement.
+Audio evidence version 3 also rejects known selected/captured language conflicts; equivalent
+regional tags match, and missing language remains unknown rather than becoming a language claim.
 
 ## Movies and series
 

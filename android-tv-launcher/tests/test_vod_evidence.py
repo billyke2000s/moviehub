@@ -67,3 +67,9 @@ class EvidenceTests(unittest.TestCase):
     def test_single_track_with_unknown_selection_can_establish_signal(self):
         track = dict(seconds=8, signalDetected=True, language='hin')
         self.assertTrue(evidence.selected_audio_signal([track], '', True))
+
+    def test_regional_language_tags_match_the_same_selected_language(self):
+        for selected, captured in [('en-GB', 'eng'), ('eng', 'en_US'), (' English ', 'en')]:
+            track = dict(seconds=8, signalDetected=True, language=captured)
+            with self.subTest(selected=selected, captured=captured):
+                self.assertTrue(evidence.selected_audio_signal([track], selected, True))

@@ -101,7 +101,7 @@ def audio_tracks(path):
 
 
 def language(value):
-    value = str(value or '').lower()
+    value = str(value or '').strip().lower().replace('_', '-').split('-', 1)[0]
     if value in ('und', 'mis'):
         return ''
     groups = [('en', 'eng', 'english'), ('hi', 'hin', 'hindi'), ('ja', 'jpn', 'japanese'),

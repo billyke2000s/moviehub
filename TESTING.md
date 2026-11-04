@@ -5,7 +5,8 @@
 Audio evidence version 3 rejects a single recorded track when its known language conflicts
 with the selected language. A sole track with missing/undefined language, or an unknown player
 selection, can establish a source signal without proving its language. Regressions cover the
-known mismatch and both unknown cases; the four-second duration/event checks remain active.
+known mismatch and both unknown cases. Regional tags such as en-GB/en_US match eng;
+whitespace and case are normalized. The four-second duration/event checks remain active.
 
 ## Audio capture completeness correction — 4 November 2026
 
