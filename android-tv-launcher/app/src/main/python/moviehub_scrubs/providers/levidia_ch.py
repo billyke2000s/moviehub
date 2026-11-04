@@ -2,6 +2,7 @@ from ast import literal_eval
 # -*- coding: utf-8 -*-
 
 import re
+from moviehub_compat.levidia_episode import episode_link, season_page
 from moviehub_compat import http_requests as requests
 from six.moves.urllib_parse import parse_qs, urlencode
 
@@ -154,16 +155,15 @@ class source:
                 return
             result_url = f"{self.base_link}/{result_url}" if not result_url.startswith(self.base_link) else result_url
             if 'tvshowtitle' in data:
-                result_url = f"{result_url}&s={season}"
+                result_url = season_page(result_url, season)
             response = self.sess.get(result_url, headers=headers, cookies=cookie_dict, verify=None)
             r = response.content.decode(encoding='utf-8', errors='strict')
             headers.update({'Referer': result_url})
             if 'tvshowtitle' in data:
                 # find the episode and season
-                seaepi = f"s{season}e{episode}"
                 r10 = DOM(r, 'li', attrs={'class': 'mlist links'})
                 r11 = list(zip(DOM(r10, 'a', ret='href'), DOM(r10, 'a')))
-                result_url = next(i[0] for i in r11 if seaepi in i[0].lower())
+                result_url = episode_link([i[0] for i in r11], season, episode)
                 if not result_url:
                     return
                 result_url = f"{self.base_link}/{result_url}" if not result_url.startswith(self.base_link) else result_url

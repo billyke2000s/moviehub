@@ -1,5 +1,14 @@
 # Testing
 
+## Levidia episode checkpoint — 4 November 2026
+
+The full Python suite passes 170 tests; all 34 Java core suites pass. Both original Levidia
+loaders now use exact advertised episode tokens; Free99 requests the selected season.
+Regressions put episode 10 before episode 1 and cover wrong-season, missing-episode, padded
+and uppercase identifiers plus an existing season query. Current Breaking Bad season 2 HTML
+confirms the advertised s2e1/s2e10 links. The earlier Android attempt timed out during emulator
+boot, so playback certification remains pending a repaired-source retry.
+
 ## FZMovies checkpoint — 3 November 2026
 
 The 168-test Python suite passes. Added cases reject an IMDb prefix collision, follow exact

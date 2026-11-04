@@ -13,6 +13,56 @@ from moviehub_scrubs import client as scraper_client
 
 
 class CurrentSiteTests(unittest.TestCase):
+    def test_levidia_loaders_select_exact_advertised_episode_on_requested_season(self):
+        for family in ('free99', 'scrubs'):
+            for present in (True, False):
+                with self.subTest(family=family, present=present):
+                    module = importlib.import_module('moviehub_' + family + '.providers.levidia_ch')
+                    provider = module.source()
+                    calls = []
+                    def request(session, method, url, **kwargs):
+                        calls.append(url)
+                        response = requests.Response()
+                        response.status_code = 200
+                        response.url = url
+                        response.headers['Content-Type'] = 'text/html'
+                        if 'search.php' in url:
+                            html = '<div class="mainlink"><a href="tv-show.php?watch=breaking-bad">Breaking Bad (2008)</a></div>'
+                        elif 'tv-show.php' in url:
+                            self.assertIn('s=2', url)
+                            html = ('<li class="mlist links"><a href="tv-episode.php?watch=breaking-bad-s2e10-over">Ten</a></li>'
+                                    '<li class="mlist links"><a href="tv-episode.php?watch=breaking-bad-s12e1-other">Other season</a></li>')
+                            if present:
+                                html += '<li class="mlist links"><a href="tv-episode.php?watch=breaking-bad-S02E01-seven-thirtyseven">One</a></li>'
+                        elif 'tv-episode.php' in url:
+                            self.assertIn('S02E01-', url)
+                            html = ('<li class="xxx0"><span class="kiri xxx1 xx12">Fixture host</span>'
+                                    '<a class="xxx xflv" target="_blank" href="https://host.example/embed">Play</a></li>')
+                        else:
+                            html = ''
+                        response._content = html.encode()
+                        response._content_consumed = True
+                        return response
+                    key = provider.tvshow('tt0903747', '1396', '', 'Breaking Bad', '', [{'title': 'Breaking Bad'}], '2008')
+                    key = provider.episode(key, 'tt0903747', '1396', '', 'Seven Thirty-Seven', '2009-03-08', 2, 1)
+                    item = dict(url='https://media.example/episode.mp4', source='fixture', direct=True)
+                    client.scope(lambda: False)
+                    with patch.object(requests.Session, 'request', new=request), \
+                            patch.object(client, 'safe', side_effect=lambda url: url), \
+                            patch.object(module.scrape_sources, 'process', return_value=[item]) as process:
+                        result = provider.sources(key, [])
+                    self.assertEqual(len(result or []), 1 if present else 0)
+                    self.assertEqual(process.call_count, 1 if present else 0)
+                    self.assertFalse(any('s2e10-' in call or 's12e1-' in call for call in calls))
+
+    def test_levidia_season_url_replaces_existing_selector_without_losing_watch(self):
+        from moviehub_compat.levidia_episode import episode_link, season_page
+        self.assertEqual(season_page('https://www.levidia.ch/tv-show.php?watch=fixture&s=1', 2),
+                         'https://www.levidia.ch/tv-show.php?watch=fixture&s=2')
+        self.assertIsNone(episode_link(['tv-episode.php?watch=fixture-s2e10',
+                                       'movie.php?watch=fixture-s2e1',
+                                       'tv-episode.php?watch=fixture-s2e1&watch=other'], 2, 1))
+
     def test_fzmovies_uses_exact_imdb_and_resolves_root_relative_download_hops(self):
         from moviehub_free99.providers import fzmovies_live
         search = ('<div class="mainbox"><a id="wrong" href="/movie/wrong">Film</a>'

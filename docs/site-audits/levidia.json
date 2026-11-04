@@ -1,0 +1,19 @@
+{
+    "site": "free99:levidia_ch",
+    "date": "2026-11-04",
+    "status": "episode_selection_repaired_playback_retest_pending",
+    "fullPlaybackVerified": false,
+    "siteInspection": "Current public search lists Inception (2010) and Breaking Bad (2008). Season 2 is selected with s=2; its page advertises S2E1 through S2E13, including S2E10 which collides with the previous substring test.",
+    "repairs": [
+        "Free99 now requests the selected season instead of the default season page.",
+        "Both existing loaders select exact advertised season/episode tokens, including zero-padded and uppercase tokens; episode 1 cannot match episode 10.",
+        "No fabricated episode URL and no fallback to another episode when the requested one is missing."
+    ],
+    "validation": {
+        "pythonTests": 170,
+        "coreSuites": 34,
+        "cases": "Both original loaders tested with episode 10 ordered before episode 1, wrong-season links, missing requested episodes, uppercase/padded tokens, and replacement of a previous season query."
+    },
+    "previousAttempt": "Run 41726423062 did not reach Levidia playback: emulator boot timed out. That incomplete report remains historical evidence.",
+    "next": "Rerun Levidia movies and series on the repaired source and review decoded footage/audio; do not certify from parser tests."
+}
