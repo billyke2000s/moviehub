@@ -276,6 +276,9 @@ public final class VodSessionPlaybackTest {
         String url = "http://127.0.0.1:" + server.getLocalPort() + "/vod.mp4";
         open(session(index -> new VodSources.Resolved(url, null)));
         assertTrue(activity.player.getTime() >= 10_000);
+        // Let the opening resume guard expire, so only the audit jump can
+        // protect the injected buffering below from becoming a false stall.
+        await(() -> activity.player != null && activity.player.getTime() >= 15_000);
         instrumentation.runOnMainSync(() -> {
             FreeVodLiveAuditTest.seekSource(activity, 35_000);
             activity.vod.onBuffering(true);
