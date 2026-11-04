@@ -1,7 +1,7 @@
 from ast import literal_eval
 # -*- coding: utf-8 -*-
 import re
-from moviehub_compat.bnwmovies_archive import additional_files
+from moviehub_compat.bnwmovies_archive import additional_files, rss_movie_link
 
 from six.moves.urllib_parse import parse_qs, urlencode
 
@@ -38,11 +38,26 @@ class source:
             if int(year) > 1970:
                 return self.results
             search_url = self.base_link + self.search_link % cleantitle.get_plus(title)
-            search_html = client.scrapePage(search_url).text
+            try:
+                response = client.scrapePage(search_url)
+            except Exception:
+                response = None
+            if response is not None and getattr(response, "status_code", 200) in (401, 403):
+                return self.results
+            search_html = getattr(response, "text", "")
             results = client_utils.parseDOM(search_html, 'div', attrs={'class': 'post'})
             result = [(client_utils.parseDOM(i, 'a', ret='href'), client_utils.parseDOM(i, 'a')) for i in results]
             result = [(i[0][0], i[1][0]) for i in result if len(i[0]) > 0 and len(i[1]) > 0]
-            page_url = [i[0] for i in result if cleantitle.match_alias(i[1], aliases)][0]
+            matches = [i[0] for i in result if cleantitle.match_alias(i[1], aliases)]
+            page_url = matches[0] if matches else None
+            if not page_url:
+                feed_url = self.base_link + '/search/%s/feed/rss2/' % cleantitle.get_plus(title)
+                feed = client.scrapePage(feed_url)
+                if getattr(feed, 'status_code', 200) in (401, 403):
+                    return self.results
+                page_url = rss_movie_link(feed.text, self.base_link, aliases, cleantitle.match_alias)
+            if not page_url:
+                return self.results
             page_html = client.scrapePage(page_url).text
             # The current target page supplies its title/year separately from
             # recommendations. Do not substitute another year's same-named film.

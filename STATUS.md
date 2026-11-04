@@ -5,7 +5,9 @@
 BnWMovies now follows the selected film's advertised Archive file directory and discovers
 the full 640x480 MP4 and original MPEG, in addition to both embedded choices. Current file
 probes report about 91 minutes and audio tracks for both alternatives. Android playback
-verification is in progress for this site alone; no site is marked all good.
+verification is in progress for this site alone; no site is marked all good. The first native
+lookup returned HTTP 502 with no sources. Work continues with the site's advertised search
+RSS fallback and redacted runtime-stage diagnostics, retaining all four file alternatives.
 
 ## Audio language review correction — 4 November 2026
 

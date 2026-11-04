@@ -8,6 +8,7 @@ on:
             - ".github/scripts/vod-evidence-mode.sh"
             - "android-tv-launcher/tests/review-vod-evidence.py"
             - "android-tv-launcher/app/src/androidTest/java/local/tv/home/VodAuditEvidence.java"
+            - "android-tv-launcher/app/src/androidTest/java/local/tv/home/FreeVodLiveAuditTest.java"
             - "android-tv-launcher/app/src/main/python/moviehub_compat/bnwmovies_archive.py"
             - "android-tv-launcher/app/src/main/python/moviehub_free99/providers/bnwmovies_com.py"
             - "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/bnwmovies_com.py"
@@ -48,8 +49,12 @@ jobs:
                   gradle-version: "9.6.0"
             - name: Prepare bounded media-sample decoder
               run: |
-                  sudo apt-get update -qq
-                  sudo apt-get install -y -qq ffmpeg
+                  if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+                    sudo apt-get install -y -qq --no-install-recommends ffmpeg || {
+                      sudo apt-get update -qq
+                      sudo apt-get install -y -qq --no-install-recommends ffmpeg
+                    }
+                  fi
                   sudo chmod 666 /dev/kvm
             - name: Capture rendered video and native media samples
               uses: reactivecircus/android-emulator-runner@v2

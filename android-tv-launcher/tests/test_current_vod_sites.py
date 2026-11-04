@@ -13,6 +13,50 @@ from moviehub_scrubs import client as scraper_client
 
 
 class CurrentSiteTests(unittest.TestCase):
+    def test_bnwmovies_does_not_retry_a_refused_search_through_rss(self):
+        for family in ('free99', 'scrubs'):
+            module = importlib.import_module('moviehub_' + family + '.providers.bnwmovies_com')
+            for status in (401, 403):
+                provider = module.source()
+                key = provider.movie('tt0038991', '20246', 'The Stranger', 'The Stranger',
+                                     [{'title': 'The Stranger'}], '1946')
+                with self.subTest(family=family, status=status), patch.object(
+                        module.client, 'scrapePage', return_value=SimpleNamespace(status_code=status, text='')) as fetch:
+                    self.assertEqual(provider.sources(key, []), [])
+                    self.assertEqual(fetch.call_count, 1)
+
+    def test_bnwmovies_uses_current_search_feed_after_primary_server_error(self):
+        feed = ('<rss><channel><item><title>Hands Of A Stranger</title><link>'
+                'https://bnwmovies.com/hands-of-a-stranger.html</link></item>'
+                '<item><title>The Stranger</title><link>https://bnwmovies.com/the-stranger.html'
+                '</link></item></channel></rss>')
+        page = ('<span itemprop="name">The Stranger (1946)</span>'
+                '<source src="https://archive.org/download/film/Movie.mp4">')
+        for family in ('free99', 'scrubs'):
+            module = importlib.import_module('moviehub_' + family + '.providers.bnwmovies_com')
+            provider = module.source()
+            key = provider.movie('tt0038991', '20246', 'The Stranger', 'The Stranger',
+                                 [{'title': 'The Stranger'}], '1946')
+            with self.subTest(family=family), patch.object(module.client, 'scrapePage', side_effect=[
+                    SimpleNamespace(status_code=502, text='Bad gateway'),
+                    SimpleNamespace(status_code=200, text=feed), SimpleNamespace(text=page)]) as fetch, \
+                    patch.object(module.scrape_sources, 'make_direct_item',
+                        side_effect=lambda hosts, link, **kwargs: dict(source='archive.org', url=link)):
+                self.assertEqual(len(provider.sources(key, [])), 1)
+                self.assertIn('/search/', fetch.call_args_list[1].args[0])
+                self.assertTrue(fetch.call_args_list[1].args[0].endswith('/feed/rss2/'))
+                self.assertEqual(fetch.call_args.args[0], 'https://bnwmovies.com/the-stranger.html')
+
+    def test_bnwmovies_feed_rejects_external_or_credentialled_film_links(self):
+        from moviehub_compat.bnwmovies_archive import rss_movie_link
+        for link in ['https://evil.example/the-stranger.html',
+                     'https://user:pass@bnwmovies.com/the-stranger.html',
+                     'https://bnwmovies.com/the-stranger.html?token=bad']:
+            feed = '<rss><channel><item><title>The Stranger</title><link>' + link + '</link></item></channel></rss>'
+            self.assertIsNone(rss_movie_link(feed, 'https://bnwmovies.com', [], lambda title, aliases: True))
+        self.assertIsNone(rss_movie_link('<!DOCTYPE rss><rss/>', 'https://bnwmovies.com', [],
+                                        lambda title, aliases: True))
+
     def test_bnwmovies_discovers_advertised_full_files_in_both_existing_loaders(self):
         search = '<div class="post"><a href="https://bnwmovies.com/the-stranger.html">The Stranger</a></div>'
         directory = 'https://archive.org/download/TheStranger_0/'

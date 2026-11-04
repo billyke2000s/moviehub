@@ -6,7 +6,9 @@
 both existing BnWMovies loaders. The directory must be linked by the matched film page and
 match an embedded Archive item. Only listed video files with an existing film filename stem
 are accepted; unrelated items, trailers, foreign hosts and credential/query links are excluded.
-Listing failure preserves embedded choices.
+Listing failure preserves embedded choices. Primary search failure can use the currently
+advertised public RSS search feed, requiring a matching title and same-origin post link
+before the existing target-page year check.
 
 ## Per-site audit persistence
 

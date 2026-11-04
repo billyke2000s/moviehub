@@ -13,7 +13,7 @@
     },
     "series": "No series route in these existing loaders; current-site capability review remains pending.",
     "fullPlaybackVerified": false,
-    "next": "Run the existing Android/LibVLC evidence method against all four routes for this same film. Inspect actual video frames and audio windows before deciding the next repair on this site.",
+    "next": "Recheck this same film through the second lookup route, inspect Android request stages and all returned playback choices, then repair the next concrete failure on BnWMovies before moving to another site.",
     "alternativeRouteAttempt": {
         "siteEvidence": "The current selected film page advertises an Archive download directory. Its current listing contains the full MP4 and original MPEG as well as the two embedded derivatives.",
         "implementation": "Both existing loaders now read only the advertised directory for the same embedded Archive item and exact film filename stem. Additional files come from actual links, not invented filenames. Optional listing failure retains embedded sources.",
@@ -37,7 +37,7 @@
                 "audioChannels": 2
             }
         ],
-        "validation": "194 Python regressions pass. Current captured page/listing discovers both alternatives. Actual file probes establish runtime/tracks; Android picture, smoothness, seeking and recorded audio remain to be checked. The independent decoder now accepts MPEG program streams; a generated four-second MPEG/MP2 control decodes four seconds with a non-silent signal.",
+        "validation": "197 Python regressions pass. Current captured page/listing discovers both alternatives. Actual file probes establish runtime/tracks; Android picture, smoothness, seeking and recorded audio remain to be checked. The independent decoder now accepts MPEG program streams; a generated four-second MPEG/MP2 control decodes four seconds with a non-silent signal.",
         "localTransportLimit": "The local guarded Python engine cannot resolve the site DNS in this environment; current pages and file probes were fetched separately. This is not counted as a successful live Android lookup.",
         "independentDecodedReview": {
             "codeRevision": "66e4d45b150aebbf48ebf3932b2fa2f56781e90a",
@@ -69,6 +69,14 @@
             "visualReview": "Opening credits name Edward G. Robinson, Loretta Young and Orson Welles. Midpoint and late frames show the matching black-and-white feature, rather than a website-message video.",
             "androidEvidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41883351432",
             "androidStatus": "running; inspect results before certification"
-        }
+        },
+        "firstAndroidAttempt": {
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41883351432",
+            "sourceCommit": "66e4d45b150aebbf48ebf3932b2fa2f56781e90a",
+            "lookup": "http_502",
+            "sourcesReturned": 0,
+            "action": "Continue on this site. Add its currently advertised, working search RSS feed as a fallback and include the runtime request-stage/host-status trace in the next Android lookup report."
+        },
+        "searchFallback": "The current RSS search feed returns the actual The Stranger post link. Both loaders now use this feed if primary search errors or lacks a match, while retaining exact target-page year checks. Foreign/credentialled links and XML document-type declarations are rejected; access refusals do not trigger the alternate route."
     }
 }

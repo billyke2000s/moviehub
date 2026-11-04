@@ -116,7 +116,12 @@ public final class FreeVodLiveAuditTest {
                     JSONObject report = new JSONObject(
                         FreeVodProviders.search(context, site, film, cancelled, sources::add)
                     );
-                    lookup.put("status", report.optString("status")).put("sources", sources.size());
+                    // Runtime attempts contain stages and host/status traces, not URLs or headers.
+                    lookup
+                        .put("status", report.optString("status"))
+                        .put("sources", sources.size())
+                        .put("stage", report.optString("stage"))
+                        .put("attempts", report.optJSONArray("attempts"));
                 } catch (Exception error) {
                     lookup.put("status", error.getClass().getSimpleName());
                 } finally {

@@ -2,7 +2,30 @@
 from html.parser import HTMLParser
 from pathlib import PurePosixPath
 import re
+import xml.etree.ElementTree as ET
 from urllib.parse import quote, unquote, urljoin, urlsplit
+
+
+def rss_movie_link(xml, origin, aliases, match_alias):
+    # The public search feed advertises actual post URLs, not guessed film slugs.
+    if '<!DOCTYPE' in xml.upper() or len(xml) > 2 * 1024 * 1024:
+        return None
+    try:
+        root = ET.fromstring(xml)
+    except ET.ParseError:
+        return None
+    for item in root.findall('./channel/item')[:50]:
+        title = item.findtext('title') or ''
+        link = item.findtext('link') or ''
+        try:
+            target = urlsplit(link)
+        except ValueError:
+            continue
+        if (target.scheme == 'https' and target.netloc == urlsplit(origin).netloc and
+                not target.query and not target.fragment and target.path.endswith('.html') and
+                match_alias(title, aliases)):
+            return link
+    return None
 
 
 class Links(HTMLParser):

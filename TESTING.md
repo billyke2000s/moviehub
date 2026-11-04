@@ -5,7 +5,8 @@
 BnWMovies regressions exercise both real loaders returning full MP4/original MPEG plus
 existing embeds. Separate cases reject foreign files/items, trailers, credentials, traversal
 and malformed URLs, avoid guessing unadvertised directories and retain embeds when the
-optional listing is unavailable. All 194 Python tests pass. MPEG-program-stream evidence
+optional listing is unavailable. All 197 Python tests pass. Primary-search server-error fallback to the current RSS feed
+is exercised in both loaders; wrong-title/foreign/credentialled feed entries remain rejected. MPEG-program-stream evidence
 decoding is checked with an actual generated MPEG2/MP2 control; live verification remains
 separate and uses all four returned choices for the same film.
 
