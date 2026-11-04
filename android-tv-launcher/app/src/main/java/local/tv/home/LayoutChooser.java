@@ -25,7 +25,11 @@ final class LayoutChooser {
         title.setGravity(Gravity.CENTER);
         title.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
         page.addView(title);
-        TextView about = activity.text("You can change this later in Settings → System.", 16);
+        TextView about = activity.text(
+            "Both show the same pages; on a phone, hold it sideways. You can change this later in " +
+                "Settings → System.",
+            16
+        );
         about.setGravity(Gravity.CENTER);
         about.setAlpha(0.75f);
         about.setPadding(0, activity.dp(6), 0, activity.dp(22));
@@ -37,8 +41,12 @@ final class LayoutChooser {
 
     private static Button choice(MainActivity activity, String label, String mode, String guess) {
         Button button = activity.button(label + (mode.equals(guess) ? "   (suggested)" : ""), () -> {
+            boolean wasPhone = DeviceMode.phone(activity);
             DeviceMode.choose(activity, mode);
-            open(activity);
+            // The phone layout's scale is set as a screen is created, so a change of layout
+            // rebuilds this one; it then opens in the chosen layout (MainActivity.onCreate).
+            if (wasPhone != DeviceMode.phone(activity)) activity.recreate();
+            else open(activity);
         });
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(activity.dp(420), activity.dp(56));
         layout.bottomMargin = activity.dp(12);
@@ -46,12 +54,16 @@ final class LayoutChooser {
         return button;
     }
 
-    /** Opens MovieHub in the chosen layout: the phone's Live TV, or the TV's Home. */
+    /**
+     * Opens MovieHub's Home in the chosen layout. Both use the same pages; a phone may be turned
+     * either way round sideways.
+     */
     static void open(MainActivity activity) {
-        if (DeviceMode.phone(activity)) activity.phoneLive.show();
-        else {
-            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-            activity.homeScreen.home();
-        }
+        activity.setRequestedOrientation(
+            DeviceMode.phone(activity)
+                ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                : ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        );
+        activity.homeScreen.home();
     }
 }

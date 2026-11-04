@@ -174,6 +174,12 @@ the screen is left. A request with its final body byte held past expiry is refus
 the page interrupts a partially received header. It does not show the QR code or test a real phone. `PremiumizeLink` has no
 automated test: it needs Premiumize's live sign-in service.
 
+`PhoneScaleTest` (core) checks the phone layout's scale: the short side becomes 540 units for
+720p to 1600p screens, a 1080p TV box keeps 320 dpi, and very small screens stop at 120 dpi.
+`PhoneModeTest` (device) chooses the phone layout, follows the rebuilt screen to Home, checks the
+sideways orientation and the applied density, and plays a channel from the guide with touch
+buttons. The CI emulator has a TV's density, so it cannot show the pages shrinking.
+
 ## Device tests
 
 `ChannelDatabaseTest.versionSevenWithoutMainUpgradesAndKeepsChannelsAndFavourites` reconstructs

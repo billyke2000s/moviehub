@@ -10,6 +10,7 @@ remain intact. [Android CI 41866897273](https://github.com/billyke2000s/moviehub
 at code revision `f62b3eb` passed all six jobs. All 35 local core suites pass, including
 62 phone-entry checks.
 The settings stack at `9ebfca1` also passed all six jobs in [CI 41867094618](https://github.com/billyke2000s/moviehub/actions/runs/41867094618), plus all 36 local core suites.
+The phone-layout stack at `e64f49f` passed all six jobs in [CI 41867359952](https://github.com/billyke2000s/moviehub/actions/runs/41867359952), plus all 37 local core suites, including 12 phone-scale checks.
 
 ## Current release — MovieHub 1.0.19 (code 119)
 
@@ -241,9 +242,12 @@ Historical checkpoint: 25 October 2026 (1.0 promoted the experimental line into 
    not yet checked on a phone or the X905X5M box. Earlier notes below about the retained
    SurfaceTexture describe the replaced design.
 
-9. **Phone layout covers Live TV only.** Films, series, My List and settings still open in the TV
-   layout. MainActivity now handles rotation itself (configChanges), so screens are not rebuilt
-   when a phone turns.
+9. **Phone layout is the TV pages, sideways (31 October 2026, unreleased).** Phone mode opens Home
+   in landscape (either way round) and scales every screen so the phone's short side is 540 units,
+   the TV pages' design height (`PhoneScale`, applied in both activities). Live TV uses the TV
+   guide; the player keeps its touch buttons. Text is smaller than on a TV. The portrait
+   `PhoneLive` list is no longer opened. The emulator CI uses the TV density, so the scaling itself
+   is only checked by core tests; [Unverified] on a real phone.
 
 10. **Live TV stream rules ported from the LibVLC player (27 October 2026).** Buffering, dead-stream,
     reconnect-budget and provider-link-renewal rules now apply to the ExoPlayer live player
