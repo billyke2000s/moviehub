@@ -27,7 +27,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | cinejoy (`native:cinejoy`) | | | | |
 | dudefilms (`native:dudefilms`) | | | | |
 | fibwatch (`native:fibwatch`) | | | | |
-| 4KHDHub (`native:fourkhdhub`) | 7 sources tested; 0 technical passes; 2 complete | 1 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/native-fourkhdhub.json) at ee57d83 |
+| 4KHDHub (`native:fourkhdhub`) | 5 sources tested; 0 technical passes; 2 complete | 1 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-fourkhdhub.json) at 33b6cec |
 | fshare (`native:fshare`) | | | | |
 | hdhub4u (`native:hdhub4u`) | | | | |
 | hexa (`native:hexa`) | | | | |
