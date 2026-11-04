@@ -21,7 +21,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | stagatv.com (`free99:stagatv_com`) | 0 sources tested; 0 technical passes; 1 no_matches, 1 http_500 | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/free99-stagatv_com.json) at 6f0e2fd |
 | tvseries.in (`free99:tvseries_in`) | 0 sources tested; 0 technical passes; 2 no_matches | 0 sources tested; 0 technical passes; 1 ReadTimeout | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/free99-tvseries_in.json) at 5a647c5 |
 | Akwam (`native:akwam`) | | | | |
-| allmovieland (`native:allmovieland`) | | | | |
+| allmovieland (`native:allmovieland`) | 0 sources tested; 0 technical passes; 1 http_404 | Incomplete check; see evidence | Incomplete; needs follow-up | [Evidence](docs/site-audits/runs/41763869027/native-allmovieland.json) at e088281 |
 | animesalt (`native:animesalt`) | | | | |
 | bollyflix (`native:bollyflix`) | | | | |
 | cinejoy (`native:cinejoy`) | | | | |
