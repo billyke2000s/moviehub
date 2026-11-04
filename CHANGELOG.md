@@ -26,6 +26,7 @@
 - Movies and Series → Library: "Links you added" (was "My library"); Premiumize entries appear only
   with a Premiumize account. Continue watching cards read "▶ Resume" and the extra My list button
   is gone.
+- Enforce phone sign-in expiry during incomplete requests and disconnect pending clients on close.
 
 - Account screens now show two choices side by side: "Use your phone" and "Type it here".
 - TMDB, Xtream, M3U playlist and Masqueradarr: scan the QR code, or open the short address shown

@@ -1,5 +1,13 @@
 # Status
 
+## Phone entry expiry correction — 4 November 2026
+
+Phone-entry requests now share the original monotonic five-minute deadline, including partial
+headers and bodies. Expired requests cannot deliver account details; closing the page also
+disconnects its active client. The local socket regression reproduced late acceptance before
+the fix and now passes. Existing one-use entry, attempt limits and exact password handling
+remain intact. Fresh Android CI is pending.
+
 ## Current release — MovieHub 1.0.19 (code 119)
 
 [1.0.19 is published](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.19)

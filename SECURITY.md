@@ -116,7 +116,9 @@ web page:
   addresses. Other paths get 404; other clients get 403. Wrong codes and rejected details share
   one limit of 20 tries, after which the page closes (a 1 in 50,000 chance of guessing a code).
 - Requests are limited to 8 KB. The page closes after one accepted set of details, after 20
-  rejected tries, after 5 minutes, or when the TV leaves that screen.
+  rejected tries, after 5 minutes, or when the TV leaves that screen. The lifetime uses a
+  monotonic clock; every header/body read shares that deadline. Expired or cancelled pending
+  requests cannot deliver details, and closing the page disconnects an active client.
 - Keys, links and passwords travel over the home network as plain HTTP. Anyone able to watch that
   network's traffic during those minutes could read them, so this suits a private home network,
   not shared Wi-Fi. Typing with the remote remains available.
