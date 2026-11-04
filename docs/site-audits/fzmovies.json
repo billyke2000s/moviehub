@@ -1,7 +1,7 @@
 {
     "site": "free99:fzmovies_live",
-    "date": "2026-11-03",
-    "status": "parser_repaired_selected_content_reviewed_playback_failures_remain",
+    "date": "2026-11-04",
+    "status": "corrected_seek_retest_content_confirmed_technical_failures_remain",
     "siteInspection": "Current homepage describes a movie catalogue and links TV shows to a separate MobileTVshows website. Current Inception search contains one exact IMDb tt1375666 card.",
     "repairs": [
         "Match the actual IMDb data-title value rather than a substring in the whole card.",
@@ -14,7 +14,7 @@
         "coverage": "Exact IMDb prefix-collision rejection, advertised-hop handling, original format-label preservation and explicit unsupported TV status; no inventory loss."
     },
     "fullPlaybackVerified": false,
-    "next": "Investigate the visible backup-failure state and remaining decoder/smoothness failures; do not certify the whole site from the one positive sample.",
+    "next": "Investigate the remaining decoder, frame-rate and late-audio failures. Compare the saved runner control and retain the corrected-method failure counts; do not certify the site from the historical one-source pass.",
     "liveReview": {
         "sourceCommit": "57881d6573cf013621ef49e1cd1ce10c9d56dbf8",
         "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41726423062",
@@ -28,7 +28,10 @@
         "duneSample": {
             "evidenceId": "0006",
             "durationSeconds": 9948,
-            "dimensions": [640, 268],
+            "dimensions": [
+                640,
+                268
+            ],
             "initialPositionMs": 650,
             "technicalWindowsPassed": true,
             "midpointAndLateSeekPassed": true,
@@ -43,6 +46,36 @@
             "contentIdentityConfirmed": true,
             "visiblePlaybackError": true
         },
-        "remainingFailures": "Seven candidates failed decoder, audio-output or smoothness checks. One technically passing sample is not a site-wide pass."
+        "remainingFailures": "Seven candidates failed decoder, audio-output or smoothness checks. One technically passing sample is not a site-wide pass.",
+        "playbackAuditVersion": 1
+    },
+    "correctedSeekRetest": {
+        "playbackAuditVersion": 2,
+        "sourceCommit": "966d6ad7de4a151f487c8b557fd450daadbbc2b8",
+        "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41766998519",
+        "artifactId": 13294130824,
+        "candidatesTested": 8,
+        "technicalPasses": 0,
+        "contentReview": "Contact sheets 0001 and 0006 show real Inception and Dune: Part Two opening/midpoint/late scenes. The previous backup-error overlay is absent from these reviewed frames.",
+        "outcomes": {
+            "playback_stall_or_audio_output_unverified": 4,
+            "no_decoded_video": 4
+        },
+        "duneSample": {
+            "evidenceId": "0006",
+            "durationSeconds": 9948,
+            "displayedFpsByPosition": {
+                "start": 20.2025,
+                "middle": 19.8266,
+                "late": 18.189
+            },
+            "nonSilentAudioSecondsByPosition": {
+                "start": 5.596,
+                "middle": 7.986625,
+                "late": 6.687375
+            }
+        },
+        "inceptionAudio": "The two decoded Inception candidates have non-silent start/middle captures but zero decoded late-audio samples.",
+        "limits": "Only the selected contact sheets were visually reviewed. Four other candidates did not decode; no whole-title or physical-speaker claim."
     }
 }
