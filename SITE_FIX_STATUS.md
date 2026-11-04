@@ -49,7 +49,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | Rtally (`native:rtally`) | 0 sources tested; 0 technical passes; 2 rejected_media | 0 sources tested; 0 technical passes; 1 SSLError | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-rtally.json) at 3b69d6b |
 | skymovies (`native:skymovies`) | | | | |
 | toonstream (`native:toonstream`) | 0 sources tested; 0 technical passes; 1 ConnectTimeout | 0 sources tested; 0 technical passes; 1 ValueError | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-toonstream.json) at 722a41e |
-| topmovies (`native:topmovies`) | | | | |
+| topmovies (`native:topmovies`) | 0 sources tested; 0 technical passes; 2 gaierror | 0 sources tested; 0 technical passes; 1 gaierror | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-topmovies.json) at 913a3a2 |
 | uhdmovies (`native:uhdmovies`) | | | | |
 | vegamovies (`native:vegamovies`) | | | | |
 | vidcore (`native:vidcore`) | | | | |
