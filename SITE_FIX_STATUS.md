@@ -73,7 +73,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | rarefilmm.com (`scrubs:rarefilmm_com`) | 1 sources tested; 0 technical passes; 1 complete | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-rarefilmm_com.json) at 636a1e8 |
 | series9movies.com (`scrubs:series9movies_com`) | 0 sources tested; 0 technical passes; 2 http_403 | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-series9movies_com.json) at 26f79eb |
 | tubitv.com (`scrubs:tubitv_com`) | 0 sources tested; 0 technical passes; 2 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/scrubs-tubitv_com.json) at b512652 |
-| tvids.net (`scrubs:tvids_net`) | | | | |
+| tvids.net (`scrubs:tvids_net`) | 0 sources tested; 0 technical passes; 2 gaierror | 0 sources tested; 0 technical passes; 1 gaierror | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41763869027/scrubs-tvids_net.json) at 667950f |
 | tvmovieflix.com (`scrubs:tvmovieflix_com`) | | | | |
 | tvseries.video (`scrubs:tvseries_video`) | | | | |
 | upmovies.net (`scrubs:upmovies_net`) | | | | |
