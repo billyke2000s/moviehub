@@ -558,6 +558,7 @@ class CurrentSiteTests(unittest.TestCase):
         self.assertIn(dict(provider='new.waffi.cloud · Watch', status='preparing'), client.diagnostics()['hostAttempts'])
 
     def test_trace_contains_only_hosts_methods_statuses_and_survives_resolution_scope(self):
+        client.scope(lambda: False)
         response = requests.Response(); response.status_code = 403
         response.url = 'https://site.example/token?secret=private'; response._content = b'blocked'
         response._content_consumed = True

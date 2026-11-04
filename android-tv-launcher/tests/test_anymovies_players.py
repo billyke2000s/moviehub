@@ -12,6 +12,45 @@ from moviehub_scrubs import client as scraper_client
 
 class AnyMoviesPlayerTests(unittest.TestCase):
 
+    def test_movie_buttons_require_the_requested_film_identity(self):
+        from moviehub_compat.anymovies_series import movie_player_sources
+        data = dict(imdb='tt1375666', tmdb='27205', title='Inception', year='2010')
+        returned = [dict(url='https://media.example/correct.m3u8', source='vidfast', direct=True),
+                    dict(url='https://media.example/wrong.m3u8', source='vidfast', direct=True, tmdb='693134')]
+        for url, label in [('https://vidfast.vc/movie/tt1375666', 'VidFast'),
+                           ('https://peachify.top/embed/movie/27205', 'Peachify')]:
+            with self.subTest(player=label), patch('moviehub_compat.anymovies_series.resolve_player',
+                    return_value=returned) as resolve:
+                rows = movie_player_sources(url, data)
+            self.assertEqual(len(rows), 1)
+            self.assertEqual((rows[0]['imdb'], rows[0]['tmdb']), ('tt1375666', '27205'))
+            self.assertEqual(resolve.call_args.args[0]['source'], label)
+        for url in ['https://vidfast.vc.evil.example/movie/tt1375666',
+                    'https://user:pass@vidfast.vc/movie/tt1375666',
+                    'https://vidfast.vc/movie/tt9999999',
+                    'https://peachify.top/embed/movie/693134']:
+            with self.subTest(url=url), patch('moviehub_compat.anymovies_series.resolve_player') as resolve:
+                self.assertIsNone(movie_player_sources(url, data))
+                resolve.assert_not_called()
+
+    def test_both_movie_loaders_publish_advertised_alternative_player(self):
+        search = '<div class="result_title"><a href="/movie/Inception_2010">Watch Inception (2010)</a></div>'
+        page = '<button onclick="_loadP(this,\'https://vidfast.vc/movie/tt1375666\')">VidFast</button>'
+        item = dict(url='https://media.example/feature.m3u8', source='vidfast vRapid', direct=True)
+        for family in ('free99', 'scrubs'):
+            module = importlib.import_module('moviehub_' + family + '.providers.anymovies_co')
+            provider = module.source()
+            key = provider.movie('tt1375666', '27205', 'Inception', 'Inception', [{'title': 'Inception'}], '2010')
+            with self.subTest(family=family), patch.object(module.client, 'scrapePage', side_effect=[
+                    SimpleNamespace(text=search), SimpleNamespace(text=page)]), \
+                    patch.object(module, 'movie_player_sources', return_value=[item]) as alternative, \
+                    patch.object(module.scrape_sources, 'process') as legacy:
+                rows = provider.sources(key, vod._HOSTS)
+            self.assertEqual(rows, [item])
+            self.assertEqual(alternative.call_args.args[0], 'https://vidfast.vc/movie/tt1375666')
+            self.assertEqual(alternative.call_args.args[1]['tmdb'], '27205')
+            legacy.assert_not_called()
+
     def test_current_mxdrop_click_movie_link_reaches_existing_resolver(self):
         from resolveurl.plugins.mixdrop import MixDropResolver
         self.assertIn('mxdrop.click', vod._HOSTS)
@@ -38,6 +77,14 @@ class AnyMoviesPlayerTests(unittest.TestCase):
             key = json.loads(sources.call_args.args[0])
             self.assertEqual((key['imdb'], key['tmdb'], key['season'], key['episode']),
                              ('tt0903747', '1396', '2', '3'))
+        for label, provider in [('VidFast', Vidfast), ('Peachify', Peachify)]:
+            movie = dict(imdb='tt1375666', tmdb='27205', title='Inception', year='2010')
+            with self.subTest(movie_player=label), patch.object(provider, 'sources', return_value=[]) as sources:
+                resolve_player(dict(source=label, url='https://player.example/unused'), movie, None)
+            key = json.loads(sources.call_args.args[0])
+            self.assertEqual((key['imdb'], key['tmdb']), ('tt1375666', '27205'))
+            self.assertNotIn('season', key)
+            self.assertNotIn('episode', key)
         with patch.object(Vidfast, 'sources') as sources:
             resolve_player(dict(source='VidFast', url='https://player.example/unused'),
                            dict(data, tmdb='not-an-id'), None)

@@ -2,10 +2,7 @@
     "site": "free99:anymovies_co",
     "date": "2026-11-04",
     "status": "series_sample_verified_movie_audio_repair_in_progress",
-    "existingAdapters": [
-        "free99:anymovies_co",
-        "scrubs:anymovies_co"
-    ],
+    "existingAdapters": ["free99:anymovies_co", "scrubs:anymovies_co"],
     "siteInspection": {
         "movie": "Current Inception search card and player buttons retained.",
         "series": "Current search returns Breaking Bad series card with matching IMDb tt0903747.",
@@ -29,7 +26,7 @@
         "content": "Contact sheet explicitly reviewed: studio logo at start, buffering overlay at early position, real Inception scenes at middle and late positions. The early frame is not usable content evidence."
     },
     "fullPlaybackVerified": false,
-    "next": "Save verified episode routes immediately. Repair the observed mxdrop.click movie-host registration and retest real movie duration, picture, audio and seeking; do not mark the whole site good yet.",
+    "next": "Check the new advertised movie routes with complete source audio, matching frames, plausible runtime, smoothness and both seeks. Do not mark AnyMovies good until a movie and an episode meet the complete method.",
     "androidRetest": {
         "run": "https://github.com/billyke2000s/moviehub/actions/runs/41723642563",
         "sourceCommit": "12fe2c215c9d176cbdad2893aaf2c539a1598959",
@@ -51,21 +48,9 @@
         "movieTechnicalPasses": 0,
         "initialPositionMs": 1154,
         "durationSeconds": 8888,
-        "displayedFpsByPosition": [
-            15.4225,
-            15.5762,
-            14.9633
-        ],
-        "videoGapMsByPosition": [
-            314,
-            343,
-            322
-        ],
-        "nonSilentAudioSecondsByPosition": [
-            0.7466875,
-            0.96,
-            1.5786875
-        ],
+        "displayedFpsByPosition": [15.4225, 15.5762, 14.9633],
+        "videoGapMsByPosition": [314, 343, 322],
+        "nonSilentAudioSecondsByPosition": [0.7466875, 0.96, 1.5786875],
         "contentReview": "Current contact sheet shows the matching Inception opening and real midpoint/late scenes. Early screenshot shows buffering; the earlier no-working-backup overlay is absent from these reviewed midpoint/late frames.",
         "series": "unsupported_host; no source played."
     },
@@ -74,12 +59,14 @@
         "search": "Current exact-IMDb Breaking Bad card points to VidSrc; current search page also advertises /js/series_info_box_for_movie.js.",
         "seriesScript": "Actual first-party UI script publishes VidSrc, VidFast, Peachify and MoviesAPI exact-episode templates plus two download alternatives. Existing loader followed only the default VidSrc anchor.",
         "repair": "Parse literal advertised templates without executing JavaScript, retain exact IMDb/season/episode scope, use both existing catalogue loaders and existing host processing, retain primary locator if optional script fails. MoviesAPI shared handler accepts the current slash-format episode route and retains legacy hyphen routes. Advertised VidFast/Peachify tabs reuse their existing native protocols with the original validated IMDb, TMDB, season and episode; conflicting returned identity/filename evidence is rejected.",
-        "validation": "202 Python regressions pass for the series repair. One host-registration/embed-resolution regression added for the movie repair; new native movie/audio evidence remains pending.",
+        "validation": "205 Python regressions and all 34 core suites pass locally. Previous 203-test revision 7a97b1c passed all six Android CI jobs. Native playback of the new alternative movie routes remains pending.",
         "baselineRun": "https://github.com/billyke2000s/moviehub/actions/runs/41894438198",
         "baselineSeries": "Native lookup returned unsupported_host with one VidSrc locator in each adapter; no episode played.",
         "baselineMovie": "Runner media-tool setup failed before movie playback; no new movie evidence.",
         "otherObservations": "Following VidSrc's actual API-supplied episode player returned HTTP 403 with Expired title. MoviesAPI's actual script supplied the public player API; its IMDb episode request returned HTTP 404/result false. No challenge bypass attempted.",
-        "movieHostRepair": "Register the currently advertised mxdrop.click domain with the existing MixDrop resolver. The resolver's URL pattern and public embed flow already support this spelling; it was absent from the shared host inventory. Preserve the actual host and headers rather than rewriting to another domain."
+        "movieHostRepair": "Register the currently advertised mxdrop.click domain with the existing MixDrop resolver. The resolver's URL pattern and public embed flow already support this spelling; it was absent from the shared host inventory. Preserve the actual host and headers rather than rewriting to another domain.",
+        "nextMovieRepair": "Both movie loaders now retain the requested TMDB ID and resolve only matching VidFast/Peachify buttons actually advertised by the selected movie page, using the existing native protocols. Other host choices and conflicting-identity rejection are preserved.",
+        "nativeRetestScope": "Retest newly added VidFast/Peachify movie routes; the already sampled MixDrop MP4 audio failures remain recorded. Episode checks continue against all returned routes."
     },
     "seriesPlaybackVerified": true,
     "currentNativeReview": {
@@ -94,11 +81,7 @@
             "completeAudioAndFramePasses": 0,
             "title": "Inception",
             "durationSeconds": 8888,
-            "displayedFps": [
-                23.849915178125936,
-                23.762474063827685,
-                23.242013648501633
-            ],
+            "displayedFps": [23.849915178125936, 23.762474063827685, 23.242013648501633],
             "visualReview": "Matching studio opening, Cillian Murphy at midpoint and Cobb/Mal at late seek. Early frame shows buffering. Movie audio evidence remains unverified.",
             "otherTitle": "Dune: Part Two has an actually advertised mxdrop.click download link rejected as unsupported; investigate missing resolver domain registration."
         },
@@ -110,26 +93,227 @@
             "season": 1,
             "episode": 1,
             "durationSeconds": 3501,
-            "reviewedRoutes": [
-                "vidfast vRapid",
-                "vidfast vBlaze"
-            ],
+            "reviewedRoutes": ["vidfast vRapid", "vidfast vBlaze"],
             "displayedFps": [
-                [
-                    23.0673626646781,
-                    23.86182108626198,
-                    24.251906903970273
-                ],
-                [
-                    23.288355822088956,
-                    23.98533128499926,
-                    23.81184736996194
-                ]
+                [23.0673626646781, 23.86182108626198, 24.251906903970273],
+                [23.288355822088956, 23.98533128499926, 23.81184736996194]
             ],
             "audioEvidence": "The live evidence reviewer reports two usable candidates; exactly two candidates pass technical playback. Thus both reviewed routes pass all three version-3 source-audio checks. Recording start/stop events are confirmed for all six clips.",
             "visualReview": "Both reviewed contacts show the pilot cold open with Jesse in the RV, Jesse at midpoint and Walter in the desert late in the episode. Full picture fits. Early seek frames show transient buffering; required start/midpoint/late observations pass.",
             "remainingRoutes": "Titan fails seeking; Horizon does not decode."
         },
         "verificationScope": "Selected opening/midpoint/late windows, not uninterrupted complete-film/episode viewing or physical-speaker testing."
+    },
+    "movieHostRetest": {
+        "sourceCommit": "7a97b1ca5ba829261ae40c16f6f6c05dbb57b906",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41899116421",
+        "pythonTestsPassed": 203,
+        "movies": [
+            {
+                "title": "Inception",
+                "evidenceId": "0001",
+                "status": "verified",
+                "provider": "downloads-anymovies.co \u00b7 mixdrop.ag",
+                "durationSeconds": 8888,
+                "width": 1280,
+                "height": 720,
+                "displayedFps": [23.899810398163854, 23.765905827598157, 23.364023364023364],
+                "midpointDecoded": true,
+                "lateSeekDecoded": true
+            },
+            {
+                "title": "Dune: Part Two",
+                "evidenceId": "0002",
+                "status": "verified",
+                "provider": "downloads-anymovies.co \u00b7 mxdrop.click",
+                "durationSeconds": 9948,
+                "width": 1280,
+                "height": 536,
+                "displayedFps": [24.01346734663564, 23.211982938200574, 23.115079365079364],
+                "midpointDecoded": true,
+                "lateSeekDecoded": true
+            }
+        ],
+        "audioReviews": [
+            {
+                "evidenceId": "0001",
+                "verification": "audio_signal_or_selection_unverified",
+                "capturedSourceAudio": {
+                    "start": {
+                        "tracks": [
+                            {
+                                "seconds": 0,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -120,
+                                        "activeSeconds": 0
+                                    },
+                                    {
+                                        "rmsDbfs": -120,
+                                        "activeSeconds": 0
+                                    }
+                                ],
+                                "signalDetected": false,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0001-start-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": false
+                    },
+                    "middle": {
+                        "tracks": [
+                            {
+                                "seconds": 0.96,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -38.17,
+                                        "activeSeconds": 0.96
+                                    },
+                                    {
+                                        "rmsDbfs": -38.35,
+                                        "activeSeconds": 0.96
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0001-middle-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": false
+                    },
+                    "late": {
+                        "tracks": [
+                            {
+                                "seconds": 1.5786875,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -35.69,
+                                        "activeSeconds": 1.5786875
+                                    },
+                                    {
+                                        "rmsDbfs": -35.38,
+                                        "activeSeconds": 1.5786875
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0001-late-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": false
+                    }
+                },
+                "audioEvidenceVersion": 3,
+                "physicalAudioOutputTested": false
+            },
+            {
+                "evidenceId": "0002",
+                "verification": "audio_signal_or_selection_unverified",
+                "capturedSourceAudio": {
+                    "start": {
+                        "tracks": [
+                            {
+                                "seconds": 3.970625,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -43.7,
+                                        "activeSeconds": 3.970625
+                                    },
+                                    {
+                                        "rmsDbfs": -44.21,
+                                        "activeSeconds": 3.970625
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0002-start-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": false
+                    },
+                    "middle": {
+                        "tracks": [
+                            {
+                                "seconds": 1.9969375,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -18.79,
+                                        "activeSeconds": 1.9969375
+                                    },
+                                    {
+                                        "rmsDbfs": -18.84,
+                                        "activeSeconds": 1.9969375
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0002-middle-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": false
+                    },
+                    "late": {
+                        "tracks": [
+                            {
+                                "seconds": 7.6858125,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -29.15,
+                                        "activeSeconds": 7.6858125
+                                    },
+                                    {
+                                        "rmsDbfs": -29.13,
+                                        "activeSeconds": 7.6858125
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0002-late-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": true
+                    }
+                },
+                "audioEvidenceVersion": 3,
+                "physicalAudioOutputTested": false
+            }
+        ],
+        "completeAudioPasses": 0
     }
 }

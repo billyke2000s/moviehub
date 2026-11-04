@@ -1,5 +1,9 @@
 # Architecture
 
+## AnyMovies advertised movie players — 4 November 2026
+
+The existing catalogue loaders retain the requested TMDB ID and use movie_player_sources only for actual VidFast/Peachify buttons whose IMDb/TMDB locator matches that film. The existing native protocol classes return sources through the normal media validation and playback path. Other player links retain existing host processing; no new engine or website identity is added.
+
 AnyMovies series lookup keeps its IMDb-scoped catalogue selection, then reads only the
 first-party script actually advertised by that page. Literal exact-episode tab templates
 feed the existing host resolver; advertised VidFast/Peachify tabs reuse their existing

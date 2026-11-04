@@ -1,5 +1,9 @@
 # Testing
 
+## AnyMovies movie player regression checks — 4 November 2026
+
+205 Python tests and 34 core suites pass locally. New cases cover exact movie IDs, rejecting wrong/foreign/credentialled player buttons, both catalogue loaders retaining TMDB identity, and existing native protocols receiving movie keys without episode fields. The moved diagnostic test now creates its own request scope. These tests do not establish live movie playback.
+
 ## AnyMovies alternate series players — 4 November 2026
 
 Current first-party series UI publishes four player tabs. Regressions cover literal template

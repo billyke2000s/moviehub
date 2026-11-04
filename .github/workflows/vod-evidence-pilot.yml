@@ -24,8 +24,13 @@ jobs:
             fail-fast: false
             matrix:
                 route:
-                    - { provider: "free99:anymovies_co", media: movies, capture: true }
-                    - { provider: "free99:anymovies_co", media: series, capture: true }
+                    - {
+                          provider: "free99:anymovies_co",
+                          media: movies,
+                          capture: true,
+                          source_names: "vidfast,Peachify",
+                      }
+                    - { provider: "free99:anymovies_co", media: series, capture: true, source_names: "" }
         env:
             ORG_GRADLE_PROJECT_moviehubAbi: x86_64
         steps:
@@ -66,7 +71,7 @@ jobs:
                   script: |
                       adb shell wm size
                       adb shell wm density
-                      VOD_SOURCE_LIMIT=200 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=false bash .github/scripts/vod-evidence-mode.sh '${{ matrix.route.capture }}' 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}'
+                      VOD_SOURCE_LIMIT=200 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=false bash .github/scripts/vod-evidence-mode.sh '${{ matrix.route.capture }}' 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}' '${{ matrix.route.source_names }}'
             - name: Expose bounded review frames in diagnostics
               if: always()
               run: |

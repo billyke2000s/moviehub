@@ -79,10 +79,35 @@ def resolve_player(player, data, resolve):
         else:
             from moviehub_native.cinestream_crypto import Peachify as Player
         provider = Player()
-        key = provider.tvshow(data['imdb'], tmdb, '', data['title'], data['title'], [], data.get('year', ''))
-        key = provider.episode(key, data['imdb'], tmdb, '', '', '', data['season'], data['episode'])
+        key = provider.movie(data['imdb'], tmdb, data['title'], data['title'], [], data.get('year', ''))
+        if 'season' in data:
+            key = provider.episode(key, data['imdb'], tmdb, '', '', '', data['season'], data['episode'])
         return provider.sources(key, [])
     return resolve(player['url']) if resolve else []
+
+
+def movie_player_sources(url, data):
+    """Resolve a published movie button only when its identity matches this film."""
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return None
+    if parsed.scheme != 'https' or parsed.query or parsed.fragment:
+        return None
+    imdb, tmdb = data.get('imdb', ''), str(data.get('tmdb', ''))
+    if not re.fullmatch(r'tt[0-9]{5,10}', imdb) or not re.fullmatch(r'[1-9][0-9]{0,9}', tmdb):
+        return None
+    label = None
+    if parsed.netloc == 'vidfast.vc' and parsed.path == '/movie/' + imdb:
+        label = 'VidFast'
+    elif parsed.netloc == 'peachify.top' and parsed.path == '/embed/movie/' + tmdb:
+        label = 'Peachify'
+    if label is None:
+        return None
+    wanted = dict(imdb=imdb, tmdb=tmdb, season=-1)
+    rows = resolve_player(dict(url=url, source=label), data, None) or []
+    return [dict(row, imdb=imdb, tmdb=tmdb) for row in rows if matches(row, wanted)]
+
 
 class SeriesLookup:
     def tvshow(self, imdb, tmdb, tvdb, title, localtitle, aliases, year):

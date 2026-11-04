@@ -1,5 +1,7 @@
 ## Unreleased
 
+- AnyMovies now resolves its advertised alternative movie players through existing native protocols, preserving exact IMDb/TMDB identity and other host choices. Native verification is in progress.
+
 - Read BnWMovies' advertised same-film download listing to retain full MP4/MPEG alternatives
   alongside its embedded derivatives, and use the advertised search RSS feed after a primary
   search failure. Validate actual playback before certification.

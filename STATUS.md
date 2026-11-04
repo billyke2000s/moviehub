@@ -1,5 +1,9 @@
 # Status
 
+## AnyMovies movie alternatives in progress — 4 November 2026
+
+Both movie loaders now retain TMDB identity and resolve matching advertised VidFast/Peachify buttons through existing native protocols. The earlier MixDrop host repair enabled Dune playback, but both tested MP4s still fail complete audio capture. Episode routes are already verified. The new movie routes pass 205 Python tests and 34 core suites; native playback remains pending.
+
 ## AnyMovies alternate series routes in progress — 4 November 2026
 
 The site advertises four series player tabs in its first-party UI script; the loader

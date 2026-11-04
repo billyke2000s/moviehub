@@ -9,7 +9,7 @@ from moviehub_scrubs import cleantitle
 from moviehub_scrubs import client
 from moviehub_scrubs import client_utils
 from moviehub_scrubs import scrape_sources
-from moviehub_compat.anymovies_series import SeriesLookup
+from moviehub_compat.anymovies_series import SeriesLookup, movie_player_sources
 #from moviehub_scrubs import log_utils
 
 
@@ -23,7 +23,7 @@ class source(SeriesLookup):
 
 
     def movie(self, imdb, tmdb, title, localtitle, aliases, year):
-        url = {'imdb': imdb, 'title': title, 'aliases': aliases, 'year': year}
+        url = {'imdb': imdb, 'tmdb': tmdb, 'title': title, 'aliases': aliases, 'year': year}
         url = urlencode(url)
         return url
 
@@ -58,7 +58,8 @@ class source(SeriesLookup):
                 try:
                     if any(x in link for x in ['report-error.html', 'statcounter.com']):
                         continue
-                    for source in scrape_sources.process(hostDict, link):
+                    resolved = movie_player_sources(link, data)
+                    for source in (scrape_sources.process(hostDict, link) if resolved is None else resolved):
                         if scrape_sources.check_host_limit(source['source'], self.results):
                             continue
                         self.results.append(source)
