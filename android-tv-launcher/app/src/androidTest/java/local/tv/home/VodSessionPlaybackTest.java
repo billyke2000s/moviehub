@@ -336,7 +336,7 @@ public final class VodSessionPlaybackTest {
                 "http://127.0.0.1:" + server.getLocalPort() + uri.getPath()
             ).openConnection();
         EngineSources.Stream stream = new EngineSources.Stream(
-            new JSONObject().put("url", "https://8.8.8.8/vod.mp4")
+            new JSONObject().put("url", "https://8.8.8.8/vod.mp4").put("headers", new JSONObject())
         );
         VodSources.Session calibration = session(index -> new VodSources.Resolved(stream.url, null));
         calibration.transport = index -> stream;
