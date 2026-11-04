@@ -1,0 +1,43 @@
+{
+    "site": "scrubs:iwaatch_com",
+    "date": "2026-11-04",
+    "sourceCommit": "09b957f85d6386b223057173b285439f17bdca78",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41726423062",
+    "artifactId": 13285435100,
+    "status": "reviewed_samples_follow_up_required",
+    "fullPlaybackVerified": false,
+    "movie": {
+        "title": "Inception",
+        "tmdb": 27205,
+        "durationSeconds": 8888,
+        "contentReview": "Contact sheets show the Legendary opening and recognizable Inception scenes with Cillian Murphy and Leonardo DiCaprio at midpoint/late positions. No ad or site-message substitute appears in the reviewed frames.",
+        "samples": [
+            {
+                "evidenceId": "0001",
+                "dimensions": [1280, 536],
+                "initialPositionMs": 655,
+                "technicalWindowsPassed": true,
+                "sourceAudioSignalPositions": ["start", "middle", "late"],
+                "capturedAudioSeconds": [0.4693125, 5.5466875, 0.384],
+                "followUp": "Early screenshot shows buffering. Very short opening/late audio captures do not establish sustained programme audio."
+            },
+            {
+                "evidenceId": "0002",
+                "dimensions": [1920, 800],
+                "initialPositionMs": 654,
+                "technicalWindowsPassed": true,
+                "sourceAudioSignalPositions": ["start", "middle"],
+                "lateAudioSeconds": 0,
+                "followUp": "Early frame shows buffering and midpoint frame shows no working backup message. Late captured audio has zero decoded samples."
+            }
+        ],
+        "catalogueGap": "Dune: Part Two returned no_matches."
+    },
+    "series": "Existing movie-only adapter explicitly reports unsupported_type; no series playback claimed.",
+    "codeReview": "Existing Iwaatch loader retains title/year matching and advertised quality routes. No speculative production edit made from a recording-only observation.",
+    "limitations": [
+        "Only bounded sample windows and captured frames reviewed; no uninterrupted full-film watch.",
+        "Audio signal/metadata inspected; no physical speaker or dialogue-listening claim."
+    ],
+    "next": "Retest Iwaatch with recording disabled to investigate the visible buffering and backup failure, then obtain sustained audio evidence before certification."
+}
