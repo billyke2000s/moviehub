@@ -51,7 +51,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | toonstream (`native:toonstream`) | 0 sources tested; 0 technical passes; 1 ConnectTimeout | 0 sources tested; 0 technical passes; 1 ValueError | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-toonstream.json) at 722a41e |
 | topmovies (`native:topmovies`) | 0 sources tested; 0 technical passes; 2 gaierror | 0 sources tested; 0 technical passes; 1 gaierror | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-topmovies.json) at 913a3a2 |
 | uhdmovies (`native:uhdmovies`) | 0 sources tested; 0 technical passes; 2 http_404 | 0 sources tested; 0 technical passes; 1 http_404 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-uhdmovies.json) at 2616d2d |
-| vegamovies (`native:vegamovies`) | | | | |
+| vegamovies (`native:vegamovies`) | 0 sources tested; 0 technical passes; 2 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-vegamovies.json) at e144cfc |
 | vidcore (`native:vidcore`) | | | | |
 | videasy (`native:videasy`) | | | | |
 | vidfast (`native:vidfast`) | | | | |
