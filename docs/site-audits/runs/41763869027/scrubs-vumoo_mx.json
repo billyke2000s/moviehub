@@ -1,0 +1,35 @@
+{
+    "site": "scrubs:vumoo_mx",
+    "sourceCommit": "8c8dafc7c7b9f0bfbd30e78622a2c99f3c0a877d",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41763869027",
+    "fullPlaybackVerified": false,
+    "contentReview": "pending",
+    "media": {
+        "movies": {
+            "complete": true,
+            "lookupOutcomes": {
+                "no_matches": 2
+            },
+            "candidatesTested": 0,
+            "playbackOutcomes": {},
+            "technicalPasses": 0,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {},
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        },
+        "series": {
+            "complete": true,
+            "lookupOutcomes": {
+                "no_matches": 1
+            },
+            "candidatesTested": 0,
+            "playbackOutcomes": {},
+            "technicalPasses": 0,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {},
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        }
+    }
+}
