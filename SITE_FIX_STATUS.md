@@ -68,7 +68,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | moviesnipipay.me (`scrubs:moviesnipipay_me`) | 0 sources tested; 0 technical passes; 1 resolution_failed | 0 sources tested; 0 technical passes; 1 unsupported_host | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-moviesnipipay_me.json) at 82ea65d |
 | myflixer.it (`scrubs:myflixer_it`) | 0 sources tested; 0 technical passes; 1 ValueError, 1 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-myflixer_it.json) at fc74eec |
 | noxx.to (`scrubs:noxx_to`) | 0 sources tested; 0 technical passes; 1 unsupported_type | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-noxx_to.json) at 81361c5 |
-| PressPlayZ (`scrubs:pressplay_top`) | Published matching-TMDB player parser repaired; playback pending | Active page-selected template expands exact episode; playback pending | Partial repair; retest and server coverage required | [Repair evidence](docs/site-audits/pressplay.json), 4 November 2026 |
+| PressPlayZ (`scrubs:pressplay_top`) | 0 sources tested; 0 technical passes; 2 http_404 | 0 sources tested; 0 technical passes; 1 http_500 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-pressplay_top.json) at c4cff88 |
 | projectfreetv.cyou (`scrubs:projectfreetv_cyou`) | | | | |
 | rarefilmm.com (`scrubs:rarefilmm_com`) | | | | |
 | series9movies.com (`scrubs:series9movies_com`) | | | | |
