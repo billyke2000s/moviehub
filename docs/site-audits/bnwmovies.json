@@ -38,6 +38,37 @@
             }
         ],
         "validation": "194 Python regressions pass. Current captured page/listing discovers both alternatives. Actual file probes establish runtime/tracks; Android picture, smoothness, seeking and recorded audio remain to be checked. The independent decoder now accepts MPEG program streams; a generated four-second MPEG/MP2 control decodes four seconds with a non-silent signal.",
-        "localTransportLimit": "The local guarded Python engine cannot resolve the site DNS in this environment; current pages and file probes were fetched separately. This is not counted as a successful live Android lookup."
+        "localTransportLimit": "The local guarded Python engine cannot resolve the site DNS in this environment; current pages and file probes were fetched separately. This is not counted as a successful live Android lookup.",
+        "independentDecodedReview": {
+            "codeRevision": "66e4d45b150aebbf48ebf3932b2fa2f56781e90a",
+            "file": "The_Stranger.mp4",
+            "method": "Direct independent decoder check using the real file URL supplied by the download redirect, after canonical requests returned server errors. This is not the Android/LibVLC verdict.",
+            "windows": [
+                {
+                    "position": "start",
+                    "positionSeconds": 10,
+                    "decodedAudioSeconds": 8.0,
+                    "signalDetected": true,
+                    "channelRmsDbfs": [-15.31, -15.32]
+                },
+                {
+                    "position": "middle",
+                    "positionSeconds": 2736,
+                    "decodedAudioSeconds": 8.0,
+                    "signalDetected": true,
+                    "channelRmsDbfs": [-21.43, -21.43]
+                },
+                {
+                    "position": "late",
+                    "positionSeconds": 4925,
+                    "decodedAudioSeconds": 8.0,
+                    "signalDetected": true,
+                    "channelRmsDbfs": [-21.08, -21.09]
+                }
+            ],
+            "visualReview": "Opening credits name Edward G. Robinson, Loretta Young and Orson Welles. Midpoint and late frames show the matching black-and-white feature, rather than a website-message video.",
+            "androidEvidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41883351432",
+            "androidStatus": "running; inspect results before certification"
+        }
     }
 }
