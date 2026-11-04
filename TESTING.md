@@ -1,5 +1,15 @@
 # Testing
 
+## Resuming the site audit — 4 November 2026
+
+The audit now resumes missing/incomplete movie-and-series receipts across saved runs, with
+up to three independent site jobs. Each still uploads and commits its own report immediately.
+A complete check with playback failures remains a repair item; skipping that completed check
+is not a content certification. A newer incomplete receipt overrides older complete coverage.
+The combined-run review gate requires all 74 complete checks and explicit playback verification.
+A manual fresh option rechecks the full inventory. Six queue regressions cover incomplete/missing
+coverage, numeric run ordering, identity validation, strict completion flags and no false pass.
+
 ## PressPlayZ page-parser checkpoint — 4 November 2026
 
 The Python suite passes 172 tests and all 34 Java core suites pass. Current captured Inception

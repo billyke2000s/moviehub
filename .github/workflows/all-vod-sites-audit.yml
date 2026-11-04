@@ -4,6 +4,7 @@ on:
         branches: [fix/all-vod-site-audit]
         paths:
             - "android-tv-launcher/tests/site-audit-checkpoint.py"
+            - "android-tv-launcher/tests/site-audit-queue.py"
             - "android-tv-launcher/tests/run-live-vod-audit.sh"
             - "android-tv-launcher/tests/review-vod-evidence.py"
             - "android-tv-launcher/app/src/androidTest/java/local/tv/home/FreeVodLiveAuditTest.java"
@@ -13,6 +14,11 @@ on:
             - ".github/scripts/audit-one-vod-site.sh"
             - ".github/scripts/save-site-audit-checkpoint.cjs"
     workflow_dispatch:
+        inputs:
+            fresh:
+                description: Recheck all 74 sites instead of resuming unfinished checks
+                type: boolean
+                default: false
 concurrency:
     group: all-vod-sites-audit-${{ github.ref }}
     cancel-in-progress: true
@@ -23,6 +29,8 @@ jobs:
         runs-on: ubuntu-latest
         outputs:
             sites: ${{ steps.inventory.outputs.sites }}
+            pending: ${{ steps.inventory.outputs.pending }}
+            has_work: ${{ steps.inventory.outputs.has_work }}
         steps:
             - uses: actions/checkout@v5
             - uses: actions/setup-python@v5
@@ -35,30 +43,22 @@ jobs:
                   node --test .github/scripts/test-save-site-audit-checkpoint.cjs
                   bash -n .github/scripts/audit-one-vod-site.sh
             - id: inventory
-              name: Read the existing enabled-site inventory
-              run: |
-                  python - <<'PYCODE' >> "$GITHUB_OUTPUT"
-                  import json, re, sys
-                  sys.path.insert(0, 'android-tv-launcher/app/src/main/python')
-                  import moviehub_vod as vod
-                  sites = [row['id'] for row in json.loads(vod.search_providers())]
-                  if len(sites) != 74 or len(set(sites)) != 74:
-                      raise SystemExit('Expected all 74 distinct enabled websites')
-                  if not all(re.fullmatch(r'(free99|scrubs|native):[a-z0-9_]+', site) for site in sites):
-                      raise SystemExit('Invalid website ID')
-                  print('sites=' + json.dumps(sites))
-                  PYCODE
+              name: Resume missing or incomplete checks from saved receipts
+              env:
+                  AUDIT_FRESH: ${{ inputs.fresh || false }}
+              run: python android-tv-launcher/tests/site-audit-queue.py >> "$GITHUB_OUTPUT"
     site:
         needs: inventory
+        if: needs.inventory.outputs.has_work == 'true'
         runs-on: ubuntu-latest
         timeout-minutes: 100
         permissions:
             contents: write
         strategy:
             fail-fast: true
-            max-parallel: 1
+            max-parallel: 3
             matrix:
-                site: ${{ fromJSON(needs.inventory.outputs.sites) }}
+                site: ${{ fromJSON(needs.inventory.outputs.pending) }}
         env:
             ORG_GRADLE_PROJECT_moviehubAbi: x86_64
         steps:
@@ -137,15 +137,4 @@ jobs:
             - name: Distinguish saved checkpoints from completed playback verification
               env:
                   EXPECTED_SITES: ${{ needs.inventory.outputs.sites }}
-              run: |
-                  python - <<'PYCODE'
-                  import json, os, pathlib
-                  expected = set(json.loads(os.environ['EXPECTED_SITES']))
-                  root = pathlib.Path('docs/site-audits/runs') / os.environ['GITHUB_RUN_ID']
-                  rows = [json.loads(path.read_text()) for path in root.glob('*.json')]
-                  actual = {row['site'] for row in rows}
-                  if actual != expected or len(rows) != len(expected):
-                      raise SystemExit('Incomplete saved site coverage; inspect failed checkpoint job')
-                  if not all(row.get('fullPlaybackVerified') for row in rows):
-                      raise SystemExit('Checkpoints saved; playback repairs/content review remain incomplete')
-                  PYCODE
+              run: python android-tv-launcher/tests/site-audit-queue.py review

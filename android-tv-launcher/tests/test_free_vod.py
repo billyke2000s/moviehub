@@ -662,5 +662,6 @@ from test_fmhy_rive import RiveTests
 from test_fmhy_movy import MovyTests
 from test_vod_evidence import EvidenceTests
 from test_site_audit_checkpoint import SiteCheckpointTests
+from test_site_audit_queue import SiteAuditQueueTests
 
 if __name__=='__main__':unittest.main()
