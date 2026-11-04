@@ -48,7 +48,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | rogmovies (`native:rogmovies`) | 0 sources tested; 0 technical passes; 1 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-rogmovies.json) at 4b8e06e |
 | Rtally (`native:rtally`) | 0 sources tested; 0 technical passes; 2 rejected_media | 0 sources tested; 0 technical passes; 1 SSLError | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-rtally.json) at 3b69d6b |
 | skymovies (`native:skymovies`) | | | | |
-| toonstream (`native:toonstream`) | | | | |
+| toonstream (`native:toonstream`) | 0 sources tested; 0 technical passes; 1 ConnectTimeout | 0 sources tested; 0 technical passes; 1 ValueError | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-toonstream.json) at 722a41e |
 | topmovies (`native:topmovies`) | | | | |
 | uhdmovies (`native:uhdmovies`) | | | | |
 | vegamovies (`native:vegamovies`) | | | | |
