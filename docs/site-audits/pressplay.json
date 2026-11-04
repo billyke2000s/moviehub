@@ -1,0 +1,27 @@
+{
+    "site": "scrubs:pressplay_top",
+    "date": "2026-11-04",
+    "status": "published_player_parser_repaired_live_playback_pending",
+    "fullPlaybackVerified": false,
+    "inspection": "Current site uses /explore search cards and Astro player props. The selector still requests /api/player-servers but its own client falls back to a bundled server list when that endpoint fails.",
+    "repairs": [
+        "Follow advertised same-origin watch cards matching title/year and the requested movie/TV type.",
+        "Require exact TMDB identity in the matching player component before using the published embed.",
+        "For TV, expand only the active published server template with the requested season/episode.",
+        "Parse inert JSON attributes; do not execute downloaded website JavaScript."
+    ],
+    "capturedPageChecks": [
+        "Actual Inception (2010), TMDB 27205 search/detail HTML reaches its published movie player through the existing loader.",
+        "Actual Modern Family, TMDB 1421 player config expands the requested season 2 episode 3 exactly."
+    ],
+    "validation": {
+        "pythonTests": 172,
+        "coreSuites": 34,
+        "cases": "Matching versus conflicting TMDB identity, same-title alternatives, same-origin watch cards, movie/series isolation, inactive/malformed props, unknown template fields and exact TV substitution."
+    },
+    "limitations": [
+        "Only the current page-selected server is restored; complete enumeration of the selector fallback list remains unresolved.",
+        "Published player links are extraction evidence, not decoded playback."
+    ],
+    "next": "Run the Android movie/series evidence audit and review correct content, sustained audio, runtime, smoothness and seeking. Keep certification pending."
+}

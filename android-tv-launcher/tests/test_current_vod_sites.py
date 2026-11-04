@@ -264,19 +264,69 @@ class CurrentSiteTests(unittest.TestCase):
             provider.sources(key, [])
         self.assertEqual(calls, ['one', 'two'])
 
-    def test_pressplay_reads_current_active_servers_and_expands_episode_identity(self):
+    def test_pressplay_reads_matching_published_player_without_obsolete_api(self):
+        from html import escape
         from moviehub_scrubs.providers import pressplay_top
-        from moviehub_scrubs import scrape_sources
-        servers = [dict(active=True, tvUrl='https://one.example/tv/{id}/{season}/{episode}'),
-                   dict(active=False, tvUrl='https://disabled.example/tv/{id}'),
-                   dict(active=True, tvUrl='https://two.example/tv/{id}-{season}-{episode}?t={time}')]
-        provider = pressplay_top.source()
-        key = provider.tvshow('tt1', '42', '', 'Show', 'Show', [], '2020')
-        key = provider.episode(key, 'tt1', '42', '', 'Episode', '2020-01-01', '2', '3')
-        with patch.object(scraper_client, 'request', return_value=servers), patch.object(scrape_sources, 'process', return_value=[]) as process:
-            provider.sources(key, [])
-        self.assertEqual([call.args[1] for call in process.call_args_list],
-                         ['https://one.example/tv/42/2/3', 'https://two.example/tv/42-2-3?t=0'])
+        def encode(value):
+            if isinstance(value, dict):
+                return [0, {key: encode(item) for key, item in value.items()}]
+            if isinstance(value, list):
+                return [1, [encode(item) for item in value]]
+            return [0, value]
+        for series in (False, True):
+            kind = 'tv' if series else 'movie'
+            catalogue = ''.join('<div class="group relative w-full"><div><a href="%s">Poster</a></div><span>2020</span><h3>Fixture</h3></div>' % link
+                                for link in ('https://other.example/watch/' + kind + '-external',
+                                             '/watch/' + kind + '-wrong', '/watch/' + kind + '-correct'))
+            calls = []
+            def request(url, **kwargs):
+                calls.append(url)
+                if '/explore?' in url:
+                    return catalogue
+                identity = 999 if url.endswith('-wrong') else 42
+                props = (dict(result=dict(id=identity), activeServerConfig=dict(active=True,
+                              tvUrl='https://host.example/tv/{id}/{season}/{episode}?t={time}')) if series else
+                         dict(mediaId=identity, mediaType='movie', iframeUrl='https://host.example/movie/42'))
+                component = 'TVShowPlayer.hash.js' if series else 'BackdropPlayer.hash.js'
+                payload = {key: encode(value) for key, value in props.items()}
+                return '<astro-island component-url="/_astro/%s" props="%s"></astro-island>' % (component, escape(json.dumps(payload), quote=True))
+            provider = pressplay_top.source()
+            if series:
+                key = provider.tvshow('tt1', '42', '', 'Fixture', '', [], '2020')
+                key = provider.episode(key, 'tt1', '42', '', 'Episode', '2021-01-01', '2', '3')
+            else:
+                key = provider.movie('tt1', '42', 'Fixture', '', [], '2020')
+            with patch.object(scraper_client, 'request', side_effect=request), \
+                    patch.object(pressplay_top.scrape_sources, 'process', return_value=[]) as process:
+                provider.sources(key, [])
+            expected = 'https://host.example/tv/42/2/3?t=0' if series else 'https://host.example/movie/42'
+            self.assertEqual([call.args[1] for call in process.call_args_list], [expected])
+            self.assertEqual(len(calls), 3)
+            self.assertFalse(any('/api/player-servers' in call or 'other.example' in call for call in calls))
+
+    def test_pressplay_rejects_inactive_malformed_or_incomplete_player_data(self):
+        from html import escape
+        from moviehub_compat.pressplay_page import Player
+        for props in (
+                {'result': [0, {'id': [0, 42]}], 'activeServerConfig': [0, {'active': [0, False], 'tvUrl': [0, 'https://host.example/{id}']}]},
+                {'result': [0, {'id': [0, 42]}], 'activeServerConfig': [0, {'active': [0, True], 'tvUrl': [0, 'https://host.example/{unknown}']}]},
+                {'result': [0, {'id': [0, 999]}], 'activeServerConfig': [0, {'active': [0, True], 'tvUrl': [0, 'https://host.example/{id}']}]},
+                {'result': [0], 'activeServerConfig': [0]},
+                {'result': [0, {'id': [0, 42]}], 'activeServerConfig': [0, {'active': [0, True], 'tvUrl': [0, 'javascript:alert(1)']}]}):
+            parser = Player(42, True, 2, 3)
+            parser.feed('<astro-island component-url="/_astro/TVShowPlayer.hash.js" props="%s">' % escape(json.dumps(props), quote=True))
+            self.assertEqual(parser.links, [])
+        parser.feed('<astro-island component-url="/_astro/TVShowPlayer.hash.js" props="not json">')
+        self.assertEqual(parser.links, [])
+
+    def test_pressplay_movie_requires_matching_media_type_and_player_component(self):
+        from html import escape
+        from moviehub_compat.pressplay_page import Player
+        for component, kind in [('RecommendationList.hash.js', 'movie'), ('BackdropPlayer.hash.js', 'tv')]:
+            props = dict(mediaId=[0, 42], mediaType=[0, kind], iframeUrl=[0, 'https://host.example/movie/42'])
+            parser = Player(42, False, 1, 1)
+            parser.feed('<astro-island component-url="/_astro/%s" props="%s">' % (component, escape(json.dumps(props), quote=True)))
+            self.assertEqual(parser.links, [])
 
     def test_project_player_enumerates_each_source_and_continues_after_a_failure(self):
         def request(url, **kwargs):

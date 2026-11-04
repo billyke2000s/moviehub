@@ -1,5 +1,14 @@
 # Testing
 
+## PressPlayZ page-parser checkpoint — 4 November 2026
+
+The Python suite passes 172 tests and all 34 Java core suites pass. Current captured Inception
+search/detail HTML returns the published player only after matching TMDB 27205. The Modern
+Family page advertises an active TV template which expands TMDB 1421, season 2, episode 3.
+Regression cases reject conflicting identities, foreign catalogue links, wrong media types,
+inactive/malformed player data and unknown template fields. This restores the page-selected
+server; full selector enumeration and live playback/content verification remain pending.
+
 ## Levidia episode checkpoint — 4 November 2026
 
 The focused evidence pilot now retests Levidia movies/series and compares Iwaatch movies with
