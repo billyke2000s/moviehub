@@ -40,7 +40,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | onetouchtv (`native:onetouchtv`) | | | | |
 | peachify (`native:peachify`) | | | | |
 | projectfreetv.sx (`native:projectfreetv_sx`) | | | | |
-| rive (`native:rive`) | 18 sources tested; 1 technical passes; 2 complete | 3 sources tested; 1 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/native-rive.json) at 06f2660 |
+| rive (`native:rive`) | 18 tested, 1 technical pass; Inception footage confirmed, late audio missing and language label conflicts | 3 tested, 1 technical pass; correct Breaking Bad pilot footage; late audio capture under half a second | Partial verification; source failures remain | [Reviewed evidence](docs/site-audits/rive.json), 4 November 2026 |
 | rogmovies (`native:rogmovies`) | | | | |
 | Rtally (`native:rtally`) | | | | |
 | skymovies (`native:skymovies`) | | | | |
