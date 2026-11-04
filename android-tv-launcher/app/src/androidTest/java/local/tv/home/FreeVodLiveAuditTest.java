@@ -40,6 +40,14 @@ public final class FreeVodLiveAuditTest {
             .putExtra("vodSession", session);
     }
 
+    static void seekSource(VlcPlaybackActivity activity, long target) {
+        if (activity.player != null && activity.player.isSeekable()) {
+            // Match normal user/resume seeks: settling is not a failed stream.
+            if (activity.vod != null) activity.vod.seeking(target);
+            activity.player.setTime(target);
+        }
+    }
+
     @Test
     public void auditEveryDiscoveredPlaybackSource() throws Exception {
         var arguments = InstrumentationRegistry.getArguments();
@@ -373,9 +381,7 @@ public final class FreeVodLiveAuditTest {
     }
 
     private boolean seekAndDecode(VlcPlaybackActivity activity, long target) {
-        instrumentation.runOnMainSync(() -> {
-            if (activity.player != null && activity.player.isSeekable()) activity.player.setTime(target);
-        });
+        instrumentation.runOnMainSync(() -> seekSource(activity, target));
         long[] sample = new long[9];
         snapshot(activity, sample);
         long frames = sample[7],

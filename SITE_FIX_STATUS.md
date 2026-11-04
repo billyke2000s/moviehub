@@ -4,6 +4,10 @@ All 74 movie/series sites and the two sports sites are listed below.
 Results are intentionally blank for the fresh audit. Fill each row only after checking that site.
 Use **should be all good g** after the required repair and playback checks pass.
 
+Playback method correction (4 November): older candidate checks bypassed the app’s seek
+guard. Their seek/smoothness failures and backup overlays require a corrected-method retest.
+New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remain valid.
+
 ## Movies and series
 
 | Site / provider ID | Movie result | Series result | Status | Evidence / notes |

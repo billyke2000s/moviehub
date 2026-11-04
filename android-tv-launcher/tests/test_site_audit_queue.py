@@ -59,6 +59,22 @@ class SiteAuditQueueTests(unittest.TestCase):
         self.assertFalse(queue.complete(dict(media={kind: dict(complete='false')
                                                    for kind in ('movies', 'series')})))
 
+    def test_old_raw_seek_samples_are_rechecked_without_repeating_lookup_only_checks(self):
+        playback = {kind: dict(complete=True, candidatesTested=1) for kind in ('movies', 'series')}
+        self.save(10, self.sites[0], media=playback)
+        self.save(10, self.sites[1])
+        self.save(10, self.sites[2], media=playback, playbackAuditVersion=2)
+        reports = queue.latest_reports(self.root, self.sites)
+        self.assertEqual(queue.pending_sites(self.sites, reports), [self.sites[0]])
+        with self.assertRaisesRegex(ValueError, 'Incomplete saved site coverage'):
+            queue.verify(self.sites, reports)
+
+    def test_unrecognized_playback_method_cannot_satisfy_current_coverage(self):
+        playback = {kind: dict(complete=True, candidatesTested=1) for kind in ('movies', 'series')}
+        self.save(10, self.sites[0], media=playback, playbackAuditVersion=999)
+        reports = queue.latest_reports(self.root, self.sites)
+        self.assertEqual(queue.pending_sites(self.sites, reports), self.sites)
+
     def test_unknown_site_or_corrupt_receipt_is_not_silently_skipped(self):
         self.save(10, 'native:unknown')
         with self.assertRaisesRegex(ValueError, 'enabled inventory'):

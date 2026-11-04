@@ -19,7 +19,7 @@ def summarize(root, site, commit, run_url):
         raise ValueError('Invalid source commit')
     if not re.fullmatch(r'https://github.com/[^/]+/[^/]+/actions/runs/[0-9]+', run_url):
         raise ValueError('Invalid run URL')
-    output = dict(site=site, sourceCommit=commit, evidenceRun=run_url,
+    output = dict(site=site, sourceCommit=commit, evidenceRun=run_url, playbackAuditVersion=2,
                   fullPlaybackVerified=False, contentReview='pending', media={})
     for media in ('movies', 'series'):
         directory = root / media

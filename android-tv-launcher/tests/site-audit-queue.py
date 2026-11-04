@@ -34,11 +34,16 @@ def complete(report):
 
 
 def pending_sites(sites, reports, fresh=False):
-    return [site for site in sites if fresh or not complete(reports.get(site, {}))]
+    def current(report):
+        if not complete(report):
+            return False
+        has_playback = any(media.get('candidatesTested', 0) > 0 for media in report['media'].values())
+        return not has_playback or report.get('playbackAuditVersion') == 2
+    return [site for site in sites if fresh or not current(reports.get(site, {}))]
 
 
 def verify(sites, reports):
-    if set(reports) != set(sites) or any(not complete(reports[site]) for site in sites):
+    if set(reports) != set(sites) or pending_sites(sites, reports):
         raise ValueError('Incomplete saved site coverage; unfinished checks must be resumed')
     if not all(reports[site].get('fullPlaybackVerified') is True for site in sites):
         raise ValueError('Checks saved; playback repairs/content review remain incomplete')

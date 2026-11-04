@@ -277,8 +277,10 @@ public final class VodSessionPlaybackTest {
         open(session(index -> new VodSources.Resolved(url, null)));
         assertTrue(activity.player.getTime() >= 10_000);
         instrumentation.runOnMainSync(() -> {
-            activity.vod.seeking(35_000);
-            activity.player.setTime(35_000);
+            FreeVodLiveAuditTest.seekSource(activity, 35_000);
+            activity.vod.onBuffering(true);
+            assertFalse(activity.vod.queue.isStalled(SystemClock.elapsedRealtime() + 5_000));
+            activity.vod.onBuffering(false);
         });
         await(() -> activity.player != null && activity.player.getTime() >= 34_000);
         assertEquals(0, activity.vod.activeIndex());

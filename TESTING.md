@@ -1,5 +1,20 @@
 # Testing
 
+## Audit seek guard correction — 4 November 2026
+
+The live audit previously called VLC setTime directly, bypassing MovieHub’s normal
+VodPlayback.seeking guard. Intentional seek buffering could therefore trigger failover and
+backup-error overlays during an individual-source check. The audit now notifies the existing
+guard before each jump, matching user/resume behavior; production timing and thresholds are
+unchanged. The existing managed-fixture seek test now calls that actual audit helper and
+injects buffering to require that it is not classified as a five-second stall.
+
+New receipts identify playbackAuditVersion 2. Resume coverage rechecks all older receipts
+that tested video candidates, while keeping completed lookup-only checks. Two regressions
+prevent stale/unknown playback methods from passing coverage. Historical decoded frames and
+lookup results remain evidence, but old seek/smoothness failures and backup overlays need
+this corrected-method retest before attributing them to a provider or the production player.
+
 ## PressPlayZ advertised alternatives — 4 November 2026
 
 The 182-test Python suite and all 34 Java core suites pass. The current selector imports a

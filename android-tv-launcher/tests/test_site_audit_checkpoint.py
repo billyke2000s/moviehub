@@ -45,6 +45,7 @@ class SiteCheckpointTests(unittest.TestCase):
         self.assertEqual(report['media']['movies']['technicalPasses'], 1)
         self.assertEqual(report['media']['movies']['candidatesAwaitingContentReview'], 1)
         self.assertFalse(report['fullPlaybackVerified'])
+        self.assertEqual(report['playbackAuditVersion'], 2)
         self.assertEqual(report['contentReview'], 'pending')
         self.assertFalse(report['media']['series']['complete'])
         self.assertNotIn('secret', json.dumps(report))
