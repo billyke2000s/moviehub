@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -76,6 +77,7 @@ final class PhoneEntry implements Closeable {
     private final boolean allowLoopback;
     private final long deadline;
     private volatile boolean closed;
+    private volatile Socket client;
     private int posts;
 
     /**
@@ -104,7 +106,7 @@ final class PhoneEntry implements Closeable {
         this.received = received;
         this.wanted = wanted;
         this.allowLoopback = allowLoopback;
-        deadline = System.currentTimeMillis() + lifetimeMs;
+        deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(lifetimeMs);
         Thread thread = new Thread(this::serve, "PhoneEntry");
         thread.setDaemon(true);
         thread.start();
@@ -136,6 +138,12 @@ final class PhoneEntry implements Closeable {
             server.close();
         } catch (IOException ignored) {
             /* Already closed. */
+        }
+        Socket pending = client;
+        if (pending != null) try {
+            pending.close();
+        } catch (IOException ignored) {
+            /* Already disconnected. */
         }
     }
 
@@ -169,19 +177,46 @@ final class PhoneEntry implements Closeable {
 
     private void serve() {
         try {
-            while (!closed && System.currentTimeMillis() < deadline && wanted.getAsBoolean()) {
+            while (available()) {
                 try (Socket socket = server.accept()) {
-                    socket.setSoTimeout(5000);
+                    client = socket;
+                    if (!available()) continue;
                     handle(socket);
                 } catch (SocketTimeoutException tick) {
                     /* Check the deadline and the screen again. */
                 } catch (IOException e) {
                     if (closed) break;
+                } finally {
+                    client = null;
                 }
             }
         } finally {
             close();
         }
+    }
+
+    private boolean available() {
+        return !closed && System.nanoTime() < deadline && wanted.getAsBoolean();
+    }
+
+    /** Each read shares the original deadline; trickled headers/body cannot renew it. */
+    private InputStream boundedInput(Socket socket) throws IOException {
+        InputStream input = socket.getInputStream();
+        return new InputStream() {
+            @Override
+            public int read() throws IOException {
+                byte[] one = new byte[1];
+                return read(one, 0, 1) < 0 ? -1 : one[0] & 0xff;
+            }
+
+            @Override
+            public int read(byte[] bytes, int offset, int length) throws IOException {
+                if (!PhoneEntry.this.available()) throw new SocketTimeoutException("Phone entry expired");
+                long remaining = TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime());
+                socket.setSoTimeout((int) Math.min(5000, Math.max(1, remaining)));
+                return input.read(bytes, offset, length);
+            }
+        };
     }
 
     private void handle(Socket socket) throws IOException {
@@ -190,7 +225,8 @@ final class PhoneEntry implements Closeable {
             respond(out, 403, "Forbidden");
             return;
         }
-        Request request = Request.read(socket.getInputStream());
+        Request request = Request.read(boundedInput(socket));
+        if (!available()) return;
         if (request == null) {
             respond(out, 400, "Bad request");
             return;
@@ -228,9 +264,13 @@ final class PhoneEntry implements Closeable {
             respond(out, 200, form(page.invalid));
             return;
         }
+        if (!available()) return;
         respond(out, 200, done("Sent to your TV. You can close this page."));
-        close();
-        received.accept(values);
+        try {
+            received.accept(values);
+        } finally {
+            close();
+        }
     }
 
     /** The short address: asks for the TV's code, then shows the same page as the QR code. */

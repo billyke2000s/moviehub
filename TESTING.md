@@ -170,7 +170,8 @@ open the panel by its title; no test selects a track from it.
 `PhoneEntryTest` (core) runs the phone page over local sockets: secret path, short address with
 the 6-digit code (wrong codes refused and counted), 404/403/405/400 responses, 8 KB limit, invalid values kept on the phone, several boxes (all required, passwords
 hidden and not trimmed), one set delivered, closing after use, after 20 tries, on expiry and when
-the screen is left. It does not show the QR code or test a real phone. `PremiumizeLink` has no
+the screen is left. A request with its final body byte held past expiry is refused, and closing
+the page interrupts a partially received header. It does not show the QR code or test a real phone. `PremiumizeLink` has no
 automated test: it needs Premiumize's live sign-in service.
 
 ## Device tests

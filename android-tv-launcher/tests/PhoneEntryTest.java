@@ -103,7 +103,74 @@ public final class PhoneEntryTest {
         while (!entry.closed() && System.currentTimeMillis() < until) Thread.sleep(50);
     }
 
+    private static void expiryDuringRequest() throws Exception {
+        AtomicReference<String> got = new AtomicReference<>();
+        AtomicInteger calls = new AtomicInteger();
+        AtomicBoolean wanted = new AtomicBoolean(true);
+        try (PhoneEntry entry = start(got, calls, wanted, 500, true)) {
+            URI uri = URI.create(entry.url());
+            try (Socket socket = new Socket(uri.getHost(), uri.getPort())) {
+                socket.setSoTimeout(2000);
+                OutputStream out = socket.getOutputStream();
+                String body = "f0=" + KEY;
+                // Leave the last byte pending while the original session expires.
+                String partial =
+                    "POST " +
+                    uri.getPath() +
+                    " HTTP/1.1\r\nContent-Length: " +
+                    body.length() +
+                    "\r\n\r\n" +
+                    body.substring(0, body.length() - 1);
+                out.write(partial.getBytes(StandardCharsets.US_ASCII));
+                out.flush();
+                Thread.sleep(800);
+                try {
+                    out.write(body.charAt(body.length() - 1));
+                    out.flush();
+                    socket.getInputStream().readAllBytes();
+                } catch (java.io.IOException expired) {
+                    // Closing an expired pending request may reset the client socket.
+                }
+                check(calls.get() == 0 && got.get() == null, "expired pending body never delivered");
+                waitClosed(entry, 2000);
+                check(entry.closed(), "pending request cannot extend the session lifetime");
+            }
+        }
+    }
+
+    private static void closeDuringRequest() throws Exception {
+        try (
+            PhoneEntry entry = start(
+                new AtomicReference<>(),
+                new AtomicInteger(),
+                new AtomicBoolean(true),
+                60_000,
+                true
+            )
+        ) {
+            URI uri = URI.create(entry.url());
+            try (Socket socket = new Socket(uri.getHost(), uri.getPort())) {
+                socket.setSoTimeout(1500);
+                socket.getOutputStream().write("POST ".getBytes(StandardCharsets.US_ASCII));
+                socket.getOutputStream().flush();
+                Thread.sleep(100);
+                entry.close();
+                boolean disconnected = false;
+                try {
+                    disconnected = socket.getInputStream().read() == -1;
+                } catch (java.net.SocketTimeoutException stillOpen) {
+                    // A timeout is not a successful cancellation.
+                } catch (java.io.IOException closed) {
+                    disconnected = true;
+                }
+                check(disconnected, "closing the page disconnects an incomplete request");
+            }
+        }
+    }
+
     public static void main(String[] args) throws Exception {
+        expiryDuringRequest();
+        closeDuringRequest();
         // Form parsing and escaping.
         check(" abc+ ".equals(PhoneEntry.field("a=1&value=%20abc%2B%20", "value")), "decodes as typed");
         check(PhoneEntry.field("a=1&b=2", "value") == null, "missing field");
