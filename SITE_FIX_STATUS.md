@@ -72,7 +72,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | projectfreetv.cyou (`scrubs:projectfreetv_cyou`) | 0 sources tested; 0 technical passes; 2 http_403 | 0 sources tested; 0 technical passes; 1 http_403 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-projectfreetv_cyou.json) at 33595bc |
 | rarefilmm.com (`scrubs:rarefilmm_com`) | 1 sources tested; 0 technical passes; 1 complete | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-rarefilmm_com.json) at 636a1e8 |
 | series9movies.com (`scrubs:series9movies_com`) | 0 sources tested; 0 technical passes; 2 http_403 | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-series9movies_com.json) at 26f79eb |
-| tubitv.com (`scrubs:tubitv_com`) | | | | |
+| tubitv.com (`scrubs:tubitv_com`) | Incomplete check; see evidence | Incomplete check; see evidence | Incomplete; needs follow-up | [Evidence](docs/site-audits/runs/41726423062/scrubs-tubitv_com.json) at 415a577 |
 | tvids.net (`scrubs:tvids_net`) | | | | |
 | tvmovieflix.com (`scrubs:tvmovieflix_com`) | | | | |
 | tvseries.video (`scrubs:tvseries_video`) | | | | |
