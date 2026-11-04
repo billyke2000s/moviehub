@@ -320,12 +320,214 @@
         "sourceCommit": "c20b7ef6f4ca514c4769b3a4a210d1d204166185",
         "run": "https://github.com/billyke2000s/moviehub/actions/runs/41935755045",
         "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41935761675",
-        "status": "in_progress",
+        "status": "series_verified_movie_job_running",
         "scope": "Newly enabled advertised VidFast/Peachify movie routes plus existing episode routes. Local Python: 205 pass; core suites: 34 pass."
     },
     "recordingInvestigation": {
         "status": "hypothesis_not_a_playback_pass",
         "source": "https://github.com/videolan/vlc/blob/c128d1f15c3c858e452535b0573d38f22e91ff37/modules/stream_out/record.c",
         "finding": "VLC waits for video keyframes and aligns recording start timestamps across tracks. That can explain short audio extracted from an eight-second wall-clock capture. Current short MP4 captures remain unverified; no threshold or production playback setting was changed."
+    },
+    "latestSeriesRetest": {
+        "sourceCommit": "c20b7ef6f4ca514c4769b3a4a210d1d204166185",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41935755045",
+        "reviewedEpisodes": [
+            {
+                "evidenceId": "0001",
+                "provider": "downloads-anymovies.co \u00b7 vidfast vRapid",
+                "durationSeconds": 3501,
+                "width": 852,
+                "height": 480,
+                "displayedFps": [20.386001283380224, 21.010901883052526, 19.251761436935595],
+                "midpointDecoded": true,
+                "lateSeekDecoded": true,
+                "audio": {
+                    "start": {
+                        "tracks": [
+                            {
+                                "seconds": 6.5066875,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -25.51,
+                                        "activeSeconds": 6.5066875
+                                    },
+                                    {
+                                        "rmsDbfs": -25.67,
+                                        "activeSeconds": 6.5066875
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0001-start-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": true
+                    },
+                    "middle": {
+                        "tracks": [
+                            {
+                                "seconds": 6.976,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -48.15,
+                                        "activeSeconds": 6.976
+                                    },
+                                    {
+                                        "rmsDbfs": -49.65,
+                                        "activeSeconds": 6.976
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0001-middle-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": true
+                    },
+                    "late": {
+                        "tracks": [
+                            {
+                                "seconds": 7.296,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -52,
+                                        "activeSeconds": 7.296
+                                    },
+                                    {
+                                        "rmsDbfs": -52.05,
+                                        "activeSeconds": 7.296
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0001-late-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": true
+                    }
+                },
+                "visualReview": "Matching Breaking Bad S1E1 cold open with Jesse in the RV, Jesse at midpoint and Walter in the desert late in the episode. Full picture fits. Early seek captures show transient buffering; required observation windows pass."
+            },
+            {
+                "evidenceId": "0002",
+                "provider": "downloads-anymovies.co \u00b7 vidfast vBlaze",
+                "durationSeconds": 3501,
+                "width": 852,
+                "height": 480,
+                "displayedFps": [21.482918096374757, 21.17740415612756, 19.51461119366023],
+                "midpointDecoded": true,
+                "lateSeekDecoded": true,
+                "audio": {
+                    "start": {
+                        "tracks": [
+                            {
+                                "seconds": 6.3786875,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -25.62,
+                                        "activeSeconds": 6.3786875
+                                    },
+                                    {
+                                        "rmsDbfs": -25.77,
+                                        "activeSeconds": 6.3786875
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0002-start-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": true
+                    },
+                    "middle": {
+                        "tracks": [
+                            {
+                                "seconds": 7.2106875,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -46.31,
+                                        "activeSeconds": 7.2106875
+                                    },
+                                    {
+                                        "rmsDbfs": -47.17,
+                                        "activeSeconds": 7.2106875
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0002-middle-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": true
+                    },
+                    "late": {
+                        "tracks": [
+                            {
+                                "seconds": 7.2533125,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -52.01,
+                                        "activeSeconds": 7.2533125
+                                    },
+                                    {
+                                        "rmsDbfs": -52.06,
+                                        "activeSeconds": 7.2533125
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0002-late-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": true
+                    }
+                },
+                "visualReview": "Matching Breaking Bad S1E1 cold open with Jesse in the RV, Jesse at midpoint and Walter in the desert late in the episode. Full picture fits. Early seek captures show transient buffering; required observation windows pass."
+            }
+        ],
+        "totalEpisodeCandidates": 5,
+        "scope": "Opening, midpoint and late samples; not uninterrupted episode viewing or physical speakers."
+    },
+    "validationCI": {
+        "sourceCommit": "c20b7ef6f4ca514c4769b3a4a210d1d204166185",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41935761675",
+        "jobsPassed": 6,
+        "pythonTestsPassed": 205
     }
 }
