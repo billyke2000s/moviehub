@@ -33,7 +33,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | hexa (`native:hexa`) | 1 sources tested; 1 technical passes; 1 complete, 1 http_403 | 0 sources tested; 0 technical passes; 1 ReadTimeout | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-hexa.json) at fa777d7 |
 | hindmoviez (`native:hindmoviez`) | 0 sources tested; 0 technical passes; 1 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-hindmoviez.json) at f1e8b59 |
 | kisskh (`native:kisskh`) | | | | |
-| m4ufree.lat (`native:m4ufree_lat`) | | | | |
+| m4ufree.lat (`native:m4ufree_lat`) | 0 sources tested; 0 technical passes; 1 unsupported_type | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-m4ufree_lat.json) at 85f455c |
 | MeowTV (`native:meowtv`) | | | | |
 | mlsbd (`native:mlsbd`) | | | | |
 | moviebox (`native:moviebox`) | | | | |
