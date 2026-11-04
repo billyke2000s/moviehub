@@ -262,7 +262,11 @@ class CurrentSiteTests(unittest.TestCase):
             with self.subTest(family=family), patch.object(module.client, 'scrapePage',
                     side_effect=[SimpleNamespace(text=page), SimpleNamespace(text=script)]) as fetch, \
                     patch.object(module.scrape_sources, 'process', return_value=[
-                        dict(url='https://media.example/episode.m3u8', source='moviesapi.to', direct=True)]) as process:
+                        dict(url='https://media.example/episode.m3u8', source='moviesapi.to', direct=True),
+                        dict(url='https://media.example/wrong.m3u8', source='moviesapi.to', direct=True,
+                             imdb='tt9999999', season=2, episode=3),
+                        dict(url='https://media.example/wrong-episode.m3u8', source='moviesapi.to', direct=True,
+                             filename='Breaking.Bad.S02E04.mp4')]) as process:
                 result = provider.sources(key, [])
             self.assertEqual(len(result), 2)
             self.assertEqual(fetch.call_args.args[0],

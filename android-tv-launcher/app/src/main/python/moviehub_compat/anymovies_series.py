@@ -1,5 +1,6 @@
 """AnyMovies' current series cards, shared by its existing two catalogue loaders."""
 from html.parser import HTMLParser
+from moviehub_identity import matches
 import re
 from urllib.parse import parse_qs, urlencode, urlparse, urljoin
 
@@ -101,8 +102,11 @@ class SeriesLookup:
                 # The card anchor is only the default tab. Read the other tabs
                 # from the first-party script explicitly advertised by this page.
                 for script in cards.scripts[:20]:
-                    script_url = urljoin(self.base_link + '/', script)
-                    parsed_script = urlparse(script_url)
+                    try:
+                        script_url = urljoin(self.base_link + '/', script)
+                        parsed_script = urlparse(script_url)
+                    except ValueError:
+                        continue
                     if (parsed_script.scheme != 'https' or
                             parsed_script.netloc != urlparse(self.base_link).netloc or
                             parsed_script.path != '/js/series_info_box_for_movie.js' or
@@ -121,6 +125,8 @@ class SeriesLookup:
                         except Exception:
                             resolved = []
                         for item in resolved or [player]:
+                            if not matches(item, identity):
+                                continue
                             item = dict(item, **identity)
                             if not any(row['url'] == item['url'] for row in results):
                                 results.append(item)
