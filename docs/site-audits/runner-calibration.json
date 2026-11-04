@@ -1,0 +1,45 @@
+{
+    "date": "2026-11-04",
+    "sourceCommit": "91c4f86545e1ef9657619c957b7a014051ffc417",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41769264010",
+    "kind": "synthetic_runner_control",
+    "fixture": "Runner-generated 180-second 1280x720 24 fps H.264/AAC tone file, played through the actual MovieHub relay and player using the existing loopback connection seam.",
+    "testCasesPassed": 1,
+    "providerPlaybackVerified": false,
+    "windows": {
+        "opening": {
+            "targetMs": 0,
+            "elapsedMs": 20033,
+            "displayedFps": 19.417960365397096,
+            "nominalFps": 24,
+            "videoGapMs": 293,
+            "audioGapMs": 293,
+            "progressMs": 19998,
+            "audioBuffers": 935,
+            "meetsExistingMinimums": true
+        },
+        "middle": {
+            "targetMs": 90000,
+            "elapsedMs": 20018,
+            "displayedFps": 20.931161954241183,
+            "nominalFps": 24,
+            "videoGapMs": 298,
+            "audioGapMs": 515,
+            "progressMs": 19572,
+            "audioBuffers": 1005,
+            "meetsExistingMinimums": true
+        },
+        "late": {
+            "targetMs": 162000,
+            "elapsedMs": 10157,
+            "displayedFps": 21.85684749433888,
+            "nominalFps": 24,
+            "videoGapMs": 303,
+            "audioGapMs": 303,
+            "progressMs": 9817,
+            "audioBuffers": 536,
+            "meetsExistingMinimums": true
+        }
+    },
+    "interpretation": "All three control windows meet the existing audit's frame-rate, gap and progress minimums. The runner displays fewer than the encoded 24 fps; this one result does not explain every provider's lower-rate sample or prove physical-TV performance."
+}
