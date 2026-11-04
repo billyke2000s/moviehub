@@ -45,7 +45,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | peachify (`native:peachify`) | 0 sources tested; 0 technical passes; 2 http_403 | 0 sources tested; 0 technical passes; 1 http_403 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-peachify.json) at 4fabb86 |
 | projectfreetv.sx (`native:projectfreetv_sx`) | | | | |
 | rive (`native:rive`) | 18 sources tested; 0 technical passes; 2 complete | 3 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-rive.json) at 2e136f0 |
-| rogmovies (`native:rogmovies`) | | | | |
+| rogmovies (`native:rogmovies`) | 0 sources tested; 0 technical passes; 1 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-rogmovies.json) at 4b8e06e |
 | Rtally (`native:rtally`) | | | | |
 | skymovies (`native:skymovies`) | | | | |
 | toonstream (`native:toonstream`) | | | | |
