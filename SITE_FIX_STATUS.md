@@ -23,7 +23,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 | Akwam (`native:akwam`) | 2 sources tested; 0 technical passes; 2 complete | 1 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-akwam.json) at 29815b9 |
 | allmovieland (`native:allmovieland`) | 0 sources tested; 0 technical passes; 1 http_404 | 0 sources tested; 0 technical passes; 1 http_404 | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-allmovieland.json) at b17d4b5 |
 | animesalt (`native:animesalt`) | Incomplete check; see evidence | Incomplete check; see evidence | Incomplete; needs follow-up | [Evidence](docs/site-audits/runs/41763869027/native-animesalt.json) at c64069e |
-| bollyflix (`native:bollyflix`) | | | | |
+| bollyflix (`native:bollyflix`) | 0 sources tested; 0 technical passes; 1 ConnectTimeout | 0 sources tested; 0 technical passes; 1 ConnectTimeout | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/native-bollyflix.json) at 8fa7d7a |
 | cinejoy (`native:cinejoy`) | | | | |
 | dudefilms (`native:dudefilms`) | | | | |
 | fibwatch (`native:fibwatch`) | | | | |
