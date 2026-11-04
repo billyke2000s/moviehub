@@ -8,7 +8,8 @@ executed. Regressions reject executable values, duplicate keys, unsafe templates
 module URLs, retain the validated default if the bundle is unavailable, and continue after an
 individual backend fails. Current movie/TV module imports and all seven templates were checked.
 The default MoviesAPI Inception endpoint currently returns HTTP 404/result false; this repair
-restores alternative enumeration and still requires Android playback/content review.
+restores alternative enumeration. The focused pilot now checks PressPlayZ movies and series
+using that saved code; Android playback/content verification remains pending.
 
 ## Resuming the site audit — 4 November 2026
 
