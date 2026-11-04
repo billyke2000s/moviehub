@@ -61,7 +61,7 @@ Use **should be all good g** after the required repair and playback checks pass.
 | doomovies.ga (`scrubs:doomovies_ga`) | 0 sources tested; 0 technical passes; 1 http_403 | 0 sources tested; 0 technical passes; 1 unsupported_type | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-doomovies_ga.json) at d25c2be |
 | gdriveplayer.us (`scrubs:gdriveplayer_us`) | 0 sources tested; 0 technical passes; 2 no_matches | 0 sources tested; 0 technical passes; 1 no_matches | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-gdriveplayer_us.json) at 2da8e19 |
 | gogoanime.tel (`scrubs:gogoanime_tel`) | 0 sources tested; 0 technical passes; 1 unsupported_type | 0 sources tested; 0 technical passes; 1 ValueError | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-gogoanime_tel.json) at 5bf2a1b |
-| gogoanimes.to (`scrubs:gogoanimes_to`) | | | | |
+| gogoanimes.to (`scrubs:gogoanimes_to`) | 0 sources tested; 0 technical passes; 1 unsupported_type | 0 sources tested; 0 technical passes; 1 ValueError | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41726423062/scrubs-gogoanimes_to.json) at 8d39ad4 |
 | goojara.to (`scrubs:goojara_to`) | | | | |
 | iwaatch.com (`scrubs:iwaatch_com`) | | | | |
 | m4uhd.tv (`scrubs:m4uhd_tv`) | | | | |
