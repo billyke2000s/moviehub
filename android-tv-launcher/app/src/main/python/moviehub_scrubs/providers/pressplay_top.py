@@ -1,8 +1,9 @@
 from ast import literal_eval
 # -*- coding: utf-8 -*-
 
+import re
 from urllib.parse import urljoin, urlsplit
-from moviehub_compat.pressplay_page import Catalogue, Player
+from moviehub_compat.pressplay_page import Catalogue, Player, bundled_servers, template_link
 
 from six.moves.urllib_parse import parse_qs, urlencode
 
@@ -67,7 +68,33 @@ class source:
             checked += 1
             player = Player(data['tmdb'], series, data.get('season', '1'), data.get('episode', '1'))
             player.feed(client.request(page_url))
-            for link in dict.fromkeys(player.links):
+            links = list(player.links)
+            if links:
+                # The live selector's failed API falls back to these published
+                # literal configs. Read data only; never run the downloaded JS.
+                for asset in player.assets[:1]:
+                    asset_url = urljoin(page_url, asset)
+                    if not self._site_asset(asset_url):
+                        continue
+                    try:
+                        module = client.request(asset_url, referer=page_url)
+                        imports = re.findall(r'from["\'](\./app\.[A-Za-z0-9_-]+\.js)["\']', module)
+                        if not imports:
+                            continue
+                        bundle_url = urljoin(asset_url, imports[0])
+                        if not self._site_asset(bundle_url):
+                            continue
+                        configs = bundled_servers(client.request(bundle_url, referer=page_url))
+                        field = 'tvUrl' if series else 'movieUrl'
+                        for config in configs:
+                            link = template_link(config.get(field), data['tmdb'],
+                                                 data.get('season', '1'), data.get('episode', '1'))
+                            if link:
+                                links.append(link)
+                    except Exception:
+                        # Keep the independently validated page-selected player.
+                        continue
+            for link in dict.fromkeys(links):
                 try:
                     self.results.extend(scrape_sources.process(hostDict, link))
                 except Exception:
@@ -76,6 +103,12 @@ class source:
                 break
         return self.results
 
+
+    def _site_asset(self, url):
+        parsed = urlsplit(url)
+        return (parsed.scheme == 'https' and parsed.netloc == urlsplit(self.base_link).netloc and
+                re.fullmatch(r'/_astro/[A-Za-z0-9._-]+\.js', parsed.path) is not None and
+                not parsed.query and not parsed.fragment)
 
     def resolve(self, url):
         return url

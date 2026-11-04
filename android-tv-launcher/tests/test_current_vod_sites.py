@@ -301,8 +301,65 @@ class CurrentSiteTests(unittest.TestCase):
                 provider.sources(key, [])
             expected = 'https://host.example/tv/42/2/3?t=0' if series else 'https://host.example/movie/42'
             self.assertEqual([call.args[1] for call in process.call_args_list], [expected])
-            self.assertEqual(len(calls), 3)
+            self.assertEqual(len(calls), 4 if series else 3)
             self.assertFalse(any('/api/player-servers' in call or 'other.example' in call for call in calls))
+
+    def test_pressplay_reads_only_inert_published_server_arrays(self):
+        from moviehub_compat.pressplay_page import bundled_servers
+        script = ('const executable=[{id:"bad",movieUrl:steal(),tvUrl:"https://bad.example/{id}"}];'
+                  'const sources=[{id:"one",name:"One",movieUrl:"https://one.example/movie/{id}",'
+                  'tvUrl:"https://one.example/tv/{id}/{season}/{episode}",rank:1.5},'
+                  '{id:"off",movieUrl:"https://off.example/{id}",tvUrl:"https://off.example/{id}",active:false},'
+                  '{id:"two",movieUrl:"https://two.example/{id}",tvUrl:"https://two.example/{id}",active:true}];')
+        self.assertEqual([row['id'] for row in bundled_servers(script)], ['one', 'two'])
+        duplicate = 'const x=[{id:"one",id:"two",movieUrl:"https://one.example/{id}",tvUrl:"https://one.example/{id}"}];'
+        self.assertEqual(bundled_servers(duplicate), [])
+
+    def test_pressplay_tries_published_fallbacks_after_default_player_failure(self):
+        from html import escape
+        from moviehub_scrubs.providers import pressplay_top
+        catalogue = '<div class="group relative w-full"><a href="/watch/movie-fixture">Poster</a><span>2020</span><h3>Fixture</h3></div>'
+        props = dict(mediaId=[0, 42], mediaType=[0, 'movie'], iframeUrl=[0, 'https://default.example/42'])
+        page = ('<astro-island component-url="/_astro/CompactServerSelector.fixture.js"></astro-island>'
+                '<astro-island component-url="/_astro/BackdropPlayer.fixture.js" props="%s"></astro-island>' % escape(json.dumps(props), quote=True))
+        bundle = ('const choices=[{id:"one",movieUrl:"https://one.example/movie/{id}",tvUrl:"https://one.example/tv/{id}"},'
+                  '{id:"two",movieUrl:"https://two.example/movie/{id}",tvUrl:"https://two.example/tv/{id}"}];')
+        responses = [catalogue, page, 'import{x}from"./app.fixture.js";', bundle]
+        provider = pressplay_top.source()
+        key = provider.movie('tt1', '42', 'Fixture', '', [], '2020')
+        def process(hosts, link):
+            if 'default.example' in link:
+                raise ValueError('Unavailable default player')
+            return [dict(url=link)]
+        with patch.object(scraper_client, 'request', side_effect=responses), \
+                patch.object(pressplay_top.scrape_sources, 'process', side_effect=process) as resolved:
+            result = provider.sources(key, [])
+        self.assertEqual([call.args[1] for call in resolved.call_args_list],
+                         ['https://default.example/42', 'https://one.example/movie/42', 'https://two.example/movie/42'])
+        self.assertEqual(len(result), 2)
+        self.assertFalse(provider._site_asset('https://other.example/_astro/app.fixture.js'))
+        self.assertFalse(provider._site_asset('https://pressplayz.top/_astro/../../api/private.js'))
+
+    def test_pressplay_unavailable_selector_cannot_remove_validated_default(self):
+        from html import escape
+        from moviehub_scrubs.providers import pressplay_top
+        catalogue = '<div class="group relative w-full"><a href="/watch/movie-fixture">Poster</a><span>2020</span><h3>Fixture</h3></div>'
+        props = dict(mediaId=[0, 42], mediaType=[0, 'movie'], iframeUrl=[0, 'https://default.example/42'])
+        page = ('<astro-island component-url="/_astro/CompactServerSelector.fixture.js"></astro-island>'
+                '<astro-island component-url="/_astro/BackdropPlayer.fixture.js" props="%s"></astro-island>' % escape(json.dumps(props), quote=True))
+        provider = pressplay_top.source()
+        key = provider.movie('tt1', '42', 'Fixture', '', [], '2020')
+        with patch.object(scraper_client, 'request', side_effect=[catalogue, page, ValueError('Unavailable bundle')]), \
+                patch.object(pressplay_top.scrape_sources, 'process', return_value=[dict(url='https://default.example/42')]):
+            self.assertEqual(len(provider.sources(key, [])), 1)
+
+    def test_pressplay_template_links_preserve_episode_and_reject_unsafe_urls(self):
+        from moviehub_compat.pressplay_page import template_link
+        self.assertEqual(template_link('https://one.example/{id}/{season}/{episode}?t={time}', 42, 2, 3),
+                         'https://one.example/42/2/3?t=0')
+        for value in ('http://one.example/{id}', 'https://user:secret@one.example/{id}',
+                      'https://one.example:invalid/{id}', 'https://one.example/{unknown}', None):
+            self.assertIsNone(template_link(value, 42, 2, 3))
 
     def test_pressplay_rejects_inactive_malformed_or_incomplete_player_data(self):
         from html import escape

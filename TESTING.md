@@ -1,5 +1,15 @@
 # Testing
 
+## PressPlayZ advertised alternatives — 4 November 2026
+
+The 182-test Python suite and all 34 Java core suites pass. The current selector imports a
+shared module whose seven literal server choices are now read as data. No downloaded JS is
+executed. Regressions reject executable values, duplicate keys, unsafe templates and foreign
+module URLs, retain the validated default if the bundle is unavailable, and continue after an
+individual backend fails. Current movie/TV module imports and all seven templates were checked.
+The default MoviesAPI Inception endpoint currently returns HTTP 404/result false; this repair
+restores alternative enumeration and still requires Android playback/content review.
+
 ## Resuming the site audit — 4 November 2026
 
 The audit now resumes missing/incomplete movie-and-series receipts across saved runs, with
