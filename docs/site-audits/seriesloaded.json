@@ -20,5 +20,18 @@
         "newOfflineRegressionCases": 6,
         "status": "queued_in_Android_CI",
         "scope": "Real existing loader requests and source emission, episode 10 before episode 1, missing requested episode, wrong season/show, wrong movie year and literal publisher suffix."
+    },
+    "currentAttempt": {
+        "sourceCommit": "f2e887b36ff9912114abe5e50c885647ab907b1f",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41947540445",
+        "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41947547706",
+        "status": "queued",
+        "media": [
+            "movies",
+            "series"
+        ],
+        "profile": "tv_720p",
+        "playbackAuditVersion": 2,
+        "audioEvidenceVersion": 3
     }
 }
