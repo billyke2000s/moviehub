@@ -22,7 +22,7 @@ class Structure(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
-        if tag in ("div", "article", "li"):
+        if tag in ("div", "article", "li", "h3"):
             self.classes[(tag, attrs.get("class", "")[:160])] += 1
         if tag == "a":
             self.anchor = dict(text="", href=attrs.get("href", ""),
@@ -58,7 +58,7 @@ def safe_url(url):
                           if re.search(r"\.[a-zA-Z0-9]{1,5}$", parts.path) else "",
                 queryKeys=sorted(parse_qs(parts.query))[:12])
 
-def inspect(path):
+def inspect(path, depth=0):
     result = dict(page=path)
     try:
         with requests.get(ORIGIN + path, timeout=(10, 20), stream=True,
@@ -88,6 +88,16 @@ def inspect(path):
                                 id=a["id"][:100], rel=a["rel"][:100], css=a["css"][:100],
                                 target=safe_url(a["href"]))
                            for a in selected[:30]]
+        result["interactiveChallengeAdvertised"] = bool(re.search(r"captchaEnabled\\s*=\\s*true", html))
+        if depth == 0 and path.startswith("/?s="):
+            posts = [a for a in parser.links if a["rel"] == "bookmark" and
+                     re.match(r"^(?:Inception \\(2010\\)|Dune: Part Two \\(2024\\)|Breaking Bad Season 1 Episode 1\\s*[–-]\\s*7)", a["text"])]
+            result["linkedPostStructures"] = []
+            for post in posts[:2]:
+                target = urlsplit(urljoin(ORIGIN, post["href"]))
+                if target.scheme == "https" and target.netloc == urlsplit(ORIGIN).netloc:
+                    result["linkedPostStructures"].append(inspect(target.path, depth=1))
+
     except Exception as error:
         result["errorType"] = type(error).__name__
     return result
