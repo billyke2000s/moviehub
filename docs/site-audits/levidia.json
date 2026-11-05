@@ -1,8 +1,8 @@
 {
     "site": "free99:levidia_ch",
     "date": "2026-11-05",
-    "status": "native_retest_in_progress",
-    "fullPlaybackVerified": false,
+    "status": "verified_movie_and_episode_paths",
+    "fullPlaybackVerified": true,
     "siteInspection": "Current public search lists Inception (2010) and Breaking Bad (2008). Season 2 is selected with s=2; its page advertises S2E1 through S2E13, including S2E10 which collides with the previous substring test.",
     "repairs": [
         "Free99 now requests the selected season instead of the default season page.",
@@ -12,10 +12,39 @@
     "validation": {
         "pythonTests": 170,
         "coreSuites": 34,
-        "cases": "Both original loaders tested with episode 10 ordered before episode 1, wrong-season links, missing requested episodes, uppercase/padded tokens, and replacement of a previous season query."
+        "cases": "Both original loaders tested with episode 10 ordered before episode 1, wrong-season links, missing requested episodes, uppercase/padded tokens, and replacement of a previous season query.",
+        "currentAndroidCI": {
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41944476251",
+            "jobs": [
+                {
+                    "name": "free-vod-live-probe",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "vod-recovery-tests",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "apk",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "experimental-device-tests",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "signed-compatibility",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "device-tests",
+                    "conclusion": "success"
+                }
+            ]
+        }
     },
     "previousAttempt": "Run 41726423062 did not reach Levidia playback: emulator boot timed out. That incomplete report remains historical evidence.",
-    "next": "Review each returned movie and exact episode candidate; inspect actual frames and independently decoded audio, then fix remaining advertised routes rather than recording failure as completion.",
+    "next": "Continue to NaijaVault using its current advertised catalogue when the standard test titles are absent. Retain Levidia's failed routes explicitly; do not present them as working.",
     "liveRetest": {
         "sourceCommit": "df8d8f3c91c2242811a3cede68f8c26404139fbc",
         "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41760241840",
@@ -32,7 +61,7 @@
         "limits": "Only these four contact sheets were visually reviewed. All 17 candidates have machine outcomes; no whole-title uninterrupted watch or physical speaker test."
     },
     "currentAttempt": {
-        "status": "native_run_started",
+        "status": "completed_and_content_reviewed",
         "profile": "tv_720p",
         "media": [
             "movies",
@@ -49,5 +78,365 @@
             "movies": 126973113571,
             "series": 126973113850
         }
+    },
+    "latestNativeReview": {
+        "sourceCommit": "95333dd429e7ae6079ca1d2036188b57b7caa640",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41944467988",
+        "playbackAuditVersion": 2,
+        "audioEvidenceVersion": 3,
+        "profile": "tv_720p",
+        "movies": {
+            "jobId": 126973113571,
+            "candidatesTested": 8,
+            "completePasses": 1,
+            "samples": [
+                {
+                    "evidenceId": "0008",
+                    "title": "Dune: Part Two",
+                    "season": -1,
+                    "episode": -1,
+                    "durationSeconds": 9947,
+                    "expectedMinutes": 166,
+                    "dimensions": [
+                        854,
+                        480
+                    ],
+                    "advertisedQuality": "SD",
+                    "displayedFpsByPosition": {
+                        "start": 24.02417277590648,
+                        "middle": 23.728310840872016,
+                        "late": 23.402784635133802
+                    },
+                    "nominalFps": 23.976,
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "selectedAudioLanguage": "eng",
+                    "capturedAudio": {
+                        "start": {
+                            "tracks": [
+                                {
+                                    "seconds": 4.2026875,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -53.07,
+                                            "activeSeconds": 4.2026875
+                                        },
+                                        {
+                                            "rmsDbfs": -56.01,
+                                            "activeSeconds": 3.7026875
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0008-start-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "middle": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.7653125,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -32.96,
+                                            "activeSeconds": 7.7653125
+                                        },
+                                        {
+                                            "rmsDbfs": -34.45,
+                                            "activeSeconds": 7.7653125
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0008-middle-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "late": {
+                            "tracks": [
+                                {
+                                    "seconds": 4.9066875,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -41.8,
+                                            "activeSeconds": 4.9066875
+                                        },
+                                        {
+                                            "rmsDbfs": -41.88,
+                                            "activeSeconds": 4.9066875
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0008-late-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        }
+                    },
+                    "refreshes": 0,
+                    "transportErrors": [
+                        "Provider relay: SocketException",
+                        "Provider relay: IOException"
+                    ],
+                    "contentIdentityConfirmed": true
+                }
+            ],
+            "contentReview": "Dune: Part Two opening spacecraft/desert, Lady Jessica at midpoint and Feyd-Rautha late match the selected film; full picture fits and no backup-error overlay appears in reviewed frames.",
+            "remainingFailures": "Inception 0001/0005/0006/0007 have insufficient recorded audio in at least one position; 0002/0003/0004 fail midpoint seeking. None of these alternatives is certified."
+        },
+        "series": {
+            "jobId": 126973113850,
+            "candidatesTested": 8,
+            "completePasses": 2,
+            "samples": [
+                {
+                    "evidenceId": "0001",
+                    "title": "Breaking Bad",
+                    "season": 1,
+                    "episode": 1,
+                    "durationSeconds": 3486,
+                    "expectedMinutes": 58,
+                    "dimensions": [
+                        416,
+                        240
+                    ],
+                    "advertisedQuality": "SD",
+                    "displayedFpsByPosition": {
+                        "start": 24.180388666369975,
+                        "middle": 23.968371633308625,
+                        "late": 24.089248691874815
+                    },
+                    "nominalFps": 23.976,
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "selectedAudioLanguage": "unknown",
+                    "capturedAudio": {
+                        "start": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.1053125,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -23.82,
+                                            "activeSeconds": 7.1053125
+                                        },
+                                        {
+                                            "rmsDbfs": -24.5,
+                                            "activeSeconds": 7.1053125
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0001-start-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "middle": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.8948125,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -35.87,
+                                            "activeSeconds": 7.8948125000000005
+                                        },
+                                        {
+                                            "rmsDbfs": -35.93,
+                                            "activeSeconds": 7.8948125000000005
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0001-middle-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "late": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.291125,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -32.93,
+                                            "activeSeconds": 7.291125
+                                        },
+                                        {
+                                            "rmsDbfs": -32.93,
+                                            "activeSeconds": 7.291125
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0001-late-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        }
+                    },
+                    "refreshes": 0,
+                    "transportErrors": [
+                        "Provider relay: SocketException"
+                    ],
+                    "contentIdentityConfirmed": true
+                },
+                {
+                    "evidenceId": "0005",
+                    "title": "Breaking Bad",
+                    "season": 1,
+                    "episode": 1,
+                    "durationSeconds": 3486,
+                    "expectedMinutes": 58,
+                    "dimensions": [
+                        416,
+                        240
+                    ],
+                    "advertisedQuality": "720p",
+                    "displayedFpsByPosition": {
+                        "start": 24.011857707509883,
+                        "middle": 23.8713543747503,
+                        "late": 24.216665019274487
+                    },
+                    "nominalFps": 23.976,
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "selectedAudioLanguage": "unknown",
+                    "capturedAudio": {
+                        "start": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.4304375,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -22.83,
+                                            "activeSeconds": 7.4304375
+                                        },
+                                        {
+                                            "rmsDbfs": -24.43,
+                                            "activeSeconds": 7.4304375
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0005-start-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "middle": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.15175,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -35.46,
+                                            "activeSeconds": 7.15175
+                                        },
+                                        {
+                                            "rmsDbfs": -35.51,
+                                            "activeSeconds": 7.15175
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0005-middle-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "late": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.3375625,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -32.95,
+                                            "activeSeconds": 7.3375625
+                                        },
+                                        {
+                                            "rmsDbfs": -32.96,
+                                            "activeSeconds": 7.3375625
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0005-late-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        }
+                    },
+                    "refreshes": 1,
+                    "transportErrors": [
+                        "Provider relay: SocketException"
+                    ],
+                    "contentIdentityConfirmed": true
+                }
+            ],
+            "contentReview": "Breaking Bad S1E1 contacts show Jesse unconscious in the RV opening, Walter outside the RV early, Jesse at midpoint and Walter in the desert late. Normal audit controls are visible on 0005; no failure overlay. Entire picture fits.",
+            "qualityLimit": "Both passing episode variants actually render 416x240. Candidate 0005 is advertised up to 720p but uses the existing managed fallback; this is not a verified 720p result. Selected native language is unknown; captured stereo AAC tracks are tagged eng and pass the unknown-language signal rule without a fabricated selected-language claim.",
+            "remainingFailures": "0002 has a 2,835-second runtime outside the expected 58-minute range; 0003 has insufficient late audio; 0004/0008 do not decode; 0006/0007 fail smoothness. Those alternatives remain unverified."
+        },
+        "scope": "Representative movie and exact pilot routes verified at opening, midpoint and late samples, including both seeks, smooth progress and independently decoded non-silent source audio. Not uninterrupted whole-title viewing, all catalogue entries, all host buttons or physical speaker output.",
+        "physicalAudioOutputTested": false,
+        "result": "should be all good g — verified movie and episode paths; failed alternatives and actual SD quality retained"
     }
 }
