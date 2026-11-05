@@ -1,7 +1,7 @@
 {
     "site": "free99:levidia_ch",
-    "date": "2026-11-04",
-    "status": "episode_selection_repaired_all_live_candidates_failed",
+    "date": "2026-11-05",
+    "status": "native_retest_in_progress",
     "fullPlaybackVerified": false,
     "siteInspection": "Current public search lists Inception (2010) and Breaking Bad (2008). Season 2 is selected with s=2; its page advertises S2E1 through S2E13, including S2E10 which collides with the previous substring test.",
     "repairs": [
@@ -15,7 +15,7 @@
         "cases": "Both original loaders tested with episode 10 ordered before episode 1, wrong-season links, missing requested episodes, uppercase/padded tokens, and replacement of a previous season query."
     },
     "previousAttempt": "Run 41726423062 did not reach Levidia playback: emulator boot timed out. That incomplete report remains historical evidence.",
-    "next": "Investigate downstream Wootly/Luluvdo audio, seeking and smoothness failures. Exact episode parsing is repaired, but the live site is not certified.",
+    "next": "Review each returned movie and exact episode candidate; inspect actual frames and independently decoded audio, then fix remaining advertised routes rather than recording failure as completion.",
     "liveRetest": {
         "sourceCommit": "df8d8f3c91c2242811a3cede68f8c26404139fbc",
         "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41760241840",
@@ -30,5 +30,17 @@
             "series/0001 and 0002 Breaking Bad S1E1: matching pilot RV/desert and midpoint scenes; visible buffering and no-working-backup overlays."
         ],
         "limits": "Only these four contact sheets were visually reviewed. All 17 candidates have machine outcomes; no whole-title uninterrupted watch or physical speaker test."
+    },
+    "currentAttempt": {
+        "status": "queued_by_this_commit",
+        "profile": "tv_720p",
+        "media": [
+            "movies",
+            "series"
+        ],
+        "sourceNames": "all returned candidates",
+        "checks": "Unchanged playbackAuditVersion 2 and independent audioEvidenceVersion 3. Retest after matched native rendering control exposed the old 1080p software-output bottleneck; this is not a new site certification.",
+        "progress": "Redacted per-candidate heartbeats emitted during native run.",
+        "previousRepairsRetained": true
     }
 }
