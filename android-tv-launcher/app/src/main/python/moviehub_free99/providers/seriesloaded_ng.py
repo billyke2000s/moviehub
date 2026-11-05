@@ -1,4 +1,5 @@
 from ast import literal_eval
+from moviehub_compat.seriesloaded_catalogue import episode_label, movie_label
 # -*- coding: utf-8 -*-
 
 import re
@@ -103,12 +104,9 @@ class source:
                 if not links or not labels:
                     continue
                 label = client_utils.remove_tags(labels[0]).strip()
-                if 'tvshowtitle' not in data:
-                    found_year = re.search(r'\((\d{4})\)', label)
-                    clean_label = re.sub(r'\s*\(\d{4}\)', '', label)
-                    if not found_year or found_year[1] != year or not cleantitle.match_alias(clean_label, aliases):
-                        continue
-                elif cleantitle.get(search_term) != cleantitle.get(label):
+                clean_label = (episode_label(label, season, episode)
+                               if 'tvshowtitle' in data else movie_label(label, year))
+                if not clean_label or not cleantitle.match_alias(clean_label, aliases):
                     continue
                 r.append({'title': label, 'link': links[0]})
             if not r:

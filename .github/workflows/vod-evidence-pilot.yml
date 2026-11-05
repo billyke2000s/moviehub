@@ -26,8 +26,8 @@ jobs:
             fail-fast: false
             matrix:
                 route:
-                    - { provider: "free99:levidia_ch", media: movies, capture: true, source_names: "" }
-                    - { provider: "free99:levidia_ch", media: series, capture: true, source_names: "" }
+                    - { provider: "free99:seriesloaded_ng", media: movies, capture: true, source_names: "" }
+                    - { provider: "free99:seriesloaded_ng", media: series, capture: true, source_names: "" }
         env:
             ORG_GRADLE_PROJECT_moviehubAbi: x86_64
         steps:

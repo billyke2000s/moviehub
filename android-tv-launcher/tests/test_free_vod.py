@@ -658,6 +658,7 @@ from test_cinestream_chains import CineStreamChainTests
 from test_vod_sessions import SessionTests
 from test_current_vod_sites import CurrentSiteTests
 from test_anymovies_players import AnyMoviesPlayerTests
+from test_seriesloaded_catalogue import SeriesLoadedTests
 from test_native_vod_sites import NativeSiteTests
 from test_fmhy_rive import RiveTests
 from test_fmhy_movy import MovyTests

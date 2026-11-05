@@ -1,13 +1,24 @@
 {
     "site": "free99:seriesloaded_ng",
     "date": "2026-11-05",
-    "status": "current_search_and_advertised_download_inspection",
+    "status": "catalogue_selection_repaired_native_retest_queued",
     "fullPlaybackVerified": false,
     "previousReceipt": "One movie candidate and no series candidates in historical corrected-seek checking; no full certification.",
     "currentInspection": {
         "origin": "https://seriezloaded.tv",
         "checks": "Inspect current homepage, Inception/Dune catalogue search and exact episode plus show-level Breaking Bad searches. Reuse existing app request headers; never generate challenge tokens.",
-        "codeReviewFinding": "Current exact normalized episode-title comparison excludes labelled episode ranges before the existing range-handling block can run. Confirm actual advertised catalogue structure before choosing a repair."
+        "codeReviewFinding": "Current exact normalized episode-title comparison excludes labelled episode ranges before the existing range-handling block can run. Confirm actual advertised catalogue structure before choosing a repair.",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41947115300",
+        "confirmed": "Live HTTP 200 search page advertises Breaking Bad Season 1 Episode 1 – 7 (Complete). Existing exact-card equality rejected it. Live Dune search advertises Dune: Part Two (2024) – Hollywood Movie, whose suffix prevented alias matching."
     },
-    "next": "Repair observed identity/episode/hop mismatches using current advertised data, then run strict native playback, independent audio and manual content review."
+    "next": "Review current advertised post/download structure and native movie/episode evidence, fix any remaining legitimate hop or playback failure before certification.",
+    "repairs": [
+        "Accept an explicitly advertised episode range only for the exact show, requested season and contained episode, then select that exact advertised episode link.",
+        "Match movie title/year after removing only the observed Hollywood Movie publisher suffix. Different titles, years, seasons and out-of-range episodes remain rejected."
+    ],
+    "validation": {
+        "newOfflineRegressionCases": 6,
+        "status": "queued_in_Android_CI",
+        "scope": "Real existing loader requests and source emission, episode 10 before episode 1, missing requested episode, wrong season/show, wrong movie year and literal publisher suffix."
+    }
 }
