@@ -1,5 +1,15 @@
 # Status
 
+## AnyMovies movie and episode samples verified — 4 November 2026
+
+Native run 41935755045 at `c20b7ef` verifies three movie routes across Inception and
+Dune: Part Two, plus two Breaking Bad S1E1 routes. Reviewed pictures match the titles
+and fit the display; runtime, smoothness, both seeks and all three source-audio windows
+pass. All six Android CI jobs pass in run 41935761675, including 205 Python tests.
+The checklist records **should be all good g** for those supported paths. Remaining
+failed alternatives stay explicit. This is sampled playback, not every title, uninterrupted
+viewing or physical speakers. Continue with FZMovies next.
+
 ## AnyMovies movie alternatives in progress — 4 November 2026
 
 Both movie loaders now retain TMDB identity and resolve matching advertised VidFast/Peachify buttons through existing native protocols. The earlier MixDrop host repair enabled Dune playback, but both tested MP4s still fail complete audio capture. Episode routes are already verified. The new movie routes pass 205 Python tests and 34 core suites; native playback remains pending.

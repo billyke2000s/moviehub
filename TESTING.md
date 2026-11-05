@@ -1,5 +1,15 @@
 # Testing
 
+## AnyMovies movie and episode samples verified — 4 November 2026
+
+Native run 41935755045 at `c20b7ef` verifies three movie routes across Inception and
+Dune: Part Two, plus two Breaking Bad S1E1 routes. Reviewed pictures match the titles
+and fit the display; runtime, smoothness, both seeks and all three source-audio windows
+pass. All six Android CI jobs pass in run 41935761675, including 205 Python tests.
+The checklist records **should be all good g** for those supported paths. Remaining
+failed alternatives stay explicit. This is sampled playback, not every title, uninterrupted
+viewing or physical speakers. Continue with FZMovies next.
+
 ## AnyMovies movie player regression checks — 4 November 2026
 
 205 Python tests and 34 core suites pass locally. New cases cover exact movie IDs, rejecting wrong/foreign/credentialled player buttons, both catalogue loaders retaining TMDB identity, and existing native protocols receiving movie keys without episode fields. The moved diagnostic test now creates its own request scope. These tests do not establish live movie playback.

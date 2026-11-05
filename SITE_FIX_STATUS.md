@@ -10,7 +10,7 @@ New candidate receipts carry `playbackAuditVersion: 2`; lookup-only checks remai
 
 Historical checking baseline: 143 candidates tested, 16 technical sample passes across ten sites.
 All ten have individual evidence reviews; incomplete audio, failed sources and unconfirmed
-content remain explicit. The current per-site results below supersede that baseline; BnWMovies now has a verified movie route. Audio evidence version 2 requires
+content remain explicit. The current per-site results below supersede that baseline; BnWMovies has a verified movie route; AnyMovies has verified movie and episode routes. Audio evidence version 2 requires
 at least four decoded seconds per requested eight-second recording and measures partial
 signal blocks accurately; earlier tiny-fragment flags do not meet that requirement.
 Audio evidence version 3 also rejects known selected/captured language conflicts; equivalent
@@ -20,7 +20,7 @@ regional tags match, and missing language remains unknown rather than becoming a
 
 | Site / provider ID | Movie result | Series result | Status | Evidence / notes |
 | --- | --- | --- | --- | --- |
-| anymovies.co (`free99:anymovies_co`) | Inception: smooth native playback and seeks pass; complete audio evidence fails | Breaking Bad S1E1: 2 routes verify 58-minute runtime, full picture, smoothness, audio and seeking | Episode verified; movie audio/alternative-host repair in progress | [Current review](docs/site-audits/anymovies.json), playback method 2 |
+| anymovies.co (`free99:anymovies_co`) | Inception + Dune: Part Two; 3 routes pass runtime, full picture, smoothness, audio and both seeks | Breaking Bad S1E1; 2 routes pass the complete method | **should be all good g** — verified movie and episode paths; failed alternatives retained | [Current review](docs/site-audits/anymovies.json), native run 41935755045 at c20b7ef |
 | bnwmovies.com (`free99:bnwmovies_com`) | The Stranger (1946): 91-minute runtime, full picture, smooth native playback, audio and both seeks verified; 2 MP4 passes | 0 sources tested; 0 technical passes; 1 unsupported_type | **should be all good g** — verified movie route; legacy MPEG/Ogg failures retained | [Current attempts and evidence](docs/site-audits/bnwmovies.json), native run 41892016460 |
 | fzmovies.live (`free99:fzmovies_live`) | Corrected-seek check: 8 tested, 0 technical passes; real Inception/Dune frames; Dune audio at all positions; remaining FPS/late-audio/decoder failures | Movie-only adapter; unsupported_type | Partial verification; playback failures remain | [Current review](docs/site-audits/fzmovies.json), playback method 2 |
 | levidia.ch (`free99:levidia_ch`) | 7 sources tested; 0 technical passes; 2 complete | 9 sources tested; 0 technical passes; 1 complete | Checked; repair/content review pending | [Evidence](docs/site-audits/runs/41766998519/free99-levidia_ch.json) at 9a92abd |
