@@ -4,7 +4,9 @@
 
 The one-site runner downloads Ubuntu decoder packages in parallel using its preinstalled
 aria2 and SHA256 values from APT metadata. Unsafe output paths, absent hashes and
-conflicting package hashes fail closed. Verified package archives are cached immediately
+conflicting package hashes fail closed. GitHub’s fixed APT mirror-list transport expands
+to its configured HTTP mirrors; arbitrary local-file URIs remain rejected. Verified
+package archives are cached immediately
 after installation, even if later site playback fails. This addresses slow package
 transfers; it changes no production player or playback/audio acceptance criteria.
 

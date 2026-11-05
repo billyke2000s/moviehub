@@ -6,6 +6,8 @@ import sys
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
+MIRROR_PREFIX = 'mirror+file:/etc/apt/apt-mirrors.txt/'
+
 
 def requests_from(text):
     result = []
@@ -17,7 +19,8 @@ def requests_from(text):
             raise ValueError('Incomplete APT download record')
         url, name, size = fields[:3]
         target = urlsplit(url)
-        if (target.scheme not in ('http', 'https') or not target.hostname or
+        runner_mirror = url.startswith(MIRROR_PREFIX) and not target.query
+        if (not runner_mirror and (target.scheme not in ('http', 'https') or not target.hostname) or
                 target.username or target.password or target.fragment):
             raise ValueError('Unexpected package URL')
         if (not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9.+:%_~-]*\.deb', name) or
@@ -27,7 +30,27 @@ def requests_from(text):
     return result
 
 
-def download_plan(requests, metadata):
+def download_urls(url, mirror_list=None):
+    if not url.startswith(MIRROR_PREFIX):
+        return [url]
+    if mirror_list is None:
+        mirror_list = Path('/etc/apt/apt-mirrors.txt').read_text()
+    suffix = url[len(MIRROR_PREFIX):]
+    urls = []
+    for line in mirror_list.splitlines():
+        fields = line.split('#', 1)[0].split()
+        if not fields:
+            continue
+        mirror = urlsplit(fields[0])
+        if (mirror.scheme in ('http', 'https') and mirror.hostname and
+                not mirror.username and not mirror.password and not mirror.query and not mirror.fragment):
+            urls.append(fields[0].rstrip('/') + '/' + suffix)
+    if not urls:
+        raise ValueError('No HTTP package mirror in the fixed runner list')
+    return urls
+
+
+def download_plan(requests, metadata, mirror_list=None):
     hashes = {}
     for paragraph in metadata.split('\n\n'):
         fields = dict(line.split(': ', 1) for line in paragraph.splitlines()
@@ -42,7 +65,8 @@ def download_plan(requests, metadata):
                                 if path.endswith('/' + filename)))
         if len(matches) != 1:
             raise ValueError('Missing or ambiguous signed SHA256 package metadata')
-        lines.extend((url, '  out=' + name, '  checksum=sha-256=' + matches.pop()))
+        lines.extend(('\t'.join(download_urls(url, mirror_list)),
+                      '  out=' + name, '  checksum=sha-256=' + matches.pop()))
     return '\n'.join(lines) + ('\n' if lines else '')
 
 

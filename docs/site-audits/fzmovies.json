@@ -79,13 +79,24 @@
         "sourceScope": "Existing exact-IMDb loader and all returned Inception/Dune candidates. Current controls established an output-rendering limit on the older 1080p software runner; native 720p output leaves source quality unchanged.",
         "progress": "Per-source redacted progress checkpoints are now emitted while the opt-in test runs. They are progress markers, not playback certification.",
         "series": "Existing movie-only capability remains explicit; no fabricated episode support.",
-        "setupRepair": "Parallelize downloads with the runner-provided aria2, require each SHA256 from signed APT metadata, and cache verified package archives before playback. The cold-cache setup has a twenty-minute bound; all playback/audio thresholds remain unchanged."
+        "setupRepair": "Parallelize downloads with the runner-provided aria2, require each SHA256 from signed APT metadata, and cache verified package archives before playback. The cold-cache setup has a twenty-minute bound; all playback/audio thresholds remain unchanged. The runner mirror-list format is expanded only from its fixed /etc/apt/apt-mirrors.txt file; arbitrary local-file URLs stay rejected. Six metadata tests pass."
     },
     "activeRetest": {
-        "sourceCommit": "786a6e825e0a39edff4a93a73df547241223e475",
-        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41938601459",
-        "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41938610900",
-        "status": "setup_failed_before_playback",
-        "reason": "APT package transfers from the Ubuntu mirror exceeded the eight-minute tool-setup bound; no native site playback took place."
-    }
+        "status": "pending_restart_with_runner_mirror_support"
+    },
+    "previousSetupAttempts": [
+        {
+            "sourceCommit": "786a6e825e0a39edff4a93a73df547241223e475",
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41938601459",
+            "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41938610900",
+            "status": "setup_failed_before_playback",
+            "reason": "APT package transfers from the Ubuntu mirror exceeded the eight-minute tool-setup bound; no native site playback took place."
+        },
+        {
+            "sourceCommit": "06fe171fb642f08a092ff3612cf067fb5333c4f2",
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41941292730",
+            "status": "setup_failed_before_playback",
+            "reason": "The new downloader rejected GitHub runner mirror+file URIs. Support for the fixed runner mirror file is now covered by regression tests."
+        }
+    ]
 }

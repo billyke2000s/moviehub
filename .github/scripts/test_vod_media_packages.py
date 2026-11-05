@@ -31,6 +31,24 @@ class PackagePlanTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             download_plan([(self.uri, 'pkg_1_amd64.deb')], metadata)
 
+    def test_runner_mirror_transport_preserves_package_path_and_checksum(self):
+        url = 'mirror+file:/etc/apt/apt-mirrors.txt/' + self.filename
+        requests = requests_from("'%s' pkg_1_amd64.deb 42 MD5Sum:old\n" % url)
+        metadata = 'Filename: %s\nSHA256: %s\n' % (self.filename, 'a' * 64)
+        mirrors = 'http://azure.archive.ubuntu.com/ubuntu\nhttps://archive.ubuntu.com/ubuntu\n'
+        plan = download_plan(requests, metadata, mirrors)
+        self.assertIn('http://azure.archive.ubuntu.com/ubuntu/' + self.filename, plan)
+        self.assertIn('\thttps://archive.ubuntu.com/ubuntu/' + self.filename, plan)
+        self.assertIn('checksum=sha-256=' + 'a' * 64, plan)
+
+    def test_other_local_mirror_files_and_credentialled_mirrors_are_rejected(self):
+        with self.assertRaises(ValueError):
+            requests_from("'mirror+file:/tmp/private/pool/pkg.deb' pkg_1_amd64.deb 42 MD5Sum:old")
+        metadata = 'Filename: %s\nSHA256: %s\n' % (self.filename, 'a' * 64)
+        with self.assertRaises(ValueError):
+            download_plan([('mirror+file:/etc/apt/apt-mirrors.txt/' + self.filename, 'pkg_1_amd64.deb')],
+                          metadata, 'https://user:pass@archive.ubuntu.com/ubuntu')
+
 
 if __name__ == '__main__':
     unittest.main()

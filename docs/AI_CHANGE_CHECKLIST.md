@@ -20,6 +20,11 @@ Record the relevant evidence in the PR body; do not turn this into a new user ap
 - Keep production ARM32 and ARM64 in one APK; preserve the explicit emulator override.
 - Keep package name, signing identity, update paths and database migration compatibility.
 - Format changed code and run `git diff --check`.
+- For partial Git data API updates, read `base_tree_sha` from the current parent in the same
+  operation; reject a missing or invalid base instead of creating a replacement repository tree.
+- Before moving the branch, verify that its expected root folders and unchanged app/provider
+  trees are preserved, and that the diff contains only intended paths. Read the saved tree back
+  after publishing the commit.
 - Run meaningful checks appropriate to the change and record actual outcomes.
 - Update matching docs and version notes without overwriting historical evidence.
 - Open a PR with a concrete description and validation results.

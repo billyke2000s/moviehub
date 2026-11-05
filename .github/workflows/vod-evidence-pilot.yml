@@ -50,7 +50,7 @@ jobs:
               id: decoder-cache
               uses: actions/cache/restore@v4
               with:
-                  path: ~/.cache/moviehub-vod-debs
+                  path: ~/.cache/moviehub-vod-debs/*.deb
                   key: vod-debs-${{ runner.os }}-${{ runner.arch }}-v1
             - name: Prepare bounded media-sample decoder
               timeout-minutes: 20
@@ -81,7 +81,7 @@ jobs:
               if: steps.decoder-cache.outputs.cache-hit != 'true'
               uses: actions/cache/save@v4
               with:
-                  path: ~/.cache/moviehub-vod-debs
+                  path: ~/.cache/moviehub-vod-debs/*.deb
                   key: vod-debs-${{ runner.os }}-${{ runner.arch }}-v1
             - name: Capture rendered video and native media samples
               uses: reactivecircus/android-emulator-runner@v2
