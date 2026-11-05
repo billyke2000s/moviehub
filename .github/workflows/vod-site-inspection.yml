@@ -1,0 +1,22 @@
+name: Inspect current NaijaVault public page structure
+on:
+    push:
+        branches: [fix/all-vod-site-audit]
+        paths:
+            - ".github/workflows/vod-site-inspection.yml"
+            - ".github/scripts/vod_site_inspection.py"
+    workflow_dispatch:
+permissions:
+    contents: read
+jobs:
+    inspect:
+        runs-on: ubuntu-latest
+        timeout-minutes: 6
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+            - run: python -m pip install requests
+            - name: Inspect bounded public HTML without logging media URLs
+              run: python .github/scripts/vod_site_inspection.py

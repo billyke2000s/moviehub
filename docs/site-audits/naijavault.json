@@ -1,0 +1,16 @@
+{
+    "site": "free99:naijavault_com",
+    "date": "2026-11-05",
+    "status": "current_catalogue_and_parser_inspection",
+    "fullPlaybackVerified": false,
+    "previousReceipts": "Standard Inception/Dune Part Two/Breaking Bad titles returned no matches; that does not establish the entire catalogue is broken.",
+    "currentInspection": {
+        "pages": [
+            "https://www.naijavault.com/dune-part-one-2021/",
+            "https://www.naijavault.com/red-eye-season-1-complete-tvseries/"
+        ],
+        "findings": "Public catalogue advertises Dune: Part One (2021) and Red Eye Season 1 with explicit download/episode links. Inspect current search and anchor structure before selecting corresponding metadata-backed native test cases.",
+        "proofLimit": "No playback claim from page contents. Current redacted structure inspection uses fixed public pages with bounded bodies, request timeouts and no emitted media URLs or cookies."
+    },
+    "next": "Repair observed parser/hop mismatches using actual advertised links, test exact identity/episode selection, then run native playback with full independent audio and content review."
+}
