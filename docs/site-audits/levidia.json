@@ -32,7 +32,7 @@
         "limits": "Only these four contact sheets were visually reviewed. All 17 candidates have machine outcomes; no whole-title uninterrupted watch or physical speaker test."
     },
     "currentAttempt": {
-        "status": "queued_by_this_commit",
+        "status": "native_run_started",
         "profile": "tv_720p",
         "media": [
             "movies",
@@ -41,6 +41,13 @@
         "sourceNames": "all returned candidates",
         "checks": "Unchanged playbackAuditVersion 2 and independent audioEvidenceVersion 3. Retest after matched native rendering control exposed the old 1080p software-output bottleneck; this is not a new site certification.",
         "progress": "Redacted per-candidate heartbeats emitted during native run.",
-        "previousRepairsRetained": true
+        "previousRepairsRetained": true,
+        "sourceCommit": "95333dd429e7ae6079ca1d2036188b57b7caa640",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41944467988",
+        "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41944476251",
+        "jobs": {
+            "movies": 126973113571,
+            "series": 126973113850
+        }
     }
 }
