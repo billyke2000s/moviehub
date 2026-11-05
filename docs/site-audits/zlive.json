@@ -1,0 +1,50 @@
+{
+    "site": "ZLive",
+    "date": "2026-11-04",
+    "status": "current_website_backup_video_verified_app_chain_incomplete",
+    "fullPlaybackVerified": false,
+    "websiteCheck": {
+        "catalogueChannels": 256,
+        "primary": {
+            "channel": "Sky Sports F1 FHD",
+            "page": "https://zlive.st/watch/skysportsf1-uk2",
+            "result": "Site player displayed Stream unavailable: networkError/manifestLoadError; video had zero dimensions and no playback progress."
+        },
+        "backup": {
+            "channel": "Sky Sports F1 FHD Backup",
+            "page": "https://zlive.st/watch/skysportsf1-uk3",
+            "dimensions": [
+                1920,
+                1080
+            ],
+            "observedClockSeconds": [
+                85.481775,
+                156.869628,
+                330.789903
+            ],
+            "readyState": 4,
+            "contentReview": "Actual Sky Sports F1 interview footage with presenters and a racing driver; no site-message substitute visible.",
+            "audioSignalVerified": false
+        }
+    },
+    "repair": {
+        "pullRequest": "https://github.com/billyke2000s/moviehub/pull/210",
+        "sourceCommit": "a0ba6a71f546965049fd157a0b59d1c8d919d6b8",
+        "integration": "Saved on the separate sports repair branch, not merged into main or the VOD branch."
+    },
+    "protocolReplay": {
+        "implementation": "Owned repair-branch zlive.js, executed with Node crypto and a restricted curl HTTP seam; not the Android/Rhino/relay runtime.",
+        "catalogueHttp": 200,
+        "ticketHttp": 200,
+        "resolveHttp": 200,
+        "resolvedLocation": true,
+        "backupMediaHttp": 403,
+        "stoppedOnMediaRefusal": true
+    },
+    "limitations": [
+        "Browser video progress does not establish working programme audio.",
+        "Direct media request was refused, so fresh production-relay decoding and sustained app playback remain unverified.",
+        "One working website backup does not certify all channels."
+    ],
+    "next": "Verify the repaired Android source-to-relay playback, actual programme audio and long-session behavior; preserve the primary failure instead of marking the whole site good."
+}

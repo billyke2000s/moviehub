@@ -1,0 +1,74 @@
+name: Publish MovieHub 1.0.18 ARM compatibility update
+on:
+    push:
+        branches: [main]
+        paths: [".github/workflows/release-moviehub-1.0.18.yml"]
+permissions:
+    contents: read
+    actions: write
+jobs:
+    dispatch:
+        if: github.repository == 'billyke2000s/moviehub'
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        steps:
+            - name: Dispatch the existing signed publisher for this release commit
+              uses: actions/github-script@v8
+              with:
+                  script: |
+                      const {owner, repo} = context.repo;
+                      const {data: main} = await github.rest.repos.getBranch({owner, repo, branch: 'main'});
+                      if (main.commit.sha !== context.sha) throw new Error('Main moved before release dispatch');
+                      await github.rest.actions.createWorkflowDispatch({
+                        owner, repo, workflow_id: 'publish-android-launcher.yml', ref: 'main',
+                        inputs: {version_code: '118', version_name: '1.0.18'}
+                      });
+                      core.notice('Dispatched standard publisher for MovieHub 1.0.18 (118)');
+    release-page:
+        needs: dispatch
+        runs-on: ubuntu-latest
+        timeout-minutes: 35
+        steps:
+            - name: Require successful signed publication from this commit
+              uses: actions/github-script@v8
+              with:
+                  script: |
+                      const {owner, repo} = context.repo;
+                      let passed = false;
+                      for (let attempt = 0; attempt < 120; attempt++) {
+                        const {data: runs} = await github.rest.actions.listWorkflowRuns({
+                          owner, repo, workflow_id: 'publish-android-launcher.yml',
+                          head_sha: context.sha, event: 'workflow_dispatch', per_page: 10
+                        });
+                        const run = runs.workflow_runs.find(run => run.head_sha === context.sha);
+                        if (run?.status === 'completed') {
+                          if (run.conclusion !== 'success') throw new Error('Signed publication did not pass');
+                          passed = true;
+                          break;
+                        }
+                        core.info('Waiting for signed publication of the ARM32/ARM64 APK');
+                        await new Promise(resolve => setTimeout(resolve, 15000));
+                      }
+                      if (!passed) throw new Error('Signed publication did not complete');
+            - name: Verify the published feed version
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
+              run: |
+                  gh release download android-tv-latest --pattern update.json --dir "$RUNNER_TEMP/moviehub-118-feed"
+                  python - <<'PY'
+                  import json,os,pathlib
+                  manifest=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'moviehub-118-feed/update.json').read_text())
+                  if (manifest['packageName'],manifest['versionCode'],manifest['versionName']) != ('local.tv.home',118,'1.0.18'):
+                      raise SystemExit('Updater feed is not MovieHub 1.0.18')
+                  PY
+            - name: Dispatch the existing numbered-release copier
+              uses: actions/github-script@v8
+              with:
+                  script: |
+                      const {owner, repo} = context.repo;
+                      await github.rest.actions.createWorkflowDispatch({
+                        owner, repo, workflow_id: 'release-android-launcher.yml', ref: 'main',
+                        inputs: {notes: ''}
+                      });
+                      core.notice('Dispatched the numbered MovieHub 1.0.18 release page');

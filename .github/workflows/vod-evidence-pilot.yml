@@ -1,0 +1,100 @@
+name: VOD single-site rendered content and captured source audio
+on:
+    push:
+        branches: [fix/all-vod-site-audit]
+        paths:
+            - ".github/workflows/vod-evidence-pilot.yml"
+            - ".github/scripts/vod-evidence-audit.sh"
+            - ".github/scripts/vod-evidence-mode.sh"
+            - "android-tv-launcher/tests/review-vod-evidence.py"
+            - "android-tv-launcher/app/src/androidTest/java/local/tv/home/VodAuditEvidence.java"
+            - "android-tv-launcher/app/src/androidTest/java/local/tv/home/FreeVodLiveAuditTest.java"
+            - "android-tv-launcher/app/src/main/python/**"
+    workflow_dispatch:
+concurrency:
+    group: vod-evidence-pilot-${{ github.ref }}
+    cancel-in-progress: true
+permissions:
+    contents: read
+jobs:
+    evidence:
+        runs-on: ubuntu-latest
+        timeout-minutes: 75
+        strategy:
+            fail-fast: false
+            matrix:
+                route:
+                    - { provider: "free99:fzmovies_live", media: movies, capture: true, source_names: "" }
+        env:
+            ORG_GRADLE_PROJECT_moviehubAbi: x86_64
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/setup-java@v5
+              with:
+                  distribution: temurin
+                  java-version: "17"
+            - uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+            - run: python -m pip install Pillow
+            - uses: android-actions/setup-android@v4
+              with:
+                  packages: platform-tools
+            - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'build-tools;36.0.0' 'ndk;27.2.12479018'
+            - uses: gradle/actions/setup-gradle@v5
+              with:
+                  gradle-version: "9.6.0"
+            - name: Prepare bounded media-sample decoder
+              timeout-minutes: 8
+              run: |
+                  if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+                    sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+                    sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends ffmpeg
+                  fi
+                  sudo chmod 666 /dev/kvm
+            - name: Capture rendered video and native media samples
+              uses: reactivecircus/android-emulator-runner@v2
+              with:
+                  api-level: 28
+                  arch: x86_64
+                  profile: tv_720p
+                  cores: 4
+                  ram-size: 4096M
+                  emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -noaudio
+                  disable-animations: true
+                  script: |
+                      adb shell wm size
+                      adb shell wm density
+                      VOD_SOURCE_LIMIT=200 VOD_SAMPLE_SECONDS=20 VOD_STOP_AFTER_VERIFIED=false bash .github/scripts/vod-evidence-mode.sh '${{ matrix.route.capture }}' 0 1 '${{ matrix.route.provider }}' '${{ matrix.route.media }}' '${{ matrix.route.source_names }}'
+            - name: Expose bounded review frames in diagnostics
+              if: always()
+              run: |
+                  python - <<'PY'
+                  import base64
+                  import io
+                  import json
+                  from pathlib import Path
+                  from PIL import Image
+                  report = Path('vod-evidence/review.jsonl')
+                  if report.is_file():
+                      for line in report.read_text().splitlines():
+                          row = json.loads(line)
+                          if row.get('kind') == 'playback':
+                              fields = ('evidenceId', 'verification', 'capturedSourceAudio', 'audioEvidenceVersion', 'physicalAudioOutputTested')
+                              print('VOD_REVIEW_SUMMARY ' + json.dumps({key: row.get(key) for key in fields}))
+                  for path in sorted(Path('vod-evidence').glob('*-contact.jpg'))[:8]:
+                      with Image.open(path) as frame:
+                          frame.thumbnail((960, 660))
+                          encoded = io.BytesIO()
+                          frame.convert('RGB').save(encoded, format='JPEG', quality=65)
+                      if len(encoded.getvalue()) <= 100000:
+                          print('VOD_REVIEW_IMAGE ' + path.stem + ' ' + base64.b64encode(encoded.getvalue()).decode('ascii'))
+                  PY
+            - uses: actions/upload-artifact@v6
+              if: always()
+              with:
+                  name: rendered-vod-evidence-${{ strategy.job-index }}-${{ matrix.route.media }}
+                  path: |
+                      vod-live-audit.jsonl
+                      vod-evidence/
+                  retention-days: 7

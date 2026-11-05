@@ -1,0 +1,42 @@
+{
+    "site": "free99:fzmovies_live",
+    "sourceCommit": "57881d6573cf013621ef49e1cd1ce10c9d56dbf8",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41726423062",
+    "fullPlaybackVerified": false,
+    "contentReview": "pending",
+    "media": {
+        "movies": {
+            "complete": true,
+            "lookupOutcomes": {
+                "complete": 2
+            },
+            "candidatesTested": 8,
+            "playbackOutcomes": {
+                "playback_stall_or_audio_output_unverified": 3,
+                "no_decoded_video": 4,
+                "verified": 1
+            },
+            "technicalPasses": 1,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {
+                "technical_failure": 7,
+                "needs_content_review": 1
+            },
+            "candidatesAwaitingContentReview": 1,
+            "fullPlaybackVerified": false
+        },
+        "series": {
+            "complete": true,
+            "lookupOutcomes": {
+                "unsupported_type": 1
+            },
+            "candidatesTested": 0,
+            "playbackOutcomes": {},
+            "technicalPasses": 0,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {},
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        }
+    }
+}

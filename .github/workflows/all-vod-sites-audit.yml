@@ -1,0 +1,140 @@
+name: Every enabled VOD site — individual saved checkpoints
+on:
+    push:
+        branches: [fix/all-vod-site-audit]
+        paths:
+            - "android-tv-launcher/tests/site-audit-checkpoint.py"
+            - "android-tv-launcher/tests/site-audit-queue.py"
+            - "android-tv-launcher/tests/run-live-vod-audit.sh"
+            - "android-tv-launcher/tests/review-vod-evidence.py"
+            - "android-tv-launcher/app/src/androidTest/java/local/tv/home/FreeVodLiveAuditTest.java"
+            - "android-tv-launcher/app/src/androidTest/java/local/tv/home/VodAuditEvidence.java"
+            - "android-tv-launcher/app/src/androidTest/assets/vod-audit-cases.json"
+            - ".github/workflows/all-vod-sites-audit.yml"
+            - ".github/scripts/audit-one-vod-site.sh"
+            - ".github/scripts/save-site-audit-checkpoint.cjs"
+    workflow_dispatch:
+        inputs:
+            fresh:
+                description: Recheck all 74 sites instead of resuming unfinished checks
+                type: boolean
+                default: false
+concurrency:
+    group: all-vod-sites-audit-${{ github.ref }}
+    cancel-in-progress: true
+permissions:
+    contents: read
+jobs:
+    inventory:
+        runs-on: ubuntu-latest
+        outputs:
+            sites: ${{ steps.inventory.outputs.sites }}
+            pending: ${{ steps.inventory.outputs.pending }}
+            has_work: ${{ steps.inventory.outputs.has_work }}
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+            - run: python -m pip install requests==2.32.5 six==1.17.0
+            - name: Verify checkpoint handling before starting the queue
+              run: |
+                  python android-tv-launcher/tests/test_free_vod.py
+                  node --test .github/scripts/test-save-site-audit-checkpoint.cjs
+                  bash -n .github/scripts/audit-one-vod-site.sh
+            - id: inventory
+              name: Resume missing or incomplete checks from saved receipts
+              env:
+                  AUDIT_FRESH: ${{ inputs.fresh || false }}
+              run: python android-tv-launcher/tests/site-audit-queue.py >> "$GITHUB_OUTPUT"
+    site:
+        needs: inventory
+        if: needs.inventory.outputs.has_work == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 100
+        permissions:
+            contents: write
+        strategy:
+            fail-fast: true
+            max-parallel: 3
+            matrix:
+                site: ${{ fromJSON(needs.inventory.outputs.pending) }}
+        env:
+            ORG_GRADLE_PROJECT_moviehubAbi: x86_64
+        steps:
+            - uses: actions/checkout@v5
+              with:
+                  # Later jobs pick up each repair saved before their site starts.
+                  # Source pushes do not restart the whole inventory from zero.
+                  ref: fix/all-vod-site-audit
+            - id: source
+              run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            - uses: actions/setup-java@v5
+              with:
+                  distribution: temurin
+                  java-version: "17"
+            - uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+            - uses: android-actions/setup-android@v4
+              with:
+                  packages: platform-tools
+            - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'build-tools;36.0.0' 'ndk;27.2.12479018'
+            - uses: gradle/actions/setup-gradle@v5
+              with:
+                  gradle-version: "9.6.0"
+            - name: Install bounded media evidence decoder
+              run: |
+                  python -m pip install Pillow
+                  sudo apt-get update -qq
+                  sudo apt-get install -y -qq ffmpeg
+                  sudo chmod 666 /dev/kvm
+            - name: Check this site's movies and series with the existing player
+              # Playback failures are saved outcomes. A failed evidence upload or
+              # git checkpoint still fails this job and stops the remaining sites.
+              continue-on-error: true
+              uses: reactivecircus/android-emulator-runner@v2
+              with:
+                  api-level: 28
+                  arch: x86_64
+                  profile: tv_1080p
+                  cores: 4
+                  ram-size: 4096M
+                  emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -noaudio
+                  disable-animations: true
+                  script: bash .github/scripts/audit-one-vod-site.sh '${{ matrix.site }}'
+            - name: Prepare permanent redacted checkpoint
+              if: always()
+              env:
+                  AUDIT_SITE: ${{ matrix.site }}
+                  AUDIT_SOURCE_SHA: ${{ steps.source.outputs.sha }}
+              run: |
+                  mkdir -p site-audit
+                  python android-tv-launcher/tests/site-audit-checkpoint.py site-audit "$AUDIT_SITE" "$AUDIT_SOURCE_SHA" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            - name: Upload this site's playback evidence immediately
+              if: always()
+              uses: actions/upload-artifact@v6
+              with:
+                  name: site-evidence-${{ strategy.job-index }}
+                  path: site-audit/
+                  retention-days: 7
+                  if-no-files-found: error
+            - name: Save this site's report and checklist row to GitHub
+              if: always()
+              uses: actions/github-script@v8
+              with:
+                  script: |
+                      const save = require('./.github/scripts/save-site-audit-checkpoint.cjs');
+                      await save({github, context, core});
+    review-gate:
+        needs: [inventory, site]
+        if: always() && needs.inventory.result == 'success' && !cancelled()
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+              with:
+                  ref: fix/all-vod-site-audit
+            - name: Distinguish saved checkpoints from completed playback verification
+              env:
+                  EXPECTED_SITES: ${{ needs.inventory.outputs.sites }}
+              run: python android-tv-launcher/tests/site-audit-queue.py review

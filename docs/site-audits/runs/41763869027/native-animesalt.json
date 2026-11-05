@@ -1,0 +1,31 @@
+{
+    "site": "native:animesalt",
+    "sourceCommit": "c64069e445769d71380467dc70c9fc22819f532c",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41763869027",
+    "fullPlaybackVerified": false,
+    "contentReview": "pending",
+    "media": {
+        "movies": {
+            "complete": false,
+            "lookupOutcomes": {},
+            "candidatesTested": 0,
+            "playbackOutcomes": {},
+            "technicalPasses": 0,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {},
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        },
+        "series": {
+            "complete": false,
+            "lookupOutcomes": {},
+            "candidatesTested": 0,
+            "playbackOutcomes": {},
+            "technicalPasses": 0,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {},
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        }
+    }
+}

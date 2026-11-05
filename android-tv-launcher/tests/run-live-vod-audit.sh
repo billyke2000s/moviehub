@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+shard=${1:?Audit shard required}
+shards=${2:?Audit shard count required}
+providers=${3:-}
+media=${4:-movies}
+source_names=${5:-}
+series=false
+if [ "$media" = series ]; then
+    series=true
+elif [ "$media" != movies ]; then
+    echo 'Media must be movies or series' >&2
+    exit 1
+fi
+gradle -p android-tv-launcher --no-daemon assembleDebug assembleDebugAndroidTest
+# connectedDebugAndroidTest uninstalls the app, destroying its private report before collection.
+# Install and invoke instrumentation explicitly, then validate the report before declaring success.
+adb install -r android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk
+adb install -r android-tv-launcher/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+audit_args=(-e vodStopAfterVerified "${VOD_STOP_AFTER_VERIFIED:-false}" -e vodSourceLimit "${VOD_SOURCE_LIMIT:-200}" -e vodSampleSeconds "${VOD_SAMPLE_SECONDS:-20}")
+audit_args+=(-e vodCaptureEvidence "${VOD_CAPTURE_EVIDENCE:-false}")
+if [ -n "$providers" ]; then audit_args+=(-e vodProviders "$providers"); fi
+if [ -n "$source_names" ]; then audit_args+=(-e vodSourceNames "$source_names"); fi
+if [ -n "${VOD_CINESTREAM_BACKENDS:-}" ]; then
+    audit_args+=(-e vodCineStreamAllBackends true -e vodCineStreamBackends "$VOD_CINESTREAM_BACKENDS")
+fi
+instrumentation=(am instrument -w -r \
+  -e class local.tv.home.FreeVodLiveAuditTest \
+  -e vodLiveAudit true -e vodShard "$shard" -e vodShards "$shards" \
+  -e vodSeries "$series" \
+  "${audit_args[@]}" \
+  local.tv.home.test/local.tv.home.MovieHubTestRunner)
+# adb joins separate arguments into a remote shell command. Quote on that remote
+# boundary too, otherwise a source such as "Vidy Vegas" becomes a runner argument.
+remote_command=$(python -c 'import shlex, sys; print(shlex.join(sys.argv[1:]))' "${instrumentation[@]}")
+adb shell "$remote_command"
+adb exec-out run-as local.tv.home cat files/vod-live-audit.jsonl > vod-live-audit.jsonl
+python - "$shard" "$shards" <<'PY'
+import json, pathlib, sys
+rows = [json.loads(line) for line in pathlib.Path('vod-live-audit.jsonl').read_text().splitlines()]
+if not rows or rows[-1] != dict(kind='finished', shard=int(sys.argv[1]), shards=int(sys.argv[2])):
+    raise SystemExit('Incomplete audit: missing final shard marker')
+for row in rows:
+    print(json.dumps(row))
+PY

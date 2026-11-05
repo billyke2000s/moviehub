@@ -1,0 +1,41 @@
+{
+    "site": "scrubs:iwaatch_com",
+    "sourceCommit": "09b957f85d6386b223057173b285439f17bdca78",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41726423062",
+    "fullPlaybackVerified": false,
+    "contentReview": "pending",
+    "media": {
+        "movies": {
+            "complete": true,
+            "lookupOutcomes": {
+                "complete": 1,
+                "no_matches": 1
+            },
+            "candidatesTested": 2,
+            "playbackOutcomes": {
+                "verified": 2
+            },
+            "technicalPasses": 2,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {
+                "needs_content_review": 1,
+                "audio_signal_or_selection_unverified": 1
+            },
+            "candidatesAwaitingContentReview": 1,
+            "fullPlaybackVerified": false
+        },
+        "series": {
+            "complete": true,
+            "lookupOutcomes": {
+                "unsupported_type": 1
+            },
+            "candidatesTested": 0,
+            "playbackOutcomes": {},
+            "technicalPasses": 0,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {},
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        }
+    }
+}

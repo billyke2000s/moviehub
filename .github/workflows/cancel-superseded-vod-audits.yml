@@ -1,0 +1,42 @@
+name: Cancel superseded VOD audit runs
+on:
+    push:
+        branches: [fix/all-vod-site-audit]
+        paths: [".github/workflows/cancel-superseded-vod-audits.yml"]
+    workflow_dispatch:
+permissions:
+    contents: read
+    actions: write
+jobs:
+    cleanup:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/github-script@v8
+              with:
+                  script: |
+                      const branch = 'fix/all-vod-site-audit';
+                      if (context.ref !== `refs/heads/${branch}`) throw new Error('Audit branch only');
+                      const names = new Set(['CineStream candidate playback evidence', 'Audit new FMHY movie sources']);
+                      const {owner, repo} = context.repo;
+                      let count = 0;
+                      for (const status of ['queued', 'in_progress']) {
+                          const candidates = [];
+                          for (let page = 1; page <= 10; page++) {
+                              const result = await github.rest.actions.listWorkflowRunsForRepo({owner, repo, branch, status, per_page: 100, page});
+                              candidates.push(...result.data.workflow_runs);
+                              if (result.data.workflow_runs.length < 100) break;
+                              if (page === 10) throw new Error('Unexpected audit backlog size');
+                          }
+                          for (const run of candidates) {
+                              if (run.head_branch !== branch || run.head_sha === context.sha || !names.has(run.name)) continue;
+                              try {
+                                  await github.rest.actions.cancelWorkflowRun({owner, repo, run_id: run.id});
+                                  core.notice(`Requested cancellation of superseded ${run.name} ${run.id}`);
+                                  count++;
+                              } catch (error) {
+                                  if (![404, 409].includes(error.status)) throw error;
+                                  core.notice(`Run ${run.id} already finished or changed state`);
+                              }
+                          }
+                      }
+                      core.notice(`Cancellation requested for ${count} superseded audit runs. Current checks and site checkpoint queue retained.`);

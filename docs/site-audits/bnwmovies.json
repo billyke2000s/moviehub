@@ -1,0 +1,716 @@
+{
+    "site": "free99:bnwmovies_com",
+    "date": "2026-11-04",
+    "status": "verified_movie_route",
+    "existingAdapters": ["free99:bnwmovies_com", "scrubs:bnwmovies_com"],
+    "siteInspection": "Current The Stranger page explicitly identifies its target as The Stranger (1946) and advertises Ogg and MP4 formats. Recommendation text is excluded from identity matching.",
+    "defect": "Both existing loaders accepted a same-named film without checking the explicit target-page year.",
+    "repair": "Reject conflicting target title/year metadata before extracting sources; retain both advertised formats and the existing unknown-metadata behavior.",
+    "validation": {
+        "pythonTests": 197,
+        "currentCapturedPages": "Both real loaders retained two source locators for 1946 and rejected a conflicting 1955 lookup. This is extraction validation, not decoded playback.",
+        "androidPlayback": "Native tv_720p profile: full uncropped picture, plausible 5472-second film, smooth playback, midpoint/late seeks and all three captured source-audio windows verified for full MP4 and small MP4.",
+        "regressionCI": {
+            "sourceCommit": "92ad8f3a02a071f1d06b92149c565e472afbec71",
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41892024081",
+            "jobsPassed": 6,
+            "jobsFailed": 0
+        }
+    },
+    "series": "Existing BnWMovies adapters are movie-only; prior native series lookup returned unsupported_type. No series playback is claimed.",
+    "fullPlaybackVerified": true,
+    "next": "Verified movie route saved. Continue to the next website; retain the explicit unsupported series capability and failing legacy-file results.",
+    "alternativeRouteAttempt": {
+        "siteEvidence": "The current selected film page advertises an Archive download directory. Its current listing contains the full MP4 and original MPEG as well as the two embedded derivatives.",
+        "implementation": "Both existing loaders now read only the advertised directory for the same embedded Archive item and exact film filename stem. Additional files come from actual links, not invented filenames. Optional listing failure retains embedded sources.",
+        "additionalFiles": [
+            {
+                "file": "The_Stranger.mp4",
+                "width": 640,
+                "height": 480,
+                "durationSeconds": 5472.934133,
+                "videoCodec": "h264",
+                "audioCodec": "aac",
+                "audioChannels": 2
+            },
+            {
+                "file": "The_Stranger.MPEG",
+                "width": 640,
+                "height": 480,
+                "durationSeconds": 5472.906233,
+                "videoCodec": "mpeg2video",
+                "audioCodec": "mp2",
+                "audioChannels": 2
+            }
+        ],
+        "validation": "197 Python regressions pass. Current captured page/listing discovers both alternatives. Actual file probes establish runtime/tracks; Android picture, smoothness, seeking and recorded audio remain to be checked. The independent decoder now accepts MPEG program streams; a generated four-second MPEG/MP2 control decodes four seconds with a non-silent signal.",
+        "localTransportLimit": "The local guarded Python engine cannot resolve the site DNS in this environment; current pages and file probes were fetched separately. This is not counted as a successful live Android lookup.",
+        "independentDecodedReview": {
+            "codeRevision": "66e4d45b150aebbf48ebf3932b2fa2f56781e90a",
+            "file": "The_Stranger.mp4",
+            "method": "Direct independent decoder check using the real file URL supplied by the download redirect, after canonical requests returned server errors. This is not the Android/LibVLC verdict.",
+            "windows": [
+                {
+                    "position": "start",
+                    "positionSeconds": 10,
+                    "decodedAudioSeconds": 8.0,
+                    "signalDetected": true,
+                    "channelRmsDbfs": [-15.31, -15.32]
+                },
+                {
+                    "position": "middle",
+                    "positionSeconds": 2736,
+                    "decodedAudioSeconds": 8.0,
+                    "signalDetected": true,
+                    "channelRmsDbfs": [-21.43, -21.43]
+                },
+                {
+                    "position": "late",
+                    "positionSeconds": 4925,
+                    "decodedAudioSeconds": 8.0,
+                    "signalDetected": true,
+                    "channelRmsDbfs": [-21.08, -21.09]
+                }
+            ],
+            "visualReview": "Opening credits name Edward G. Robinson, Loretta Young and Orson Welles. Midpoint and late frames show the matching black-and-white feature, rather than a website-message video.",
+            "androidEvidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41883351432",
+            "androidStatus": "First Android attempt returned http_502; later attempts and their outcomes are recorded below."
+        },
+        "firstAndroidAttempt": {
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41883351432",
+            "sourceCommit": "66e4d45b150aebbf48ebf3932b2fa2f56781e90a",
+            "lookup": "http_502",
+            "sourcesReturned": 0,
+            "action": "Continue on this site. Add its currently advertised, working search RSS feed as a fallback and include the runtime request-stage/host-status trace in the next Android lookup report."
+        },
+        "searchFallback": "The current RSS search feed returns the actual The Stranger post link. Both loaders now use this feed if primary search errors or lacks a match, while retaining exact target-page year checks. Foreign/credentialled links and XML document-type declarations are rejected; access refusals do not trigger the alternate route.",
+        "secondAndroidAttempt": {
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41885723184",
+            "sourceCommit": "a4c3ddc3e26745590bac9b185158bd4752f95e94",
+            "lookup": "complete",
+            "sourcesReturned": 4,
+            "technicalPasses": 0,
+            "fullMp4": {
+                "evidenceId": "0001",
+                "durationSeconds": 5472,
+                "width": 640,
+                "height": 480,
+                "nominalFps": 29.97,
+                "displayedFps": {
+                    "start": 18.28994053270701,
+                    "middle": 19.861660079051383,
+                    "late": 18.740704015865145
+                },
+                "nonSilentAudioSeconds": {
+                    "start": 5.6424375,
+                    "middle": 6.57125,
+                    "late": 4.45825
+                },
+                "midpointDecoded": true,
+                "lateSeekDecoded": true,
+                "visualReview": "Actual The Stranger opening credits, midpoint and late film scenes. Early contact frame shows buffering at 11 percent. No site-message replacement video in reviewed frames."
+            },
+            "otherRoutes": "Original MPEG and Ogg failed midpoint seeking; smaller MP4 passed seeking/audio but also failed displayed-frame criteria."
+        },
+        "originalMpegAlternativeDesktopReview": {
+            "method": "Follow the separately advertised d1/workable storage endpoint in the same Archive item metadata, after the canonical-redirect MPEG stream timed out.",
+            "positionSeconds": 2736,
+            "decodedAudioSeconds": 7.9924375,
+            "signalDetected": true,
+            "frameReview": "Matching Orson Welles film footage. Desktop decode only; not an Android pass."
+        },
+        "displayOverrideAttempt": {
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41888479731",
+            "sourceCommit": "057be18fb0118f7bc0e9ca26408f5c6a283a1b95",
+            "device": "tv_1080p with wm size 1280x720 override",
+            "sourcesReturned": 4,
+            "technicalPasses": 2,
+            "result": "Both MP4 routes pass the unchanged technical and captured-audio criteria. Screenshot review finds clipping on the right and bottom; this remains a blocker. No site pass claimed.",
+            "files": [
+                {
+                    "evidenceId": "0001",
+                    "verification": "needs_content_review",
+                    "durationSeconds": 5472,
+                    "width": 640,
+                    "height": 480,
+                    "displayedFps": {
+                        "start": 30.09834111453263,
+                        "middle": 29.593705151680112,
+                        "late": 30.36556603773585
+                    },
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "capturedSourceAudio": {
+                        "start": {
+                            "tracks": [
+                                {
+                                    "seconds": 5.6424375,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -15.23,
+                                            "activeSeconds": 5.6424375
+                                        },
+                                        {
+                                            "rmsDbfs": -15.23,
+                                            "activeSeconds": 5.6424375
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0001-start-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "middle": {
+                            "tracks": [
+                                {
+                                    "seconds": 6.57125,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -20.76,
+                                            "activeSeconds": 6.57125
+                                        },
+                                        {
+                                            "rmsDbfs": -20.76,
+                                            "activeSeconds": 6.57125
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0001-middle-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "late": {
+                            "tracks": [
+                                {
+                                    "seconds": 4.736875,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -15.86,
+                                            "activeSeconds": 4.736875
+                                        },
+                                        {
+                                            "rmsDbfs": -15.86,
+                                            "activeSeconds": 4.736875
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0001-late-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        }
+                    }
+                },
+                {
+                    "evidenceId": "0002",
+                    "verification": "technical_failure",
+                    "durationSeconds": 5472,
+                    "width": 640,
+                    "height": 480,
+                    "displayedFps": {
+                        "start": 29.914952531645568,
+                        "middle": 29.449805989453786,
+                        "late": 28.388998035363457
+                    },
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "capturedSourceAudio": {
+                        "start": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.758375,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -14.97,
+                                            "activeSeconds": 7.758375
+                                        },
+                                        {
+                                            "rmsDbfs": -14.98,
+                                            "activeSeconds": 7.758375
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "mp2",
+                                    "language": "",
+                                    "channelCount": 2,
+                                    "file": "0002-start-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "middle": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.7845,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -22.34,
+                                            "activeSeconds": 7.7844999999999995
+                                        },
+                                        {
+                                            "rmsDbfs": -22.35,
+                                            "activeSeconds": 7.7844999999999995
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "mp2",
+                                    "language": "",
+                                    "channelCount": 2,
+                                    "file": "0002-middle-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "late": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.862875,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -17.5,
+                                            "activeSeconds": 7.862875
+                                        },
+                                        {
+                                            "rmsDbfs": -17.51,
+                                            "activeSeconds": 7.862875
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "mp2",
+                                    "language": "",
+                                    "channelCount": 2,
+                                    "file": "0002-late-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        }
+                    }
+                },
+                {
+                    "evidenceId": "0003",
+                    "verification": "technical_failure",
+                    "durationSeconds": 5472,
+                    "width": 400,
+                    "height": 300,
+                    "displayedFps": {
+                        "start": 28.815737445630685,
+                        "middle": null,
+                        "late": null
+                    },
+                    "midpointDecoded": false,
+                    "lateSeekDecoded": false,
+                    "capturedSourceAudio": {
+                        "start": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.36075,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -15.02,
+                                            "activeSeconds": 7.36075
+                                        },
+                                        {
+                                            "rmsDbfs": -15.02,
+                                            "activeSeconds": 7.36075
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "vorbis",
+                                    "language": "",
+                                    "channelCount": 2,
+                                    "file": "0003-start-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        }
+                    }
+                },
+                {
+                    "evidenceId": "0004",
+                    "verification": "needs_content_review",
+                    "durationSeconds": 5472,
+                    "width": 320,
+                    "height": 240,
+                    "displayedFps": {
+                        "start": 29.92297057080782,
+                        "middle": 30.07257182622527,
+                        "late": 29.07488986784141
+                    },
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "capturedSourceAudio": {
+                        "start": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.7090625,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -14.97,
+                                            "activeSeconds": 7.7090625
+                                        },
+                                        {
+                                            "rmsDbfs": -14.98,
+                                            "activeSeconds": 7.7090625
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0004-start-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "middle": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.7555,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -20.34,
+                                            "activeSeconds": 7.7555
+                                        },
+                                        {
+                                            "rmsDbfs": -20.35,
+                                            "activeSeconds": 7.7555
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0004-middle-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        },
+                        "late": {
+                            "tracks": [
+                                {
+                                    "seconds": 7.73225,
+                                    "channels": [
+                                        {
+                                            "rmsDbfs": -16.95,
+                                            "activeSeconds": 7.73225
+                                        },
+                                        {
+                                            "rmsDbfs": -16.96,
+                                            "activeSeconds": 7.73225
+                                        }
+                                    ],
+                                    "signalDetected": true,
+                                    "codec": "aac",
+                                    "language": "eng",
+                                    "channelCount": 2,
+                                    "file": "0004-late-audio-0.wav"
+                                }
+                            ],
+                            "capped": false,
+                            "errors": [],
+                            "recordingEventsConfirmed": true,
+                            "minimumDecodedSeconds": 4,
+                            "selectedAudioSignalVerified": true
+                        }
+                    }
+                }
+            ]
+        },
+        "nativeDisplayRetest": {
+            "sourceCommit": "92ad8f3a02a071f1d06b92149c565e472afbec71",
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41892016460",
+            "device": "tv_720p; no display override",
+            "status": "completed",
+            "previousSetupAttempt": {
+                "run": "https://github.com/billyke2000s/moviehub/actions/runs/41890911139",
+                "status": "cancelled",
+                "result": "No playback evidence: media-tool package installation stalled. Restarted with package-index refresh and explicit acquisition/step timeouts."
+            },
+            "artifactId": 13354383433,
+            "technicalPasses": 2,
+            "reviewedMovies": [
+                {
+                    "evidenceId": "0001",
+                    "status": "verified",
+                    "durationSeconds": 5472,
+                    "width": 640,
+                    "height": 480,
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "displayedFps": {
+                        "start": 29.452875399361023,
+                        "middle": 29.25109257052046,
+                        "late": 29.634803432448614
+                    },
+                    "contentReview": "matching_film_full_frame",
+                    "audio": {
+                        "start": {
+                            "recordingEventsConfirmed": true,
+                            "tracks": [
+                                {
+                                    "seconds": 5.6424375,
+                                    "signalDetected": true,
+                                    "language": "eng",
+                                    "codec": "aac",
+                                    "channelCount": 2
+                                }
+                            ]
+                        },
+                        "middle": {
+                            "recordingEventsConfirmed": true,
+                            "tracks": [
+                                {
+                                    "seconds": 6.57125,
+                                    "signalDetected": true,
+                                    "language": "eng",
+                                    "codec": "aac",
+                                    "channelCount": 2
+                                }
+                            ]
+                        },
+                        "late": {
+                            "recordingEventsConfirmed": true,
+                            "tracks": [
+                                {
+                                    "seconds": 4.45825,
+                                    "signalDetected": true,
+                                    "language": "eng",
+                                    "codec": "aac",
+                                    "channelCount": 2
+                                }
+                            ]
+                        }
+                    },
+                    "visualReview": "Full 4:3 picture fits the display. Opening cast credits identify The Stranger; middle and late frames match the same black-and-white film. No site-message replacement or playback-error overlay in reviewed MP4 frames. The small MP4 has ordinary player controls visible.",
+                    "reviewedPass": true
+                },
+                {
+                    "evidenceId": "0002",
+                    "status": "playback_stall_or_audio_output_unverified",
+                    "durationSeconds": 5472,
+                    "width": 640,
+                    "height": 480,
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "displayedFps": {
+                        "start": 29.29784487039428,
+                        "middle": 29.948502574871256,
+                        "late": 29.262086513994912
+                    },
+                    "reviewedPass": false
+                },
+                {
+                    "evidenceId": "0003",
+                    "status": "seek_unverified",
+                    "durationSeconds": 5472,
+                    "width": 400,
+                    "height": 300,
+                    "midpointDecoded": false,
+                    "lateSeekDecoded": false,
+                    "displayedFps": {
+                        "start": 25.979854393138528,
+                        "middle": null,
+                        "late": null
+                    },
+                    "reviewedPass": false
+                },
+                {
+                    "evidenceId": "0004",
+                    "status": "verified",
+                    "durationSeconds": 5472,
+                    "width": 320,
+                    "height": 240,
+                    "midpointDecoded": true,
+                    "lateSeekDecoded": true,
+                    "displayedFps": {
+                        "start": 29.23367083581497,
+                        "middle": 29.241805320314835,
+                        "late": 28.960987261146496
+                    },
+                    "contentReview": "matching_film_full_frame",
+                    "audio": {
+                        "start": {
+                            "recordingEventsConfirmed": true,
+                            "tracks": [
+                                {
+                                    "seconds": 8.0,
+                                    "signalDetected": true,
+                                    "language": "eng",
+                                    "codec": "aac",
+                                    "channelCount": 2
+                                }
+                            ]
+                        },
+                        "middle": {
+                            "recordingEventsConfirmed": true,
+                            "tracks": [
+                                {
+                                    "seconds": 7.52325,
+                                    "signalDetected": true,
+                                    "language": "eng",
+                                    "codec": "aac",
+                                    "channelCount": 2
+                                }
+                            ]
+                        },
+                        "late": {
+                            "recordingEventsConfirmed": true,
+                            "tracks": [
+                                {
+                                    "seconds": 7.73225,
+                                    "signalDetected": true,
+                                    "language": "eng",
+                                    "codec": "aac",
+                                    "channelCount": 2
+                                }
+                            ]
+                        }
+                    },
+                    "visualReview": "Full 4:3 picture fits the display. Opening cast credits identify The Stranger; middle and late frames match the same black-and-white film. No site-message replacement or playback-error overlay in reviewed MP4 frames. The small MP4 has ordinary player controls visible.",
+                    "reviewedPass": true
+                }
+            ]
+        },
+        "nativeDisplayControls": {
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41890911170",
+            "sourceCommit": "aaea9ca7e7bf8d31d8f773626dd498b72e0e1790",
+            "native720": {
+                "kind": "runner_calibration",
+                "width": 1280,
+                "height": 720,
+                "windows": [
+                    {
+                        "targetMs": 0,
+                        "elapsedMs": 20175,
+                        "displayedFps": 29.39281288723668,
+                        "nominalFps": 30,
+                        "videoGapMs": 273,
+                        "audioGapMs": 273,
+                        "progressMs": 20002,
+                        "audioBuffers": 939,
+                        "meetsExistingPlaybackCriteria": true
+                    },
+                    {
+                        "targetMs": 90000,
+                        "elapsedMs": 20010,
+                        "displayedFps": 29.835082458770614,
+                        "nominalFps": 30,
+                        "videoGapMs": 269,
+                        "audioGapMs": 269,
+                        "progressMs": 19584,
+                        "audioBuffers": 1016,
+                        "meetsExistingPlaybackCriteria": true
+                    },
+                    {
+                        "targetMs": 162000,
+                        "elapsedMs": 10129,
+                        "displayedFps": 29.32174943232303,
+                        "nominalFps": 30,
+                        "videoGapMs": 267,
+                        "audioGapMs": 267,
+                        "progressMs": 9834,
+                        "audioBuffers": 550,
+                        "meetsExistingPlaybackCriteria": true
+                    }
+                ],
+                "providerPlaybackVerified": false,
+                "emulatorCanvas": "1280x720"
+            },
+            "native1080": {
+                "kind": "runner_calibration",
+                "width": 1280,
+                "height": 720,
+                "windows": [
+                    {
+                        "targetMs": 0,
+                        "elapsedMs": 20141,
+                        "displayedFps": 17.576088575542425,
+                        "nominalFps": 30,
+                        "videoGapMs": 341,
+                        "audioGapMs": 341,
+                        "progressMs": 19999,
+                        "audioBuffers": 931,
+                        "meetsExistingPlaybackCriteria": false
+                    },
+                    {
+                        "targetMs": 90000,
+                        "elapsedMs": 20074,
+                        "displayedFps": 18.53143369532729,
+                        "nominalFps": 30,
+                        "videoGapMs": 310,
+                        "audioGapMs": 310,
+                        "progressMs": 19590,
+                        "audioBuffers": 1003,
+                        "meetsExistingPlaybackCriteria": false
+                    },
+                    {
+                        "targetMs": 162000,
+                        "elapsedMs": 10138,
+                        "displayedFps": 18.445452752022096,
+                        "nominalFps": 30,
+                        "videoGapMs": 341,
+                        "audioGapMs": 341,
+                        "progressMs": 9840,
+                        "audioBuffers": 545,
+                        "meetsExistingPlaybackCriteria": false
+                    }
+                ],
+                "providerPlaybackVerified": false,
+                "emulatorCanvas": "1920x1080"
+            },
+            "finding": "Identical 30 fps 1280x720 synthetic source meets all existing criteria on native tv_720p but fails displayed-frame criteria on tv_1080p. This supports a software emulator output rendering bottleneck; it does not certify the film."
+        }
+    },
+    "samplePlaybackVerified": true,
+    "playbackAuditVersion": 2,
+    "audioEvidenceVersion": 3,
+    "verificationScope": "The Stranger (1946), one supported movie route, tested at opening, midpoint and late seek. Both MP4 files pass. This does not claim uninterrupted whole-film playback, physical-speaker output, every catalogue title or working legacy MPEG/Ogg files. Existing adapters are movie-only.",
+    "uninterruptedFullFilmTested": false
+}
