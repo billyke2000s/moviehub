@@ -1,0 +1,13 @@
+{
+    "site": "free99:seriesloaded_ng",
+    "date": "2026-11-05",
+    "status": "current_search_and_advertised_download_inspection",
+    "fullPlaybackVerified": false,
+    "previousReceipt": "One movie candidate and no series candidates in historical corrected-seek checking; no full certification.",
+    "currentInspection": {
+        "origin": "https://seriezloaded.tv",
+        "checks": "Inspect current homepage, Inception/Dune catalogue search and exact episode plus show-level Breaking Bad searches. Reuse existing app request headers; never generate challenge tokens.",
+        "codeReviewFinding": "Current exact normalized episode-title comparison excludes labelled episode ranges before the existing range-handling block can run. Confirm actual advertised catalogue structure before choosing a repair."
+    },
+    "next": "Repair observed identity/episode/hop mismatches using current advertised data, then run strict native playback, independent audio and manual content review."
+}

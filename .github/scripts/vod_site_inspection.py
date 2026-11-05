@@ -7,11 +7,11 @@ from html.parser import HTMLParser
 from urllib.parse import parse_qs, urljoin, urlsplit
 import requests
 
-ORIGIN = "https://www.naijavault.com"
+ORIGIN = "https://seriezloaded.tv"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Android 11; TV) AppleWebKit/537.36 Chrome/130.0 Safari/537.36",
            "Accept": "*/*", "DNT": "1"}
-PAGES = ["/", "/search/Dune/", "/?s=Dune", "/search/Red%20Eye/",
-         "/dune-part-one-2021/", "/red-eye-season-1-complete-tvseries/"]
+PAGES = ["/", "/?s=Inception", "/?s=Dune",
+         "/?s=Breaking+Bad+Season+1+Episode+1", "/?s=Breaking+Bad"]
 
 class Structure(HTMLParser):
     def __init__(self):
@@ -83,7 +83,7 @@ def inspect(path):
                       containers=[dict(tag=k[0], css=k[1], count=v)
                                   for k, v in parser.classes.most_common(30)])
         selected = [a for a in parser.links if
-                    re.search(r"dune|red eye|download|episode", a["text"], re.I)]
+                    re.search(r"inception|dune|breaking bad|download|episode", a["text"], re.I)]
         result["links"] = [dict(text=re.sub(r"\s+", " ", a["text"]).strip()[:180],
                                 id=a["id"][:100], rel=a["rel"][:100], css=a["css"][:100],
                                 target=safe_url(a["href"]))

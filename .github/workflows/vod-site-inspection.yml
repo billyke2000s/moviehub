@@ -1,4 +1,4 @@
-name: Inspect current NaijaVault public page structure
+name: Inspect current VOD public page structure
 on:
     push:
         branches: [fix/all-vod-site-audit]
