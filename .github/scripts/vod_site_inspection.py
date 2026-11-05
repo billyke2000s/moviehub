@@ -8,6 +8,8 @@ from urllib.parse import parse_qs, urljoin, urlsplit
 import requests
 
 ORIGIN = "https://www.naijavault.com"
+HEADERS = {"User-Agent": "Mozilla/5.0 (Android 11; TV) AppleWebKit/537.36 Chrome/130.0 Safari/537.36",
+           "Accept": "*/*", "DNT": "1"}
 PAGES = ["/", "/search/Dune/", "/?s=Dune", "/search/Red%20Eye/",
          "/dune-part-one-2021/", "/red-eye-season-1-complete-tvseries/"]
 
@@ -60,7 +62,7 @@ def inspect(path):
     result = dict(page=path)
     try:
         with requests.get(ORIGIN + path, timeout=(10, 20), stream=True,
-                          allow_redirects=False) as response:
+                          allow_redirects=False, headers=HEADERS) as response:
             result.update(status=response.status_code,
                           contentType=response.headers.get("Content-Type", "").split(";")[0])
             if response.is_redirect:
@@ -72,8 +74,10 @@ def inspect(path):
                 if len(content) > 524288:
                     result["bodyCapped"] = True
                     return result
+        html = content.decode(response.encoding or "utf-8", errors="replace")
+        result["accessChallenge"] = bool(re.search(r"cf-chl|challenge-platform|just a moment", html, re.I))
         parser = Structure()
-        parser.feed(content.decode(response.encoding or "utf-8", errors="replace"))
+        parser.feed(html)
         result.update(bytes=len(content), headings=parser.headings[:8],
                       forms=parser.forms[:3],
                       containers=[dict(tag=k[0], css=k[1], count=v)
