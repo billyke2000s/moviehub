@@ -1,0 +1,63 @@
+{
+    "site": "native:cinejoy",
+    "date": "2026-11-04",
+    "status": "sampled_content_confirmed_opening_audio_unverified",
+    "playbackAuditVersion": 2,
+    "sourceCommit": "b86f8fe3cb5b1f388cbbab7442cdfcfd194fdfcf",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41766998519",
+    "artifactId": 13295916131,
+    "candidatesTested": 3,
+    "technicalPasses": 2,
+    "reviewedSamples": [
+        {
+            "media": "movies",
+            "evidenceId": "0001",
+            "title": "Inception",
+            "season": -1,
+            "episode": -1,
+            "durationSeconds": 8887,
+            "dimensions": [1728, 720],
+            "initialPositionMs": 994,
+            "displayedFps": {
+                "start": 21.299890514581467,
+                "middle": 22.53422604177076,
+                "late": 21.284905291935168
+            },
+            "capturedAudioSeconds": {
+                "start": [0.0],
+                "middle": [0.2133125],
+                "late": [0.4053125]
+            },
+            "contentIdentityConfirmed": true
+        },
+        {
+            "media": "series",
+            "evidenceId": "0001",
+            "title": "Breaking Bad",
+            "season": 1,
+            "episode": 1,
+            "durationSeconds": 3482,
+            "dimensions": [1280, 720],
+            "initialPositionMs": 991,
+            "displayedFps": {
+                "start": 22.056631892697467,
+                "middle": 20.307082714214957,
+                "late": 21.525457047375664
+            },
+            "capturedAudioSeconds": {
+                "start": [0.0],
+                "middle": [7.3386875],
+                "late": [5.1626875]
+            },
+            "contentIdentityConfirmed": true
+        }
+    ],
+    "visualReview": "Movie 0001 shows Inception studio opening, Cillian Murphy at midpoint and Cobb/Mal late scenes. Series 0001 shows Breaking Bad pilot RV opening and matching Walter White midpoint/late scenes. Inception early frame shows buffering at zero percent.",
+    "fullPlaybackVerified": false,
+    "limits": [
+        "Both opening recordings decode zero audio seconds. Inception middle and late recordings decode only 0.2133 and 0.4053 seconds.",
+        "Dune candidate did not decode.",
+        "Selected windows are not uninterrupted whole-title playback; physical speaker output was not tested."
+    ],
+    "next": "Investigate why the native opening recordings contain no audio and why other captures are truncated; retain the Dune decoder failure."
+}

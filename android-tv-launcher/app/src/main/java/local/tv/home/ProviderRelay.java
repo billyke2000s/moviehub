@@ -72,6 +72,8 @@ final class ProviderRelay implements AutoCloseable {
 
     /** Instrumentation fixture only; never assigned by app code. */
     static ConnectionFactory testConnections;
+    /** Instrumentation diagnostics only; never assigned by application code. */
+    static java.util.function.Consumer<Throwable> testFailures;
     final String url;
 
     ProviderRelay(EngineSources.Stream stream) throws Exception {
@@ -407,7 +409,12 @@ final class ProviderRelay implements AutoCloseable {
             }
             throw new IOException("Stream redirect limit");
         } catch (Exception e) {
-            if (!closed) Diagnostics.recovered("Provider relay", e);
+            if (!closed) {
+                if (testFailures != null) try {
+                    testFailures.accept(e);
+                } catch (Exception ignored) {}
+                Diagnostics.recovered("Provider relay", e);
+            }
         } finally {
             clients.remove(client);
             if (upstream != null) {

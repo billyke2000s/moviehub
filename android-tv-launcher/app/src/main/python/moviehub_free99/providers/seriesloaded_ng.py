@@ -1,4 +1,5 @@
 from ast import literal_eval
+from moviehub_compat.seriesloaded_catalogue import episode_label, movie_label
 # -*- coding: utf-8 -*-
 
 import re
@@ -93,24 +94,29 @@ class source:
             # The live site replaced admin-ajax live_search_posts with catalogue search.
             search_term = (f'{title} Season {season} Episode {episode}'
                            if 'tvshowtitle' in data else title)
-            search_url = self.base_link + '/?s=' + cleantitle.get_plus(search_term)
-            search_html = client.request(search_url, headers=self.headers)
-            cards = DOM(search_html, 'h3', attrs={'class': r'entry-title.*'})
-            r = []
-            for card in cards:
-                links = DOM(card, 'a', ret='href')
-                labels = DOM(card, 'a')
-                if not links or not labels:
-                    continue
-                label = client_utils.remove_tags(labels[0]).strip()
-                if 'tvshowtitle' not in data:
-                    found_year = re.search(r'\((\d{4})\)', label)
-                    clean_label = re.sub(r'\s*\(\d{4}\)', '', label)
-                    if not found_year or found_year[1] != year or not cleantitle.match_alias(clean_label, aliases):
+            search_terms = [search_term]
+            if 'tvshowtitle' not in data and ':' in title:
+                short_term = title.split(':', 1)[0].strip()
+                if short_term:
+                    search_terms.append(short_term)
+            for search_term in search_terms:
+                search_url = self.base_link + '/?s=' + cleantitle.get_plus(search_term)
+                search_html = client.request(search_url, headers=self.headers)
+                cards = DOM(search_html, 'h3', attrs={'class': r'entry-title.*'})
+                r = []
+                for card in cards:
+                    links = DOM(card, 'a', ret='href')
+                    labels = DOM(card, 'a')
+                    if not links or not labels:
                         continue
-                elif cleantitle.get(search_term) != cleantitle.get(label):
-                    continue
-                r.append({'title': label, 'link': links[0]})
+                    label = client_utils.remove_tags(labels[0]).strip()
+                    clean_label = (episode_label(label, season, episode)
+                                   if 'tvshowtitle' in data else movie_label(label, year))
+                    if not clean_label or not cleantitle.match_alias(clean_label, aliases):
+                        continue
+                    r.append({'title': label, 'link': links[0]})
+                if r:
+                    break
             if not r:
                 return
 

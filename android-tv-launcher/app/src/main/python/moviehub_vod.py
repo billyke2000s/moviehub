@@ -14,6 +14,16 @@ from pathlib import Path
 _RECORDS = json.loads(Path(__file__).with_name('moviehub_providers.json').read_text())
 from moviehub_native import PROVIDERS as _NATIVE_PROVIDERS
 _RECORDS += _NATIVE_PROVIDERS
+# Maintained loaders correct observed current-site capabilities.
+# Keep the upstream manifest and original hashes as provenance, not runtime capabilities.
+for _record in _RECORDS:
+    if _record['name'] == 'anymovies_co':
+        _record['series'] = True
+    if _record['id'] == 'free99:fzmovies_live':
+        # Its TV methods are upstream stubs; the current site links TV out to
+        # a separate website. Keep this site in both screens' shared inventory,
+        # but report its actual movie-only capability instead of no_matches.
+        _record['series'] = False
 _MODULES = {r['id']: r for r in _RECORDS}
 # Keep host selection headless and free-only. Never authorize a cloud service or open a popup.
 _HOSTS = sorted({d.lower() for cls in resolveurl.relevant_resolvers(include_universal=False, include_popups=False)
@@ -456,7 +466,7 @@ import email.message
 import urllib.request
 import urllib.response
 
-def urllib_open(request, data=None, timeout=8, **kwargs):
+def urllib_open(request, data=None, timeout=8, redirect=True, **kwargs):
     if isinstance(request,str):
         address,headers,method=request,{},('POST' if data is not None else 'GET')
     else:
@@ -464,7 +474,7 @@ def urllib_open(request, data=None, timeout=8, **kwargs):
         headers=dict(request.header_items())
         data=request.data if data is None else data
         method=request.get_method()
-    response=client.fetch(address,headers,data,timeout,method=method)
+    response=client.fetch(address,headers,data,timeout,redirect=redirect,method=method)
     message=email.message.Message()
     for key,value in response.headers.items(): message[key]=value
     result=urllib.response.addinfourl(io.BytesIO(response.content),message,response.url,response.status_code)
@@ -472,11 +482,27 @@ def urllib_open(request, data=None, timeout=8, **kwargs):
     return result
 
 class SafeOpener:
-    def __init__(self): self.addheaders=[]
+    def __init__(self, handlers=()):
+        self.addheaders=[]
+        self.follow_redirects=True
+        for handler in handlers: self.add_handler(handler)
     def open(self,request,data=None,timeout=8):
         if isinstance(request,str): request=urllib.request.Request(request,data=data,headers=dict(self.addheaders))
-        return urllib_open(request,data,timeout)
-    def add_handler(self,handler): pass
+        return urllib_open(request,data,timeout,redirect=self.follow_redirects)
+    def add_handler(self,handler):
+        kind=handler if isinstance(handler,type) else type(handler)
+        base=urllib.request.HTTPRedirectHandler
+        if issubclass(kind,base) and (
+                kind.redirect_request is not base.redirect_request or
+                kind.http_error_302 is not base.http_error_302):
+            # Bundled resolvers inspect Location using NoRedirection handlers.
+            # Retain that boundary without bypassing the guarded HTTP client.
+            self.follow_redirects=False
 
-urllib.request.urlopen=urllib_open
-urllib.request.build_opener=lambda *handlers: SafeOpener()
+def safe_build_opener(*handlers):
+    return SafeOpener(handlers)
+
+from six.moves import urllib_request as legacy_urllib_request
+for _transport in (urllib.request, legacy_urllib_request):
+    _transport.urlopen=urllib_open
+    _transport.build_opener=safe_build_opener

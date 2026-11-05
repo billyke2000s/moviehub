@@ -1,0 +1,213 @@
+{
+    "version": 1,
+    "profiles": {
+        "general": {
+            "movies": [
+                {
+                    "title": "Inception",
+                    "year": "2010",
+                    "imdb": "tt1375666",
+                    "tmdb": 27205,
+                    "runtimeMinutes": 148,
+                    "season": -1,
+                    "episode": -1
+                },
+                {
+                    "title": "Dune: Part Two",
+                    "year": "2024",
+                    "imdb": "tt15239678",
+                    "tmdb": 693134,
+                    "runtimeMinutes": 166,
+                    "season": -1,
+                    "episode": -1
+                }
+            ],
+            "series": [
+                {
+                    "title": "Breaking Bad",
+                    "year": "2008",
+                    "imdb": "tt0903747",
+                    "tmdb": 1396,
+                    "runtimeMinutes": 58,
+                    "season": 1,
+                    "episode": 1,
+                    "premiered": "2008-01-20",
+                    "episodeTitle": "Pilot"
+                }
+            ]
+        },
+        "classics": {
+            "movies": [
+                {
+                    "title": "The Stranger",
+                    "year": "1946",
+                    "imdb": "tt0038991",
+                    "tmdb": 20246,
+                    "runtimeMinutes": 95,
+                    "season": -1,
+                    "episode": -1
+                }
+            ],
+            "series": [
+                {
+                    "title": "Breaking Bad",
+                    "year": "2008",
+                    "imdb": "tt0903747",
+                    "tmdb": 1396,
+                    "runtimeMinutes": 58,
+                    "season": 1,
+                    "episode": 1,
+                    "premiered": "2008-01-20",
+                    "episodeTitle": "Pilot"
+                }
+            ]
+        },
+        "anime": {
+            "movies": [
+                {
+                    "title": "Your Name.",
+                    "year": "2016",
+                    "imdb": "tt5311514",
+                    "tmdb": 372058,
+                    "runtimeMinutes": 106,
+                    "season": -1,
+                    "episode": -1
+                }
+            ],
+            "series": [
+                {
+                    "title": "Naruto",
+                    "year": "2002",
+                    "imdb": "tt0409591",
+                    "tmdb": 46260,
+                    "runtimeMinutes": 24,
+                    "season": 1,
+                    "episode": 1,
+                    "premiered": "2002-10-03",
+                    "episodeTitle": "Enter: Naruto Uzumaki!"
+                }
+            ]
+        },
+        "asian": {
+            "movies": [
+                {
+                    "title": "Train to Busan",
+                    "year": "2016",
+                    "imdb": "tt5700672",
+                    "tmdb": 396535,
+                    "runtimeMinutes": 118,
+                    "season": -1,
+                    "episode": -1
+                }
+            ],
+            "series": [
+                {
+                    "title": "Squid Game",
+                    "year": "2021",
+                    "imdb": "tt10919420",
+                    "tmdb": 93405,
+                    "runtimeMinutes": 60,
+                    "season": 1,
+                    "episode": 1,
+                    "premiered": "2021-09-17",
+                    "episodeTitle": "Red Light, Green Light"
+                }
+            ]
+        },
+        "indian": {
+            "movies": [
+                {
+                    "title": "Dangal",
+                    "year": "2016",
+                    "imdb": "tt5074352",
+                    "tmdb": 360814,
+                    "runtimeMinutes": 161,
+                    "season": -1,
+                    "episode": -1
+                }
+            ],
+            "series": [
+                {
+                    "title": "Mirzapur",
+                    "year": "2018",
+                    "imdb": "tt6473300",
+                    "tmdb": 84105,
+                    "runtimeMinutes": 51,
+                    "season": 1,
+                    "episode": 1,
+                    "premiered": "2018-11-15",
+                    "episodeTitle": "Jhandu"
+                }
+            ]
+        },
+        "filipino": {
+            "movies": [
+                {
+                    "title": "Hello, Love, Goodbye",
+                    "year": "2019",
+                    "imdb": "tt10156112",
+                    "tmdb": 593961,
+                    "runtimeMinutes": 118,
+                    "season": -1,
+                    "episode": -1
+                }
+            ],
+            "series": [
+                {
+                    "title": "Squid Game",
+                    "year": "2021",
+                    "imdb": "tt10919420",
+                    "tmdb": 93405,
+                    "runtimeMinutes": 60,
+                    "season": 1,
+                    "episode": 1,
+                    "premiered": "2021-09-17",
+                    "episodeTitle": "Red Light, Green Light"
+                }
+            ]
+        },
+        "rare": {
+            "movies": [
+                {
+                    "title": "Anna",
+                    "year": "1967",
+                    "imdb": "",
+                    "tmdb": 45486,
+                    "runtimeMinutes": 87,
+                    "season": -1,
+                    "episode": -1
+                }
+            ],
+            "series": [
+                {
+                    "title": "Breaking Bad",
+                    "year": "2008",
+                    "imdb": "tt0903747",
+                    "tmdb": 1396,
+                    "runtimeMinutes": 58,
+                    "season": 1,
+                    "episode": 1,
+                    "premiered": "2008-01-20",
+                    "episodeTitle": "Pilot"
+                }
+            ]
+        }
+    },
+    "sites": {
+        "free99:bnwmovies_com": "classics",
+        "scrubs:rarefilmm_com": "rare",
+        "native:animesalt": "anime",
+        "native:toonstream": "anime",
+        "scrubs:gogoanime_tel": "anime",
+        "scrubs:gogoanimes_to": "anime",
+        "native:kisskh": "asian",
+        "native:onetouchtv": "asian",
+        "scrubs:doomovies_ga": "asian",
+        "native:allmovieland": "indian",
+        "native:bollyflix": "indian",
+        "native:hindmoviez": "indian",
+        "native:mlsbd": "indian",
+        "native:rogmovies": "indian",
+        "scrubs:moviesnipipay_me": "filipino"
+    }
+}

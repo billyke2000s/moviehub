@@ -5,15 +5,18 @@ failures remain failures; no access checks, paid locks or transport restrictions
 """
 import base64
 import json
-from urllib.parse import parse_qs, urlencode, urlparse
+import re
+from urllib.parse import quote, parse_qs, urlencode, urlparse
 from moviehub_compat import client
 from resolveurl.lib.aesgcm import python_aesgcm
-from resolveurl.lib import pyaes
+from resolveurl.lib import helpers
 from .cinestream_api import Base, get, item, USER_AGENT, request
 
 VIDROCK_FORMAT_KEY = bytes.fromhex('7f3e9c2a8b5d1f4e6a9c3b7d2e5f8a1c4b6d9e2f5a8c1b4d7e9f2a5c8b1d4e7f')
 PEACHIFY_FORMAT_KEY = bytes.fromhex('a8f2a1b5e9c470814f6b2c3a5d8e7f9c1a2b3c4d5e3f7a8b8cad1e2d0a4d5c5d')
-VIDZEE_FORMAT_KEY = base64.b64decode('QTdrUDl4TTJRdjhMcjROejFIdDZZYzNCdzVKZjBEc1U=')
+# Published locator-format key in Vidzee's streams-BHpSC3gU.js WebAssembly data.
+# This decrypts the public JSON locator, not encrypted video or a DRM licence.
+VIDZEE_STREAM_KEY = bytes.fromhex('e4f9b27d8c1a6ef5037db98ac54e21f0b9d6c3a781fe42ad65c0e9b73f148a2d')
 
 
 def b64(value):
@@ -84,29 +87,54 @@ class Peachify(Base):
         yield from self.each(('multi', 'hr', 'holly', 'air', 'moviebox'), backend)
 
 
+def vidzee_locator(value):
+    if not isinstance(value, str) or not value or len(value) > 262144:
+        raise ValueError('Invalid Vidzee locator')
+    encoded = base64.b64decode(value + '=' * (-len(value) % 4), validate=True)
+    # The current public client uses RC4 and discards the first 2048 keystream bytes.
+    # Reuse the bundled data decoder; never download or execute player JavaScript/WASM.
+    padded = base64.b64encode(bytes(2048) + encoded)
+    clear = helpers.arc4(VIDZEE_STREAM_KEY, padded)[2048:].encode('latin1').decode('utf-8')
+    data = json.loads(clear)
+    if not isinstance(data, dict):
+        raise ValueError('Invalid Vidzee locator object')
+    return data
+
+
 class Vidzee(Base):
     base_link = 'https://player.vidzee.wtf'
+    api = 'https://core.vidzee.wtf'
 
     def extract(self, q):
-        def backend(number):
-            args = dict(id=q['tmdb'], sr=number)
-            if 'season' in q:
-                args.update(ss=q['season'], ep=q['episode'])
-            response = get(self.base_link + '/api/server?' + urlencode(args))
-            headers = {'User-Agent': USER_AGENT, 'referer': self.base_link + '/'}
-            for key, value in (response.get('headers') or {}).items():
-                headers = {k: v for k, v in headers.items() if k.lower() != key.lower()}
-                headers[key] = value
-            for row in response.get('url', [])[:32]:
-                encoded = row.get('link')
-                if not encoded:
-                    continue
-                iv, encrypted = b64(encoded).decode('ascii').split(':', 1)
-                iv, encrypted = b64(iv), b64(encrypted)
-                if len(iv) != 16 or len(encrypted) % 16 or len(encrypted) > client.MAX_BODY:
-                    continue
-                decoder = pyaes.Decrypter(pyaes.AESModeOfOperationCBC(VIDZEE_FORMAT_KEY, iv=iv))
-                url = (decoder.feed(encrypted) + decoder.feed()).decode('utf-8')
-                label = 'Vidzee ' + str(number) + ' · ' + str(row.get('name') or number)
-                yield item(url, headers, label, info=str(row.get('lang') or ''))
-        yield from self.each((0, 1, 2, 4, 5, 6, 7), backend)
+        route = self.route(q)
+        headers = self.headers()
+        languages = []
+        try:
+            data = get(self.api + '/streams/languages/' + route, headers)
+            rows = data.get('languages') if isinstance(data, dict) else data
+            if isinstance(rows, list):
+                languages = list(dict.fromkeys(row for row in rows[:16] if isinstance(row, str)
+                    and re.fullmatch(r'[A-Za-z][A-Za-z -]{0,39}', row)))
+        except Exception as error:
+            client.host_result('Vidzee languages', type(error).__name__)
+        servers = ['dcloud'] + ['v4:' + language for language in languages] + ['tik', 'v6:Hindi', 'v6:English']
+
+        def backend(server):
+            response = get(self.api + '/streams/' + route + '?s=' + quote(server, safe='') + '&e=1', headers)
+            if not isinstance(response, dict):
+                return
+            if isinstance(response.get('c'), str) and not response.get('url'):
+                response = vidzee_locator(response['c'])
+            url = response.get('url')
+            if not isinstance(url, str) or not url:
+                return
+            supplied = response.get('headers') or {}
+            if not isinstance(supplied, dict):
+                raise ValueError('Invalid Vidzee media headers')
+            media_headers = dict(headers)
+            for key, value in supplied.items():
+                media_headers = {k: v for k, v in media_headers.items() if k.lower() != key.lower()}
+                media_headers[key] = value
+            label = 'Vidzee ' + server.replace('v4:', 'Acme ').replace('v6:', '')
+            yield item(url, media_headers, label, info=str(response.get('language') or ''))
+        yield from self.each(servers, backend)

@@ -8,6 +8,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: cinestream-source-audit-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   protocols:
     runs-on: ubuntu-latest

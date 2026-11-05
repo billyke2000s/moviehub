@@ -1,0 +1,46 @@
+{
+    "site": "native:cinejoy",
+    "sourceCommit": "b86f8fe3cb5b1f388cbbab7442cdfcfd194fdfcf",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41766998519",
+    "playbackAuditVersion": 2,
+    "fullPlaybackVerified": false,
+    "contentReview": "pending",
+    "media": {
+        "movies": {
+            "complete": true,
+            "lookupOutcomes": {
+                "complete": 2
+            },
+            "candidatesTested": 2,
+            "playbackOutcomes": {
+                "verified": 1,
+                "no_decoded_video": 1
+            },
+            "technicalPasses": 1,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {
+                "audio_signal_or_selection_unverified": 1,
+                "technical_failure": 1
+            },
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        },
+        "series": {
+            "complete": true,
+            "lookupOutcomes": {
+                "complete": 1
+            },
+            "candidatesTested": 1,
+            "playbackOutcomes": {
+                "verified": 1
+            },
+            "technicalPasses": 1,
+            "sourceLimitMayHaveBeenReached": false,
+            "evidenceOutcomes": {
+                "audio_signal_or_selection_unverified": 1
+            },
+            "candidatesAwaitingContentReview": 0,
+            "fullPlaybackVerified": false
+        }
+    }
+}

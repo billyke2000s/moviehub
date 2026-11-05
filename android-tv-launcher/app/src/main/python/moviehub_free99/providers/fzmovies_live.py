@@ -3,7 +3,7 @@ from ast import literal_eval
 
 import re
 
-from six.moves.urllib_parse import parse_qs, urlencode, urlparse
+from six.moves.urllib_parse import parse_qs, urlencode, urlparse, urljoin
 
 from moviehub_free99 import cleantitle
 from moviehub_free99 import client
@@ -78,7 +78,8 @@ class source:
             if not results:
                 return
 
-            results2 = [i for i in results if title_imdb in i]   # IMDB value is what we're looking for
+            results2 = [i for i in results if title_imdb in
+                        DOM(i, 'span', attrs={'class': 'imdbRatingPlugin'}, ret='data-title')]
 
             if not results2:
                 return
@@ -90,8 +91,7 @@ class source:
             if not result_url:
                 return
 
-            if not result_url.startswith(('http', '/')):
-                result_url = f'{self.base_link}/{result_url}'
+            result_url = urljoin(self.base_link + '/', result_url)
 
             results2 = client.scrapePage(result_url, headers=self.headers, cookie=self.cookie).text
             pattern2 = r'(d.*?link[0-9]?)'
@@ -103,8 +103,7 @@ class source:
             infos = []
 
             for link, info in results5:
-                if not link.startswith(('http', '/')):
-                    link = f'{self.base_link}/{link}'
+                link = urljoin(self.base_link + '/', link)
                 response8 = client.request(link, headers=self.headers, cookie=self.cookie, timeout=20)
                 file_links = DOM(response8, 'a', attrs={'id': pattern2}, ret='href')
                 links.extend(file_links)  # add the links
@@ -116,8 +115,7 @@ class source:
             infos = []
 
             for link, info in result_links:
-                if not link.startswith(('http', '/')):
-                    link = f'{self.base_link}/{link}'
+                link = urljoin(self.base_link + '/', link)
 
                 response9 = client.request(link, headers=self.headers, cookie=self.cookie, timeout=20)
                 file_links = DOM(response9, 'a', attrs={'id': pattern2}, ret='href')
@@ -131,8 +129,7 @@ class source:
             pattern5 = r'(download[0-9]?)'
 
             for link, info in final_links:
-                if not link.startswith(('http', '/')):
-                    link = f'{self.base_link}/{link}'
+                link = urljoin(self.base_link + '/', link)
                 response10 = client.request(link, headers=self.headers, cookie=self.cookie, timeout=20)
                 file_links = DOM(response10, 'input', attrs={'name': pattern5}, ret='value')
                 links.extend(file_links)
@@ -141,7 +138,6 @@ class source:
             final_links2 = list(dict.fromkeys(final_links2))  # remove dups
 
             for link, info in final_links2:
-                info = '720p' if 'webm' in info.lower() else info
                 item = scrape_sources.make_direct_item(hostDict, link, host='Direct', info=info, referer=None, prep=True)
                 if item:
                     self.results.append(item)                

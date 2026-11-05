@@ -1,0 +1,180 @@
+{
+    "site": "free99:seriesloaded_ng",
+    "date": "2026-11-05",
+    "status": "movie_path_verified_series_send_resolution_pending",
+    "fullPlaybackVerified": false,
+    "previousReceipt": "One movie candidate and no series candidates in historical corrected-seek checking; no full certification.",
+    "currentInspection": {
+        "origin": "https://seriezloaded.tv",
+        "checks": "Inspect current homepage, Inception/Dune catalogue search and exact episode plus show-level Breaking Bad searches. Reuse existing app request headers; never generate challenge tokens.",
+        "codeReviewFinding": "Current exact normalized episode-title comparison excludes labelled episode ranges before the existing range-handling block can run. Confirm actual advertised catalogue structure before choosing a repair.",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41947115300",
+        "confirmed": "Live HTTP 200 search page advertises Breaking Bad Season 1 Episode 1 – 7 (Complete). Existing exact-card equality rejected it. Live Dune search advertises Dune: Part Two (2024) – Hollywood Movie, whose suffix prevented alias matching."
+    },
+    "next": "Retest the actual Send resolver and both media types with the guarded redirect fix. Preserve Inception movie proof and continue advertised alternatives if the exact episode remains unavailable.",
+    "repairs": [
+        "Accept an explicitly advertised episode range only for the exact show, requested season and contained episode, then select that exact advertised episode link.",
+        "Match movie title/year after removing only the observed Hollywood Movie publisher suffix. Different titles, years, seasons and out-of-range episodes remain rejected.",
+        "If a colon-bearing movie's full search yields no matching card, try its shorter catalogue term once while preserving exact full title/year verification on the returned card.",
+        "Preserve no-follow redirect requests in the existing guarded urllib adapter, including six.moves aliases, so legacy host helpers can inspect issued Location metadata without fetching the destination file."
+    ],
+    "validation": {
+        "newOfflineRegressionCases": 7,
+        "status": "Seven catalogue cases and three guarded-transport cases queued in CI; previous six catalogue cases passed within 211 tests.",
+        "scope": "Real existing loader requests and source emission, episode 10 before episode 1, missing requested episode, wrong season/show, wrong movie year and literal publisher suffix.",
+        "completedRegressionRun": {
+            "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41947649250",
+            "apkJobId": 126984291411,
+            "pythonTests": 211,
+            "pythonStatus": "passed",
+            "apkStatus": "success",
+            "remainingDeviceJobs": "Two jobs were cancelled by the later diagnostic-only commit; no all-six-green claim for this revision."
+        },
+        "redirectRegressionCases": 3
+    },
+    "currentAttempt": {
+        "sourceCommit": "f2e887b36ff9912114abe5e50c885647ab907b1f",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41947540445",
+        "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41947547706",
+        "status": "queued",
+        "media": [
+            "movies",
+            "series"
+        ],
+        "profile": "tv_720p",
+        "playbackAuditVersion": 2,
+        "audioEvidenceVersion": 3,
+        "series": {
+            "jobId": 126983368078,
+            "status": "completed_no_playback_candidates",
+            "lookup": "resolution_failed",
+            "extracted": 1,
+            "host": "send.cm",
+            "trace": "Three SeriezLoaded HTTP 200 requests reached its exact advertised episode handoff; the existing Send resolver fetched send.now with HTTP 200 but returned no media."
+        },
+        "movies": {
+            "jobId": 126983367934,
+            "status": "completed_one_reviewed_movie_pass",
+            "sourceCommit": "f2e887b36ff9912114abe5e50c885647ab907b1f",
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41947540445",
+            "playbackAuditVersion": 2,
+            "audioEvidenceVersion": 3,
+            "sample": {
+                "evidenceId": "0001",
+                "title": "Inception",
+                "durationSeconds": 8888,
+                "expectedMinutes": 148,
+                "dimensions": [
+                    1280,
+                    640
+                ],
+                "provider": "seriezloaded.tv · new.waffi.cloud · Watch",
+                "displayedFpsByPosition": {
+                    "start": 24.00474167736837,
+                    "middle": 24.08625550225036,
+                    "late": 23.952686052242484
+                },
+                "midpointDecoded": true,
+                "lateSeekDecoded": true,
+                "selectedAudioLanguage": "und",
+                "capturedSourceAudio": {
+                    "start": {
+                        "tracks": [
+                            {
+                                "seconds": 7.872,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -37.2,
+                                        "activeSeconds": 7.872
+                                    },
+                                    {
+                                        "rmsDbfs": -35.85,
+                                        "activeSeconds": 7.872
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0001-start-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": true
+                    },
+                    "middle": {
+                        "tracks": [
+                            {
+                                "seconds": 5.9733125,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -46.25,
+                                        "activeSeconds": 5.9733125000000005
+                                    },
+                                    {
+                                        "rmsDbfs": -46.07,
+                                        "activeSeconds": 5.9733125000000005
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0001-middle-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": true
+                    },
+                    "late": {
+                        "tracks": [
+                            {
+                                "seconds": 7.936,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -47.98,
+                                        "activeSeconds": 6.936
+                                    },
+                                    {
+                                        "rmsDbfs": -48.23,
+                                        "activeSeconds": 6.936
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0001-late-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": true
+                    }
+                },
+                "contentIdentityConfirmed": true,
+                "contentReview": "Opening Legendary logo, elderly Saito early, Browning/Cobb midpoint and Ariadne late match Inception. Full picture fits; no failure overlay in reviewed frames.",
+                "physicalAudioOutputTested": false
+            },
+            "scope": "Representative opening, midpoint and late samples with both seeks and independently decoded non-silent audio; no uninterrupted whole-film or physical speaker claim.",
+            "remaining": "Dune exact full-title search returned no matches; this is now receiving a bounded shorter catalogue query with the original full-title/year match preserved."
+        }
+    },
+    "moviePlaybackVerified": true,
+    "seriesPlaybackVerified": false,
+    "sendInvestigation": {
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41948970473",
+        "jobId": 126988088874,
+        "outcome": "Exact advertised Send handoff reaches a normal-looking HTTP 200 form; direct bundled resolver raises ResolverError at send.py:43 (Unable to locate File). Broad Cloudflare script markers are present, but neither a challenge page title nor interactive response widget was detected; this is not proof of an interactive block.",
+        "protocolFinding": "The existing compatibility opener ignored custom NoRedirection handlers; the legacy helper then loses final Location metadata. New regressions require the issued location while keeping all HTTP under the bounded client.",
+        "limits": "A code-level transport repair is not a Send playback pass; fresh native evidence is still required."
+    }
+}

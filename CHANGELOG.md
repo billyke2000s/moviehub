@@ -1,5 +1,46 @@
 ## Unreleased
 
+- AnyMovies now resolves its advertised alternative movie players through existing native protocols, preserving exact IMDb/TMDB identity and other host choices. Native verification is in progress.
+
+- Read BnWMovies' advertised same-film download listing to retain full MP4/MPEG alternatives
+  alongside its embedded derivatives, and use the advertised search RSS feed after a primary
+  search failure. Validate actual playback before certification.
+
+- Reject known selected/captured language conflicts in single-track audit recordings.
+
+- Require complete source-audio capture windows in audit evidence and measure partial PCM
+  blocks accurately; tiny recordings no longer count as sustained audio verification.
+
+- Correct FZMovies IMDb matching and relative download hops; preserve original format labels
+  instead of assuming WebM is 720p, and report unsupported TV capability without hiding the site.
+
+- Reject conflicting BnWMovies target-page film years in both existing loaders while
+  retaining both advertised video formats; playback checks remain pending.
+
+- Isolate each audited source from saved resume positions and record/check its initial
+  timestamp, preventing an end-of-film sample from counting as opening footage.
+
+- Save each website's movie/series audit evidence and checklist checkpoint before advancing
+  to another site, preserving failures and requiring explicit content review before certification.
+
+- Add AnyMovies' current IMDb-scoped TV lookup to both existing loaders, preserving movie
+  extraction and reporting downstream unsupported players honestly. Playback verification is pending.
+- Resume the Android evidence audit one site at a time, saving code and checklist checkpoints.
+
+- Repair Vidzee’s current movie/episode stream service, advertised language servers and public JSON locator format; retain source headers and URL/media validation.
+- Add opt-in rendered frames and bounded native media recordings with independent audio-signal checks; content identity remains pending visual review.
+- Use shared genre-appropriate audit identities for classic, anime, Asian and regional catalogues.
+
+- Add exact season/episode handling to 4KHDHub, Rtally and Akwam; follow Akwam's advertised current catalogue domain.
+- Repair Multimovies dubbed-series discovery with exact TMDB/episode checks and unwrap its advertised ModiPlay host controls.
+- Support Akwam’s current two-hop download page as well as older mirrors.
+- Require sustained displayed frame rate in addition to clock, video-gap and played-audio progress in the VOD audit.
+- Scope Rtally media to the matched post, excluding unrelated recommendation cards and season packs.
+- Audit displayed video and played audio progress, handle statistics resets on seeking, and use normal signed-link refresh.
+
+- Use the same enabled free-site list for Movies and Series; keep unsupported content types explicit.
+- Expand the site audit to check complete coverage, sustained video/audio output, runtime and two seek positions.
+
 ## 1.0.19 (29 October 2026)
 
 - Add 36 enabled CineStream adapter protocols for additional film and series sites and playback
@@ -254,6 +295,10 @@ MovieHub 1.0: everything tested in MovieHub Experimental, up to exp-15, is now p
 - Preserve host headers and record third-party provenance and outstanding release blockers.
 
 # Changelog
+
+- AnyMovies series lookup now discovers the other player tabs advertised by its first-party interface and reuses existing host protocols for the exact requested episode. Shared MoviesAPI handling accepts current slash episode URLs as well as legacy URLs; native playback verification remains in progress.
+
+- BnWMovies discovers the selected film’s explicitly advertised full MP4 and original MPEG alongside embedded files, and uses its current search RSS feed when primary search fails. Native verification now confirms a full-picture, 91-minute movie with smooth MP4 playback, audio and seeking; legacy MPEG/Ogg failures remain recorded.
 
 ## Unreleased
 

@@ -1,5 +1,69 @@
 # Architecture
 
+## AnyMovies advertised movie players — 4 November 2026
+
+The existing catalogue loaders retain the requested TMDB ID and use movie_player_sources only for actual VidFast/Peachify buttons whose IMDb/TMDB locator matches that film. The existing native protocol classes return sources through the normal media validation and playback path. Other player links retain existing host processing; no new engine or website identity is added.
+
+AnyMovies series lookup keeps its IMDb-scoped catalogue selection, then reads only the
+first-party script actually advertised by that page. Literal exact-episode tab templates
+feed the existing host resolver; advertised VidFast/Peachify tabs reuse their existing
+native protocol classes with the original requested IDs. This adds no website identity or
+player engine. Conflicting downstream identity and filename evidence is rejected.
+
+## BnWMovies advertised alternatives — 4 November 2026
+
+`moviehub_compat/bnwmovies_archive.py` shares advertised Archive-directory discovery between
+both existing BnWMovies loaders. The directory must be linked by the matched film page and
+match an embedded Archive item. Only listed video files with an existing film filename stem
+are accepted; unrelated items, trailers, foreign hosts and credential/query links are excluded.
+Listing failure preserves embedded choices. Primary search failure can use the currently
+advertised public RSS search feed, requiring a matching title and same-origin post link
+before the existing target-page year check.
+
+## Per-site audit persistence
+
+The live audit assigns a unique player ID to every individual candidate, so it cannot inherit
+the default `media` resume position or another candidate's history. It records the actual
+initial timestamp and rejects resumed openings; this changes only test code, not app resume.
+
+`all-vod-sites-audit.yml` schedules one enabled website per matrix job with maximum concurrency three.
+`audit-one-vod-site.sh` reuses the existing player/evidence scripts for both media types and
+preserves failed reports separately. `site-audit-checkpoint.py` emits only redacted coverage
+and outcome counts, never a content certification. `save-site-audit-checkpoint.cjs` writes
+that report plus one checklist row in one commit, re-reading the latest branch on conflicts.
+The source commit is recorded separately from the later evidence commit. Reports are retained
+under a run-specific path; source changes still require explicit repair commits. Each queued
+site checks out the latest audit branch when it starts and records that exact commit, so saving
+a provider repair does not restart the whole queue. This is a sequence of dated site snapshots,
+not a claim that all sites passed on one application revision.
+
+## Shared VOD site selection
+
+FZMovies' existing loader requires an exact IMDb badge, resolves advertised relative hops,
+and retains original format labels instead of assuming WebM means 720p. Its upstream TV
+methods are stubs; current-site inspection confirms TV is linked to a separate site. The
+runtime reports unsupported type while the shared movie/series site inventory remains intact.
+
+Both existing BnWMovies loaders check explicit target-page `itemprop=name` title/year
+metadata before extracting media. Conflicting named-film years are rejected; unrelated
+recommendation dates are not identity evidence. Both advertised video formats remain available.
+
+AnyMovies' existing Free99/Scrubs loaders share `moviehub_compat/anymovies_series.py` for
+current series cards. The parser requires a series card and player link with the requested
+IMDb identity, then uses VidSrc's documented exact-episode route. Runtime capability is
+extended without changing upstream manifest provenance. Existing movie extraction and
+host resolution remain in place; unsupported hosts do not become direct media links.
+
+4KHDHub selects real individual episode filenames. Rtally reads only literal JSON for the matched
+post and follows the site's numbered episode-player mapping. Akwam uses its advertised `.ss`
+catalogue, matching IMDb identity and labelled season/episode before the existing media hops.
+Provider/site identities remain stable. Audit seeks tolerate statistics resets but require new
+displayed frames; sustained windows check presented pictures and played audio buffers. Normal
+source refresh is enabled in the audit, matching production managed VOD startup/recovery.
+
+`FreeVodProviders.ids(context, series)` uses the same enabled website IDs as `ids(context)`. Python adapter movie/series flags remain capability facts for safe content routing. `query_site` reports unsupported types explicitly; it does not substitute a film for an episode. Retired and parked sites remain excluded.
+
+
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names

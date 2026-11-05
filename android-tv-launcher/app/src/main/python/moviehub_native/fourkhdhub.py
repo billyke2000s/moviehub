@@ -46,7 +46,21 @@ class source:
     def movie(self, imdb, tmdb, title, localtitle, aliases, year):
         return json.dumps(dict(title=title, year=str(year), aliases=aliases))
 
+    def tvshow(self, imdb, tmdb, tvdb, title, localtitle, aliases, year):
+        return self.movie(imdb, tmdb, title, localtitle, aliases, year)
+
+    def episode(self, key, imdb, tmdb, tvdb, title, premiered, season, episode):
+        if not key or not str(season).isdigit() or not str(episode).isdigit():
+            return None
+        if int(season) < 1 or int(episode) < 1:
+            return None
+        info = json.loads(key)
+        info.update(season=int(season), episode=int(episode))
+        return json.dumps(info)
+
     def sources(self, key, hosts):
+        if not key:
+            return []
         info = json.loads(key)
         page = client.request(self.base_link + '/?' + urlencode({'s': info['title']}))
         found = None
@@ -64,10 +78,19 @@ class source:
             return []
         detail = client.request(found, referer=self.base_link + '/')
         results = []
-        for card in dom_parser.parse_dom(detail, 'div', {'class': 'download-item'}):
+        series = 'season' in info
+        card_class = 'episode-download-item' if series else 'download-item'
+        for card in dom_parser.parse_dom(detail, 'div', {'class': card_class}):
             client.check()
-            labels = dom_parser.parse_dom(card.content, 'div', {'class': 'file-title'})
+            labels = dom_parser.parse_dom(card.content, 'div', {'class': 'episode-file-title' if series else 'file-title'})
             filename = text(labels[0].content) if labels else text(card.content)
+            if series:
+                from moviehub_identity import matches
+                named = re.search(r'(?i)(?<![a-z0-9])S(\d{1,2})[ ._-]*E(\d{1,3})(?!\d)', filename)
+                if named is None or not matches(dict(filename=filename), info):
+                    continue
+                if re.search(r'(?i)\.(?:zip|rar|7z)\b|\b(?:batch|complete pack)\b', filename):
+                    continue
             quality = re.search(r'\b(2160|1080|720|480)p\b', filename, re.I)
             quality = quality[1] + 'p' if quality else 'SD'
             for link in anchors(card.content):
@@ -102,6 +125,7 @@ class source:
                         item = direct(address, 'https://hubcloud.ist/', provider, quality)
                         size = re.search(r'\b[0-9.]+\s*[GM]B\b', text(card.content))
                         item['info'] = (filename + (' · ' + size[0] if size else ''))[:500]
+                        item['filename'] = filename
                         item['boundedRanges'] = True
                         results.append(item)
                 except Exception as error:

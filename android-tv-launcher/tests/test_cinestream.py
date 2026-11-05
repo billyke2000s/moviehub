@@ -367,7 +367,7 @@ class CineStreamTests(unittest.TestCase):
 
     def test_akwam_follows_download_hops_only_after_matching_imdb(self):
         provider = sites.Akwam()
-        pages = ['<a class="box" href="/film">A Film</a>', '<a href="https://imdb.com/title/tt1234/">IMDb</a><a class="link-download" href="/one">download</a>', '<a class="download-link" href="/two">next</a>', '<a class="link" href="https://cdn.example/film.mp4">file</a>']
+        pages = ['<a class="box" href="/movie/123/film">A Film</a>', '<a href="https://imdb.com/title/tt1234/">IMDb</a><a class="link-download" href="/one">download</a>', '<a class="download-link" href="/two">next</a>', '<a class="link" href="https://cdn.example/film.mp4">file</a>']
         with patch.object(client, 'request', side_effect=pages) as request:
             rows = provider.sources(self.key(provider), [])
         self.assertEqual(request.call_count, 4)
@@ -375,6 +375,37 @@ class CineStreamTests(unittest.TestCase):
         with patch.object(client, 'request', side_effect=[pages[0], pages[1].replace('tt1234', 'tt9999')]) as request:
             self.assertEqual(provider.sources(self.key(provider), []), [])
         self.assertEqual(request.call_count, 2)
+
+    def test_akwam_current_download_page_can_contain_final_file_without_extra_hop(self):
+        provider = sites.Akwam()
+        pages = ['<a href="/movie/123/film">A Film</a>',
+                 '<a href="https://imdb.com/title/tt1234/">IMDb</a>'
+                 '<a class="link-download" href="/download/123">download</a>',
+                 '<a class="link btn btn-light" download href="https://cdn.example/film.mp4">file</a>']
+        with patch.object(client, 'request', side_effect=pages) as request:
+            rows = provider.sources(self.key(provider), [])
+        self.assertEqual(request.call_count, 3)
+        self.assertEqual(rows[0]['url'].partition('|')[0], 'https://cdn.example/film.mp4')
+
+    def test_akwam_series_verifies_imdb_season_and_episode_on_current_domain(self):
+        provider = sites.Akwam()
+        imdb = '<a href="https://www.imdb.com/title/tt1234/">IMDb</a>'
+        pages = ['<a class="box" href="/series/1/show">A Film</a>',
+                 imdb + '<h1>A Film الموسم الاول</h1><a href="/series/2/show">الموسم الثاني</a>',
+                 imdb + '<h1>A Film الموسم الثاني</h1><a href="/episode/11/wrong">حلقة 1</a><a href="/episode/13/right">حلقة 3</a>',
+                 '<a class="link-download" href="/one">download</a>',
+                 '<a class="download-link" href="/two">next</a>',
+                 '<a class="link" href="https://cdn.example/right.mp4">file</a>']
+        with patch.object(client, 'request', side_effect=pages) as request:
+            rows = provider.sources(self.key(provider, True), [])
+        self.assertEqual(len(rows), 1)
+        self.assertIn('/episode/13/right', request.call_args_list[3].args[0])
+        self.assertTrue(request.call_args_list[0].args[0].startswith('https://akwam.ss/search?'))
+        self.assertEqual(provider.season_number('Season 10'), 10)
+        self.assertEqual(provider.season_number('الموسم الأول'), 1)
+        wrong = pages[:2] + [pages[2].replace('tt1234', 'tt9999')]
+        with patch.object(client, 'request', side_effect=wrong):
+            self.assertEqual(provider.sources(self.key(provider, True), []), [])
 
     def test_asiaflix_selects_requested_episode_from_nested_angular_state(self):
         provider = sites.Asiaflix()
@@ -417,29 +448,78 @@ class CineStreamTests(unittest.TestCase):
         self.assertEqual([r['quality'] for r in rows], ['Auto', '2160p', '720p'])
         self.assertTrue(all(parse_qs(r['url'].partition('|')[2]) == {'Referer': ['https://cinejoy.pk/']} for r in rows))
 
-    def test_vidzee_cbc_response_headers_override_defaults_case_insensitively(self):
-        import base64
+    def test_vidzee_current_locator_and_exact_episode_routes_preserve_headers(self):
         from moviehub_native import cinestream_crypto as crypto
-        from resolveurl.lib import pyaes
-        iv = b'0123456789abcdef'
-        cipher = pyaes.Encrypter(pyaes.AESModeOfOperationCBC(crypto.VIDZEE_FORMAT_KEY, iv=iv))
-        encrypted = cipher.feed(b'https://cdn.example/film.m3u8') + cipher.feed()
-        inner = base64.b64encode(iv).decode() + ':' + base64.b64encode(encrypted).decode()
-        response = {'headers': {'Referer': 'https://required.example/'}, 'url': [dict(link=base64.b64encode(inner.encode()).decode())]}
+        encoded = 'JHdmKJxbY01g15bnCKQtdTv5LiUdu0TtFN30RxcoizpAWpmS9hiqJOz8mx0NXwK2H+FpnFe/rmcMF4BT4fS6vM+GAoyayYyriqfmVfCiMsTiKzGpTqvV1g4oIvB0CKtG+CbgqvWIvfb9RfIVZaY='
         provider = crypto.Vidzee()
-        with patch.object(client, 'request', return_value=response):
+        def request(url, **kwargs):
+            self.assertNotIn('/api/server', url)
+            self.assertIn('/tv/123/2/3', url)
+            if '/languages/' in url:
+                return {'languages': ['English', 'Hindi', 'English', '../wrong', 42]}
+            self.assertEqual(parse_qs(urlparse(url).query)['e'], ['1'])
+            return {'c': encoded}
+        with patch.object(client, 'request', side_effect=request) as call:
             rows = provider.sources(self.key(provider, True), [])
-        self.assertEqual(len(rows), 7)
+        self.assertEqual(len(rows), 6)
+        self.assertTrue(any('s=v4%3AEnglish' in entry.args[0] for entry in call.call_args_list))
+        self.assertEqual(rows[0]['url'].partition('|')[0], 'https://cdn.example/film.m3u8')
         headers = parse_qs(rows[0]['url'].partition('|')[2])
         self.assertEqual([v for k, v in headers.items() if k.lower() == 'referer'], [['https://required.example/']])
+        self.assertEqual(rows[0]['info'], 'English')
+
+    def test_vidzee_unavailable_backend_does_not_hide_independent_movie_servers(self):
+        from moviehub_native import cinestream_crypto as crypto
+        provider = crypto.Vidzee()
+        def request(url, **kwargs):
+            self.assertIn('/movie/123', url)
+            if '/languages/' in url:
+                raise ValueError('Unavailable languages')
+            if 's=dcloud' in url:
+                raise ValueError('Unavailable server')
+            return {'url': 'https://cdn.example/film.m3u8', 'language': 'English'}
+        with patch.object(client, 'request', side_effect=request):
+            rows = provider.sources(self.key(provider), [])
+        self.assertEqual(len(rows), 3)
+        for invalid in ('!', 'A' * 262145, None):
+            with self.subTest(invalid_type=type(invalid).__name__), self.assertRaises((ValueError, TypeError)):
+                crypto.vidzee_locator(invalid)
 
     def test_rtally_keeps_distinct_backend_routes_and_direct_resources(self):
         from moviehub_native.cinestream_embeds import Rtally
         provider = Rtally()
-        with patch.object(client, 'request', return_value=r'{\"small\":\"https://cdn.example/film.mp4\",\"filemoonUrl\":\"one\",\"vidhideUrl\":\"two\"}'):
+        search = {'results':[dict(title='A Film', slug='a-film', year='2020')]}
+        post = dict(title='A Film', year=[{'title':'2020'}], small='https://cdn.example/film.mp4',
+                    filemoonUrl='one', vidhideUrl='two')
+        data = json.dumps(dict(post=post, recommendations=[dict(title='Other Film', small='https://wrong.example/wrong.mp4')]))
+        with patch.object(client, 'request', side_effect=[search, data]):
             rows = provider.sources(self.key(provider), [])
-        self.assertEqual([r['url'].partition('|')[0] for r in rows], ['https://cdn.example/film.mp4', 'https://filemoon.sx/e/one', 'https://vidhideplus.com/v/two'])
+        self.assertEqual([r['url'].partition('|')[0] for r in rows], ['https://cdn.example/film.mp4', 'https://bysewihe.com/e/one', 'https://vidhideplus.com/v/two'])
         self.assertEqual([r['direct'] for r in rows], [True, False, False])
+
+    def test_rtally_series_uses_verified_show_season_and_the_sites_episode_index(self):
+        from moviehub_native.cinestream_rtally import Rtally
+        provider = Rtally()
+        search = {'results': [dict(title='A Film Season 1', slug='a-film-season-1', year='2020'),
+                              dict(title='A Film Season 2', slug='a-film-s2', year='2021')]}
+        post = dict(title='A Film Season 2', year=[{'title':'2021'}],
+                    multiLinksDl='episode1,episode2,episode3,episode4', small='https://wrong.example/season-pack.zip')
+        with patch.object(client, 'request', side_effect=[search, json.dumps(dict(post=post))]) as call:
+            rows = provider.sources(self.key(provider, True), [])
+        self.assertEqual([r['url'] for r in rows], ['https://bysewihe.com/e/episode3'])
+        self.assertTrue(call.call_args.args[0].endswith('/post/a-film-s2'))
+        with patch.object(client, 'request', return_value={'results':[dict(title='A Film Season 1', slug='wrong', year='1999')]}) as call:
+            self.assertEqual(provider.sources(self.key(provider, True), []), [])
+        self.assertEqual(call.call_count, 1)
+
+    def test_rtally_flight_reads_post_literals_without_executing_scripts_or_recommendations(self):
+        from moviehub_native.cinestream_rtally import posts
+        chunk = '1:' + json.dumps({'props':dict(post=dict(title='Chosen'), recommendations=[dict(title='Wrong')])}) + '\n'
+        page = '<script>self.__next_f.push(' + json.dumps([1,chunk]) + '); danger();</script>'
+        self.assertEqual(list(posts(page)), [dict(title='Chosen')])
+        self.assertEqual(list(posts('var post = danger();')), [])
+        self.assertEqual(list(posts(json.dumps(dict(recommendations=[dict(title='Wrong')])))), [])
+
 
     def test_implicit_requests_use_upstream_profile_without_changing_legacy_client(self):
         legacy = client.UserAgent
@@ -564,6 +644,28 @@ class CineStreamTests(unittest.TestCase):
             if rows:
                 self.assertEqual(rows[0]['source'], 'Multimovies Real backend')
                 self.assertFalse(rows[0]['direct'])
+
+    def test_multimovies_dubbed_alias_requires_exact_tmdb_and_episode_and_unwraps_hosts(self):
+        from moviehub_native.cinestream_embeds import Multimovies
+        provider = Multimovies()
+        search = {'tv_shows': [dict(title='A Film (Now in Hindi)', year=2023, url='/series/dub-99')]}
+        for identity, season, episode, count in (('123', 2, 3, 1), ('999', 2, 3, 0),
+                                                  ('123', 1, 3, 0), ('123', 2, 1, 0)):
+            config = dict(season=2, episode=3, initialServers=[dict(name='ModiPlay', type='iframe',
+                url='https://rozgarlelo.modiplay.xyz/embed/tmdb/tv?id=' + identity +
+                    '&amp;amp;s=' + str(season) + '&amp;amp;e=' + str(episode))])
+            page = 'const watchConfig = ' + json.dumps(config) + ';'
+            wrapper = ('<div class="srv-item" data-pname="Host" data-url="https://host.example/e/real"></div>'
+                       '<div class="srv-item" data-url="/proxy.php?p=1"></div>'
+                       '<a href="https://ads.example/e/ad">Ad</a>'
+                       '<div class="recommendation" data-url="https://host.example/e/wrong"></div>')
+            with patch.object(client, 'request', side_effect=[search, page, wrapper]) as request:
+                rows = provider.sources(self.key(provider, True), [])
+            self.assertEqual(len(rows), count)
+            if rows:
+                self.assertEqual(rows[0]['url'], 'https://host.example/e/real')
+                self.assertEqual(parse_qs(urlparse(request.call_args.args[0]).query),
+                                 dict(id=['123'], s=['2'], e=['3']))
 
     def test_current_animesalt_retains_advertised_hosts_and_languages(self):
         import base64

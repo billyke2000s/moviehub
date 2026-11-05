@@ -1,0 +1,46 @@
+{
+    "site": "native:projectfreetv_sx",
+    "sourceCommit": "abffe8e3a6782ac7fdf1e313e558d04814c916dd",
+    "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41766998519",
+    "playbackAuditVersion": 2,
+    "date": "2026-11-04",
+    "artifactId": 13297696110,
+    "status": "inception_content_confirmed_audio_windows_incomplete",
+    "fullPlaybackVerified": false,
+    "candidatesTested": 4,
+    "technicalPasses": 2,
+    "reviewedSamples": [
+        {
+            "evidenceId": "0001",
+            "title": "Inception",
+            "durationSeconds": 8888,
+            "displayedFps": {
+                "start": 21.80469715698393,
+                "middle": 21.793213255050254,
+                "late": 21.563079324812175
+            },
+            "capturedAudioSeconds": {
+                "start": [0.0],
+                "middle": [0.952],
+                "late": [1.6021875]
+            }
+        },
+        {
+            "evidenceId": "0002",
+            "title": "Inception",
+            "durationSeconds": 8888,
+            "displayedFps": {
+                "start": 21.811167713536772,
+                "middle": 21.949034441568784,
+                "late": 20.899053627760253
+            },
+            "capturedAudioSeconds": {
+                "start": [0.0],
+                "middle": [0.952],
+                "late": [1.6021875]
+            }
+        }
+    ],
+    "visualReview": "Both contacts show Inception studio opening, Cillian Murphy midpoint and Cobb/Mal late scenes. Both early frames display buffering; no no-working-backup overlay is visible in the selected contact sheets.",
+    "next": "Both opening recordings decode no audio; middle and late captures are only 0.952 and 1.6022 seconds. Series has no matching sample. Two further movie candidates fail playback. These are incomplete audio-evidence windows, not proof the provider audio is silent."
+}

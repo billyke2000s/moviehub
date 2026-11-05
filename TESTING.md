@@ -1,5 +1,220 @@
 # Testing
 
+## Decoder setup reliability
+
+The one-site runner downloads Ubuntu decoder packages in parallel using its preinstalled
+aria2 and SHA256 values from APT metadata. Unsafe output paths, absent hashes and
+conflicting package hashes fail closed. GitHub’s fixed APT mirror-list transport expands
+to its configured HTTP mirrors; arbitrary local-file URIs remain rejected. Verified
+package archives are cached immediately
+after installation, even if later site playback fails. This addresses slow package
+transfers; it changes no production player or playback/audio acceptance criteria.
+
+## AnyMovies movie and episode samples verified — 4 November 2026
+
+Native run 41935755045 at `c20b7ef` verifies three movie routes across Inception and
+Dune: Part Two, plus two Breaking Bad S1E1 routes. Reviewed pictures match the titles
+and fit the display; runtime, smoothness, both seeks and all three source-audio windows
+pass. All six Android CI jobs pass in run 41935761675, including 205 Python tests.
+The checklist records **should be all good g** for those supported paths. Remaining
+failed alternatives stay explicit. This is sampled playback, not every title, uninterrupted
+viewing or physical speakers. Continue with FZMovies next.
+
+## AnyMovies movie player regression checks — 4 November 2026
+
+205 Python tests and 34 core suites pass locally. New cases cover exact movie IDs, rejecting wrong/foreign/credentialled player buttons, both catalogue loaders retaining TMDB identity, and existing native protocols receiving movie keys without episode fields. The moved diagnostic test now creates its own request scope. These tests do not establish live movie playback.
+
+## AnyMovies alternate series players — 4 November 2026
+
+Current first-party series UI publishes four player tabs. Regressions cover literal template
+parsing, exact requested show/episode, both catalogue loaders, optional-script failure,
+foreign or credentialled players, conflicting returned identity/filenames, and MoviesAPI's
+current slash route alongside legacy routes. A further case verifies the advertised
+VidFast/Peachify tabs call existing native protocols with the original IDs and episode.
+The first four new Python cases and core CI stages pass at `d1335ea`; final native results
+remain pending. No AnyMovies playback pass is claimed.
+
+## BnWMovies native full-frame verification — 4 November 2026
+
+Run 41892016460 at `92ad8f3` found four actual file routes. Full MP4 renders
+29.45/29.25/29.63 fps and has 5.64/6.57/4.46 seconds of non-silent English AAC
+in the three recorded windows; all recordings confirm start/stop events. Both seeks pass,
+and visual review confirms the entire matching film picture fits. Small MP4 also passes;
+MPEG fails a playback/output criterion and Ogg fails midpoint seeking. Six Android
+regression jobs pass in run 41892024081. Scope is one verified movie with sampled
+opening/midpoint/late playback, not uninterrupted viewing or physical speakers.
+
+## BnWMovies 30 fps investigation — 4 November 2026
+
+The new full MP4 has correct runtime, matching film frames, decoded source-audio windows
+and successful midpoint/late seeks, but the 1080p software-rendered emulator displays only
+18–20 fps for its 29.97 fps input. The calibration now generates an actual 30 fps 720p
+synthetic input and compares 1920x1080 versus 1280x720 emulator output. Its nominal rate
+comes from the real VLC track metadata, not a hardcoded 24. Reports record whether each
+window meets the existing 80-percent frame/progress and four-second gap requirements.
+The first 1280x720 override run passes both MP4 technical/audio checks but its screenshots
+are clipped. The next comparison uses native tv_1080p/tv_720p profiles without wm overrides.
+The same BnWMovies files are retested at native 1280x720 output; their source dimensions, codecs,
+player, relay and acceptance thresholds do not change. No production display setting changes.
+
+## BnWMovies advertised alternatives — 4 November 2026
+
+BnWMovies regressions exercise both real loaders returning full MP4/original MPEG plus
+existing embeds. Separate cases reject foreign files/items, trailers, credentials, traversal
+and malformed URLs, avoid guessing unadvertised directories and retain embeds when the
+optional listing is unavailable. All 197 Python tests pass. Primary-search server-error fallback to the current RSS feed
+is exercised in both loaders; wrong-title/foreign/credentialled feed entries remain rejected. MPEG-program-stream evidence
+decoding is checked with an actual generated MPEG2/MP2 control; live verification remains
+separate and uses all four returned choices for the same film.
+
+## Audio language review correction — 4 November 2026
+
+Audio evidence version 3 rejects a single recorded track when its known language conflicts
+with the selected language. A sole track with missing/undefined language, or an unknown player
+selection, can establish a source signal without proving its language. Regressions cover the
+known mismatch and both unknown cases. Regional tags such as en-GB/en_US match eng;
+whitespace and case are normalized. The four-second duration/event checks remain active.
+
+## Audio capture completeness correction — 4 November 2026
+
+Audio evidence version 2 measures the actual length of the final partial PCM block instead
+of rounding every fragment up to half a second. Each selected source-audio window must
+decode at least four seconds of the requested eight seconds, contain a measured non-silent
+signal and have confirmed recording events. Short captures remain unverified even when
+they contain sound. Historical technical playback counts remain dated evidence; their old
+audio flags do not establish this stronger requirement. This changes the offline evidence
+checker, not production playback or smoothness thresholds. The regression suite covers a
+50 ms fragment, missing events, the duration boundary, silence and track-language selection.
+
+
+## Independent runner throughput control — 4 November 2026
+
+The original opt-in calibration job generated a synthetic 1280×720/24 fps H.264/AAC tone fixture
+only in its runner workspace. The production relay connects to the existing loopback fixture
+through the established test connection seam; no public upstream is contacted. It reuses the
+managed-player fixture and corrected
+seek helper, measuring displayed frames, audio buffers, clock progress and gaps at opening,
+midpoint and late seek. It makes no provider requests, changes no production assets or
+thresholds, and cannot certify a provider. The new calibration test skips unless explicitly
+selected with vodRunnerCalibration=true; the required six focused fixture cases are unchanged.
+This control is needed before attributing low displayed frame rates to a website or to CI.
+
+## Audit seek guard correction — 4 November 2026
+
+The live audit previously called VLC setTime directly, bypassing MovieHub’s normal
+VodPlayback.seeking guard. Intentional seek buffering could therefore trigger failover and
+backup-error overlays during an individual-source check. The audit now notifies the existing
+guard before each jump, matching user/resume behavior; production timing and thresholds are
+unchanged. The existing managed-fixture seek test now calls that actual audit helper and
+injects buffering to require that it is not classified as a five-second stall.
+
+New receipts identify playbackAuditVersion 2. Resume coverage rechecks all older receipts
+that tested video candidates, while keeping completed lookup-only checks. Two regressions
+prevent stale/unknown playback methods from passing coverage. Historical decoded frames and
+lookup results remain evidence, but old seek/smoothness failures and backup overlays need
+this corrected-method retest before attributing them to a provider or the production player.
+
+## PressPlayZ advertised alternatives — 4 November 2026
+
+The 182-test Python suite and all 34 Java core suites pass. The current selector imports a
+shared module whose seven literal server choices are now read as data. No downloaded JS is
+executed. Regressions reject executable values, duplicate keys, unsafe templates and foreign
+module URLs, retain the validated default if the bundle is unavailable, and continue after an
+individual backend fails. Current movie/TV module imports and all seven templates were checked.
+The default MoviesAPI Inception endpoint currently returns HTTP 404/result false; this repair
+restores alternative enumeration. The focused pilot now checks PressPlayZ movies and series
+using that saved code; Android playback/content verification remains pending.
+
+## Resuming the site audit — 4 November 2026
+
+The audit now resumes missing/incomplete movie-and-series receipts across saved runs, with
+up to three independent site jobs. Each still uploads and commits its own report immediately.
+A complete check with playback failures remains a repair item; skipping that completed check
+is not a content certification. A newer incomplete receipt overrides older complete coverage.
+The combined-run review gate requires all 74 complete checks and explicit playback verification.
+A manual fresh option rechecks the full inventory. Six queue regressions cover incomplete/missing
+coverage, numeric run ordering, identity validation, strict completion flags and no false pass.
+
+## PressPlayZ page-parser checkpoint — 4 November 2026
+
+The Python suite passes 172 tests and all 34 Java core suites pass. Current captured Inception
+search/detail HTML returns the published player only after matching TMDB 27205. The Modern
+Family page advertises an active TV template which expands TMDB 1421, season 2, episode 3.
+Regression cases reject conflicting identities, foreign catalogue links, wrong media types,
+inactive/malformed player data and unknown template fields. This restores the page-selected
+server; full selector enumeration and live playback/content verification remain pending.
+
+## Levidia episode checkpoint — 4 November 2026
+
+The focused evidence pilot now retests Levidia movies/series and compares Iwaatch movies with
+and without native recording. Its results remain separate from the saved all-site queue.
+The full Python suite passes 170 tests; all 34 Java core suites pass. Both original Levidia
+loaders now use exact advertised episode tokens; Free99 requests the selected season.
+Regressions put episode 10 before episode 1 and cover wrong-season, missing-episode, padded
+and uppercase identifiers plus an existing season query. Current Breaking Bad season 2 HTML
+confirms the advertised s2e1/s2e10 links. The earlier Android attempt timed out during emulator
+boot, so playback certification remains pending a repaired-source retry.
+
+## FZMovies checkpoint — 3 November 2026
+
+The 168-test Python suite passes. Added cases reject an IMDb prefix collision, follow exact
+root/protocol-relative download hops, preserve a WebM label without inventing 720p, and report
+the movie-only TV limitation while retaining all 74 shared sites. Current homepage/search
+inspection confirms the catalogue and IMDb markup. These checks do not certify playback.
+
+## BnWMovies identity checkpoint — 3 November 2026
+
+The full Python suite passes 166 tests. The added regression drives both original loaders,
+retains both advertised formats for a matching target year, and rejects a same-named film's
+conflicting year despite unrelated recommendation dates. Captured current search/detail pages
+also return two locators for The Stranger (1946) and none for a conflicting 1955 query in both
+loaders. This verifies extraction/identity handling only; Android playback remains pending.
+
+## Opening-position audit correction — 3 November 2026
+
+Explicit review of the AnyMovies retest found some frames labelled start were near the end:
+the audit omitted the player ID, reusing `media` and its saved resume position. Each source
+now opens with an independent temporary ID, records `initialPositionMs` and
+`startedAtBeginning`, and cannot pass if its initial position exceeds 15 seconds. Temporary
+audit positions are cleared after closing. Production resume behavior is unchanged.
+`VodSessionPlaybackTest.auditSourcesStartIndependentlyWithoutChangingSavedUserProgress`
+opens real fixture media while both legacy and prior-audit progress exist; it requires a
+fresh opening and preservation of those saved positions. The focused runner now requires
+six cases from that class, with none skipped. Android execution is pending; previous start
+labels must not be treated as proof of opening footage.
+
+## Durable per-site audit checkpoints — 3 November 2026
+
+The all-site workflow reads the same 74-site runtime inventory and runs one website at a time.
+Each job checks movies and series using the existing Android/LibVLC evidence runner, preserves
+each media report even when playback fails, then atomically saves a redacted report and only
+that website's checklist row. A checkpoint/upload failure stops the remaining jobs; ordinary
+playback failures remain recorded outcomes. The final review gate does not equate saved
+checkpoints with completed playback/content verification.
+
+Validation: 165 Python tests, including six coverage/failure-preservation checkpoint cases;
+one Node test exercises concurrent-ref retry and preservation of other rows/manual edits.
+Shell syntax, JavaScript syntax, formatter and diff checks pass. Existing application code
+still has 34 passing core suites. Full runner execution is pending GitHub validation.
+
+## AnyMovies checkpoint — 3 November 2026
+
+Four current-site regressions cover both existing loaders, IMDb/type isolation, conflicting
+player identities, lookalike/credential-bearing hosts, exact episode locators, unchanged
+current movie-card/player-button extraction, and one shared website identity. The full Python
+suite passes 159 tests; all 34 core suites pass locally. The focused evidence workflow now
+checks AnyMovies alone for movies and series, with the existing Android/LibVLC recorder and
+all returned candidates up to the existing 200-source cap. Read final CI and evidence before
+claiming playback success. A fresh checklist result remains blank until that part is checked.
+
+## Rendered-content and source-audio evidence — in progress
+
+The earlier emulator's `-noaudio` setting means its played-buffer counters did not prove audible output. Attempts to initialize a PulseAudio output sink failed calibration before provider testing. The current opt-in pilot instead captures actual rendered screenshots and bounded native `MediaPlayer.record()` clips from MovieHub's existing player. Smoothness windows run without recording, then an eight-second clip is captured independently at that position. Recording-state events confirm start, stop and the actual closed-file path rather than a timed directory scan. The source audio in those clips is independently decoded and checked for a non-silent signal and selected-track language; a known encoded tone checks the analysis pipeline. This verifies source audio data, not physical speaker output. Neutral filenames are exported, raw media stays out of uploaded review artifacts, and no downloaded player code is executed. Content identity remains pending until frames/dialogue are reviewed. The shared audit-case asset uses suitable classic/anime/Asian/regional titles instead of requiring every catalogue to contain Inception. No prior six-sample result certifies the actual movie visually or audibly.
+
+## Complete VOD site audit — 2 November 2026
+
+`audit-all-vod-sites.py` emits a row for every enabled site and media type, including unsupported adapter types, and verifies its completion count. The full Android audit uses eight shards for each media type. It records each shard inventory and per-site completion so missing cases cannot appear complete. Each site tries up to three distinct sources until one passes. Verification requires plausible runtime, decoded and displayed video, played audio buffers, sustained progress at startup/midpoint/90-percent seek, and bounded gaps. Default all-source audit commands retain exhaustive source traversal; the new full-site workflow explicitly opts into representative sampling. A passed sample is not a full-catalogue guarantee.
+
 ## Published 1.0.19 validation — 29 October 2026
 
 Source: `8759c88e0e2e72227c06bc1751ae1836ef241c53`. Signed publisher
@@ -17,7 +232,6 @@ targeted retry passed. No gate or test was removed or weakened.
 The existing 23 full native-source passes and unresolved live failures remain separate evidence
 below and in the [source report](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
 
-
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
@@ -29,7 +243,6 @@ Application revision `925af7c` passed all six Android jobs in run 40913881846. F
 include 23 verified sources (eleven movies and twelve episodes); the episode retry passed after an EGL crash.
 Vidy playback failures and other site/host errors remain unresolved; registration is not playback proof.
 See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
-
 
 Earlier checkpoint: current-site inspection corrected the new adapters. Application revision
 47b22de passed all six Android jobs after an experimental retry (the first attempt raised
@@ -58,8 +271,6 @@ lists it as a failure although Gradle/CI succeeds). The new native track-format 
 Experimental reports cover 7 + 20 unique cases, and focused VOD reports cover 3 + 5 + 1 + 1, with
 no failures/skips. Two new Hexa Alpha links passed live audio/video/runtime/midpoint checks in
 run 40856772425. VaPlayer diagnostics still crashed; these routes remain pending.
-
-
 
 ## Published 1.0.18 validation — 29 October 2026
 
@@ -140,7 +351,7 @@ There are four layers of checks. CI runs all of them on every pull request that 
 
 | Layer                          | Where                                      | Needs                                | Runs in CI step                                              |
 | ------------------------------ | ------------------------------------------ | ------------------------------------ | ------------------------------------------------------------ |
-| Core rule checks              | `android-tv-launcher/tests/`               | Only a JDK                           | "Verify playlist, network, channel search and episode rules" |
+| Core rule checks               | `android-tv-launcher/tests/`               | Only a JDK                           | "Verify playlist, network, channel search and episode rules" |
 | Build and lint                 | Gradle                                     | Android SDK 35                       | "Build APK and run Android lint"                             |
 | Device tests (instrumentation) | `android-tv-launcher/app/src/androidTest/` | Android emulator                     | `device-tests` job                                           |
 | Signing compatibility          | release build vs published APK             | signing secrets (same-repo PRs only) | `signed-compatibility` job                                   |

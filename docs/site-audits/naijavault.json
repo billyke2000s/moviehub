@@ -1,0 +1,75 @@
+{
+    "site": "free99:naijavault_com",
+    "date": "2026-11-05",
+    "status": "blocked_by_current_access_challenge",
+    "fullPlaybackVerified": false,
+    "previousReceipts": "Standard Inception/Dune Part Two/Breaking Bad titles returned no matches; that does not establish the entire catalogue is broken.",
+    "currentInspection": {
+        "pages": [
+            "https://www.naijavault.com/dune-part-one-2021/",
+            "https://www.naijavault.com/red-eye-season-1-complete-tvseries/"
+        ],
+        "findings": "Public catalogue advertises Dune: Part One (2021) and Red Eye Season 1 with explicit download/episode links. Inspect current search and anchor structure before selecting corresponding metadata-backed native test cases.",
+        "proofLimit": "No playback claim from page contents. Current redacted structure inspection uses fixed public pages with bounded bodies, request timeouts and no emitted media URLs or cookies.",
+        "runs": [
+            {
+                "run": "https://github.com/billyke2000s/moviehub/actions/runs/41946710125",
+                "jobId": 126980614734,
+                "headers": "requests defaults",
+                "outcome": "All six fixed public pages returned 403."
+            },
+            {
+                "run": "https://github.com/billyke2000s/moviehub/actions/runs/41946885886",
+                "jobId": 126981206657,
+                "sourceCommit": "8a585c1d9696386bcf6d678f139f66bc42ec3c91",
+                "headers": "Existing MovieHub Android/TV User-Agent, Accept and DNT headers",
+                "outcome": "All six fixed public pages returned 403 with explicit challenge markers.",
+                "pages": [
+                    {
+                        "page": "/",
+                        "status": 403,
+                        "accessChallenge": true
+                    },
+                    {
+                        "page": "/search/Dune/",
+                        "status": 403,
+                        "accessChallenge": true
+                    },
+                    {
+                        "page": "/?s=Dune",
+                        "status": 403,
+                        "accessChallenge": true
+                    },
+                    {
+                        "page": "/search/Red%20Eye/",
+                        "status": 403,
+                        "accessChallenge": true
+                    },
+                    {
+                        "page": "/dune-part-one-2021/",
+                        "status": 403,
+                        "accessChallenge": true
+                    },
+                    {
+                        "page": "/red-eye-season-1-complete-tvseries/",
+                        "status": 403,
+                        "accessChallenge": true
+                    }
+                ]
+            }
+        ],
+        "advertisedDownloadChecks": [
+            {
+                "page": "https://media.naijavault.com/sdm_downloads/dune-part-one-2021-naijavault-com/",
+                "outcome": "Public fetch failed with HTTP 526; no decoded media proof."
+            },
+            {
+                "host": "www.lulacloud.com",
+                "source": "Red Eye S1E1 advertised download page",
+                "outcome": "Public fetch failed with HTTP 502; no decoded media proof."
+            }
+        ],
+        "limits": "Indexed catalogue pages establish advertised entries, not live access or playback. No challenge bypass, certificate disabling, invented media URL or fake playback pass."
+    },
+    "next": "Legitimate live site access is needed to inspect and repair the actual integration. Leave this site explicitly unfinished. Continue current SeriezLoaded inspection and return to NaijaVault when access is available."
+}

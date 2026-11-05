@@ -1,6 +1,7 @@
 from ast import literal_eval
 
 import re
+from moviehub_compat.levidia_episode import episode_link, season_page
 from six.moves.urllib_parse import parse_qs, urlencode
 
 from moviehub_free99 import cleantitle
@@ -92,12 +93,13 @@ class source:
                 result_url = self.base_link + result_url
             #log_utils.log('first result_url: '+repr(result_url))
             if 'tvshowtitle' in data:
+                result_url = season_page(result_url, season)
                 r = client.request(result_url, headers=self.headers, cookie=self.cookie)
                 r = DOM(r, 'a', ret='href')
                 #log_utils.log('tvshow r: '+repr(r))
-                check_episode = 's%se%s' %(season, episode)
-                #log_utils.log('tvshow check_episode: '+repr(check_episode))
-                found_url = [i for i in r if check_episode in i][0]
+                found_url = episode_link(r, season, episode)
+                if not found_url:
+                    return self.results
                 #log_utils.log('tvshow found_url: '+repr(found_url))
                 if not found_url.startswith(self.base_link):
                     if not found_url.startswith('/'):

@@ -1,5 +1,139 @@
 # Status
 
+## AnyMovies movie and episode samples verified — 4 November 2026
+
+Native run 41935755045 at `c20b7ef` verifies three movie routes across Inception and
+Dune: Part Two, plus two Breaking Bad S1E1 routes. Reviewed pictures match the titles
+and fit the display; runtime, smoothness, both seeks and all three source-audio windows
+pass. All six Android CI jobs pass in run 41935761675, including 205 Python tests.
+The checklist records **should be all good g** for those supported paths. Remaining
+failed alternatives stay explicit. This is sampled playback, not every title, uninterrupted
+viewing or physical speakers. Continue with FZMovies next.
+
+## AnyMovies movie alternatives in progress — 4 November 2026
+
+Both movie loaders now retain TMDB identity and resolve matching advertised VidFast/Peachify buttons through existing native protocols. The earlier MixDrop host repair enabled Dune playback, but both tested MP4s still fail complete audio capture. Episode routes are already verified. The new movie routes pass 205 Python tests and 34 core suites; native playback remains pending.
+
+## AnyMovies alternate series routes in progress — 4 November 2026
+
+The site advertises four series player tabs in its first-party UI script; the loader
+previously followed only VidSrc. Both existing loaders now discover those actual templates,
+retain exact episode identity and reuse existing host/native protocols. MoviesAPI's current
+slash episode format is accepted. The initial native series baseline returned unsupported_host;
+movie tool setup timed out before playback. Current movie/episode verification continues on
+this site; no AnyMovies pass is recorded. Code and attempts are saved after each repair.
+
+## BnWMovies verified movie route — 4 November 2026
+
+Native run [41892016460](https://github.com/billyke2000s/moviehub/actions/runs/41892016460)
+at `92ad8f3` verifies both MP4 files for The Stranger (1946): 5472-second runtime,
+full 4:3 picture, approximately 29 fps, midpoint/late seeking and non-silent AAC captures
+at opening, midpoint and late seek. All six Android CI jobs passed at the same revision
+in run 41892024081. The native tv_720p profile resolves the test-display clipping; no
+production display, source-quality or playback threshold changed. The checklist records
+**should be all good g** for the verified movie route. Legacy MPEG/Ogg failures remain
+explicit; this is sampled movie playback, not every title or uninterrupted full-film testing.
+Continue one site at a time with AnyMovies next.
+
+## BnWMovies display review — 4 November 2026
+
+The 720p display-override run returned four sources; both MP4s meet the unchanged native
+frame/progress/seek gates and all three captured-audio checks. Visual review found the
+picture clipped at the right and bottom. This blocks certification. Commit `aaea9ca` uses
+the native `tv_720p` device profile without an override to recheck the complete picture.
+All six Android regression jobs passed at `057be18`; those results do not certify a site.
+
+## BnWMovies native alternatives — 4 November 2026
+
+The second Android attempt found all four routes. Full MP4 playback decoded the correct
+91-minute film, both seeks and non-silent audio at all three positions, but failed smoothness
+with 18–20 displayed fps against a 29.97 fps source. No whole-site pass is recorded. Work
+continues on this site with matched 30 fps local controls at two emulator display sizes,
+keeping source quality and playback thresholds unchanged. Results and attempts are saved
+in `docs/site-audits/bnwmovies.json`.
+
+## BnWMovies advertised alternatives — 4 November 2026
+
+BnWMovies now follows the selected film's advertised Archive file directory and discovers
+the full 640x480 MP4 and original MPEG, in addition to both embedded choices. Current file
+probes report about 91 minutes and audio tracks for both alternatives. Android playback
+verification is in progress for this site alone; no site is marked all good. The first native
+lookup returned HTTP 502 with no sources. Work continues with the site's advertised search
+RSS fallback and redacted runtime-stage diagnostics, retaining all four file alternatives.
+
+## Audio language review correction — 4 November 2026
+
+The PR review reproduced a false positive in single-track language selection. Audio evidence
+version 3 now rejects known language conflicts while retaining honest unknown-language signal
+checks. Regional language aliases are normalized. All 191 Python regressions pass locally; [Android CI 41867603165](https://github.com/billyke2000s/moviehub/actions/runs/41867603165)
+at code revision `3496379` passed all six jobs. CI also ran all 191 Python checks and the
+eleven focused native recovery cases, with none of those eleven skipped. No site certification changes.
+
+## All-site checking pass saved — 4 November 2026
+
+All 74 VOD sites have completed lookup/playback receipts across the saved audit runs.
+Candidate-bearing checks use corrected seek handling (playback audit version 2). The final
+review gate remains blocked because repairs and content/audio verification are incomplete;
+completed checking does not mean all sites work. Vidzee, MeowTV and Cinejoy have individual
+current content reviews linked in `SITE_FIX_STATUS.md`; all ten sites with technical sample
+passes now have individual reviews. Hexa's Inception sample passes the corrected audio-duration
+check with matching content and technical playback windows, but other movie/episode requests
+remain blocked. Short or empty native audio captures
+remain explicit blockers. The offline checker now rejects captures shorter than four seconds
+and measures partial signal blocks without rounding them up. No site is certified, merged or
+published by this checkpoint. All 187 Python checks and the checkpoint-writer concurrency
+test pass. Android CI run 41824909443 at becfa67 passed all six jobs; its focused recovery job
+ran eleven cases, none skipped. Later commits change documentation only.
+
+
+## FZMovies checkpoint — 3 November 2026
+
+Exact IMDb matching, relative download-hop handling, honest WebM format labels and explicit
+movie-only capability are corrected in the existing loader. All 74 movie/series inventory
+entries remain. The 168 Python tests pass; native playback/content review remains pending.
+
+## BnWMovies checkpoint — 3 November 2026
+
+Both existing loaders now reject conflicting target-page title/year metadata instead of
+offering another year's same-named film. Both Ogg/MP4 routes are retained. All 166 Python
+tests pass, and captured current pages exercise both loaders. The individual code/checkpoint
+is saved before advancing; Android playback and site certification remain pending.
+
+## One-site-at-a-time audit resumed — 3 November 2026
+
+Fresh AnyMovies run 41723642563 tested five movie candidates with no complete technical pass;
+series lookup reports unsupported_host after the discovery repair. Five contact sheets show
+real Inception/Dune scenes and buffering, but also exposed a test bug: some start samples
+inherited the default media resume key. Unique per-source audit IDs and an explicit initial
+timestamp check are now added, with a native regression pending execution. Earlier start
+labels are not reliable opening evidence. Rechecks must precede any all-good status.
+
+AnyMovies repair checkpoint `12fe2c2` is pushed. Fresh Android run 41723642563 now reaches the
+series player and reports `unsupported_host`, replacing the old incorrect `unsupported_type`.
+The downstream player advertises Turnstile; playback remains blocked. The baseline movie
+decoded real Inception scenes, but showed buffering, failed smoothness, and produced an empty
+opening audio sample (middle/late samples contain non-silent English AAC). It is not certified.
+
+The all-site workflow is being changed from end-of-shard uploads to one-site jobs with immediate
+atomic report/checklist commits. It retains all 74 VOD sites, leaves other rows untouched and
+never writes “should be all good g” automatically. Local validation passes 165 Python tests and
+the checkpoint-writer concurrency test. Live checkpoint-writer validation is pending.
+
+The owner requires each site's code/evidence checkpoint to be saved before moving to the
+next site. All 74 VOD sites remain in `SITE_FIX_STATUS.md`; unchecked results stay blank.
+AnyMovies is first. Its current website returns a matching Breaking Bad series card, but
+the old loaders report unsupported type (confirmed by Android run 41722195176). The current
+exact-episode lookup is added to both existing loaders; the downstream VidSrc player advertises
+a Turnstile requirement and remains a playback blocker. No challenge bypass is implemented.
+Local checks pass: 159 Python tests and 34 core suites. Fresh Android playback evidence for
+the repaired code is pending. No site is marked fully verified and no APK is published.
+
+## Full VOD site audit — in progress, 2 November 2026
+
+The owner clarified that each site needs actual-content, audible-signal, duration and smoothness verification. Existing automated passes are technical samples only. PulseAudio calibration could not initialize in CI. Work now uses captured rendered frames and bounded native player recordings with independently decoded source audio before full content review; no prior six-sample result certifies the actual movie visually or audibly.
+
+The enabled inventory has 74 websites, previously filtered to 69 for Movies and 61 for Series. Both screens now schedule the same 74-site list, with unsupported adapter types reported explicitly. Current-site inspection found omitted series support on 4KHDHub, Akwam and Rtally; their missing paths are implemented on PR #211. Multimovies also needs its dubbed-title catalogue alias, exact TMDB/episode evidence and explicitly advertised wrapper hosts. The stricter follow-up audit finds valid-length decoded sources which still stall or fail seeking; those remain unverified rather than counted as working. The first complete 148-case baseline is recorded in Actions run 41397448329; successful audit execution is distinct from successful playback. No all-site success or publication is claimed.
+
 ## Current release — MovieHub 1.0.19 (code 119)
 
 [1.0.19 is published](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.19)
@@ -38,7 +172,6 @@ include 23 verified sources (eleven movies and twelve episodes); the episode ret
 Vidy playback failures and other site/host errors remain unresolved; registration is not playback proof.
 See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
 
-
 Earlier checkpoint: current-site inspection corrected the new adapters. Application revision
 47b22de passed all six Android jobs after an experimental retry (the first attempt raised
 DeadSystemException). Its native Vidy samples still failed and remain draft-PR blockers.
@@ -62,7 +195,6 @@ including 208 regular cases plus the opt-in audit assumption, 27 experimental ca
 focused VOD cases. Its two normal Hexa Alpha live checks also passed. The separate Movy
 comparison on unchanged main passed 8/8; the feature audit had one unverified 4K audio sample. See the [inventory and evidence](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
 Not merged or published.
-
 
 Last updated: 29 October 2026.
 

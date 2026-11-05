@@ -8,7 +8,7 @@ filters=(
     'PlaybackTest#vodRepeatedBufferingPreparesBackupsWithoutStoppingCurrentPlayback'
     'PlaybackTest#shortInitialFreeClipWaitsForLateBackupWithoutEndingMovie'
 )
-minimum=(3 5 1 1)
+minimum=(3 6 1 1)
 result=0
 for index in "${!filters[@]}"; do
     target="local.tv.home.${filters[$index]}"

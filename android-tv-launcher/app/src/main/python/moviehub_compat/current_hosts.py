@@ -157,17 +157,21 @@ def xpass(url):
 
 
 def moviesapi(url):
-    match = re.search(r'/(movie|tv)/([^/?]+)', urlparse(url).path)
-    if not match:
+    route = urlparse(url).path.strip('/').split('/')
+    if len(route) < 2 or route[0] not in ('movie', 'tv'):
         return []
-    kind, identity = match.groups()
+    kind = route[0]
     if kind == 'tv':
-        parts = identity.rsplit('-', 2)
-        if len(parts) != 3 or not all(x.isdigit() for x in parts[1:]):
+        parts = route[1:] if len(route) == 4 else route[1].rsplit('-', 2) if len(route) == 2 else []
+        if (len(parts) != 3 or not re.fullmatch(r'(?:tt[0-9]{5,10}|[0-9]{1,10})', parts[0]) or
+                not re.fullmatch(r'[0-9]{1,3}', parts[1]) or
+                not re.fullmatch(r'[0-9]{1,4}', parts[2]) or int(parts[2]) < 1):
             return []
         path = '/v1/tv/' + '/'.join(parts)
     else:
-        path = '/v1/movie/' + identity
+        if len(route) != 2 or not re.fullmatch(r'(?:tt[0-9]{5,10}|[0-9]{1,10})', route[1]):
+            return []
+        path = '/v1/movie/' + route[1]
     page = client.request(url)
     scripts = re.findall(r'<script[^>]+src=["\']([^"\']+)', page)
     asset = next((urljoin(url, x) for x in scripts if x.startswith('/assets/index-') and x.endswith('.js')), None)

@@ -1,0 +1,219 @@
+{
+    "site": "free99:fzmovies_live",
+    "date": "2026-11-05",
+    "status": "verified_movie_paths",
+    "siteInspection": "Current homepage describes a movie catalogue and links TV shows to a separate MobileTVshows website. Current Inception search contains one exact IMDb tt1375666 card.",
+    "repairs": [
+        "Match the actual IMDb data-title value rather than a substring in the whole card.",
+        "Resolve root-relative and protocol-relative entry/download hops through the existing URL validation.",
+        "Do not turn a WebM format label into a fabricated 720p quality claim.",
+        "Report the existing movie-only capability explicitly while retaining this site in both screens shared 74-site inventory."
+    ],
+    "validation": {
+        "pythonTests": 168,
+        "coverage": "Exact IMDb prefix-collision rejection, advertised-hop handling, original format-label preservation and explicit unsupported TV status; no inventory loss.",
+        "currentAndroidCI": {
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41942075938",
+            "jobs": [
+                {
+                    "name": "free-vod-live-probe",
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "apk",
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "device-tests",
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "signed-compatibility",
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "experimental-device-tests",
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "vod-recovery-tests",
+                    "status": "completed",
+                    "conclusion": "success"
+                }
+            ]
+        }
+    },
+    "fullPlaybackVerified": true,
+    "next": "Continue with Levidia. Keep FZMovies Inception/decoder alternatives explicitly unverified; preserve genuine movie-only capability.",
+    "liveReview": {
+        "sourceCommit": "57881d6573cf013621ef49e1cd1ce10c9d56dbf8",
+        "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41726423062",
+        "artifactId": 13278000379,
+        "candidatesTested": 8,
+        "technicalPasses": 1,
+        "reviewedContactSheets": [
+            "0001: actual Inception opening/midpoint/late footage; no-working-backup overlay at midpoint.",
+            "0006: actual Dune: Part Two opening/midpoint/late footage; no-working-backup overlay at midpoint."
+        ],
+        "duneSample": {
+            "evidenceId": "0006",
+            "durationSeconds": 9948,
+            "dimensions": [
+                640,
+                268
+            ],
+            "initialPositionMs": 650,
+            "technicalWindowsPassed": true,
+            "midpointAndLateSeekPassed": true,
+            "capturedAudioCodec": "aac",
+            "capturedAudioChannels": 1,
+            "capturedAudioLanguage": "eng",
+            "nonSilentAudioSecondsByPosition": {
+                "start": 5.596,
+                "middle": 7.7090625,
+                "late": 6.687375
+            },
+            "contentIdentityConfirmed": true,
+            "visiblePlaybackError": true
+        },
+        "remainingFailures": "Seven candidates failed decoder, audio-output or smoothness checks. One technically passing sample is not a site-wide pass.",
+        "playbackAuditVersion": 1
+    },
+    "correctedSeekRetest": {
+        "playbackAuditVersion": 2,
+        "sourceCommit": "966d6ad7de4a151f487c8b557fd450daadbbc2b8",
+        "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41766998519",
+        "artifactId": 13294130824,
+        "candidatesTested": 8,
+        "technicalPasses": 0,
+        "contentReview": "Contact sheets 0001 and 0006 show real Inception and Dune: Part Two opening/midpoint/late scenes. The previous backup-error overlay is absent from these reviewed frames.",
+        "outcomes": {
+            "playback_stall_or_audio_output_unverified": 4,
+            "no_decoded_video": 4
+        },
+        "duneSample": {
+            "evidenceId": "0006",
+            "durationSeconds": 9948,
+            "displayedFpsByPosition": {
+                "start": 20.2025,
+                "middle": 19.8266,
+                "late": 18.189
+            },
+            "nonSilentAudioSecondsByPosition": {
+                "start": 5.596,
+                "middle": 7.986625,
+                "late": 6.687375
+            }
+        },
+        "inceptionAudio": "The two decoded Inception candidates have non-silent start/middle captures but zero decoded late-audio samples.",
+        "limits": "Only the selected contact sheets were visually reviewed. Four other candidates did not decode; no whole-title or physical-speaker claim."
+    },
+    "currentAttempt": {
+        "sourceScope": "Existing exact-IMDb loader and all returned Inception/Dune candidates. Current controls established an output-rendering limit on the older 1080p software runner; native 720p output leaves source quality unchanged.",
+        "progress": "Per-source redacted progress checkpoints are now emitted while the opt-in test runs. They are progress markers, not playback certification.",
+        "series": "Existing movie-only capability remains explicit; no fabricated episode support.",
+        "setupRepair": "Parallelize downloads with the runner-provided aria2, require each SHA256 from signed APT metadata, and cache verified package archives before playback. The cold-cache setup has a twenty-minute bound; all playback/audio thresholds remain unchanged. The runner mirror-list format is expanded only from its fixed /etc/apt/apt-mirrors.txt file; arbitrary local-file URLs stay rejected. Six metadata tests pass."
+    },
+    "activeRetest": {
+        "sourceCommit": "c6d300c0e483ebae7907afcbf2e1dde764c8d5b3",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41942067338",
+        "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41942075938",
+        "status": "completed_and_content_reviewed",
+        "setup": "Signed-package setup completed in 21 seconds; verified archives cached before playback; six metadata safety tests passed."
+    },
+    "previousSetupAttempts": [
+        {
+            "sourceCommit": "786a6e825e0a39edff4a93a73df547241223e475",
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41938601459",
+            "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41938610900",
+            "status": "setup_failed_before_playback",
+            "reason": "APT package transfers from the Ubuntu mirror exceeded the eight-minute tool-setup bound; no native site playback took place."
+        },
+        {
+            "sourceCommit": "06fe171fb642f08a092ff3612cf067fb5333c4f2",
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41941292730",
+            "status": "setup_failed_before_playback",
+            "reason": "The new downloader rejected GitHub runner mirror+file URIs. Support for the fixed runner mirror file is now covered by regression tests."
+        }
+    ],
+    "verifiedMovieReview": {
+        "sourceCommit": "c6d300c0e483ebae7907afcbf2e1dde764c8d5b3",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41942067338",
+        "jobId": 126965095914,
+        "playbackAuditVersion": 2,
+        "audioEvidenceVersion": 3,
+        "profile": "tv_720p",
+        "candidatesTested": 8,
+        "completePasses": 2,
+        "title": "Dune: Part Two",
+        "durationSeconds": 9948,
+        "expectedMinutes": 166,
+        "dimensions": [
+            640,
+            268
+        ],
+        "contentIdentityConfirmed": true,
+        "contentReview": "Both contacts show the Dune: Part Two opening spacecraft/desert, Lady Jessica at midpoint and Paul Atreides late. Entire picture fits; no backup-error overlay in reviewed frames.",
+        "samples": [
+            {
+                "evidenceId": "0005",
+                "displayedFpsByPosition": {
+                    "start": 23.968371633308625,
+                    "middle": 23.993271989710102,
+                    "late": 23.14358873350404
+                },
+                "nominalFps": 23.976,
+                "midpointDecoded": true,
+                "lateSeekDecoded": true,
+                "nonSilentAudioSecondsByPosition": {
+                    "start": 5.340625,
+                    "middle": 7.7090625,
+                    "late": 6.687375
+                },
+                "selectedAudioLanguage": "eng",
+                "capturedAudioCodec": "aac",
+                "capturedAudioChannels": 1,
+                "recordingEventsConfirmed": true,
+                "allSelectedAudioSignalChecksPassed": true,
+                "transportErrors": [
+                    "Provider relay: SocketException",
+                    "Provider relay: IOException"
+                ]
+            },
+            {
+                "evidenceId": "0006",
+                "displayedFpsByPosition": {
+                    "start": 23.963634566925244,
+                    "middle": 23.924864063272366,
+                    "late": 23.196130687987367
+                },
+                "nominalFps": 23.976,
+                "midpointDecoded": true,
+                "lateSeekDecoded": true,
+                "nonSilentAudioSecondsByPosition": {
+                    "start": 5.340625,
+                    "middle": 7.7090625,
+                    "late": 6.4319375
+                },
+                "selectedAudioLanguage": "eng",
+                "capturedAudioCodec": "aac",
+                "capturedAudioChannels": 1,
+                "recordingEventsConfirmed": true,
+                "allSelectedAudioSignalChecksPassed": true,
+                "transportErrors": [
+                    "Provider relay: SocketException",
+                    "Provider relay: IOException"
+                ]
+            }
+        ],
+        "remainingFailures": "Inception candidates 0001/0002 still lack sufficient opening/late recorded audio. Candidates 0003/0004/0007/0008 failed technical decoding. These routes are not certified.",
+        "physicalAudioOutputTested": false,
+        "scope": "Representative Dune movie routes verified at opening, midpoint and late positions, including both seeks and independently decoded non-silent English source audio. Not uninterrupted whole-film viewing, every catalogue title, physical-speaker output, or unsupported series support.",
+        "result": "should be all good g — verified movie paths; failed alternatives retained"
+    }
+}

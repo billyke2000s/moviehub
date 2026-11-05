@@ -1,6 +1,6 @@
 """MovieHub's separately maintained public website adapters; no Kodi provenance claim."""
 PROVIDERS = [dict(id='native:fourkhdhub', module='moviehub_native.fourkhdhub', family='native',
-    name='fourkhdhub', site='4khdhub.one', movies=True, series=False),
+    name='fourkhdhub', site='4khdhub.one', movies=True, series=True),
     dict(id='native:vixsrc', module='moviehub_native.vixsrc', family='native',
     name='vixsrc', site='vixsrc.to', movies=True, series=True),
     dict(id='native:rive', module='moviehub_native.rive', family='native',
@@ -24,7 +24,7 @@ _CINESTREAM = [
 ]
 _CATALOGUES = [
     ('projectfreetv_sx', 'ProjectFreeTv', 'projectfreetv.sx', True, True),
-    ('akwam', 'Akwam', 'akwam.it', True, False),
+    ('akwam', 'Akwam', 'akwam.it', True, True),
     ('asiaflix', 'Asiaflix', 'asiaflix.net', True, True),
 ]
 for group, module in ((_CINESTREAM, 'cinestream_api'), (_CATALOGUES, 'cinestream_catalogues')):
@@ -49,7 +49,7 @@ for name, factory, site, series in (
     ('multimovies', 'Multimovies', 'm1.multimovies.courses', True),
     ('toonstream', 'Toonstream', 'toonstream.us', True),
     ('animesalt', 'AnimeSalt', 'animesalt.cx', True),
-    ('rtally', 'Rtally', 'rtally.lol', False),
+    ('rtally', 'Rtally', 'rtally.lol', True),
     ('kisskh', 'KissKH', 'kisskh.do', True),
 ):
     PROVIDERS.append(dict(id='native:' + name, module='moviehub_native.cinestream_embeds',

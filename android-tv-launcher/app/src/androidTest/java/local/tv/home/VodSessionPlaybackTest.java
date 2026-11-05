@@ -178,6 +178,51 @@ public final class VodSessionPlaybackTest {
     }
 
     @Test
+    public void auditSourcesStartIndependentlyWithoutChangingSavedUserProgress() throws Exception {
+        Context context = instrumentation.getTargetContext();
+        android.content.SharedPreferences positions = context.getSharedPreferences("positions", 0);
+        android.content.SharedPreferences ui = context.getSharedPreferences("ui", 0);
+        boolean oldResume = ui.getBoolean("resume", true);
+        boolean hadLegacy = positions.contains("media");
+        long oldLegacy = positions.getLong("media", 0);
+        String url = "http://127.0.0.1:" + server.getLocalPort() + "/vod.mp4";
+        Intent previous = FreeVodLiveAuditTest.sourceIntent(context, url, "unused");
+        String previousId = previous.getStringExtra("id");
+        token = VodSources.remember(session(index -> new VodSources.Resolved(url, null)));
+        Intent current = FreeVodLiveAuditTest.sourceIntent(context, url, token);
+        String currentId = current.getStringExtra("id");
+        assertNotEquals(previousId, currentId);
+        assertNotEquals("media", currentId);
+        positions.edit().putLong("media", 90_000).putLong(previousId, 120_000).commit();
+        ui.edit().putBoolean("resume", true).commit();
+        try {
+            activity = (VlcPlaybackActivity) instrumentation.startActivitySync(current);
+            await(
+                () ->
+                    activity.player != null && activity.player.isPlaying() && activity.player.getTime() > 300
+            );
+            assertTrue("Audit resumed an unrelated source", activity.player.getTime() < 15_000);
+            assertEquals(90_000, positions.getLong("media", 0));
+            assertEquals(120_000, positions.getLong(previousId, 0));
+        } finally {
+            if (activity != null) {
+                instrumentation.runOnMainSync(activity::finish);
+                await(activity::isDestroyed);
+            }
+            ResumePoint.clear(context, previousId, null);
+            ResumePoint.clear(context, currentId, null);
+            positions
+                .edit()
+                .remove(previousId + ":duration")
+                .remove(currentId + ":duration")
+                .commit();
+            if (hadLegacy) positions.edit().putLong("media", oldLegacy).commit();
+            else positions.edit().remove("media").commit();
+            ui.edit().putBoolean("resume", oldResume).commit();
+        }
+    }
+
+    @Test
     public void initialPlayUsesSessionResolutionAndRefreshesOneExpiredLink() throws Exception {
         AtomicInteger refreshes = new AtomicInteger();
         String origin = "http://127.0.0.1:" + server.getLocalPort();
@@ -231,9 +276,14 @@ public final class VodSessionPlaybackTest {
         String url = "http://127.0.0.1:" + server.getLocalPort() + "/vod.mp4";
         open(session(index -> new VodSources.Resolved(url, null)));
         assertTrue(activity.player.getTime() >= 10_000);
+        // Let the opening resume guard expire, so only the audit jump can
+        // protect the injected buffering below from becoming a false stall.
+        await(() -> activity.player != null && activity.player.getTime() >= 15_000);
         instrumentation.runOnMainSync(() -> {
-            activity.vod.seeking(35_000);
-            activity.player.setTime(35_000);
+            FreeVodLiveAuditTest.seekSource(activity, 35_000);
+            activity.vod.onBuffering(true);
+            assertFalse(activity.vod.queue.isStalled(SystemClock.elapsedRealtime() + 5_000));
+            activity.vod.onBuffering(false);
         });
         await(() -> activity.player != null && activity.player.getTime() >= 34_000);
         assertEquals(0, activity.vod.activeIndex());
@@ -278,6 +328,112 @@ public final class VodSessionPlaybackTest {
             () -> activity.player != null && activity.player.isPlaying() && activity.player.getTime() > 300
         );
         assertEquals(0, activity.vod.activeIndex());
+    }
+
+    void measureKnownFixture() throws Exception {
+        ProviderRelay.testConnections = uri ->
+            (HttpURLConnection) new URL(
+                "http://127.0.0.1:" + server.getLocalPort() + uri.getPath()
+            ).openConnection();
+        EngineSources.Stream stream = new EngineSources.Stream(
+            new JSONObject().put("url", "https://8.8.8.8/vod.mp4").put("headers", new JSONObject())
+        );
+        VodSources.Session calibration = session(index -> new VodSources.Resolved(stream.url, null));
+        calibration.transport = index -> stream;
+        calibration.free = true;
+        calibration.expectedDuration = 180_000;
+        open(calibration);
+        long[] initial = calibrationSnapshot();
+        assertEquals(1280, initial[4]);
+        assertEquals(720, initial[5]);
+        org.json.JSONArray windows = new org.json.JSONArray();
+        for (long target : new long[] { 0, 90_000, 162_000 }) {
+            if (target > 0) {
+                instrumentation.runOnMainSync(() -> FreeVodLiveAuditTest.seekSource(activity, target));
+                await(() -> activity.player.getTime() >= target - 1000);
+            }
+            long[] before = calibrationSnapshot();
+            long start = SystemClock.elapsedRealtime(),
+                videoAt = start,
+                audioAt = start;
+            long video = before[1],
+                audio = before[2],
+                frames = 0,
+                buffers = 0;
+            long videoGap = 0,
+                audioGap = 0;
+            long[] sample = before;
+            while (SystemClock.elapsedRealtime() - start < (target == 162_000 ? 10_000 : 20_000)) {
+                SystemClock.sleep(250);
+                sample = calibrationSnapshot();
+                long now = SystemClock.elapsedRealtime();
+                if (sample[1] > video) {
+                    frames += sample[1] - video;
+                    videoAt = now;
+                }
+                if (sample[2] > audio) {
+                    buffers += sample[2] - audio;
+                    audioAt = now;
+                }
+                video = sample[1];
+                audio = sample[2];
+                videoGap = Math.max(videoGap, now - videoAt);
+                audioGap = Math.max(audioGap, now - audioAt);
+            }
+            long elapsed = SystemClock.elapsedRealtime() - start;
+            assertTrue("Fixture must display video", frames > 0);
+            assertTrue("Fixture must play audio buffers", buffers > 0);
+            windows.put(
+                new JSONObject()
+                    .put("targetMs", target)
+                    .put("elapsedMs", elapsed)
+                    .put("displayedFps", (frames * 1000.0) / elapsed)
+                    .put("nominalFps", sample[6] / 1000.0)
+                    .put("videoGapMs", videoGap)
+                    .put("audioGapMs", audioGap)
+                    .put("progressMs", sample[0] - before[0])
+                    .put("audioBuffers", buffers)
+            );
+        }
+        JSONObject report = new JSONObject()
+            .put("kind", "runner_calibration")
+            .put("width", initial[4])
+            .put("height", initial[5])
+            .put("windows", windows)
+            .put("providerPlaybackVerified", false);
+        try (
+            FileWriter writer = new FileWriter(
+                new File(instrumentation.getTargetContext().getFilesDir(), "vod-runner-calibration.json")
+            )
+        ) {
+            writer.write(report.toString());
+        }
+    }
+
+    private long[] calibrationSnapshot() {
+        long[] sample = new long[7];
+        instrumentation.runOnMainSync(() -> {
+            sample[0] = activity.player.getTime();
+            IMedia media = activity.player.getMedia();
+            if (media == null) return;
+            try {
+                IMedia.Stats stats = media.getStats();
+                sample[1] = stats == null ? 0 : stats.displayedPictures;
+                sample[2] = stats == null ? 0 : stats.playedAbuffers;
+                for (int index = 0; index < media.getTrackCount(); index++) if (
+                    media.getTrack(index) instanceof IMedia.VideoTrack
+                ) {
+                    IMedia.VideoTrack video = (IMedia.VideoTrack) media.getTrack(index);
+                    sample[4] = video.width;
+                    sample[5] = video.height;
+                    sample[6] =
+                        video.frameRateDen > 0 ? (1000L * video.frameRateNum) / video.frameRateDen : 0;
+                }
+            } finally {
+                media.release();
+            }
+        });
+        return sample;
     }
 
     @After

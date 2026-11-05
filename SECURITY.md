@@ -1,5 +1,39 @@
 # Security
 
+FZMovies matching now compares the explicit IMDb badge exactly. Advertised relative links
+still pass the existing URL/public-address/redirect checks; no unsafe target is newly allowed.
+
+BnWMovies identity checks use the target page's explicit title/year metadata, excluding
+unrelated recommendations. No transport, credential or public-address restriction is relaxed.
+
+## Audit checkpoint writer
+
+The per-site CI job uses repository contents-write permission only to save its redacted report
+and one checklist row on `fix/all-vod-site-audit`. The writer rejects other branches and invalid
+site IDs, preserves the latest tree, retries concurrent updates and never force-pushes. Reports
+whitelist counts/status codes and omit media URLs, tokens, headers and exception messages.
+Rendered frames and bounded audio remain in the existing seven-day Actions evidence artifacts.
+
+## AnyMovies series lookup — 3 November 2026
+
+TV lookup accepts only a matching IMDb series card and its exact HTTPS `vidsrc.sh` player
+origin, rejects credentials/lookalike hosts/conflicting IDs, and uses a documented episode
+locator. It does not fabricate filename evidence, mark an embed as direct media, execute
+website scripts, or bypass the downstream player's observed Turnstile requirement.
+
+## Vidzee public locator protocol — 2 November 2026
+
+The current first-party client uses `https://core.vidzee.wtf/streams/` with exact movie/TMDB or TV/TMDB/season/episode routes. Its optional `c` field is an obfuscated JSON locator. The observed public `streams-BHpSC3gU.js` embeds a data decoder with RC4-drop-2048 and a published 32-byte format constant. MovieHub ports only that bounded data format through its already-bundled RC4 helper; it does not execute downloaded JavaScript or WebAssembly, decrypt DRM media, or acquire licence/account keys. Normal HTTPS/public-address, media, header and cancellation checks remain active. First-party asset SHA-256 values: `Ads-BlxpIcYy.js` = `c5ea2f5bbdb19759d8aea06d10b667bfa2efc942c60701da05d7f7107513d4a0`; `streams-BHpSC3gU.js` = `62e30a5483ef9906c3c5c4ab8e9e8067bc5d5c00f87c94100158c9815e5636f5`.
+
+## VOD audit and catalogue updates — 2 November 2026
+
+Rtally post payloads are parsed as JSON literals, never executed, and recommendation media is
+excluded from the selected title. Episode links require the selected show/season identity.
+Akwam's new canonical host is advertised by its existing homepage; the old provider ID remains.
+The audit's transport observer retains exception class and source-code location only, without
+messages, signed URLs, cookies or account details. The observer is never assigned by app code.
+Existing public-address, HTTPS, redirect and credential-origin checks remain active.
+
 Current follow-up adds the remaining fifteen catalogue adapters and bounded redirect/file-host
 protocols without modifying established sites or replacing the player. All fifteen stay registered;
 ordinary redirects are not grounds for removal. Eleven current roots exposed film catalogues;
@@ -15,7 +49,6 @@ validation of subsequent parser corrections remain pending; accessible HTML is n
 The preceding revision 7a38417 passed all six Android jobs in run 40869288216; its separate Vidy
 series audit failed and is not evidence of success for this follow-up.
 
-
 ## Additional CineStream protocols
 
 New adapters use the existing bounded public-address transport and media/identity checks.
@@ -30,7 +63,6 @@ and discloses requested media identifiers, transient site-issued tokens and encr
 responses to that service. It receives no MovieHub
 account credentials. Formats are display-only, and manifest declarations/provider reports are not
 promoted into verified decoder/audio claims. Existing redirect credential restrictions remain.
-
 
 ## Refreshable VOD sessions
 

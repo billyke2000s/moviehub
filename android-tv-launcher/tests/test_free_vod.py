@@ -41,6 +41,23 @@ class FreeVodTests(unittest.TestCase):
         self.assertTrue(levidia['movies'] and levidia['series'])
         self.assertEqual(vod.validate(), 111)
 
+    def test_audit_cases_match_enabled_sites_and_use_real_genre_appropriate_identities(self):
+        path = Path(__file__).resolve().parents[1] / 'app/src/androidTest/assets/vod-audit-cases.json'
+        cases = json.loads(path.read_text())
+        ids = {row['id'] for row in json.loads(vod.search_providers())}
+        self.assertTrue(set(cases['sites']) <= ids)
+        self.assertEqual(cases['sites']['native:animesalt'], 'anime')
+        self.assertEqual(cases['sites']['free99:bnwmovies_com'], 'classics')
+        for profile in cases['profiles'].values():
+            for kind, rows in profile.items():
+                self.assertGreater(len(rows), 0)
+                for sample in rows:
+                    self.assertGreater(sample['tmdb'], 0)
+                    self.assertGreater(sample['runtimeMinutes'], 10)
+                    if kind == 'series':
+                        self.assertEqual((sample['season'], sample['episode']), (1, 1))
+                        self.assertTrue(sample['imdb'].startswith('tt'))
+
     def test_only_levidia_is_restored_from_the_original_26_exclusions(self):
         originally_excluded = set(('123-movies.golf 123moviestv.me 1movies.la 9pm.to cinebox.cc '
             'couchtuner.show dopebox.to ev01.to filmxy.online flixhq.to flixwave.me goojara.life '
@@ -640,8 +657,14 @@ from test_cinestream import CineStreamTests
 from test_cinestream_chains import CineStreamChainTests
 from test_vod_sessions import SessionTests
 from test_current_vod_sites import CurrentSiteTests
+from test_anymovies_players import AnyMoviesPlayerTests
+from test_seriesloaded_catalogue import SeriesLoadedTests
+from test_resolver_transport import ResolverTransportTests
 from test_native_vod_sites import NativeSiteTests
 from test_fmhy_rive import RiveTests
 from test_fmhy_movy import MovyTests
+from test_vod_evidence import EvidenceTests
+from test_site_audit_checkpoint import SiteCheckpointTests
+from test_site_audit_queue import SiteAuditQueueTests
 
 if __name__=='__main__':unittest.main()
