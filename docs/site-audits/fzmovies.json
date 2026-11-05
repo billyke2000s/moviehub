@@ -79,5 +79,11 @@
         "sourceScope": "Existing exact-IMDb loader and all returned Inception/Dune candidates. Current controls established an output-rendering limit on the older 1080p software runner; native 720p output leaves source quality unchanged.",
         "progress": "Per-source redacted progress checkpoints are now emitted while the opt-in test runs. They are progress markers, not playback certification.",
         "series": "Existing movie-only capability remains explicit; no fabricated episode support."
+    },
+    "activeRetest": {
+        "sourceCommit": "786a6e825e0a39edff4a93a73df547241223e475",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41938601459",
+        "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41938610900",
+        "status": "in_progress"
     }
 }
