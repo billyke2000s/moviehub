@@ -1,7 +1,7 @@
 {
     "site": "free99:seriesloaded_ng",
     "date": "2026-11-05",
-    "status": "episode_catalogue_repaired_downstream_send_resolution_failed",
+    "status": "movie_path_verified_series_send_resolution_pending",
     "fullPlaybackVerified": false,
     "previousReceipt": "One movie candidate and no series candidates in historical corrected-seek checking; no full certification.",
     "currentInspection": {
@@ -11,15 +11,24 @@
         "run": "https://github.com/billyke2000s/moviehub/actions/runs/41947115300",
         "confirmed": "Live HTTP 200 search page advertises Breaking Bad Season 1 Episode 1 – 7 (Complete). Existing exact-card equality rejected it. Live Dune search advertises Dune: Part Two (2024) – Hollywood Movie, whose suffix prevented alias matching."
     },
-    "next": "Inspect the actual Send handoff and returned page/form to distinguish a dead file from a protocol change. Continue fixing this site and selecting genuine advertised alternatives; no series playback pass from catalogue extraction alone.",
+    "next": "Finish advertised Send page inspection and repair the episode path or select a genuinely advertised supported alternative. Retest the bounded Dune catalogue fallback; keep the verified Inception result saved.",
     "repairs": [
         "Accept an explicitly advertised episode range only for the exact show, requested season and contained episode, then select that exact advertised episode link.",
-        "Match movie title/year after removing only the observed Hollywood Movie publisher suffix. Different titles, years, seasons and out-of-range episodes remain rejected."
+        "Match movie title/year after removing only the observed Hollywood Movie publisher suffix. Different titles, years, seasons and out-of-range episodes remain rejected.",
+        "If a colon-bearing movie's full search yields no matching card, try its shorter catalogue term once while preserving exact full title/year verification on the returned card."
     ],
     "validation": {
-        "newOfflineRegressionCases": 6,
-        "status": "queued_in_Android_CI",
-        "scope": "Real existing loader requests and source emission, episode 10 before episode 1, missing requested episode, wrong season/show, wrong movie year and literal publisher suffix."
+        "newOfflineRegressionCases": 7,
+        "status": "Seven-case revision queued in CI; six-case revision passed all 211 total tests.",
+        "scope": "Real existing loader requests and source emission, episode 10 before episode 1, missing requested episode, wrong season/show, wrong movie year and literal publisher suffix.",
+        "completedRegressionRun": {
+            "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41947649250",
+            "apkJobId": 126984291411,
+            "pythonTests": 211,
+            "pythonStatus": "passed",
+            "apkStatus": "success",
+            "remainingDeviceJobs": "Two jobs were cancelled by the later diagnostic-only commit; no all-six-green claim for this revision."
+        }
     },
     "currentAttempt": {
         "sourceCommit": "f2e887b36ff9912114abe5e50c885647ab907b1f",
@@ -43,7 +52,120 @@
         },
         "movies": {
             "jobId": 126983367934,
-            "status": "running"
+            "status": "completed_one_reviewed_movie_pass",
+            "sourceCommit": "f2e887b36ff9912114abe5e50c885647ab907b1f",
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41947540445",
+            "playbackAuditVersion": 2,
+            "audioEvidenceVersion": 3,
+            "sample": {
+                "evidenceId": "0001",
+                "title": "Inception",
+                "durationSeconds": 8888,
+                "expectedMinutes": 148,
+                "dimensions": [
+                    1280,
+                    640
+                ],
+                "provider": "seriezloaded.tv · new.waffi.cloud · Watch",
+                "displayedFpsByPosition": {
+                    "start": 24.00474167736837,
+                    "middle": 24.08625550225036,
+                    "late": 23.952686052242484
+                },
+                "midpointDecoded": true,
+                "lateSeekDecoded": true,
+                "selectedAudioLanguage": "und",
+                "capturedSourceAudio": {
+                    "start": {
+                        "tracks": [
+                            {
+                                "seconds": 7.872,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -37.2,
+                                        "activeSeconds": 7.872
+                                    },
+                                    {
+                                        "rmsDbfs": -35.85,
+                                        "activeSeconds": 7.872
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0001-start-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": true
+                    },
+                    "middle": {
+                        "tracks": [
+                            {
+                                "seconds": 5.9733125,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -46.25,
+                                        "activeSeconds": 5.9733125000000005
+                                    },
+                                    {
+                                        "rmsDbfs": -46.07,
+                                        "activeSeconds": 5.9733125000000005
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0001-middle-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": true
+                    },
+                    "late": {
+                        "tracks": [
+                            {
+                                "seconds": 7.936,
+                                "channels": [
+                                    {
+                                        "rmsDbfs": -47.98,
+                                        "activeSeconds": 6.936
+                                    },
+                                    {
+                                        "rmsDbfs": -48.23,
+                                        "activeSeconds": 6.936
+                                    }
+                                ],
+                                "signalDetected": true,
+                                "codec": "aac",
+                                "language": "eng",
+                                "channelCount": 2,
+                                "file": "0001-late-audio-0.wav"
+                            }
+                        ],
+                        "capped": false,
+                        "errors": [],
+                        "recordingEventsConfirmed": true,
+                        "minimumDecodedSeconds": 4,
+                        "selectedAudioSignalVerified": true
+                    }
+                },
+                "contentIdentityConfirmed": true,
+                "contentReview": "Opening Legendary logo, elderly Saito early, Browning/Cobb midpoint and Ariadne late match Inception. Full picture fits; no failure overlay in reviewed frames.",
+                "physicalAudioOutputTested": false
+            },
+            "scope": "Representative opening, midpoint and late samples with both seeks and independently decoded non-silent audio; no uninterrupted whole-film or physical speaker claim.",
+            "remaining": "Dune exact full-title search returned no matches; this is now receiving a bounded shorter catalogue query with the original full-title/year match preserved."
         }
-    }
+    },
+    "moviePlaybackVerified": true,
+    "seriesPlaybackVerified": false
 }

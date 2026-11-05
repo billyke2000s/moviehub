@@ -10,7 +10,7 @@ import requests
 ORIGIN = "https://seriezloaded.tv"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Android 11; TV) AppleWebKit/537.36 Chrome/130.0 Safari/537.36",
            "Accept": "*/*", "DNT": "1"}
-PAGES = ["/", "/?s=Inception", "/?s=Dune",
+PAGES = ["/", "/?s=Inception", "/?s=dune+part+two", "/?s=Dune",
          "/?s=Breaking+Bad+Season+1+Episode+1", "/?s=Breaking+Bad"]
 
 class Structure(HTMLParser):

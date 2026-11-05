@@ -8,13 +8,22 @@ from vod_site_inspection import HEADERS, ORIGIN, Structure, safe_url
 POSTS = ["/inception-2010/", "/movie-dune-part-two-2024-hollywood-movie/",
          "/series-breaking-bad-season-1-episode-1-7-complete/"]
 
-def read(url):
+def read(url, redirects=0):
     with requests.get(url, headers=HEADERS, timeout=(10, 20),
                       allow_redirects=False, stream=True) as response:
         info = dict(status=response.status_code,
                     contentType=response.headers.get("Content-Type", "").split(";")[0])
         if response.is_redirect:
-            info["redirect"] = safe_url(response.headers.get("Location", ""))
+            target = requests.compat.urljoin(url, response.headers.get("Location", ""))
+            info["redirect"] = safe_url(target)
+            destination = urlsplit(target)
+            if (redirects < 4 and destination.scheme == "https" and
+                    destination.netloc == urlsplit(url).netloc and
+                    not destination.username and not destination.password):
+                response.close()
+                final, html = read(target, redirects + 1)
+                final["redirectCount"] = max(final.get("redirectCount", 0), redirects + 1)
+                return final, html
             return info, ""
         if "html" not in info["contentType"]:
             return info, ""

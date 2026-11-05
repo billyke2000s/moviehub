@@ -83,9 +83,36 @@ class SeriesLoadedTests(unittest.TestCase):
                           'Dune: Part Two (2024) – Hollywood Movie</a></h3>')
                 article = ('<a class="btn-ghost" href="https://media.example/film.mp4">'
                            'Download Movie</a>')
-                with patch.object(module.client, "request", side_effect=[search, article]), \
+                with patch.object(module.client, "request", side_effect=lambda url, **kwargs: search if "/?s=" in url else article), \
                      patch.object(module.scrape_sources, "process",
                                   side_effect=lambda hosts, url: [{"url": url}]) as process:
                     result = provider.sources(key, [])
                 self.assertEqual(bool(result), expected)
                 self.assertEqual(process.call_count, int(expected))
+
+    def test_short_catalogue_fallback_keeps_full_title_and_year_identity(self):
+        provider = module.source()
+        key = provider.movie("tt15239678", "693134", "Dune: Part Two", "Dune: Part Two",
+                             [{"title": "Dune: Part Two"}], "2024")
+        cards = ('<h3 class="entry-title"><a href="https://seriezloaded.tv/first/">'
+                 'Dune: Part One (2021)</a></h3>'
+                 '<h3 class="entry-title"><a href="https://seriezloaded.tv/second/">'
+                 'Dune: Part Two (2024) – Hollywood Movie</a></h3>')
+        article = ('<a class="btn-ghost" href="https://media.example/second.mp4">'
+                   'Download Movie</a>')
+        calls = []
+        def fetch(url, **kwargs):
+            calls.append(url)
+            if url.endswith("/?s=dune+part+two"):
+                return "<h1>No results</h1>"
+            if url.endswith("/?s=dune"):
+                return cards
+            if url == "https://seriezloaded.tv/second/":
+                return article
+            raise AssertionError("Unexpected title or request")
+        with patch.object(module.client, "request", side_effect=fetch), \
+             patch.object(module.scrape_sources, "process",
+                          side_effect=lambda hosts, url: [{"url": url}]):
+            result = provider.sources(key, [])
+        self.assertEqual([item["url"] for item in result], ["https://media.example/second.mp4"])
+        self.assertEqual(len(calls), 3)
