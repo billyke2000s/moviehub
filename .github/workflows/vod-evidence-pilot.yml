@@ -6,6 +6,8 @@ on:
             - ".github/workflows/vod-evidence-pilot.yml"
             - ".github/scripts/vod-evidence-audit.sh"
             - ".github/scripts/vod-evidence-mode.sh"
+            - ".github/scripts/vod_media_packages.py"
+            - ".github/scripts/test_vod_media_packages.py"
             - "android-tv-launcher/tests/review-vod-evidence.py"
             - "android-tv-launcher/app/src/androidTest/java/local/tv/home/VodAuditEvidence.java"
             - "android-tv-launcher/app/src/androidTest/java/local/tv/home/FreeVodLiveAuditTest.java"
@@ -44,14 +46,43 @@ jobs:
             - uses: gradle/actions/setup-gradle@v5
               with:
                   gradle-version: "9.6.0"
+            - name: Restore signed decoder-package cache
+              id: decoder-cache
+              uses: actions/cache/restore@v4
+              with:
+                  path: ~/.cache/moviehub-vod-debs
+                  key: vod-debs-${{ runner.os }}-${{ runner.arch }}-v1
             - name: Prepare bounded media-sample decoder
-              timeout-minutes: 8
+              timeout-minutes: 20
               run: |
+                  python .github/scripts/test_vod_media_packages.py
+                  cache_dir="$HOME/.cache/moviehub-vod-debs"
+                  mkdir -p "$cache_dir/partial"
+                  apt_cache=(-o "Dir::Cache::archives=$cache_dir" -o APT::Keep-Downloaded-Packages=true)
                   if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
                     sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
-                    sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends ffmpeg
+                    if command -v aria2c >/dev/null; then
+                      sudo apt-get "${apt_cache[@]}" --print-uris -y --no-install-recommends install ffmpeg > "$RUNNER_TEMP/vod-apt-uris.txt"
+                      python .github/scripts/vod_media_packages.py "$RUNNER_TEMP/vod-apt-uris.txt" "$RUNNER_TEMP/vod-apt-downloads.txt"
+                      if [ -s "$RUNNER_TEMP/vod-apt-downloads.txt" ]; then
+                        sudo aria2c \
+                          --input-file="$RUNNER_TEMP/vod-apt-downloads.txt" --dir="$cache_dir" \
+                          --max-concurrent-downloads=8 --split=4 --max-connection-per-server=4 \
+                          --min-split-size=1M --max-tries=2 --connect-timeout=15 --timeout=30 \
+                          --summary-interval=10 --console-log-level=warn --file-allocation=none \
+                          --allow-overwrite=true --auto-file-renaming=false \
+                          --continue=true --check-integrity=true
+                      fi
+                    fi
+                    sudo apt-get "${apt_cache[@]}" -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends ffmpeg
                   fi
                   sudo chmod 666 /dev/kvm
+            - name: Cache verified decoder packages before playback
+              if: steps.decoder-cache.outputs.cache-hit != 'true'
+              uses: actions/cache/save@v4
+              with:
+                  path: ~/.cache/moviehub-vod-debs
+                  key: vod-debs-${{ runner.os }}-${{ runner.arch }}-v1
             - name: Capture rendered video and native media samples
               uses: reactivecircus/android-emulator-runner@v2
               with:

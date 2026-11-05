@@ -78,12 +78,14 @@
     "currentAttempt": {
         "sourceScope": "Existing exact-IMDb loader and all returned Inception/Dune candidates. Current controls established an output-rendering limit on the older 1080p software runner; native 720p output leaves source quality unchanged.",
         "progress": "Per-source redacted progress checkpoints are now emitted while the opt-in test runs. They are progress markers, not playback certification.",
-        "series": "Existing movie-only capability remains explicit; no fabricated episode support."
+        "series": "Existing movie-only capability remains explicit; no fabricated episode support.",
+        "setupRepair": "Parallelize downloads with the runner-provided aria2, require each SHA256 from signed APT metadata, and cache verified package archives before playback. The cold-cache setup has a twenty-minute bound; all playback/audio thresholds remain unchanged."
     },
     "activeRetest": {
         "sourceCommit": "786a6e825e0a39edff4a93a73df547241223e475",
         "run": "https://github.com/billyke2000s/moviehub/actions/runs/41938601459",
         "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41938610900",
-        "status": "in_progress"
+        "status": "setup_failed_before_playback",
+        "reason": "APT package transfers from the Ubuntu mirror exceeded the eight-minute tool-setup bound; no native site playback took place."
     }
 }

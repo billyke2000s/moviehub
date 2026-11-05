@@ -1,5 +1,13 @@
 # Testing
 
+## Decoder setup reliability
+
+The one-site runner downloads Ubuntu decoder packages in parallel using its preinstalled
+aria2 and SHA256 values from APT metadata. Unsafe output paths, absent hashes and
+conflicting package hashes fail closed. Verified package archives are cached immediately
+after installation, even if later site playback fails. This addresses slow package
+transfers; it changes no production player or playback/audio acceptance criteria.
+
 ## AnyMovies movie and episode samples verified — 4 November 2026
 
 Native run 41935755045 at `c20b7ef` verifies three movie routes across Inception and
