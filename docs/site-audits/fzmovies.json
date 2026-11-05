@@ -1,7 +1,7 @@
 {
     "site": "free99:fzmovies_live",
-    "date": "2026-11-04",
-    "status": "native_retest_in_progress",
+    "date": "2026-11-05",
+    "status": "verified_movie_paths",
     "siteInspection": "Current homepage describes a movie catalogue and links TV shows to a separate MobileTVshows website. Current Inception search contains one exact IMDb tt1375666 card.",
     "repairs": [
         "Match the actual IMDb data-title value rather than a substring in the whole card.",
@@ -11,10 +11,45 @@
     ],
     "validation": {
         "pythonTests": 168,
-        "coverage": "Exact IMDb prefix-collision rejection, advertised-hop handling, original format-label preservation and explicit unsupported TV status; no inventory loss."
+        "coverage": "Exact IMDb prefix-collision rejection, advertised-hop handling, original format-label preservation and explicit unsupported TV status; no inventory loss.",
+        "currentAndroidCI": {
+            "run": "https://github.com/billyke2000s/moviehub/actions/runs/41942075938",
+            "jobs": [
+                {
+                    "name": "free-vod-live-probe",
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "apk",
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "device-tests",
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "signed-compatibility",
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "experimental-device-tests",
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "vod-recovery-tests",
+                    "status": "completed",
+                    "conclusion": "success"
+                }
+            ]
+        }
     },
-    "fullPlaybackVerified": false,
-    "next": "Retest the existing corrected loader on the native tv_720p profile with unchanged runtime, audio, frame/progress and seek criteria. Inspect each actual candidate and continue repairing this site until a movie path passes; no new FZMovies pass is claimed.",
+    "fullPlaybackVerified": true,
+    "next": "Continue with Levidia. Keep FZMovies Inception/decoder alternatives explicitly unverified; preserve genuine movie-only capability.",
     "liveReview": {
         "sourceCommit": "57881d6573cf013621ef49e1cd1ce10c9d56dbf8",
         "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41726423062",
@@ -88,8 +123,8 @@
         "sourceCommit": "c6d300c0e483ebae7907afcbf2e1dde764c8d5b3",
         "run": "https://github.com/billyke2000s/moviehub/actions/runs/41942067338",
         "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41942075938",
-        "status": "native_job_running",
-        "setup": "Completed signed-package setup and six metadata safety tests; native capture stage reached."
+        "status": "completed_and_content_reviewed",
+        "setup": "Signed-package setup completed in 21 seconds; verified archives cached before playback; six metadata safety tests passed."
     },
     "previousSetupAttempts": [
         {
@@ -105,5 +140,80 @@
             "status": "setup_failed_before_playback",
             "reason": "The new downloader rejected GitHub runner mirror+file URIs. Support for the fixed runner mirror file is now covered by regression tests."
         }
-    ]
+    ],
+    "verifiedMovieReview": {
+        "sourceCommit": "c6d300c0e483ebae7907afcbf2e1dde764c8d5b3",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41942067338",
+        "jobId": 126965095914,
+        "playbackAuditVersion": 2,
+        "audioEvidenceVersion": 3,
+        "profile": "tv_720p",
+        "candidatesTested": 8,
+        "completePasses": 2,
+        "title": "Dune: Part Two",
+        "durationSeconds": 9948,
+        "expectedMinutes": 166,
+        "dimensions": [
+            640,
+            268
+        ],
+        "contentIdentityConfirmed": true,
+        "contentReview": "Both contacts show the Dune: Part Two opening spacecraft/desert, Lady Jessica at midpoint and Paul Atreides late. Entire picture fits; no backup-error overlay in reviewed frames.",
+        "samples": [
+            {
+                "evidenceId": "0005",
+                "displayedFpsByPosition": {
+                    "start": 23.968371633308625,
+                    "middle": 23.993271989710102,
+                    "late": 23.14358873350404
+                },
+                "nominalFps": 23.976,
+                "midpointDecoded": true,
+                "lateSeekDecoded": true,
+                "nonSilentAudioSecondsByPosition": {
+                    "start": 5.340625,
+                    "middle": 7.7090625,
+                    "late": 6.687375
+                },
+                "selectedAudioLanguage": "eng",
+                "capturedAudioCodec": "aac",
+                "capturedAudioChannels": 1,
+                "recordingEventsConfirmed": true,
+                "allSelectedAudioSignalChecksPassed": true,
+                "transportErrors": [
+                    "Provider relay: SocketException",
+                    "Provider relay: IOException"
+                ]
+            },
+            {
+                "evidenceId": "0006",
+                "displayedFpsByPosition": {
+                    "start": 23.963634566925244,
+                    "middle": 23.924864063272366,
+                    "late": 23.196130687987367
+                },
+                "nominalFps": 23.976,
+                "midpointDecoded": true,
+                "lateSeekDecoded": true,
+                "nonSilentAudioSecondsByPosition": {
+                    "start": 5.340625,
+                    "middle": 7.7090625,
+                    "late": 6.4319375
+                },
+                "selectedAudioLanguage": "eng",
+                "capturedAudioCodec": "aac",
+                "capturedAudioChannels": 1,
+                "recordingEventsConfirmed": true,
+                "allSelectedAudioSignalChecksPassed": true,
+                "transportErrors": [
+                    "Provider relay: SocketException",
+                    "Provider relay: IOException"
+                ]
+            }
+        ],
+        "remainingFailures": "Inception candidates 0001/0002 still lack sufficient opening/late recorded audio. Candidates 0003/0004/0007/0008 failed technical decoding. These routes are not certified.",
+        "physicalAudioOutputTested": false,
+        "scope": "Representative Dune movie routes verified at opening, midpoint and late positions, including both seeks and independently decoded non-silent English source audio. Not uninterrupted whole-film viewing, every catalogue title, physical-speaker output, or unsupported series support.",
+        "result": "should be all good g — verified movie paths; failed alternatives retained"
+    }
 }
