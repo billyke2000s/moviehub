@@ -234,6 +234,15 @@ public final class FreeVodLiveAuditTest {
             writer.write(row.toString());
             writer.write('\n');
         }
+        JSONObject checkpoint = new JSONObject()
+            .put("event", row.optString("kind"))
+            .put("website", row.optString("website"))
+            .put("evidenceId", row.optString("evidenceId"))
+            .put("provider", row.optString("provider"))
+            .put("status", row.optString("status"));
+        android.os.Bundle progress = new android.os.Bundle();
+        progress.putString("stream", "\nVOD_AUDIT_PROGRESS " + checkpoint + "\n");
+        instrumentation.sendStatus(2, progress);
     }
 
     private void play(

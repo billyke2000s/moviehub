@@ -1,7 +1,7 @@
 {
     "site": "free99:fzmovies_live",
     "date": "2026-11-04",
-    "status": "corrected_seek_retest_content_confirmed_technical_failures_remain",
+    "status": "native_retest_in_progress",
     "siteInspection": "Current homepage describes a movie catalogue and links TV shows to a separate MobileTVshows website. Current Inception search contains one exact IMDb tt1375666 card.",
     "repairs": [
         "Match the actual IMDb data-title value rather than a substring in the whole card.",
@@ -14,7 +14,7 @@
         "coverage": "Exact IMDb prefix-collision rejection, advertised-hop handling, original format-label preservation and explicit unsupported TV status; no inventory loss."
     },
     "fullPlaybackVerified": false,
-    "next": "Investigate the remaining decoder, frame-rate and late-audio failures. Compare the saved runner control and retain the corrected-method failure counts; do not certify the site from the historical one-source pass.",
+    "next": "Retest the existing corrected loader on the native tv_720p profile with unchanged runtime, audio, frame/progress and seek criteria. Inspect each actual candidate and continue repairing this site until a movie path passes; no new FZMovies pass is claimed.",
     "liveReview": {
         "sourceCommit": "57881d6573cf013621ef49e1cd1ce10c9d56dbf8",
         "evidenceRun": "https://github.com/billyke2000s/moviehub/actions/runs/41726423062",
@@ -28,10 +28,7 @@
         "duneSample": {
             "evidenceId": "0006",
             "durationSeconds": 9948,
-            "dimensions": [
-                640,
-                268
-            ],
+            "dimensions": [640, 268],
             "initialPositionMs": 650,
             "technicalWindowsPassed": true,
             "midpointAndLateSeekPassed": true,
@@ -77,5 +74,10 @@
         },
         "inceptionAudio": "The two decoded Inception candidates have non-silent start/middle captures but zero decoded late-audio samples.",
         "limits": "Only the selected contact sheets were visually reviewed. Four other candidates did not decode; no whole-title or physical-speaker claim."
+    },
+    "currentAttempt": {
+        "sourceScope": "Existing exact-IMDb loader and all returned Inception/Dune candidates. Current controls established an output-rendering limit on the older 1080p software runner; native 720p output leaves source quality unchanged.",
+        "progress": "Per-source redacted progress checkpoints are now emitted while the opt-in test runs. They are progress markers, not playback certification.",
+        "series": "Existing movie-only capability remains explicit; no fabricated episode support."
     }
 }

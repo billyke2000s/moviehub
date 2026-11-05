@@ -24,13 +24,7 @@ jobs:
             fail-fast: false
             matrix:
                 route:
-                    - {
-                          provider: "free99:anymovies_co",
-                          media: movies,
-                          capture: true,
-                          source_names: "vidfast,Peachify",
-                      }
-                    - { provider: "free99:anymovies_co", media: series, capture: true, source_names: "" }
+                    - { provider: "free99:fzmovies_live", media: movies, capture: true, source_names: "" }
         env:
             ORG_GRADLE_PROJECT_moviehubAbi: x86_64
         steps:
