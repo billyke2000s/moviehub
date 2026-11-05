@@ -28,7 +28,10 @@
         "duneSample": {
             "evidenceId": "0006",
             "durationSeconds": 9948,
-            "dimensions": [640, 268],
+            "dimensions": [
+                640,
+                268
+            ],
             "initialPositionMs": 650,
             "technicalWindowsPassed": true,
             "midpointAndLateSeekPassed": true,
@@ -82,7 +85,11 @@
         "setupRepair": "Parallelize downloads with the runner-provided aria2, require each SHA256 from signed APT metadata, and cache verified package archives before playback. The cold-cache setup has a twenty-minute bound; all playback/audio thresholds remain unchanged. The runner mirror-list format is expanded only from its fixed /etc/apt/apt-mirrors.txt file; arbitrary local-file URLs stay rejected. Six metadata tests pass."
     },
     "activeRetest": {
-        "status": "pending_restart_with_runner_mirror_support"
+        "sourceCommit": "c6d300c0e483ebae7907afcbf2e1dde764c8d5b3",
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41942067338",
+        "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41942075938",
+        "status": "native_job_running",
+        "setup": "Completed signed-package setup and six metadata safety tests; native capture stage reached."
     },
     "previousSetupAttempts": [
         {
