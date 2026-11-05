@@ -1,7 +1,7 @@
 {
     "site": "free99:seriesloaded_ng",
     "date": "2026-11-05",
-    "status": "catalogue_selection_repaired_native_retest_queued",
+    "status": "episode_catalogue_repaired_downstream_send_resolution_failed",
     "fullPlaybackVerified": false,
     "previousReceipt": "One movie candidate and no series candidates in historical corrected-seek checking; no full certification.",
     "currentInspection": {
@@ -11,7 +11,7 @@
         "run": "https://github.com/billyke2000s/moviehub/actions/runs/41947115300",
         "confirmed": "Live HTTP 200 search page advertises Breaking Bad Season 1 Episode 1 – 7 (Complete). Existing exact-card equality rejected it. Live Dune search advertises Dune: Part Two (2024) – Hollywood Movie, whose suffix prevented alias matching."
     },
-    "next": "Review current advertised post/download structure and native movie/episode evidence, fix any remaining legitimate hop or playback failure before certification.",
+    "next": "Inspect the actual Send handoff and returned page/form to distinguish a dead file from a protocol change. Continue fixing this site and selecting genuine advertised alternatives; no series playback pass from catalogue extraction alone.",
     "repairs": [
         "Accept an explicitly advertised episode range only for the exact show, requested season and contained episode, then select that exact advertised episode link.",
         "Match movie title/year after removing only the observed Hollywood Movie publisher suffix. Different titles, years, seasons and out-of-range episodes remain rejected."
@@ -32,6 +32,18 @@
         ],
         "profile": "tv_720p",
         "playbackAuditVersion": 2,
-        "audioEvidenceVersion": 3
+        "audioEvidenceVersion": 3,
+        "series": {
+            "jobId": 126983368078,
+            "status": "completed_no_playback_candidates",
+            "lookup": "resolution_failed",
+            "extracted": 1,
+            "host": "send.cm",
+            "trace": "Three SeriezLoaded HTTP 200 requests reached its exact advertised episode handoff; the existing Send resolver fetched send.now with HTTP 200 but returned no media."
+        },
+        "movies": {
+            "jobId": 126983367934,
+            "status": "running"
+        }
     }
 }

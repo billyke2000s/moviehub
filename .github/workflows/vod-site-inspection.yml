@@ -5,6 +5,7 @@ on:
         paths:
             - ".github/workflows/vod-site-inspection.yml"
             - ".github/scripts/vod_site_inspection.py"
+            - ".github/scripts/vod_seriesloaded_hops.py"
     workflow_dispatch:
 permissions:
     contents: read
@@ -20,3 +21,6 @@ jobs:
             - run: python -m pip install requests
             - name: Inspect bounded public HTML without logging media URLs
               run: python .github/scripts/vod_site_inspection.py
+
+            - name: Inspect advertised download handoffs without logging file URLs
+              run: python .github/scripts/vod_seriesloaded_hops.py
