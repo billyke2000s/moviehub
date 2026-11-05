@@ -88,10 +88,10 @@ def inspect(path, depth=0):
                                 id=a["id"][:100], rel=a["rel"][:100], css=a["css"][:100],
                                 target=safe_url(a["href"]))
                            for a in selected[:30]]
-        result["interactiveChallengeAdvertised"] = bool(re.search(r"captchaEnabled\\s*=\\s*true", html))
+        result["interactiveChallengeAdvertised"] = bool(re.search(r"captchaEnabled\s*=\s*true", html))
         if depth == 0 and path.startswith("/?s="):
             posts = [a for a in parser.links if a["rel"] == "bookmark" and
-                     re.match(r"^(?:Inception \\(2010\\)|Dune: Part Two \\(2024\\)|Breaking Bad Season 1 Episode 1\\s*[–-]\\s*7)", a["text"])]
+                     re.match(r"^(?:Inception \(2010\)|Dune: Part Two \(2024\)|Breaking Bad Season 1 Episode 1\s*[–-]\s*7)", a["text"])]
             result["linkedPostStructures"] = []
             for post in posts[:2]:
                 target = urlsplit(urljoin(ORIGIN, post["href"]))
