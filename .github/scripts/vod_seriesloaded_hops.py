@@ -1,6 +1,9 @@
 """Inspect only advertised SeriezLoaded download handoffs; redact identifiers."""
 import json
 import re
+import sys
+import traceback
+from pathlib import Path
 from urllib.parse import urlsplit
 import requests
 from vod_site_inspection import HEADERS, ORIGIN, Structure, safe_url
@@ -35,12 +38,36 @@ def read(url, redirects=0):
         html = body.decode(response.encoding or "utf-8", errors="replace")
         info.update(bytes=len(body),
                     accessChallenge=bool(re.search(r"cf-chl|challenge-platform|just a moment", html, re.I)),
+                    challengePage=bool(re.search(r"<title>[^<]*(?:just a moment|attention required)", html, re.I)),
+                    interactiveWidget=bool(re.search(r"cf-turnstile-response|g-recaptcha-response|h-captcha-response", html, re.I)),
                     captchaAdvertised=bool(re.search(r"captchaEnabled\s*=\s*true", html)),
                     deletedFile=bool(re.search(r"file (?:you were looking for doesn.t exist|not found|deleted|has been removed)", html, re.I)))
         parser = Structure()
         parser.feed(html)
         info["forms"] = parser.forms[:3]
         return info, html
+
+
+def diagnose_send(media_id):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] /
+                           "android-tv-launcher/app/src/main/python"))
+    import moviehub_vod
+    from moviehub_compat import client
+    from resolveurl.plugins.send import SendResolver
+    client.scope(lambda: False, timeout=25)
+    result = {}
+    try:
+        url = SendResolver().get_media_url("send.cm", media_id)
+        result["returnedMediaLocator"] = isinstance(url, str) and bool(url)
+        if isinstance(url, str):
+            result["target"] = safe_url(url.partition("|")[0])
+    except Exception as error:
+        result["errorType"] = type(error).__name__
+        result["origin"] = [dict(file=Path(frame.filename).name,
+                                 function=frame.name, line=frame.lineno)
+                            for frame in traceback.extract_tb(error.__traceback__)[-5:]]
+    result["requests"] = client.diagnostics()["requests"]
+    return result
 
 for post in POSTS:
     result = dict(post=post, downloads=[])
@@ -76,6 +103,9 @@ for post in POSTS:
                 media = re.match(r"/(?:f/embed/|d/)?([0-9a-zA-Z]+)", destination.path)
                 if media:
                     entry["existingResolverPage"], _ = read("https://send.now/" + media[1])
+                    page = entry["existingResolverPage"]
+                    if not page.get("challengePage") and not page.get("interactiveWidget"):
+                        entry["actualBundledResolver"] = diagnose_send(media[1])
     except Exception as error:
         result["errorType"] = type(error).__name__
     print("VOD_ADVERTISED_HANDOFF " + json.dumps(result), flush=True)
