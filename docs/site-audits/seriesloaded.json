@@ -11,15 +11,16 @@
         "run": "https://github.com/billyke2000s/moviehub/actions/runs/41947115300",
         "confirmed": "Live HTTP 200 search page advertises Breaking Bad Season 1 Episode 1 – 7 (Complete). Existing exact-card equality rejected it. Live Dune search advertises Dune: Part Two (2024) – Hollywood Movie, whose suffix prevented alias matching."
     },
-    "next": "Finish advertised Send page inspection and repair the episode path or select a genuinely advertised supported alternative. Retest the bounded Dune catalogue fallback; keep the verified Inception result saved.",
+    "next": "Retest the actual Send resolver and both media types with the guarded redirect fix. Preserve Inception movie proof and continue advertised alternatives if the exact episode remains unavailable.",
     "repairs": [
         "Accept an explicitly advertised episode range only for the exact show, requested season and contained episode, then select that exact advertised episode link.",
         "Match movie title/year after removing only the observed Hollywood Movie publisher suffix. Different titles, years, seasons and out-of-range episodes remain rejected.",
-        "If a colon-bearing movie's full search yields no matching card, try its shorter catalogue term once while preserving exact full title/year verification on the returned card."
+        "If a colon-bearing movie's full search yields no matching card, try its shorter catalogue term once while preserving exact full title/year verification on the returned card.",
+        "Preserve no-follow redirect requests in the existing guarded urllib adapter, including six.moves aliases, so legacy host helpers can inspect issued Location metadata without fetching the destination file."
     ],
     "validation": {
         "newOfflineRegressionCases": 7,
-        "status": "Seven-case revision queued in CI; six-case revision passed all 211 total tests.",
+        "status": "Seven catalogue cases and three guarded-transport cases queued in CI; previous six catalogue cases passed within 211 tests.",
         "scope": "Real existing loader requests and source emission, episode 10 before episode 1, missing requested episode, wrong season/show, wrong movie year and literal publisher suffix.",
         "completedRegressionRun": {
             "androidCI": "https://github.com/billyke2000s/moviehub/actions/runs/41947649250",
@@ -28,7 +29,8 @@
             "pythonStatus": "passed",
             "apkStatus": "success",
             "remainingDeviceJobs": "Two jobs were cancelled by the later diagnostic-only commit; no all-six-green claim for this revision."
-        }
+        },
+        "redirectRegressionCases": 3
     },
     "currentAttempt": {
         "sourceCommit": "f2e887b36ff9912114abe5e50c885647ab907b1f",
@@ -167,5 +169,12 @@
         }
     },
     "moviePlaybackVerified": true,
-    "seriesPlaybackVerified": false
+    "seriesPlaybackVerified": false,
+    "sendInvestigation": {
+        "run": "https://github.com/billyke2000s/moviehub/actions/runs/41948970473",
+        "jobId": 126988088874,
+        "outcome": "Exact advertised Send handoff reaches a normal-looking HTTP 200 form; direct bundled resolver raises ResolverError at send.py:43 (Unable to locate File). Broad Cloudflare script markers are present, but neither a challenge page title nor interactive response widget was detected; this is not proof of an interactive block.",
+        "protocolFinding": "The existing compatibility opener ignored custom NoRedirection handlers; the legacy helper then loses final Location metadata. New regressions require the issued location while keeping all HTTP under the bounded client.",
+        "limits": "A code-level transport repair is not a Send playback pass; fresh native evidence is still required."
+    }
 }
