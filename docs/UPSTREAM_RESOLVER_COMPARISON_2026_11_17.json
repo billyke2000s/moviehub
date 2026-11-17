@@ -1264,10 +1264,10 @@
     {
       "adapter": "native:rive",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/rive.py",
-      "localSha256": "9370d6a04d261a2f96164ca28e92d7960b063972b9a1b6793e516d24bddaca08",
+      "localSha256": "1b8d51cb979527c3e28ed69fc00b0c976d14e03c68c1b7ff578484a6d6695fdd",
       "movies": true,
       "pending": false,
-      "selection": "current Phisher provider-directory flow and clear formats adapted; reserve media-validation time; retain primevids gate; packaged playback pending",
+      "selection": "Phisher current directory adapted with extraction time reservation; new backend names audit-only after packaged Pulse crash; ordinary playback retains previously tested advertised routes",
       "series": true,
       "site": "rivestream.app",
       "upstreams": [

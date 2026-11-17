@@ -19,7 +19,9 @@ Implemented resolver updates:
 - Rive: fetch the currently advertised provider directory, instead of assuming the retired
   Vanguard name still works. Directory names are validated, duplicate backends are removed,
   and clear file/DASH formats use the existing transport and media checks. Extraction reserves
-  time for validation so a late slow backend cannot discard earlier collected links.
+  time for validation so a late slow backend cannot discard earlier collected links. New
+  directory names remain audit-only until packaged playback passes; normal discovery retains
+  the previously tested Primevids/Citadel routes when still advertised.
 - Fshare: Phisher's IMDb catalogue lookup and advertised watch-page links, current .co origin,
   broader player-token syntax and the current default trailer identifier.
 - VaPlayer: send TMDB IDs to the current API, retain exact season/episode numbers and
@@ -51,7 +53,7 @@ coverage, not that its remote providers produced working streams. The current wo
 resolve provider DNS, so live results must come from the GitHub runners; local DNS failures are
 not evidence that these providers are closed.
 
-Local checks: **168 Python tests** and all **34 Java core suites** pass. The earlier Android
+Local checks: **169 Python tests** and all **34 Java core suites** pass. The earlier Android
 build/lint job stopped on pre-existing Java formatting differences; the two files are formatted
 in a separate formatting-only commit. Prior device and signing checks passed, but this follow-up
 requires new CI results. No merge or APK publication is performed.
@@ -83,6 +85,16 @@ Direct requests with the current mobile signing format to all four MovieBox toke
 hosts returned HTTP 403 with the explicit message `Service not available in current region`.
 This is recorded as an availability failure, not repaired by the protocol port. Peachify also
 returned HTTP 403 in runner tests. No region bypass or weakened media checks are introduced.
+
+## Packaged playback failure and release gate
+
+[Series job 134128169324](https://github.com/billyke2000s/moviehub/actions/runs/44108734340/job/134128169324)
+verified seven sampled links: Vidzee Dcloud/Hindi, Cinejoy Nebula/Warsaw and Rive
+Primevids/Citadel variants. Four other links failed to decode. Starting Rive Pulse then
+crashed LibVLC in `FakeESOut::applyTimestampContinuity`, so the run did not finish. The
+[redacted records](PACKAGED_RESOLVER_AUDIT_2026_11_17.json) preserve the exact outcomes.
+New Rive backends are therefore available to explicit audits only; they are not newly
+enabled for ordinary playback. This gate does not relabel their failures as successes.
 
 ## Limits that remain
 

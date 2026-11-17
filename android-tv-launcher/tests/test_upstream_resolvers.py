@@ -173,6 +173,7 @@ class UpstreamResolverTests(unittest.TestCase):
     def test_rive_uses_current_directory_instead_of_retired_backend_names(self):
         from moviehub_native.rive import source
         provider = source()
+        provider.cinestream_audit = True
         called = []
         def request(url, **kwargs):
             args = parse_qs(urlparse(url).query)
@@ -189,6 +190,15 @@ class UpstreamResolverTests(unittest.TestCase):
         self.assertEqual(called, ['primevids', 'electra'])
         self.assertEqual(len(rows), 1)  # Primevids retains its existing dcloud-only gate.
         self.assertEqual(rows[0]['source'], 'Electra · 1080p')
+
+    def test_rive_new_directory_backends_require_packaged_playback_evidence(self):
+        from moviehub_native.rive import source
+        provider = source()
+        response = {'data': ['pulse', 'citadel', 'electra', 'primevids']}
+        with patch.object(client, 'request', return_value=response):
+            self.assertEqual(provider.services(True), ['primevids', 'citadel'])
+            provider.cinestream_audit = True
+            self.assertEqual(provider.services(True), ['primevids', 'citadel', 'pulse', 'electra'])
 
     def test_rive_reserves_validation_time_instead_of_losing_collected_links(self):
         from moviehub_native import rive

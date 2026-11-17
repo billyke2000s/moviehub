@@ -5,7 +5,7 @@
 The comparison now enumerates all 111 bundled adapters and 237 host modules. MovieBox mobile,
 Vidzee named-server, Fshare, Rive, VaPlayer, Peachify, Videasy and Multimovies flows are updated; eleven free-host modules are
 refreshed, and upstream origins are rechecked. New sharded audits report each adapter separately
-for movies/series, including exclusions and unsupported capabilities. Local checks: 168 Python
+for movies/series, including exclusions and unsupported capabilities. Local checks: 169 Python
 tests and all 34 Java core suites pass. Full resolver replacement and universal provider playback
 remain unproven; retained/unresolved entries are explicit. See the
 [full scope and evidence](docs/UPSTREAM_SOURCE_REFRESH_2026_11_17.md).

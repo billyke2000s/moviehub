@@ -65,6 +65,12 @@ class source:
                          and re.fullmatch(r'[a-z][a-z0-9_-]{0,31}', name)))[:24]
             if not names:
                 raise ValueError('Empty Rive provider directory')
+            # Discovery is broader than playback compatibility. Pulse crashed
+            # packaged LibVLC in the 17 November episode audit; other newly
+            # advertised routes also failed decoding. Keep them independently
+            # testable without exposing unverified backends in normal playback.
+            if not getattr(self, 'cinestream_audit', False):
+                names = [name for name in names if name in ('primevids', 'citadel', 'vanguard')]
             preferred = [name for name in ('primevids', 'citadel') if name in names]
             return preferred + [name for name in names if name not in preferred]
         except Exception as error:
