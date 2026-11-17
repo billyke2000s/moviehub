@@ -82,13 +82,17 @@ def matches(row, q):
 
 
 class MobileMovieBox(Base):
-    def fetch(self, host, route, body=None, token=''):
+    def fetch(self, host, route, body=None, token='', retry=True):
         client.check()
         url = host + PREFIX + route
         payload = json.dumps(body, ensure_ascii=False, separators=(',', ':')) if body is not None else None
         request_headers = headers('POST' if payload is not None else 'GET', url, payload,
-                                  token=self.tokens.get(host, token), device=self.device)
+                                  token=self.tokens.get(host, token) if token else '', device=self.device)
         response = client.fetch(url, request_headers, post=payload, timeout=12, session=http_session())
+        if token and retry and response.status_code in (401, 441, 403, 407):
+            self.tokens.pop(host, None)
+            fresh = self.visitor(host)
+            return self.fetch(host, route, body, fresh, retry=False)
         try:
             fresh = json.loads(response.headers.get('x-user') or '{}').get('token')
         except (ValueError, AttributeError):
@@ -117,7 +121,11 @@ class MobileMovieBox(Base):
             token = self.visitor(host)
             result = data(self.fetch(host, 'subject-api/search/v2', dict(
                 page=1, perPage=20, keyword=q['title']), token).json())
-            candidates = [row for row in (result.get('items') or [])[:24]
+            subjects = list(result.get('items') or [])
+            for group in (result.get('results') or [])[:20]:
+                if isinstance(group, dict) and isinstance(group.get('subjects'), list):
+                    subjects.extend(group['subjects'][:24])
+            candidates = [row for row in subjects[:120]
                           if isinstance(row, dict) and row.get('subjectId') and matches(row, q)]
             # Missing-year results cannot disambiguate multiple different subjects/remakes.
             if len({str(row['subjectId']) for row in candidates}) > 1:

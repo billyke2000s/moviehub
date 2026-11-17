@@ -1,4 +1,4 @@
-"""Rive's anonymous TMDB lookup, retaining only independently audited backend routes."""
+"""Rive's anonymous TMDB lookup using its current advertised backend directory."""
 import json
 import re
 from urllib.parse import urlencode
@@ -35,11 +35,7 @@ class source:
             return []
         query = json.loads(key)
         results = []
-        # Primevids/dcloud supplied the measured 1080-class film; retain Citadel's
-        # separate lower-resolution and language resources afterwards.
-        backends = ('vanguard', 'primevids', 'citadel') if 'season' in query else ('primevids', 'citadel')
-        # Vanguard passed the packaged episode check; its movie audio/seek check
-        # did not pass. Keep movie discovery on the existing routes.
+        backends = self.services('season' in query)
         for backend in backends:
             client.check()
             try:
@@ -47,6 +43,26 @@ class source:
             except Exception as error:
                 client.host_result('Rive ' + backend, type(error).__name__)
         return results
+
+    def services(self, series):
+        # Phisher's current implementation discovers this directory instead of
+        # assuming that historically working provider names still exist.
+        try:
+            response = client.request(self.base_link + '/api/backendfetch?' + urlencode(dict(
+                requestID='VideoProviderServices', secretKey='rive')),
+                referer=self.base_link + '/', output='json', timeout=12)
+            names = response.get('data')
+            if not isinstance(names, list):
+                raise ValueError('Invalid Rive provider directory')
+            names = list(dict.fromkeys(name for name in names if isinstance(name, str)
+                         and re.fullmatch(r'[a-z][a-z0-9_-]{0,31}', name)))[:24]
+            if not names:
+                raise ValueError('Empty Rive provider directory')
+            preferred = [name for name in ('primevids', 'citadel') if name in names]
+            return preferred + [name for name in names if name not in preferred]
+        except Exception as error:
+            client.host_result('Rive provider directory', type(error).__name__)
+            return ('vanguard', 'primevids', 'citadel') if series else ('primevids', 'citadel')
 
     def backend(self, identity, backend):
         query = dict(identity, provider=backend)
@@ -72,7 +88,7 @@ class source:
             # Other Primevids carriers have not passed decode/audio checks.
             if backend == 'primevids' and claim.casefold() != 'dcloud':
                 continue
-            if str(row.get('format', '')).lower() not in ('hls', 'm3u8'):
+            if str(row.get('format', '')).lower() not in ('hls', 'm3u8', 'mp4', 'mkv', 'video', 'file', 'dash', 'mpd'):
                 continue
             url = row.get('url')
             if not isinstance(url, str):

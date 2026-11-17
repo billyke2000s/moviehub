@@ -1264,10 +1264,10 @@
     {
       "adapter": "native:rive",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/rive.py",
-      "localSha256": "d5f59319f151fa10b6f7b0fbcafb52e7231fbccbe917c9120b352a3574c77c06",
+      "localSha256": "0fc34c130a5ead065ab27edded02eb854fe9ed5f45f25718ebc806d3e24e8a7f",
       "movies": true,
       "pending": false,
-      "selection": "comparison recorded; known route failures/browser or decoder dependencies remain unresolved",
+      "selection": "current Phisher provider-directory flow and clear file/DASH formats adapted; retained primevids gate; packaged playback pending",
       "series": true,
       "site": "rivestream.app",
       "upstreams": [
@@ -1701,6 +1701,9 @@
     },
     {
       "adapter": "native:moviebox",
+      "additionalLocalDependencies": {
+        "android-tv-launcher/app/src/main/python/moviehub_native/moviebox_mobile.py": "a88a69c885a651440810c2141ab5ec3000f0dfd6660001f29ca1f571bfe1a65f"
+      },
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_moviebox.py",
       "localSha256": "827328f1e7762eb9770c5ad96537d45fdaf74c5a9382818a97c2c35bb731556d",
       "movies": true,

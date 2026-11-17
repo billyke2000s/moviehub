@@ -13,6 +13,9 @@ Implemented resolver updates:
 - Vidzee: current named servers and exact movie/episode paths on core.vidzee.wtf, dynamic
   Acme languages and the API's supported plain-JSON representation. Server failures are
   isolated; explicit playback headers and the older CBC-compatible fallback are retained.
+- Rive: fetch the currently advertised provider directory, instead of assuming the retired
+  Vanguard name still works. Directory names are validated, duplicate backends are removed,
+  and clear file/DASH formats use the existing transport and media checks.
 - Fshare: Phisher's IMDb catalogue lookup and advertised watch-page links, current .co origin,
   broader player-token syntax and the current default trailer identifier.
 - Cinejoy and AllMovieLand: current upstream origins, keeping existing protocol/transport guards.
@@ -37,17 +40,30 @@ coverage, not that its remote providers produced working streams. The current wo
 resolve provider DNS, so live results must come from the GitHub runners; local DNS failures are
 not evidence that these providers are closed.
 
-Local checks: **158 Python tests** and all **34 Java core suites** pass. The earlier Android
+Local checks: **160 Python tests** and all **34 Java core suites** pass. The earlier Android
 build/lint job stopped on pre-existing Java formatting differences; the two files are formatted
 in a separate formatting-only commit. Prior device and signing checks passed, but this follow-up
 requires new CI results. No merge or APK publication is performed.
+
+## First full live audit
+
+[Run 44103491723](https://github.com/billyke2000s/moviehub/actions/runs/44103491723),
+application commit `e774f3c`, produced exactly 111 unique adapter records for films and
+111 for series. Fifteen adapters returned media-validated film sources; seven returned
+series sources. Vidzee returned two film and four episode links through its new protocol.
+These are extraction/media-response observations, not decoded audio/video proof. The
+[complete redacted results](ALL_ADAPTER_AUDIT_2026_11_17.json) retain every failure and
+unsupported capability, including pending and excluded adapters.
+
+This run exposed MovieBox's nested mobile search response (`data.results[].subjects`),
+which was corrected after the snapshot, together with a bounded visitor-token refresh.
+The corrected revision and the newly added packaged playback checks need their own results.
 
 ## Limits that remain
 
 This still must not be described as a successful replacement of every newest resolver or a
 fix for every remote service. Several current Phisher paths depend on its Android browser/WASM
-helpers; function dates cannot be inferred from a compiled package timestamp. Existing Rive,
-Movy, Hexa and other route failures are not relabelled as repaired. The report explicitly marks
+helpers; function dates cannot be inferred from a compiled package timestamp. Movy, Hexa and other route failures are not relabelled as repaired; Rive's newly discovered directory needs fresh packaged playback evidence. The report explicitly marks
 retained or unresolved implementations, and live audits report zero-source/failing entries.
 
 The changes above are implemented and reviewable; the owner's full "every source works" goal

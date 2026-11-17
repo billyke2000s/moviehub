@@ -46,8 +46,9 @@ class UpstreamResolverTests(unittest.TestCase):
             elif '/search/v2' in url:
                 self.assertEqual(headers['Authorization'], 'Bearer ephemeral')
                 self.assertEqual(json.loads(kw['post'])['keyword'], q['title'])
-                result = {'data': {'items': [dict(subjectId='wrong', title='Another Film', year='2020'),
-                                           dict(subjectId='right', title='A Film', year='2020')]}}
+                result = {'data': {'results': [{'subjects': [
+                    dict(subjectId='wrong', title='Another Film', year='2020'),
+                    dict(subjectId='right', title='A Film', year='2020')]}]}}
             else:
                 args = parse_qs(urlparse(url).query)
                 self.assertEqual(args, dict(subjectId=['right'], se=['2'], ep=['3']))
@@ -69,6 +70,30 @@ class UpstreamResolverTests(unittest.TestCase):
                     dict(title='A Film', imdbId='tt9999'), dict(title='A Film', tmdbId='123')]:
             self.assertFalse(mobile.matches(row, q))
         self.assertTrue(mobile.matches(dict(title='A Film [English]', releaseDate='2020-01-01'), q))
+
+    def test_moviebox_refreshes_expired_visitor_once_without_sending_it_to_bootstrap(self):
+        provider = mobile.MobileMovieBox()
+        provider.device = 'fixture'
+        host = mobile.HOSTS[0]
+        provider.tokens = {host: 'expired'}
+        calls = []
+        def fetch(url, headers, **kw):
+            calls.append((url, headers))
+            response = requests.Response()
+            response.status_code = 200
+            response._content = b'{"data":{"streams":[]}}'
+            if len(calls) == 1:
+                self.assertEqual(headers['Authorization'], 'Bearer expired')
+                response.status_code = 401
+            elif '/ranking-list?' in url:
+                self.assertNotIn('Authorization', headers)
+                response.headers['x-user'] = '{"token":"renewed"}'
+            else:
+                self.assertEqual(headers['Authorization'], 'Bearer renewed')
+            return response
+        with patch.object(client, 'fetch', side_effect=fetch):
+            provider.fetch(host, 'subject-api/play-info/v2?subjectId=id&se=0&ep=0', token='expired')
+        self.assertEqual(len(calls), 3)
 
     def test_vidzee_current_api_uses_named_servers_and_exact_episode(self):
         provider = Vidzee()
@@ -135,6 +160,26 @@ class UpstreamResolverTests(unittest.TestCase):
         self.assertEqual({row['adapter'] for row in report['adapters']}, {row['id'] for row in vod._RECORDS})
         self.assertEqual(len(report['adapters']), 111)
         self.assertEqual(sum(row['adapter'].startswith('scrubs:') for row in report['adapters']), 59)
+
+    def test_rive_uses_current_directory_instead_of_retired_backend_names(self):
+        from moviehub_native.rive import source
+        provider = source()
+        called = []
+        def request(url, **kwargs):
+            args = parse_qs(urlparse(url).query)
+            if 'requestID' in args:
+                self.assertEqual(args['requestID'], ['VideoProviderServices'])
+                return {'data': ['electra', 'primevids', 'electra', 'https://wrong.example']}
+            called.append(args['provider'][0])
+            self.assertEqual(args['id'], ['42'])
+            return {'data': {'tmdbId': 42, 'sources': [dict(
+                url='https://cdn.example/film.mp4', format='mp4', quality='1080p')]}}
+        with patch.object(client, 'request', side_effect=request):
+            key = provider.movie('tt1234', 42, 'A Film', 'A Film', [], '2020')
+            rows = provider.sources(key, [])
+        self.assertEqual(called, ['primevids', 'electra'])
+        self.assertEqual(len(rows), 1)  # Primevids retains its existing dcloud-only gate.
+        self.assertEqual(rows[0]['source'], 'Electra · 1080p')
 
 
 if __name__ == '__main__':
