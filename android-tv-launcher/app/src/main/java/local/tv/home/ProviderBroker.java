@@ -257,8 +257,13 @@ final class ProviderBroker {
         return ProviderFailure.from(error);
     }
 
-    static Object call(Context c, String id, String operation, JSONObject row, NativeHttp http)
-        throws Exception {
+    static Object call(
+        Context c,
+        String id,
+        String operation,
+        JSONObject row,
+        NativeHttp http
+    ) throws Exception {
         if (!supported(id)) throw new IOException("Unsupported provider");
         String module = ProviderPackages.module(c, id);
         if (id.equals("zlive")) {
