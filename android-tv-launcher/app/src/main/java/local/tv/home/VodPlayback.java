@@ -130,6 +130,13 @@ final class VodPlayback {
             if (!failover()) unavailable();
         }
         if (!preparing && queue.isStalled(SystemClock.elapsedRealtime())) failover();
+        // A picture that froze without the player reporting buffering or an error.
+        if (
+            !preparing &&
+            activity.player != null &&
+            activity.player.isPlaying() &&
+            queue.onClock(SystemClock.elapsedRealtime(), activity.player.getTime(), activity.bufferingNow())
+        ) activity.sourceFrozen();
     }
 
     /** A jump is waiting or starting; {@code target} is where it lands, or -1 while still choosing. */
@@ -191,6 +198,12 @@ final class VodPlayback {
         session.pinned = false;
         queue.select(active, false);
         if (activity.player != null && activity.player.isPlaying()) queue.onPlaying();
+        // Chosen from "Can't play this": the current source has already failed, so move on now.
+        else if (activity.playbackFailed() && !failover()) android.widget.Toast.makeText(
+            activity,
+            "No other source to try",
+            android.widget.Toast.LENGTH_SHORT
+        ).show();
     }
 
     String sourceLabel() {
@@ -257,6 +270,8 @@ final class VodPlayback {
     }
 
     private void prepare(int index, boolean refresh, long position) {
+        // A failure waiting behind a menu belonged to the source being replaced.
+        activity.clearPendingError();
         preparing = true;
         playing = false;
         lastCatchup = 0;

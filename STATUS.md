@@ -265,6 +265,14 @@ Historical checkpoint: 25 October 2026 (1.0 promoted the experimental line into 
     core tests and emulator CI only; awaiting the owner's check on the box. [Unverified] whether the
     👍/👎 symbols draw on every box's font.
 
+15. **Films and series playback recovery and parental lock (31 October 2026, unreleased).** A clock
+    that stands still for 12 s while VLC reports playing and not buffering now counts as a failed
+    source (`VodSourceFailover.onClock`); errors raised behind an open menu are retried when it
+    closes. Core tests and CI only; the 12 s threshold has not been seen against a real freezing
+    provider. A picture that freezes while the clock keeps moving is still not detected. The
+    films-and-series lock asks for the PIN in `MainActivity.play`, after sources are found; a
+    cancelled PIN leaves the screen that started playback as it was. [Unverified] on the TV box.
+
 ## Decisions
 
 - Version 7 → 8 channel upgrades must add `main` before renumbering the preferred copies.

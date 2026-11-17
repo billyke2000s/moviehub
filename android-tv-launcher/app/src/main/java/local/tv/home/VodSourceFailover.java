@@ -15,6 +15,12 @@ final class VodSourceFailover {
     static final long STALL_MS = 4000L;
     static final long WINDOW_MS = 60000L;
     static final int STALLS_PER_WINDOW = 2;
+    /**
+     * The player says it is playing, is not buffering, and its clock has not moved for this long:
+     * the source has frozen without telling us. Longer than a buffering stall, so a slow moment on
+     * the network is left to the buffering rules.
+     */
+    static final long FROZEN_MS = 12000L;
 
     static final class Source {
 
@@ -58,6 +64,9 @@ final class VodSourceFailover {
     private boolean hasPlayed;
     private boolean seeking;
     private boolean userPaused;
+    private long lastClock = Long.MIN_VALUE,
+        clockStill = -1;
+    private boolean frozenReported;
     private String pinnedProvider;
 
     void setSources(List<Source> ordered) {
@@ -135,12 +144,39 @@ final class VodSourceFailover {
 
     void setSeeking(boolean value) {
         seeking = value;
-        if (value) bufferingSince = -1;
+        if (value) {
+            bufferingSince = -1;
+            clockStill = -1;
+        }
     }
 
     void setUserPaused(boolean value) {
         userPaused = value;
-        if (value) bufferingSince = -1;
+        if (value) {
+            bufferingSince = -1;
+            clockStill = -1;
+        }
+    }
+
+    /**
+     * Called about once a second with the player's clock while it reports playing. True once per
+     * freeze, when the clock has stood still for {@link #FROZEN_MS} with no buffering, seek or pause.
+     */
+    boolean onClock(long nowMs, long clockMs, boolean buffering) {
+        boolean moved = clockMs != lastClock;
+        lastClock = clockMs;
+        if (moved) frozenReported = false;
+        if (!hasPlayed || seeking || userPaused || buffering || moved) {
+            clockStill = -1;
+            return false;
+        }
+        if (clockStill < 0) {
+            clockStill = nowMs;
+            return false;
+        }
+        if (frozenReported || nowMs - clockStill < FROZEN_MS) return false;
+        frozenReported = true;
+        return true;
     }
 
     /** Call only on a transition into buffering, not on every percentage update. */
@@ -195,5 +231,8 @@ final class VodSourceFailover {
         seeking = false;
         userPaused = false;
         bufferingSince = -1;
+        lastClock = Long.MIN_VALUE;
+        clockStill = -1;
+        frozenReported = false;
     }
 }

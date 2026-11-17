@@ -397,7 +397,7 @@ Only documentation follows this tested application revision.
 
 Run `bash android-tv-launcher/tests/run-core-tests.sh`; regular CI and publishing call this same script. A local run on 25 October 2026 (OpenJDK 21 `javac`) passed 903 checks in 26 suites; the suite list is in the script. GitHub CI still verifies javac, APK builds, lint, emulator behavior, and signing.
 
-`VodSourceFailoverTest` covers startup exclusion, threshold boundaries, seeking/pause exclusion, provider pinning, duplicates and exhaustion. PlaybackTest adds actual-VLC fixtures for repeated-buffering replacement through a failed candidate, preserving the old stream while resolving, cancellation on pause and late results, and exhausted alternatives without loops. These tests do not establish dual-decoder support on the target TV or live Premiumize availability.
+`VodSourceFailoverTest` covers startup exclusion, threshold boundaries, seeking/pause exclusion, provider pinning, duplicates, exhaustion and the frozen-clock rule (12 s still clock while playing, once per freeze, never while buffering, paused, seeking or before a new source plays). PlaybackTest adds actual-VLC fixtures for repeated-buffering replacement through a failed candidate, preserving the old stream while resolving, cancellation on pause and late results, and exhausted alternatives without loops. These tests do not establish dual-decoder support on the target TV or live Premiumize availability.
 
 LiveControlsTest waits for a dismissed panel to leave the event queue before injecting the next physical color key; panels have no closing window animation. Guide paging retains the next direction during asynchronous loads rather than dropping it.
 
