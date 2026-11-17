@@ -13,7 +13,7 @@ _CINESTREAM = [
     ('vaplayer', 'VaPlayer', 'streamdata.vaplayer.ru', True, True),
     ('primesrc', 'PrimeSrc', 'primesrc.me', True, True),
     ('fshare', 'Fshare', 'fsharetv.co', True, False),
-    ('videasy', 'Videasy', 'vidy.st', True, True),
+    ('videasy', 'Videasy', 'player.videasy.to', True, True),
     ('meowtv', 'Meowtv', 'meowtv.ru', True, True),
     ('vidup', 'Vidup', 'vidup.to', True, True),
     ('vidcore', 'Vidcore', 'vidcore.io', True, True),

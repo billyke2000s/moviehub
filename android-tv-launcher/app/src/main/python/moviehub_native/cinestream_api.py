@@ -185,7 +185,7 @@ class Fshare(Base):
             yield item(urljoin(self.base_link, row['src']), {'Referer': page_url, 'User-Agent': DESKTOP_138}, 'Fshare', str(row.get('quality') or ''))
 
 
-class Videasy(Base):
+class Vidy(Base):
     base_link = 'https://www.vidy.st'
     api = 'https://api.wecollege.net'
     # Boise and Miami are already provided by Movy. Keep its implementation intact.
@@ -232,6 +232,72 @@ class Videasy(Base):
             requested = set(audit.split(','))
             names = tuple(name for name in names if name in requested)
         yield from self.each(names, backend)
+
+
+class Videasy(Vidy):
+    """Phisher 711's Videasy service, with the compatible Vidy fallback."""
+    base_link = 'https://player.videasy.to'
+    current_api = 'https://api.speedracelight.com'
+    current_backends = (('Yoru', 'cdn', ''), ('Cypher', 'downloader2', ''),
+                        ('Breach', 'm4uhd', ''), ('Neon', 'vsrc', ''),
+                        ('Vyse', 'hdmovie', 'English'), ('Killjoy', 'meine', ''),
+                        ('Fade', 'hdmovie', 'Hindi'), ('Omen', 'lamovie', ''),
+                        ('Raze', 'superflix', ''))
+
+    def current(self, q):
+        names = self.current_backends
+        audit = getattr(self, 'cinestream_audit_backends', '')
+        if isinstance(audit, str) and audit:
+            requested = set(audit.casefold().split(','))
+            names = tuple(row for row in names if row[0].casefold() in requested)
+        if not names:
+            return
+        headers = dict(self.headers(), Origin=self.base_link, Accept='*/*', **{
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                          'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'})
+        seed = get(self.current_api + '/seed?' + urlencode(dict(mediaId=q['tmdb'])), headers)['seed']
+        if not isinstance(seed, str) or not seed.isascii() or len(seed) > 256:
+            raise ValueError('Invalid Videasy seed')
+
+        def backend(server):
+            name, endpoint, language = server
+            args = dict(title=quote(q['title'], safe=''), mediaType='tv' if 'season' in q else 'movie',
+                        year=q['year'], tmdbId=q['tmdb'], imdbId=q['imdb'], enc=2, seed=seed)
+            if 'season' in q:
+                args.update(episodeId=q['episode'], seasonId=q['season'])
+            if name == 'Killjoy':
+                args['language'] = 'german'
+            encrypted = request(self.current_api + '/' + endpoint + '/sources-with-title?' +
+                                urlencode(args), headers=headers)
+            decoded = post_json(DECODER + '/dec-videasy', dict(text=encrypted, id=int(q['tmdb']), seed=seed))
+            result = decoded.get('result') or {}
+            for row in result.get('sources', [])[:32]:
+                if not isinstance(row, dict) or row.get('drm'):
+                    continue
+                claim = str(row.get('quality') or '')
+                if language and claim != language:
+                    continue
+                quality = claim if re.fullmatch(r'(?:2160|1080|720|480|360)p', claim) else ''
+                label = 'Videasy ' + name
+                url = row.get('url')
+                if isinstance(url, str) and re.search(r'\.m3u8(?:$|\?)', url, re.I):
+                    for stream in hls_streams(url, self.base_link + '/', label, media_headers=headers):
+                        stream['info'] = claim if not quality else ''
+                        yield stream
+                else:
+                    yield item(url, headers, label, quality, info=claim if not quality else '')
+        yield from self.each(names, backend)
+
+    def extract(self, q):
+        found = False
+        try:
+            for row in self.current(q):
+                found = True
+                yield row
+        except Exception as error:
+            client.host_result('Videasy current API', type(error).__name__)
+        if not found:
+            yield from super().extract(q)
 
 
 class Meowtv(Base):

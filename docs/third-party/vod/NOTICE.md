@@ -52,3 +52,9 @@ CSX contributors. GPLv3-or-later as stated in the upstream README; the existing
 Scrubs-GPL-3.0.txt supplies the full GPLv3 text. Original app MIT terms do not replace this licence.
 Reference: https://github.com/SaurabhKaperwan/CSX/tree/13903aa/CineStream .
 The implementation inventory and incomplete chains are documented in CINESTREAM_ADDITIONS_2026_10_29.md.
+
+Resolver refresh (17 November 2026): selected free-host modules are adapted from ResolveURL
+5.1.213. MovieBox mobile, Vidzee, Fshare, VaPlayer, Peachify, Videasy, Multimovies and Rive
+protocol updates reference Phisher StreamPlay 711, GPLv3, retaining the existing Python runtime
+and upstream data formats. No user account token or remotely executable module is bundled.
+Reference: https://github.com/phisher98/cloudstream-extensions-phisher/tree/builds .

@@ -46,7 +46,6 @@ Maintained patches (25 October 2026): both Levidia adapters skip yearless search
 
 The Scrubs Levidia active path also delegates Wootly links to the bundled host resolver instead of its historical inline resolver and a second resolution.
 
-
 17 November 2026 upstream follow-up: eleven free-host plugins are adapted from ResolveURL
 5.1.213 at Gujal00/ResolveURL commit d208fd01fe1226e111a15b7dc48e25202cd8bae8.
 The remaining original/runtime-adapted files and account resolvers retain their prior provenance;
@@ -58,3 +57,9 @@ StreamPlay 711 compiled implementation, retaining the project's corresponding-so
 Vidzee's optional plain-JSON response format is also described by the public
 neilbauman21-hub/free-moveis-api providers/vidzeeCrypto.js implementation. No user-account
 credentials are bundled; MovieBox visitor state is generated only during the current lookup.
+
+Resolver refresh (17 November 2026): selected free-host modules are adapted from ResolveURL
+5.1.213. MovieBox mobile, Vidzee, Fshare, VaPlayer, Peachify, Videasy, Multimovies and Rive
+protocol updates reference Phisher StreamPlay 711, GPLv3, retaining the existing Python runtime
+and upstream data formats. No user account token or remotely executable module is bundled.
+Reference: https://github.com/phisher98/cloudstream-extensions-phisher/tree/builds .

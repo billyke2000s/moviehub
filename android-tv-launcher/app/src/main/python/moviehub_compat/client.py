@@ -25,6 +25,11 @@ def check():
     if callback and callback(): raise Cancelled()
     if time.monotonic() >= getattr(_STATE, 'deadline', float('inf')): raise Cancelled()
 
+def remaining():
+    """Time left in this lookup, without replacing its cancellation scope."""
+    check()
+    return max(0, getattr(_STATE, 'deadline', float('inf')) - time.monotonic())
+
 def safe(url):
     check()
     parsed = urlparse(url)

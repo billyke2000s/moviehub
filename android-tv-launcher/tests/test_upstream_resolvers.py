@@ -190,11 +190,60 @@ class UpstreamResolverTests(unittest.TestCase):
         self.assertEqual(len(rows), 1)  # Primevids retains its existing dcloud-only gate.
         self.assertEqual(rows[0]['source'], 'Electra · 1080p')
 
+    def test_rive_reserves_validation_time_instead_of_losing_collected_links(self):
+        from moviehub_native import rive
+        provider = rive.source()
+        with patch.object(client, 'remaining', return_value=20), \
+             patch.object(client, 'check'), \
+             patch.object(rive.time, 'monotonic', side_effect=[0, 1, 13]), \
+             patch.object(provider, 'services', return_value=['citadel', 'slow']), \
+             patch.object(provider, 'backend', return_value=[{'url': 'https://cdn.example/film.mp4'}]) as backend:
+            rows = provider.sources(provider.movie('', 42, '', '', [], ''), [])
+        self.assertEqual(len(rows), 1)
+        backend.assert_called_once_with({'id': '42'}, 'citadel', 6)
+
+    def test_current_videasy_uses_its_own_api_and_exact_episode(self):
+        from moviehub_native import cinestream_api as api
+        provider = api.Videasy()
+        provider.cinestream_audit_backends = 'yoru,vyse,fade'
+        calls = []
+        def request(url, **kwargs):
+            calls.append(url)
+            if '/seed?' in url:
+                return {'seed': 'issued'}
+            if '/sources-with-title?' in url:
+                self.assertEqual(urlparse(url).netloc, 'api.speedracelight.com')
+                args = parse_qs(urlparse(url).query)
+                self.assertEqual(args['title'], ['A%20Film'])
+                self.assertEqual(args['seasonId'], ['2'])
+                self.assertEqual(args['episodeId'], ['3'])
+                self.assertEqual(kwargs['headers']['Origin'], 'https://player.videasy.to')
+                return 'encrypted'
+            self.assertTrue(url.endswith('/dec-videasy'))
+            self.assertEqual(json.loads(kwargs['post']), dict(text='encrypted', id=123, seed='issued'))
+            return {'result': {'sources': [dict(url='https://cdn.example/film.mp4', quality=language)
+                                          for language in ('English', 'Hindi')]}}
+        with patch.object(client, 'request', side_effect=request):
+            key = provider.movie('tt1234', 123, 'A Film', 'A Film', [], '2020')
+            key = provider.episode(key, '', '', '', '', '', 2, 3)
+            rows = provider.sources(key, [])
+        self.assertEqual([r['source'] for r in rows], ['Videasy Yoru', 'Videasy Yoru',
+                                                   'Videasy Vyse', 'Videasy Fade'])
+        self.assertFalse(any('wecollege' in url for url in calls))
+
+    def test_current_videasy_failure_retains_compatible_vidy_fallback(self):
+        from moviehub_native import cinestream_api as api
+        provider = api.Videasy()
+        with patch.object(provider, 'current', side_effect=ValueError('refused')), \
+             patch.object(api.Vidy, 'extract', return_value=iter([{'source': 'Vidy Phoenix'}])):
+            rows = list(provider.extract({}))
+        self.assertEqual(rows, [{'source': 'Vidy Phoenix'}])
+
     def test_multimovies_current_cards_and_server_buttons_select_exact_episode(self):
         from moviehub_native.cinestream_embeds import Multimovies
         provider = Multimovies()
         listing = ('<article class="poster-card"><h3 class="poster-caption">'
-                   '<a href="/series/a-film">A Film</a></h3>'
+                   '<a href="/series/a-film">A Film (Now in Hindi)</a></h3>'
                    '<div class="poster-meta">2020</div></article>')
         detail = '<div class="server-grid"><button class="server-chip" data-url="https://host.example/e/123">English</button></div>'
         with patch.object(client, 'request', side_effect=[listing, detail]) as request:
@@ -205,6 +254,19 @@ class UpstreamResolverTests(unittest.TestCase):
         self.assertTrue(request.call_args_list[1].args[0].endswith('/series/a-film/season/2/episode/3'))
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]['source'], 'Multimovies English')
+
+    def test_multimovies_modiplay_follows_only_literal_advertised_servers(self):
+        from moviehub_native.cinestream_embeds import Multimovies
+        provider = Multimovies()
+        page = ('switchServer("https://mixdrop.ag/e/one");'
+                'switchServer("https://mixdrop.ag/e/one");'
+                'switchServer("https://streamwish.to/e/two");'
+                'switchServer(computeSecret());')
+        with patch.object(client, 'request', return_value=page):
+            rows = list(provider.player('https://rozgarlelo.modiplay.xyz/embed/tmdb/movie?id=123',
+                                        provider.base_link, 'Multimovies Cineverse'))
+        self.assertEqual([row['url'] for row in rows], ['https://mixdrop.ag/e/one',
+                                                       'https://streamwish.to/e/two'])
 
     def test_multimovies_current_cards_reject_another_year_and_external_detail(self):
         from moviehub_native.cinestream_embeds import Multimovies

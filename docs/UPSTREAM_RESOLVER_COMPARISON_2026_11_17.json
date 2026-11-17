@@ -1264,10 +1264,10 @@
     {
       "adapter": "native:rive",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/rive.py",
-      "localSha256": "0fc34c130a5ead065ab27edded02eb854fe9ed5f45f25718ebc806d3e24e8a7f",
+      "localSha256": "9370d6a04d261a2f96164ca28e92d7960b063972b9a1b6793e516d24bddaca08",
       "movies": true,
       "pending": false,
-      "selection": "current Phisher provider-directory flow and clear file/DASH formats adapted; retained primevids gate; packaged playback pending",
+      "selection": "current Phisher provider-directory flow and clear formats adapted; reserve media-validation time; retain primevids gate; packaged playback pending",
       "series": true,
       "site": "rivestream.app",
       "upstreams": [
@@ -1302,7 +1302,7 @@
     {
       "adapter": "native:vaplayer",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
-      "localSha256": "ea00d626164bb736a93ee5243f216df836e46b4d8dfacdf349d983b28fd56d7c",
+      "localSha256": "0e4b2cfda29d7450f13002a45dbeb4437a73fda66fe3fd0c76eb049503ad16e5",
       "movies": true,
       "pending": true,
       "selection": "Phisher TMDB request contract adapted; pending playback state retained",
@@ -1328,7 +1328,7 @@
     {
       "adapter": "native:primesrc",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
-      "localSha256": "ea00d626164bb736a93ee5243f216df836e46b4d8dfacdf349d983b28fd56d7c",
+      "localSha256": "0e4b2cfda29d7450f13002a45dbeb4437a73fda66fe3fd0c76eb049503ad16e5",
       "movies": true,
       "pending": true,
       "selection": "comparison recorded; known route failures/browser or decoder dependencies remain unresolved",
@@ -1347,7 +1347,7 @@
     {
       "adapter": "native:fshare",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
-      "localSha256": "ea00d626164bb736a93ee5243f216df836e46b4d8dfacdf349d983b28fd56d7c",
+      "localSha256": "0e4b2cfda29d7450f13002a45dbeb4437a73fda66fe3fd0c76eb049503ad16e5",
       "movies": true,
       "pending": false,
       "selection": "newer Phisher protocol/address adapted in this revision",
@@ -1373,12 +1373,12 @@
     {
       "adapter": "native:videasy",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
-      "localSha256": "ea00d626164bb736a93ee5243f216df836e46b4d8dfacdf349d983b28fd56d7c",
+      "localSha256": "0e4b2cfda29d7450f13002a45dbeb4437a73fda66fe3fd0c76eb049503ad16e5",
       "movies": true,
       "pending": false,
-      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "selection": "Phisher 711 current Videasy API, named servers and exact episode contract adapted; older Vidy retained as fallback; playback not established",
       "series": true,
-      "site": "vidy.st",
+      "site": "player.videasy.to",
       "upstreams": [
         {
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
@@ -1399,7 +1399,7 @@
     {
       "adapter": "native:meowtv",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
-      "localSha256": "ea00d626164bb736a93ee5243f216df836e46b4d8dfacdf349d983b28fd56d7c",
+      "localSha256": "0e4b2cfda29d7450f13002a45dbeb4437a73fda66fe3fd0c76eb049503ad16e5",
       "movies": true,
       "pending": false,
       "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
@@ -1418,7 +1418,7 @@
     {
       "adapter": "native:vidup",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
-      "localSha256": "ea00d626164bb736a93ee5243f216df836e46b4d8dfacdf349d983b28fd56d7c",
+      "localSha256": "0e4b2cfda29d7450f13002a45dbeb4437a73fda66fe3fd0c76eb049503ad16e5",
       "movies": true,
       "pending": false,
       "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
@@ -1444,7 +1444,7 @@
     {
       "adapter": "native:vidcore",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
-      "localSha256": "ea00d626164bb736a93ee5243f216df836e46b4d8dfacdf349d983b28fd56d7c",
+      "localSha256": "0e4b2cfda29d7450f13002a45dbeb4437a73fda66fe3fd0c76eb049503ad16e5",
       "movies": true,
       "pending": false,
       "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
@@ -1463,7 +1463,7 @@
     {
       "adapter": "native:vidfast",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
-      "localSha256": "ea00d626164bb736a93ee5243f216df836e46b4d8dfacdf349d983b28fd56d7c",
+      "localSha256": "0e4b2cfda29d7450f13002a45dbeb4437a73fda66fe3fd0c76eb049503ad16e5",
       "movies": true,
       "pending": false,
       "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
@@ -1489,7 +1489,7 @@
     {
       "adapter": "native:onetouchtv",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
-      "localSha256": "ea00d626164bb736a93ee5243f216df836e46b4d8dfacdf349d983b28fd56d7c",
+      "localSha256": "0e4b2cfda29d7450f13002a45dbeb4437a73fda66fe3fd0c76eb049503ad16e5",
       "movies": true,
       "pending": false,
       "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
@@ -1508,7 +1508,7 @@
     {
       "adapter": "native:cinejoy",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
-      "localSha256": "ea00d626164bb736a93ee5243f216df836e46b4d8dfacdf349d983b28fd56d7c",
+      "localSha256": "0e4b2cfda29d7450f13002a45dbeb4437a73fda66fe3fd0c76eb049503ad16e5",
       "movies": true,
       "pending": false,
       "selection": "newer Phisher protocol/address adapted in this revision",
@@ -1534,7 +1534,7 @@
     {
       "adapter": "native:hexa",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
-      "localSha256": "ea00d626164bb736a93ee5243f216df836e46b4d8dfacdf349d983b28fd56d7c",
+      "localSha256": "0e4b2cfda29d7450f13002a45dbeb4437a73fda66fe3fd0c76eb049503ad16e5",
       "movies": true,
       "pending": false,
       "selection": "comparison recorded; known route failures/browser or decoder dependencies remain unresolved",
@@ -1731,7 +1731,7 @@
     {
       "adapter": "native:allmovieland",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
-      "localSha256": "ea00d626164bb736a93ee5243f216df836e46b4d8dfacdf349d983b28fd56d7c",
+      "localSha256": "0e4b2cfda29d7450f13002a45dbeb4437a73fda66fe3fd0c76eb049503ad16e5",
       "movies": true,
       "pending": false,
       "selection": "newer Phisher protocol/address adapted in this revision",
@@ -1757,10 +1757,10 @@
     {
       "adapter": "native:multimovies",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_embeds.py",
-      "localSha256": "ec85bfbbde6197c7ed309943fd8c63035d7b70b1b4d2ca7e6eb79563c7252076",
+      "localSha256": "059ad23b6e5626ec07c6fe609f813d6e915351d9634afb6eed10b3949a7809f2",
       "movies": true,
       "pending": false,
-      "selection": "Phisher current poster-card search and server-chip flow adapted with legacy fallbacks",
+      "selection": "current Phisher poster-card/server-chip protocol with exact title/year/episode guards; CSX literal Modiplay wrapper; retain compatible legacy fallbacks",
       "series": true,
       "site": "m1.multimovies.courses",
       "upstreams": [
@@ -1783,7 +1783,7 @@
     {
       "adapter": "native:toonstream",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_embeds.py",
-      "localSha256": "ec85bfbbde6197c7ed309943fd8c63035d7b70b1b4d2ca7e6eb79563c7252076",
+      "localSha256": "059ad23b6e5626ec07c6fe609f813d6e915351d9634afb6eed10b3949a7809f2",
       "movies": true,
       "pending": false,
       "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
@@ -1802,7 +1802,7 @@
     {
       "adapter": "native:animesalt",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_embeds.py",
-      "localSha256": "ec85bfbbde6197c7ed309943fd8c63035d7b70b1b4d2ca7e6eb79563c7252076",
+      "localSha256": "059ad23b6e5626ec07c6fe609f813d6e915351d9634afb6eed10b3949a7809f2",
       "movies": true,
       "pending": false,
       "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
@@ -1821,7 +1821,7 @@
     {
       "adapter": "native:rtally",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_embeds.py",
-      "localSha256": "ec85bfbbde6197c7ed309943fd8c63035d7b70b1b4d2ca7e6eb79563c7252076",
+      "localSha256": "059ad23b6e5626ec07c6fe609f813d6e915351d9634afb6eed10b3949a7809f2",
       "movies": true,
       "pending": false,
       "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
@@ -1840,7 +1840,7 @@
     {
       "adapter": "native:kisskh",
       "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_embeds.py",
-      "localSha256": "ec85bfbbde6197c7ed309943fd8c63035d7b70b1b4d2ca7e6eb79563c7252076",
+      "localSha256": "059ad23b6e5626ec07c6fe609f813d6e915351d9634afb6eed10b3949a7809f2",
       "movies": true,
       "pending": false,
       "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",

@@ -49,7 +49,7 @@ class CineStreamTests(unittest.TestCase):
 
     def test_videasy_independent_backends_survive_refusal_without_assumed_quality(self):
         from moviehub_native import movy
-        provider = api.Videasy()
+        provider = api.Vidy()
         seen = []
 
         def request(url, **kwargs):
@@ -83,7 +83,7 @@ class CineStreamTests(unittest.TestCase):
 
     def test_videasy_language_filters_and_diagnostic_subset(self):
         from moviehub_native import movy
-        provider = api.Videasy()
+        provider = api.Vidy()
         provider.cinestream_audit_backends = 'austin,delhi,boise'
         payload = {'sources': [{'url': 'https://cdn.example/' + language + '.m3u8', 'quality': language}
                                for language in ('English', 'Hindi', 'German')]}
@@ -630,7 +630,7 @@ class CineStreamTests(unittest.TestCase):
 
     def test_vidy_renditions_preserve_origin_and_external_audio_contract(self):
         from moviehub_native import movy
-        provider = api.Videasy()
+        provider = api.Vidy()
         provider.cinestream_audit_backends = 'phoenix'
         payload = {'sources': [dict(url='https://cdn.example/master.m3u8', quality='Streamwish')]}
         body = '#EXTM3U\n#EXT-X-STREAM-INF:RESOLUTION=1280x720,CODECS="avc1,mp4a"\n720.m3u8'

@@ -1,6 +1,7 @@
 """Rive's anonymous TMDB lookup using its current advertised backend directory."""
 import json
 import re
+import time
 from urllib.parse import urlencode
 
 from moviehub_compat import client
@@ -35,11 +36,17 @@ class source:
             return []
         query = json.loads(key)
         results = []
+        # Reserve the rest of the lookup for validating collected links. A slow
+        # late backend must not consume the scope and discard earlier results.
+        extraction_end = time.monotonic() + min(60, client.remaining() * .6)
         backends = self.services('season' in query)
         for backend in backends:
             client.check()
+            available = extraction_end - time.monotonic()
+            if available <= 0:
+                break
             try:
-                results.extend(self.backend(query, backend))
+                results.extend(self.backend(query, backend, min(6, available)))
             except Exception as error:
                 client.host_result('Rive ' + backend, type(error).__name__)
         return results
@@ -64,10 +71,10 @@ class source:
             client.host_result('Rive provider directory', type(error).__name__)
             return ('vanguard', 'primevids', 'citadel') if series else ('primevids', 'citadel')
 
-    def backend(self, identity, backend):
+    def backend(self, identity, backend, timeout=6):
         query = dict(identity, provider=backend)
         response = client.request(self.api + '?' + urlencode(query),
-                                  referer=self.base_link + '/', output='json', timeout=18)
+                                  referer=self.base_link + '/', output='json', timeout=timeout)
         data = response.get('data') if isinstance(response, dict) else None
         if not isinstance(data, dict):
             return []

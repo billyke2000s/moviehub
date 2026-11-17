@@ -39,6 +39,10 @@ class Multimovies(Base):
             if anchor is None:
                 continue
             label = re.sub(r'\s*\(\d{4}\)\s*$', '', anchor.text())
+            # The current catalogue suffixes translated editions this way;
+            # preserve exact title/year matching after removing only that tag.
+            label = re.sub(r'\s*\(Now in (?:Hindi|English|Tamil|Telugu|Malayalam|Kannada)\)$',
+                           '', label, flags=re.I)
             if slug(label) != slug(q['title']):
                 continue
             meta = card.first(cls='poster-meta')
@@ -62,7 +66,24 @@ class Multimovies(Base):
                 advertised = button.attrs.get('data-url')
                 if advertised:
                     advertised = advertised.replace('{tmdbId}', q['tmdb'])
-                    yield external(urljoin(url, advertised), url, 'Multimovies ' + button.text())
+                    yield from self.player(urljoin(url, advertised), url, 'Multimovies ' + button.text())
+
+    def player(self, url, referer, label):
+        # CSX's Modiplay extractor reads literal switchServer targets. Keep its
+        # scope to that advertised wrapper; no remote script is executed.
+        if urlparse(url).hostname == 'rozgarlelo.modiplay.xyz':
+            try:
+                page = request(url, referer=referer)
+                links = list(dict.fromkeys(re.findall(
+                    r'switchServer\([\'\"](https?://[^\'\"]+)', page)))[:16]
+                if links:
+                    for link in links:
+                        client.check()
+                        yield external(link, url, label)
+                    return
+            except Exception as error:
+                client.host_result('Multimovies Modiplay', type(error).__name__)
+        yield external(url, referer, label)
 
     def extract(self, q):
         found = False

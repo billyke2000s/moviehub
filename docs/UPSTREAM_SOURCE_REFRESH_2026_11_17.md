@@ -13,9 +13,13 @@ Implemented resolver updates:
 - Vidzee: current named servers and exact movie/episode paths on core.vidzee.wtf, dynamic
   Acme languages and the API's supported plain-JSON representation. Server failures are
   isolated; explicit playback headers and the older CBC-compatible fallback are retained.
+- Videasy: Phisher 711's separate `api.speedracelight.com` service, current named servers,
+  seed, exact-episode `sources-with-title` requests and existing decoder API; retain the Vidy
+  path as a fallback, rather than presenting the older Vidy service as current Videasy.
 - Rive: fetch the currently advertised provider directory, instead of assuming the retired
   Vanguard name still works. Directory names are validated, duplicate backends are removed,
-  and clear file/DASH formats use the existing transport and media checks.
+  and clear file/DASH formats use the existing transport and media checks. Extraction reserves
+  time for validation so a late slow backend cannot discard earlier collected links.
 - Fshare: Phisher's IMDb catalogue lookup and advertised watch-page links, current .co origin,
   broader player-token syntax and the current default trailer identifier.
 - VaPlayer: send TMDB IDs to the current API, retain exact season/episode numbers and
@@ -23,7 +27,8 @@ Implemented resolver updates:
 - Peachify: current .pro/none.eat-peach hosts, Firefox request profile and current AES-GCM
   format key. An independent Node crypto vector catches the old one-byte key mismatch.
 - Multimovies: current `/search?q=` poster cards and `server-chip` buttons, with title/year,
-  same-origin and exact-episode guards; retain compatible API/watchConfig/Doo fallbacks.
+  same-origin and exact-episode guards; recognize explicit translated-edition title suffixes
+  and follow literal advertised Modiplay server links; retain API/watchConfig/Doo fallbacks.
 - Cinejoy and AllMovieLand: current upstream origins, keeping existing protocol/transport guards.
 - ResolveURL: eleven current free-host modules (ten replacements plus PeeStream), including
   Byse, Vidzy, StreamWish, Streamix, Mixdrop, FireStream, VOE and Abyss. The account-based
@@ -46,7 +51,7 @@ coverage, not that its remote providers produced working streams. The current wo
 resolve provider DNS, so live results must come from the GitHub runners; local DNS failures are
 not evidence that these providers are closed.
 
-Local checks: **164 Python tests** and all **34 Java core suites** pass. The earlier Android
+Local checks: **168 Python tests** and all **34 Java core suites** pass. The earlier Android
 build/lint job stopped on pre-existing Java formatting differences; the two files are formatted
 in a separate formatting-only commit. Prior device and signing checks passed, but this follow-up
 requires new CI results. No merge or APK publication is performed.
@@ -64,6 +69,20 @@ unsupported capability, including pending and excluded adapters.
 This run exposed MovieBox's nested mobile search response (`data.results[].subjects`),
 which was corrected after the snapshot, together with a bounded visitor-token refresh.
 The corrected revision and the newly added packaged playback checks need their own results.
+
+## Follow-up runner results
+
+[Run 44108734444](https://github.com/billyke2000s/moviehub/actions/runs/44108734444),
+commit `d2f39d7`, again emitted all 111 film and 111 series records. Fourteen film adapters
+and five series adapters returned media-validated links for the sampled titles. Multimovies
+now extracts six film players; those hosts remained unsupported in that snapshot. Its
+translated series title handling and Modiplay wrapper were updated afterwards. Rive hit
+the extraction deadline; the validation-time reservation was added afterwards.
+
+Direct requests with the current mobile signing format to all four MovieBox token-bootstrap
+hosts returned HTTP 403 with the explicit message `Service not available in current region`.
+This is recorded as an availability failure, not repaired by the protocol port. Peachify also
+returned HTTP 403 in runner tests. No region bypass or weakened media checks are introduced.
 
 ## Limits that remain
 
