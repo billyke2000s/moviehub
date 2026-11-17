@@ -20,26 +20,26 @@ import java.util.Locale;
 final class GuideMenu {
 
     /**
-     * The menu, in the satellite box's order: label and the guide list each opens. Favourites is
-     * on the blue key (and on the second page). Long lists split into pages of nine with More… at
-     * the bottom, as the box did.
+     * The menu: label and the guide list each opens. The sections keep the satellite box's order;
+     * Favourites (also on the blue key) and Options sit on the first page, so they are found
+     * without More…. Long lists split into pages of nine with More… at the bottom, as the box did.
      */
     static final String[][] ITEMS = {
         { "All Channels", "all" },
+        { "Favourites", "favourites" },
         { "Entertainment", "section:Entertainment" },
         { "Movies", "section:Movies" },
         { "Sports", "section:Sports" },
         { "News", "section:News" },
         { "Documentaries", "section:Documentaries" },
         { "Kids", "section:Kids" },
+        { "Options", "options" },
         { "Music", "section:Music" },
         { "Radio", "section:Radio" },
-        { "Favourites", "favourites" },
         { "Religion", "section:Religion" },
         { "Shopping", "section:Shopping" },
         { "International", "countries" },
         { "Channel groups from your lists", "groups" },
-        { "Options", "options" },
     };
 
     /** Rows on a page, More… included. */

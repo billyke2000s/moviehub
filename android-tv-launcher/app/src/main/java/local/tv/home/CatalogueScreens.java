@@ -114,13 +114,17 @@ final class CatalogueScreens {
                 new LinearLayout.LayoutParams(activity.dp(88), activity.dp(36))
             );
             Button library = activity.navigationButton("Library", () -> {});
-            library.setOnClickListener(v ->
-                SidePanel.of(activity, "Your library")
-                    .option("My library", () -> activity.libraryScreens.savedLibrary(libraryKind()))
+            // Saved links always; the Premiumize cloud only with a Premiumize account connected.
+            library.setOnClickListener(v -> {
+                SidePanel panel = SidePanel.of(activity, "Your library").option("Links you added", () ->
+                    activity.libraryScreens.savedLibrary(libraryKind())
+                );
+                if (activity.secrets.has("premiumize")) panel
                     .option("Premiumize cloud", () -> activity.cloudScreens.cloud("", libraryKind()))
-                    .option("Transfers", () -> activity.cloudScreens.transfers(libraryKind()))
-                    .show()
-            );
+                    .option("Premiumize transfers", () -> activity.cloudScreens.transfers(libraryKind()));
+                else panel.message("Connect Premiumize in Settings \u2192 Accounts to see your cloud here.");
+                panel.show();
+            });
             header.addView(library, new LinearLayout.LayoutParams(activity.dp(88), activity.dp(36)));
             header.addView(backButton, new LinearLayout.LayoutParams(activity.dp(72), activity.dp(36)));
             ViewGroup parent = (ViewGroup) activity.page.getParent();

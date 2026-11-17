@@ -17,7 +17,8 @@ import java.util.Date;
  *       provider is connected.
  *   <li>Free services (Pluto TV, FreeLiveSports and the provider-engine services): one card each,
  *       on or off, with how many channels came from it.
- *   <li>Advanced: hiding US-only services, Masqueradarr, the ZLive domain and provider packages.
+ *   <li>Advanced: hiding US-only services, the ZLive domain and provider packages. (Masqueradarr
+ *       is with the other accounts, in Accounts.)
  * </ul>
  *
  * Only where the settings are shown changed; every preference keeps its key and meaning.
@@ -239,21 +240,6 @@ final class FreeChannelsPage {
                 }
             )
         );
-        boolean masqueradarr = activity.secrets.has("masqueradarr");
-        track(
-            focus,
-            focusTitle,
-            "Masqueradarr",
-            settings.settingCard(
-                body,
-                "Masqueradarr",
-                "Your own Masqueradarr server's playlist, if you run one",
-                masqueradarr ? "Connected" : "Not set up",
-                masqueradarr,
-                masqueradarr ? "Manage" : "Set up",
-                () -> settings.accountScreen("Masqueradarr")
-            )
-        );
         String domain = prefs.getString("engineZliveDomain", "");
         track(
             focus,
@@ -264,7 +250,7 @@ final class FreeChannelsPage {
                 "ZLive address",
                 "Only change this if ZLive moves to a new web address",
                 domain.isEmpty() ? "Default" : domain,
-                true,
+                false,
                 "Change",
                 () -> zliveDomain(domain)
             )
@@ -314,12 +300,27 @@ final class FreeChannelsPage {
                 enabled ? "Turn off" : "Turn on",
                 () -> {
                     toggle.run();
-                    ChannelSync.refreshNow(activity);
+                    refreshSoon();
                     show(name);
                 }
             )
         );
     }
+
+    /** Refreshes the channel list once, a few seconds after the last on/off change on this page. */
+    private Runnable pending;
+
+    private void refreshSoon() {
+        if (pending != null) activity.handler.removeCallbacks(pending);
+        pending = () -> {
+            pending = null;
+            if (!activity.isDestroyed()) ChannelSync.refreshNow(activity);
+        };
+        activity.handler.postDelayed(pending, REFRESH_DELAY_MS);
+        activity.toast("Channels update in a few seconds");
+    }
+
+    static final long REFRESH_DELAY_MS = 5000;
 
     /** "312 channels · updated 25 Oct 14:10", or the failure summary (fixed text, no addresses). */
     static String channels(int count, long refreshed, String error) {
@@ -368,6 +369,16 @@ final class FreeChannelsPage {
     }
 
     private void packages(boolean trust, boolean auto) {
+        if (!trust) {
+            SidePanel.of(activity, "Service updates")
+                .message(
+                    "Updates to the free services are not set up in this version of MovieHub. " +
+                        "The services keep working with the version built into the app."
+                )
+                .action("Close", null)
+                .show();
+            return;
+        }
         SidePanel panel = SidePanel.of(activity, "Service updates");
         if (trust) panel.option(auto ? "Automatic updates · On" : "Automatic updates · Off", () -> {
             activity.prefs.edit().putBoolean("providerAutoUpdates", !auto).apply();
