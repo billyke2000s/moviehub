@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * The Apps screen, like the Google TV app drawer: a search box, Android shortcuts (Wi-Fi,
+ * The Apps screen, like the Google TV app drawer: a search box, box settings shortcuts (Wi-Fi,
  * Bluetooth, display, ...), recently used apps, then every app as a TV banner tile. Apps can be
  * hidden from this screen and shown again with "Show hidden".
  */
@@ -178,7 +178,7 @@ final class AllApps {
 
     private void shortcuts(LinearLayout parent) {
         PackageManager manager = activity.getPackageManager();
-        heading(parent, "Android");
+        heading(parent, "Box settings");
         View title = parent.getChildAt(parent.getChildCount() - 1);
         LinearLayout line = activity.horizontal(parent);
         int added = 0;
@@ -234,14 +234,17 @@ final class AllApps {
         if (banner != null) {
             ImageView image = new ImageView(activity);
             image.setImageDrawable(banner);
-            image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            // Whole banner, never cropped: some apps' banners are not 16:9, and cropping cut off
+            // their names and icons.
+            image.setScaleType(ImageView.ScaleType.FIT_CENTER);
             tile.addView(image, new FrameLayout.LayoutParams(-1, -1));
         } else {
             LinearLayout content = activity.vertical();
             content.setGravity(Gravity.CENTER);
             ImageView icon = new ImageView(activity);
             if (app.icon != null) icon.setImageDrawable(app.icon);
-            content.addView(icon, new LinearLayout.LayoutParams(activity.dp(44), activity.dp(44)));
+            icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            content.addView(icon, new LinearLayout.LayoutParams(activity.dp(48), activity.dp(48)));
             TextView label = activity.compactText(app.label, 13);
             label.setGravity(Gravity.CENTER);
             label.setMaxLines(1);
@@ -259,8 +262,9 @@ final class AllApps {
         tile.setFocusableInTouchMode(true);
         tile.setOnFocusChangeListener((v, focused) -> {
             tile.setForeground(focused ? ring : null);
-            tile.setScaleX(focused ? 1.08f : 1f);
-            tile.setScaleY(focused ? 1.08f : 1f);
+            // Small enough that a tile at the edge of the screen is not cut off when it grows.
+            tile.setScaleX(focused ? 1.05f : 1f);
+            tile.setScaleY(focused ? 1.05f : 1f);
             tile.setTranslationZ(focused ? activity.dp(6) : 0);
             tile.setAlpha(focused ? 1f : hidden ? .45f : 1f);
         });

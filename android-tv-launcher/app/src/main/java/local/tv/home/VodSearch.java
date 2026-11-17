@@ -19,6 +19,10 @@ final class VodSearch implements AutoCloseable {
     private final long deadline;
     private final List<java.util.function.Consumer<SourceRepository.Source>> observers = new ArrayList<>();
     private static volatile VodSearch current;
+    /** The last search and what it was for, kept for Settings → Setup → Engineer view. */
+    static volatile VodSearch latest;
+
+    static volatile String latestTitle = "";
     private final Map<String, String> outcomes = new ConcurrentHashMap<>();
     private final Map<String, String> hostOutcomes = new ConcurrentHashMap<>();
 
@@ -26,6 +30,7 @@ final class VodSearch implements AutoCloseable {
         VodSearch previous = current;
         if (previous != null) previous.close();
         current = this;
+        latest = this;
         long started = SystemClock.elapsedRealtime();
         // One entry per website; discovery and host resolution have separate bounded budgets.
         deadline = started + 420000;
@@ -201,6 +206,14 @@ final class VodSearch implements AutoCloseable {
             text.append(id).append(": ").append(hostOutcomes.get(id));
         }
         return text.length() == 0 ? "Loading bundled providers…" : text.toString();
+    }
+
+    /** How many websites have answered (found something, nothing, or failed). */
+    int websitesChecked() {
+        int complete = 0;
+        for (String outcome : outcomes.values())
+            if (!outcome.equals("Queued") && !outcome.equals("Searching")) complete++;
+        return complete;
     }
 
     String progress() {

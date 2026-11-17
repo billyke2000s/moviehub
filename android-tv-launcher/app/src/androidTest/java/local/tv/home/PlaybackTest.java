@@ -384,8 +384,9 @@ public class PlaybackTest {
             instrumentation.runOnMainSync(() -> {
                 activity.revealControls();
                 labelled.set(
-                    activity.speed.getText().toString().contains("Downloading at ") &&
-                        activity.speed.getText().toString().contains("MB received") &&
+                    // Plain words for the family: the source, no raw speed or byte counts.
+                    activity.speed.getText().toString().startsWith("Source: ") &&
+                        !activity.speed.getText().toString().contains("Mb/s") &&
                         activity.vod.incomingBytes() > 0 &&
                         activity.speed.isShown()
                 );

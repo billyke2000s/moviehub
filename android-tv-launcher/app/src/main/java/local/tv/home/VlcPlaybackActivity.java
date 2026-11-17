@@ -148,21 +148,11 @@ public class VlcPlaybackActivity extends Activity {
                 if (++reminderTicks % 15 == 0 && !dialogOpen) showDueReminder();
                 downloadMbps = vod == null ? PlayerOverlay.downloadSpeed(player) : vod.incomingMbps();
                 if (downloadMbps >= 0) Timings.lastMbps = downloadMbps;
-                String traffic =
-                    downloadMbps < 0
-                        ? "Receiving stream…"
-                        : String.format(Locale.ROOT, "Downloading at %.1f Mb/s", downloadMbps);
-                if (vod != null) {
-                    long bytes = vod.incomingBytes();
-                    traffic =
-                        "Source: " +
-                        vod.sourceLabel() +
-                        "\n" +
-                        traffic +
-                        (bytes < 0
-                            ? ""
-                            : String.format(Locale.ROOT, " · %.2f MB received", bytes / 1000000d));
-                }
+                // The family sees a plain "Loading…" until the picture moves; the speed and amount
+                // received are in Settings → Setup → Engineer view (Timings.lastMbps).
+                String traffic = player.isPlaying() ? "" : "Loading…";
+                if (vod != null) traffic =
+                    "Source: " + vod.sourceLabel() + (traffic.isEmpty() ? "" : "\n" + traffic);
                 speed.setText(traffic);
                 timeline.setEnabled(player.isSeekable() && length > 0);
                 if (!dragging && length > 0) timeline.setProgress(
@@ -465,12 +455,7 @@ public class VlcPlaybackActivity extends Activity {
                 if (playedOnce) Timings.markOnce("stall");
                 if (playedOnce && vod != null && !buffering) vod.onBuffering(true);
                 buffering = true;
-                status.setText(
-                    "Buffering… " +
-                        Math.round(event.getBuffering()) +
-                        "%" +
-                        (downloadMbps < 0 ? "" : String.format(Locale.ROOT, "  ·  %.1f Mb/s", downloadMbps))
-                );
+                status.setText("Loading… " + Math.round(event.getBuffering()) + "%");
                 status.setVisibility(View.VISIBLE);
             } else {
                 status.setVisibility(View.GONE);

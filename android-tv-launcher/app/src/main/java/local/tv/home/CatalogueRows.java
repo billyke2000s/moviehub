@@ -123,13 +123,8 @@ final class CatalogueRows {
         String type = screen.type;
         if (testLoader == null && !activity.secrets.has("tmdb")) {
             list.addView(rowTitle("Trending today"));
-            activity.emptyState(
-                list,
-                "Connect TMDB",
-                "Movies and series come from TMDB. Add your free API key to see them here.",
-                "Connect TMDB",
-                () -> activity.settingsScreens.accountScreen("TMDB")
-            );
+            // Connecting TMDB is in Settings → Accounts, for whoever looks after the box.
+            activity.emptyState(list, "Not set up yet", CatalogueScreens.NOT_SET_UP, null, null);
             return scroll;
         }
         List<TmdbCategories.Entry> entries = new ArrayList<>();

@@ -15,9 +15,10 @@ import java.util.concurrent.*;
 import org.json.*;
 
 /**
- * The Browse and Filters sheets of the Movies/Series screen: category and genre lists, region,
- * years, languages, countries, streaming services and the combined "Refine results" form.
- * Split out of {@link CatalogueScreens}; no behaviour of its own beyond those sheets.
+ * The Browse sheet of the Movies/Series screen (Browse and Filters were two sheets): a short "find
+ * something" form (genre, year, rating, sort), popular and new lists, genres, and languages and
+ * people. Region and streaming-service availability were removed. Split out of
+ * {@link CatalogueScreens}; no behaviour of its own beyond the sheet.
  */
 final class CatalogueOptions {
 
@@ -57,6 +58,10 @@ final class CatalogueOptions {
     }
 
     void renderCategoryHub(LinearLayout target, String kind, String section) {
+        if (section.equals(":categories") || section.equals(":filters")) {
+            renderBrowse(target, kind);
+            return;
+        }
         String type = kind.equals("Movies") ? "movie" : "tv";
         target.removeAllViews();
         if (!section.equals(":filters")) {
@@ -120,44 +125,9 @@ final class CatalogueOptions {
 
     void renderCatalogueOptions(LinearLayout grid, String kind, String path) {
         String type = kind.equals("Movies") ? "movie" : "tv";
-        if (path.equals(":filters")) {
-            grid.addView(activity.button("Refine results", () -> refineCatalogue(kind)));
-            categoryChoices(grid, kind, TmdbCategories.groups(type));
-            return;
-        }
-        if (path.equals(":categories") || path.equals(":genres")) {
+        if (path.equals(":categories") || path.equals(":filters") || path.equals(":genres")) {
             renderCategoryHub(grid, kind, path);
             refreshCatalogueGenres(grid, kind, path);
-            return;
-        }
-        if (path.equals(":region")) {
-            grid.addView(activity.text("Loading countries…", 16));
-            activity.async(
-                () ->
-                    new JSONArray(
-                        Network.text(
-                            MediaRepository.tmdbUrl("configuration/countries", activity.secrets.get("tmdb")),
-                            null,
-                            false
-                        )
-                    ),
-                countries -> {
-                    grid.removeAllViews();
-                    for (int i = 0; i < countries.length(); i++) {
-                        JSONObject country = countries.getJSONObject(i);
-                        String code = country.getString("iso_3166_1");
-                        grid.addView(
-                            activity.button(country.optString("english_name", code), () -> {
-                                activity.prefs.edit().putString("catalogueRegion", code).apply();
-                                if (screens.catalogue != null) {
-                                    screens.catalogue.overlayPages.pop();
-                                    screens.catalogue.renderOverlay();
-                                }
-                            })
-                        );
-                    }
-                }
-            );
             return;
         }
         if (path.equals(":years")) {
@@ -218,10 +188,8 @@ final class CatalogueOptions {
             return;
         }
         if (!activity.secrets.has("tmdb")) {
-            grid.addView(activity.text("Connect TMDB to browse this catalogue", 20));
-            grid.addView(
-                activity.button("Connect TMDB", () -> activity.settingsScreens.accountScreen("TMDB"))
-            );
+            // Connecting TMDB is in Settings, for whoever looks after the box.
+            grid.addView(activity.text(CatalogueScreens.NOT_SET_UP, 20));
             return;
         }
         TextView loading = activity.text("Loading titles…", 15);
@@ -265,157 +233,172 @@ final class CatalogueOptions {
             );
             return;
         }
-        if (path.equals(":services")) {
-            grid.removeAllViews();
-            grid.addView(activity.button("Region: " + catalogueRegion(), () -> chooseCatalogueRegion(kind)));
-            grid.addView(activity.compactText("Availability data: JustWatch", 12));
-            categoryChoices(
-                grid,
-                kind,
-                TmdbCategories.filters(type, ":availability", catalogueRegion(), java.time.LocalDate.now())
-            );
-            grid.addView(loading);
-            activity.async(
-                () ->
-                    activity.media
-                        .tmdb("watch/providers/" + type + "?watch_region=" + catalogueRegion())
-                        .getJSONArray("results"),
-                items -> {
-                    grid.removeView(loading);
-                    List<TmdbCategories.Entry> choices = new ArrayList<>();
-                    for (int i = 0; i < items.length(); i++) {
-                        JSONObject provider = items.getJSONObject(i);
-                        choices.add(
-                            new TmdbCategories.Entry(
-                                provider.getString("provider_name"),
-                                TmdbCategories.discover(
-                                    type,
-                                    "watch_region=" +
-                                        catalogueRegion() +
-                                        "&with_watch_providers=" +
-                                        provider.getInt("provider_id")
-                                )
-                            )
-                        );
-                    }
-                    if (choices.isEmpty()) grid.addView(
-                        activity.text("No services listed in this region", 16)
-                    );
-                    categoryChoices(grid, kind, choices);
-                }
-            );
-            return;
-        }
     }
 
-    void refineCatalogue(String kind) {
+    /** The groups offered under "More ways to browse": languages and people. */
+    static List<TmdbCategories.Entry> moreWays(String type) {
+        List<TmdbCategories.Entry> out = new ArrayList<>();
+        for (TmdbCategories.Entry entry : TmdbCategories.groups(type))
+            if (entry.path.equals(":languages") || entry.path.equals(":people")) out.add(entry);
+        return out;
+    }
+
+    /** The one Browse sheet: find something, popular and new, genres, more ways to browse. */
+    void renderBrowse(LinearLayout target, String kind) {
+        String type = kind.equals("Movies") ? "movie" : "tv";
+        target.removeAllViews();
+        sheetHeading(target, "Find something");
+        refineControls(target, kind);
+        sheetHeading(target, "Popular & new");
+        categoryChoices(target, kind, TmdbCategories.lists(type));
+        sheetHeading(target, "Genres");
+        categoryChoices(target, kind, screens.catalogueGenres(type));
+        sheetHeading(target, "More ways to browse");
+        categoryChoices(target, kind, moreWays(type));
+    }
+
+    private void sheetHeading(LinearLayout target, String text) {
+        TextView label = activity.compactText(text, 18);
+        label.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        label.setPadding(activity.dp(3), activity.dp(14), 0, activity.dp(4));
+        target.addView(label);
+    }
+
+    static final String[] ORDERS = { "Most popular", "Highest rated", "Newest releases", "Title A–Z" },
+        ORDER_ROUTES = { "popularity.desc", "vote_average.desc", "date.desc", "title.asc" };
+
+    /**
+     * Genre, year, rating and sort as four buttons in the sheet itself (they were a separate
+     * "Refine results" form in another style), then Show results and Reset. Each choice is saved
+     * at once under the keys the old form used, so the sheet reopens with the last choices.
+     */
+    void refineControls(LinearLayout target, String kind) {
         String type = kind.equals("Movies") ? "movie" : "tv",
             prefix = "refine_" + type + "_";
-        LinearLayout content = activity.vertical();
+        SharedPreferences prefs = activity.prefs;
         List<TmdbCategories.Entry> genres = screens.catalogueGenres(type);
-        int[] genre = { activity.prefs.getInt(prefix + "genre", 0) },
-            rating = { activity.prefs.getInt(prefix + "rating", 0) },
-            sort = { activity.prefs.getInt(prefix + "sort", 0) };
-        String[] orders = { "Most popular", "Highest rated", "Newest releases", "Title A–Z" },
-            routes = { "popularity.desc", "vote_average.desc", "date.desc", "title.asc" };
-        sort[0] = Math.max(0, Math.min(orders.length - 1, sort[0]));
-        String genreName = "Any genre";
+        int genre = prefs.getInt(prefix + "genre", 0),
+            year = prefs.getInt(prefix + "year", 0),
+            rating = prefs.getInt(prefix + "rating", 0),
+            sort = Math.max(0, Math.min(ORDERS.length - 1, prefs.getInt(prefix + "sort", 0)));
+        String genreName = "Any";
         for (TmdbCategories.Entry entry : genres)
-            if (entry.path.endsWith("=" + genre[0])) genreName = entry.name;
-        Button genreButton = activity.button(genreName, () -> {});
-        content.addView(activity.muted("Genre", 14));
-        content.addView(genreButton);
-        genreButton.setOnClickListener(v -> {
-            String[] choices = new String[genres.size() + 1];
-            choices[0] = "Any genre";
-            for (int i = 0; i < genres.size(); i++) choices[i + 1] = genres.get(i).name;
+            if (entry.path.endsWith("=" + genre)) genreName = entry.name;
+        LinearLayout line = activity.row();
+        target.addView(line);
+        refineButton(line, "Genre · " + genreName, "refine:genre", () -> {
+            String[] names = new String[genres.size() + 1];
+            names[0] = "Any genre";
             int current = 0;
-            for (int i = 0; i < genres.size(); i++) if (genres.get(i).path.endsWith("=" + genre[0])) current =
-                i + 1;
+            for (int i = 0; i < genres.size(); i++) {
+                names[i + 1] = genres.get(i).name;
+                if (genres.get(i).path.endsWith("=" + prefs.getInt(prefix + "genre", 0))) current = i + 1;
+            }
             SidePanel.of(activity, "Genre")
-                .choices(choices, current, which -> {
-                    genre[0] =
-                        which == 0
-                            ? 0
-                            : Integer.parseInt(
-                                  genres
-                                      .get(which - 1)
-                                      .path.substring(genres.get(which - 1).path.lastIndexOf('=') + 1)
-                              );
-                    genreButton.setText(choices[which]);
+                .choices(names, current, which -> {
+                    String path = which == 0 ? "" : genres.get(which - 1).path;
+                    prefs
+                        .edit()
+                        .putInt(
+                            prefix + "genre",
+                            which == 0 ? 0 : Integer.parseInt(path.substring(path.lastIndexOf('=') + 1))
+                        )
+                        .apply();
+                    again(target, kind, "refine:genre");
                 })
                 .show();
         });
-        EditText year = activity.field(
-            content,
-            "Release year · leave blank for any",
-            false,
-            activity.prefs.getInt(prefix + "year", 0) == 0
-                ? ""
-                : String.valueOf(activity.prefs.getInt(prefix + "year", 0))
-        );
-        year.setInputType(InputType.TYPE_CLASS_NUMBER);
-        content.addView(activity.muted("Minimum rating", 14));
-        Button ratingButton = activity.button(rating[0] == 0 ? "Any rating" : rating[0] + "+", () -> {});
-        content.addView(ratingButton);
-        ratingButton.setOnClickListener(v ->
+        refineButton(line, "Year · " + (year == 0 ? "Any" : String.valueOf(year)), "refine:year", () -> {
+            int now = java.time.LocalDate.now().getYear();
+            String[] names = new String[now - 1950 + 2];
+            names[0] = "Any year";
+            int current = 0;
+            for (int i = 1; i < names.length; i++) {
+                names[i] = String.valueOf(now - i + 1);
+                if (now - i + 1 == prefs.getInt(prefix + "year", 0)) current = i;
+            }
+            SidePanel.of(activity, "Year")
+                .choices(names, current, which -> {
+                    prefs
+                        .edit()
+                        .putInt(prefix + "year", which == 0 ? 0 : now - which + 1)
+                        .apply();
+                    again(target, kind, "refine:year");
+                })
+                .show();
+        });
+        line = activity.row();
+        target.addView(line);
+        refineButton(line, "Rating · " + (rating == 0 ? "Any" : rating + "+"), "refine:rating", () ->
             SidePanel.of(activity, "Minimum rating")
                 .choices(
                     new String[] { "Any rating", "5+", "6+", "7+", "8+", "9+" },
-                    rating[0] == 0 ? 0 : rating[0] - 4,
+                    prefs.getInt(prefix + "rating", 0) == 0 ? 0 : prefs.getInt(prefix + "rating", 0) - 4,
                     which -> {
-                        rating[0] = which == 0 ? 0 : which + 4;
-                        ratingButton.setText(rating[0] == 0 ? "Any rating" : rating[0] + "+");
+                        prefs
+                            .edit()
+                            .putInt(prefix + "rating", which == 0 ? 0 : which + 4)
+                            .apply();
+                        again(target, kind, "refine:rating");
                     }
                 )
                 .show()
         );
-        content.addView(activity.muted("Sort order", 14));
-        Button sortButton = activity.button(orders[sort[0]], () -> {});
-        content.addView(sortButton);
-        sortButton.setOnClickListener(v ->
+        refineButton(line, "Sort · " + ORDERS[sort], "refine:sort", () ->
             SidePanel.of(activity, "Sort order")
-                .choices(orders, sort[0], which -> {
-                    sort[0] = which;
-                    sortButton.setText(orders[which]);
-                })
+                .choices(
+                    ORDERS,
+                    Math.max(0, Math.min(ORDERS.length - 1, prefs.getInt(prefix + "sort", 0))),
+                    which -> {
+                        prefs
+                            .edit()
+                            .putInt(prefix + "sort", which)
+                            .apply();
+                        again(target, kind, "refine:sort");
+                    }
+                )
                 .show()
         );
-        Dialog dialog = activity.form("Refine " + kind.toLowerCase(Locale.ROOT), content);
-        LinearLayout actions = activity.row();
-        Button apply = activity.chip(actions, "Apply filters", () -> {
-            try {
-                int value = year.getText().toString().trim().isEmpty()
-                    ? 0
-                    : Integer.parseInt(year.getText().toString().trim());
-                String route = TmdbCategories.refine(type, genre[0], value, rating[0], routes[sort[0]]);
-                activity.prefs
-                    .edit()
-                    .putInt(prefix + "genre", genre[0])
-                    .putInt(prefix + "year", value)
-                    .putInt(prefix + "rating", rating[0])
-                    .putInt(prefix + "sort", sort[0])
-                    .apply();
-                dialog.dismiss();
-                screens.browse(kind, "Filtered results", route, 1);
-            } catch (Exception e) {
-                year.setError("Enter a year from 1874 to 9999");
-            }
+        line = activity.row();
+        target.addView(line);
+        Button results = refineButton(line, "Show results", "refine:show", () -> {
+            String route = TmdbCategories.refine(
+                type,
+                prefs.getInt(prefix + "genre", 0),
+                prefs.getInt(prefix + "year", 0),
+                prefs.getInt(prefix + "rating", 0),
+                ORDER_ROUTES[Math.max(0, Math.min(ORDERS.length - 1, prefs.getInt(prefix + "sort", 0)))]
+            );
+            screens.browse(kind, "Your choices", route, 1);
         });
-        activity.primary(apply);
-        activity.chip(actions, "Reset", () -> {
-            genre[0] = 0;
-            rating[0] = 0;
-            sort[0] = 0;
-            genreButton.setText("Any genre");
-            ratingButton.setText("Any rating");
-            sortButton.setText(orders[0]);
-            year.setText("");
+        activity.primary(results);
+        refineButton(line, "Reset", "refine:reset", () -> {
+            prefs
+                .edit()
+                .remove(prefix + "genre")
+                .remove(prefix + "year")
+                .remove(prefix + "rating")
+                .remove(prefix + "sort")
+                .apply();
+            again(target, kind, "refine:reset");
         });
-        content.addView(actions);
     }
 
-    void chooseCatalogueRegion(String kind) {
-        screens.browse(kind, "Region", ":region", 1);
+    /** Rebuilds the sheet with the new choice and puts the remote back on the same button. */
+    private void again(LinearLayout target, String kind, String tag) {
+        renderBrowse(target, kind);
+        View button = target.findViewWithTag(tag);
+        if (button != null) button.requestFocus();
+    }
+
+    /** A half-width button in the sheet; its tag lets focus come back to it after a rebuild. */
+    private Button refineButton(LinearLayout line, String label, String tag, Runnable action) {
+        Button button = activity.button(label, action);
+        button.setTextSize(14);
+        button.setTag(tag);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, activity.dp(42), 1);
+        lp.setMargins(activity.dp(3), activity.dp(3), activity.dp(3), activity.dp(3));
+        line.addView(button, lp);
+        return button;
     }
 }

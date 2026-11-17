@@ -93,7 +93,7 @@ public class AllAppsTest {
             List<String> shown = texts(activity.appsScreen.extras, new ArrayList<>());
             assertTrue(
                 "Android shortcuts: " + shown,
-                shown.contains("Android") && shown.contains("Settings")
+                shown.contains("Box settings") && shown.contains("Settings")
             );
             assertTrue("Recently used row", shown.contains("Recently used"));
             View focus = activity.getCurrentFocus();

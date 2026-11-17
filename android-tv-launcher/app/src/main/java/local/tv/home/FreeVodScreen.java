@@ -51,11 +51,8 @@ final class FreeVodScreen {
             boolean[] automatic = { AutoPlayback.enabled(activity, season) };
             Button choose = activity.button("Choose a source instead", () -> automatic[0] = false);
             activity.page.addView(choose);
-            activity.page.addView(
-                activity.button("Provider search details", () ->
-                    SidePanel.of(activity, "Provider search details").message(search.report()).show()
-                )
-            );
+            // Which website answered what is in Settings → Setup → Engineer view.
+            VodSearch.latestTitle = season < 0 ? title : title + " S" + season + " E" + episode;
             final int generation = activity.generation;
             Runnable refresh = new Runnable() {
                 int count = -1;
@@ -145,9 +142,7 @@ final class FreeVodScreen {
                                   search.progress() +
                                   (done ? "" : " · searching for backups…")
                             : done
-                              ? "No playable stream found · " +
-                                search.progress() +
-                                ". See provider search details."
+                              ? PlainWords.noStream(search.websitesChecked())
                               : "No stream yet · " + search.progress() + " · still searching…"
                     );
                     // Even an immediate complete response waits for the original selection window.

@@ -78,14 +78,15 @@ public class SettingsStyleTest {
     /** Free channels: one page with plain sections, a card per service, and focus kept on rebuild. */
     @Test
     public void freeChannelsIsOnePageWithSectionsAndACardPerService() {
-        // Its own sidebar tab, not a card under Accounts.
-        remote.runOnMainSync(() -> activity.settingsScreens.settings());
+        // In Setup now (it was its own Settings tab): the family never needs it.
+        remote.runOnMainSync(() -> activity.settingsScreens.setup());
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
-            View button = find(activity.getWindow().getDecorView(), FreeChannelsPage.TAB);
-            assertNotNull("Free channels tab", button);
-            while (!button.hasOnClickListeners()) button = (View) button.getParent();
-            button.performClick();
+            View decor = activity.getWindow().getDecorView();
+            View card = find(decor, "Free channels");
+            assertNotNull("Free channels card in Setup", card);
+            ViewGroup row = (ViewGroup) card.getParent().getParent();
+            row.getChildAt(row.getChildCount() - 1).performClick();
         });
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
@@ -100,8 +101,13 @@ public class SettingsStyleTest {
             })
                 assertNotNull("Card " + card, find(decor, card));
             for (String label : AdapterSources.LABELS) assertNotNull("Service " + label, find(decor, label));
-            for (String gone : new String[] { "Local provider engine", "Runtime 2" })
-                assertNull("Engine jargon removed: " + gone, find(decor, gone));
+            for (String gone : new String[] {
+                "Local provider engine",
+                "Runtime 2",
+                "Service updates",
+                "Masqueradarr",
+            })
+                assertNull("Removed: " + gone, find(decor, gone));
         });
         UiEvidence.capture("settings-free-channels");
         remote.runOnMainSync(() -> new FreeChannelsPage(activity).show("Pluto TV"));
@@ -118,7 +124,7 @@ public class SettingsStyleTest {
     public void everyTabUsesTheAccountCardStyle() {
         remote.runOnMainSync(() -> activity.settingsScreens.settings());
         remote.waitForIdleSync();
-        for (String tab : new String[] { "Accounts", "Appearance", "Playback", "System" }) {
+        for (String tab : new String[] { "Accounts", "Appearance", "Playback", "System", SetupScreens.TAB }) {
             remote.runOnMainSync(() -> {
                 View button = find(activity.getWindow().getDecorView(), tab);
                 while (!button.hasOnClickListeners()) button = (View) button.getParent();

@@ -33,7 +33,8 @@ final class CloudScreens {
             return;
         }
         Runnable goBack = () -> {
-            if (parents.isEmpty()) activity.libraryScreens.library(kind);
+            if (parents.isEmpty()) activity.settingsScreens.setup();
+            // opened from Settings → Setup
             else {
                 List<String[]> path = new ArrayList<>(parents);
                 String[] parent = path.remove(path.size() - 1);
@@ -126,7 +127,7 @@ final class CloudScreens {
     }
 
     void transfers(String kind) {
-        activity.screen("Transfers", () -> activity.libraryScreens.library(kind));
+        activity.screen("Transfers", activity.settingsScreens::setup);
         LinearLayout tools = activity.horizontal(activity.page);
         activity.chip(tools, "Refresh", () -> transfers(kind));
         activity.chip(tools, "Cloud", () -> cloud("", kind));

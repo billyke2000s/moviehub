@@ -160,22 +160,7 @@ final class LibraryScreens {
         activity.screen("Continue watching", activity.homeScreen::home);
         activity.resumeRefresh = this::continueWatching;
         activity.page.addView(activity.muted("Select to resume · Hold Select for more", 13));
-        LinearLayout controls = activity.horizontal(activity.page);
-        activity.chip(controls, "Clear history", () ->
-            SidePanel.of(activity, "Clear viewing history?")
-                .message("This removes saved playback progress on this device. My List is kept.")
-                .action("Clear history", () -> {
-                    activity.getSharedPreferences("positions", Context.MODE_PRIVATE).edit().clear().apply();
-                    try {
-                        activity.secrets.put("recentPlayback", "[]");
-                    } catch (Exception e) {
-                        activity.toast("Could not clear history");
-                    }
-                    continueWatching();
-                })
-                .action("Cancel", null)
-                .show()
-        );
+        // Clear history moved to Settings → Setup: it was easy to press by accident here.
         try {
             String stored = activity.secrets.get("recentPlayback");
             JSONArray recent = new JSONArray(stored.isEmpty() ? "[]" : stored);
@@ -495,7 +480,8 @@ final class LibraryScreens {
     }
 
     void savedLibrary(String kind) {
-        activity.screen(kind + " links you added", () -> library(kind));
+        // Reached from Settings → Setup, so Back returns there.
+        activity.screen(kind + " links you added", activity.settingsScreens::setup);
         LinearLayout tools = activity.horizontal(activity.page);
         activity.chip(tools, "Browse catalogue", () -> activity.catalogues.catalogueMenu(kind));
         activity.chip(tools, "Add source", () -> activity.settingsScreens.addSource(kind, "", ""));

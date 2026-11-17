@@ -80,17 +80,16 @@ final class ExoMenus implements LiveMenus {
     public void liveOptions() {
         LiveZapper zapper = screen.zapper();
         if (zapper == null) return;
-        // What changes this channel. Pause stays: the TV banner has no pause button and many remotes
-        // have no play/pause key. The player's log is in Settings, System, Troubleshooting.
+        // Only what the banner's buttons do not: Audio & subtitles, Source and Information are each
+        // one button on the banner. Pause stays: the TV banner has no pause button and many remotes
+        // have no play/pause key. The technical status and log are in Settings → Setup → Engineer view.
         List<String> labels = new java.util.ArrayList<>();
         if (ExoLive.behindLive()) labels.add("Back to live");
         java.util.Collections.addAll(
             labels,
             ExoLive.isPlaying() ? "Pause" : "Play",
-            "Programme information",
-            "Audio & subtitles",
-            zapper.sourceText(),
-            "Reconnect channel"
+            "Reconnect channel",
+            "What's happening"
         );
         screen.dialogOpen(true);
         SidePanel panel = SidePanel.of(screen.activity(), "Options").onDismiss(screen::panelClosed);
@@ -98,12 +97,25 @@ final class ExoMenus implements LiveMenus {
             panel.option(label, () -> {
                 if (label.equals("Back to live")) backToLive.run();
                 else if (label.equals("Pause") || label.equals("Play")) screen.toggle();
-                else if (label.equals("Audio & subtitles")) audioAndSubtitles();
-                else if (label.equals("Programme information")) zapper.information();
-                // The row reads "Source: Auto · …" (LiveZapper.sourceText).
-                else if (label.startsWith("Source")) chooseSource();
                 else if (label.equals("Reconnect channel")) reconnect.run();
+                else if (label.equals("What's happening")) whatsHappening();
             });
         panel.show();
+    }
+
+    /** The player's state in plain words, and its recent events (no decoder or format names). */
+    private void whatsHappening() {
+        String events = ExoLiveLog.plainEvents(6);
+        screen.dialogOpen(true);
+        SidePanel.of(screen.activity(), "What's happening")
+            .message(
+                PlainWords.liveStatus(ExoLive.status()) +
+                    (events.isEmpty() ? "" : "\n\nRecently:\n" + events) +
+                    "\n\nIf the picture keeps stopping: choose Source on the banner to try another copy, " +
+                    "or Reconnect channel."
+            )
+            .action("Close", null)
+            .onDismiss(screen::panelClosed)
+            .show();
     }
 }

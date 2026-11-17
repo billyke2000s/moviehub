@@ -9,10 +9,12 @@ import java.util.Locale;
 import org.json.JSONObject;
 
 /**
- * Settings → System → Troubleshooting: an internet speed test, checks that each connected service
- * answers, playback timings (see {@link Timings}) and recent recovered errors (see
- * {@link ErrorLog}). It shows service names, times and plain explanations only, never addresses,
- * keys or account details.
+ * Settings → Setup → Engineer view (it was Settings → System → Troubleshooting): an internet speed
+ * test, checks that each connected service answers, playback timings (see {@link Timings}), the
+ * last film search's provider details, the Live TV player's status and log, and recent recovered
+ * errors (see {@link ErrorLog}). The technical words are kept here so they can be read back when
+ * something needs fixing; the family's page is {@link HelpPage}. It shows service names, times and
+ * explanations only, never addresses, keys or account details.
  */
 final class Troubleshooting {
 
@@ -30,9 +32,15 @@ final class Troubleshooting {
 
     void show() {
         body = activity.settingsScreens.settingsLayout(
-            "Troubleshooting",
-            activity.settingsScreens::settings,
-            "System"
+            TITLE,
+            activity.settingsScreens::setup,
+            SetupScreens.TAB
+        );
+        body.addView(
+            activity.muted(
+                "Technical details for fixing problems. Nothing here needs changing day to day.",
+                14
+            )
         );
         body.addView(
             activity.muted(
@@ -50,8 +58,12 @@ final class Troubleshooting {
         speedTest();
         connections();
         playback();
+        providerSearch();
+        livePlayer();
         recentErrors();
     }
+
+    static final String TITLE = "Engineer view";
 
     // ---- Internet speed test ------------------------------------------------------------------
 
@@ -243,14 +255,49 @@ final class Troubleshooting {
                     (stat.count == 1 ? " time" : " times")
             );
         actions(
-            new String[] { "Refresh", "Reset timings", "Live TV player log" },
+            new String[] { "Refresh", "Reset timings" },
             new Runnable[] {
                 this::show,
                 () -> {
                     Timings.clear();
                     show();
                 },
-                // Moved here from the Live TV player's Options: details for diagnosing a channel.
+            }
+        );
+    }
+
+    // ---- Provider search ----------------------------------------------------------------------
+
+    /** The last film or episode search: what each website answered (moved from the source list). */
+    private void providerSearch() {
+        heading("Last film search");
+        VodSearch search = VodSearch.latest;
+        if (search == null) {
+            row("Nothing searched yet", "Press Play on a film or episode, then come back here");
+            return;
+        }
+        row(VodSearch.latestTitle.isEmpty() ? "Last search" : VodSearch.latestTitle, search.progress());
+        actions(
+            new String[] { "Provider search details" },
+            new Runnable[] {
+                () ->
+                    SidePanel.of(activity, "Provider search details")
+                        .message(search.report())
+                        .action("Close", null)
+                        .show(),
+            }
+        );
+    }
+
+    // ---- Live TV player -----------------------------------------------------------------------
+
+    /** The Live TV player's technical status and event log (the family sees PlainWords instead). */
+    private void livePlayer() {
+        heading("Live TV player");
+        row("Player status", "ExoPlayer \u00b7 " + ExoLive.status());
+        actions(
+            new String[] { "Player event log" },
+            new Runnable[] {
                 () ->
                     SidePanel.of(activity, "Live TV player log")
                         .message("ExoPlayer \u00b7 " + ExoLive.status() + "\n\n" + ExoLive.eventLog())
