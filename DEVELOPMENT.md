@@ -77,5 +77,5 @@ See [TESTING.md](TESTING.md). The minimum before opening a pull request:
 - Work on a branch and open a pull request against `main`. CI runs on pull requests.
 - Merging to `main` does **not** publish an update to TVs. Publishing is a separate, manual workflow
   (`publish-android-launcher.yml`) described in [android-tv-launcher/UPDATES.md](android-tv-launcher/UPDATES.md).
-- `release/moviehub-*` branches each hold a one-off publish workflow for that version. They are
-  intentionally never merged.
+- To release, run **Release MovieHub** (`release-moviehub.yml`) by hand on `main` with the new
+  version code and name. Do not add per-version workflow files or `release/moviehub-*` branches.

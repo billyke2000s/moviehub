@@ -22,9 +22,11 @@ The signed APK and update manifest are published in the `android-tv-latest` rele
 
 Keep and back up that signing key; use it for the first release installation and all future releases. Existing debug APKs are not a verified upgrade path to this release key. The updater refuses APKs signed with a different certificate; an initial move from a debug build may require a separate installation and data migration plan.
 
-Run Publish Android TV launcher update on the intended source branch, with a visible version name and an integer version code greater than every previous release. It builds and lints the release, verifies its signature, and publishes home.apk and update.json. Publishing is not triggered by ordinary debug builds or merges. Explicit owner-authorized
-one-off `release-moviehub-<version>.yml` workflows can dispatch this standard publisher when
-their release-preparation PR is merged; those are release actions, not ordinary app builds. The permanent signing secrets are configured, and the initial signed release has been published.
+Run Publish Android TV launcher update on the intended source branch, with a visible version name and an integer version code greater than every previous release. It builds and lints the release, verifies its signature, and publishes home.apk and update.json. Publishing is not triggered by ordinary debug builds or merges. To publish and create the
+numbered release page in one step, run **Release MovieHub** (`release-moviehub.yml`) by hand on
+`main` with the version code and name: it dispatches this standard publisher, waits for it, checks
+the feed and then dispatches the numbered-release copier below. It replaces the old one-off
+`release-moviehub-<version>.yml` files and signs nothing itself. The permanent signing secrets are configured, and the initial signed release has been published.
 
 The HTML preview hides the button normally. Append `?updateDemo=1` to its URL to see the illustrative update-available state. It does not perform a live release check or install anything.
 

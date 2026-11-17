@@ -1,29 +1,49 @@
-name: Publish MovieHub 1.0.19 CineStream source and metadata update
+name: Release MovieHub (publish + numbered release page)
+# Replaces the old one-file-per-release workflows (release-moviehub-1.0.17/18/19.yml etc.).
+# Run it by hand from the Actions tab on main. It does not build or sign anything itself:
+#   1. dispatches the existing signed publisher (publish-android-launcher.yml),
+#   2. waits for it to succeed and checks the updater feed shows the requested version,
+#   3. dispatches the numbered release-page copier (release-android-launcher.yml).
 on:
-    push:
-        branches: [main]
-        paths: [".github/workflows/release-moviehub-1.0.19.yml"]
+    workflow_dispatch:
+        inputs:
+            version_code:
+                description: "Increasing integer version code (for example 120)"
+                required: true
+            version_name:
+                description: "Visible version (for example 1.0.20)"
+                required: true
 permissions:
     contents: read
     actions: write
+concurrency:
+    group: release-moviehub
+    cancel-in-progress: false
 jobs:
     dispatch:
-        if: github.repository == 'billyke2000s/moviehub'
+        if: github.repository == 'billyke2000s/moviehub' && github.ref == 'refs/heads/main'
         runs-on: ubuntu-latest
         timeout-minutes: 5
         steps:
-            - name: Dispatch the existing signed publisher for this release commit
+            - name: Dispatch the existing signed publisher for this commit
               uses: actions/github-script@v8
+              env:
+                  VERSION_CODE: ${{ inputs.version_code }}
+                  VERSION_NAME: ${{ inputs.version_name }}
               with:
                   script: |
                       const {owner, repo} = context.repo;
+                      const code = process.env.VERSION_CODE.trim();
+                      const name = process.env.VERSION_NAME.trim();
+                      if (!/^\d+$/.test(code)) throw new Error('version_code must be a whole number');
+                      if (!name) throw new Error('version_name is required');
                       const {data: main} = await github.rest.repos.getBranch({owner, repo, branch: 'main'});
                       if (main.commit.sha !== context.sha) throw new Error('Main moved before release dispatch');
                       await github.rest.actions.createWorkflowDispatch({
                         owner, repo, workflow_id: 'publish-android-launcher.yml', ref: 'main',
-                        inputs: {version_code: '119', version_name: '1.0.19'}
+                        inputs: {version_code: code, version_name: name}
                       });
-                      core.notice('Dispatched standard publisher for MovieHub 1.0.19 (119)');
+                      core.notice(`Dispatched standard publisher for MovieHub ${name} (${code})`);
     release-page:
         needs: dispatch
         runs-on: ubuntu-latest
@@ -54,13 +74,16 @@ jobs:
               env:
                   GH_TOKEN: ${{ github.token }}
                   GH_REPO: ${{ github.repository }}
+                  VERSION_CODE: ${{ inputs.version_code }}
+                  VERSION_NAME: ${{ inputs.version_name }}
               run: |
-                  gh release download android-tv-latest --pattern update.json --dir "$RUNNER_TEMP/moviehub-119-feed"
+                  gh release download android-tv-latest --pattern update.json --dir "$RUNNER_TEMP/moviehub-feed"
                   python - <<'PY'
                   import json,os,pathlib
-                  manifest=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'moviehub-119-feed/update.json').read_text())
-                  if (manifest['packageName'],manifest['versionCode'],manifest['versionName']) != ('local.tv.home',119,'1.0.19'):
-                      raise SystemExit('Updater feed is not MovieHub 1.0.19')
+                  manifest=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'moviehub-feed/update.json').read_text())
+                  expected=('local.tv.home',int(os.environ['VERSION_CODE'].strip()),os.environ['VERSION_NAME'].strip())
+                  if (manifest['packageName'],manifest['versionCode'],manifest['versionName']) != expected:
+                      raise SystemExit('Updater feed does not match the requested version')
                   PY
             - name: Dispatch the existing numbered-release copier
               uses: actions/github-script@v8
@@ -71,4 +94,4 @@ jobs:
                         owner, repo, workflow_id: 'release-android-launcher.yml', ref: 'main',
                         inputs: {notes: ''}
                       });
-                      core.notice('Dispatched the numbered MovieHub 1.0.19 release page');
+                      core.notice('Dispatched the numbered release page');
