@@ -722,7 +722,7 @@ public class PlaybackTest {
     }
 
     @Test
-    public void playbackOptionsApplySpeedPictureAndCancellableSleepTimer() throws Exception {
+    public void playbackOptionsApplyPictureAndCancellableSleepTimer() throws Exception {
         await(() -> {
             try {
                 return player() != null && player().isPlaying();
@@ -731,8 +731,8 @@ public class PlaybackTest {
             }
         }, 30000);
         MediaPlayer engine = player();
-        option(activity.menus::chooseSpeed, 1);
-        assertEquals(1.25f, engine.getRate(), .01f);
+        // Playback speed was removed from the menu (owner's menu audit); the rate stays normal.
+        assertEquals(1f, engine.getRate(), .01f);
         option(activity.menus::choosePicture, 1);
         assertEquals("16:9", engine.getAspectRatio());
         option(activity.menus::chooseSleep, 1);
