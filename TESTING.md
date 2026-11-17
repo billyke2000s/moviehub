@@ -174,6 +174,19 @@ the screen is left. A request with its final body byte held past expiry is refus
 the page interrupts a partially received header. It does not show the QR code or test a real phone. `PremiumizeLink` has no
 automated test: it needs Premiumize's live sign-in service.
 
+`MenuWordsTest` (core) checks the family Help page's rules (`HelpChecks`): nothing shown for a
+healthy box or when nothing is known; no internet, too slow for HD or 4K (and the lower quality
+offered), storage full, update ready; every problem specific and with a fix. It also checks
+`PlainWords`: the Live TV player's status and events in plain words (technical ones left out),
+repeated source names numbered ("copy 2") without merging, and the "no stream found" line.
+
+Device tests changed with the menu audit sheet: `SettingsStyleTest` (Setup tab; Free channels
+opened from Setup), `DiagnosticsTest` (Engineer view returns to Setup; new Help page test),
+`LiveGuideTest` (one-page guide menu, colour keys always buttons), `TvNavigationTest` and
+`PosterFeedTest` (one Browse sheet, no Library button, Premiumize not in Accounts), `AllAppsTest`
+("Box settings") and `PlaybackTest` (no raw download speed on the player). None of them proves
+the layout on a real TV box.
+
 ## Device tests
 
 `ChannelDatabaseTest.versionSevenWithoutMainUpgradesAndKeepsChannelsAndFavourites` reconstructs

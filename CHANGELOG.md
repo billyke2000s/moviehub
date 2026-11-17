@@ -1,5 +1,34 @@
 ## Unreleased
 
+Menu audit sheet (owner's decisions, 17 November 2026; builds on the earlier menu clean-up):
+
+- Settings → **Setup**, a new last tab with no PIN, for whoever looks after the box: Premiumize
+  (account, cloud, transfers), Masqueradarr (only while connected), Free channels, More channel
+  sections (International, channel groups), Parental lock, Links you added, Clear watch history,
+  Engineer view and the TMDB credit. The Free channels tab and the Library button are gone.
+- Settings → System → **Help** for the family: only problems they can fix, each with one button
+  (no internet → Wi-Fi settings; too slow for HD/4K → lower quality; storage full → storage
+  settings; update ready → Update), plus an internet speed test. Troubleshooting became Setup →
+  **Engineer view**, with the last film search's provider details and the Live TV player's
+  status and log added.
+- Removed: Accent colour, Layout (TV/phone), Playback speed, ZLive address (a changed address can
+  still be reset), Service updates, guide sections Radio/Religion/Shopping, the guide's
+  "Set up coloured buttons", region/streaming-service browsing.
+- Automatic play is one switch (films and series together). Featured row says what it is.
+- Movies/Series: one **Browse** sheet (Browse and Filters merged): genre, year, rating and sort as
+  buttons with Show results and Reset, then Popular & new, Genres, Languages and People.
+- No "Connect TMDB" buttons for the family; a plain "not set up yet" line instead.
+- Live TV: colour keys are always on-screen buttons. The guide menu fits on one page and lost
+  its top tabs (Options, Reminders and Search are on the colour buttons). Guide Options holds
+  only the day choices, Picture in the guide and Refresh. Player Options holds Back to live,
+  Pause/Play, Reconnect and **What's happening** (plain words and recent events); its duplicates
+  of the banner buttons are gone.
+- Films: the player shows "Loading…" instead of download speeds; Sources numbers repeated names
+  ("copy 2") instead of merging them; Provider search details moved to the Engineer view, and
+  "no stream found" says how many websites were checked.
+- All apps: banners are no longer cropped, focused tiles grow less, "Android" is "Box settings".
+- New permission ACCESS_NETWORK_STATE (granted automatically) so Help can tell when Wi-Fi is off.
+
 - Settings → Accounts lists every account, including Masqueradarr (moved from Free channels →
   Advanced). Back from an account screen returns to where it was opened (Home, a film list,
   Search), not always to Settings.

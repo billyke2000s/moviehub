@@ -1,5 +1,15 @@
 # Status
 
+## Menu audit sheet — 17 November 2026 (pull request, not merged or published)
+
+The owner's MovieHub menu audit sheet (100 rows, a decision on each) is applied on a branch
+built on #202 (which contains #199, #201 and #200). Settings gains a Setup tab and a family Help
+page; Troubleshooting is Setup → Engineer view; Browse and Filters are one sheet; Live TV colour
+keys are always buttons. See CHANGELOG.md (Unreleased). Local core checks: 37 suites / 1,411
+checks. Android build, lint and device tests run only in CI (no Android SDK locally). Not tested
+on the TV box. Open questions: the Settings tab colour bug (row 74) could not be found from the
+code without the owner's photo; the All apps "cut off" fix is a best guess.
+
 ## Phone entry expiry correction — 4 November 2026
 
 Phone-entry requests now share the original monotonic five-minute deadline, including partial
