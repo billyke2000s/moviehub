@@ -153,10 +153,10 @@ final class SkyOverlay {
         colourKey(GREEN, "Source", () -> a.liveMenus().chooseSource());
         colourKey(LiveTvScreen.YELLOW, "Information", this::toggleInformation);
         colourKey(BLUE, "Options", () -> a.liveMenus().liveOptions());
-        // No coloured buttons on the remote: BACK reveals these as buttons to pick with ◀ ▶.
+        // Always drawn as buttons (boxControls), for remotes without coloured buttons.
         TextView noColours = label(15, true, SOFT);
         content.addView(keys);
-        noColours.setText("No colour buttons? ◀ ▶ then OK");
+        noColours.setText("◀ ▶ to choose a button, OK to press it");
         content.addView(noColours);
         hint = label(16, true, LiveTvScreen.YELLOW);
         hint.setPadding(0, a.dp(8), 0, 0);

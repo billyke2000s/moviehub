@@ -141,7 +141,6 @@ final class PlayerMenus {
     /** The More button: the film's playback options. */
     void moreControls() {
         List<String> labels = new ArrayList<>();
-        labels.add("Playback speed · " + a.playbackRate + "×");
         labels.add("Picture size");
         labels.add("Subtitle timing");
         labels.add(
@@ -157,7 +156,6 @@ final class PlayerMenus {
         for (String label : labels)
             panel.option(label, () -> {
                 if (label.equals("Sources")) chooseVodSource();
-                else if (label.startsWith("Playback speed")) chooseSpeed();
                 else if (label.equals("Picture size")) choosePicture();
                 else if (label.equals("Subtitle timing")) subtitleTiming();
                 else chooseSleep();
@@ -168,21 +166,6 @@ final class PlayerMenus {
     void options(String title, String[] labels, int selected, java.util.function.IntConsumer action) {
         a.dialogOpen = true;
         SidePanel.of(a, title).choices(labels, selected, action).onDismiss(a::panelClosed).show();
-    }
-
-    void chooseSpeed() {
-        float[] rates = { .5f, .75f, 1f, 1.25f, 1.5f, 1.75f, 2f };
-        int selected = 2;
-        for (int i = 0; i < rates.length; i++) if (rates[i] == a.playbackRate) selected = i;
-        options(
-            "Playback speed",
-            new String[] { "0.5×", "0.75×", "Normal · 1×", "1.25×", "1.5×", "1.75×", "2×" },
-            selected,
-            which -> {
-                a.playbackRate = rates[which];
-                if (ready()) a.player.setRate(a.playbackRate);
-            }
-        );
     }
 
     void choosePicture() {
@@ -247,25 +230,22 @@ final class PlayerMenus {
     void chooseVodSource() {
         if (a.vod == null) return;
         var entries = a.vod.queue.sources();
-        String report = a.vod.providerReport();
-        String[] names = new String[entries.size() + (report.isEmpty() ? 1 : 2)];
-        if (!report.isEmpty()) names[names.length - 1] = "Provider search details";
+        // Which website answered what is in Settings → Setup → Engineer view, not in this list.
+        String[] names = new String[entries.size() + 1];
         // Picking a source by hand keeps later switches to that provider's links (VodPlayback.select),
         // so say so, and how to go back to switching between every source.
         names[0] = a.vod.automaticSources()
             ? "Automatic (recommended) \u00b7 switches if a source fails"
             : "Manual · only switches between this provider's links · choose to make it Automatic";
+        // Separate sources can share a name; number the repeats so they can be told apart.
+        List<String> labels = new ArrayList<>();
+        for (var entry : entries) labels.add(entry.label);
+        labels = PlainWords.numberRepeats(labels);
         for (int i = 0; i < entries.size(); i++) names[i + 1] =
-            entries.get(i).label + (i == a.vod.activeIndex() ? " \u00b7 Playing" : "");
+            labels.get(i) + (i == a.vod.activeIndex() ? " \u00b7 Playing" : "");
         options("Sources", names, a.vod.automaticSources() ? 0 : a.vod.activeIndex() + 1, which -> {
             if (a.vod == null) return;
-            if (which > entries.size()) {
-                a.dialogOpen = true;
-                SidePanel.of(a, "Provider search details")
-                    .message(a.vod.providerReport())
-                    .onDismiss(a::panelClosed)
-                    .show();
-            } else if (which == 0) a.vod.automatic();
+            if (which == 0) a.vod.automatic();
             else a.vod.select(which - 1);
         });
     }

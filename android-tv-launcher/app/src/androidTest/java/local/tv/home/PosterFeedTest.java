@@ -351,7 +351,7 @@ public class PosterFeedTest {
             card.requestFocus();
         });
         remote.runOnMainSync(() -> {
-            View filters = label(activity.getWindow().getDecorView(), "Filters");
+            View filters = label(activity.getWindow().getDecorView(), "Browse");
             assertNotNull(filters);
             filters.performClick();
         });
@@ -360,7 +360,7 @@ public class PosterFeedTest {
             try {
                 android.app.Dialog dialog = activity.catalogueDialog;
                 assertTrue(dialog.isShowing());
-                assertNotNull(label(dialog.getWindow().getDecorView(), "Years & decades"));
+                assertNotNull(label(dialog.getWindow().getDecorView(), "Show results"));
                 assertTrue(feed.isAttachedToWindow());
                 assertEquals(20, feed.items.size());
             } catch (Exception e) {

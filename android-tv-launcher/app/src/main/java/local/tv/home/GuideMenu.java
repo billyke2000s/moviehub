@@ -13,16 +13,17 @@ import java.util.Locale;
 /**
  * The guide menu, laid out like the satellite box's: a numbered list in the guide's dark blue
  * (1 All Channels, 2 Favourites, 3 Entertainment … 0 More…), the chosen row in yellow, number keys
- * to pick one, and the colour keys underneath. Live TV opens here, like the box's TV Guide button;
- * the parts along the top (Reminders, Search, Options) can be chosen too. BACK from the channel
- * grid comes here; BACK from here goes Home.
+ * to pick one, and the colour keys underneath (Options, Reminders, Search, Favourites; always shown
+ * as buttons). Live TV opens here, like the box's TV Guide button. BACK from the channel grid comes
+ * here; BACK from here goes Home.
  */
 final class GuideMenu {
 
     /**
      * The menu: label and the guide list each opens. The sections keep the satellite box's order;
-     * Favourites (also on the blue key) and Options sit on the first page, so they are found
-     * without More…. Long lists split into pages of nine with More… at the bottom, as the box did.
+     * Favourites (also on the blue key) and Options are among them. Radio, Religion and Shopping
+     * were removed; International and the channel groups are in Settings → Setup, so the menu fits
+     * on one page. A longer list would split into pages of nine with More… at the bottom.
      */
     static final String[][] ITEMS = {
         { "All Channels", "all" },
@@ -35,11 +36,6 @@ final class GuideMenu {
         { "Kids", "section:Kids" },
         { "Options", "options" },
         { "Music", "section:Music" },
-        { "Radio", "section:Radio" },
-        { "Religion", "section:Religion" },
-        { "Shopping", "section:Shopping" },
-        { "International", "countries" },
-        { "Channel groups from your lists", "groups" },
     };
 
     /** Rows on a page, More… included. */
@@ -50,9 +46,8 @@ final class GuideMenu {
 
     private final MainActivity activity;
     private final LiveTvScreen guide;
-    /** The menu's rows, and the parts along the top (for tests). */
-    final List<View> rows = new ArrayList<>(),
-        tabs = new ArrayList<>();
+    /** The menu's rows (for tests). */
+    final List<View> rows = new ArrayList<>();
     /** The colour keys along the bottom, which can be chosen with the D-pad. */
     KeyBar bar;
 
@@ -94,50 +89,14 @@ final class GuideMenu {
         page.setPadding(activity.dp(80), activity.dp(24), activity.dp(80), activity.dp(18));
         page.setBackground(GuideFrame.background());
 
-        // The heading row: the guide's name, then its parts. Each part can be chosen: this list,
-        // reminders, search and options.
+        // The heading: the guide's name and the page. Options, Reminders and Search are on the
+        // colour buttons at the bottom (they were also along the top, in another style).
         LinearLayout top = activity.row();
         top.setGravity(Gravity.BOTTOM);
         TextView name = text("TV Guide", 30, true);
         name.setPadding(0, 0, activity.dp(30), 0);
         top.addView(name);
-        String[] parts = { heading, "REMINDERS", "SEARCH", "OPTIONS" };
-        Runnable[] actions = {
-            () -> rows.get(0).requestFocus(),
-            guide.panels::reminders,
-            guide.panels::searchPanel,
-            guide.panels::options,
-        };
-        tabs.clear();
-        for (int i = 0; i < parts.length; i++) {
-            Runnable action = actions[i];
-            boolean current = i == 0;
-            TextView tab = text(parts[i], 18, true);
-            tab.setPadding(activity.dp(10), activity.dp(3), activity.dp(10), activity.dp(3));
-            tab.setFocusable(true);
-            tab.setFocusableInTouchMode(true);
-            tab.setOnClickListener(v -> action.run());
-            View.OnFocusChangeListener style = (v, focused) -> {
-                tab.setBackground(focused ? box(LiveTvScreen.YELLOW) : null);
-                tab.setTextColor(focused ? LiveTvScreen.INK : current ? 0xffffffff : 0xffe2eeff);
-                tab.setAlpha(focused || current ? 1f : 0.8f);
-            };
-            tab.setOnFocusChangeListener(style);
-            style.onFocusChange(tab, false);
-            tab.setOnKeyListener((v, key, event) -> {
-                if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
-                if (key == KeyEvent.KEYCODE_DPAD_DOWN) {
-                    rows.get(0).requestFocus();
-                    return true;
-                }
-                if (key == KeyEvent.KEYCODE_DPAD_UP) return true;
-                return shortcut(items, key);
-            });
-            LinearLayout.LayoutParams tabLayout = new LinearLayout.LayoutParams(-2, -2);
-            tabLayout.rightMargin = activity.dp(8);
-            top.addView(tab, tabLayout);
-            tabs.add(tab);
-        }
+        if (this.page > 0) top.addView(text(heading, 18, true)); // "MORE" on a second page
         page.addView(top);
 
         // The rows share the height, so every one fits on the screen with nothing to scroll.
@@ -152,7 +111,7 @@ final class GuideMenu {
             row.setOnKeyListener((v, key, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
                 if (key == KeyEvent.KEYCODE_DPAD_UP && index == 0) {
-                    tabs.get(0).requestFocus();
+                    rows.get(rows.size() - 1).requestFocus(); // round to the bottom
                     return true;
                 }
                 if (key == KeyEvent.KEYCODE_DPAD_DOWN && index == items.length - 1) {
@@ -213,12 +172,6 @@ final class GuideMenu {
         switch (target) {
             case "":
                 page(page + 1); // More…
-                break;
-            case "countries":
-                guide.panels.countries();
-                break;
-            case "groups":
-                guide.panels.groups();
                 break;
             case "options":
                 guide.panels.options();

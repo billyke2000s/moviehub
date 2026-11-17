@@ -21,73 +21,14 @@ final class LiveTvPanels {
         this.guide = guide;
     }
 
-    /** Teaches the guide this remote's colour keys: press red, green, yellow, then blue. */
-    void learnColourKeys(int step) {
-        learnColourKeys(step, new StringBuilder());
-    }
-
-    /** {@code learned} lists what each button sent so far, shown as the set-up goes on. */
-    private void learnColourKeys(int step, StringBuilder learned) {
-        String[] names = { "RED", "GREEN", "YELLOW", "BLUE" };
-        if (step >= 4) {
-            activity.toast("Coloured buttons set up\n" + learned);
-            guide.guide(guide.pageStart, 0);
-            return;
-        }
-        android.app.Dialog panel = SidePanel.of(activity, "Press the " + names[step] + " button")
-            .message(
-                "Press the " +
-                    names[step].toLowerCase(Locale.ROOT) +
-                    " button on your remote now. If nothing happens, the remote is not sending" +
-                    " that button to the TV box, so MovieHub can't use it. Back cancels." +
-                    (learned.length() == 0 ? "" : "\n\n" + learned)
-            )
-            .show();
-        panel.setOnKeyListener((d, key, event) -> {
-            if (key == KeyEvent.KEYCODE_BACK) return false;
-            boolean navigation =
-                key == KeyEvent.KEYCODE_DPAD_UP ||
-                key == KeyEvent.KEYCODE_DPAD_DOWN ||
-                key == KeyEvent.KEYCODE_DPAD_LEFT ||
-                key == KeyEvent.KEYCODE_DPAD_RIGHT ||
-                key == KeyEvent.KEYCODE_DPAD_CENTER ||
-                key == KeyEvent.KEYCODE_ENTER;
-            if (navigation) return true;
-            if (event.getAction() == KeyEvent.ACTION_UP) {
-                int scan = event.getScanCode();
-                // A button Android has no name for is told apart only by its scan code.
-                if (key == KeyEvent.KEYCODE_UNKNOWN && scan <= 0) return true;
-                android.content.SharedPreferences.Editor edit = activity.prefs.edit();
-                if (key == KeyEvent.KEYCODE_UNKNOWN) edit.putInt(
-                    LiveTvScreen.COLOUR_SCAN_PREFS[step],
-                    scan
-                ).remove(LiveTvScreen.COLOUR_PREFS[step]);
-                else edit.putInt(LiveTvScreen.COLOUR_PREFS[step], key).remove(
-                    LiveTvScreen.COLOUR_SCAN_PREFS[step]
-                );
-                edit.apply();
-                learned
-                    .append(learned.length() == 0 ? "" : "\n")
-                    .append(names[step].charAt(0))
-                    .append(names[step].substring(1).toLowerCase(Locale.ROOT))
-                    .append(": ")
-                    .append(KeyEvent.keyCodeToString(key))
-                    .append(" (scan ")
-                    .append(scan)
-                    .append(")");
-                panel.dismiss();
-                learnColourKeys(step + 1, learned);
-            }
-            return true;
-        });
-    }
-
-    /** Everything the colour keys do, for remotes without colour keys, and the guide's settings. */
+    /**
+     * The guide's own options: what has no other home. Search, Reminders and Favourites are on the
+     * colour buttons; the parental lock is in Settings → Setup. A day choice is shown only when it
+     * would change something.
+     */
     void options() {
         boolean picture = activity.prefs.getBoolean(LiveTvScreen.PICTURE, true);
-        // Lists and sections are in the guide menu and on the colour keys; this panel only holds
-        // what has no other home. A day choice is shown only when it would change something.
-        SidePanel panel = SidePanel.of(activity, "Live TV").option("Search", this::searchPanel);
+        SidePanel panel = SidePanel.of(activity, "Live TV");
         if (guide.windowOffset < LiveTvScreen.MAX_OFFSET) panel.option("Next day (+24 hours)", () ->
             guide.nextDay(guide.focusedRow())
         );
@@ -95,13 +36,10 @@ final class LiveTvPanels {
             guide.previousDay(guide.focusedRow())
         );
         panel
-            .option("Reminders", this::reminders)
-            .option("Parental lock", this::parentalLock)
             .option(picture ? "Picture in the guide · On" : "Picture in the guide · Off", () -> {
                 activity.prefs.edit().putBoolean(LiveTvScreen.PICTURE, !picture).apply();
                 guide.startPicture();
             })
-            .option("Set up coloured buttons", () -> learnColourKeys(0))
             .option("Refresh channels", () -> {
                 ChannelSync.refreshNow(activity);
                 guide.guide(0, 0);

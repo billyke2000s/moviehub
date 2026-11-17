@@ -333,7 +333,7 @@ public class LiveGuideTest {
     }
 
     @Test
-    public void liveTvOpensTheGuideMenuWithEveryRowAndTheTopPartsWorking() {
+    public void liveTvOpensTheGuideMenuWithEveryRowAndTheColourButtonsWorking() {
         // Live TV from Home: the guide menu first, like the TV Guide button.
         remote.runOnMainSync(() -> activity.liveTv.start());
         await(
@@ -342,26 +342,16 @@ public class LiveGuideTest {
         );
         remote.waitForIdleSync();
         UiEvidence.capture("live-guide-menu-first");
+        // Every section on one page now (no More…): Radio, Religion and Shopping were removed,
+        // International and channel groups moved to Settings → Setup.
         remote.runOnMainSync(() -> assertAllRowsOnScreen(10));
-        // Down to the last row (0 More…) and select: the second page, all on screen too.
         for (int i = 0; i < 9; i++) remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
-        await("on More…", () -> activity.liveTv.menu.rows.get(9).hasFocus());
-        // Down from the last row goes round to the top, as on the satellite box.
+        await("on the last row", () -> activity.liveTv.menu.rows.get(9).hasFocus());
+        // Down from the last row goes round to the top, and up from the top round to the bottom.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
         await("round to the top", () -> activity.liveTv.menu.rows.get(0).hasFocus());
-        remote.runOnMainSync(() -> activity.liveTv.menu.rows.get(9).requestFocus());
-        await("back on More…", () -> activity.liveTv.menu.rows.get(9).hasFocus());
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
-        await(
-            "more",
-            () -> activity.liveTv.menu.rows.size() == 6 && activity.liveTv.menu.rows.get(0).hasFocus()
-        );
-        remote.waitForIdleSync();
-        remote.runOnMainSync(() -> assertAllRowsOnScreen(6));
-        // BACK: the main menu again.
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-        await("main menu", () -> activity.liveTv.menu.rows.size() == 10);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        await("round to the bottom", () -> activity.liveTv.menu.rows.get(9).hasFocus());
         // A number opens its row: with Favourites second, 8 is Kids (9 is Options).
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_8);
         await("kids", () -> activity.liveTv.filter.equals("section:Kids"));
@@ -371,17 +361,22 @@ public class LiveGuideTest {
             "menu after kids",
             () -> activity.liveTv.menu.rows.size() == 10 && activity.liveTv.menu.rows.get(0).hasFocus()
         );
-        // Up from the first row: the parts along the top; right to Reminders, which opens.
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
-        await("top parts", () -> activity.liveTv.menu.tabs.get(0).hasFocus());
+        // The colour keys are buttons from the start (no remote colour keys needed): BACK
+        // highlights them, ▶ moves along, OK presses.
+        remote.runOnMainSync(() -> {
+            for (View key : activity.liveTv.menu.bar.keys)
+                assertTrue("colour key is a button", key.isFocusable());
+        });
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        await("options key", () -> activity.liveTv.menu.bar.focused() == 0);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
-        await("reminders part", () -> activity.liveTv.menu.tabs.get(1).hasFocus());
+        await("reminders key", () -> activity.liveTv.menu.bar.focused() == 1);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         await("reminders open", () -> SidePanel.current != null && SidePanel.current.isShowing());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
         // Search opens its form (a dialog over the menu, so the menu loses the window focus).
         await("menu focused again", () -> activity.hasWindowFocus());
-        remote.runOnMainSync(() -> activity.liveTv.menu.tabs.get(2).requestFocus());
+        remote.runOnMainSync(() -> activity.liveTv.menu.bar.keys.get(2).requestFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         await("search open", () -> !activity.hasWindowFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
@@ -413,27 +408,31 @@ public class LiveGuideTest {
     }
 
     @Test
-    public void theGuideMenuKeepsSectionsInBoxOrderWithFavouritesAndOptionsFirst() {
+    public void theGuideMenuKeepsSectionsInBoxOrderOnOnePage() {
         remote.runOnMainSync(() -> activity.liveTv.start());
         await("menu", () -> activity.liveTv.menu.rows.size() == 10);
-        String[][] first = GuideMenu.pageItems(0),
-            second = GuideMenu.pageItems(1);
-        // Favourites and Options are on the first page; the sections keep the box's order.
+        String[][] first = GuideMenu.pageItems(0);
+        // Favourites and Options are on the one page; the sections keep the box's order.
+        assertEquals(10, first.length);
         assertEquals("All Channels", first[0][0]);
         assertEquals("Favourites", first[1][0]);
         assertEquals("Entertainment", first[2][0]);
         assertEquals("Kids", first[7][0]);
         assertEquals("Options", first[8][0]);
-        assertEquals("More…", first[9][0]);
-        assertEquals("Music", second[0][0]);
-        assertEquals("Radio", second[1][0]);
-        assertEquals("Channel groups from your lists", second[second.length - 1][0]);
-        // 0 is More…; BACK goes up a page.
+        assertEquals("Music", first[9][0]);
+        for (String[] item : GuideMenu.ITEMS)
+            for (String gone : new String[] {
+                "Radio",
+                "Religion",
+                "Shopping",
+                "International",
+                "Channel groups from your lists",
+                "More…",
+            })
+                assertFalse("Not in the guide menu: " + gone, item[0].equals(gone));
+        // 0 opens the tenth row, Music.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_0);
-        await("second page", () -> activity.liveTv.menu.page == 1 && activity.liveTv.menu.rows.size() == 6);
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-        await("first page", () -> activity.liveTv.menu.page == 0 && activity.liveTv.menu.rows.size() == 10);
+        await("music", () -> activity.liveTv.filter.equals("section:Music"));
     }
 
     @Test

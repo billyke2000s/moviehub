@@ -47,7 +47,7 @@ final class SettingsScreens {
                         activity.http()
                     );
                     dialog.dismiss();
-                    activity.libraryScreens.library(kind);
+                    activity.libraryScreens.savedLibrary(kind);
                 } catch (Exception e) {
                     activity.toast("Enter a title and valid media URL");
                 }
@@ -59,7 +59,13 @@ final class SettingsScreens {
         settingsTab(settingsLayout("Settings", activity.homeScreen::home, selectedTab), selectedTab);
     }
 
-    /** Shared sidebar, viewport and content spacing for Settings and its Troubleshooting page. */
+    /** Opens Settings on its Setup tab (the owner's things; see {@link SetupScreens}). */
+    void setup() {
+        selectedTab = SetupScreens.TAB;
+        settings();
+    }
+
+    /** Shared sidebar, viewport and content spacing for Settings and its sub-pages. */
     LinearLayout settingsLayout(String title, Runnable back, String selected) {
         selectedTab = selected;
         activity.fixedScreen(title, back);
@@ -76,13 +82,7 @@ final class SettingsScreens {
         scroll.addView(body);
         layout.addView(scroll, new LinearLayout.LayoutParams(0, -1, 1));
         List<Button> choices = new ArrayList<>();
-        for (String tab : new String[] {
-            "Accounts",
-            FreeChannelsPage.TAB,
-            "Appearance",
-            "Playback",
-            "System",
-        }) {
+        for (String tab : new String[] { "Accounts", "Appearance", "Playback", "System", SetupScreens.TAB }) {
             Button choice = activity.navigationButton(tab, () -> {});
             choices.add(choice);
             LinearLayout.LayoutParams navParams = new LinearLayout.LayoutParams(-1, activity.dp(44));
@@ -133,7 +133,7 @@ final class SettingsScreens {
                   : "premiumize";
     }
 
-    private void accountCard(LinearLayout body, String service, String description) {
+    void accountCard(LinearLayout body, String service, String description) {
         boolean connected = activity.secrets.has(accountKey(service));
         settingCard(
             body,
@@ -562,6 +562,40 @@ final class SettingsScreens {
         );
     }
 
+    /**
+     * One switch for automatic play of films and series (they were two). On means both are on; the
+     * two preferences keep their keys, so a box with only one of them on shows Off until changed.
+     */
+    private void automaticPlay(LinearLayout body) {
+        boolean[] on = {
+            activity.prefs.getBoolean(AutoPlayback.MOVIES, true) &&
+                activity.prefs.getBoolean(AutoPlayback.SERIES, true),
+        };
+        TextView[] value = new TextView[1];
+        Button[] button = new Button[1];
+        value[0] = settingCard(
+            body,
+            "Automatic play",
+            "Pick the best source by itself when you press Play on a film or episode",
+            on[0] ? "On" : "Off",
+            on[0],
+            on[0] ? "Turn off" : "Turn on",
+            () -> {
+                on[0] = !on[0];
+                activity.prefs
+                    .edit()
+                    .putBoolean(AutoPlayback.MOVIES, on[0])
+                    .putBoolean(AutoPlayback.SERIES, on[0])
+                    .apply();
+                value[0].setText(on[0] ? "On" : "Off");
+                statusColour(value[0], on[0]);
+                button[0].setText(on[0] ? "Turn off" : "Turn on");
+            }
+        );
+        LinearLayout card = (LinearLayout) body.getChildAt(body.getChildCount() - 1);
+        button[0] = (Button) card.getChildAt(card.getChildCount() - 1);
+    }
+
     private void settingsTab(LinearLayout body, String tab) {
         body.removeAllViews();
         if (tab.equals("Accounts")) {
@@ -569,57 +603,23 @@ final class SettingsScreens {
             accountCard(body, "Xtream", "Live channels from your TV provider");
             accountCard(body, "M3U playlist", "Your own IPTV playlist");
             accountCard(body, "TMDB", "Movie and series discovery, details and artwork");
-            accountCard(body, "Premiumize", "Playback sources and your cloud library");
-            accountCard(body, "Masqueradarr", "Your own Masqueradarr server's playlist, if you run one");
-        } else if (tab.equals(FreeChannelsPage.TAB)) {
-            new FreeChannelsPage(activity).fill(body, null);
+            // Premiumize and Masqueradarr are in Setup: nobody in the family uses them.
+        } else if (tab.equals(SetupScreens.TAB)) {
+            new SetupScreens(activity).fill(body);
         } else if (tab.equals("Appearance")) {
             heading(body, "Look and feel");
-            toggle(body, "Featured row", "Artwork and a poster shelf on Home", "featured", true);
-            toggle(body, "24-hour clock", "Show the time as 21:30 instead of 9:30 PM", "clock24", true);
-            String[] accentNames = { "Violet", "Blue", "Teal" };
-            int[] accents = { 0xff8a9eff, 0xff55aaff, 0xff45c9ac };
-            int current = 0;
-            for (int i = 0; i < accents.length; i++) if (accents[i] == activity.accent()) current = i;
-            TextView[] accentValue = new TextView[1];
-            accentValue[0] = settingCard(
+            toggle(
                 body,
-                "Accent colour",
-                "Outline colour around the selected item",
-                accentNames[current],
-                true,
-                "Change",
-                () -> {
-                    int selected = 0;
-                    for (int i = 0; i < accents.length; i++) if (accents[i] == activity.accent()) selected =
-                        i;
-                    SidePanel.of(activity, "Accent colour")
-                        .choices(accentNames, selected, which -> {
-                            activity.prefs.edit().putInt("accent", accents[which]).apply();
-                            accentValue[0].setText(accentNames[which]);
-                            accentValue[0].setTextColor(accents[which]);
-                        })
-                        .show();
-                }
+                "Featured row",
+                "The big picture and row of posters at the top of Home",
+                "featured",
+                true
             );
-            accentValue[0].setTextColor(activity.accent());
+            toggle(body, "24-hour clock", "Show the time as 21:30 instead of 9:30 PM", "clock24", true);
         } else if (tab.equals("Playback")) {
             heading(body, "Films and series");
             toggle(body, "Resume playback", "Continue from where you stopped", "resume", true);
-            toggle(
-                body,
-                "Automatic play: films",
-                "Choose the best ready-to-play source and movie file",
-                AutoPlayback.MOVIES,
-                true
-            );
-            toggle(
-                body,
-                "Automatic play: series",
-                "Choose sources automatically when starting or continuing a series",
-                AutoPlayback.SERIES,
-                true
-            );
+            automaticPlay(body);
             String[] qualityNames = { "720p", "1080p", "4K" };
             int[] qualityValues = { 720, 1080, 2160 };
             TextView[] qualityLabel = new TextView[1];
@@ -677,35 +677,12 @@ final class SettingsScreens {
             );
             settingCard(
                 body,
-                "Layout",
-                "TV (remote) or phone and tablet (touch)",
-                DeviceMode.phone(activity) ? "Phone" : "TV",
-                false,
-                "Change",
-                () -> LayoutChooser.show(activity)
-            );
-            boolean lockOn = ParentalLock.hasPin(activity);
-            settingCard(
-                body,
-                "Parental lock",
-                "A PIN for chosen Live TV channels and guide sections, or for all films and series",
-                !lockOn
-                    ? "Off"
-                    : ParentalLock.filmsLocked(activity)
-                      ? "On \u00b7 films and series locked"
-                      : "On",
-                lockOn,
-                "Manage",
-                () -> activity.liveTv.panels.parentalLock(this::settings)
-            );
-            settingCard(
-                body,
-                "Troubleshooting",
-                "Speed test, connection checks, playback timings and recent errors",
+                HelpPage.TITLE,
+                "Checks this box for problems you can fix yourself, each with its fix",
                 null,
                 false,
-                "Open",
-                activity.troubleshooting::show
+                "Check",
+                activity.help::show
             );
             settingCard(
                 body,
@@ -735,21 +712,6 @@ final class SettingsScreens {
                 false,
                 "Read",
                 () -> SafetyNotice.show(activity)
-            );
-            settingCard(
-                body,
-                "Metadata",
-                "Uses the TMDB API but is not endorsed or certified by TMDB",
-                null,
-                false,
-                "Details",
-                () ->
-                    SidePanel.of(activity, "Metadata attribution")
-                        .message(
-                            "The Movie Database (TMDB)\nhttps://www.themoviedb.org\n\nMetadata is separate from your playback sources."
-                        )
-                        .action("Close", null)
-                        .show()
             );
         }
         activity.settingsStyle(body);

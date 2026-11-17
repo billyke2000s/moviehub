@@ -228,14 +228,11 @@ public class TvNavigationTest {
         instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         instrumentation.waitForIdleSync();
         instrumentation.runOnMainSync(() -> {
-            for (String category : new String[] {
-                "Search",
-                "Browse",
-                "Filters",
-                "Library",
-                "Trending today",
-            })
+            for (String category : new String[] { "Search", "Browse", "Trending today" })
                 assertFullyVisible(category);
+            // One Browse sheet; the Library moved to Settings → Setup.
+            assertNull(text(root(), "Filters"));
+            assertNull(text(root(), "Library"));
         });
         screenshot("movies");
         select("Browse");
@@ -265,7 +262,9 @@ public class TvNavigationTest {
                 countInputs(activity.getWindow().getDecorView())
             );
             assertFullyVisible("Xtream");
-            assertFullyVisible("Premiumize");
+            assertFullyVisible("TMDB");
+            // Premiumize is in Settings → Setup: nobody in the family uses it.
+            assertNull(text(root(), "Premiumize"));
         });
         back();
         select("Live TV");
@@ -430,33 +429,23 @@ public class TvNavigationTest {
             instrumentation.runOnMainSync(() ->
                 assertNotNull("Remote opens the final genre", text(root(), "Western"))
             );
-            select("Filters");
+            // Browse again: the filters are part of the same sheet now (they were their own).
+            select("Browse");
             instrumentation.runOnMainSync(() -> {
                 for (String name : new String[] {
-                    "Years & decades",
+                    "Find something",
+                    "Show results",
+                    "Popular & new",
+                    "Genres",
+                    "More ways to browse",
                     "Languages",
-                    "Countries",
-                    "Streaming services",
-                    "Ratings",
-                    "Runtime",
-                    "Sort order",
-                    "Keywords & themes",
-                    "Studios",
                     "People",
-                    type.equals("movie") ? "Collections" : "Series types",
-                    type.equals("movie") ? "Release types" : "Series status",
                 })
-                    assertNotNull("Filter " + name, text(root(), name));
+                    assertNotNull("Browse " + name, text(root(), name));
+                for (String gone : new String[] { "Streaming services", "Countries", "Region" })
+                    assertNull("Removed from Browse: " + gone, text(root(), gone));
             });
             screenshot(kind.toLowerCase() + "-filters");
-            select(type.equals("movie") ? "Release types" : "Series types");
-            instrumentation.runOnMainSync(() ->
-                assertNotNull(
-                    "Media-specific categories",
-                    text(root(), type.equals("movie") ? "Digital releases" : "Miniseries")
-                )
-            );
-            back();
             back();
             back();
             // The grid was opened from the rows page, so Back returns there before Home.

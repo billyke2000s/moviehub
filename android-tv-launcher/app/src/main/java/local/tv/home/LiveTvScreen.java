@@ -564,7 +564,10 @@ final class LiveTvScreen {
         );
     }
 
-    /** Remote colour-key preferences, set by "Set up coloured buttons". */
+    /**
+     * Remote colour-key preferences, taught by the old "Set up coloured buttons" (removed: the
+     * colour keys are now always on-screen buttons). Keys taught before still work.
+     */
     static final String[] COLOUR_PREFS = { "remoteRed", "remoteGreen", "remoteYellow", "remoteBlue" };
     /**
      * Learned scan codes, for remotes whose colour buttons Android has no key name for (they
@@ -581,7 +584,7 @@ final class LiveTvScreen {
     /**
      * Which colour key this is ('r', 'g', 'y', 'b') or 0. Remotes send different codes for the
      * colour keys: the standard ones, F1–F4 on many air-mouse remotes, or whatever was taught in
-     * "Set up coloured buttons".
+     * the old "Set up coloured buttons".
      */
     char colour(int key) {
         return colour(activity.prefs, key);

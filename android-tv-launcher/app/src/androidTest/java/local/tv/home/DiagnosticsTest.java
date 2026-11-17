@@ -66,23 +66,25 @@ public class DiagnosticsTest {
     }
 
     @Test
-    public void troubleshootingKeepsTheSettingsSidebarAndReturnsToSystem() {
+    public void engineerViewKeepsTheSettingsSidebarAndReturnsToSetup() {
         remote.runOnMainSync(() -> activity.troubleshooting.show());
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
             View root = activity.getWindow().getDecorView();
-            for (String tab : new String[] { "Accounts", "Appearance", "Playback", "System" }) {
+            for (String tab : new String[] { "Accounts", "Appearance", "Playback", "System", "Setup" }) {
                 Button choice = button(root, tab);
                 assertNotNull("Settings navigation: " + tab, choice);
-                assertEquals(tab.equals("System"), choice.isSelected());
+                assertEquals(tab.equals("Setup"), choice.isSelected());
             }
+            assertTrue(shows(root, "Live TV player"));
+            assertTrue(shows(root, "Last film search"));
             button(root, "Back").performClick();
         });
         remote.waitForIdleSync();
         remote.runOnMainSync(() -> {
             View root = activity.getWindow().getDecorView();
-            assertTrue(button(root, "System").isSelected());
-            assertTrue(shows(root, "Automatic updates"));
+            assertTrue(button(root, "Setup").isSelected());
+            assertTrue(shows(root, "Engineer view"));
             button(root, "Appearance").performClick();
             assertTrue(shows(activity.getWindow().getDecorView(), "Look and feel"));
         });
@@ -91,6 +93,30 @@ public class DiagnosticsTest {
         remote.runOnMainSync(() -> {
             button(activity.getWindow().getDecorView(), "Playback").performClick();
             assertTrue(shows(activity.getWindow().getDecorView(), "Films and series"));
+        });
+    }
+
+    /** System → Help: the family's page, back to System; never a vague "something is wrong". */
+    @Test
+    public void helpPageListsOnlyFixableProblemsAndReturnsToSystem() {
+        remote.runOnMainSync(() -> activity.help.show());
+        remote.waitForIdleSync();
+        UiEvidence.capture("settings-help");
+        remote.runOnMainSync(() -> {
+            View root = activity.getWindow().getDecorView();
+            assertTrue(button(root, "System").isSelected());
+            assertTrue(shows(root, "Internet speed"));
+            assertFalse(shows(root, "Something is wrong"));
+            assertFalse("No technical log on the family page", shows(root, "Player event log"));
+            button(root, "Back").performClick();
+        });
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            View root = activity.getWindow().getDecorView();
+            assertTrue(button(root, "System").isSelected());
+            assertTrue(shows(root, "Automatic updates"));
+            assertTrue(shows(root, HelpPage.TITLE));
+            assertFalse("Troubleshooting moved to Setup", shows(root, "Troubleshooting"));
         });
     }
 

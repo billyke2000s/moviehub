@@ -105,27 +105,12 @@ final class CatalogueScreens {
                 activity.navigationButton("Search", () -> activity.catalogueSearch.searchCatalogue(kind)),
                 new LinearLayout.LayoutParams(activity.dp(88), activity.dp(36))
             );
+            // One Browse sheet (Browse and Filters were two). The Library button moved to
+            // Settings → Setup: links you added and Premiumize are the owner's.
             header.addView(
-                activity.navigationButton("Browse", () -> showOverlay("Browse categories", ":categories")),
+                activity.navigationButton("Browse", () -> showOverlay("Browse", ":categories")),
                 new LinearLayout.LayoutParams(activity.dp(100), activity.dp(36))
             );
-            header.addView(
-                activity.navigationButton("Filters", () -> showOverlay("Filters", ":filters")),
-                new LinearLayout.LayoutParams(activity.dp(88), activity.dp(36))
-            );
-            Button library = activity.navigationButton("Library", () -> {});
-            // Saved links always; the Premiumize cloud only with a Premiumize account connected.
-            library.setOnClickListener(v -> {
-                SidePanel panel = SidePanel.of(activity, "Your library").option("Links you added", () ->
-                    activity.libraryScreens.savedLibrary(libraryKind())
-                );
-                if (activity.secrets.has("premiumize")) panel
-                    .option("Premiumize cloud", () -> activity.cloudScreens.cloud("", libraryKind()))
-                    .option("Premiumize transfers", () -> activity.cloudScreens.transfers(libraryKind()));
-                else panel.message("Connect Premiumize in Settings \u2192 Accounts to see your cloud here.");
-                panel.show();
-            });
-            header.addView(library, new LinearLayout.LayoutParams(activity.dp(88), activity.dp(36)));
             header.addView(backButton, new LinearLayout.LayoutParams(activity.dp(72), activity.dp(36)));
             ViewGroup parent = (ViewGroup) activity.page.getParent();
             parent.removeView(activity.page);
@@ -139,23 +124,18 @@ final class CatalogueScreens {
             // artwork visible at the top right, as streaming apps do.
             View sideShade = new View(activity);
             sideShade.setBackground(
-                new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[] {
-                    0xf2090d14,
-                    0xb3090d14,
-                    0x33090d14,
-                    0x00090d14,
-                })
+                new GradientDrawable(
+                    GradientDrawable.Orientation.LEFT_RIGHT,
+                    new int[] { 0xf2090d14, 0xb3090d14, 0x33090d14, 0x00090d14 }
+                )
             );
             root.addView(sideShade, new FrameLayout.LayoutParams(-1, -1));
             View lowerShade = new View(activity);
             lowerShade.setBackground(
-                new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {
-                    0x66090d14,
-                    0x00090d14,
-                    0xaa090d14,
-                    0xff090d14,
-                    0xff090d14,
-                })
+                new GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[] { 0x66090d14, 0x00090d14, 0xaa090d14, 0xff090d14, 0xff090d14 }
+                )
             );
             root.addView(lowerShade, new FrameLayout.LayoutParams(-1, -1));
             activity.page.setBackgroundColor(Color.TRANSPARENT);
@@ -299,10 +279,7 @@ final class CatalogueScreens {
             TextView loading = activity.compactText("Loading titles…", 15);
             content.addView(loading);
             if (!activity.secrets.has("tmdb")) {
-                loading.setText("Connect TMDB to browse this catalogue");
-                content.addView(
-                    activity.button("Connect TMDB", () -> activity.settingsScreens.accountScreen("TMDB"))
-                );
+                loading.setText(NOT_SET_UP);
             } else {
                 feed = activity.posters.catalogueFeed(
                     content,
@@ -438,6 +415,12 @@ final class CatalogueScreens {
         }
         return activity.media.tmdb(path + (path.contains("?") ? "&" : "?") + "page=" + number);
     }
+
+    /**
+     * Shown to the family where films and series would be when TMDB is not connected. Connecting it
+     * is in Settings → Accounts, for whoever looks after the box, so there is no button here.
+     */
+    static final String NOT_SET_UP = "Films and series aren't set up on this box yet.";
 
     void catalogueMenu(String kind) {
         activity.libraryScreens.library(kind);

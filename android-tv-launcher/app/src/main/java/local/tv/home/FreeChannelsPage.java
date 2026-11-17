@@ -10,15 +10,16 @@ import java.text.DateFormat;
 import java.util.Date;
 
 /**
- * Settings → Free channels (its own sidebar tab): every free source in one place, in plain sections.
+ * Settings → Setup → Free channels (it was its own Settings tab): every free source in one place,
+ * in plain sections. The owner's page: the family never needs to change it.
  *
  * <ul>
  *   <li>Public channel lists (Free-TV and iptv-org): which country, and whether they stay when a TV
  *       provider is connected.
  *   <li>Free services (Pluto TV, FreeLiveSports and the provider-engine services): one card each,
  *       on or off, with how many channels came from it.
- *   <li>Advanced: hiding US-only services, the ZLive domain and provider packages. (Masqueradarr
- *       is with the other accounts, in Accounts.)
+ *   <li>Advanced: hiding US-only services, and resetting a ZLive address changed in an earlier
+ *       version. (Masqueradarr is in Setup, while connected.)
  * </ul>
  *
  * Only where the settings are shown changed; every preference keeps its key and meaning.
@@ -33,9 +34,10 @@ final class FreeChannelsPage {
         this.settings = activity.settingsScreens;
     }
 
-    /** The countries offered for the public lists, as FreeChannels preference values. */
-    /** The Settings sidebar tab this page fills. */
+    /** The page's title. */
     static final String TAB = "Free channels";
+
+    /** The countries offered for the public lists, as FreeChannels preference values. */
 
     static final String[][] REGIONS = {
         { "off", "Off" },
@@ -71,14 +73,14 @@ final class FreeChannelsPage {
         return 2 + ProviderBroker.IDS.length;
     }
 
-    /** Opens Settings on the Free channels tab. */
+    /** Opens the page, from Settings → Setup. */
     void show() {
         show(null);
     }
 
-    /** Opens Settings on the Free channels tab; {@code focusTitle} puts the remote on that card. */
+    /** Opens the page; {@code focusTitle} puts the remote on that card. Back returns to Setup. */
     void show(String focusTitle) {
-        LinearLayout body = settings.settingsLayout("Settings", activity.homeScreen::home, TAB);
+        LinearLayout body = settings.settingsLayout(TAB, settings::setup, SetupScreens.TAB);
         fill(body, focusTitle);
     }
 
@@ -144,7 +146,7 @@ final class FreeChannelsPage {
             settings.settingCard(
                 body,
                 "Channel lists",
-                "Free-to-air channels from the Free-TV and iptv-org lists",
+                "Free-to-air channels from public lists, by country",
                 regionLabel(choice),
                 !choice.equals("off"),
                 "Change",
@@ -160,12 +162,10 @@ final class FreeChannelsPage {
                 settings.settingCard(
                     body,
                     "With a TV provider",
-                    always
-                        ? "The lists stay when your Xtream or M3U account is connected"
-                        : "The lists are left out while your Xtream or M3U account is connected",
-                    always ? "Keep them" : "Leave them out",
+                    "Whether these channels stay when an Xtream or M3U account is connected",
+                    always ? "Kept" : "Left out",
                     always,
-                    always ? "Leave out" : "Keep",
+                    "Change",
                     () -> {
                         prefs
                             .edit()
@@ -240,37 +240,26 @@ final class FreeChannelsPage {
                 }
             )
         );
+        // The ZLive address and service updates were removed from this page. A ZLive address set
+        // in an earlier version is offered only to be reset, so it cannot stay stuck.
         String domain = prefs.getString("engineZliveDomain", "");
-        track(
+        if (!domain.isEmpty()) track(
             focus,
             focusTitle,
             "ZLive address",
             settings.settingCard(
                 body,
                 "ZLive address",
-                "Only change this if ZLive moves to a new web address",
-                domain.isEmpty() ? "Default" : domain,
+                "Changed by hand in an earlier version. Reset to use ZLive's normal address",
+                domain,
                 false,
-                "Change",
-                () -> zliveDomain(domain)
-            )
-        );
-        boolean trust = ProviderPackages.configured(activity);
-        boolean auto = prefs.getBoolean("providerAutoUpdates", true);
-        track(
-            focus,
-            focusTitle,
-            "Service updates",
-            settings.settingCard(
-                body,
-                "Service updates",
-                trust
-                    ? "Signed updates to the free services, checked when channels refresh"
-                    : "Not available until a signing key is set up",
-                trust ? (auto ? "Automatic" : "Off") : "Not set up",
-                trust && auto,
-                "Manage",
-                () -> packages(trust, auto)
+                "Reset",
+                () -> {
+                    prefs.edit().remove("engineZliveDomain").apply();
+                    AdapterSources.invalidate();
+                    ChannelSync.refreshNow(activity);
+                    show();
+                }
             )
         );
         activity.settingsStyle(body);
@@ -366,93 +355,5 @@ final class FreeChannelsPage {
                 show("Channel lists");
             })
             .show();
-    }
-
-    private void packages(boolean trust, boolean auto) {
-        if (!trust) {
-            SidePanel.of(activity, "Service updates")
-                .message(
-                    "Updates to the free services are not set up in this version of MovieHub. " +
-                        "The services keep working with the version built into the app."
-                )
-                .action("Close", null)
-                .show();
-            return;
-        }
-        SidePanel panel = SidePanel.of(activity, "Service updates");
-        if (trust) panel.option(auto ? "Automatic updates · On" : "Automatic updates · Off", () -> {
-            activity.prefs.edit().putBoolean("providerAutoUpdates", !auto).apply();
-            show("Service updates");
-        });
-        panel
-            .option("Check for updates now", () -> {
-                if (!ProviderPackages.configured(activity)) {
-                    activity.toast("Updates are not set up");
-                    return;
-                }
-                activity.async(() -> {
-                    ProviderUpdates.check(activity, true);
-                    return "Update check finished";
-                }, activity::toast);
-            })
-            .option("Go back to the previous version", () ->
-                activity.async(
-                    () -> {
-                        ProviderPackages.rollback(activity);
-                        return "Previous version restored; automatic updates paused";
-                    },
-                    message -> {
-                        activity.toast(message);
-                        show("Service updates");
-                    }
-                )
-            )
-            .option("Show version", () ->
-                activity.async(
-                    () -> ProviderPackages.current(activity).getLong("version"),
-                    version -> activity.toast("Service package version " + version)
-                )
-            )
-            .message("Going back keeps your channels and favourites.")
-            .show();
-    }
-
-    private void zliveDomain(String domain) {
-        LinearLayout form = activity.vertical();
-        android.widget.EditText field = activity.field(form, "Web address (optional)", false, domain);
-        android.app.Dialog dialog = activity.form("ZLive address", form);
-        form.addView(
-            activity.button("Save", () -> {
-                try {
-                    String value = field.getText().toString().trim().toLowerCase(java.util.Locale.ROOT);
-                    if (!value.isEmpty()) {
-                        java.net.URI u = java.net.URI.create(
-                            ProviderUrls.playback(value.contains("://") ? value : "https://" + value)
-                        );
-                        if (
-                            u.getUserInfo() != null ||
-                            u.getPort() != -1 ||
-                            u.getQuery() != null ||
-                            u.getFragment() != null ||
-                            !(u.getPath().isEmpty() || u.getPath().equals("/"))
-                        ) throw new IllegalArgumentException();
-                        value = u.getHost();
-                        if (
-                            !value.matches("(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z][a-z0-9-]+") ||
-                            value.endsWith(".local") ||
-                            value.endsWith(".localhost")
-                        ) throw new IllegalArgumentException();
-                    }
-                    activity.prefs.edit().putString("engineZliveDomain", value).apply();
-                    AdapterSources.invalidate();
-                    ChannelSync.refreshNow(activity);
-                    dialog.dismiss();
-                    show("ZLive address");
-                } catch (Exception e) {
-                    activity.toast("Enter an HTTPS address without an account, port or path");
-                }
-            })
-        );
-        form.addView(activity.button("Cancel", dialog::dismiss));
     }
 }

@@ -14,7 +14,7 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * {@link ExoLive}'s event log (Options → Player event log): the decoder, video formats, quality
+ * {@link ExoLive}'s event log (Settings → Setup → Engineer view; plain words in Options): the decoder, video formats, quality
  * switches, dropped frames, errors, and the picture stopping while the sound plays on. It only
  * records; it never repairs. Main thread only.
  */
@@ -46,6 +46,23 @@ final class ExoLiveLog {
         if (log.isEmpty()) return "Nothing recorded yet.";
         StringBuilder text = new StringBuilder();
         for (String line : log) text.append(line).append('\n');
+        return text.toString().trim();
+    }
+
+    /**
+     * Up to {@code count} recent events in plain words, newest first, each with its time; technical
+     * ones (decoders, formats, frame counts) are left out. For the player's "What's happening".
+     */
+    static String plainEvents(int count) {
+        StringBuilder text = new StringBuilder();
+        int added = 0;
+        for (String line : log) {
+            int split = line.indexOf("  ");
+            String plain = split < 0 ? null : PlainWords.liveEvent(line.substring(split + 2));
+            if (plain == null) continue;
+            text.append(line, 0, Math.min(5, split)).append("  ").append(plain).append('\n');
+            if (++added == count) break;
+        }
         return text.toString().trim();
     }
 

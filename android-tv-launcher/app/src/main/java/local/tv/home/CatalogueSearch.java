@@ -53,7 +53,7 @@ final class CatalogueSearch {
                     return;
                 }
                 if (!activity.secrets.has("tmdb")) {
-                    activity.settingsScreens.accountScreen("TMDB");
+                    query.setError(CatalogueScreens.NOT_SET_UP);
                     return;
                 }
                 entityResults(found, kind, entity, value, 1);
@@ -266,13 +266,7 @@ final class CatalogueSearch {
             clear();
             activity.destination = () -> searchCatalogue(kind, value);
             if (testSource == null && !activity.secrets.has("tmdb")) {
-                activity.emptyState(
-                    results,
-                    "Connect TMDB",
-                    "Search uses TMDB. Add your free API key to search movies, series and people.",
-                    "Connect TMDB",
-                    () -> activity.settingsScreens.accountScreen("TMDB")
-                );
+                activity.emptyState(results, "Not set up yet", CatalogueScreens.NOT_SET_UP, null, null);
                 return;
             }
             emptyRows = 0;

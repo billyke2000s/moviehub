@@ -89,16 +89,17 @@ final class HomeScreen {
         heading.setEllipsize(android.text.TextUtils.TruncateAt.END);
         copy.addView(heading);
         TextView summary = activity.compactText(
-            activity.secrets.has("tmdb")
-                ? "Choose a title below"
-                : "Connect TMDB to browse movies and series",
+            activity.secrets.has("tmdb") ? "Choose a title below" : CatalogueScreens.NOT_SET_UP,
             14
         );
         summary.setMaxLines(2);
         summary.setEllipsize(android.text.TextUtils.TruncateAt.END);
         summary.setShadowLayer(activity.dp(4), 0, activity.dp(1), 0xcc000000);
         copy.addView(summary);
-        Button open = activity.button("Connect TMDB", () -> activity.settingsScreens.accountScreen("TMDB"));
+        // "View details" once a title is chosen. Without TMDB there is nothing to open: connecting
+        // it is in Settings → Accounts, for whoever looks after the box.
+        Button open = activity.button("View details", () -> {});
+        if (!activity.secrets.has("tmdb")) open.setVisibility(View.GONE);
         // The standard button style, sized to its label rather than a long fixed width.
         open.setPadding(activity.dp(20), activity.dp(5), activity.dp(20), activity.dp(5));
         LinearLayout.LayoutParams openLayout = new LinearLayout.LayoutParams(-2, activity.dp(36));
@@ -121,7 +122,7 @@ final class HomeScreen {
             TextView loading = activity.compactText("Loading titles…", 14);
             posterHost.addView(loading);
             if (!activity.secrets.has("tmdb")) {
-                loading.setText("Connect TMDB in Settings to see artwork and recommendations.");
+                loading.setText(CatalogueScreens.NOT_SET_UP);
                 return;
             }
             shelf.load(path, pageNumber ->
@@ -265,6 +266,7 @@ final class HomeScreen {
             summary.setText(item.optString("overview", ""));
             open.setText("View details");
             open.setOnClickListener(v -> activity.posters.tmdbTitle(item));
+            open.setVisibility(View.VISIBLE); // hidden until there is a title to open
             String art = item.optString("backdrop_path");
             if (pendingArt != null) activity.handler.removeCallbacks(pendingArt);
             pendingArt = () -> {
