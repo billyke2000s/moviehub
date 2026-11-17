@@ -18,6 +18,12 @@ Implemented resolver updates:
   and clear file/DASH formats use the existing transport and media checks.
 - Fshare: Phisher's IMDb catalogue lookup and advertised watch-page links, current .co origin,
   broader player-token syntax and the current default trailer identifier.
+- VaPlayer: send TMDB IDs to the current API, retain exact season/episode numbers and
+  stop requiring an IMDb identifier for a TMDB-based lookup. Its pending playback flag remains.
+- Peachify: current .pro/none.eat-peach hosts, Firefox request profile and current AES-GCM
+  format key. An independent Node crypto vector catches the old one-byte key mismatch.
+- Multimovies: current `/search?q=` poster cards and `server-chip` buttons, with title/year,
+  same-origin and exact-episode guards; retain compatible API/watchConfig/Doo fallbacks.
 - Cinejoy and AllMovieLand: current upstream origins, keeping existing protocol/transport guards.
 - ResolveURL: eleven current free-host modules (ten replacements plus PeeStream), including
   Byse, Vidzy, StreamWish, Streamix, Mixdrop, FireStream, VOE and Abyss. The account-based
@@ -40,7 +46,7 @@ coverage, not that its remote providers produced working streams. The current wo
 resolve provider DNS, so live results must come from the GitHub runners; local DNS failures are
 not evidence that these providers are closed.
 
-Local checks: **161 Python tests** and all **34 Java core suites** pass. The earlier Android
+Local checks: **164 Python tests** and all **34 Java core suites** pass. The earlier Android
 build/lint job stopped on pre-existing Java formatting differences; the two files are formatted
 in a separate formatting-only commit. Prior device and signing checks passed, but this follow-up
 requires new CI results. No merge or APK publication is performed.

@@ -40,6 +40,8 @@ class CineStreamTests(unittest.TestCase):
                 rows = provider.sources(self.key(provider, series), [])
             args = parse_qs(urlparse(request.call_args.args[0]).query)
             self.assertEqual(args['type'], ['tv' if series else 'movie'])
+            self.assertEqual(args['tmdb'], ['123'])
+            self.assertNotIn('imdb', args)
             self.assertEqual(args.get('season'), ['2'] if series else None)
             self.assertEqual(args.get('episode'), ['3'] if series else None)
             self.assertIn('Referer=https%3A%2F%2Fnextgencloudfabric.com%2F', rows[0]['url'])
@@ -323,10 +325,10 @@ class CineStreamTests(unittest.TestCase):
         from moviehub_native.cinestream_embeds import Multimovies
         provider = Multimovies()
         page = '<ul id="playeroptionsul"><li data-post="12" data-nume="trailer" data-type="tv"></li><li data-post="12" data-nume="1" data-type="tv"></li></ul>'
-        with patch.object(client, 'request', side_effect=[{}, page, {'embed_url': '<iframe src="https://cdn.example/master.m3u8"></iframe>'}]) as request:
+        with patch.object(client, 'request', side_effect=['', {}, page, {'embed_url': '<iframe src="https://cdn.example/master.m3u8"></iframe>'}]) as request:
             rows = provider.sources(self.key(provider, True), [])
-        self.assertEqual(request.call_count, 3)
-        self.assertTrue(request.call_args_list[1].args[0].endswith('/episodes/a-film-2x3/'))
+        self.assertEqual(request.call_count, 4)
+        self.assertTrue(request.call_args_list[2].args[0].endswith('/episodes/a-film-2x3/'))
         self.assertEqual(request.call_args.kwargs['post'], dict(action='doo_player_ajax', post='12', nume='1', type='tv'))
         self.assertIn('Referer=https%3A%2F%2Fm1.multimovies.courses%2Fepisodes%2Fa-film-2x3%2F', rows[0]['url'])
 
@@ -538,9 +540,9 @@ class CineStreamTests(unittest.TestCase):
         self.assertEqual(rows[0]['info'], 'English')
 
     def test_tmdb_routes_do_not_require_an_unrelated_imdb_identifier(self):
-        for cls in (api.Meowtv, api.PrimeSrc, api.Videasy):
+        for cls in (api.Meowtv, api.PrimeSrc, api.Videasy, api.VaPlayer):
             self.assertIsNotNone(cls().movie('', '123', 'A Film', 'A Film', [], '2020'))
-        for cls in (api.VaPlayer, api.Fshare, api.AllMovieLand, sites.Akwam):
+        for cls in (api.Fshare, api.AllMovieLand, sites.Akwam):
             self.assertIsNone(cls().movie('', '123', 'A Film', 'A Film', [], '2020'))
 
     def test_source_metadata_is_advertised_not_selected_or_measured_audio(self):
@@ -559,7 +561,7 @@ class CineStreamTests(unittest.TestCase):
             config = dict(season=2, episode=episode, initialServers=[
                 dict(name='Real backend', type='iframe', url='https://host.example/e/1')])
             page = 'const watchConfig = ' + json.dumps(config) + ';'
-            with patch.object(client, 'request', side_effect=[search, page]) as request:
+            with patch.object(client, 'request', side_effect=['', search, page]) as request:
                 rows = provider.sources(self.key(provider, True), [])
             self.assertEqual(len(rows), expected)
             self.assertTrue(request.call_args.args[0].endswith('/series/a-film-99/season/2/episode/3'))

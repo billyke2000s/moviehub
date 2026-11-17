@@ -118,11 +118,10 @@ class Base:
 
 
 class VaPlayer(Base):
-    requires_imdb = True
     base_link = 'https://streamdata.vaplayer.ru'
 
     def extract(self, q):
-        args = dict(imdb=q['imdb'], type='tv' if 'season' in q else 'movie')
+        args = dict(tmdb=q['tmdb'], type='tv' if 'season' in q else 'movie')
         if 'season' in q:
             args.update(season=q['season'], episode=q['episode'])
         headers = {'Referer': 'https://nextgencloudfabric.com/', 'User-Agent': USER_AGENT}

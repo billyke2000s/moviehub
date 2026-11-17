@@ -42,7 +42,7 @@ jobs:
       matrix:
         route:
           - {
-              provider: "native:vidzee,native:moviebox,native:fshare,native:cinejoy,native:allmovieland,native:rive",
+              provider: "native:vidzee,native:moviebox,native:fshare,native:cinejoy,native:allmovieland,native:rive,native:peachify,native:multimovies,native:vaplayer",
               names: "",
             }
           - { provider: "native:videasy", names: "Vidy Vegas,Vidy Phoenix" }

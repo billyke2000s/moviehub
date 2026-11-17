@@ -35,7 +35,7 @@ for group, module in ((_CINESTREAM, 'cinestream_api'), (_CATALOGUES, 'cinestream
 
 for name, factory, site, module in (
     ('vidrock', 'Vidrock', 'vidrock.ru', 'cinestream_crypto'),
-    ('peachify', 'Peachify', 'peachify.top', 'cinestream_crypto'),
+    ('peachify', 'Peachify', 'peachify.pro', 'cinestream_crypto'),
     ('vidzee', 'Vidzee', 'player.vidzee.wtf', 'cinestream_crypto'),
     ('moviebox', 'MovieBox', 'h5-api.aoneroom.com', 'cinestream_moviebox'),
 ):
