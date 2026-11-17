@@ -41,7 +41,10 @@ Implemented resolver updates:
 
 The machine-readable [whole-inventory comparison](UPSTREAM_RESOLVER_COMPARISON_2026_11_17.json)
 records every adapter and all 237 bundled host modules, candidate implementations, hashes,
-selection/retention reasons and unresolved cases. All 59 Scrubs originals match the currently
+selection/retention reasons and unresolved cases. Line-history dates and commits are recorded for all
+39 corresponding CSX function spans. Those dates include nonfunctional edits; the public
+Phisher repository supplies compiled builds without individual function history, so its
+package timestamp is not substituted for a missing function date. All 59 Scrubs originals match the currently
 published official 5.1.42 package. The official Free99 repository no longer publishes its add-on;
 its nine last-known modules remain recorded instead of being claimed current or working.
 

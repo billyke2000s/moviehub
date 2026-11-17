@@ -1238,6 +1238,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invoke4khdhub",
+          "functionHistoryCommit": "71074713cc19924d883ec583f6344d062172eae6",
+          "functionHistoryLines": [
+            1931,
+            2000
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-05-03T12:39:57+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1313,6 +1321,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeVaPlayer",
+          "functionHistoryCommit": "0d74bfc77013450aac51be7f5183f1d8ed5ce588",
+          "functionHistoryLines": [
+            3405,
+            3439
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-07-28T22:13:18+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1339,6 +1355,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokePrimeSrc",
+          "functionHistoryCommit": "1c835ccf74c9e60669f56d5b7cfbd6a28c4d7431",
+          "functionHistoryLines": [
+            2383,
+            2413
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-04-06T15:44:59+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         }
@@ -1358,6 +1382,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeFshare",
+          "functionHistoryCommit": "be09d39b1473a0f365b527b08070890c4a49a744",
+          "functionHistoryLines": [
+            3441,
+            3495
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-07-02T11:28:24+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1384,11 +1416,26 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeVideasy",
+          "functionHistoryCommit": "0d74bfc77013450aac51be7f5183f1d8ed5ce588",
+          "functionHistoryLines": [
+            696,
+            795
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-07-28T22:13:18+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
         {
           "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "a5ebbeb40946368a620585d178f99db92885885528527d4222e86d6c27c2a541",
+          "function": "invokeVideasy",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        },
+        {
+          "comparison": "separate Vidy protocol retained only as fallback; not the current Videasy function",
           "compiledMethodSha256": "0d1b5f92a4934ddb274cd1eb51a1cc3181444b3ef20d86f7be630e55f2435586",
           "function": "invokeVidy",
           "repository": "phisher98/cloudstream-extensions-phisher",
@@ -1410,6 +1457,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeMeowtv",
+          "functionHistoryCommit": "e3c32667a4c1f984635b31b52ef6cf0e89c2bd20",
+          "functionHistoryLines": [
+            3732,
+            3787
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-09-01T12:06:34+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         }
@@ -1429,6 +1484,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeVidup",
+          "functionHistoryCommit": "0d74bfc77013450aac51be7f5183f1d8ed5ce588",
+          "functionHistoryLines": [
+            4435,
+            4541
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-07-28T22:13:18+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1455,6 +1518,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeVidcore",
+          "functionHistoryCommit": "6991f379e3cb82a1402896208befef674d950b67",
+          "functionHistoryLines": [
+            3222,
+            3296
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-08-22T13:04:48+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         }
@@ -1474,6 +1545,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeVidFastPro",
+          "functionHistoryCommit": "e3c32667a4c1f984635b31b52ef6cf0e89c2bd20",
+          "functionHistoryLines": [
+            3133,
+            3220
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-09-01T12:06:34+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1500,6 +1579,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeOnetouchtv",
+          "functionHistoryCommit": "0d74bfc77013450aac51be7f5183f1d8ed5ce588",
+          "functionHistoryLines": [
+            1184,
+            1255
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-07-28T22:13:18+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         }
@@ -1519,6 +1606,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeCinejoy",
+          "functionHistoryCommit": "7aa846c70a48c2833b635de2986ee3f81781b4b6",
+          "functionHistoryLines": [
+            4087,
+            4215
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-09-08T12:05:10+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1545,6 +1640,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeHexa",
+          "functionHistoryCommit": "035bba3e1cf6a93bc844cc00e1d9a5dc2c14c09a",
+          "functionHistoryLines": [
+            797,
+            858
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-05-11T12:07:07+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1571,6 +1674,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeProjectfreetv",
+          "functionHistoryCommit": "65d5ca926be526ef3d3857ab14e7def16b73f084",
+          "functionHistoryLines": [
+            2415,
+            2460
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-03-03T12:55:10+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         }
@@ -1590,6 +1701,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeAkwam",
+          "functionHistoryCommit": "92584daf792c02810f8683077db59ad4b538b2e1",
+          "functionHistoryLines": [
+            276,
+            359
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-02-23T12:26:50+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         }
@@ -1609,6 +1728,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeAsiaflix",
+          "functionHistoryCommit": "876ab188bab53223e7b1b40f9af0d13de9eeebe1",
+          "functionHistoryLines": [
+            1003,
+            1068
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-04-18T13:16:41+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1635,6 +1762,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeVidrock",
+          "functionHistoryCommit": "6b7f94d098bcc1a99585c287a2b3242fa212f4e1",
+          "functionHistoryLines": [
+            3027,
+            3070
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-07-21T22:47:26+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1661,6 +1796,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokePeachify",
+          "functionHistoryCommit": "e3c32667a4c1f984635b31b52ef6cf0e89c2bd20",
+          "functionHistoryLines": [
+            3789,
+            3864
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-09-01T12:06:34+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1687,6 +1830,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeVidzee",
+          "functionHistoryCommit": "0d74bfc77013450aac51be7f5183f1d8ed5ce588",
+          "functionHistoryLines": [
+            2462,
+            2547
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-07-28T22:13:18+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1716,6 +1867,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeMoviebox",
+          "functionHistoryCommit": "d1569ecd950ca23c9a4e4fbb8a99f6bab55edba2",
+          "functionHistoryLines": [
+            2615,
+            2819
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-07-29T22:48:04+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1742,6 +1901,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeAllmovieland",
+          "functionHistoryCommit": "1d47e856bdbc0df746b8959f977fc8e5e631ac58",
+          "functionHistoryLines": [
+            1070,
+            1131
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-03-02T14:32:11+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1768,6 +1935,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeMultimovies",
+          "functionHistoryCommit": "6c08805280f69a2150d1a9d75f946477c157977a",
+          "functionHistoryLines": [
+            1787,
+            1833
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-08-04T16:40:04+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1794,6 +1969,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeToonstream",
+          "functionHistoryCommit": "1d47e856bdbc0df746b8959f977fc8e5e631ac58",
+          "functionHistoryLines": [
+            940,
+            966
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-03-02T14:32:11+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         }
@@ -1813,6 +1996,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeAnimesalt",
+          "functionHistoryCommit": "54fac6236ca2b79665407918d42c8a437dc29af8",
+          "functionHistoryLines": [
+            3647,
+            3700
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-05-08T12:08:15+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         }
@@ -1832,6 +2023,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeRtally",
+          "functionHistoryCommit": "65d5ca926be526ef3d3857ab14e7def16b73f084",
+          "functionHistoryLines": [
+            601,
+            650
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-03-03T12:55:10+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         }
@@ -1851,6 +2050,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeKisskh",
+          "functionHistoryCommit": "0d74bfc77013450aac51be7f5183f1d8ed5ce588",
+          "functionHistoryLines": [
+            1257,
+            1373
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-07-28T22:13:18+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1877,6 +2084,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeBollyflix",
+          "functionHistoryCommit": "0a63c497665f16c2dc979f01aa70c0987e261db5",
+          "functionHistoryLines": [
+            1701,
+            1741
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-07-18T12:42:28+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1903,6 +2118,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeTopMovies",
+          "functionHistoryCommit": "1d47e856bdbc0df746b8959f977fc8e5e631ac58",
+          "functionHistoryLines": [
+            2237,
+            2279
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-03-02T14:32:11+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1929,6 +2152,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeMoviesmod",
+          "functionHistoryCommit": "4f313a98a0dbcd9118b7018d0da623976c613374",
+          "functionHistoryLines": [
+            2281,
+            2296
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-03-16T22:27:16+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1955,6 +2186,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeMoviesdrive",
+          "functionHistoryCommit": "71074713cc19924d883ec583f6344d062172eae6",
+          "functionHistoryLines": [
+            2122,
+            2185
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-05-03T12:39:57+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -1981,6 +2220,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeUhdmovies",
+          "functionHistoryCommit": "0a63c497665f16c2dc979f01aa70c0987e261db5",
+          "functionHistoryLines": [
+            2187,
+            2235
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-07-18T12:42:28+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -2007,6 +2254,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeDudefilms",
+          "functionHistoryCommit": "86958c93c9935db178a5fc5b15d5135fec07e609",
+          "functionHistoryLines": [
+            3072,
+            3131
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-04-15T12:33:16+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -2033,6 +2288,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeVegamovies",
+          "functionHistoryCommit": "65d5ca926be526ef3d3857ab14e7def16b73f084",
+          "functionHistoryLines": [
+            2075,
+            2120
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-03-03T12:55:10+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -2078,6 +2341,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeHindmoviez",
+          "functionHistoryCommit": "e9ecb1991c0469938f2d7a8aa8646e4da06a607a",
+          "functionHistoryLines": [
+            1133,
+            1182
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-05-12T12:20:00+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -2104,6 +2375,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeHdhub4u",
+          "functionHistoryCommit": "7aa846c70a48c2833b635de2986ee3f81781b4b6",
+          "functionHistoryLines": [
+            1835,
+            1929
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-09-08T12:05:10+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -2130,6 +2409,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeZinkmovies",
+          "functionHistoryCommit": "fb0fa054fbcdfe3cc2dac4c0ae0bf97af20b52bb",
+          "functionHistoryLines": [
+            2019,
+            2073
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-05-15T12:18:34+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
@@ -2156,6 +2443,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeFibwatch",
+          "functionHistoryCommit": "9f899882eb705ac9e965c879438ed41e91b00771",
+          "functionHistoryLines": [
+            4300,
+            4433
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-07-20T12:49:53+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         }
@@ -2175,6 +2470,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeMlsbd",
+          "functionHistoryCommit": "6816b0873010ae5d66528666567dee478bc434c5",
+          "functionHistoryLines": [
+            1743,
+            1785
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-06-27T22:22:19+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         }
@@ -2194,6 +2497,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeSkymovies",
+          "functionHistoryCommit": "e3c32667a4c1f984635b31b52ef6cf0e89c2bd20",
+          "functionHistoryLines": [
+            1405,
+            1482
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-09-01T12:06:34+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         }
@@ -2213,6 +2524,14 @@
           "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
           "comparison": "latest public CineStream source; per-function history available",
           "function": "invokeM4ufree",
+          "functionHistoryCommit": "e157ef621ab758137c00f74aa4b8b7762d53a62f",
+          "functionHistoryLines": [
+            3298,
+            3403
+          ],
+          "functionHistoryPath": "CineStream/src/main/kotlin/com/megix/CineStreamExtractors.kt",
+          "functionHistoryStatus": "git line history of current function span; includes nonfunctional edits, not a package date",
+          "functionLastTouched": "2026-04-17T11:28:55+05:30",
           "repository": "SaurabhKaperwan/CSX",
           "version": 487
         },
