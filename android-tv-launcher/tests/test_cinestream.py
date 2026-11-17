@@ -40,6 +40,8 @@ class CineStreamTests(unittest.TestCase):
                 rows = provider.sources(self.key(provider, series), [])
             args = parse_qs(urlparse(request.call_args.args[0]).query)
             self.assertEqual(args['type'], ['tv' if series else 'movie'])
+            self.assertEqual(args['tmdb'], ['123'])
+            self.assertNotIn('imdb', args)
             self.assertEqual(args.get('season'), ['2'] if series else None)
             self.assertEqual(args.get('episode'), ['3'] if series else None)
             self.assertIn('Referer=https%3A%2F%2Fnextgencloudfabric.com%2F', rows[0]['url'])
@@ -47,7 +49,7 @@ class CineStreamTests(unittest.TestCase):
 
     def test_videasy_independent_backends_survive_refusal_without_assumed_quality(self):
         from moviehub_native import movy
-        provider = api.Videasy()
+        provider = api.Vidy()
         seen = []
 
         def request(url, **kwargs):
@@ -81,7 +83,7 @@ class CineStreamTests(unittest.TestCase):
 
     def test_videasy_language_filters_and_diagnostic_subset(self):
         from moviehub_native import movy
-        provider = api.Videasy()
+        provider = api.Vidy()
         provider.cinestream_audit_backends = 'austin,delhi,boise'
         payload = {'sources': [{'url': 'https://cdn.example/' + language + '.m3u8', 'quality': language}
                                for language in ('English', 'Hindi', 'German')]}
@@ -219,8 +221,10 @@ class CineStreamTests(unittest.TestCase):
         page = "<input value='t' type='hidden' id='trailer'><script>Movie.setSource('token')</script>"
         data = {'data': {'file': {'sources': [dict(src='/a.mp4', quality='720')],
                                  'alternatives': [[dict(src='/b.mp4', quality='1080')]]}}}
-        with patch.object(client, 'request', side_effect=[page, data]):
+        with patch.object(client, 'request', side_effect=['<a href="/w/advertised-movie">Film</a>', page, data]) as request:
             rows = provider.sources(self.key(provider), [])
+        self.assertIn('/movie/tt1234', request.call_args_list[0].args[0])
+        self.assertIn('/w/advertised-movie', request.call_args_list[1].args[0])
         self.assertEqual(len(rows), 2)
         self.assertEqual({r['quality'] for r in rows}, {'720', '1080'})
         with patch.object(client, 'request') as request:
@@ -321,10 +325,10 @@ class CineStreamTests(unittest.TestCase):
         from moviehub_native.cinestream_embeds import Multimovies
         provider = Multimovies()
         page = '<ul id="playeroptionsul"><li data-post="12" data-nume="trailer" data-type="tv"></li><li data-post="12" data-nume="1" data-type="tv"></li></ul>'
-        with patch.object(client, 'request', side_effect=[{}, page, {'embed_url': '<iframe src="https://cdn.example/master.m3u8"></iframe>'}]) as request:
+        with patch.object(client, 'request', side_effect=['', {}, page, {'embed_url': '<iframe src="https://cdn.example/master.m3u8"></iframe>'}]) as request:
             rows = provider.sources(self.key(provider, True), [])
-        self.assertEqual(request.call_count, 3)
-        self.assertTrue(request.call_args_list[1].args[0].endswith('/episodes/a-film-2x3/'))
+        self.assertEqual(request.call_count, 4)
+        self.assertTrue(request.call_args_list[2].args[0].endswith('/episodes/a-film-2x3/'))
         self.assertEqual(request.call_args.kwargs['post'], dict(action='doo_player_ajax', post='12', nume='1', type='tv'))
         self.assertIn('Referer=https%3A%2F%2Fm1.multimovies.courses%2Fepisodes%2Fa-film-2x3%2F', rows[0]['url'])
 
@@ -415,7 +419,7 @@ class CineStreamTests(unittest.TestCase):
         with patch.object(client, 'request', side_effect=request):
             rows = provider.sources(self.key(provider, True), [])
         self.assertEqual([r['quality'] for r in rows], ['Auto', '2160p', '720p'])
-        self.assertTrue(all(parse_qs(r['url'].partition('|')[2]) == {'Referer': ['https://cinejoy.pk/']} for r in rows))
+        self.assertTrue(all(parse_qs(r['url'].partition('|')[2]) == {'Referer': ['https://cinejoy.to/']} for r in rows))
 
     def test_vidzee_cbc_response_headers_override_defaults_case_insensitively(self):
         import base64
@@ -536,9 +540,9 @@ class CineStreamTests(unittest.TestCase):
         self.assertEqual(rows[0]['info'], 'English')
 
     def test_tmdb_routes_do_not_require_an_unrelated_imdb_identifier(self):
-        for cls in (api.Meowtv, api.PrimeSrc, api.Videasy):
+        for cls in (api.Meowtv, api.PrimeSrc, api.Videasy, api.VaPlayer):
             self.assertIsNotNone(cls().movie('', '123', 'A Film', 'A Film', [], '2020'))
-        for cls in (api.VaPlayer, api.Fshare, api.AllMovieLand, sites.Akwam):
+        for cls in (api.Fshare, api.AllMovieLand, sites.Akwam):
             self.assertIsNone(cls().movie('', '123', 'A Film', 'A Film', [], '2020'))
 
     def test_source_metadata_is_advertised_not_selected_or_measured_audio(self):
@@ -557,7 +561,7 @@ class CineStreamTests(unittest.TestCase):
             config = dict(season=2, episode=episode, initialServers=[
                 dict(name='Real backend', type='iframe', url='https://host.example/e/1')])
             page = 'const watchConfig = ' + json.dumps(config) + ';'
-            with patch.object(client, 'request', side_effect=[search, page]) as request:
+            with patch.object(client, 'request', side_effect=['', search, page]) as request:
                 rows = provider.sources(self.key(provider, True), [])
             self.assertEqual(len(rows), expected)
             self.assertTrue(request.call_args.args[0].endswith('/series/a-film-99/season/2/episode/3'))
@@ -626,7 +630,7 @@ class CineStreamTests(unittest.TestCase):
 
     def test_vidy_renditions_preserve_origin_and_external_audio_contract(self):
         from moviehub_native import movy
-        provider = api.Videasy()
+        provider = api.Vidy()
         provider.cinestream_audit_backends = 'phoenix'
         payload = {'sources': [dict(url='https://cdn.example/master.m3u8', quality='Streamwish')]}
         body = '#EXTM3U\n#EXT-X-STREAM-INF:RESOLUTION=1280x720,CODECS="avc1,mp4a"\n720.m3u8'

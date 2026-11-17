@@ -1,0 +1,37 @@
+name: Every bundled VOD adapter
+on:
+  pull_request:
+    paths:
+      - "android-tv-launcher/app/src/main/python/**"
+      - "android-tv-launcher/tests/audit-all-vod.py"
+      - ".github/workflows/all-vod-adapters.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        media: [movies, series]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests==2.32.5 six==1.17.0
+      - name: Record every adapter including exclusions and missing capabilities
+        run: |
+          set -o pipefail
+          python android-tv-launcher/tests/audit-all-vod.py \
+            --media '${{ matrix.media }}' --shard '${{ matrix.shard }}' --shards 8 \
+            | tee all-adapters.jsonl
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: all-vod-${{ matrix.media }}-${{ matrix.shard }}
+          path: all-adapters.jsonl
+          if-no-files-found: error

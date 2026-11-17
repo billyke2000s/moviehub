@@ -12,7 +12,7 @@ from resolveurl.lib import pyaes
 from .cinestream_api import Base, get, item, USER_AGENT, request
 
 VIDROCK_FORMAT_KEY = bytes.fromhex('7f3e9c2a8b5d1f4e6a9c3b7d2e5f8a1c4b6d9e2f5a8c1b4d7e9f2a5c8b1d4e7f')
-PEACHIFY_FORMAT_KEY = bytes.fromhex('a8f2a1b5e9c470814f6b2c3a5d8e7f9c1a2b3c4d5e3f7a8b8cad1e2d0a4d5c5d')
+PEACHIFY_FORMAT_KEY = bytes.fromhex('a8f2a1b5e9c470814f6b2c3a5d8e7f9c1a2b3c4d5e3f7a8b8cad1e2d0a4d5c5b')
 VIDZEE_FORMAT_KEY = base64.b64decode('QTdrUDl4TTJRdjhMcjROejFIdDZZYzNCdzVKZjBEc1U=')
 
 
@@ -50,12 +50,14 @@ class Vidrock(Base):
 
 
 class Peachify(Base):
-    base_link = 'https://peachify.top'
-    api = 'https://x.eat-peach.sbs'
+    base_link = 'https://peachify.pro'
+    api = 'https://none.eat-peach.sbs'
 
     def extract(self, q):
         headers = dict(self.headers(), Origin=self.base_link, **{'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'})
+            'Mozilla/5.0 (X11; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0',
+            'Accept': '*/*', 'Accept-Language': 'en-US,en;q=0.5',
+            'Sec-Fetch-Dest': 'empty', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'cross-site'})
         def backend(name):
             data = get(self.api + '/' + name + '/' + self.route(q), headers).get('data')
             if not isinstance(data, str):
@@ -86,8 +88,48 @@ class Peachify(Base):
 
 class Vidzee(Base):
     base_link = 'https://player.vidzee.wtf'
+    api = 'https://core.vidzee.wtf'
+
+    def current(self, q):
+        headers = dict(self.headers(), Origin=self.base_link)
+        route = self.route(q)
+        names = [('dcloud', 'Dcloud'), ('doppler', 'Doppler'), ('tik', 'TCloud'),
+                 ('ipcloud', 'IPcloud'), ('v6:English', 'English'), ('v6:Hindi', 'Hindi')]
+        try:
+            languages = get(self.api + '/streams/languages/' + route, headers).get('languages') or []
+            for language in languages[:8]:
+                if isinstance(language, str) and 0 < len(language) <= 48:
+                    names.append(('v4:' + language, 'Acme ' + language))
+        except Exception as error:
+            client.host_result('Vidzee languages', type(error).__name__)
+        def backend(pair):
+            name, label = pair
+            # The upstream API explicitly supports e=0 (plain JSON) and e=1
+            # (its browser WASM representation) for the same public stream.
+            url = self.api + '/streams/' + route + '?' + urlencode(dict(s=name, e=0))
+            response = get(url, headers)
+            if response.get('c'):
+                raise ValueError('Vidzee returned an unsupported encrypted representation')
+            url = response.get('url')
+            if not isinstance(url, str):
+                return
+            media_headers = dict(headers)
+            for key, value in (response.get('headers') or {}).items():
+                if isinstance(value, str) and key.casefold() in ('referer', 'origin', 'user-agent', 'accept'):
+                    media_headers = {k: v for k, v in media_headers.items() if k.casefold() != key.casefold()}
+                    media_headers[key] = value
+            yield item(url, media_headers, 'Vidzee ' + label,
+                       info=str(response.get('language') or ''))
+        yield from self.each(names, backend)
 
     def extract(self, q):
+        found = False
+        for stream in self.current(q):
+            found = True
+            yield stream
+        if found:
+            return
+        # Retain the CBC representation only for still-compatible older mirrors.
         def backend(number):
             args = dict(id=q['tmdb'], sr=number)
             if 'season' in q:

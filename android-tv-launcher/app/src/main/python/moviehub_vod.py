@@ -150,7 +150,7 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
         utils = importlib.import_module('moviehub_'+family+'.source_utils')
         utils._seen.websites = set()
         provider = getattr(importlib.import_module(record['module']), record.get('factory', 'source'))()
-        if record.get('factory'):
+        if record.get('factory') or record['family'] == 'native':
             provider.cinestream_audit = info.get('cinestreamAudit') is True
             if provider.cinestream_audit:
                 provider.cinestream_audit_backends = info.get('cinestreamAuditBackends', '')

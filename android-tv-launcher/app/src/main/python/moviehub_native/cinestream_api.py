@@ -118,11 +118,10 @@ class Base:
 
 
 class VaPlayer(Base):
-    requires_imdb = True
     base_link = 'https://streamdata.vaplayer.ru'
 
     def extract(self, q):
-        args = dict(imdb=q['imdb'], type='tv' if 'season' in q else 'movie')
+        args = dict(tmdb=q['tmdb'], type='tv' if 'season' in q else 'movie')
         if 'season' in q:
             args.update(season=q['season'], episode=q['episode'])
         headers = {'Referer': 'https://nextgencloudfabric.com/', 'User-Agent': USER_AGENT}
@@ -158,18 +157,25 @@ class PrimeSrc(Base):
 
 class Fshare(Base):
     requires_imdb = True
-    base_link = 'https://fsharetv.cc'
+    base_link = 'https://fsharetv.co'
 
     def extract(self, q):
         if 'season' in q:
             return
         slug = re.sub(r'[^a-z0-9]+', '-', (q['title'] + ' episode 1 ' + q['imdb']).lower()).strip('-')
         page_url = self.base_link + '/w/' + slug
+        try:
+            listing = request(self.base_link + '/movie/' + quote(q['imdb'], safe=''), headers=self.headers())
+            advertised = re.search(r'href=[\'\"](/w/[^\'\"]+)[\'\"]', listing)
+            if advertised:
+                page_url = urljoin(self.base_link, advertised[1])
+        except Exception as error:
+            client.host_result('Fshare catalogue', type(error).__name__)
         page = request(page_url)
-        token = re.search(r"Movie\.setSource\('([^']+)'", page)
+        token = re.search(r"(?:source_id|file_id|setSource)[\s=:(\'\"]+([^\'\")]+)", page, re.I)
         trailers = dom_parser.parse_dom(page, 'input', {'id': 'trailer'}, req='value')
-        trailer = trailers[0].attrs['value'] if trailers else None
-        if not token or trailer is None:
+        trailer = trailers[0].attrs['value'] if trailers else 'Png81APqcxU'
+        if not token:
             return
         data = get(self.base_link + '/api/file/' + quote(token[1], safe='') + '/source?' +
                    urlencode(dict(trailer=trailer, type='watch')))
@@ -179,7 +185,7 @@ class Fshare(Base):
             yield item(urljoin(self.base_link, row['src']), {'Referer': page_url, 'User-Agent': DESKTOP_138}, 'Fshare', str(row.get('quality') or ''))
 
 
-class Videasy(Base):
+class Vidy(Base):
     base_link = 'https://www.vidy.st'
     api = 'https://api.wecollege.net'
     # Boise and Miami are already provided by Movy. Keep its implementation intact.
@@ -226,6 +232,72 @@ class Videasy(Base):
             requested = set(audit.split(','))
             names = tuple(name for name in names if name in requested)
         yield from self.each(names, backend)
+
+
+class Videasy(Vidy):
+    """Phisher 711's Videasy service, with the compatible Vidy fallback."""
+    base_link = 'https://player.videasy.to'
+    current_api = 'https://api.speedracelight.com'
+    current_backends = (('Yoru', 'cdn', ''), ('Cypher', 'downloader2', ''),
+                        ('Breach', 'm4uhd', ''), ('Neon', 'vsrc', ''),
+                        ('Vyse', 'hdmovie', 'English'), ('Killjoy', 'meine', ''),
+                        ('Fade', 'hdmovie', 'Hindi'), ('Omen', 'lamovie', ''),
+                        ('Raze', 'superflix', ''))
+
+    def current(self, q):
+        names = self.current_backends
+        audit = getattr(self, 'cinestream_audit_backends', '')
+        if isinstance(audit, str) and audit:
+            requested = set(audit.casefold().split(','))
+            names = tuple(row for row in names if row[0].casefold() in requested)
+        if not names:
+            return
+        headers = dict(self.headers(), Origin=self.base_link, Accept='*/*', **{
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                          'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'})
+        seed = get(self.current_api + '/seed?' + urlencode(dict(mediaId=q['tmdb'])), headers)['seed']
+        if not isinstance(seed, str) or not seed.isascii() or len(seed) > 256:
+            raise ValueError('Invalid Videasy seed')
+
+        def backend(server):
+            name, endpoint, language = server
+            args = dict(title=quote(q['title'], safe=''), mediaType='tv' if 'season' in q else 'movie',
+                        year=q['year'], tmdbId=q['tmdb'], imdbId=q['imdb'], enc=2, seed=seed)
+            if 'season' in q:
+                args.update(episodeId=q['episode'], seasonId=q['season'])
+            if name == 'Killjoy':
+                args['language'] = 'german'
+            encrypted = request(self.current_api + '/' + endpoint + '/sources-with-title?' +
+                                urlencode(args), headers=headers)
+            decoded = post_json(DECODER + '/dec-videasy', dict(text=encrypted, id=int(q['tmdb']), seed=seed))
+            result = decoded.get('result') or {}
+            for row in result.get('sources', [])[:32]:
+                if not isinstance(row, dict) or row.get('drm'):
+                    continue
+                claim = str(row.get('quality') or '')
+                if language and claim != language:
+                    continue
+                quality = claim if re.fullmatch(r'(?:2160|1080|720|480|360)p', claim) else ''
+                label = 'Videasy ' + name
+                url = row.get('url')
+                if isinstance(url, str) and re.search(r'\.m3u8(?:$|\?)', url, re.I):
+                    for stream in hls_streams(url, self.base_link + '/', label, media_headers=headers):
+                        stream['info'] = claim if not quality else ''
+                        yield stream
+                else:
+                    yield item(url, headers, label, quality, info=claim if not quality else '')
+        yield from self.each(names, backend)
+
+    def extract(self, q):
+        found = False
+        try:
+            for row in self.current(q):
+                found = True
+                yield row
+        except Exception as error:
+            client.host_result('Videasy current API', type(error).__name__)
+        if not found:
+            yield from super().extract(q)
 
 
 class Meowtv(Base):
@@ -365,7 +437,7 @@ class OneTouchTv(Base):
 
 
 class Cinejoy(Base):
-    base_link = 'https://cinejoy.pk'
+    base_link = 'https://cinejoy.to'
     api = 'https://api.wing.st'
 
     def extract(self, q):
@@ -417,7 +489,7 @@ class Hexa(Base):
 
 class AllMovieLand(Base):
     requires_imdb = True
-    base_link = 'https://allmovieland.one'
+    base_link = 'https://allmovieland.io'
 
     def extract(self, q):
         script = request('https://allmovieland.link/player.js?v=60%20128')

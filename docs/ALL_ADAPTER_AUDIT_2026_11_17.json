@@ -1,0 +1,4807 @@
+{
+  "commit": "e774f3cecfea0dcecf87eb38a447db13115770cf",
+  "run": "https://github.com/billyke2000s/moviehub/actions/runs/44103491723",
+  "scope": "All 111 adapters for each media type. Source/media response validation, not decoded playback. MovieBox search nesting was corrected after this snapshot.",
+  "results": [
+    {
+      "adapter": "free99:anymovies_co",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 1,
+      "extracted": 3,
+      "rejected": 0,
+      "resolutionErrors": 2,
+      "unsupportedHosts": 0,
+      "seconds": 3.6,
+      "stage": "resolution",
+      "hostAttempts": [
+        {
+          "provider": "playmogo.com",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "mixdrop.ag",
+          "status": "complete"
+        },
+        {
+          "provider": "vidsrc.sh",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "vidfast.vc",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "primesrc.me",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "multiembed.mov",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "player.videasy.to",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "peachify.top",
+          "status": "unsupported_host"
+        }
+      ]
+    },
+    {
+      "adapter": "free99:bnwmovies_com",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.03,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "free99:fzmovies_live",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 4,
+      "extracted": 6,
+      "rejected": 0,
+      "resolutionErrors": 2,
+      "unsupportedHosts": 0,
+      "seconds": 40.27,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "direct",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "ita3w80y98.y9a8ua48mhss5ye.cyou",
+          "status": "complete"
+        },
+        {
+          "provider": "ik2mqisu1w.y9a8ua48mhss5ye.cyou",
+          "status": "complete"
+        }
+      ]
+    },
+    {
+      "adapter": "free99:levidia_ch",
+      "media": "movies",
+      "pending": false,
+      "status": "ConnectionError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 1,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 11.92,
+      "stage": "resolution",
+      "hostAttempts": [
+        {
+          "provider": "www.wootly.ch",
+          "status": "extracted"
+        }
+      ]
+    },
+    {
+      "adapter": "free99:my4hydra_top",
+      "media": "movies",
+      "pending": false,
+      "status": "gaierror",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.13,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "free99:naijavault_com",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 3.66,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "free99:seriesloaded_ng",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 3.23,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "free99:stagatv_com",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 2.94,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "free99:tvseries_in",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.05,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:akwam",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 1.34,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:allmovieland",
+      "media": "movies",
+      "pending": false,
+      "status": "http_404",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.73,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:animesalt",
+      "media": "movies",
+      "pending": false,
+      "status": "http_404",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.5,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:asiaflix",
+      "media": "movies",
+      "pending": true,
+      "status": "JSONDecodeError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.12,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:bollyflix",
+      "media": "movies",
+      "pending": false,
+      "status": "http_429",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 19,
+      "rejected": 10,
+      "resolutionErrors": 9,
+      "unsupportedHosts": 0,
+      "seconds": 42.19,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "Bollyflix · hydracker.com",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Bollyflix · rapidgator.net",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "Bollyflix · dailyuploads.net",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Bollyflix · clicknupload.click",
+          "status": "no_advertised_file_or_supported_terminal"
+        },
+        {
+          "provider": "Bollyflix · 1fichier.com",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Bollyflix · multiup.io",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "Bollyflix · nordvpn.com",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Bollyflix · vikingfile.com",
+          "status": "ReadTimeout"
+        },
+        {
+          "provider": "Bollyflix · vik1ngfile.site",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Bollyflix · linksmod.top",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Bollyflix · mixdrop.ag",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "Bollyflix · gofile.io",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "Bollyflix · megaup.net",
+          "status": "rejected_media"
+        }
+      ]
+    },
+    {
+      "adapter": "native:cinejoy",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.55,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "Cinejoy Light",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Cinejoy Lisbon",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Cinejoy Nebula",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Cinejoy Sirius",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Cinejoy Rigel",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Cinejoy Warsaw",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Cinejoy Munich",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Cinejoy Paris",
+          "status": "PermissionError"
+        }
+      ]
+    },
+    {
+      "adapter": "native:dudefilms",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 1.64,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:fibwatch",
+      "media": "movies",
+      "pending": false,
+      "status": "ValueError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.33,
+      "stage": "extraction",
+      "hostAttempts": [
+        {
+          "provider": "Fibwatch",
+          "status": "interaction_required"
+        }
+      ]
+    },
+    {
+      "adapter": "native:fourkhdhub",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.14,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "hubcloud.mov",
+          "status": "unsupported_host"
+        }
+      ]
+    },
+    {
+      "adapter": "native:fshare",
+      "media": "movies",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.37,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:hdhub4u",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 1,
+      "extracted": 1,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 22.92,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "HDHub4u · hubcdn.wiki",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HDHub4u · kamitor316opk.com",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HDHub4u · cryptonewz.online",
+          "status": "no_advertised_file_or_supported_terminal"
+        },
+        {
+          "provider": "HDHub4u · hubcloud.mov",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HDHub4u · hubdrive.blog",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HDHub4u · greenmotors.club",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HDHub4u · hdstream4u.com",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HDHub4u · hubstream.art",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HDHub4u · Stream File 1.08 GB",
+          "status": "complete"
+        }
+      ]
+    },
+    {
+      "adapter": "native:hexa",
+      "media": "movies",
+      "pending": false,
+      "status": "PermissionError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.03,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:hindmoviez",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 3,
+      "extracted": 3,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 33.26,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "HindMoviez · mvlink.blog",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HindMoviez · gdirect.online",
+          "status": "no_advertised_file_or_supported_terminal"
+        },
+        {
+          "provider": "HindMoviez · abc.jossattanuppoi-7552.workers.dev",
+          "status": "ReadTimeout"
+        },
+        {
+          "provider": "HindMoviez · abc.zollutroinoju-4636.workers.dev",
+          "status": "complete"
+        },
+        {
+          "provider": "HindMoviez · share.mauvevoumaja-7549.workers.dev",
+          "status": "complete"
+        },
+        {
+          "provider": "HindMoviez · share.quexipittoune-4659.workers.dev",
+          "status": "complete"
+        }
+      ]
+    },
+    {
+      "adapter": "native:kisskh",
+      "media": "movies",
+      "pending": false,
+      "status": "JSONDecodeError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.1,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:m4ufree_lat",
+      "media": "movies",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "native:meowtv",
+      "media": "movies",
+      "pending": false,
+      "status": "http_400",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 3.26,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "Meowtv dcloud",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Meowtv doppler",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Meowtv acme",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Meowtv tik",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Meowtv ipcloud",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Meowtv hindi",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Meowtv english",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Meowtv turkce",
+          "status": "ValueError"
+        }
+      ]
+    },
+    {
+      "adapter": "native:mlsbd",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 23.45,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "Mlsbd · mlsbd.co",
+          "status": "no_advertised_file_or_supported_terminal"
+        }
+      ]
+    },
+    {
+      "adapter": "native:moviebox",
+      "media": "movies",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 3.4,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:moviesdrive",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 4,
+      "extracted": 7,
+      "rejected": 3,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 23.49,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "MoviesDrive · cryptonewz.online",
+          "status": "no_advertised_file_or_supported_terminal"
+        },
+        {
+          "provider": "MoviesDrive · hubcloud.mov",
+          "status": "no_advertised_file_or_supported_terminal"
+        },
+        {
+          "provider": "MoviesDrive · pixel.rohitkiskk.workers.dev",
+          "status": "ValueError"
+        },
+        {
+          "provider": "MoviesDrive · hubcloud.fans",
+          "status": "ValueError"
+        },
+        {
+          "provider": "MoviesDrive · mdrive.lol",
+          "status": "ValueError"
+        },
+        {
+          "provider": "MoviesDrive · Stream File 543.76 MB",
+          "status": "complete"
+        },
+        {
+          "provider": "MoviesDrive · Stream File 1.08 GB",
+          "status": "complete"
+        },
+        {
+          "provider": "MoviesDrive · Pixeldrain",
+          "status": "complete"
+        },
+        {
+          "provider": "MoviesDrive · Stream PixelServer  2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "MoviesDrive · Stream File 3.37 GB",
+          "status": "rejected_media"
+        }
+      ]
+    },
+    {
+      "adapter": "native:moviesmod",
+      "media": "movies",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 1,
+      "rejected": 1,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 4.54,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "MoviesMod · driveseed.org",
+          "status": "ValueError"
+        },
+        {
+          "provider": "MoviesMod · cdn.video-gen.xyz",
+          "status": "ValueError"
+        },
+        {
+          "provider": "MoviesMod · en.thenaukriadda.in",
+          "status": "ValueError"
+        },
+        {
+          "provider": "MoviesMod · urlflix.xyz",
+          "status": "ValueError"
+        },
+        {
+          "provider": "MoviesMod · links.modpro.blog",
+          "status": "ValueError"
+        },
+        {
+          "provider": "MoviesMod · posts.modpro.blog",
+          "status": "ValueError"
+        },
+        {
+          "provider": "MoviesMod · Cloud Stream",
+          "status": "rejected_media"
+        }
+      ]
+    },
+    {
+      "adapter": "native:movy",
+      "media": "movies",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.29,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "Movy boise",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "Movy miami",
+          "status": "JSONDecodeError"
+        }
+      ]
+    },
+    {
+      "adapter": "native:multimovies",
+      "media": "movies",
+      "pending": false,
+      "status": "unsupported_host",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 6,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 6,
+      "seconds": 1.77,
+      "stage": "resolution",
+      "hostAttempts": [
+        {
+          "provider": "Multimovies Cineverse",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "Multimovies GD mirror",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "Multimovies Nexus",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "Multimovies Vidrift",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "Multimovies VIDOUT",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "Multimovies Vidbolt",
+          "status": "unsupported_host"
+        }
+      ]
+    },
+    {
+      "adapter": "native:onetouchtv",
+      "media": "movies",
+      "pending": false,
+      "status": "PermissionError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.54,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:peachify",
+      "media": "movies",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.35,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "Peachify multi",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "Peachify hr",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "Peachify holly",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "Peachify air",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "Peachify moviebox",
+          "status": "JSONDecodeError"
+        }
+      ]
+    },
+    {
+      "adapter": "native:primesrc",
+      "media": "movies",
+      "pending": true,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 2.65,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "PrimeSrc Filemoon",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Voe",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Dood",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Luluvdoo",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Streamtape",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Streamwish",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Mixdrop",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Vidmoly",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Savefiles",
+          "status": "JSONDecodeError"
+        }
+      ]
+    },
+    {
+      "adapter": "native:projectfreetv_sx",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 4,
+      "extracted": 18,
+      "rejected": 3,
+      "resolutionErrors": 8,
+      "unsupportedHosts": 2,
+      "seconds": 15.36,
+      "stage": "resolution",
+      "hostAttempts": [
+        {
+          "provider": "ProjectFreeTV",
+          "status": "complete"
+        }
+      ]
+    },
+    {
+      "adapter": "native:rive",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 7,
+      "extracted": 7,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 3.01,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "Primevids · dcloud",
+          "status": "complete"
+        },
+        {
+          "provider": "Citadel · English",
+          "status": "complete"
+        },
+        {
+          "provider": "Citadel · Tamil",
+          "status": "complete"
+        }
+      ]
+    },
+    {
+      "adapter": "native:rogmovies",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 1.42,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:rtally",
+      "media": "movies",
+      "pending": false,
+      "status": "rejected_media",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 6,
+      "rejected": 1,
+      "resolutionErrors": 2,
+      "unsupportedHosts": 3,
+      "seconds": 4.56,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "Rtally direct",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "Rtally filemoon",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "Rtally streamwish",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "Rtally vidhide",
+          "status": "rejected_media"
+        }
+      ]
+    },
+    {
+      "adapter": "native:skymovies",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 4,
+      "extracted": 6,
+      "rejected": 2,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 15.61,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "SkyMovies · howblogs.xyz",
+          "status": "ValueError"
+        },
+        {
+          "provider": "SkyMovies · hubcloud.mov",
+          "status": "ValueError"
+        },
+        {
+          "provider": "SkyMovies · tpead.net",
+          "status": "complete"
+        },
+        {
+          "provider": "SkyMovies · megaup.net",
+          "status": "rejected_media"
+        }
+      ]
+    },
+    {
+      "adapter": "native:toonstream",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 3.92,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:topmovies",
+      "media": "movies",
+      "pending": false,
+      "status": "gaierror",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.07,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:uhdmovies",
+      "media": "movies",
+      "pending": false,
+      "status": "http_404",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 3.83,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "UHDMovies · driveseed.org",
+          "status": "ValueError"
+        },
+        {
+          "provider": "UHDMovies · cdn.video-gen.xyz",
+          "status": "ValueError"
+        },
+        {
+          "provider": "UHDMovies · en.thenaukriadda.in",
+          "status": "ValueError"
+        }
+      ]
+    },
+    {
+      "adapter": "native:vaplayer",
+      "media": "movies",
+      "pending": true,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.47,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:vegamovies",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.91,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:vidcore",
+      "media": "movies",
+      "pending": false,
+      "status": "PermissionError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.78,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:videasy",
+      "media": "movies",
+      "pending": false,
+      "status": "JSONDecodeError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.19,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:vidfast",
+      "media": "movies",
+      "pending": false,
+      "status": "PermissionError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.63,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:vidrock",
+      "media": "movies",
+      "pending": false,
+      "status": "ConnectionError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 2.84,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:vidup",
+      "media": "movies",
+      "pending": false,
+      "status": "PermissionError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.9,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:vidzee",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 2,
+      "extracted": 6,
+      "rejected": 4,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 7.21,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "Vidzee tik",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "Vidzee Dcloud",
+          "status": "complete"
+        },
+        {
+          "provider": "Vidzee English",
+          "status": "complete"
+        },
+        {
+          "provider": "Vidzee Acme Hindi",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "Vidzee Acme English",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "Vidzee Acme Tamil",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "Vidzee Acme Telugu",
+          "status": "rejected_media"
+        }
+      ]
+    },
+    {
+      "adapter": "native:vixsrc",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 1,
+      "extracted": 1,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.8,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "VixCloud",
+          "status": "complete"
+        }
+      ]
+    },
+    {
+      "adapter": "native:zinkmovies",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 3.01,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:123movies_skin",
+      "media": "movies",
+      "pending": false,
+      "status": "gaierror",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.53,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:123moviestv_me",
+      "media": "movies",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.06,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:1movies_la",
+      "media": "movies",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.39,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:9pm_to",
+      "media": "movies",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.17,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:anymovies_co",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 1,
+      "extracted": 3,
+      "rejected": 0,
+      "resolutionErrors": 2,
+      "unsupportedHosts": 0,
+      "seconds": 5.88,
+      "stage": "resolution",
+      "hostAttempts": [
+        {
+          "provider": "playmogo.com",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "mixdrop.ag",
+          "status": "complete"
+        },
+        {
+          "provider": "vidsrc.sh",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "vidfast.vc",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "primesrc.me",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "multiembed.mov",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "player.videasy.to",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "peachify.top",
+          "status": "unsupported_host"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:bluray7_com",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.95,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:bnwmovies_com",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:bstsrs_one",
+      "media": "movies",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:cinebox_cc",
+      "media": "movies",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.07,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:couchtuner_show",
+      "media": "movies",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:doomovies_ga",
+      "media": "movies",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.11,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:dopebox_to",
+      "media": "movies",
+      "pending": false,
+      "status": "gaierror",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.02,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:filepursuit",
+      "media": "movies",
+      "pending": false,
+      "status": "requires_api_key",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:filmxy_pw",
+      "media": "movies",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.16,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:flixhq_to",
+      "media": "movies",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.08,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:flixwave_me",
+      "media": "movies",
+      "pending": false,
+      "status": "ConnectTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.24,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:gdriveplayer_us",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 1.22,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:gogoanime_bid",
+      "media": "movies",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:gogoanime_tel",
+      "media": "movies",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:gogoanimes_to",
+      "media": "movies",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:goojara_club",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.19,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:goojara_to",
+      "media": "movies",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.5,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:hdbest_net",
+      "media": "movies",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 5.05,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:himovies_top",
+      "media": "movies",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.06,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:iwaatch_com",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 2,
+      "extracted": 2,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 4.04,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "server2.iwaatch.com",
+          "status": "complete"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:levidia_ch",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 1.78,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:levidiamovies_club",
+      "media": "movies",
+      "pending": false,
+      "status": "http_523",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 1.02,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:library",
+      "media": "movies",
+      "pending": false,
+      "status": "local_library",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:m4ufree_se",
+      "media": "movies",
+      "pending": false,
+      "status": "ConnectTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 5.13,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:m4uhd_tv",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 1,
+      "extracted": 1,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 4.1,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "if9.ppzj-youtube.cfd",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "player.abyssplayer.com",
+          "status": "extracted"
+        },
+        {
+          "provider": "vidsrc.sh",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "abyssplayer.com",
+          "status": "complete"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:movie4u_live",
+      "media": "movies",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.33,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:movies2watch_tv",
+      "media": "movies",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.12,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:movies4fun_net",
+      "media": "movies",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.2,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:moviesnipipay_me",
+      "media": "movies",
+      "pending": false,
+      "status": "unsupported_host",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 13,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 13,
+      "seconds": 8.32,
+      "stage": "resolution",
+      "hostAttempts": [
+        {
+          "provider": "FileRock",
+          "status": "interaction_required"
+        },
+        {
+          "provider": "Mega",
+          "status": "interaction_required"
+        },
+        {
+          "provider": "Racaty",
+          "status": "interaction_required"
+        },
+        {
+          "provider": "Uptobox",
+          "status": "interaction_required"
+        },
+        {
+          "provider": "Subscene",
+          "status": "unsupported_host"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:myflixer_it",
+      "media": "movies",
+      "pending": false,
+      "status": "ValueError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 1.15,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:noxx_to",
+      "media": "movies",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:okmov_to",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.19,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:pressplay_top",
+      "media": "movies",
+      "pending": false,
+      "status": "http_404",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 2.28,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "vidnest.pro",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "vidsrc.sh",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "vidfast.pro",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "vidspark.to",
+          "status": "unsupported_host"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:projectfreetv_cyou",
+      "media": "movies",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.12,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:projectfreetv_lol",
+      "media": "movies",
+      "pending": false,
+      "status": "gaierror",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.26,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:putlocker_gives",
+      "media": "movies",
+      "pending": false,
+      "status": "ConnectTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.7,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:rarefilmm_com",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.95,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:series9movies_com",
+      "media": "movies",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.14,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:series9mx_pro",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.29,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:sflixz_watch",
+      "media": "movies",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.07,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:soap2day_fan",
+      "media": "movies",
+      "pending": false,
+      "status": "gaierror",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.08,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:streamlord_com",
+      "media": "movies",
+      "pending": false,
+      "status": "ValueError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:tinyzonetv_to",
+      "media": "movies",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.08,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:tubitv_com",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.85,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:tvids_net",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 10,
+      "extracted": 28,
+      "rejected": 16,
+      "resolutionErrors": 2,
+      "unsupportedHosts": 0,
+      "seconds": 45.28,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "play.xpass.top",
+          "status": "extracted"
+        },
+        {
+          "provider": "vidsrc.sh",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "embed.wplay.me",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "www.2embed.cc",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "vidapi.xyz",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "player.videasy.net",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "multiembed.mov",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "www.vidking.net",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "moviesapi.to",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "embed.smashystream.com",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "gomo.to",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "tik.1x2.space · TIK 1",
+          "status": "complete"
+        },
+        {
+          "provider": "vip.1x2.space · VIP 1",
+          "status": "complete"
+        },
+        {
+          "provider": "tik.1x2.space · FIL 1",
+          "status": "complete"
+        },
+        {
+          "provider": "tik.1x2.space · FIL 2",
+          "status": "complete"
+        },
+        {
+          "provider": "tik.1x2.space · FIL 3",
+          "status": "complete"
+        },
+        {
+          "provider": "tik.1x2.space · WIS 1",
+          "status": "complete"
+        },
+        {
+          "provider": "usa7-as06.shegu.net · FEB 1",
+          "status": "complete"
+        },
+        {
+          "provider": "hls.shegu.net · FEB 1",
+          "status": "complete"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "se8x.harmonivia.cyou · VID 1",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "mol.1x2.space · MOL 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "mol.1x2.space · MOL 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "mol.1x2.space · MOL 3",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "mol.1x2.space · MOL 4",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfbw.p2l.workers.dev · BIG 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfbw.p2l.workers.dev · BIG 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfbw.p2l.workers.dev · BIG 3",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfbw.p2l.workers.dev · BIG 4",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfmix.bx7.workers.dev · MIX 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfmix.bx7.workers.dev · MIX 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfmix.bx7.workers.dev · MIX 3",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfmix.bx7.workers.dev · MIX 4",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "ps1.1x2.space · MEG 1",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "play.xpass.top · VXR 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "hlsproxy3.asiaflix.net · VRK 1",
+          "status": "rejected_media"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:tvmovieflix_com",
+      "media": "movies",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.06,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:tvseries_video",
+      "media": "movies",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.16,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:upmovies_net",
+      "media": "movies",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.1,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:vumoo_mx",
+      "media": "movies",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.25,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:watchseries_cyou",
+      "media": "movies",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.15,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:watchserieshd_stream",
+      "media": "movies",
+      "pending": false,
+      "status": "ValueError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 1.21,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:watchtvseries_net",
+      "media": "movies",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 10,
+      "extracted": 27,
+      "rejected": 15,
+      "resolutionErrors": 2,
+      "unsupportedHosts": 0,
+      "seconds": 42.35,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "play.xpass.top",
+          "status": "extracted"
+        },
+        {
+          "provider": "vidsrc.sh",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "embed.wplay.me",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "www.2embed.cc",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "vidapi.xyz",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "player.videasy.net",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "multiembed.mov",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "www.vidking.net",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "moviesapi.to",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "embed.smashystream.com",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "gomo.to",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "tik.1x2.space · TIK 1",
+          "status": "complete"
+        },
+        {
+          "provider": "vip.1x2.space · VIP 1",
+          "status": "complete"
+        },
+        {
+          "provider": "tik.1x2.space · FIL 1",
+          "status": "complete"
+        },
+        {
+          "provider": "tik.1x2.space · FIL 2",
+          "status": "complete"
+        },
+        {
+          "provider": "tik.1x2.space · FIL 3",
+          "status": "complete"
+        },
+        {
+          "provider": "tik.1x2.space · WIS 1",
+          "status": "complete"
+        },
+        {
+          "provider": "uk1-avs01-1.shegu.net · FEB 1",
+          "status": "complete"
+        },
+        {
+          "provider": "hls.shegu.net · FEB 1",
+          "status": "complete"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "se8x.harmonivia.cyou · VID 1",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "mol.1x2.space · MOL 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "mol.1x2.space · MOL 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "mol.1x2.space · MOL 3",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "mol.1x2.space · MOL 4",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfbw.p2l.workers.dev · BIG 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfbw.p2l.workers.dev · BIG 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfbw.p2l.workers.dev · BIG 3",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfbw.p2l.workers.dev · BIG 4",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfmix.bx7.workers.dev · MIX 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfmix.bx7.workers.dev · MIX 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfmix.bx7.workers.dev · MIX 3",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "ps1.1x2.space · MEG 1",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "play.xpass.top · VXR 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "hlsproxy3.asiaflix.net · VRK 1",
+          "status": "rejected_media"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:watchug_com",
+      "media": "movies",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.24,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:winnoise_com",
+      "media": "movies",
+      "pending": false,
+      "status": "ValueError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.59,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "free99:anymovies_co",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "free99:bnwmovies_com",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "free99:fzmovies_live",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.05,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "free99:levidia_ch",
+      "media": "series",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 1,
+      "extracted": 1,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 20.74,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "www.wootly.ch",
+          "status": "extracted"
+        },
+        {
+          "provider": "wootly.ch",
+          "status": "complete"
+        }
+      ]
+    },
+    {
+      "adapter": "free99:my4hydra_top",
+      "media": "series",
+      "pending": false,
+      "status": "gaierror",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.25,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "free99:naijavault_com",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 3.6,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "free99:seriesloaded_ng",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 1.72,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "free99:stagatv_com",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 2.24,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "free99:tvseries_in",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 2.07,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:akwam",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "native:allmovieland",
+      "media": "series",
+      "pending": false,
+      "status": "http_404",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.89,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:animesalt",
+      "media": "series",
+      "pending": false,
+      "status": "http_404",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 1.11,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:asiaflix",
+      "media": "series",
+      "pending": true,
+      "status": "JSONDecodeError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.13,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:bollyflix",
+      "media": "series",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 4,
+      "rejected": 2,
+      "resolutionErrors": 2,
+      "unsupportedHosts": 0,
+      "seconds": 35.45,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "Bollyflix · new10.gdflix.io",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Bollyflix · nordvpn.com",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Bollyflix · vikingfile.com",
+          "status": "ReadTimeout"
+        },
+        {
+          "provider": "Bollyflix · rapidgator.net",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "Bollyflix · 1fichier.com",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Bollyflix · goflix.sbs",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "Bollyflix · megaup.net",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "Bollyflix · gofile.io",
+          "status": "resolution_failed"
+        }
+      ]
+    },
+    {
+      "adapter": "native:cinejoy",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.71,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "Cinejoy Light",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Cinejoy Lisbon",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Cinejoy Nebula",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Cinejoy Sirius",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Cinejoy Rigel",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Cinejoy Warsaw",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Cinejoy Munich",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Cinejoy Paris",
+          "status": "PermissionError"
+        }
+      ]
+    },
+    {
+      "adapter": "native:dudefilms",
+      "media": "series",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 11.4,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "DudeFilms · new10.gdflix.io",
+          "status": "ValueError"
+        },
+        {
+          "provider": "DudeFilms · drop.download",
+          "status": "ReadTimeout"
+        }
+      ]
+    },
+    {
+      "adapter": "native:fibwatch",
+      "media": "series",
+      "pending": false,
+      "status": "ValueError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.11,
+      "stage": "extraction",
+      "hostAttempts": [
+        {
+          "provider": "Fibwatch",
+          "status": "interaction_required"
+        }
+      ]
+    },
+    {
+      "adapter": "native:fourkhdhub",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "native:fshare",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "native:hdhub4u",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 22.83,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "HDHub4u · kamitor316opk.com",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HDHub4u · hubdrive.blog",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HDHub4u · hubcloud.mov",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HDHub4u · hubcdn.wiki",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HDHub4u · greenmotors.club",
+          "status": "ValueError"
+        }
+      ]
+    },
+    {
+      "adapter": "native:hexa",
+      "media": "series",
+      "pending": false,
+      "status": "PermissionError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.03,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:hindmoviez",
+      "media": "series",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 2,
+      "extracted": 12,
+      "rejected": 0,
+      "resolutionErrors": 1,
+      "unsupportedHosts": 0,
+      "seconds": 60.09,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "HindMoviez · gdirect.online",
+          "status": "no_advertised_file_or_supported_terminal"
+        },
+        {
+          "provider": "HindMoviez · ger.proputuddeddau-6761.workers.dev",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HindMoviez · abc.feteujoyupro-7936.workers.dev",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HindMoviez · abc.fuyouxassogru-4365.workers.dev",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HindMoviez · abc.fexehitroffau-2619.workers.dev",
+          "status": "ValueError"
+        },
+        {
+          "provider": "HindMoviez · abc.ceisoluddeubu-4592.workers.dev",
+          "status": "complete"
+        },
+        {
+          "provider": "HindMoviez · md.nuxatrequoujoi-5721.workers.dev",
+          "status": "complete"
+        },
+        {
+          "provider": "HindMoviez · share.licraupekoupo-1855.workers.dev",
+          "status": "resolution_failed"
+        }
+      ]
+    },
+    {
+      "adapter": "native:kisskh",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.65,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:m4ufree_lat",
+      "media": "series",
+      "pending": false,
+      "status": "ValueError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.14,
+      "stage": "extraction",
+      "hostAttempts": [
+        {
+          "provider": "M4UFree",
+          "status": "interaction_required"
+        }
+      ]
+    },
+    {
+      "adapter": "native:meowtv",
+      "media": "series",
+      "pending": false,
+      "status": "http_400",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 3.8,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "Meowtv dcloud",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Meowtv doppler",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Meowtv acme",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Meowtv tik",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Meowtv ipcloud",
+          "status": "ValueError"
+        },
+        {
+          "provider": "Meowtv hindi",
+          "status": "PermissionError"
+        },
+        {
+          "provider": "Meowtv english",
+          "status": "PermissionError"
+        }
+      ]
+    },
+    {
+      "adapter": "native:mlsbd",
+      "media": "series",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.15,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:moviebox",
+      "media": "series",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 3.91,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:moviesdrive",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.59,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:moviesmod",
+      "media": "series",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 1,
+      "rejected": 1,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.07,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "MoviesMod · driveseed.org",
+          "status": "ValueError"
+        },
+        {
+          "provider": "MoviesMod · instant.video-gen.xyz",
+          "status": "ValueError"
+        },
+        {
+          "provider": "MoviesMod · cdn.video-gen.xyz",
+          "status": "ValueError"
+        },
+        {
+          "provider": "MoviesMod · en.thenaukriadda.in",
+          "status": "ValueError"
+        },
+        {
+          "provider": "MoviesMod · Cloud Stream",
+          "status": "rejected_media"
+        }
+      ]
+    },
+    {
+      "adapter": "native:movy",
+      "media": "series",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.3,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "Movy boise",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "Movy miami",
+          "status": "JSONDecodeError"
+        }
+      ]
+    },
+    {
+      "adapter": "native:multimovies",
+      "media": "series",
+      "pending": false,
+      "status": "http_404",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.99,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:onetouchtv",
+      "media": "series",
+      "pending": false,
+      "status": "PermissionError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.17,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:peachify",
+      "media": "series",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.23,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "Peachify multi",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "Peachify hr",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "Peachify holly",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "Peachify air",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "Peachify moviebox",
+          "status": "JSONDecodeError"
+        }
+      ]
+    },
+    {
+      "adapter": "native:primesrc",
+      "media": "series",
+      "pending": true,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 2.22,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "PrimeSrc Filemoon",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Voe",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Dood",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Luluvdoo",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Streamtape",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Streamwish",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Mixdrop",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Vidmoly",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Vinovo",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Vidara",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc Streamplay",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc VidsST",
+          "status": "JSONDecodeError"
+        },
+        {
+          "provider": "PrimeSrc StreamRuby",
+          "status": "JSONDecodeError"
+        }
+      ]
+    },
+    {
+      "adapter": "native:projectfreetv_sx",
+      "media": "series",
+      "pending": false,
+      "status": "http_404",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 7,
+      "rejected": 2,
+      "resolutionErrors": 2,
+      "unsupportedHosts": 3,
+      "seconds": 3.83,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "ProjectFreeTV",
+          "status": "rejected_media"
+        }
+      ]
+    },
+    {
+      "adapter": "native:rive",
+      "media": "series",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 3,
+      "extracted": 4,
+      "rejected": 1,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 3.24,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "Vanguard · 4K HDR",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "Primevids · dcloud",
+          "status": "complete"
+        },
+        {
+          "provider": "Citadel · Hindi",
+          "status": "complete"
+        }
+      ]
+    },
+    {
+      "adapter": "native:rogmovies",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 3.51,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:rtally",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "native:skymovies",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 1.88,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:toonstream",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 1.15,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:topmovies",
+      "media": "series",
+      "pending": false,
+      "status": "gaierror",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.1,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:uhdmovies",
+      "media": "series",
+      "pending": false,
+      "status": "http_404",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 6.15,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "UHDMovies · driveseed.org",
+          "status": "ValueError"
+        },
+        {
+          "provider": "UHDMovies · cdn.video-gen.xyz",
+          "status": "ValueError"
+        },
+        {
+          "provider": "UHDMovies · en.thenaukriadda.in",
+          "status": "ValueError"
+        }
+      ]
+    },
+    {
+      "adapter": "native:vaplayer",
+      "media": "series",
+      "pending": true,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.65,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:vegamovies",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 4.33,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:vidcore",
+      "media": "series",
+      "pending": false,
+      "status": "PermissionError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.84,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:videasy",
+      "media": "series",
+      "pending": false,
+      "status": "JSONDecodeError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.14,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:vidfast",
+      "media": "series",
+      "pending": false,
+      "status": "PermissionError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.85,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:vidrock",
+      "media": "series",
+      "pending": false,
+      "status": "ConnectionError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 2.62,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:vidup",
+      "media": "series",
+      "pending": false,
+      "status": "PermissionError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.92,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "native:vidzee",
+      "media": "series",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 4,
+      "extracted": 4,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 4.41,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "Vidzee Dcloud",
+          "status": "complete"
+        },
+        {
+          "provider": "Vidzee TCloud",
+          "status": "complete"
+        },
+        {
+          "provider": "Vidzee English",
+          "status": "complete"
+        },
+        {
+          "provider": "Vidzee Hindi",
+          "status": "complete"
+        }
+      ]
+    },
+    {
+      "adapter": "native:vixsrc",
+      "media": "series",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 1,
+      "extracted": 1,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.84,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "VixCloud",
+          "status": "complete"
+        }
+      ]
+    },
+    {
+      "adapter": "native:zinkmovies",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 2.6,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:123movies_skin",
+      "media": "series",
+      "pending": false,
+      "status": "gaierror",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.38,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:123moviestv_me",
+      "media": "series",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.33,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:1movies_la",
+      "media": "series",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.25,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:9pm_to",
+      "media": "series",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.38,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:anymovies_co",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:bluray7_com",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:bnwmovies_com",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:bstsrs_one",
+      "media": "series",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.16,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:cinebox_cc",
+      "media": "series",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.1,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:couchtuner_show",
+      "media": "series",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.54,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:doomovies_ga",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:dopebox_to",
+      "media": "series",
+      "pending": false,
+      "status": "gaierror",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.03,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:filepursuit",
+      "media": "series",
+      "pending": false,
+      "status": "requires_api_key",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:filmxy_pw",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:flixhq_to",
+      "media": "series",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.11,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:flixwave_me",
+      "media": "series",
+      "pending": false,
+      "status": "ConnectTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.61,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:gdriveplayer_us",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.64,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:gogoanime_bid",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.44,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:gogoanime_tel",
+      "media": "series",
+      "pending": false,
+      "status": "ValueError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.66,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:gogoanimes_to",
+      "media": "series",
+      "pending": false,
+      "status": "ValueError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.81,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:goojara_club",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:goojara_to",
+      "media": "series",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.21,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:hdbest_net",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:himovies_top",
+      "media": "series",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.08,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:iwaatch_com",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:levidia_ch",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.87,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:levidiamovies_club",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:library",
+      "media": "series",
+      "pending": false,
+      "status": "local_library",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:m4ufree_se",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:m4uhd_tv",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:movie4u_live",
+      "media": "series",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.25,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:movies2watch_tv",
+      "media": "series",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.04,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:movies4fun_net",
+      "media": "series",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.07,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:moviesnipipay_me",
+      "media": "series",
+      "pending": false,
+      "status": "http_404",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.6,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:myflixer_it",
+      "media": "series",
+      "pending": false,
+      "status": "ValueError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 1.48,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:noxx_to",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.87,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:okmov_to",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.37,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:pressplay_top",
+      "media": "series",
+      "pending": false,
+      "status": "http_404",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 1.76,
+      "stage": "hosts",
+      "hostAttempts": [
+        {
+          "provider": "vidnest.pro",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "vidsrc.sh",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "vidfast.pro",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "vidspark.to",
+          "status": "unsupported_host"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:projectfreetv_cyou",
+      "media": "series",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.17,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:projectfreetv_lol",
+      "media": "series",
+      "pending": false,
+      "status": "gaierror",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.05,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:putlocker_gives",
+      "media": "series",
+      "pending": false,
+      "status": "ConnectTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.52,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:rarefilmm_com",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:series9movies_com",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:series9mx_pro",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:sflixz_watch",
+      "media": "series",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.6,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:soap2day_fan",
+      "media": "series",
+      "pending": false,
+      "status": "gaierror",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.21,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:streamlord_com",
+      "media": "series",
+      "pending": false,
+      "status": "ValueError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:tinyzonetv_to",
+      "media": "series",
+      "pending": false,
+      "status": "ReadTimeout",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 8.15,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:tubitv_com",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.23,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:tvids_net",
+      "media": "series",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 7,
+      "extracted": 30,
+      "rejected": 21,
+      "resolutionErrors": 2,
+      "unsupportedHosts": 0,
+      "seconds": 46.05,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "play.xpass.top",
+          "status": "extracted"
+        },
+        {
+          "provider": "vidsrc.sh",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "embed.wplay.me",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "www.2embed.cc",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "vidapi.xyz",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "player.videasy.net",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "embed.smashystream.com",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "moviesapi.to",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "gomo.to",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "www.vidking.net",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "multiembed.mov",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "tik.1x2.space · TIK 1",
+          "status": "complete"
+        },
+        {
+          "provider": "vip.1x2.space · VIP 1",
+          "status": "complete"
+        },
+        {
+          "provider": "tik.1x2.space · FIL 1",
+          "status": "complete"
+        },
+        {
+          "provider": "tik.1x2.space · FIL 2",
+          "status": "complete"
+        },
+        {
+          "provider": "tik.1x2.space · WIS 1",
+          "status": "complete"
+        },
+        {
+          "provider": "suprox.xpass.top · WIS 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "suprox.xpass.top · WIS 3",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "tik.1x2.space · WIS 4",
+          "status": "complete"
+        },
+        {
+          "provider": "m4mb.1x2.space · BOX 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 3",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 4",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 5",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 6",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 7",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "dara.1x2.space · ARA 1",
+          "status": "complete"
+        },
+        {
+          "provider": "sq3.dreamoraresort.sbs · VID 1",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "mol.1x2.space · MOL 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "mol.1x2.space · MOL 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfbw.p2l.workers.dev · BIG 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfmix.bx7.workers.dev · MIX 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "play.xpass.top · TAP 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "meg3.1x2.space · AKC",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "ps1.1x2.space · MEG 1",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "meg2.1x2.space · MEG 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "play.xpass.top · VXR 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "play.xpass.top · VRK 1",
+          "status": "rejected_media"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:tvmovieflix_com",
+      "media": "series",
+      "pending": false,
+      "status": "unsupported_media",
+      "sources": 0,
+      "attempted": false
+    },
+    {
+      "adapter": "scrubs:tvseries_video",
+      "media": "series",
+      "pending": false,
+      "status": "complete",
+      "attempted": true,
+      "sources": 6,
+      "extracted": 27,
+      "rejected": 19,
+      "resolutionErrors": 2,
+      "unsupportedHosts": 0,
+      "seconds": 42.86,
+      "stage": "media",
+      "hostAttempts": [
+        {
+          "provider": "play.xpass.top",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "www.2embed.cc",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "vidsrc.me",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "moviesapi.club",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "gomo.to",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "embed.wplay.me",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "multiembed.mov",
+          "status": "unsupported_host"
+        },
+        {
+          "provider": "tik.1x2.space · TIK 1",
+          "status": "complete"
+        },
+        {
+          "provider": "vip.1x2.space · VIP 1",
+          "status": "complete"
+        },
+        {
+          "provider": "tik.1x2.space · FIL 1",
+          "status": "complete"
+        },
+        {
+          "provider": "tik.1x2.space · FIL 2",
+          "status": "complete"
+        },
+        {
+          "provider": "tik.1x2.space · WIS 1",
+          "status": "complete"
+        },
+        {
+          "provider": "suprox.xpass.top · WIS 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "suprox.xpass.top · WIS 3",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "tik.1x2.space · WIS 4",
+          "status": "complete"
+        },
+        {
+          "provider": "m4mb.1x2.space · BOX 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 3",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 4",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 5",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cflul.ne7.workers.dev · LUL 7",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "sq3.dreamoraresort.sbs · VID 1",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "mol.1x2.space · MOL 3",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfbw.p2l.workers.dev · BIG 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfmix.bx7.workers.dev · MIX 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "cfmix.bx7.workers.dev · MIX 3",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "meg3.1x2.space · AKC",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "ps1.1x2.space · MEG 1",
+          "status": "resolution_failed"
+        },
+        {
+          "provider": "meg2.1x2.space · MEG 2",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "play.xpass.top · VXR 1",
+          "status": "rejected_media"
+        },
+        {
+          "provider": "play.xpass.top · VRK 1",
+          "status": "rejected_media"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:upmovies_net",
+      "media": "series",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.42,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:vumoo_mx",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.52,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:watchseries_cyou",
+      "media": "series",
+      "pending": false,
+      "status": "http_403",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.16,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:watchserieshd_stream",
+      "media": "series",
+      "pending": false,
+      "status": "ValueError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.65,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:watchtvseries_net",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.69,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:watchug_com",
+      "media": "series",
+      "pending": false,
+      "status": "SSLError",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.42,
+      "stage": "extraction",
+      "hostAttempts": []
+    },
+    {
+      "adapter": "scrubs:winnoise_com",
+      "media": "series",
+      "pending": false,
+      "status": "no_matches",
+      "attempted": true,
+      "sources": 0,
+      "extracted": 0,
+      "rejected": 0,
+      "resolutionErrors": 0,
+      "unsupportedHosts": 0,
+      "seconds": 0.41,
+      "stage": "extraction",
+      "hostAttempts": []
+    }
+  ],
+  "shards": [
+    {
+      "summary": true,
+      "media": "movies",
+      "shard": 6,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 13,
+      "attempted": 11,
+      "withSources": 2
+    },
+    {
+      "summary": true,
+      "media": "movies",
+      "shard": 3,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 8,
+      "attempted": 8,
+      "withSources": 1
+    },
+    {
+      "summary": true,
+      "media": "series",
+      "shard": 2,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 17,
+      "attempted": 14,
+      "withSources": 0
+    },
+    {
+      "summary": true,
+      "media": "movies",
+      "shard": 7,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 13,
+      "attempted": 12,
+      "withSources": 2
+    },
+    {
+      "summary": true,
+      "media": "movies",
+      "shard": 0,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 16,
+      "attempted": 13,
+      "withSources": 1
+    },
+    {
+      "summary": true,
+      "media": "movies",
+      "shard": 2,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 17,
+      "attempted": 17,
+      "withSources": 3
+    },
+    {
+      "summary": true,
+      "media": "series",
+      "shard": 1,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 17,
+      "attempted": 10,
+      "withSources": 1
+    },
+    {
+      "summary": true,
+      "media": "series",
+      "shard": 3,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 8,
+      "attempted": 5,
+      "withSources": 0
+    },
+    {
+      "summary": true,
+      "media": "movies",
+      "shard": 4,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 17,
+      "attempted": 16,
+      "withSources": 1
+    },
+    {
+      "summary": true,
+      "media": "series",
+      "shard": 7,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 13,
+      "attempted": 11,
+      "withSources": 0
+    },
+    {
+      "summary": true,
+      "media": "series",
+      "shard": 4,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 17,
+      "attempted": 17,
+      "withSources": 2
+    },
+    {
+      "summary": true,
+      "media": "series",
+      "shard": 5,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 10,
+      "attempted": 8,
+      "withSources": 1
+    },
+    {
+      "summary": true,
+      "media": "movies",
+      "shard": 1,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 17,
+      "attempted": 15,
+      "withSources": 4
+    },
+    {
+      "summary": true,
+      "media": "series",
+      "shard": 0,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 16,
+      "attempted": 13,
+      "withSources": 2
+    },
+    {
+      "summary": true,
+      "media": "movies",
+      "shard": 5,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 10,
+      "attempted": 10,
+      "withSources": 1
+    },
+    {
+      "summary": true,
+      "media": "series",
+      "shard": 6,
+      "shards": 8,
+      "inventory": 111,
+      "covered": 13,
+      "attempted": 10,
+      "withSources": 1
+    }
+  ]
+}

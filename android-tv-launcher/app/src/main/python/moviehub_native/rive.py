@@ -1,6 +1,7 @@
-"""Rive's anonymous TMDB lookup, retaining only independently audited backend routes."""
+"""Rive's anonymous TMDB lookup using its current advertised backend directory."""
 import json
 import re
+import time
 from urllib.parse import urlencode
 
 from moviehub_compat import client
@@ -35,23 +36,51 @@ class source:
             return []
         query = json.loads(key)
         results = []
-        # Primevids/dcloud supplied the measured 1080-class film; retain Citadel's
-        # separate lower-resolution and language resources afterwards.
-        backends = ('vanguard', 'primevids', 'citadel') if 'season' in query else ('primevids', 'citadel')
-        # Vanguard passed the packaged episode check; its movie audio/seek check
-        # did not pass. Keep movie discovery on the existing routes.
+        # Reserve the rest of the lookup for validating collected links. A slow
+        # late backend must not consume the scope and discard earlier results.
+        extraction_end = time.monotonic() + min(60, client.remaining() * .6)
+        backends = self.services('season' in query)
         for backend in backends:
             client.check()
+            available = extraction_end - time.monotonic()
+            if available <= 0:
+                break
             try:
-                results.extend(self.backend(query, backend))
+                results.extend(self.backend(query, backend, min(6, available)))
             except Exception as error:
                 client.host_result('Rive ' + backend, type(error).__name__)
         return results
 
-    def backend(self, identity, backend):
+    def services(self, series):
+        # Phisher's current implementation discovers this directory instead of
+        # assuming that historically working provider names still exist.
+        try:
+            response = client.request(self.base_link + '/api/backendfetch?' + urlencode(dict(
+                requestID='VideoProviderServices', secretKey='rive')),
+                referer=self.base_link + '/', output='json', timeout=12)
+            names = response.get('data')
+            if not isinstance(names, list):
+                raise ValueError('Invalid Rive provider directory')
+            names = list(dict.fromkeys(name for name in names if isinstance(name, str)
+                         and re.fullmatch(r'[a-z][a-z0-9_-]{0,31}', name)))[:24]
+            if not names:
+                raise ValueError('Empty Rive provider directory')
+            # Discovery is broader than playback compatibility. Pulse crashed
+            # packaged LibVLC in the 17 November episode audit; other newly
+            # advertised routes also failed decoding. Keep them independently
+            # testable without exposing unverified backends in normal playback.
+            if not getattr(self, 'cinestream_audit', False):
+                names = [name for name in names if name in ('primevids', 'citadel', 'vanguard')]
+            preferred = [name for name in ('primevids', 'citadel') if name in names]
+            return preferred + [name for name in names if name not in preferred]
+        except Exception as error:
+            client.host_result('Rive provider directory', type(error).__name__)
+            return ('vanguard', 'primevids', 'citadel') if series else ('primevids', 'citadel')
+
+    def backend(self, identity, backend, timeout=6):
         query = dict(identity, provider=backend)
         response = client.request(self.api + '?' + urlencode(query),
-                                  referer=self.base_link + '/', output='json', timeout=18)
+                                  referer=self.base_link + '/', output='json', timeout=timeout)
         data = response.get('data') if isinstance(response, dict) else None
         if not isinstance(data, dict):
             return []
@@ -72,7 +101,7 @@ class source:
             # Other Primevids carriers have not passed decode/audio checks.
             if backend == 'primevids' and claim.casefold() != 'dcloud':
                 continue
-            if str(row.get('format', '')).lower() not in ('hls', 'm3u8'):
+            if str(row.get('format', '')).lower() not in ('hls', 'm3u8', 'mp4', 'mkv', 'video', 'file', 'dash', 'mpd'):
                 continue
             url = row.get('url')
             if not isinstance(url, str):

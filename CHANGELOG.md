@@ -1,5 +1,17 @@
 ## Unreleased
 
+- Add complete 111-adapter comparison and independent movie/series audit coverage.
+- Port newer MovieBox mobile and Vidzee named-server flows, update Fshare catalogue lookup,
+  and refresh eleven free-host resolver modules without replacing the existing runtime/player.
+- Refresh VaPlayer TMDB requests, Peachify hosts/AES-GCM format, current Videasy service,
+  Multimovies search/player markup and Rive backend discovery/time reservation.
+- Retain explicit unresolved provider results; do not treat a passing audit job as playback proof.
+
+- Select each existing catalogue origin from the newest individual value change in Phisher
+  or CSX history, rather than the newest repository/package timestamp.
+- Refresh ten stale native catalogue addresses with pinned provenance; retain existing provider
+  identities, parsers and playback rules. Full resolver-code replacement remains outstanding.
+
 ## 1.0.19 (29 October 2026)
 
 - Add 36 enabled CineStream adapter protocols for additional film and series sites and playback

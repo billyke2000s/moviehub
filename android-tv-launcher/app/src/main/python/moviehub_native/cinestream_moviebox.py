@@ -15,6 +15,15 @@ class MovieBox(Base):
     base_link = 'https://h5-api.aoneroom.com'
 
     def extract(self, q):
+        from .moviebox_mobile import MobileMovieBox
+        found = False
+        for stream in MobileMovieBox().extract(q):
+            found = True
+            yield stream
+        if found:
+            return
+        # Keep the old anonymous web route as a fallback, never as the assumed
+        # current implementation merely because it was already bundled.
         url = self.base_link + '/wefeed-h5api-bff/app/get-latest-app-pkgs?app_name=moviebox'
         response = client.fetch(url, {'User-Agent': USER_AGENT}, session=http_session())
         token = json.loads(response.headers.get('x-user', '{}')).get('token')

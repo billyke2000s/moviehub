@@ -55,7 +55,7 @@ class Mlsbd(DownloadCatalogue):
 
 class SkyMovies(DownloadCatalogue):
     name = 'SkyMovies'
-    base_link = 'https://new4.skymovieshd.clinic'
+    base_link = 'https://new5.skymovieshd.clinic'
 
     def extract(self, q):
         args = {'search': q['title'] + ' (' + q['year'] + ')', 'cat': 'All'}

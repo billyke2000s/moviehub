@@ -12,14 +12,14 @@ PROVIDERS = [dict(id='native:fourkhdhub', module='moviehub_native.fourkhdhub', f
 _CINESTREAM = [
     ('vaplayer', 'VaPlayer', 'streamdata.vaplayer.ru', True, True),
     ('primesrc', 'PrimeSrc', 'primesrc.me', True, True),
-    ('fshare', 'Fshare', 'fsharetv.cc', True, False),
-    ('videasy', 'Videasy', 'vidy.st', True, True),
+    ('fshare', 'Fshare', 'fsharetv.co', True, False),
+    ('videasy', 'Videasy', 'player.videasy.to', True, True),
     ('meowtv', 'Meowtv', 'meowtv.ru', True, True),
     ('vidup', 'Vidup', 'vidup.to', True, True),
     ('vidcore', 'Vidcore', 'vidcore.io', True, True),
     ('vidfast', 'Vidfast', 'vidfast.vc', True, True),
     ('onetouchtv', 'OneTouchTv', 'api3.devcorp.me', True, True),
-    ('cinejoy', 'Cinejoy', 'cinejoy.pk', True, True),
+    ('cinejoy', 'Cinejoy', 'cinejoy.to', True, True),
     ('hexa', 'Hexa', 'hexa.su', True, True),
 ]
 _CATALOGUES = [
@@ -35,7 +35,7 @@ for group, module in ((_CINESTREAM, 'cinestream_api'), (_CATALOGUES, 'cinestream
 
 for name, factory, site, module in (
     ('vidrock', 'Vidrock', 'vidrock.ru', 'cinestream_crypto'),
-    ('peachify', 'Peachify', 'peachify.top', 'cinestream_crypto'),
+    ('peachify', 'Peachify', 'peachify.pro', 'cinestream_crypto'),
     ('vidzee', 'Vidzee', 'player.vidzee.wtf', 'cinestream_crypto'),
     ('moviebox', 'MovieBox', 'h5-api.aoneroom.com', 'cinestream_moviebox'),
 ):
@@ -44,7 +44,7 @@ for name, factory, site, module in (
                           movies=True, series=True))
 PROVIDERS.append(dict(id='native:allmovieland', module='moviehub_native.cinestream_api',
                       factory='AllMovieLand', family='native', name='allmovieland',
-                      site='allmovieland.one', movies=True, series=True))
+                      site='allmovieland.io', movies=True, series=True))
 for name, factory, site, series in (
     ('multimovies', 'Multimovies', 'm1.multimovies.courses', True),
     ('toonstream', 'Toonstream', 'toonstream.us', True),
@@ -59,21 +59,21 @@ for name, factory, site, series in (
 # Keep only concrete incomplete/unsafe paths pending. HTTP availability alone does not
 # establish a broken site. Hexa additionally gates its independently failing backends.
 for name, factory, site, module, movies in (
-    ('bollyflix', 'Bollyflix', 'bollyflix.co.za', 'cinestream_downloads', True),
+    ('bollyflix', 'Bollyflix', 'new1.bollyflix.tours', 'cinestream_downloads', True),
     ('topmovies', 'TopMovies', 'moviesleech.club', 'cinestream_downloads', True),
-    ('moviesmod', 'MoviesMod', 'moviesmod.meme', 'cinestream_downloads', True),
-    ('moviesdrive', 'MoviesDrive', 'new1.moviesdrive.cyou', 'cinestream_downloads', True),
-    ('uhdmovies', 'UHDMovies', 'uhdmovies.beauty', 'cinestream_downloads', True),
-    ('dudefilms', 'DudeFilms', 'dudefilms.red', 'cinestream_downloads', True),
-    ('vegamovies', 'VegaMovies', '1vegamovies.shop', 'cinestream_downloads', True),
-    ('rogmovies', 'RogMovies', 'rogmovies.im', 'cinestream_downloads', True),
-    ('hindmoviez', 'HindMoviez', 'hindmovie.tax', 'cinestream_downloads', True),
-    ('hdhub4u', 'HDHub4u', 'new10.hdhub4u.cl', 'cinestream_downloads', True),
-    ('zinkmovies', 'ZinkMovies', 'new6.zinkmovies.mobi', 'cinestream_downloads', True),
+    ('moviesmod', 'MoviesMod', 'moviesmod.tw', 'cinestream_downloads', True),
+    ('moviesdrive', 'MoviesDrive', 'new3.moviesdrive.cyou', 'cinestream_downloads', True),
+    ('uhdmovies', 'UHDMovies', 'uhdmovies.ceo', 'cinestream_downloads', True),
+    ('dudefilms', 'DudeFilms', 'new2.dudefilms.church', 'cinestream_downloads', True),
+    ('vegamovies', 'VegaMovies', 'vegamovies.lease', 'cinestream_downloads', True),
+    ('rogmovies', 'RogMovies', 'rogmovies.cyou', 'cinestream_downloads', True),
+    ('hindmoviez', 'HindMoviez', 'v4.hindmovie.im', 'cinestream_downloads', True),
+    ('hdhub4u', 'HDHub4u', 'new14.hdhub4u.cl', 'cinestream_downloads', True),
+    ('zinkmovies', 'ZinkMovies', 'new3.zinkmovies.tattoo', 'cinestream_downloads', True),
     ('fibwatch', 'Fibwatch', 'fibwatch.art', 'cinestream_indexes', True),
     ('mlsbd', 'Mlsbd', 'mlsbd.co', 'cinestream_indexes', True),
-    ('skymovies', 'SkyMovies', 'new4.skymovieshd.clinic', 'cinestream_indexes', True),
-    ('m4ufree_lat', 'M4ufreeLat', 'm4ufree.lat', 'cinestream_indexes', False),
+    ('skymovies', 'SkyMovies', 'new5.skymovieshd.clinic', 'cinestream_indexes', True),
+    ('m4ufree_lat', 'M4ufreeLat', 'ww5.m4ufree.lat', 'cinestream_indexes', False),
 ):
     PROVIDERS.append(dict(id='native:' + name, module='moviehub_native.' + module,
                           factory=factory, family='native', name=name, site=site,

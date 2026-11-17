@@ -12,6 +12,7 @@ from moviehub_scrubs import dom_parser, cleantitle
 from .fourkhdhub import anchors, text
 from .cinestream_api import Base, DECODER, get, item, request
 from .cinestream_catalogues import external
+from .cinestream_dom import tree
 
 
 def slug(title):
@@ -26,7 +27,74 @@ def episode_path(q, segment='episode'):
 class Multimovies(Base):
     base_link = 'https://m1.multimovies.courses'
 
+    def current(self, q):
+        page = request(self.base_link + '/search?' + urlencode(dict(q=q['title'])), headers=self.headers())
+        if not isinstance(page, str):
+            return
+        document = tree(page)
+        matches = []
+        for card in document.all('article', cls='poster-card'):
+            caption = card.first(cls='poster-caption')
+            anchor = caption.first('a') if caption else None
+            if anchor is None:
+                continue
+            label = re.sub(r'\s*\(\d{4}\)\s*$', '', anchor.text())
+            # The current catalogue suffixes translated editions this way;
+            # preserve exact title/year matching after removing only that tag.
+            label = re.sub(r'\s*\(Now in (?:Hindi|English|Tamil|Telugu|Malayalam|Kannada)\)$',
+                           '', label, flags=re.I)
+            if slug(label) != slug(q['title']):
+                continue
+            meta = card.first(cls='poster-meta')
+            years = re.findall(r'\b(?:19|20)\d{2}\b', meta.text() if meta else '')
+            if years and q['year'] not in years:
+                continue
+            target = urljoin(self.base_link, anchor.attrs.get('href') or '')
+            if urlparse(target).netloc != urlparse(self.base_link).netloc:
+                continue
+            matches.append((target, bool(years)))
+        if len({url for url, _ in matches}) > 1:
+            matches = [(url, known) for url, known in matches if known]
+        for url, _ in dict.fromkeys(matches):
+            client.check()
+            if 'season' in q:
+                if '/series/' not in urlparse(url).path:
+                    continue
+                url = url.rstrip('/') + '/season/' + q['season'] + '/episode/' + q['episode']
+            doc = tree(request(url, headers=self.headers()))
+            for button in doc.all('button', cls='server-chip'):
+                advertised = button.attrs.get('data-url')
+                if advertised:
+                    advertised = advertised.replace('{tmdbId}', q['tmdb'])
+                    yield from self.player(urljoin(url, advertised), url, 'Multimovies ' + button.text())
+
+    def player(self, url, referer, label):
+        # CSX's Modiplay extractor reads literal switchServer targets. Keep its
+        # scope to that advertised wrapper; no remote script is executed.
+        if urlparse(url).hostname == 'rozgarlelo.modiplay.xyz':
+            try:
+                page = request(url, referer=referer)
+                links = list(dict.fromkeys(re.findall(
+                    r'switchServer\([\'\"](https?://[^\'\"]+)', page)))[:16]
+                if links:
+                    for link in links:
+                        client.check()
+                        yield external(link, url, label)
+                    return
+            except Exception as error:
+                client.host_result('Multimovies Modiplay', type(error).__name__)
+        yield external(url, referer, label)
+
     def extract(self, q):
+        found = False
+        try:
+            for row in self.current(q):
+                found = True
+                yield row
+        except Exception as error:
+            client.host_result('Multimovies current catalogue', type(error).__name__)
+        if found:
+            return
         # The current site replaced WordPress/Doo with a searchable catalogue and
         # literal watchConfig. Keep the old path as a fallback for older mirrors.
         data = get(self.base_link + '/api/search?' + urlencode(dict(q=q['title'], limit=20)))

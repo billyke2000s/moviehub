@@ -1,5 +1,15 @@
 # Status
 
+## Complete-inventory provider follow-up — 17 November 2026
+
+The comparison now enumerates all 111 bundled adapters and 237 host modules. MovieBox mobile,
+Vidzee named-server, Fshare, Rive, VaPlayer, Peachify, Videasy and Multimovies flows are updated; eleven free-host modules are
+refreshed, and upstream origins are rechecked. New sharded audits report each adapter separately
+for movies/series, including exclusions and unsupported capabilities. Local checks: 169 Python
+tests and all 34 Java core suites pass. Full resolver replacement and universal provider playback
+remain unproven; retained/unresolved entries are explicit. See the
+[full scope and evidence](docs/UPSTREAM_SOURCE_REFRESH_2026_11_17.md).
+
 ## Current release — MovieHub 1.0.19 (code 119)
 
 [1.0.19 is published](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.19)
