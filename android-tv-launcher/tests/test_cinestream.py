@@ -219,8 +219,10 @@ class CineStreamTests(unittest.TestCase):
         page = "<input value='t' type='hidden' id='trailer'><script>Movie.setSource('token')</script>"
         data = {'data': {'file': {'sources': [dict(src='/a.mp4', quality='720')],
                                  'alternatives': [[dict(src='/b.mp4', quality='1080')]]}}}
-        with patch.object(client, 'request', side_effect=[page, data]):
+        with patch.object(client, 'request', side_effect=['<a href="/w/advertised-movie">Film</a>', page, data]) as request:
             rows = provider.sources(self.key(provider), [])
+        self.assertIn('/movie/tt1234', request.call_args_list[0].args[0])
+        self.assertIn('/w/advertised-movie', request.call_args_list[1].args[0])
         self.assertEqual(len(rows), 2)
         self.assertEqual({r['quality'] for r in rows}, {'720', '1080'})
         with patch.object(client, 'request') as request:
@@ -415,7 +417,7 @@ class CineStreamTests(unittest.TestCase):
         with patch.object(client, 'request', side_effect=request):
             rows = provider.sources(self.key(provider, True), [])
         self.assertEqual([r['quality'] for r in rows], ['Auto', '2160p', '720p'])
-        self.assertTrue(all(parse_qs(r['url'].partition('|')[2]) == {'Referer': ['https://cinejoy.pk/']} for r in rows))
+        self.assertTrue(all(parse_qs(r['url'].partition('|')[2]) == {'Referer': ['https://cinejoy.to/']} for r in rows))
 
     def test_vidzee_cbc_response_headers_override_defaults_case_insensitively(self):
         import base64

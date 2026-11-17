@@ -158,18 +158,25 @@ class PrimeSrc(Base):
 
 class Fshare(Base):
     requires_imdb = True
-    base_link = 'https://fsharetv.cc'
+    base_link = 'https://fsharetv.co'
 
     def extract(self, q):
         if 'season' in q:
             return
         slug = re.sub(r'[^a-z0-9]+', '-', (q['title'] + ' episode 1 ' + q['imdb']).lower()).strip('-')
         page_url = self.base_link + '/w/' + slug
+        try:
+            listing = request(self.base_link + '/movie/' + quote(q['imdb'], safe=''), headers=self.headers())
+            advertised = re.search(r'href=[\'\"](/w/[^\'\"]+)[\'\"]', listing)
+            if advertised:
+                page_url = urljoin(self.base_link, advertised[1])
+        except Exception as error:
+            client.host_result('Fshare catalogue', type(error).__name__)
         page = request(page_url)
-        token = re.search(r"Movie\.setSource\('([^']+)'", page)
+        token = re.search(r"(?:source_id|file_id|setSource)[\s=:(\'\"]+([^\'\")]+)", page, re.I)
         trailers = dom_parser.parse_dom(page, 'input', {'id': 'trailer'}, req='value')
-        trailer = trailers[0].attrs['value'] if trailers else None
-        if not token or trailer is None:
+        trailer = trailers[0].attrs['value'] if trailers else 'Png81APqcxU'
+        if not token:
             return
         data = get(self.base_link + '/api/file/' + quote(token[1], safe='') + '/source?' +
                    urlencode(dict(trailer=trailer, type='watch')))
@@ -365,7 +372,7 @@ class OneTouchTv(Base):
 
 
 class Cinejoy(Base):
-    base_link = 'https://cinejoy.pk'
+    base_link = 'https://cinejoy.to'
     api = 'https://api.wing.st'
 
     def extract(self, q):
@@ -417,7 +424,7 @@ class Hexa(Base):
 
 class AllMovieLand(Base):
     requires_imdb = True
-    base_link = 'https://allmovieland.one'
+    base_link = 'https://allmovieland.io'
 
     def extract(self, q):
         script = request('https://allmovieland.link/player.js?v=60%20128')

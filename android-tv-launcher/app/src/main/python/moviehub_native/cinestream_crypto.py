@@ -86,8 +86,48 @@ class Peachify(Base):
 
 class Vidzee(Base):
     base_link = 'https://player.vidzee.wtf'
+    api = 'https://core.vidzee.wtf'
+
+    def current(self, q):
+        headers = dict(self.headers(), Origin=self.base_link)
+        route = self.route(q)
+        names = [('dcloud', 'Dcloud'), ('doppler', 'Doppler'), ('tik', 'TCloud'),
+                 ('ipcloud', 'IPcloud'), ('v6:English', 'English'), ('v6:Hindi', 'Hindi')]
+        try:
+            languages = get(self.api + '/streams/languages/' + route, headers).get('languages') or []
+            for language in languages[:8]:
+                if isinstance(language, str) and 0 < len(language) <= 48:
+                    names.append(('v4:' + language, 'Acme ' + language))
+        except Exception as error:
+            client.host_result('Vidzee languages', type(error).__name__)
+        def backend(pair):
+            name, label = pair
+            # The upstream API explicitly supports e=0 (plain JSON) and e=1
+            # (its browser WASM representation) for the same public stream.
+            url = self.api + '/streams/' + route + '?' + urlencode(dict(s=name, e=0))
+            response = get(url, headers)
+            if response.get('c'):
+                raise ValueError('Vidzee returned an unsupported encrypted representation')
+            url = response.get('url')
+            if not isinstance(url, str):
+                return
+            media_headers = dict(headers)
+            for key, value in (response.get('headers') or {}).items():
+                if isinstance(value, str) and key.casefold() in ('referer', 'origin', 'user-agent', 'accept'):
+                    media_headers = {k: v for k, v in media_headers.items() if k.casefold() != key.casefold()}
+                    media_headers[key] = value
+            yield item(url, media_headers, 'Vidzee ' + label,
+                       info=str(response.get('language') or ''))
+        yield from self.each(names, backend)
 
     def extract(self, q):
+        found = False
+        for stream in self.current(q):
+            found = True
+            yield stream
+        if found:
+            return
+        # Retain the CBC representation only for still-compatible older mirrors.
         def backend(number):
             args = dict(id=q['tmdb'], sr=number)
             if 'season' in q:

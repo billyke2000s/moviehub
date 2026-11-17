@@ -1,13 +1,14 @@
 # Architecture
 
-## Per-source address refresh candidate — 17 November 2026
+## Complete-inventory provider follow-up — 17 November 2026
 
-A per-entry comparison of both CloudStream upstream address histories selects origins for
-19 existing native providers and refreshes ten stale catalogue addresses. Provider IDs and
-the 74-site / 77-enabled-adapter inventory remain stable. Local validation: 150 Python tests
-and all 34 Java core suites pass. This is an unmerged address-refresh candidate; the complete
-per-resolver code replacement and live playback validation remain outstanding. See the
-[scope, pinned provenance and validation](docs/UPSTREAM_SOURCE_REFRESH_2026_11_17.md).
+The comparison now enumerates all 111 bundled adapters and 237 host modules. MovieBox mobile,
+Vidzee named-server and Fshare catalogue flows are updated; eleven free-host modules are
+refreshed, and upstream origins are rechecked. New sharded audits report each adapter separately
+for movies/series, including exclusions and unsupported capabilities. Local checks: 158 Python
+tests and all 34 Java core suites pass. Full resolver replacement and universal provider playback
+remain unproven; retained/unresolved entries are explicit. See the
+[full scope and evidence](docs/UPSTREAM_SOURCE_REFRESH_2026_11_17.md).
 
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed

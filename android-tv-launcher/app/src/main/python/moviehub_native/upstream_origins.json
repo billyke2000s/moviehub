@@ -314,17 +314,17 @@
     "skymovies": {
       "candidates": [
         {
-          "changed_at": "2026-10-30T03:57:15Z",
-          "commit": "2089c4b7cb1cbb33ab5252f2e7f6a79244d8ec44",
-          "origin": "https://new4.skymovieshd.clinic",
+          "changed_at": "2026-11-17T06:03:37Z",
+          "commit": "b3823b0cf2a3c6a1cc40658bb88dc3031de00abb",
+          "origin": "https://new5.skymovieshd.clinic",
           "path": "urls.json",
           "repository": "SaurabhKaperwan/Utils"
         }
       ],
       "selected": {
-        "changed_at": "2026-10-30T03:57:15Z",
-        "commit": "2089c4b7cb1cbb33ab5252f2e7f6a79244d8ec44",
-        "origin": "https://new4.skymovieshd.clinic",
+        "changed_at": "2026-11-17T06:03:37Z",
+        "commit": "b3823b0cf2a3c6a1cc40658bb88dc3031de00abb",
+        "origin": "https://new5.skymovieshd.clinic",
         "path": "urls.json",
         "repository": "SaurabhKaperwan/Utils"
       }
@@ -389,19 +389,19 @@
           "repository": "phisher98/TVVVV"
         },
         {
-          "changed_at": "2026-10-24T02:54:01Z",
-          "commit": "a244d0b948704e03076fd54453ddcb5ff6ddf30e",
-          "origin": "https://uhdmovies.beauty",
+          "changed_at": "2026-11-17T06:03:37Z",
+          "commit": "b3823b0cf2a3c6a1cc40658bb88dc3031de00abb",
+          "origin": "https://uhdmovies.ceo",
           "path": "urls.json",
           "repository": "SaurabhKaperwan/Utils"
         }
       ],
       "selected": {
-        "changed_at": "2026-11-17T05:37:58+05:30",
-        "commit": "fe937b03a06c10760a6b9bd13464157896cfb982",
+        "changed_at": "2026-11-17T06:03:37Z",
+        "commit": "b3823b0cf2a3c6a1cc40658bb88dc3031de00abb",
         "origin": "https://uhdmovies.ceo",
-        "path": "domains.json",
-        "repository": "phisher98/TVVVV"
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
       }
     },
     "vegamovies": {
@@ -432,9 +432,9 @@
     "zinkmovies": {
       "candidates": [
         {
-          "changed_at": "2026-11-03T23:06:50Z",
-          "commit": "6f981579ba692feb3706698c70ac3e2d64675b6a",
-          "origin": "https://new2.zinkmovies.tattoo",
+          "changed_at": "2026-11-17T15:59:16+05:30",
+          "commit": "d3e3fe41c3c0722256fbf9e94a2f4ef89afab1a7",
+          "origin": "https://new3.zinkmovies.tattoo",
           "path": "domains.json",
           "repository": "phisher98/TVVVV"
         },
@@ -447,9 +447,9 @@
         }
       ],
       "selected": {
-        "changed_at": "2026-11-03T23:06:50Z",
-        "commit": "6f981579ba692feb3706698c70ac3e2d64675b6a",
-        "origin": "https://new2.zinkmovies.tattoo",
+        "changed_at": "2026-11-17T15:59:16+05:30",
+        "commit": "d3e3fe41c3c0722256fbf9e94a2f4ef89afab1a7",
+        "origin": "https://new3.zinkmovies.tattoo",
         "path": "domains.json",
         "repository": "phisher98/TVVVV"
       }
@@ -457,7 +457,7 @@
   },
   "scope": "catalogue origins only; resolver code is separately maintained",
   "snapshots": {
-    "SaurabhKaperwan/Utils": "c05cf728af566b2ceb709199ac1c5c3b91607fa6",
-    "phisher98/TVVVV": "afae8fa871deb2c4a259b158b34689810c91e572"
+    "SaurabhKaperwan/Utils": "b3823b0cf2a3c6a1cc40658bb88dc3031de00abb",
+    "phisher98/TVVVV": "d3e3fe41c3c0722256fbf9e94a2f4ef89afab1a7"
   }
 }

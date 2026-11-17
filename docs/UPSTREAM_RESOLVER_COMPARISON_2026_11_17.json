@@ -1,0 +1,3659 @@
+{
+  "adapters": [
+    {
+      "adapter": "scrubs:watchserieshd_stream",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/watchserieshd_stream.py",
+      "localSha256": "ec6525e98fac6eab1e6ba64ae683c56aeb358f9a718d102f47eb39ff109a45d6",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "watchserieshd.stream",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "c44a8ee5e9de901c36ba79f6a76744dde329474c1591bf516f3ce3245aecab88",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:watchug_com",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/watchug_com.py",
+      "localSha256": "372a71da07a51af0c6aef517203302117cc522e99a122712e22649223d8c3f80",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "watchug.com",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "e51dcd484aa9fa8535991b5b6e3e00ad21125ed15a0a50be31fd02c3a13e491c",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:watchtvseries_net",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/watchtvseries_net.py",
+      "localSha256": "715af5583cd66fe83f01a92ded731d524a5babd28ca91ac7ffa44640ac0b20bd",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "watch-tvseries.net",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "8a5d538fd23f593fb50873cf136269454686be456f1e7d00d5d28ff6ec6bb0f1",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:filmxy_pw",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/filmxy_pw.py",
+      "localSha256": "83b883d499753429773b3f142f84e81f39af38290b6ef8fa0d02a79732d7ee9c",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "filmxy.online",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "46c01ebda1270dfb47b722423d36fb8947d0b4f7227351d412a641251e4b9de0",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:m4uhd_tv",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/m4uhd_tv.py",
+      "localSha256": "5daf8a03c631ea19bb057f611164fbdcc472498a57a7addf42ba6c32117d2175",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "ww1.m4uhd.tv",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "6a655f740040f6e50fd69f9735b58fc579b4288d3ea8460fe6a13f6028d651f9",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:sflixz_watch",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/sflixz_watch.py",
+      "localSha256": "21152e1c7126123d79bf3dea4a805f245b2ae3ca78bdcb9a250c389a462467be",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "sflixz.watch",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "d13445efa98cea890c31907203aa3f7f20733ef874b768521124e3fd70a55acc",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:movies4fun_net",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/movies4fun_net.py",
+      "localSha256": "e4f70d096ae186fcaf9db57e075b7c97c808770a09e0ae994502c96ecf282356",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "movies4fun.net",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "2d070e02291683f02b215ea00905ad2a95f825d36af10060ea5614d1176b5242",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:dopebox_to",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/dopebox_to.py",
+      "localSha256": "9e6f3ef400eecd7bd51d9d435c690ab8bb9d13633b49912e8a07ea1cc1879d2e",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "dopebox.to",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "47f4a932d3636e22a9f8a5dc5abe34fc01ea42d699ea085d3afd18beda6dfee2",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:gogoanime_bid",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/gogoanime_bid.py",
+      "localSha256": "f13e98b58adf11c5af56f03174d423e48a8e948a37d88b5c5bf7327749efe7f3",
+      "movies": false,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "anitaku.pe",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "70a3482e1fa5bd34b3353bb04e99b1952bfa4e1db33641064147db3f782eb45e",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:movie4u_live",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/movie4u_live.py",
+      "localSha256": "002ad1f31d7f3a07dce7173d6fa066841ed362ce49e3a7b3d325b9c5c2f37f63",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "www1.movie4u.live",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "99b842570e25f1bba66e78aaa03cbf48784dd9deb735fd65501f5c51c1028aa8",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:upmovies_net",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/upmovies_net.py",
+      "localSha256": "402c67ef6c5b60c458a6153f49a5aaec6a425c44b81478f9dc69a19e3dcd2a3b",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "upmovies.net",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "94491a204d980bbb3a9543c3063bf95c25ea8ae0f5cd9a33179cdc46cfa813c0",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:1movies_la",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/1movies_la.py",
+      "localSha256": "e392bf764cbb010dc284ef95a208c0142f04d5b92f8e17cc371650480112adfd",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "1movies.la",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "d1166b2cd158a7ebdd155ee9610099831638be5e3453f1f7d7cb579315b3920f",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:putlocker_gives",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/putlocker_gives.py",
+      "localSha256": "58454afce88a6c0db43077f3623daac3de51cebd7aa2e3f6b06adb8463286341",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "putlocker.gives",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "8f0c30df383722f103466d5a30c12651e7b9119af448f0241241ad23144558b0",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:tvmovieflix_com",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/tvmovieflix_com.py",
+      "localSha256": "cf8dfc7fbb5953de3064c41143144fad158f5ba441813538c2e86b9927b262fb",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "tvmovieflix.com",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "54020aff07f3f1456a9900afea74f0115465570706c40e1ac7ba2a067f13c1fd",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:winnoise_com",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/winnoise_com.py",
+      "localSha256": "8396a8f7b0b3bc5e736835de761e4adfadf38ac00a9951e2126b33b900e1c667",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "winnoise.com",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "f1312671943fc94a2d2212a9d9ad7f63b63f6fea0124c79ebc62a83a2e01d935",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:bstsrs_one",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/bstsrs_one.py",
+      "localSha256": "5e04edebc65c03968083eb614236b631249553f81d8922ca7f88e82acea15ede",
+      "movies": false,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "bstsrs.in",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "6624f78cc3fa7d38267980c3beee833b6eacba47127c30b9cbf7bab3bdeaca2a",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:noxx_to",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/noxx_to.py",
+      "localSha256": "4ddec8f0f1ecee3e901ebbb39f8fcae0bab6c843e0a300c13a8823527ddfb321",
+      "movies": false,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "noxx.to",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "6047448dba17986d5f950a9c5f76e18bca1454fe94e13729992297d8bec18041",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:library",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/library.py",
+      "localSha256": "2de94263753a598b53afffaa05c7a1f8caf921863f648f47bf0894158d8805aa",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "f791e7f42948842667408185613614bd7a37f8e0dac697f90e9d7e004ea8f8cb",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:bluray7_com",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/bluray7_com.py",
+      "localSha256": "2e01c7c893f71871acdac190f7d31f11ba408410626aea65f7ca91294aca044c",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "bluray7.com",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "376cf7367eb6211e2f655fbb106d1c6df308f12304d96807398110a6ac495c2b",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:flixhq_to",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/flixhq_to.py",
+      "localSha256": "55e31ea2a4f690dcab97f24964610c23d6896af4e615db015eee131e2f8d9187",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "flixhq.to",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "2c43ebbb6f5f5fd058716b8e581793eb975be6682002238b1615bc94efaa135d",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:himovies_top",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/himovies_top.py",
+      "localSha256": "3f2ac7e4d09155a075de8580754db933ccab57e2c847141c93f0f594342b6b46",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "hdtoday.cc",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "4eb2f3a3ddd986e132b9362cac03d65b9e22c53b515c7f709a4e4a85b75ed005",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:series9mx_pro",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/series9mx_pro.py",
+      "localSha256": "d5144fd0b56db33e68b011b772b0fd8b690ec89b6d7f1d1495fe5c7d1bb78ff2",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "series9mx.pro",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "3535e2cc4e3d9b11ae8417f421f5631b9cb2d8ab4e17d9cf6dee200d96e7a876",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:couchtuner_show",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/couchtuner_show.py",
+      "localSha256": "475ca9d7747b9c9d809369c0c6f2b08ffeb590725919b795b32a6aaedd18f643",
+      "movies": false,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "couchtuner.show",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "7aed355f027e19f50eb90edd59e8412564377e52865fcb659832b1537cdca16f",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:projectfreetv_cyou",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/projectfreetv_cyou.py",
+      "localSha256": "3df2365ae858e12ae815869548c368c92aef4310702da5543764e5975e9808e0",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "freeprojecttv.cyou",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "2e58c1fe02639bd38520f0f225910640df3222842067bab0f15d4575c8ef87c7",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:filepursuit",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/filepursuit.py",
+      "localSha256": "d07eaca8bfcca1dd343c5ef5ce40dd867ffb24853bfadf927c99b6223e23d2d5",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "filepursuit.p.rapidapi.com",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "ee8ba6873850c39b464fbb01eea786c7b96a3093689f48796e1f241bbd780f52",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:doomovies_ga",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/doomovies_ga.py",
+      "localSha256": "32d363ecc0729c26c7e861f37b8e0925ac7fe17226d4cdb387889ba7acf256c6",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "doomovies.net",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "c149051bcf43248d7c73157c690aa306443086743efcb569b3b38a03b56e89da",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:cinebox_cc",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/cinebox_cc.py",
+      "localSha256": "0f1fe11ca7b8aaff38037a2bc6743db7740bbc3416a4ab0d8289328665944969",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "cinebox.cc",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "02447f1727243ac3e6b839957f5186d1c838f2d0eb25ed8200398455bc30ee2e",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:flixwave_me",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/flixwave_me.py",
+      "localSha256": "69a70268ee77132d919ca46360d29c72975ec749a11961d8812f2532fc04962d",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "flixwave.me",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "049ba3ed68334afd03ab5c368b0461e01a770e0cd1ca0bd6af6657ef275a2aa3",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:123moviestv_me",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/123moviestv_me.py",
+      "localSha256": "c9ebaca4cf83a10db15fb12de46110fbede2e75eb241ec66f92cef856abec138",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "123moviestv.me",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "c5e6ba555f99bbe6f9318fbf5bc1d294d79db46a9c6c6ab5b33d36b27716e0ce",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:series9movies_com",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/series9movies_com.py",
+      "localSha256": "57b843c24e44b40d0f187e5907b8ffb49af3a055b5b0d003d8901036eec9c32a",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "series9movies.com",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "771eb5926610cf5af57ed232e5f63dcc4fd073d96c715d74388b42f7f2f17a1b",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:moviesnipipay_me",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/moviesnipipay_me.py",
+      "localSha256": "b3aa9a7663150ab8e6635ebf23ed4bc6ade5dbf745e71521b9a88196c4c92968",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "moviesnipipay.me",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "79d7d5e8f7ec8de03287b1d433f49a5eec5cbb9eb3e2f5b098975501da5b594a",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:rarefilmm_com",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/rarefilmm_com.py",
+      "localSha256": "76b6484004f603ef2e6b10ce79a3a6174f15a65029ebba8169127c5e74771fe0",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "rarefilmm.com",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "d9a2814a96b553c1d1e1b6352380fe69cc70bf48baba813fe366458b62f69608",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:myflixer_it",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/myflixer_it.py",
+      "localSha256": "510589623c661e858e64a38d2329f4e0f6bc73715f56fbaec8428ecf027f4354",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "myflixer.pw",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "6361211e58a252797e79e908e8227f76067341c16a951d39538bdf1a9c9c46ff",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:m4ufree_se",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/m4ufree_se.py",
+      "localSha256": "b33a914b49c304cd688f4d305b888693a4d6a2284d62d051d3a4402701733480",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "m4ufree.se",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "d58b6f2d961479a0e4de30fd9c12915d30fbe460ffb68349d9b8feaae11b5d97",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:tinyzonetv_to",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/tinyzonetv_to.py",
+      "localSha256": "e913b2da31bae9eb6f750d39bf93f762aa16755a32a4732c52266ce9c97a7a57",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "ev01.to",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "98a96d8aa8649c75b2402037163226ab592eb00095dfd3d70db3e3b47038fb87",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:tubitv_com",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/tubitv_com.py",
+      "localSha256": "e1444dc4945ce99601ae9f672eefb0389cfb23afda92f6f080d9460f52a5b7de",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "tubitv.com",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "47982108686689a65eff3bd31785f4f46f4b1502232ee1452cf683292c630056",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:hdbest_net",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/hdbest_net.py",
+      "localSha256": "ead8c9e27cff5a1b60493efc2817ee874a1d5656590740f4196da30e332bb00e",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "hdbest.net",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "b253fc19545c8c09b46ba8fa149026412a3d8f067eaff4b78682d60936de4267",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:goojara_club",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/goojara_club.py",
+      "localSha256": "b36ac2ae6858e5eb2e18677fb41366709c64b7af3eaf2195a509f0bfbdc13b28",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "goojara.club",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "23927842185da0647562b4dc8459ba39eaa5aa2b01103dbcca663d6a05c06784",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:bnwmovies_com",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/bnwmovies_com.py",
+      "localSha256": "2fe0c54b348befb54c43f5da26fbb9eb59df4e81528e39f3a3aa4f566a00ee5d",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "bnwmovies.com",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "de15370640ffd6a6e7f87d34f476ea3e1874f917fe5efd30e282f5bd0b53ec03",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:pressplay_top",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/pressplay_top.py",
+      "localSha256": "13cc3cd20592f824aa94ba8e5908517e32ffbe2b695741231a84d4c5c17cc4b2",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "pressplay.top",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "38bd234c2ab06b13e37298a32e26437d45c259471bf0899580843c2f0255a86d",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:levidiamovies_club",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/levidiamovies_club.py",
+      "localSha256": "f54f1c423a58f435ed3eb88bdbc7a3ec3c16868b87f78e4dd439ce2d70aab7b5",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "goojara.life",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "cb7ee5233a5c41151781c29b8cbf01772b7ffc11986c9977084377ed243c0c40",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:gogoanime_tel",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/gogoanime_tel.py",
+      "localSha256": "f3eaab6038a4dfaba5d0e6cde0d63de9a55db0985bbeddd7fdedc4d7a15b1fce",
+      "movies": false,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "gogoanime3.co",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "03f3f8969aeb9878609cbf6c796fb91f5f7f48409af7a5d63d50bdfbc601f664",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:anymovies_co",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/anymovies_co.py",
+      "localSha256": "41f71e44910a5e93df1e0c9f20f586396994a592d4543ef4ee00546e49cd98fa",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "downloads-anymovies.co",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "85cdab3edeb9dcb136bf90ecd4c587003f0d9b14a6e926d45d8220f5f37ed9dc",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:tvids_net",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/tvids_net.py",
+      "localSha256": "7dde5b6be76711fcecf2f5d41d79c951479c2bc6de7e93a6f6ea8d830e02388e",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "tvids.net",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "28fd79502b4a0dfb72621ea1c7b67c06883e3adb1d83628f26086cdc8de36678",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:gogoanimes_to",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/gogoanimes_to.py",
+      "localSha256": "bea1c6c1e1367b2270ca9801b6afc96d02da5636cff663023ce72ae94ee330f8",
+      "movies": false,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "gogoanimes.to",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "3074a2098dd4bba0a7d57187e727758a78c337767fbb3ddf4f3b16b29543779d",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:okmov_to",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/okmov_to.py",
+      "localSha256": "c9106541011830506591265ce22fbf0f1bf3ae4552c2beab70af9049cedfbe6b",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "okmov.to",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "172d9563b8e5fab727bdb57d9b99095a50ae56c9ee4af3949fc9fbc8764de784",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:watchseries_cyou",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/watchseries_cyou.py",
+      "localSha256": "54fa6009d1a69d7fcccf200c24308d65f23c26d1f3053fcf0801858c4c598fb9",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "watchseries.cyou",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "744e1cd4929feb064aa1cef6792d64f229a039925ecbb72ca89baf451398d43c",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:123movies_skin",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/123movies_skin.py",
+      "localSha256": "09880c01573bdd410cbc4e588417affb9c27039d731e332b999b5c94aa619baa",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "123-movies.golf",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "c1209d36fb5e421e225a485b93a159fd327dd80ec789f3b50f4f39e191b19aef",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:vumoo_mx",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/vumoo_mx.py",
+      "localSha256": "6a31b7ae963b2daf6d849c8b985112103c5f517d1df5ed1608095cb4acfa0e33",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "vumoo.mx",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "7fafaded2d458db99ef4348cf6c840e40533e599c3a5f898cfbd57ad84802044",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:gdriveplayer_us",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/gdriveplayer_us.py",
+      "localSha256": "f6e6a56ba1bbbdf2baab5fba20ca6f1c9d1f55aa5bb9f18952f7e0ebcf7e6e65",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "api.gdriveplayer.us",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "1a98ca6306c17c18c6e9f6bc7762d1516c800ee59dc58e0daa6f11ca200a2093",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:iwaatch_com",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/iwaatch_com.py",
+      "localSha256": "cfab45334cd0ed44a0149bd2b6e828ad231c15ee2da635a8d9269a03708a2d53",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": false,
+      "site": "iwaatch.com",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "4b738d1fa6b1d03eed06c4551942e8001cae8cd7a7e640867d490bae174d6efc",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:levidia_ch",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/levidia_ch.py",
+      "localSha256": "a48e4e93c9b635252d6f17434e37e7291b2221e80f8dba0745b721032aaf353b",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "levidia.ch",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "dea2f04fc61a9fd979035a1e58405298893e002613215a82126bd3ec8e4048e0",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:projectfreetv_lol",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/projectfreetv_lol.py",
+      "localSha256": "c101e21207a3da7ffcac1ab25aabd2edf61635011fb6e4f139e0062858552ed4",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "projectfreetv.lol",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "8f425fdb6a93d6b16f2c128291c3560c1f4a38b03ce836b51f63f0a2c694532a",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:goojara_to",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/goojara_to.py",
+      "localSha256": "3e65e8fd5ca299d8f742739ebc362209d8ed39fa668fc56e2db24e64a0848ea0",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "goojara.to",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "bb7d152c2a44d2b74ccc6bc9b30cca4117db124184a99836cbc055228ae2b569",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:movies2watch_tv",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/movies2watch_tv.py",
+      "localSha256": "4ab4de1264c675f75cdd95b093dd45d179d05862a609ac06af200c6a6e2f8418",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "movies2watch.tv",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "d1a8a6d50c90fad8865266f1ceaf3a131f581b300bf888b9316e8d56a45879dc",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:tvseries_video",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/tvseries_video.py",
+      "localSha256": "6a586619d0cf6201245cd20eaa50fd3b2b16d2709de4f44fd426172689a91a1a",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "tvseries.video",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "65f97f5408a070eaf47b4f14ad7f03a17e579ae6384b060259f2531a54c21c66",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:streamlord_com",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/streamlord_com.py",
+      "localSha256": "78c61f241ba1bd4c064d2d4bd5ffd4a873589422237fcf02dfee4812e3d90ff6",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "streamlord.com",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "275ceb3202cfb163d657c031e07a9af4a91d7c7284a09ad5407701785f32cd7f",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:9pm_to",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/9pm_to.py",
+      "localSha256": "b8bd81347e186c05d1567fdffe535462ccd8bef7427d31a5a4e7943b11b98061",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "9pm.to",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "bf4a0e37a01fa755ca1b0371f89b757b5db950d70f41d374248abbd0745c7726",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "scrubs:soap2day_fan",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/soap2day_fan.py",
+      "localSha256": "29d30d36b045ca1100d974c8161efd98d9824cec4eb4047e6527a89a90984c11",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer official Scrubs provider; shared host resolvers refreshed separately",
+      "series": true,
+      "site": "soap2dayz.top",
+      "upstreams": [
+        {
+          "comparison": "matches original inventory hash; local compatibility patches retained",
+          "originalSha256": "6e5f2f39a839487e964996728495441ab5625153657714d88c03c1d20494b2a3",
+          "repository": "jewbmx/repo",
+          "version": "5.1.42"
+        }
+      ]
+    },
+    {
+      "adapter": "free99:tvseries_in",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_free99/providers/tvseries_in.py",
+      "localSha256": "9cbb2acf44a1db7bdfa54e02c5803cc8a99b0cb903034ff15ba0fc0e54db6176",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer implementation available at its official upstream",
+      "series": true,
+      "site": "tvseries.in",
+      "upstreams": [
+        {
+          "comparison": "current official repository no longer contains Free99; retained last-known source",
+          "originalSha256": "b89272fa31a725627b1eae1fe2cff29c62a389756a818e889facb93e760fbf2b",
+          "repository": "nebulous42069/Omega",
+          "version": "2.0.1"
+        }
+      ]
+    },
+    {
+      "adapter": "free99:fzmovies_live",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_free99/providers/fzmovies_live.py",
+      "localSha256": "0f765cd3877ea5bc1ab14f87f06f75b91e25dbddbdc0affc441256ccada1b88a",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer implementation available at its official upstream",
+      "series": true,
+      "site": "fzmovies.live",
+      "upstreams": [
+        {
+          "comparison": "current official repository no longer contains Free99; retained last-known source",
+          "originalSha256": "89ff6b400045dec2144d79cbfa43fa0928e4b6abe4739c387fa894fd6c6f8c4b",
+          "repository": "nebulous42069/Omega",
+          "version": "2.0.1"
+        }
+      ]
+    },
+    {
+      "adapter": "free99:my4hydra_top",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_free99/providers/my4hydra_top.py",
+      "localSha256": "01a0fb14e5af3da3b21815be949509184626c19e62858f354dd55216f7e8831e",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer implementation available at its official upstream",
+      "series": true,
+      "site": "mp4hydra.top",
+      "upstreams": [
+        {
+          "comparison": "current official repository no longer contains Free99; retained last-known source",
+          "originalSha256": "93535d0fbbcc474b1c76dc3a7e5ff79147aac55607b583c6df7c4e36ba65a6bf",
+          "repository": "nebulous42069/Omega",
+          "version": "2.0.1"
+        }
+      ]
+    },
+    {
+      "adapter": "free99:stagatv_com",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_free99/providers/stagatv_com.py",
+      "localSha256": "3708ab548ca069beb5763a2877b61c727f83115218b712f61054a8bb405b8150",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer implementation available at its official upstream",
+      "series": true,
+      "site": "m.stagatv.com",
+      "upstreams": [
+        {
+          "comparison": "current official repository no longer contains Free99; retained last-known source",
+          "originalSha256": "4160464edf69073026cb29a4f8488d44f9d071e02129c705f9bb87628b332768",
+          "repository": "nebulous42069/Omega",
+          "version": "2.0.1"
+        }
+      ]
+    },
+    {
+      "adapter": "free99:naijavault_com",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_free99/providers/naijavault_com.py",
+      "localSha256": "47f01bc8d3b2f5e88fc3da33347af021b623927642e3fdddc90ceea9bc4e945d",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer implementation available at its official upstream",
+      "series": true,
+      "site": "naijavault.com",
+      "upstreams": [
+        {
+          "comparison": "current official repository no longer contains Free99; retained last-known source",
+          "originalSha256": "d5054086998543155dd5d42181d8cbd322d47a64cb3a771f6690fa302ccb72c5",
+          "repository": "nebulous42069/Omega",
+          "version": "2.0.1"
+        }
+      ]
+    },
+    {
+      "adapter": "free99:bnwmovies_com",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_free99/providers/bnwmovies_com.py",
+      "localSha256": "b59bdcaf240d2e23ee791bf851f0e6293da6281bb8866bd6bd1911b8e33b5784",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer implementation available at its official upstream",
+      "series": false,
+      "site": "bnwmovies.com",
+      "upstreams": [
+        {
+          "comparison": "current official repository no longer contains Free99; retained last-known source",
+          "originalSha256": "de15370640ffd6a6e7f87d34f476ea3e1874f917fe5efd30e282f5bd0b53ec03",
+          "repository": "nebulous42069/Omega",
+          "version": "2.0.1"
+        }
+      ]
+    },
+    {
+      "adapter": "free99:anymovies_co",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_free99/providers/anymovies_co.py",
+      "localSha256": "425713c0219631883bdf0d2816fbfc28846ab704e6f7d6729b294df0c9c39754",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer implementation available at its official upstream",
+      "series": false,
+      "site": "downloads-anymovies.co",
+      "upstreams": [
+        {
+          "comparison": "current official repository no longer contains Free99; retained last-known source",
+          "originalSha256": "85cdab3edeb9dcb136bf90ecd4c587003f0d9b14a6e926d45d8220f5f37ed9dc",
+          "repository": "nebulous42069/Omega",
+          "version": "2.0.1"
+        }
+      ]
+    },
+    {
+      "adapter": "free99:seriesloaded_ng",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_free99/providers/seriesloaded_ng.py",
+      "localSha256": "0752ceb337896d601161863574264797f3b2b8da7149452db8569e7c78b8849e",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer implementation available at its official upstream",
+      "series": true,
+      "site": "seriezloaded.com.ng",
+      "upstreams": [
+        {
+          "comparison": "current official repository no longer contains Free99; retained last-known source",
+          "originalSha256": "18ec5473960026367b5f61accf17de626ab28035094ae02f4731c3e78bc64c5e",
+          "repository": "nebulous42069/Omega",
+          "version": "2.0.1"
+        }
+      ]
+    },
+    {
+      "adapter": "free99:levidia_ch",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_free99/providers/levidia_ch.py",
+      "localSha256": "bb17e9f970b17734b7ecaa0388373895cd106524e79b9ad4d729623ba8fa2914",
+      "movies": true,
+      "pending": false,
+      "selection": "no newer implementation available at its official upstream",
+      "series": true,
+      "site": "levidia.ch",
+      "upstreams": [
+        {
+          "comparison": "current official repository no longer contains Free99; retained last-known source",
+          "originalSha256": "124cedc33b024dccad961f6ee2e2d947617458bc590f307ef108357fb53b72f3",
+          "repository": "nebulous42069/Omega",
+          "version": "2.0.1"
+        }
+      ]
+    },
+    {
+      "adapter": "native:fourkhdhub",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/fourkhdhub.py",
+      "localSha256": "56d3b1201fba0019be3410739580794d8c383006b574e1d23f285d884b445182",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": false,
+      "site": "4khdhub.one",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invoke4khdhub",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "b1c03c0ad9ddd537fdc7fe2e767c806224611e7f397aed1d6cc675b62a4b8d54",
+          "function": "invoke4khdhub",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:vixsrc",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/vixsrc.py",
+      "localSha256": "1311447b6a70598135e24beaabe2b3dce36dd518cc4253ef9f4f9355eff4b79e",
+      "movies": true,
+      "pending": false,
+      "selection": "independent existing adapter; no equivalent function in the two aggregators",
+      "series": true,
+      "site": "vixsrc.to",
+      "upstreams": []
+    },
+    {
+      "adapter": "native:rive",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/rive.py",
+      "localSha256": "d5f59319f151fa10b6f7b0fbcafb52e7231fbccbe917c9120b352a3574c77c06",
+      "movies": true,
+      "pending": false,
+      "selection": "comparison recorded; known route failures/browser or decoder dependencies remain unresolved",
+      "series": true,
+      "site": "rivestream.app",
+      "upstreams": [
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "27590f136fbf32eb032524788ba7a7dedc13ac29a352b1b79914b14c394b3b54",
+          "function": "invokeRiveStream",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:movy",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/movy.py",
+      "localSha256": "59d3c280b91430e4115c7919219b389279151154915e63414373835c264c0656",
+      "movies": true,
+      "pending": false,
+      "selection": "comparison recorded; known route failures/browser or decoder dependencies remain unresolved",
+      "series": true,
+      "site": "movy.sx",
+      "upstreams": [
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "0d1b5f92a4934ddb274cd1eb51a1cc3181444b3ef20d86f7be630e55f2435586",
+          "function": "invokeVidy",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:vaplayer",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
+      "localSha256": "5b401deea87cad293cc3c902e4417eeb73f1193a360b83b033a5f02767bc56e7",
+      "movies": true,
+      "pending": true,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "streamdata.vaplayer.ru",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeVaPlayer",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "013e2310c53971ec9a54cc12c5803612e222875331eae37a5a95cca63f0ffa5d",
+          "function": "invokevaplayer",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:primesrc",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
+      "localSha256": "5b401deea87cad293cc3c902e4417eeb73f1193a360b83b033a5f02767bc56e7",
+      "movies": true,
+      "pending": true,
+      "selection": "comparison recorded; known route failures/browser or decoder dependencies remain unresolved",
+      "series": true,
+      "site": "primesrc.me",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokePrimeSrc",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        }
+      ]
+    },
+    {
+      "adapter": "native:fshare",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
+      "localSha256": "5b401deea87cad293cc3c902e4417eeb73f1193a360b83b033a5f02767bc56e7",
+      "movies": true,
+      "pending": false,
+      "selection": "newer Phisher protocol/address adapted in this revision",
+      "series": false,
+      "site": "fsharetv.co",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeFshare",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "1f345602cc5c7935e8af2fa26d0e07074d4635ed1e3573777ccd0d6dc091f837",
+          "function": "invokeFshareTv",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:videasy",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
+      "localSha256": "5b401deea87cad293cc3c902e4417eeb73f1193a360b83b033a5f02767bc56e7",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "vidy.st",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeVideasy",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "0d1b5f92a4934ddb274cd1eb51a1cc3181444b3ef20d86f7be630e55f2435586",
+          "function": "invokeVidy",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:meowtv",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
+      "localSha256": "5b401deea87cad293cc3c902e4417eeb73f1193a360b83b033a5f02767bc56e7",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "meowtv.ru",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeMeowtv",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        }
+      ]
+    },
+    {
+      "adapter": "native:vidup",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
+      "localSha256": "5b401deea87cad293cc3c902e4417eeb73f1193a360b83b033a5f02767bc56e7",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "vidup.to",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeVidup",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "36e1c262a9b46bc0376ed35e8eea547f96b09fb87a86deb62001299e575cf1bd",
+          "function": "invokeVidup",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:vidcore",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
+      "localSha256": "5b401deea87cad293cc3c902e4417eeb73f1193a360b83b033a5f02767bc56e7",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "vidcore.io",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeVidcore",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        }
+      ]
+    },
+    {
+      "adapter": "native:vidfast",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
+      "localSha256": "5b401deea87cad293cc3c902e4417eeb73f1193a360b83b033a5f02767bc56e7",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "vidfast.vc",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeVidFastPro",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "3aafc5c93f4c92a17bceeec16edf48499c1c778b5c0c535531edc6a91bfb6272",
+          "function": "invokeVidFast",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:onetouchtv",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
+      "localSha256": "5b401deea87cad293cc3c902e4417eeb73f1193a360b83b033a5f02767bc56e7",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "api3.devcorp.me",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeOnetouchtv",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        }
+      ]
+    },
+    {
+      "adapter": "native:cinejoy",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
+      "localSha256": "5b401deea87cad293cc3c902e4417eeb73f1193a360b83b033a5f02767bc56e7",
+      "movies": true,
+      "pending": false,
+      "selection": "newer Phisher protocol/address adapted in this revision",
+      "series": true,
+      "site": "cinejoy.to",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeCinejoy",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "b0bd83545ab39d847bda6ea595a885c355fcd9185fc0ffba8e6972ff5ee5a34e",
+          "function": "invokeCinejoy",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:hexa",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
+      "localSha256": "5b401deea87cad293cc3c902e4417eeb73f1193a360b83b033a5f02767bc56e7",
+      "movies": true,
+      "pending": false,
+      "selection": "comparison recorded; known route failures/browser or decoder dependencies remain unresolved",
+      "series": true,
+      "site": "hexa.su",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeHexa",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "6f1d03a5d3d18b871f359b1e001649a8e26dd1180f4de40c570731272d6101c7",
+          "function": "invokeHexa",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:projectfreetv_sx",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_catalogues.py",
+      "localSha256": "7dc96066d323a2fb1a6d56663f1cea3fa04eda7273edf0c31b1b68930ef1d678",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "projectfreetv.sx",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeProjectfreetv",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        }
+      ]
+    },
+    {
+      "adapter": "native:akwam",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_catalogues.py",
+      "localSha256": "7dc96066d323a2fb1a6d56663f1cea3fa04eda7273edf0c31b1b68930ef1d678",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": false,
+      "site": "akwam.it",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeAkwam",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        }
+      ]
+    },
+    {
+      "adapter": "native:asiaflix",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_catalogues.py",
+      "localSha256": "7dc96066d323a2fb1a6d56663f1cea3fa04eda7273edf0c31b1b68930ef1d678",
+      "movies": true,
+      "pending": true,
+      "selection": "comparison recorded; known route failures/browser or decoder dependencies remain unresolved",
+      "series": true,
+      "site": "asiaflix.net",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeAsiaflix",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "8092bbc12a83635f22d410105d4247a17928cfeb009f83766b1d8b3907342bb4",
+          "function": "invokeAsiaflix",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:vidrock",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_crypto.py",
+      "localSha256": "ec1a14bd0ebfc91f3e11d0a175593a486749e5bb35adef8aa4181b0aa514d503",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "vidrock.ru",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeVidrock",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "1f4a5d532a09a1e5de58ab36210fc1e6eeb60f0c5e0bca1fd621d8c15b07d253",
+          "function": "invokevidrock",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:peachify",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_crypto.py",
+      "localSha256": "ec1a14bd0ebfc91f3e11d0a175593a486749e5bb35adef8aa4181b0aa514d503",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "peachify.top",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokePeachify",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "ba8cc148c03c4e5e6b9ffed1c457ee116a948dff828ac628b2e903abc5a6a4cf",
+          "function": "invokePeachify",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:vidzee",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_crypto.py",
+      "localSha256": "ec1a14bd0ebfc91f3e11d0a175593a486749e5bb35adef8aa4181b0aa514d503",
+      "movies": true,
+      "pending": false,
+      "selection": "newer Phisher protocol/address adapted in this revision",
+      "series": true,
+      "site": "player.vidzee.wtf",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeVidzee",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "c48e3be1d01449a605ce16e3b3261d95be28a7559f73d1cd3601c13e79f77664",
+          "function": "invokeVidzee",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:moviebox",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_moviebox.py",
+      "localSha256": "827328f1e7762eb9770c5ad96537d45fdaf74c5a9382818a97c2c35bb731556d",
+      "movies": true,
+      "pending": false,
+      "selection": "newer Phisher protocol/address adapted in this revision",
+      "series": true,
+      "site": "h5-api.aoneroom.com",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeMoviebox",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "39ede75cf428c06e2704eee6fa0cc280d3f33b1da886ef45070051f18b7e243a",
+          "function": "invokeMovieBox",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:allmovieland",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_api.py",
+      "localSha256": "5b401deea87cad293cc3c902e4417eeb73f1193a360b83b033a5f02767bc56e7",
+      "movies": true,
+      "pending": false,
+      "selection": "newer Phisher protocol/address adapted in this revision",
+      "series": true,
+      "site": "allmovieland.io",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeAllmovieland",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "30eb40cb758a6378ea4dc4cfe4613239dfb7195b5c39cba547908dc5198a6d13",
+          "function": "invokeAllMovieland",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:multimovies",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_embeds.py",
+      "localSha256": "a8da53152a425523f2815d9e922d8178f6f4f7a166287647ca30e7200b5d07d0",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "m1.multimovies.courses",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeMultimovies",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "95978f9a17b0c8706d71149f480e2ae898590a146159d437c75889ecca32944d",
+          "function": "invokeMultimovies",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:toonstream",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_embeds.py",
+      "localSha256": "a8da53152a425523f2815d9e922d8178f6f4f7a166287647ca30e7200b5d07d0",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "toonstream.us",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeToonstream",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        }
+      ]
+    },
+    {
+      "adapter": "native:animesalt",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_embeds.py",
+      "localSha256": "a8da53152a425523f2815d9e922d8178f6f4f7a166287647ca30e7200b5d07d0",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "animesalt.cx",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeAnimesalt",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        }
+      ]
+    },
+    {
+      "adapter": "native:rtally",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_embeds.py",
+      "localSha256": "a8da53152a425523f2815d9e922d8178f6f4f7a166287647ca30e7200b5d07d0",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": false,
+      "site": "rtally.lol",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeRtally",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        }
+      ]
+    },
+    {
+      "adapter": "native:kisskh",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_embeds.py",
+      "localSha256": "a8da53152a425523f2815d9e922d8178f6f4f7a166287647ca30e7200b5d07d0",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "kisskh.do",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeKisskh",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "aef49998fdbd22020a192e9c26a9825b9cff6d907cdfac586bcbf7572a624585",
+          "function": "invokeKisskh",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:bollyflix",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_downloads.py",
+      "localSha256": "6021b18ed34a04b92adbf436c7fec43ed7623e6c9c23fc7a878aa526eaa333bd",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "new1.bollyflix.tours",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeBollyflix",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "75a82f649794f79c4dff3b6a68fec58e2f7a836d8d0cea38f12b8936ec74a470",
+          "function": "invokeBollyflix",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:topmovies",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_downloads.py",
+      "localSha256": "6021b18ed34a04b92adbf436c7fec43ed7623e6c9c23fc7a878aa526eaa333bd",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "moviesleech.club",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeTopMovies",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "68f3cb6e277a01627fd35762e5ba8ca690bb40eb9f33cd4d1d96318b028906e8",
+          "function": "invokeTopMovies",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:moviesmod",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_downloads.py",
+      "localSha256": "6021b18ed34a04b92adbf436c7fec43ed7623e6c9c23fc7a878aa526eaa333bd",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "moviesmod.tw",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeMoviesmod",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "b95849619269314001a9c6fc431c2eff9d429dc5b245e62ae6c7b2cc03f3869d",
+          "function": "invokeMoviesmod",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:moviesdrive",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_downloads.py",
+      "localSha256": "6021b18ed34a04b92adbf436c7fec43ed7623e6c9c23fc7a878aa526eaa333bd",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "new3.moviesdrive.cyou",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeMoviesdrive",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "cdee6a28ebf465ec37dc4dd630d09175f3254f7b553075ee57e7ba85de8824ca",
+          "function": "invokeMoviesdrive",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:uhdmovies",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_downloads.py",
+      "localSha256": "6021b18ed34a04b92adbf436c7fec43ed7623e6c9c23fc7a878aa526eaa333bd",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "uhdmovies.ceo",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeUhdmovies",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "60f23aa3964d832f98cbbc547ea17601712521f298a939862e8964f0917cb944",
+          "function": "invokeUhdmovies",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:dudefilms",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_downloads.py",
+      "localSha256": "6021b18ed34a04b92adbf436c7fec43ed7623e6c9c23fc7a878aa526eaa333bd",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "new2.dudefilms.church",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeDudefilms",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "506e5942aa1bf7c3c3ae8f3ab9b232835bca87c97275452189df6b8179106332",
+          "function": "invokeDudefilms",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:vegamovies",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_downloads.py",
+      "localSha256": "6021b18ed34a04b92adbf436c7fec43ed7623e6c9c23fc7a878aa526eaa333bd",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "vegamovies.lease",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeVegamovies",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "b10bb2344f4526b4c8e863cf2aa88e246260b1893e7a37a22d45635af295d730",
+          "function": "invokeVegamovies",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:rogmovies",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_downloads.py",
+      "localSha256": "6021b18ed34a04b92adbf436c7fec43ed7623e6c9c23fc7a878aa526eaa333bd",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "rogmovies.cyou",
+      "upstreams": [
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "aaf6401028318187a3f5b08b38435d3832358b3d0f5da6d29688b12e224824d9",
+          "function": "invokeRogmovies",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:hindmoviez",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_downloads.py",
+      "localSha256": "6021b18ed34a04b92adbf436c7fec43ed7623e6c9c23fc7a878aa526eaa333bd",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "v4.hindmovie.im",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeHindmoviez",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "36e0a05e1ba31c22e9ed84680879676ec1e0f4ab6999028e0e6c716e5633ecc2",
+          "function": "invokeHindmoviez",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:hdhub4u",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_downloads.py",
+      "localSha256": "6021b18ed34a04b92adbf436c7fec43ed7623e6c9c23fc7a878aa526eaa333bd",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "new14.hdhub4u.cl",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeHdhub4u",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "80d7499cb56cb1c7b0e7d1ff9d3ab1b50ded2b1e8c6e75beb70c4629db978d18",
+          "function": "invokehdhub4u",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:zinkmovies",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_downloads.py",
+      "localSha256": "6021b18ed34a04b92adbf436c7fec43ed7623e6c9c23fc7a878aa526eaa333bd",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "new3.zinkmovies.tattoo",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeZinkmovies",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "f683887535543a96e6e717bbdd5ab0a33e076eb9216e9344654930b81f5b4be2",
+          "function": "invokeZinkmovies",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    },
+    {
+      "adapter": "native:fibwatch",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_indexes.py",
+      "localSha256": "72df745ec8f0568dc9f3d6ca202909c5a9f850a2215e8e367c37111071b00691",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "fibwatch.art",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeFibwatch",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        }
+      ]
+    },
+    {
+      "adapter": "native:mlsbd",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_indexes.py",
+      "localSha256": "72df745ec8f0568dc9f3d6ca202909c5a9f850a2215e8e367c37111071b00691",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "mlsbd.co",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeMlsbd",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        }
+      ]
+    },
+    {
+      "adapter": "native:skymovies",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_indexes.py",
+      "localSha256": "72df745ec8f0568dc9f3d6ca202909c5a9f850a2215e8e367c37111071b00691",
+      "movies": true,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "new5.skymovieshd.clinic",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeSkymovies",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        }
+      ]
+    },
+    {
+      "adapter": "native:m4ufree_lat",
+      "localPath": "android-tv-launcher/app/src/main/python/moviehub_native/cinestream_indexes.py",
+      "localSha256": "72df745ec8f0568dc9f3d6ca202909c5a9f850a2215e8e367c37111071b00691",
+      "movies": false,
+      "pending": false,
+      "selection": "adapted protocol retained; upstream candidates recorded; not represented as a verified replacement",
+      "series": true,
+      "site": "ww5.m4ufree.lat",
+      "upstreams": [
+        {
+          "commit": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+          "comparison": "latest public CineStream source; per-function history available",
+          "function": "invokeM4ufree",
+          "repository": "SaurabhKaperwan/CSX",
+          "version": 487
+        },
+        {
+          "comparison": "compiled candidate; package date does not date the individual function",
+          "compiledMethodSha256": "fd085d261956c2258f5ee9f8ebc630746e37f51260490a3085a4e26edd81b3a0",
+          "function": "invokeM4uhd",
+          "repository": "phisher98/cloudstream-extensions-phisher",
+          "version": 711
+        }
+      ]
+    }
+  ],
+  "hostResolvers": [
+    {
+      "localSha256": "438f5c26408586edf086fa277020eadde18783292f8e23671f98d568a025759f",
+      "module": "abstream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "438f5c26408586edf086fa277020eadde18783292f8e23671f98d568a025759f"
+    },
+    {
+      "localSha256": "fe6e35d619ef431d7ff59ff123dcbcc470afb2823ac0b5c244f614297a041b55",
+      "module": "abyss",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "fe6e35d619ef431d7ff59ff123dcbcc470afb2823ac0b5c244f614297a041b55"
+    },
+    {
+      "localSha256": "2a546afa881b6c97a9b4885b2839aac962eb2b680dba683625a8696b246a92b0",
+      "module": "adramas",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "2a546afa881b6c97a9b4885b2839aac962eb2b680dba683625a8696b246a92b0"
+    },
+    {
+      "localSha256": "1eed03e168ee90fa7a3a56f924ec5695240402e42c6506172f8924cdaabaee3e",
+      "module": "adultswim",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "1eed03e168ee90fa7a3a56f924ec5695240402e42c6506172f8924cdaabaee3e"
+    },
+    {
+      "localSha256": "df6fceafc00156d046aa19b2b562a8d12997440cf5263b43738af1e6d1a11bfe",
+      "module": "alldebrid",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "df6fceafc00156d046aa19b2b562a8d12997440cf5263b43738af1e6d1a11bfe"
+    },
+    {
+      "localSha256": "198dcc479cb78d1fb7e9e6a2983b402cda85e9059d641e71b4c279e243789277",
+      "module": "allvideo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "198dcc479cb78d1fb7e9e6a2983b402cda85e9059d641e71b4c279e243789277"
+    },
+    {
+      "localSha256": "aa9883ae53e0510b78318b0baee0bfee7782c664c2bec167f274bc238a9f002f",
+      "module": "allviid",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "aa9883ae53e0510b78318b0baee0bfee7782c664c2bec167f274bc238a9f002f"
+    },
+    {
+      "localSha256": "9ba5c77c34823b30b0b002388e44f4ee80d92d34e0ff4f1d56423e4b0e041649",
+      "module": "amazon",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "9ba5c77c34823b30b0b002388e44f4ee80d92d34e0ff4f1d56423e4b0e041649"
+    },
+    {
+      "localSha256": "20cdcc10edef8daad531867a7d2d5317e04f329757041509c8e16e9c8d399a41",
+      "module": "amdahost",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "20cdcc10edef8daad531867a7d2d5317e04f329757041509c8e16e9c8d399a41"
+    },
+    {
+      "localSha256": "9c4cc4ddd9db9f2654b276c02ba0dbaa97acf507f561f412a94060a549cd5ec9",
+      "module": "anafast",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "9c4cc4ddd9db9f2654b276c02ba0dbaa97acf507f561f412a94060a549cd5ec9"
+    },
+    {
+      "localSha256": "8bdba87eccd769882b87787d9674a4c5ee6295fb744dd0ea1f968554920c8fb4",
+      "module": "anistream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "8bdba87eccd769882b87787d9674a4c5ee6295fb744dd0ea1f968554920c8fb4"
+    },
+    {
+      "localSha256": "3e974a31184bfe20b4221740d60a266e90ed2cf9476aec0081561daf20e2aa9a",
+      "module": "anonmp4",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "3e974a31184bfe20b4221740d60a266e90ed2cf9476aec0081561daf20e2aa9a"
+    },
+    {
+      "localSha256": "99f7b224790ef735b13cc80441bea308440f96f78d5d4ffb77f58308e00d1982",
+      "module": "anonstream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "99f7b224790ef735b13cc80441bea308440f96f78d5d4ffb77f58308e00d1982"
+    },
+    {
+      "localSha256": "9728f054c6ca41c39ba375f35d83dfbda9fde1f1f7ddbac11fa610e57fe0c8e6",
+      "module": "archiveorg",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "9728f054c6ca41c39ba375f35d83dfbda9fde1f1f7ddbac11fa610e57fe0c8e6"
+    },
+    {
+      "localSha256": "708f2c62105a515b5302c1c4976fe23e9ab8a681c6a3120d948823c2e4725bef",
+      "module": "asianload",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "708f2c62105a515b5302c1c4976fe23e9ab8a681c6a3120d948823c2e4725bef"
+    },
+    {
+      "localSha256": "8c7b0a3bb667aec73208802e2a5c3f69864a0e57dbc55f482b7592f757bdd4b6",
+      "module": "asumanaksoy",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "8c7b0a3bb667aec73208802e2a5c3f69864a0e57dbc55f482b7592f757bdd4b6"
+    },
+    {
+      "localSha256": "371e4a747c1203d511593e2e1e77a193568b2382377be2187d30adcd699e3d0f",
+      "module": "bewab",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "371e4a747c1203d511593e2e1e77a193568b2382377be2187d30adcd699e3d0f"
+    },
+    {
+      "localSha256": "baa70ed6f59eef8ba7a9224e8c17caa88572f86a5e641d09827f81aa7954d216",
+      "module": "bigshare",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "baa70ed6f59eef8ba7a9224e8c17caa88572f86a5e641d09827f81aa7954d216"
+    },
+    {
+      "localSha256": "fa854b723be1b38d469a6ed9c9b55180b4a37683dab5d70fd371506ed396388a",
+      "module": "bigwarp",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "fa854b723be1b38d469a6ed9c9b55180b4a37683dab5d70fd371506ed396388a"
+    },
+    {
+      "localSha256": "de85077eca8d0220d2b6bf9a7f84e6e54fc2ba3bff74f83162e6ef6ffc29afb9",
+      "module": "bitchute",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "de85077eca8d0220d2b6bf9a7f84e6e54fc2ba3bff74f83162e6ef6ffc29afb9"
+    },
+    {
+      "localSha256": "10b430e911ac9501ae4858049a303069fc1cc641721fae7e97b0467c2194c305",
+      "module": "boodstream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "10b430e911ac9501ae4858049a303069fc1cc641721fae7e97b0467c2194c305"
+    },
+    {
+      "localSha256": "bdde8a3bd9a5c1b499c3bb1c86e237e63580239803288acdce71bb14666f5a31",
+      "module": "bowfile",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "bdde8a3bd9a5c1b499c3bb1c86e237e63580239803288acdce71bb14666f5a31"
+    },
+    {
+      "localSha256": "c88fc658371ce9d501b40fdf8541cf89847bd756ccdd27464820394099251c53",
+      "module": "boxbit",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "c88fc658371ce9d501b40fdf8541cf89847bd756ccdd27464820394099251c53"
+    },
+    {
+      "localSha256": "33cf23a3901389de274e109c0dfa86d74de41f3918836c18576deb0e9b1ba957",
+      "module": "brainzaps",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "33cf23a3901389de274e109c0dfa86d74de41f3918836c18576deb0e9b1ba957"
+    },
+    {
+      "localSha256": "3bfb585bcf57244238d5e087076eeab9a1ad9acc71ae011a197173ce43b452b9",
+      "module": "brbeast",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "3bfb585bcf57244238d5e087076eeab9a1ad9acc71ae011a197173ce43b452b9"
+    },
+    {
+      "localSha256": "7c9d0138fef6b2f28575d1366dbddc05dfd0e7fc25f935a24812068fe5a4140f",
+      "module": "brighteon",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "7c9d0138fef6b2f28575d1366dbddc05dfd0e7fc25f935a24812068fe5a4140f"
+    },
+    {
+      "localSha256": "d2522394766462f00a79a2a8aa00acc93465921dbf35cf81101602463bf47792",
+      "module": "brupload",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "d2522394766462f00a79a2a8aa00acc93465921dbf35cf81101602463bf47792"
+    },
+    {
+      "localSha256": "c4a320e47e1ffed2a04c39d8ee039465f7bace4929dd4e3e68125b2c1a257a3c",
+      "module": "bunny",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "c4a320e47e1ffed2a04c39d8ee039465f7bace4929dd4e3e68125b2c1a257a3c"
+    },
+    {
+      "localSha256": "e8c6428581714a69f790823edf2a29574cb9753fcf2aab64221de9a223c4a9a5",
+      "module": "bunnycdn",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "e8c6428581714a69f790823edf2a29574cb9753fcf2aab64221de9a223c4a9a5"
+    },
+    {
+      "localSha256": "2e4a3e510aeb02e853392e88153a7ba38738b67925491b10326e38391aaee613",
+      "module": "buzz",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "2e4a3e510aeb02e853392e88153a7ba38738b67925491b10326e38391aaee613"
+    },
+    {
+      "localSha256": "bc69910773dbfae348e390dfe0752aa54c00fc88db6609c87fdcf3ffef8e04fc",
+      "module": "byse",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "bc69910773dbfae348e390dfe0752aa54c00fc88db6609c87fdcf3ffef8e04fc"
+    },
+    {
+      "localSha256": "2f48eefa8b8e7d26ae3e39791c6bc70c312c966d6bee0f66de6429599a6e2e40",
+      "module": "casthq",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "2f48eefa8b8e7d26ae3e39791c6bc70c312c966d6bee0f66de6429599a6e2e40"
+    },
+    {
+      "localSha256": "5debbf38a23e5bc9aca611b62550b0210ac6b73f7daddd08fdede38327aa87bd",
+      "module": "cda",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "5debbf38a23e5bc9aca611b62550b0210ac6b73f7daddd08fdede38327aa87bd"
+    },
+    {
+      "localSha256": "ae4a9d31792f01d27d7734d5358cf192784177d73419c1556074e4c9d187bae7",
+      "module": "cimanow",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "ae4a9d31792f01d27d7734d5358cf192784177d73419c1556074e4c9d187bae7"
+    },
+    {
+      "localSha256": "47eb871df73fd83f9f3153f4412f1f0522cb296dfe49a8d90b790679655a07f2",
+      "module": "cloudb",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "47eb871df73fd83f9f3153f4412f1f0522cb296dfe49a8d90b790679655a07f2"
+    },
+    {
+      "localSha256": "365cecbb7e57c10a1b8ba32e174c9bf8fc5d7194808b7a63d4295c426e8cc7b2",
+      "module": "cloudfile",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "365cecbb7e57c10a1b8ba32e174c9bf8fc5d7194808b7a63d4295c426e8cc7b2"
+    },
+    {
+      "localSha256": "08c691c92f6a6dcbabf54171b790794c55c89606a24c78d3abbd7d0363a81d87",
+      "module": "cloudmailru",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "08c691c92f6a6dcbabf54171b790794c55c89606a24c78d3abbd7d0363a81d87"
+    },
+    {
+      "localSha256": "9b8ece209d985101665912b98a515230a9564abad0408938e2bc5274884b9298",
+      "module": "cocoleech",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "9b8ece209d985101665912b98a515230a9564abad0408938e2bc5274884b9298"
+    },
+    {
+      "localSha256": "e15ccbc1767fc7cb4180a9d61fd70decbd261ab46bfaadec975c60abef72f01e",
+      "module": "content_st",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "e15ccbc1767fc7cb4180a9d61fd70decbd261ab46bfaadec975c60abef72f01e"
+    },
+    {
+      "localSha256": "6fa9cb00aad2381f0f9f0a1927f91205bf269e6d6ac05a36de15ae6600549feb",
+      "module": "costv",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "6fa9cb00aad2381f0f9f0a1927f91205bf269e6d6ac05a36de15ae6600549feb"
+    },
+    {
+      "localSha256": "196289b890129206fd7a0b2d288b82b1bd529b730934d0413aa6af453e9bc78c",
+      "module": "dailymotion",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "196289b890129206fd7a0b2d288b82b1bd529b730934d0413aa6af453e9bc78c"
+    },
+    {
+      "localSha256": "d96a711bd4e61dabbada432210cebc99515618420569c4a3f0370707e5533bc9",
+      "module": "dailyuploads",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "d96a711bd4e61dabbada432210cebc99515618420569c4a3f0370707e5533bc9"
+    },
+    {
+      "localSha256": "cc4e4e0879f29b7ae0b900ac5edb7b15040ac91d61134075b4b25517f7421c5d",
+      "module": "daxab",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "cc4e4e0879f29b7ae0b900ac5edb7b15040ac91d61134075b4b25517f7421c5d"
+    },
+    {
+      "localSha256": "24b020931e87909601cbbe005c8bd3ede7007323647d93729b5640d3dd36feed",
+      "module": "debrid_link",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "24b020931e87909601cbbe005c8bd3ede7007323647d93729b5640d3dd36feed"
+    },
+    {
+      "localSha256": "a3ce91a7248c4fbc198095ef2c682c346fc6893bdb276438af194b00ace91158",
+      "module": "doodstream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "a3ce91a7248c4fbc198095ef2c682c346fc6893bdb276438af194b00ace91158"
+    },
+    {
+      "localSha256": "0328e716191ea46e2a964e62160187c09a8a62d36e7d38d5e8b4326988c8e80b",
+      "module": "drakkar",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "0328e716191ea46e2a964e62160187c09a8a62d36e7d38d5e8b4326988c8e80b"
+    },
+    {
+      "localSha256": "2095882f54b19f32c469c7d952d376b3466ce745cecfc451716c56038e886f63",
+      "module": "dramacoolmen",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "2095882f54b19f32c469c7d952d376b3466ce745cecfc451716c56038e886f63"
+    },
+    {
+      "localSha256": "32b2658e81312fab74158f7c911d7b97e469e9336e255c0242bfc9b5cf6542ee",
+      "module": "droplare",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "32b2658e81312fab74158f7c911d7b97e469e9336e255c0242bfc9b5cf6542ee"
+    },
+    {
+      "localSha256": "f38036a9a377d2a644e48c3c0dd706596b607ba230ca235bba7243122b397d3f",
+      "module": "dropload",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "f38036a9a377d2a644e48c3c0dd706596b607ba230ca235bba7243122b397d3f"
+    },
+    {
+      "localSha256": "2e51cd73d96dc51579a508004ceef0080541d2c703957e6cfe9831b54782e2b1",
+      "module": "dtube",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "2e51cd73d96dc51579a508004ceef0080541d2c703957e6cfe9831b54782e2b1"
+    },
+    {
+      "localSha256": "6d40b3a3deeaabcb0eaec7ced0c4737524813d8297cd03a7bc3e7db15fb2fbaa",
+      "module": "duboku",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "6d40b3a3deeaabcb0eaec7ced0c4737524813d8297cd03a7bc3e7db15fb2fbaa"
+    },
+    {
+      "localSha256": "0fe4c978325349b1fa9a7032e706b2adfdcf6cb0f94004abff7ba6920ed368d7",
+      "module": "dzen",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "0fe4c978325349b1fa9a7032e706b2adfdcf6cb0f94004abff7ba6920ed368d7"
+    },
+    {
+      "localSha256": "15e2ce3725b21a336a5980c392f32be5f35fd1e74cc13f6d32f882f1b6aed933",
+      "module": "embedgram",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "15e2ce3725b21a336a5980c392f32be5f35fd1e74cc13f6d32f882f1b6aed933"
+    },
+    {
+      "localSha256": "db3e85da9aa09a08a0b81704de15c045b3a742ad741dffb825ef9e9272f1bd09",
+      "module": "embedojo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "db3e85da9aa09a08a0b81704de15c045b3a742ad741dffb825ef9e9272f1bd09"
+    },
+    {
+      "localSha256": "0d9719dd50a6d92675a39aaa6a97156a5a34dfd13836aa6f4138146cf90117cb",
+      "module": "embedrise",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "0d9719dd50a6d92675a39aaa6a97156a5a34dfd13836aa6f4138146cf90117cb"
+    },
+    {
+      "localSha256": "9fc7aa47c96f9f119ebfe93669be22ffcac995c7ccfda32c53fa7793ef74aaf0",
+      "module": "entervideo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "9fc7aa47c96f9f119ebfe93669be22ffcac995c7ccfda32c53fa7793ef74aaf0"
+    },
+    {
+      "localSha256": "b0d40b1cdde4c3d84bf42c885778e7d2c6633e0b4f7d4511a2ff080b68e40958",
+      "module": "facebook",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "b0d40b1cdde4c3d84bf42c885778e7d2c6633e0b4f7d4511a2ff080b68e40958"
+    },
+    {
+      "localSha256": "1ad7862ba0f7c380780bf497cc5bf100084f92c5e7e5f924f8ef7de21e8d1f62",
+      "module": "fastdrive",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "1ad7862ba0f7c380780bf497cc5bf100084f92c5e7e5f924f8ef7de21e8d1f62"
+    },
+    {
+      "localSha256": "20107b376bfc223f89a14137788edffd31e9ac05739f86de533fbed6c955249c",
+      "module": "fastplay",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "20107b376bfc223f89a14137788edffd31e9ac05739f86de533fbed6c955249c"
+    },
+    {
+      "localSha256": "64daebb997337a345b175e0a6826558e72e50e1389b892c65377c27d697db9ee",
+      "module": "fastream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "64daebb997337a345b175e0a6826558e72e50e1389b892c65377c27d697db9ee"
+    },
+    {
+      "localSha256": "6abf8605750a10eb0fbc6551b8d7d07f0dfe0dd2d8654d354b540fda35e58dae",
+      "module": "filegram",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "6abf8605750a10eb0fbc6551b8d7d07f0dfe0dd2d8654d354b540fda35e58dae"
+    },
+    {
+      "localSha256": "9247222a137ee3f86dc7c858635fbde37a5149169563e86aad54af5fa8ecb009",
+      "module": "filekeeper",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "9247222a137ee3f86dc7c858635fbde37a5149169563e86aad54af5fa8ecb009"
+    },
+    {
+      "localSha256": "a709d8e7da1915986d5bff3054be8440fc44ff47b819380ec7e4f83f3ccd95fd",
+      "module": "filelions",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "a709d8e7da1915986d5bff3054be8440fc44ff47b819380ec7e4f83f3ccd95fd"
+    },
+    {
+      "localSha256": "cffe9bdb539127531dbe51903ace16864d89b8f7a72ed082b3a599e8c07b3dd7",
+      "module": "filemoon",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "cffe9bdb539127531dbe51903ace16864d89b8f7a72ed082b3a599e8c07b3dd7"
+    },
+    {
+      "localSha256": "a2a3d072e64444a05cf290b522dad68951517a2cabfcf7bbc1e3efcf36ec1b53",
+      "module": "fileone",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "a2a3d072e64444a05cf290b522dad68951517a2cabfcf7bbc1e3efcf36ec1b53"
+    },
+    {
+      "localSha256": "4c6d4c1c74240b1122f997523db35811353280c9359fc741658a857373efb73e",
+      "module": "filepup",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "4c6d4c1c74240b1122f997523db35811353280c9359fc741658a857373efb73e"
+    },
+    {
+      "localSha256": "8ab9ea3cf7238fdfb39fd1993de5680b4ccd8e3c807100ae9466f27305faf665",
+      "module": "filerio",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "8ab9ea3cf7238fdfb39fd1993de5680b4ccd8e3c807100ae9466f27305faf665"
+    },
+    {
+      "localSha256": "93b8d8bcd2368283ec50dec46e748879edf03443d976dd3a6b99bbe0362aec48",
+      "module": "filesfm",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "93b8d8bcd2368283ec50dec46e748879edf03443d976dd3a6b99bbe0362aec48"
+    },
+    {
+      "localSha256": "e6b0c58d7c20400d3096a6e43a17ec10fbf430955eb0c82595b2b170c4ffe5ce",
+      "module": "filesim",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "e6b0c58d7c20400d3096a6e43a17ec10fbf430955eb0c82595b2b170c4ffe5ce"
+    },
+    {
+      "localSha256": "78f9b81a6a3366139a30ecc380b60d6d8eb24f3eb60bdbeac75b867aa262dc23",
+      "module": "fileupload",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "78f9b81a6a3366139a30ecc380b60d6d8eb24f3eb60bdbeac75b867aa262dc23"
+    },
+    {
+      "localSha256": "5bb4f474ad84c120ca2be96a534ad4bdc947e532dfdcbedc9609382dc9cc3acc",
+      "module": "fileved",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "5bb4f474ad84c120ca2be96a534ad4bdc947e532dfdcbedc9609382dc9cc3acc"
+    },
+    {
+      "localSha256": "5abb271b7de3fbe1a5d332c2d9117694c45f8f9ccd0eec618d00378d93ed9f6f",
+      "module": "film77",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "5abb271b7de3fbe1a5d332c2d9117694c45f8f9ccd0eec618d00378d93ed9f6f"
+    },
+    {
+      "localSha256": "8b7ef82014f590d6b4ff8f57ee8ea46ab260e8dbda5a0d68f2c0e73f7df18b37",
+      "module": "firestream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "8b7ef82014f590d6b4ff8f57ee8ea46ab260e8dbda5a0d68f2c0e73f7df18b37"
+    },
+    {
+      "localSha256": "ab632afb20043f3b569d0c243716a6612b0765f693fab9524c56a2e276d98236",
+      "module": "flyfile",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "ab632afb20043f3b569d0c243716a6612b0765f693fab9524c56a2e276d98236"
+    },
+    {
+      "localSha256": "4aaa3ee2f66e0db5a3abe0b3e006e62ec789d91b3e6da54169244821ebddf0da",
+      "module": "forafile",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "4aaa3ee2f66e0db5a3abe0b3e006e62ec789d91b3e6da54169244821ebddf0da"
+    },
+    {
+      "localSha256": "24ea5766a03c031d5cd48a02a83b7b9079633cee58b4f63368f4c769935968f7",
+      "module": "frame",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "24ea5766a03c031d5cd48a02a83b7b9079633cee58b4f63368f4c769935968f7"
+    },
+    {
+      "localSha256": "d003722a59d5679d9b055d4eba34fb4bdeee22f7fdb59a73dbd450cc087568ba",
+      "module": "gett",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "d003722a59d5679d9b055d4eba34fb4bdeee22f7fdb59a73dbd450cc087568ba"
+    },
+    {
+      "localSha256": "c552a64b92e83f8b46b2c391a818b76b6ed87841f1687557ed7fd1f637ef93b1",
+      "module": "gofile",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "c552a64b92e83f8b46b2c391a818b76b6ed87841f1687557ed7fd1f637ef93b1"
+    },
+    {
+      "localSha256": "bb631fc49751170d7efc84f1f21e01876a9f528a4ce914e76ccad2f36107077a",
+      "module": "gomoplayer",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "bb631fc49751170d7efc84f1f21e01876a9f528a4ce914e76ccad2f36107077a"
+    },
+    {
+      "localSha256": "c32e94e5daa2c37c84ed7ce025093be57eadb70c009b1506cdcf6e74a0b87f2b",
+      "module": "goodstream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "c32e94e5daa2c37c84ed7ce025093be57eadb70c009b1506cdcf6e74a0b87f2b"
+    },
+    {
+      "localSha256": "6fc1b2c0bf9bdb0dd8cba88be365fcd660018bdf6e87aceb3d947df2bb732c8e",
+      "module": "goodstreamcc",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "6fc1b2c0bf9bdb0dd8cba88be365fcd660018bdf6e87aceb3d947df2bb732c8e"
+    },
+    {
+      "localSha256": "8ed252b1b7ec3e1e68307a28afda228d985c52107bcf32e71e542f8bfd6d441d",
+      "module": "googlephotos",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "8ed252b1b7ec3e1e68307a28afda228d985c52107bcf32e71e542f8bfd6d441d"
+    },
+    {
+      "localSha256": "fdfcf1a6ba6bf164e16abb39c1200c4e4a7a1b1d5a9409b6b79698e81e31e796",
+      "module": "googlevideo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "fdfcf1a6ba6bf164e16abb39c1200c4e4a7a1b1d5a9409b6b79698e81e31e796"
+    },
+    {
+      "localSha256": "7f5997e50850928d805ca2e9cecccb180a8e48bebf038b5d18eb151fdbcf914a",
+      "module": "goostream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "7f5997e50850928d805ca2e9cecccb180a8e48bebf038b5d18eb151fdbcf914a"
+    },
+    {
+      "localSha256": "f44ad500e7b514367132857eed9f420acf67b2ab0cf225805fd063e1d3ed9ee4",
+      "module": "gostream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "f44ad500e7b514367132857eed9f420acf67b2ab0cf225805fd063e1d3ed9ee4"
+    },
+    {
+      "localSha256": "eea39742e6dc2cc1c7fb1c07f74fe446ae31eb8630a04c2adece2cc113910f84",
+      "module": "gupload",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "eea39742e6dc2cc1c7fb1c07f74fe446ae31eb8630a04c2adece2cc113910f84"
+    },
+    {
+      "localSha256": "48a150431fca5d21191ec5f13388c6380f12fe57798cc9ad7cd5da92ce4c8ce6",
+      "module": "hdvid",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "48a150431fca5d21191ec5f13388c6380f12fe57798cc9ad7cd5da92ce4c8ce6"
+    },
+    {
+      "localSha256": "cbedd159f4cd394adbbeba25734e27cf9b163dc2221dd37c84a9a3a194fa3d0e",
+      "module": "hexupload",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "cbedd159f4cd394adbbeba25734e27cf9b163dc2221dd37c84a9a3a194fa3d0e"
+    },
+    {
+      "localSha256": "cc665f9fcaa42b7fa3bdfff0358229df49b142975e6d72cc2cf1edd14cd9914d",
+      "module": "hxfile",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "cc665f9fcaa42b7fa3bdfff0358229df49b142975e6d72cc2cf1edd14cd9914d"
+    },
+    {
+      "localSha256": "39b58e15a6e3a3f0c794f7005426bee517988ccd1e60f2b372313dd2e779bd43",
+      "module": "indavideo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "39b58e15a6e3a3f0c794f7005426bee517988ccd1e60f2b372313dd2e779bd43"
+    },
+    {
+      "localSha256": "68b7d12a7c1905ff33da870fcfe84b4a8ddbd984a12b52262f99f63b9e663941",
+      "module": "itemfix",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "68b7d12a7c1905ff33da870fcfe84b4a8ddbd984a12b52262f99f63b9e663941"
+    },
+    {
+      "localSha256": "288d824fa70b43449eff2483ee8e7b2cf5c3cc09182c07c5a020fe711a248ab1",
+      "module": "kinoger",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "288d824fa70b43449eff2483ee8e7b2cf5c3cc09182c07c5a020fe711a248ab1"
+    },
+    {
+      "localSha256": "7fc59e40dded8c249a4e446d6f65d003225d3826cf00c36dae09174f11cd7c46",
+      "module": "koramaup",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "7fc59e40dded8c249a4e446d6f65d003225d3826cf00c36dae09174f11cd7c46"
+    },
+    {
+      "localSha256": "1ab29093c60a5265ddbb50e35b2b1f642d203051bfb98135e1b21ec80a7ca870",
+      "module": "krakenfiles",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "1ab29093c60a5265ddbb50e35b2b1f642d203051bfb98135e1b21ec80a7ca870"
+    },
+    {
+      "localSha256": "f85d389b96ba4dd9cc67c0da8c7e581bb0f6ea23347acae9882bfcc1a9c64e3e",
+      "module": "kwik",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "f85d389b96ba4dd9cc67c0da8c7e581bb0f6ea23347acae9882bfcc1a9c64e3e"
+    },
+    {
+      "localSha256": "d19c67c1c00d5000ce1b0cd021491a0dd10ee97892920356f584f062227a52e4",
+      "module": "larhu",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "d19c67c1c00d5000ce1b0cd021491a0dd10ee97892920356f584f062227a52e4"
+    },
+    {
+      "localSha256": "eae3898aac260349f17ed7290eabccd0b03156575b72db3158e708fe6a02f13a",
+      "module": "lbry",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "eae3898aac260349f17ed7290eabccd0b03156575b72db3158e708fe6a02f13a"
+    },
+    {
+      "localSha256": "43c0501f577d5bf75d564c82ec6f2460e681c4a76ac478de1d94cbff630d705f",
+      "module": "letsupload",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "43c0501f577d5bf75d564c82ec6f2460e681c4a76ac478de1d94cbff630d705f"
+    },
+    {
+      "localSha256": "c20029887163f2e1c84ec173951d093cfa4c228d87d7872289deefb23d3a6329",
+      "module": "liivideo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "c20029887163f2e1c84ec173951d093cfa4c228d87d7872289deefb23d3a6329"
+    },
+    {
+      "localSha256": "bc26a368231edf3c4d38b61c46b55780445ec58038454d00be14c87382cf3c2f",
+      "module": "linkbox",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "bc26a368231edf3c4d38b61c46b55780445ec58038454d00be14c87382cf3c2f"
+    },
+    {
+      "localSha256": "df0a3d51f3cc8d85690687659ad9bdcc3f3d7f36d61df90315329b5d75c584b2",
+      "module": "linksnappy",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "df0a3d51f3cc8d85690687659ad9bdcc3f3d7f36d61df90315329b5d75c584b2"
+    },
+    {
+      "localSha256": "383815a92b38e4868e76f04c6c058b2ce15128712560c5586bf87dbaca66836e",
+      "module": "loadx",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "383815a92b38e4868e76f04c6c058b2ce15128712560c5586bf87dbaca66836e"
+    },
+    {
+      "localSha256": "40dd6114dda5649228459596e6e8d21843c74bb594d91b698b3c209a11bb164a",
+      "module": "lulustream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "40dd6114dda5649228459596e6e8d21843c74bb594d91b698b3c209a11bb164a"
+    },
+    {
+      "localSha256": "1f8376456d0341a8c4b3174d1030a9b5864fd07374dc845f3c4ebef86a296636",
+      "module": "mailru",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "1f8376456d0341a8c4b3174d1030a9b5864fd07374dc845f3c4ebef86a296636"
+    },
+    {
+      "localSha256": "39866d5868f30bf864089fb8e66f88ac22bcfee533602f0649b96a57492cf3a2",
+      "module": "maxstream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "39866d5868f30bf864089fb8e66f88ac22bcfee533602f0649b96a57492cf3a2"
+    },
+    {
+      "localSha256": "269164de81a43d8a0cd079b35d904821d902032c91377a50f52f9844f93bf1a5",
+      "module": "mediacm",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "269164de81a43d8a0cd079b35d904821d902032c91377a50f52f9844f93bf1a5"
+    },
+    {
+      "localSha256": "d86a05f84ca49b9816d2517456eef3433846c6e8faad987eff9629f93df397f0",
+      "module": "megadebrid",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "d86a05f84ca49b9816d2517456eef3433846c6e8faad987eff9629f93df397f0"
+    },
+    {
+      "localSha256": "fbe6ac7c9b7cf7f3641406bcd7c8e41d70abed361d88249a0a2feb053bc98dcf",
+      "module": "megogo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "fbe6ac7c9b7cf7f3641406bcd7c8e41d70abed361d88249a0a2feb053bc98dcf"
+    },
+    {
+      "localSha256": "d218aecee32589c47837f84448dfcc395f8b06233db6aff4c0a52ee4bd47dfcd",
+      "module": "mightyupload",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "d218aecee32589c47837f84448dfcc395f8b06233db6aff4c0a52ee4bd47dfcd"
+    },
+    {
+      "localSha256": "449a49f525e49ada67aeae9943dd45ed47ddc40be95d5e9fe98756608432aef8",
+      "module": "mixdrop",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "449a49f525e49ada67aeae9943dd45ed47ddc40be95d5e9fe98756608432aef8"
+    },
+    {
+      "localSha256": "f920ab3193f4488bfe9e46c617621462763407dbc158fa497ae96b66a4f67fa2",
+      "module": "mp4upload",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "f920ab3193f4488bfe9e46c617621462763407dbc158fa497ae96b66a4f67fa2"
+    },
+    {
+      "localSha256": "d98e13fd29da78310391cede31d1e72801c81cfb43ffcc55140e7d70de1a2ace",
+      "module": "newtube",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "d98e13fd29da78310391cede31d1e72801c81cfb43ffcc55140e7d70de1a2ace"
+    },
+    {
+      "localSha256": "51e640e972c51f2e4ad2066300af27a62623f0031e51199ad6fe95d67bf499d6",
+      "module": "offcloud",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "51e640e972c51f2e4ad2066300af27a62623f0031e51199ad6fe95d67bf499d6"
+    },
+    {
+      "localSha256": "1126012e4a6bf36ee3f94ac850eaa9cc9ffabed0a5194d4db230e836dd0e75a7",
+      "module": "ok",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "1126012e4a6bf36ee3f94ac850eaa9cc9ffabed0a5194d4db230e836dd0e75a7"
+    },
+    {
+      "localSha256": "806dc80c9fcd5ede3f95c0aa3582c2bf0c62f954f5e30bbb211d85d9c21c3044",
+      "module": "peertube",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "806dc80c9fcd5ede3f95c0aa3582c2bf0c62f954f5e30bbb211d85d9c21c3044"
+    },
+    {
+      "localSha256": "e447f5390f827971dc7bd988b7dd8b4239557c68669a921907408b502965dd8c",
+      "module": "peestream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "e447f5390f827971dc7bd988b7dd8b4239557c68669a921907408b502965dd8c"
+    },
+    {
+      "localSha256": "bd7fb2d31f189fd4b77b479c9c1809a3912f4af95881280b153d46a7e0844186",
+      "module": "pixeldrain",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "bd7fb2d31f189fd4b77b479c9c1809a3912f4af95881280b153d46a7e0844186"
+    },
+    {
+      "localSha256": "adb7f953278450fc1b832150cc5e09c966ce41e4461bdc3e995fe7767391a12b",
+      "module": "pkspeed",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "adb7f953278450fc1b832150cc5e09c966ce41e4461bdc3e995fe7767391a12b"
+    },
+    {
+      "localSha256": "9d9eb026f01661cdb5be8b62b1eb34625386ba6a53a5413f31835d3361748e74",
+      "module": "playhd",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "9d9eb026f01661cdb5be8b62b1eb34625386ba6a53a5413f31835d3361748e74"
+    },
+    {
+      "localSha256": "e56343e1cabcc1b13e06f535870158c132435d3ab5689785da2b26e90adebb9c",
+      "module": "playmate",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "e56343e1cabcc1b13e06f535870158c132435d3ab5689785da2b26e90adebb9c"
+    },
+    {
+      "localSha256": "879687eb6d80ef1a6f9aa3be4cadba991a5497307384605db310730c2d829e5f",
+      "module": "playwire",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "879687eb6d80ef1a6f9aa3be4cadba991a5497307384605db310730c2d829e5f"
+    },
+    {
+      "localSha256": "b1e596e119c0540d08597f41e66a1c338216d917f33c01ae9a8246f7baa81019",
+      "module": "prefiles",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "b1e596e119c0540d08597f41e66a1c338216d917f33c01ae9a8246f7baa81019"
+    },
+    {
+      "localSha256": "a81a1aae2014b869acff7a1c5e05bea058d9fff1a849ec99018b9d90bf82e177",
+      "module": "premiumize_me",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "a81a1aae2014b869acff7a1c5e05bea058d9fff1a849ec99018b9d90bf82e177"
+    },
+    {
+      "localSha256": "f030bfb9ec63df4661de3b3772998ab76a3b94a35dad666aa8ca4caf46cf557d",
+      "module": "qiwi",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "f030bfb9ec63df4661de3b3772998ab76a3b94a35dad666aa8ca4caf46cf557d"
+    },
+    {
+      "localSha256": "5279e6d3a7a71f1b67536319e99565273ef6e707509356c8de0bad7174803708",
+      "module": "rapidgator",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "5279e6d3a7a71f1b67536319e99565273ef6e707509356c8de0bad7174803708"
+    },
+    {
+      "localSha256": "97fc36c4fdab92ef837a98455737e351e873ee8f5c626917ae1b34f2f86a7cea",
+      "module": "realdebrid",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "97fc36c4fdab92ef837a98455737e351e873ee8f5c626917ae1b34f2f86a7cea"
+    },
+    {
+      "localSha256": "0e0cb180184a4b70ca1689e10ee63c0ce3329afb3b2992e31365e0525ec6b47f",
+      "module": "reviewrate",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "0e0cb180184a4b70ca1689e10ee63c0ce3329afb3b2992e31365e0525ec6b47f"
+    },
+    {
+      "localSha256": "1becc0934a9137b6ae48b670de99596d1b142098015a8b54a3a0cdc478e477bf",
+      "module": "reviewtech",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "1becc0934a9137b6ae48b670de99596d1b142098015a8b54a3a0cdc478e477bf"
+    },
+    {
+      "localSha256": "b090b4f3d7be1087b9a8db3b74877a540d32c3dfe727509205ca72004cc41c30",
+      "module": "rootz",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "b090b4f3d7be1087b9a8db3b74877a540d32c3dfe727509205ca72004cc41c30"
+    },
+    {
+      "localSha256": "165ea7b73a2e9253465f2405812396c0d7eda145816d4b76f775d9777565ea21",
+      "module": "rpnet",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "165ea7b73a2e9253465f2405812396c0d7eda145816d4b76f775d9777565ea21"
+    },
+    {
+      "localSha256": "5c59ed07da7ebf2350622f397f789a547bd5841f0ec0234a180283a5ca947bbf",
+      "module": "rumble",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "5c59ed07da7ebf2350622f397f789a547bd5841f0ec0234a180283a5ca947bbf"
+    },
+    {
+      "localSha256": "57dbf978bcc54c0ce11e7248c5fc13926f50402801cd4468029d8e544873a6da",
+      "module": "rutube",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "57dbf978bcc54c0ce11e7248c5fc13926f50402801cd4468029d8e544873a6da"
+    },
+    {
+      "localSha256": "eb629ffc2704155d2ba0ff433d0773a38f0416c8415b97bd5e39aa0aef9949cc",
+      "module": "sapo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "eb629ffc2704155d2ba0ff433d0773a38f0416c8415b97bd5e39aa0aef9949cc"
+    },
+    {
+      "localSha256": "cba09c304c5f3037e71088676bf6e2c076de47231b6c5f165848e6c0ca32a347",
+      "module": "savefiles",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "cba09c304c5f3037e71088676bf6e2c076de47231b6c5f165848e6c0ca32a347"
+    },
+    {
+      "localSha256": "30cde4dc699153ac393c3608d5daa7d708335831042e11610fb727b8832d2c5d",
+      "module": "secvideo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "30cde4dc699153ac393c3608d5daa7d708335831042e11610fb727b8832d2c5d"
+    },
+    {
+      "localSha256": "a22283ae1f031517c006a5f3d25bd6c3fd1d053b0a956331ab515c71ec9b1e02",
+      "module": "send",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "a22283ae1f031517c006a5f3d25bd6c3fd1d053b0a956331ab515c71ec9b1e02"
+    },
+    {
+      "localSha256": "74c12cc2b7d4a445a741b22ca4c9110eaed099ac1b120fa319381f39f8e25b16",
+      "module": "sendvid",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "74c12cc2b7d4a445a741b22ca4c9110eaed099ac1b120fa319381f39f8e25b16"
+    },
+    {
+      "localSha256": "7e2a49d955711ac60b2105c077d4252ab0496ff1770eb5b3f738b3f955a03341",
+      "module": "sharevideo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "7e2a49d955711ac60b2105c077d4252ab0496ff1770eb5b3f738b3f955a03341"
+    },
+    {
+      "localSha256": "9f37c871e4823150b2f976ceae8cad35c378636ad744034a2f194af759eaff8f",
+      "module": "sibnet",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "9f37c871e4823150b2f976ceae8cad35c378636ad744034a2f194af759eaff8f"
+    },
+    {
+      "localSha256": "35447dd9c8851371602943270a92830dfefff69faf5c5b4f54ca0244d1b323d2",
+      "module": "simplydebrid",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "35447dd9c8851371602943270a92830dfefff69faf5c5b4f54ca0244d1b323d2"
+    },
+    {
+      "localSha256": "5609bafaecc65c742e29a8044d8edfa6e9f86151f5b941474032a757d259aac9",
+      "module": "slicedrive",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "5609bafaecc65c742e29a8044d8edfa6e9f86151f5b941474032a757d259aac9"
+    },
+    {
+      "localSha256": "ac7746383023ca5291a15a37a3b0ac6128f01a94a67d292d7d62756250b43f01",
+      "module": "speedostream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "ac7746383023ca5291a15a37a3b0ac6128f01a94a67d292d7d62756250b43f01"
+    },
+    {
+      "localSha256": "295094730c9c421014a29b783317f1d7aff2f37bf1e2c6268a4df1718972f186",
+      "module": "streama2z",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "295094730c9c421014a29b783317f1d7aff2f37bf1e2c6268a4df1718972f186"
+    },
+    {
+      "localSha256": "df9c7dd43c73b9ec29d96c33c892fa321c273e7ee9a61d569ced5f3eea27c9b5",
+      "module": "streamable",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "df9c7dd43c73b9ec29d96c33c892fa321c273e7ee9a61d569ced5f3eea27c9b5"
+    },
+    {
+      "localSha256": "b7b81a937a25465e3b56f828d741c8aec05e03153daaa22a011dc2d6453cd7f8",
+      "module": "streamcash",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "b7b81a937a25465e3b56f828d741c8aec05e03153daaa22a011dc2d6453cd7f8"
+    },
+    {
+      "localSha256": "d871a7ee88d93abdaad5c6daf0f48326ed21a1e6f4ab29c4ac1e19d5aa27ae65",
+      "module": "streamcommunity",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "d871a7ee88d93abdaad5c6daf0f48326ed21a1e6f4ab29c4ac1e19d5aa27ae65"
+    },
+    {
+      "localSha256": "95c1143b9ea057d116f4950854c77d1727cce18d8a7f9dca1ff4fd0284f5f381",
+      "module": "streamembed",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "95c1143b9ea057d116f4950854c77d1727cce18d8a7f9dca1ff4fd0284f5f381"
+    },
+    {
+      "localSha256": "8c0bbcc0327b4f9d1cbd19a9aebdfdf3abaedc0eaea1957c1786a2f0f4d7e0ee",
+      "module": "streamix",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "8c0bbcc0327b4f9d1cbd19a9aebdfdf3abaedc0eaea1957c1786a2f0f4d7e0ee"
+    },
+    {
+      "localSha256": "7d7214481d8b5a882f39d5484c364780402b27c22451989f4e9913a133ef4215",
+      "module": "streamorigin",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "7d7214481d8b5a882f39d5484c364780402b27c22451989f4e9913a133ef4215"
+    },
+    {
+      "localSha256": "0690d324ee9136c93940c386ce1a6bd9258b19865c227a8068ac2536d875e75c",
+      "module": "streamoupload",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "0690d324ee9136c93940c386ce1a6bd9258b19865c227a8068ac2536d875e75c"
+    },
+    {
+      "localSha256": "d766a23362d0d0018157efd37d544f70a7dd7c6c03eb33063ca3d6922d65acbf",
+      "module": "streamruby",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "d766a23362d0d0018157efd37d544f70a7dd7c6c03eb33063ca3d6922d65acbf"
+    },
+    {
+      "localSha256": "f115744ac2c2fafe7e3c324beedce2770c84f11864cf49e2abf6cda955b9ecf6",
+      "module": "streamtape",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "f115744ac2c2fafe7e3c324beedce2770c84f11864cf49e2abf6cda955b9ecf6"
+    },
+    {
+      "localSha256": "b513deb013076ae64d7789300b40c70aa323c89372f068610cf1122ff5d27db1",
+      "module": "streamup",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "b513deb013076ae64d7789300b40c70aa323c89372f068610cf1122ff5d27db1"
+    },
+    {
+      "localSha256": "ecc12316449cd70cff32505b51a53b3b2b2c8f5a14bd6c951c7a6d6869225a5f",
+      "module": "streamwish",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "ecc12316449cd70cff32505b51a53b3b2b2c8f5a14bd6c951c7a6d6869225a5f"
+    },
+    {
+      "localSha256": "bc3b0c96aaf1049aa16135718226cc6faffda3ff7c44519e4e5d7289e4affaf2",
+      "module": "superembeds",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "bc3b0c96aaf1049aa16135718226cc6faffda3ff7c44519e4e5d7289e4affaf2"
+    },
+    {
+      "localSha256": "5cdd9880fc5f988f16d28018dc036e9dcebdf09b21ce36fb00d63affc8d9106e",
+      "module": "supervideo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "5cdd9880fc5f988f16d28018dc036e9dcebdf09b21ce36fb00d63affc8d9106e"
+    },
+    {
+      "localSha256": "d41357d32bf05615c2fb954aefd860d5fcd1be65e68ca9866374c8ea47008728",
+      "module": "tiktikstream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "d41357d32bf05615c2fb954aefd860d5fcd1be65e68ca9866374c8ea47008728"
+    },
+    {
+      "localSha256": "31335abd629c51332feba71b122ae11d616e7e3e0a8e2ce175e3e3cbd91ce982",
+      "module": "tokyvideo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "31335abd629c51332feba71b122ae11d616e7e3e0a8e2ce175e3e3cbd91ce982"
+    },
+    {
+      "localSha256": "5bb5d7621e8c56fdf78882a3d5e1496a020c65950751694ec7c6d4b03dee1a5d",
+      "module": "torbox",
+      "sameAsCurrentUpstream": false,
+      "upstreamSha256": "4eab1c3e00080ed0067a29ded43a821dcbb3e5841948f032474cfcc190a0e24c"
+    },
+    {
+      "localSha256": "a6b6eec136a72ec569303bf56091170baa21fbc520842c55707656b1a7069e70",
+      "module": "tubitv",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "a6b6eec136a72ec569303bf56091170baa21fbc520842c55707656b1a7069e70"
+    },
+    {
+      "localSha256": "38e89c6250e82c36a1605715255cf79060d9537dc96603fd7a02c4792d4dabac",
+      "module": "tudou",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "38e89c6250e82c36a1605715255cf79060d9537dc96603fd7a02c4792d4dabac"
+    },
+    {
+      "localSha256": "6ff2bf415c6034cbd9f1a529fe6ccf1e6ecb1222888ed188149950d45f68d4cb",
+      "module": "turbovid",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "6ff2bf415c6034cbd9f1a529fe6ccf1e6ecb1222888ed188149950d45f68d4cb"
+    },
+    {
+      "localSha256": "fb6cc8af86d2d3b8d05b34598011e4f428d834e083624a9848b390f33592fd2c",
+      "module": "turboviplay",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "fb6cc8af86d2d3b8d05b34598011e4f428d834e083624a9848b390f33592fd2c"
+    },
+    {
+      "localSha256": "35d79842522b7dd4b525fc44d3a37f789eb8f3e0689766d967b164434c298886",
+      "module": "tusfiles",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "35d79842522b7dd4b525fc44d3a37f789eb8f3e0689766d967b164434c298886"
+    },
+    {
+      "localSha256": "0030230fb57452792d0e75845a81c5f676dfbaa98b26021e562f24ec7d5ed540",
+      "module": "tvlogy",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "0030230fb57452792d0e75845a81c5f676dfbaa98b26021e562f24ec7d5ed540"
+    },
+    {
+      "localSha256": "d159664ec6200d95c0bf165beb143eca6b59febcbcefdc0543586e19a635bbb8",
+      "module": "twitchtv",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "d159664ec6200d95c0bf165beb143eca6b59febcbcefdc0543586e19a635bbb8"
+    },
+    {
+      "localSha256": "3f730beed8e0431c04fac51163a22c73925bc552dbf957f6cefaa8fb2fca06b1",
+      "module": "udrop",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "3f730beed8e0431c04fac51163a22c73925bc552dbf957f6cefaa8fb2fca06b1"
+    },
+    {
+      "localSha256": "7ac6d5bfa46772d79af5c850d94b70cf6827526983cc26f649db234a5dbee993",
+      "module": "ufoload",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "7ac6d5bfa46772d79af5c850d94b70cf6827526983cc26f649db234a5dbee993"
+    },
+    {
+      "localSha256": "fd5cdda91af508fca26f24c8a68c500d9c83f3ba5e8cec41fb766c8879fd9ccd",
+      "module": "updown",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "fd5cdda91af508fca26f24c8a68c500d9c83f3ba5e8cec41fb766c8879fd9ccd"
+    },
+    {
+      "localSha256": "f4163611dfd19f00dfc7edef6c0bab6c8140cbb457871d10f16f5333aec93886",
+      "module": "uperbox",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "f4163611dfd19f00dfc7edef6c0bab6c8140cbb457871d10f16f5333aec93886"
+    },
+    {
+      "localSha256": "de7516194ea880d7919cd4d40c069cc0bc75b6031d3887bd85820b9215b0823f",
+      "module": "uploadflix",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "de7516194ea880d7919cd4d40c069cc0bc75b6031d3887bd85820b9215b0823f"
+    },
+    {
+      "localSha256": "68e2d283953ae4aa3e66d58dfecc8734d3fdf6e4df1b169b6c92ee954a73f705",
+      "module": "uploady",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "68e2d283953ae4aa3e66d58dfecc8734d3fdf6e4df1b169b6c92ee954a73f705"
+    },
+    {
+      "localSha256": "1a26fed2715d8f6487ae35f4795b9e83c650e2d3be5d1f0e2d56c1611785fc86",
+      "module": "upstream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "1a26fed2715d8f6487ae35f4795b9e83c650e2d3be5d1f0e2d56c1611785fc86"
+    },
+    {
+      "localSha256": "acfbcc88c1f8964f507cd78578513a7343feaae9d6e1f231175ce7dc10227ac7",
+      "module": "uptomega",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "acfbcc88c1f8964f507cd78578513a7343feaae9d6e1f231175ce7dc10227ac7"
+    },
+    {
+      "localSha256": "d5f43c962b947a7c5418d1727d6b3ab0775232d58eaadb79a35e50271c4c3840",
+      "module": "upzur",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "d5f43c962b947a7c5418d1727d6b3ab0775232d58eaadb79a35e50271c4c3840"
+    },
+    {
+      "localSha256": "786a2179901695c58faa3e63442d4cad3a7b099dede5ea50bbdc784c51b73df8",
+      "module": "uqload",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "786a2179901695c58faa3e63442d4cad3a7b099dede5ea50bbdc784c51b73df8"
+    },
+    {
+      "localSha256": "371ba074e8d7f73ba7fb9f369360ae50206a998069e63623d65d19e4dda81664",
+      "module": "userscloud",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "371ba074e8d7f73ba7fb9f369360ae50206a998069e63623d65d19e4dda81664"
+    },
+    {
+      "localSha256": "c59f93ea8cc9386d94e74426737dca450df00139e125beeee34238ad99471fae",
+      "module": "vcdnlare",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "c59f93ea8cc9386d94e74426737dca450df00139e125beeee34238ad99471fae"
+    },
+    {
+      "localSha256": "c65c3d083382a047caee9174fcd4b46f9ba9c9e0c4df0a450d3e874800ca1899",
+      "module": "veev",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "c65c3d083382a047caee9174fcd4b46f9ba9c9e0c4df0a450d3e874800ca1899"
+    },
+    {
+      "localSha256": "81a2d050cf38430e43485ae0b5362a8f523bd04666e690cbd74eb25d21995d6f",
+      "module": "veoh",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "81a2d050cf38430e43485ae0b5362a8f523bd04666e690cbd74eb25d21995d6f"
+    },
+    {
+      "localSha256": "5068d4e107a7b6d5caf3d165f7268b6658174ee7d3f298525228d070d212fe1c",
+      "module": "vevocloud",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "5068d4e107a7b6d5caf3d165f7268b6658174ee7d3f298525228d070d212fe1c"
+    },
+    {
+      "localSha256": "08976f3a2f996ac65dfa5602348c48dabc14e2b21d0bffc412a46eed1ae1bdce",
+      "module": "vidbasic",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "08976f3a2f996ac65dfa5602348c48dabc14e2b21d0bffc412a46eed1ae1bdce"
+    },
+    {
+      "localSha256": "7f19117830db894f0e8a34786ace29e82c419e9c37db4bb30a3bd84235257d7d",
+      "module": "vidbasiclive",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "7f19117830db894f0e8a34786ace29e82c419e9c37db4bb30a3bd84235257d7d"
+    },
+    {
+      "localSha256": "f9f7f696544e35c56793149b846565446c3f08fbe94510cc77772a399482b834",
+      "module": "vidbom",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "f9f7f696544e35c56793149b846565446c3f08fbe94510cc77772a399482b834"
+    },
+    {
+      "localSha256": "caa07b204766139080f4c6374e43ec34582402017a08b8e0e62e695186b7a1b1",
+      "module": "videa",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "caa07b204766139080f4c6374e43ec34582402017a08b8e0e62e695186b7a1b1"
+    },
+    {
+      "localSha256": "6ef386870c4840ec2f378170f45d5daffc57cc326f75992aa055ec5c3e701fa6",
+      "module": "vidello",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "6ef386870c4840ec2f378170f45d5daffc57cc326f75992aa055ec5c3e701fa6"
+    },
+    {
+      "localSha256": "154b9abf16fec6b4b34d976178a4c3f18103f3c211f05663df3e04877edd9f99",
+      "module": "vidembed",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "154b9abf16fec6b4b34d976178a4c3f18103f3c211f05663df3e04877edd9f99"
+    },
+    {
+      "localSha256": "1d1e2d2fbdfc58448e0e2122e40d1471041a18af55315906016edca3c9e34f0c",
+      "module": "videoapne",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "1d1e2d2fbdfc58448e0e2122e40d1471041a18af55315906016edca3c9e34f0c"
+    },
+    {
+      "localSha256": "0169b20ff58b524a2802f84c9da580e80c4fd120c95008228905967a823a09d9",
+      "module": "videobin",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "0169b20ff58b524a2802f84c9da580e80c4fd120c95008228905967a823a09d9"
+    },
+    {
+      "localSha256": "1ebd0679352b8973eba7d36d0470ce829047ef63fd5c1cd3b74fd995b726530a",
+      "module": "videooo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "1ebd0679352b8973eba7d36d0470ce829047ef63fd5c1cd3b74fd995b726530a"
+    },
+    {
+      "localSha256": "44e64fe262ca65ce06726e720ead95c4bcdd60169cac0a23f9ee5896401bbeef",
+      "module": "videoseyred",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "44e64fe262ca65ce06726e720ead95c4bcdd60169cac0a23f9ee5896401bbeef"
+    },
+    {
+      "localSha256": "2dacacfc96d9f47aed3a34114991a4142b110b9d2f22c36c27cdd7594253700e",
+      "module": "videowood",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "2dacacfc96d9f47aed3a34114991a4142b110b9d2f22c36c27cdd7594253700e"
+    },
+    {
+      "localSha256": "9592a87527e9a2aee8ec045de0239da092b34b63b6cd7c1bbdfcfdba25c7c90f",
+      "module": "videozoo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "9592a87527e9a2aee8ec045de0239da092b34b63b6cd7c1bbdfcfdba25c7c90f"
+    },
+    {
+      "localSha256": "dc7f7f9386577a757e6dda38a83d675d862651a56c53115899e2850de660bf5b",
+      "module": "vidfast",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "dc7f7f9386577a757e6dda38a83d675d862651a56c53115899e2850de660bf5b"
+    },
+    {
+      "localSha256": "0f2fa518feeabfeab2f086d142ab8c86d831da37d628e9412709f39964b542c2",
+      "module": "vidhd",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "0f2fa518feeabfeab2f086d142ab8c86d831da37d628e9412709f39964b542c2"
+    },
+    {
+      "localSha256": "267b17e4b4e0090d42c1ab635f0c687292ec5bf46af5ae1d87ffdc4d5dcdcddc",
+      "module": "vidlook",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "267b17e4b4e0090d42c1ab635f0c687292ec5bf46af5ae1d87ffdc4d5dcdcddc"
+    },
+    {
+      "localSha256": "223486c95dc7b0b39a36eef9b3e875e2dc6e5d578af1e2e8fc4b63f4db0ebb5b",
+      "module": "vidmojo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "223486c95dc7b0b39a36eef9b3e875e2dc6e5d578af1e2e8fc4b63f4db0ebb5b"
+    },
+    {
+      "localSha256": "65a583f85472d2f770f40eea02dc75bb2848c379ebaea7fe3e0d68c6431931d4",
+      "module": "vidmoly",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "65a583f85472d2f770f40eea02dc75bb2848c379ebaea7fe3e0d68c6431931d4"
+    },
+    {
+      "localSha256": "58a1c787b735b1306d250c3f0b20e27b4f62298200b59201c3e53dca20641e5c",
+      "module": "vidmx",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "58a1c787b735b1306d250c3f0b20e27b4f62298200b59201c3e53dca20641e5c"
+    },
+    {
+      "localSha256": "84efbf6f2c6b4442c8ff4dc2da82fe212d1dda561c5fe71be576f1993333c345",
+      "module": "vidneo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "84efbf6f2c6b4442c8ff4dc2da82fe212d1dda561c5fe71be576f1993333c345"
+    },
+    {
+      "localSha256": "c43a845e8dedec4a9fd5dbf4942ec55967f9f684c1f6aa8bda8de060e14a45e0",
+      "module": "vidnest",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "c43a845e8dedec4a9fd5dbf4942ec55967f9f684c1f6aa8bda8de060e14a45e0"
+    },
+    {
+      "localSha256": "6265ddc7377ec4500f8ec3c4c651dd4ed5ba0a0ad7dd2420e141e15a050db2a7",
+      "module": "vido",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "6265ddc7377ec4500f8ec3c4c651dd4ed5ba0a0ad7dd2420e141e15a050db2a7"
+    },
+    {
+      "localSha256": "e61c3138745a0318273280ef7a6067989e5aef35a946cc051e72aa603f56f973",
+      "module": "vidora",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "e61c3138745a0318273280ef7a6067989e5aef35a946cc051e72aa603f56f973"
+    },
+    {
+      "localSha256": "77889cd147b1358e41ec5f2becf0ddb68e9052202dfa71aac54f02ea41e1c05f",
+      "module": "vidorg",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "77889cd147b1358e41ec5f2becf0ddb68e9052202dfa71aac54f02ea41e1c05f"
+    },
+    {
+      "localSha256": "1623ad58863c67ec567f79173dbf376009a9805c961ce536580cded52230fbfc",
+      "module": "vidoza",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "1623ad58863c67ec567f79173dbf376009a9805c961ce536580cded52230fbfc"
+    },
+    {
+      "localSha256": "0803692f5b4bd449eb2672474115b287546548004a15d225074f8357c287bcfb",
+      "module": "vidpro",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "0803692f5b4bd449eb2672474115b287546548004a15d225074f8357c287bcfb"
+    },
+    {
+      "localSha256": "fbdc34a05b5d0ae61ad96d5261abae138a5e0a0e3f7090dc3ebdb4e51db4a0c0",
+      "module": "vids_st",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "fbdc34a05b5d0ae61ad96d5261abae138a5e0a0e3f7090dc3ebdb4e51db4a0c0"
+    },
+    {
+      "localSha256": "47c95fbbfbb62c0deaf889a687da0991cda81cd3411efa7b251d005ee59af875",
+      "module": "vidsonic",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "47c95fbbfbb62c0deaf889a687da0991cda81cd3411efa7b251d005ee59af875"
+    },
+    {
+      "localSha256": "5bbcd75eeaf6066e5d170477170e04c6389d2bb7ea6101691cb33d52735ab7f6",
+      "module": "vidspeed",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "5bbcd75eeaf6066e5d170477170e04c6389d2bb7ea6101691cb33d52735ab7f6"
+    },
+    {
+      "localSha256": "9a24450d8628ac9824ab060697ebe156a6ecbebadcf81174b7557c7ad1bfd6dd",
+      "module": "vidstore",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "9a24450d8628ac9824ab060697ebe156a6ecbebadcf81174b7557c7ad1bfd6dd"
+    },
+    {
+      "localSha256": "467b5d9b9d8f5a84c3e267b8c0108dab914e5f0d2d8a92514459c326dcbefa4b",
+      "module": "vidtube",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "467b5d9b9d8f5a84c3e267b8c0108dab914e5f0d2d8a92514459c326dcbefa4b"
+    },
+    {
+      "localSha256": "5f1b173659f18dbe333076bf5eca9157498720f2cf197cdfe2fc3438b6e3c298",
+      "module": "vidxgo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "5f1b173659f18dbe333076bf5eca9157498720f2cf197cdfe2fc3438b6e3c298"
+    },
+    {
+      "localSha256": "fa8b782740e16bf5910f20c1fb5321cc4427ded324e77205f971044dfe51cf45",
+      "module": "vidzstore",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "fa8b782740e16bf5910f20c1fb5321cc4427ded324e77205f971044dfe51cf45"
+    },
+    {
+      "localSha256": "054477bf69f02bf4a6387b812d1ac3aea3450ff3586b464f484602154df4ce24",
+      "module": "vidzy",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "054477bf69f02bf4a6387b812d1ac3aea3450ff3586b464f484602154df4ce24"
+    },
+    {
+      "localSha256": "a5dc26b244c7bbc05b8e0e77bb5c519be7bf5c454fcb25f76dd5158b11660944",
+      "module": "vimeo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "a5dc26b244c7bbc05b8e0e77bb5c519be7bf5c454fcb25f76dd5158b11660944"
+    },
+    {
+      "localSha256": "8e5b1a030162ca6b8242946f72aa793f91409f9c6b03ae0554fdc731b89f7a99",
+      "module": "vimeos",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "8e5b1a030162ca6b8242946f72aa793f91409f9c6b03ae0554fdc731b89f7a99"
+    },
+    {
+      "localSha256": "b46ee01225d2b5b403cd667df67f446028c46e89d48532cc790ea404901da5f4",
+      "module": "vinovo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "b46ee01225d2b5b403cd667df67f446028c46e89d48532cc790ea404901da5f4"
+    },
+    {
+      "localSha256": "56849476c0237f675561de8a0e4dccd4bed95d4840f8a8b242bdb4e39f990599",
+      "module": "viralweb8",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "56849476c0237f675561de8a0e4dccd4bed95d4840f8a8b242bdb4e39f990599"
+    },
+    {
+      "localSha256": "e6ded3c3dbd4673a729afe27a1b03bc81958346fe06f3cd51cd1f266dde83edc",
+      "module": "virstream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "e6ded3c3dbd4673a729afe27a1b03bc81958346fe06f3cd51cd1f266dde83edc"
+    },
+    {
+      "localSha256": "337f463117b40989beb1a6e97e9d0515b0c1ba28010b8c555abc97be405b4941",
+      "module": "vixstream",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "337f463117b40989beb1a6e97e9d0515b0c1ba28010b8c555abc97be405b4941"
+    },
+    {
+      "localSha256": "975f2ff8a19f5e38b4854003dc4cf7a5ace1eabcabcc28b78dfbf45880b49a3e",
+      "module": "vk",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "975f2ff8a19f5e38b4854003dc4cf7a5ace1eabcabcc28b78dfbf45880b49a3e"
+    },
+    {
+      "localSha256": "89b0f88dd99006b7453d97bdc89864671fef19ffda510b985ea837d7af0ebf43",
+      "module": "vkprime",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "89b0f88dd99006b7453d97bdc89864671fef19ffda510b985ea837d7af0ebf43"
+    },
+    {
+      "localSha256": "b262c1cec5bf9b3113ca92b252a6827d72d4526064ebefc57a6dff785460dd90",
+      "module": "vkspeed",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "b262c1cec5bf9b3113ca92b252a6827d72d4526064ebefc57a6dff785460dd90"
+    },
+    {
+      "localSha256": "8cbacf0de80f651991b73b11357b97e4635a5b272071d42f7bd4869c888e6879",
+      "module": "vlalacom",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "8cbacf0de80f651991b73b11357b97e4635a5b272071d42f7bd4869c888e6879"
+    },
+    {
+      "localSha256": "13d1bb9795363782e3fd18130946db724663ad91e98d6763a93d8356c576a070",
+      "module": "voesx",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "13d1bb9795363782e3fd18130946db724663ad91e98d6763a93d8356c576a070"
+    },
+    {
+      "localSha256": "aefbeb11e1229f2fce68f34935c5782c30ef6a880045811317593a1503993488",
+      "module": "voxzer",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "aefbeb11e1229f2fce68f34935c5782c30ef6a880045811317593a1503993488"
+    },
+    {
+      "localSha256": "a28d507d8a5685b3ed49db3b142c6ffd66df1cc4906c4af322529ec5d27d6f1c",
+      "module": "vrra",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "a28d507d8a5685b3ed49db3b142c6ffd66df1cc4906c4af322529ec5d27d6f1c"
+    },
+    {
+      "localSha256": "0904b6686b2ff153224db368fd865cd063c4bd7b000f52ac10a095c90b25a19e",
+      "module": "vtube",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "0904b6686b2ff153224db368fd865cd063c4bd7b000f52ac10a095c90b25a19e"
+    },
+    {
+      "localSha256": "a1e64d5ebd4799ce217e0401119fd2bd5ec4efc9d0132751d70f00ba1db31d00",
+      "module": "vudeo",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "a1e64d5ebd4799ce217e0401119fd2bd5ec4efc9d0132751d70f00ba1db31d00"
+    },
+    {
+      "localSha256": "45acc98829e8d6908e6ad0a94fa4593cf8882d12f6429797d88524f7267759d9",
+      "module": "waaw",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "45acc98829e8d6908e6ad0a94fa4593cf8882d12f6429797d88524f7267759d9"
+    },
+    {
+      "localSha256": "99d6be1b269afa68af594e69da30f479cb82e125fca808316fe8fb1caba1a559",
+      "module": "wecima",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "99d6be1b269afa68af594e69da30f479cb82e125fca808316fe8fb1caba1a559"
+    },
+    {
+      "localSha256": "7853d13082f20488e8deae1ccb33b0287356eab6accbee2017fb3685f04aa1c5",
+      "module": "wootly",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "7853d13082f20488e8deae1ccb33b0287356eab6accbee2017fb3685f04aa1c5"
+    },
+    {
+      "localSha256": "c03104c573139d493904f97f5489797da06767700c6088d58a3900671a70776a",
+      "module": "worlduploads",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "c03104c573139d493904f97f5489797da06767700c6088d58a3900671a70776a"
+    },
+    {
+      "localSha256": "437a597a25b2c73f4c0e38105160325d191d51e7ce54c668849d842bd50d97e0",
+      "module": "wrzucaj",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "437a597a25b2c73f4c0e38105160325d191d51e7ce54c668849d842bd50d97e0"
+    },
+    {
+      "localSha256": "3aa7147b519a341ba7eda93c03696abd6141878e3825b995b0f7b6e0bf8e61bb",
+      "module": "yandex",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "3aa7147b519a341ba7eda93c03696abd6141878e3825b995b0f7b6e0bf8e61bb"
+    },
+    {
+      "localSha256": "eaf5eca1eaeff525f5e673350049c39c67e3c90d0c2cbc6711e3bfbdce866f7f",
+      "module": "yourupload",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "eaf5eca1eaeff525f5e673350049c39c67e3c90d0c2cbc6711e3bfbdce866f7f"
+    },
+    {
+      "localSha256": "43ce32247342cdceb44a9fac24d248fa746474bcb0e70552b7372c8efd1aed85",
+      "module": "youtube",
+      "sameAsCurrentUpstream": true,
+      "upstreamSha256": "43ce32247342cdceb44a9fac24d248fa746474bcb0e70552b7372c8efd1aed85"
+    }
+  ],
+  "inventory": 111,
+  "originalScrubsPackageSha256": "d7e0cd15f7e171c622f38d28674c400f047642f53676b0bf1add228de4015148",
+  "scope": "All existing adapters and bundled host plugins; provenance comparison is not a verified complete resolver replacement or playback guarantee",
+  "upstreamSnapshots": {
+    "CSX": "13903aa1c788a5cdd725b88d38bf2b9c1565a134",
+    "Free99Official": "e5f1b01fb2e52cffa4907168ddbb75a4eb8ffe36",
+    "ResolveURL": "d208fd01fe1226e111a15b7dc48e25202cd8bae8",
+    "VidzeeProtocol": "2888386206e02da12db6609594c595f9787da23a"
+  }
+}

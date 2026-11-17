@@ -1,3 +1,60 @@
+# Complete-inventory follow-up — 17 November 2026
+
+The earlier address-only candidate did not fulfil the request. This follow-up covers the
+entire existing inventory in the comparison report and adds independent movie/series probes
+for all **111 adapters**, including pending, excluded, local-library and API-key entries.
+A missing capability is recorded explicitly rather than silently skipping an adapter.
+
+Implemented resolver updates:
+
+- MovieBox: Phisher 711's anonymous mobile request signing, visitor-token bootstrap,
+  subject search, play-info/v2 and play-info fallback. Tokens remain within one lookup and
+  API origin; media URLs never receive the visitor token. Existing web flow remains a fallback.
+- Vidzee: current named servers and exact movie/episode paths on core.vidzee.wtf, dynamic
+  Acme languages and the API's supported plain-JSON representation. Server failures are
+  isolated; explicit playback headers and the older CBC-compatible fallback are retained.
+- Fshare: Phisher's IMDb catalogue lookup and advertised watch-page links, current .co origin,
+  broader player-token syntax and the current default trailer identifier.
+- Cinejoy and AllMovieLand: current upstream origins, keeping existing protocol/transport guards.
+- ResolveURL: eleven current free-host modules (ten replacements plus PeeStream), including
+  Byse, Vidzy, StreamWish, Streamix, Mixdrop, FireStream, VOE and Abyss. The account-based
+  Torbox resolver and existing runtime hardening are retained. This is a selective refresh,
+  not a claim that every local ResolveURL file equals a complete pristine upstream release.
+- Catalogue origins: rerun the per-entry semantic-history comparison against both current
+  upstream snapshots, including today's SkyMovies, UHDMovies and ZinkMovies changes.
+
+The machine-readable [whole-inventory comparison](UPSTREAM_RESOLVER_COMPARISON_2026_11_17.json)
+records every adapter and all 237 bundled host modules, candidate implementations, hashes,
+selection/retention reasons and unresolved cases. All 59 Scrubs originals match the currently
+published official 5.1.42 package. The official Free99 repository no longer publishes its add-on;
+its nine last-known modules remain recorded instead of being claimed current or working.
+
+The independent audit uses `moviehub_vod.query` for each adapter directly. It does not use
+website grouping or another adapter's successful fallback as proof. All 111 entries are
+partitioned exactly once across eight shards, for both movie and exact-episode queries.
+Each adapter has its own timeout starting when it runs. An audit job's success proves report
+coverage, not that its remote providers produced working streams. The current workspace cannot
+resolve provider DNS, so live results must come from the GitHub runners; local DNS failures are
+not evidence that these providers are closed.
+
+Local checks: **158 Python tests** and all **34 Java core suites** pass. The earlier Android
+build/lint job stopped on pre-existing Java formatting differences; the two files are formatted
+in a separate formatting-only commit. Prior device and signing checks passed, but this follow-up
+requires new CI results. No merge or APK publication is performed.
+
+## Limits that remain
+
+This still must not be described as a successful replacement of every newest resolver or a
+fix for every remote service. Several current Phisher paths depend on its Android browser/WASM
+helpers; function dates cannot be inferred from a compiled package timestamp. Existing Rive,
+Movy, Hexa and other route failures are not relabelled as repaired. The report explicitly marks
+retained or unresolved implementations, and live audits report zero-source/failing entries.
+
+The changes above are implemented and reviewable; the owner's full "every source works" goal
+is not established. The prior address-only scope and reasoning are preserved below as history.
+
+---
+
 # Per-source upstream refresh — 17 November 2026
 
 The requested policy is to choose the newest change to each source independently. A newer
@@ -59,7 +116,7 @@ python android-tv-launcher/tests/sync-vod-origins.py \
 # To apply the comparison, repeat with --write.
 ```
 
-## Remaining resolver-code work
+## Earlier resolver-code observations (before this follow-up)
 
 This is the address refresh portion of the requested source-by-source replacement, not a
 completed port of every newest resolver. The original CSX source is available; its latest

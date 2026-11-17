@@ -302,7 +302,7 @@ class HDHub4u(MoviesDrive):
 
 class ZinkMovies(DownloadCatalogue):
     name = 'ZinkMovies'
-    base_link = 'https://new2.zinkmovies.tattoo'
+    base_link = 'https://new3.zinkmovies.tattoo'
 
     def search(self, q):
         yield from super().search(dict(q, imdb=''))

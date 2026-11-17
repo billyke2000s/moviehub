@@ -1,8 +1,8 @@
 <div align="center">
 
-A source-address refresh is prepared on a separate branch; it compares each provider's own
-change history across CloudStream upstreams. Full resolver replacement and playback validation
-are still outstanding. See [refresh scope and evidence](docs/UPSTREAM_SOURCE_REFRESH_2026_11_17.md).
+A provider follow-up compares the complete 111-adapter inventory and updates MovieBox, Vidzee,
+Fshare and shared host resolvers. Per-adapter live audits and unresolved entries are tracked in
+[refresh scope and evidence](docs/UPSTREAM_SOURCE_REFRESH_2026_11_17.md); universal playback is not claimed.
 
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
