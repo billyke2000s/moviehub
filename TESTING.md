@@ -15,7 +15,7 @@ passed its build/lint, normal/experimental suites, provider probe and focused re
 normal-device attempt failed its emulator connection before running tests; its unchanged-code
 targeted retry passed. No gate or test was removed or weakened.
 The existing 23 full native-source passes and unresolved live failures remain separate evidence
-below and in the [source report](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+below and in the [source report](docs/archive/CINESTREAM_ADDITIONS_2026_10_29.md).
 
 
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
@@ -28,7 +28,7 @@ Android CI jobs passed and the fifteen-site audit verified 21 individual sources
 Application revision `925af7c` passed all six Android jobs in run 40913881846. Final live checks
 include 23 verified sources (eleven movies and twelve episodes); the episode retry passed after an EGL crash.
 Vidy playback failures and other site/host errors remain unresolved; registration is not playback proof.
-See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+See [dated evidence and limits](docs/archive/CINESTREAM_ADDITIONS_2026_10_29.md).
 
 
 Earlier checkpoint: current-site inspection corrected the new adapters. Application revision
@@ -37,7 +37,7 @@ DeadSystemException). Its native Vidy samples still failed and remain draft-PR b
 The final KissKH decimal episode-number correction passed the 116-test Python suite and a
 public-ID-only API check; Android CI for that small final correction is pending. Unattended
 audits continue to block external decoder uploads of site tokens/encrypted responses.
-See the [direct-site findings](docs/CINESTREAM_ADDITIONS_2026_10_29.md#direct-website-and-current-client-investigation--follow-up-29-october).
+See the [direct-site findings](docs/archive/CINESTREAM_ADDITIONS_2026_10_29.md#direct-website-and-current-client-investigation--follow-up-29-october).
 
 ## CineStream format/source regressions
 
@@ -49,7 +49,7 @@ uses the existing H.264/AAC fixture to verify real native track suffixes and unc
 These are fixtures; live decode evidence is recorded separately below and in the source report.
 The live audit uses managed VOD startup and supports explicit pending providers. Normal Hexa
 audits exercise Alpha; `vodCineStreamAllBackends=true` is an explicit diagnostic override. See the
-[addition report](docs/CINESTREAM_ADDITIONS_2026_10_29.md) and final PR checks for current CI evidence.
+[addition report](docs/archive/CINESTREAM_ADDITIONS_2026_10_29.md) and final PR checks for current CI evidence.
 
 Application revision `a9974b6` passed all six Android jobs in run 40856772393: build/lint/signing,
 normal/experimental suites, public provider checks and focused VOD recovery. The regular report
@@ -715,7 +715,7 @@ Additional recovery regressions check Scrubs Levidia delegates Wootly once and a
 
 ## Site-by-site VOD recovery (26 October 2026)
 
-The site recovery suite imports `test_current_vod_sites.py` from `test_free_vod.py`. It covers canonical result links, current search/player flows, distinct providers sharing a CDN URL, authenticated Xpass responses, rejected tampering with empty AES-GCM associated data, and diagnostics without URLs or credentials. Live checks and limitations are recorded in [the 26 October audit](docs/FREE_VOD_SITE_AUDIT_2026_10_26.md).
+The site recovery suite imports `test_current_vod_sites.py` from `test_free_vod.py`. It covers canonical result links, current search/player flows, distinct providers sharing a CDN URL, authenticated Xpass responses, rejected tampering with empty AES-GCM associated data, and diagnostics without URLs or credentials. Live checks and limitations are recorded in [the 26 October audit](docs/archive/FREE_VOD_SITE_AUDIT_2026_10_26.md).
 
 Current site recovery: 46 offline Python tests, including Tubi’s padded challenge/issued signing key, clear-resource filtering and Waffi mirror isolation. Android instrumentation exercises named-backend deduplication through the actual selection-window key. The HTTP identity audit compares app requests, a cookie-preserving browser-style requests session and curl without executing challenge code.
 
@@ -732,7 +732,7 @@ The live audit reports decoded audio and output audio-buffer counters separately
 Final validation on `f5b4e63e65788c512389ca31996c6a8d66d43474`: 51 offline Python tests,
 932 local core checks, all Android/build/lint/signing CI jobs and standalone engine checks passed.
 The focused live audit completed for Levidia, both native sites and a catalogue-listed Rarefilmm
-film. Read `docs/NATIVE_VOD_PLAYBACK_AUDIT_2026_10_26.jsonl` for each result; a completed audit
+film. Read `docs/archive/NATIVE_VOD_PLAYBACK_AUDIT_2026_10_26.jsonl` for each result; a completed audit
 does not assert all links passed. Product code is unchanged by the final documentation commit.
 
 ## Confirmed source quality (26 October 2026)
@@ -745,7 +745,7 @@ does not assert all links passed. Product code is unchanged by the final documen
 
 ## FMHY Rive addition (26 October 2026)
 
-`test_fmhy_rive.py`, imported by `test_free_vod.py`, checks exact movie/episode identity, separate links, quality/language labels, playback headers, unsafe URLs, protected records and cancellation. The desktop live audit decoded all seven returned Inception links and three Breaking Bad S01E01 links independently at the start and midpoint with audio. See `docs/FMHY_ADDITIONS_2026_10_26.md`. These are sampled desktop decodes and actual Python-bridge checks, not physical-TV evidence. The separate new-source workflow checks the packaged Android player without selecting existing providers.
+`test_fmhy_rive.py`, imported by `test_free_vod.py`, checks exact movie/episode identity, separate links, quality/language labels, playback headers, unsafe URLs, protected records and cancellation. The desktop live audit decoded all seven returned Inception links and three Breaking Bad S01E01 links independently at the start and midpoint with audio. See `docs/archive/FMHY_ADDITIONS_2026_10_26.md`. These are sampled desktop decodes and actual Python-bridge checks, not physical-TV evidence. The separate new-source workflow checks the packaged Android player without selecting existing providers.
 
 The initial packaged Rive audit verified two movie links and rejected five with relay errors. The redacted initial results are preserved, not relabelled as successes. A real-TCP regression reproduces raw TS served with image/jpeg during a zero-to-end read: it failed before the fix, then passed with bytes preserved and the correct TS MIME type. The new-source workflow now audits movie and exact-episode links in separate jobs; all returned links must pass. See the dated report for the follow-up result.
 

@@ -12,7 +12,7 @@
 - Retain ARM32 and ARM64 together, existing accounts, history, settings and update compatibility.
 - Known limitations: some provider links fail or lack verified audio; Vidy episode playback can
   crash. VaPlayer, PrimeSrc and Asiaflix remain pending. Availability varies by site and title.
-- Detailed validation: [CineStream source report](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+- Detailed validation: [CineStream source report](docs/archive/CINESTREAM_ADDITIONS_2026_10_29.md).
 
 ## 1.0.18 (29 October 2026)
 

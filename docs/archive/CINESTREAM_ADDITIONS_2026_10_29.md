@@ -8,7 +8,7 @@ through the existing signed publisher. The original player, both ARM ABIs, signi
 accounts/data and updater paths remain intact. Public feed and numbered APKs were independently
 downloaded and verified: `97ad0a88b1cdb981655fdaca34006fcc02345a04bd5a0fa2bfe399b5fbbdac6d`. Package/version, native ELF/Python ABI
 coverage, stripped sections and signature continuity with 1.0.18 passed. Publisher 40958274305
-and copier 40960019599 succeeded. See [current status](../STATUS.md) for full release evidence.
+and copier 40960019599 succeeded. See [current status](../../STATUS.md) for full release evidence.
 The existing Vidy/provider/audio failures are retained in the release notes; publication does not
 convert the unverified samples below into successes. Draft/unpublished descriptions below are
 historical checkpoints, predating the owner's publication request.

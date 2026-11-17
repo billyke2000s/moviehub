@@ -10,7 +10,7 @@ Android CI jobs passed and the fifteen-site audit verified 21 individual sources
 Application revision `925af7c` passed all six Android jobs in run 40913881846. Final live checks
 include 23 verified sources (eleven movies and twelve episodes); the episode retry passed after an EGL crash.
 Vidy playback failures and other site/host errors remain unresolved; registration is not playback proof.
-See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+See [dated evidence and limits](docs/archive/CINESTREAM_ADDITIONS_2026_10_29.md).
 
 
 ## CineStream additions and format metadata
@@ -21,7 +21,7 @@ backend normally; explicit audits can inspect the others. New adapters use isola
 sessions and their upstream browser/header profiles. Established native/Kodi adapters remain unchanged. New data decoders reuse bundled
 crypto and bounded transport. Some protocols depend on enc-dec.app as a data service. Missing
 account/build keys and unimplemented terminal chains are recorded in the
-[source report](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+[source report](docs/archive/CINESTREAM_ADDITIONS_2026_10_29.md).
 
 `moviehub_compat/source_metadata` reads HLS CODECS and non-playlist Content-Range totals from the
 existing probe bytes. `SourceFormats` labels release tokens as Reported; `MediaFormats` names known
