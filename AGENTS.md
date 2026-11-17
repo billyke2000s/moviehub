@@ -84,8 +84,16 @@ Only add public URLs that carry no account details (AGENTS.md: never commit cred
 provider URLs with account details). Account-based providers (Premiumize, Xtream, a personal M3U)
 are entered in the app's Settings instead.
 
-## Keep the docs current
+## Keep the docs current, and short
 
-When behaviour, structure or test expectations change, update the matching document in the same
-pull request: README.md (overview), ARCHITECTURE.md (code map), TESTING.md, SECURITY.md,
-STATUS.md (current state and known issues) and CHANGELOG.md (Unreleased section).
+Update a document in the same pull request only when the change makes it wrong:
+README.md (overview, install, build), ARCHITECTURE.md (code map), TESTING.md (how to test),
+SECURITY.md, STATUS.md (current state and open issues only) and CHANGELOG.md (Unreleased section,
+one line per user-visible change).
+
+- Test counts, CI run IDs, commit hashes and dated audit results belong in the pull request
+  description or release notes, not in committed docs. Do not add "Record evidence" commits.
+- STATUS.md describes now. When something is fixed or released, remove it from STATUS.md rather
+  than appending a dated paragraph; git history and CHANGELOG.md keep the record.
+- Dated audit reports and raw `.json`/`.jsonl` dumps go in `docs/archive/` if they must be kept.
+- Do not add release notes or status paragraphs above the README title.

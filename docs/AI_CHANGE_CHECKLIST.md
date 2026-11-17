@@ -21,7 +21,7 @@ Record the relevant evidence in the PR body; do not turn this into a new user ap
 - Keep package name, signing identity, update paths and database migration compatibility.
 - Format changed code and run `git diff --check`.
 - Run meaningful checks appropriate to the change and record actual outcomes.
-- Update matching docs and version notes without overwriting historical evidence.
+- Update only the docs the change makes wrong; put test evidence in the PR description.
 - Open a PR with a concrete description and validation results.
 
 ## Additional checks by change type

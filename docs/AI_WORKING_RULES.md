@@ -139,7 +139,8 @@ The release version code must exceed the published baseline. Verify package, sig
 ABI coverage and public checksum before reporting publication. A numbered release and updater feed
 must contain the same APK. Ordinary documentation edits must not trigger a new app publication.
 
-Keep current release notes, build commands and validation evidence current in the same PR.
-Mark dated development notes as history instead of presenting old pending work as current status.
+Keep release notes and build commands current in the same PR. Put validation evidence in the PR
+description, not in committed docs (see "Keep the docs current, and short" in AGENTS.md).
+Remove finished or outdated items from STATUS.md instead of presenting old pending work as current.
 Do not change an old report into proof of testing that never occurred. Tool-specific instruction
 files point here and to AGENTS.md; maintain one canonical policy rather than divergent copies.
