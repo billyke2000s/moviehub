@@ -334,8 +334,12 @@ final class AdapterSources {
         return stream;
     }
 
-    static int refresh(Context c, String id, ChannelDatabase db, ChannelDatabase.Cancel cancel)
-        throws Exception {
+    static int refresh(
+        Context c,
+        String id,
+        ChannelDatabase db,
+        ChannelDatabase.Cancel cancel
+    ) throws Exception {
         synchronized (AdapterSources.class) {
             expiry.remove(id);
         }
