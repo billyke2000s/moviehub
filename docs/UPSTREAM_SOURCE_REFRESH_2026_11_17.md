@@ -40,7 +40,7 @@ coverage, not that its remote providers produced working streams. The current wo
 resolve provider DNS, so live results must come from the GitHub runners; local DNS failures are
 not evidence that these providers are closed.
 
-Local checks: **160 Python tests** and all **34 Java core suites** pass. The earlier Android
+Local checks: **161 Python tests** and all **34 Java core suites** pass. The earlier Android
 build/lint job stopped on pre-existing Java formatting differences; the two files are formatted
 in a separate formatting-only commit. Prior device and signing checks passed, but this follow-up
 requires new CI results. No merge or APK publication is performed.

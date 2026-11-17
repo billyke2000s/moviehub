@@ -153,6 +153,15 @@ class UpstreamResolverTests(unittest.TestCase):
         self.assertTrue(result['attempted'])
         self.assertEqual(result['sources'], 0)
 
+    def test_timed_out_adapter_is_recorded_without_aborting_other_adapters(self):
+        audit = self.audit_module()
+        row = next(row for row in audit.vod._RECORDS if row['id'] == 'scrubs:levidia_ch')
+        with patch.object(audit.vod, 'query', side_effect=client.Cancelled()):
+            result = audit.probe(row, 'movies', 1)
+        self.assertEqual(result['adapter'], row['id'])
+        self.assertEqual(result['status'], 'timeout')
+        self.assertTrue(result['attempted'])
+
     def test_comparison_covers_the_entire_inventory_without_claiming_playback(self):
         import moviehub_vod as vod
         path = Path(__file__).resolve().parents[2] / 'docs/UPSTREAM_RESOLVER_COMPARISON_2026_11_17.json'

@@ -14,6 +14,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'app/src/main/python'))
 import moviehub_vod as vod
+from moviehub_compat import client
 from audit_transport import block_external_decoder
 
 
@@ -51,6 +52,9 @@ def probe(record, media, timeout):
                     unsupportedHosts=result.get('unsupportedHosts', 0),
                     seconds=round(time.monotonic() - started, 2),
                     stage=result.get('stage', ''), hostAttempts=result.get('hostAttempts', []))
+    except client.Cancelled:
+        return dict(common, status='timeout', sources=0, attempted=True,
+                    seconds=round(time.monotonic() - started, 2))
     except Exception as error:
         return dict(common, status=type(error).__name__, sources=0, attempted=True,
                     seconds=round(time.monotonic() - started, 2))
