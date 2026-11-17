@@ -7,8 +7,8 @@ built on #202 (which contains #199, #201 and #200). Settings gains a Setup tab a
 page; Troubleshooting is Setup → Engineer view; Browse and Filters are one sheet; Live TV colour
 keys are always buttons. See CHANGELOG.md (Unreleased). Local core checks: 37 suites / 1,411
 checks. Android build, lint and device tests run only in CI (no Android SDK locally). Not tested
-on the TV box. Open questions: the Settings tab colour bug (row 74) could not be found from the
-code without the owner's photo; the All apps "cut off" fix is a best guess.
+on the TV box. The Settings tab colour report (row 74) was a poor photo, not a bug (owner,
+17 November). The All apps "cut off" fix is a best guess.
 
 ## Phone entry expiry correction — 4 November 2026
 
