@@ -206,7 +206,7 @@ class DownloadCatalogue(Base):
 class Bollyflix(DownloadCatalogue):
     requires_imdb = True
     name = 'Bollyflix'
-    base_link = 'https://bollyflix.co.za'
+    base_link = 'https://new1.bollyflix.tours'
     search_path = '/search/{query}'
 
 
@@ -220,21 +220,21 @@ class TopMovies(DownloadCatalogue):
 class MoviesMod(DownloadCatalogue):
     requires_imdb = True
     name = 'MoviesMod'
-    base_link = 'https://moviesmod.meme'
+    base_link = 'https://moviesmod.tw'
     search_path = '/search/{query}'
 
 
 class MoviesDrive(DownloadCatalogue):
     requires_imdb = True
     name = 'MoviesDrive'
-    base_link = 'https://new1.moviesdrive.cyou'
+    base_link = 'https://new3.moviesdrive.cyou'
     search_path = '/search.php?q={query}'
     json_search = True
 
 
 class VegaMovies(MoviesDrive):
     name = 'VegaMovies'
-    base_link = 'https://1vegamovies.shop'
+    base_link = 'https://vegamovies.lease'
 
     def search(self, q):
         doc, actual, body = self.page(self.base_link)
@@ -252,12 +252,12 @@ class VegaMovies(MoviesDrive):
 
 class RogMovies(MoviesDrive):
     name = 'RogMovies'
-    base_link = 'https://rogmovies.im'
+    base_link = 'https://rogmovies.cyou'
 
 
 class UHDMovies(DownloadCatalogue):
     name = 'UHDMovies'
-    base_link = 'https://uhdmovies.beauty'
+    base_link = 'https://uhdmovies.ceo'
     search_path = '/search/{query}'
 
     def search(self, q):
@@ -267,12 +267,12 @@ class UHDMovies(DownloadCatalogue):
 class DudeFilms(DownloadCatalogue):
     requires_imdb = True
     name = 'DudeFilms'
-    base_link = 'https://dudefilms.red'
+    base_link = 'https://new2.dudefilms.church'
 
 
 class HDHub4u(MoviesDrive):
     name = 'HDHub4u'
-    base_link = 'https://new10.hdhub4u.cl'
+    base_link = 'https://new14.hdhub4u.cl'
 
     def content(self, doc):
         return doc.first('article') or doc.first('main') or doc
@@ -302,7 +302,7 @@ class HDHub4u(MoviesDrive):
 
 class ZinkMovies(DownloadCatalogue):
     name = 'ZinkMovies'
-    base_link = 'https://new6.zinkmovies.mobi'
+    base_link = 'https://new2.zinkmovies.tattoo'
 
     def search(self, q):
         yield from super().search(dict(q, imdb=''))
@@ -311,6 +311,6 @@ class ZinkMovies(DownloadCatalogue):
 class HindMoviez(DownloadCatalogue):
     requires_imdb = True
     name = 'HindMoviez'
-    base_link = 'https://hindmovie.tax'
+    base_link = 'https://v4.hindmovie.im'
 
     # The shared link traversal follows the current same-origin signing AJAX.

@@ -1,5 +1,10 @@
 ## Unreleased
 
+- Select each existing catalogue origin from the newest individual value change in Phisher
+  or CSX history, rather than the newest repository/package timestamp.
+- Refresh ten stale native catalogue addresses with pinned provenance; retain existing provider
+  identities, parsers and playback rules. Full resolver-code replacement remains outstanding.
+
 ## 1.0.19 (29 October 2026)
 
 - Add 36 enabled CineStream adapter protocols for additional film and series sites and playback

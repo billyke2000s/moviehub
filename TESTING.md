@@ -1,5 +1,14 @@
 # Testing
 
+## Per-source address refresh candidate — 17 November 2026
+
+A per-entry comparison of both CloudStream upstream address histories selects origins for
+19 existing native providers and refreshes ten stale catalogue addresses. Provider IDs and
+the 74-site / 77-enabled-adapter inventory remain stable. Local validation: 150 Python tests
+and all 34 Java core suites pass. This is an unmerged address-refresh candidate; the complete
+per-resolver code replacement and live playback validation remain outstanding. See the
+[scope, pinned provenance and validation](docs/UPSTREAM_SOURCE_REFRESH_2026_11_17.md).
+
 ## Published 1.0.19 validation — 29 October 2026
 
 Source: `8759c88e0e2e72227c06bc1751ae1836ef241c53`. Signed publisher

@@ -1,5 +1,9 @@
 <div align="center">
 
+A source-address refresh is prepared on a separate branch; it compares each provider's own
+change history across CloudStream upstreams. Full resolver replacement and playback validation
+are still outstanding. See [refresh scope and evidence](docs/UPSTREAM_SOURCE_REFRESH_2026_11_17.md).
+
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names

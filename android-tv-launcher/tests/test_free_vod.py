@@ -643,5 +643,6 @@ from test_current_vod_sites import CurrentSiteTests
 from test_native_vod_sites import NativeSiteTests
 from test_fmhy_rive import RiveTests
 from test_fmhy_movy import MovyTests
+from test_vod_origins import VodOriginTests
 
 if __name__=='__main__':unittest.main()

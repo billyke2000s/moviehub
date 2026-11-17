@@ -1,0 +1,463 @@
+{
+  "providers": {
+    "4khdhub": {
+      "candidates": [
+        {
+          "changed_at": "2026-06-06T04:16:24Z",
+          "commit": "a5bea37f02c2ac1213939cd69aca08a2708040ca",
+          "origin": "https://4khdhub.one",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-06-06T12:19:01+05:30",
+          "commit": "d5787fd9d125a08703815c51d4e25b274378e350",
+          "origin": "https://4khdhub.one",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-06-06T12:19:01+05:30",
+        "commit": "d5787fd9d125a08703815c51d4e25b274378e350",
+        "origin": "https://4khdhub.one",
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
+      }
+    },
+    "bollyflix": {
+      "candidates": [
+        {
+          "changed_at": "2026-11-15T19:18:51+05:30",
+          "commit": "00478c63ca29bf2fb1bf617285b2f6d7a0741b7b",
+          "origin": "https://new1.bollyflix.tours",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-11-16T04:20:36Z",
+          "commit": "c05cf728af566b2ceb709199ac1c5c3b91607fa6",
+          "origin": "https://new1.bollyflix.tours",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-11-16T04:20:36Z",
+        "commit": "c05cf728af566b2ceb709199ac1c5c3b91607fa6",
+        "origin": "https://new1.bollyflix.tours",
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
+      }
+    },
+    "dudefilms": {
+      "candidates": [
+        {
+          "changed_at": "2026-11-13T23:07:20+05:30",
+          "commit": "5312e9bf33619dced25412fde95ec9c59abee7a2",
+          "origin": "https://new2.dudefilms.church",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-11-14T04:32:56Z",
+          "commit": "f89871fa2ef9e47e998937d2dc46f504960f6d0d",
+          "origin": "https://new2.dudefilms.church",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-11-14T04:32:56Z",
+        "commit": "f89871fa2ef9e47e998937d2dc46f504960f6d0d",
+        "origin": "https://new2.dudefilms.church",
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
+      }
+    },
+    "fibwatch": {
+      "candidates": [
+        {
+          "changed_at": "2026-05-31T07:41:58Z",
+          "commit": "6f8cb4698529230f8abd54181b86aa1a3d3817c4",
+          "origin": "https://fibwatch.art",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-07-20T11:13:51+05:30",
+          "commit": "7daa73ccdca16848257cb1a8c9e26100e8535a14",
+          "origin": "https://fibwatch.art",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-07-20T11:13:51+05:30",
+        "commit": "7daa73ccdca16848257cb1a8c9e26100e8535a14",
+        "origin": "https://fibwatch.art",
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
+      }
+    },
+    "hdhub4u": {
+      "candidates": [
+        {
+          "changed_at": "2026-11-13T23:07:20+05:30",
+          "commit": "5312e9bf33619dced25412fde95ec9c59abee7a2",
+          "origin": "https://new14.hdhub4u.cl",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-11-14T04:32:56Z",
+          "commit": "f89871fa2ef9e47e998937d2dc46f504960f6d0d",
+          "origin": "https://new14.hdhub4u.cl",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-11-14T04:32:56Z",
+        "commit": "f89871fa2ef9e47e998937d2dc46f504960f6d0d",
+        "origin": "https://new14.hdhub4u.cl",
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
+      }
+    },
+    "hindmoviez": {
+      "candidates": [
+        {
+          "changed_at": "2026-11-14T08:28:42+05:30",
+          "commit": "5f53180068c9e6c37a648fb808989cef30e7ea3d",
+          "origin": "https://v4.hindmovie.im",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-11-02T03:54:05Z",
+          "commit": "1caca6138175b10fda0ff5d2540471cc2e52a4dd",
+          "origin": "https://hindmovie.dad",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-11-14T08:28:42+05:30",
+        "commit": "5f53180068c9e6c37a648fb808989cef30e7ea3d",
+        "origin": "https://v4.hindmovie.im",
+        "path": "domains.json",
+        "repository": "phisher98/TVVVV"
+      }
+    },
+    "m4ufree": {
+      "candidates": [
+        {
+          "changed_at": "2026-10-14T13:32:55Z",
+          "commit": "82af821fd08e62bd74bb6d145befa20eeb531e27",
+          "origin": "https://ww5.m4ufree.lat",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-10-15T02:47:00Z",
+          "commit": "ca3196fe28461a31c9ac6f567acf9ff56e551a52",
+          "origin": "https://ww5.m4ufree.lat",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-10-15T02:47:00Z",
+        "commit": "ca3196fe28461a31c9ac6f567acf9ff56e551a52",
+        "origin": "https://ww5.m4ufree.lat",
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
+      }
+    },
+    "mlsbd": {
+      "candidates": [
+        {
+          "changed_at": "2026-06-27T20:52:50+05:30",
+          "commit": "1aa89f1076d8519523b2ab7f444a5903164b185f",
+          "origin": "https://mlsbd.co",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-06-27T20:52:50+05:30",
+        "commit": "1aa89f1076d8519523b2ab7f444a5903164b185f",
+        "origin": "https://mlsbd.co",
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
+      }
+    },
+    "moviesdrive": {
+      "candidates": [
+        {
+          "changed_at": "2026-11-11T23:20:52+05:30",
+          "commit": "2699ae00dfea603f3add68380d25eb87d1835bdc",
+          "origin": "https://new3.moviesdrive.cyou",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-11-12T05:22:57Z",
+          "commit": "330290cf061ec62d2f4435b8404cf45a9db4ae3a",
+          "origin": "https://new3.moviesdrive.cyou",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-11-12T05:22:57Z",
+        "commit": "330290cf061ec62d2f4435b8404cf45a9db4ae3a",
+        "origin": "https://new3.moviesdrive.cyou",
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
+      }
+    },
+    "moviesmod": {
+      "candidates": [
+        {
+          "changed_at": "2026-10-30T19:07:25Z",
+          "commit": "1e060eeeb1c52f2bff6f3502b4d48a0a0ca58ac4",
+          "origin": "https://moviesmod.tw",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-10-31T03:41:39Z",
+          "commit": "6a058424bd219ce9344efb3b8f99c58dce3de6c5",
+          "origin": "https://moviesmod.tw",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-10-31T03:41:39Z",
+        "commit": "6a058424bd219ce9344efb3b8f99c58dce3de6c5",
+        "origin": "https://moviesmod.tw",
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
+      }
+    },
+    "multimovies": {
+      "candidates": [
+        {
+          "changed_at": "2026-10-15T21:11:38Z",
+          "commit": "7e4b9a670174e87b1d64458ca16f06eedac1a1d0",
+          "origin": "https://m1.multimovies.courses",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-10-16T02:43:41Z",
+          "commit": "2d1fd4a366513e0b8d6c9bbe6fbbc37eee9beab0",
+          "origin": "https://m1.multimovies.courses",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-10-16T02:43:41Z",
+        "commit": "2d1fd4a366513e0b8d6c9bbe6fbbc37eee9beab0",
+        "origin": "https://m1.multimovies.courses",
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
+      }
+    },
+    "rogmovies": {
+      "candidates": [
+        {
+          "changed_at": "2026-11-16T01:10:56+05:30",
+          "commit": "9a699623755eab2c87db0fb384df59d95ab4f011",
+          "origin": "https://rogmovies.cyou",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-11-16T04:20:36Z",
+          "commit": "c05cf728af566b2ceb709199ac1c5c3b91607fa6",
+          "origin": "https://rogmovies.cyou",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-11-16T04:20:36Z",
+        "commit": "c05cf728af566b2ceb709199ac1c5c3b91607fa6",
+        "origin": "https://rogmovies.cyou",
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
+      }
+    },
+    "rtally": {
+      "candidates": [
+        {
+          "changed_at": "2026-09-24T02:42:31Z",
+          "commit": "fd211994d279aa21386da5c42f4debc14c2e79c6",
+          "origin": "https://rtally.lol",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-09-24T02:42:31Z",
+        "commit": "fd211994d279aa21386da5c42f4debc14c2e79c6",
+        "origin": "https://rtally.lol",
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
+      }
+    },
+    "skymovies": {
+      "candidates": [
+        {
+          "changed_at": "2026-10-30T03:57:15Z",
+          "commit": "2089c4b7cb1cbb33ab5252f2e7f6a79244d8ec44",
+          "origin": "https://new4.skymovieshd.clinic",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-10-30T03:57:15Z",
+        "commit": "2089c4b7cb1cbb33ab5252f2e7f6a79244d8ec44",
+        "origin": "https://new4.skymovieshd.clinic",
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
+      }
+    },
+    "toonstream": {
+      "candidates": [
+        {
+          "changed_at": "2026-11-07T19:12:00+05:30",
+          "commit": "5c07d1a15a30d763280a66b38eafda37f5ac1c1d",
+          "origin": "https://toonstream.us",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-09-24T10:02:57+05:30",
+          "commit": "0eaf2176cf7a3f8eab3a5b3980b5b94d9d961a08",
+          "origin": "https://toonstream.us",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-11-07T19:12:00+05:30",
+        "commit": "5c07d1a15a30d763280a66b38eafda37f5ac1c1d",
+        "origin": "https://toonstream.us",
+        "path": "domains.json",
+        "repository": "phisher98/TVVVV"
+      }
+    },
+    "topmovies": {
+      "candidates": [
+        {
+          "changed_at": "2026-09-15T15:08:51Z",
+          "commit": "f431cde07172d422ef51778f68a66d68a6cf56ba",
+          "origin": "https://moviesleech.club",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-09-16T02:52:22Z",
+          "commit": "7bf3a1e8559f2ad387b4c809c4e1e648bfd8372b",
+          "origin": "https://moviesleech.club",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-09-16T02:52:22Z",
+        "commit": "7bf3a1e8559f2ad387b4c809c4e1e648bfd8372b",
+        "origin": "https://moviesleech.club",
+        "path": "urls.json",
+        "repository": "SaurabhKaperwan/Utils"
+      }
+    },
+    "uhdmovies": {
+      "candidates": [
+        {
+          "changed_at": "2026-11-17T05:37:58+05:30",
+          "commit": "fe937b03a06c10760a6b9bd13464157896cfb982",
+          "origin": "https://uhdmovies.ceo",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-10-24T02:54:01Z",
+          "commit": "a244d0b948704e03076fd54453ddcb5ff6ddf30e",
+          "origin": "https://uhdmovies.beauty",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-11-17T05:37:58+05:30",
+        "commit": "fe937b03a06c10760a6b9bd13464157896cfb982",
+        "origin": "https://uhdmovies.ceo",
+        "path": "domains.json",
+        "repository": "phisher98/TVVVV"
+      }
+    },
+    "vegamovies": {
+      "candidates": [
+        {
+          "changed_at": "2026-11-02T23:24:12Z",
+          "commit": "99cf4ae6b3e10771946b243b0a0f4a6b0b9ced26",
+          "origin": "https://vegamovies.lease",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-10-26T02:44:35Z",
+          "commit": "dcd69aa80970ea230bba34578108181ff4d79a65",
+          "origin": "https://1vegamovies.shop",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-11-02T23:24:12Z",
+        "commit": "99cf4ae6b3e10771946b243b0a0f4a6b0b9ced26",
+        "origin": "https://vegamovies.lease",
+        "path": "domains.json",
+        "repository": "phisher98/TVVVV"
+      }
+    },
+    "zinkmovies": {
+      "candidates": [
+        {
+          "changed_at": "2026-11-03T23:06:50Z",
+          "commit": "6f981579ba692feb3706698c70ac3e2d64675b6a",
+          "origin": "https://new2.zinkmovies.tattoo",
+          "path": "domains.json",
+          "repository": "phisher98/TVVVV"
+        },
+        {
+          "changed_at": "2026-10-25T02:46:50Z",
+          "commit": "5ae80cc2a0cb8332ba1d874c3ff448c77fb536e5",
+          "origin": "https://new6.zinkmovies.mobi",
+          "path": "urls.json",
+          "repository": "SaurabhKaperwan/Utils"
+        }
+      ],
+      "selected": {
+        "changed_at": "2026-11-03T23:06:50Z",
+        "commit": "6f981579ba692feb3706698c70ac3e2d64675b6a",
+        "origin": "https://new2.zinkmovies.tattoo",
+        "path": "domains.json",
+        "repository": "phisher98/TVVVV"
+      }
+    }
+  },
+  "scope": "catalogue origins only; resolver code is separately maintained",
+  "snapshots": {
+    "SaurabhKaperwan/Utils": "c05cf728af566b2ceb709199ac1c5c3b91607fa6",
+    "phisher98/TVVVV": "afae8fa871deb2c4a259b158b34689810c91e572"
+  }
+}
