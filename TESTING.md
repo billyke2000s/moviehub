@@ -162,6 +162,11 @@ done
 Expected output: 17 playlist, 9 network, 110 episode/file, 13 channel-query, 18 programme-guide
 matching, 17 satellite numbering, 15 guide order, 11 film skip, 13 troubleshooting and 36 channel matching/category checks passed.
 
+`TrackNamesTest` (core) checks Live TV track names: two- and three-letter language codes
+(including broadcast forms such as "fre" and "ger"), channel layouts, audio formats and stream
+labels. The one-panel Audio & Subtitles layout is covered only by the existing device tests that
+open the panel by its title; no test selects a track from it.
+
 ## Device tests
 
 `ChannelDatabaseTest.versionSevenWithoutMainUpgradesAndKeepsChannelsAndFavourites` reconstructs

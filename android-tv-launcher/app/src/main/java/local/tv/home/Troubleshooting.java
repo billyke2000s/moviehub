@@ -243,13 +243,19 @@ final class Troubleshooting {
                     (stat.count == 1 ? " time" : " times")
             );
         actions(
-            new String[] { "Refresh", "Reset timings" },
+            new String[] { "Refresh", "Reset timings", "Live TV player log" },
             new Runnable[] {
                 this::show,
                 () -> {
                     Timings.clear();
                     show();
                 },
+                // Moved here from the Live TV player's Options: details for diagnosing a channel.
+                () ->
+                    SidePanel.of(activity, "Live TV player log")
+                        .message("ExoPlayer \u00b7 " + ExoLive.status() + "\n\n" + ExoLive.eventLog())
+                        .action("Close", null)
+                        .show(),
             }
         );
     }

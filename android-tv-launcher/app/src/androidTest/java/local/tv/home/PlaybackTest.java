@@ -736,7 +736,13 @@ public class PlaybackTest {
         assertEquals("16:9", engine.getAspectRatio());
         option(activity.menus::chooseSleep, 1);
         assertTrue(activity.sleepAt > SystemClock.elapsedRealtime());
-        option(activity.menus::chooseSleep, 0);
+        // The list opens on the running choice (15 minutes); Up reaches Off and cancels it.
+        instrumentation.runOnMainSync(activity.menus::chooseSleep);
+        instrumentation.waitForIdleSync();
+        SystemClock.sleep(250);
+        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        instrumentation.waitForIdleSync();
         assertEquals(0, activity.sleepAt);
         UiEvidence.capture("playback-options");
     }

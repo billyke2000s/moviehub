@@ -1,5 +1,16 @@
 ## Unreleased
 
+- Player menus: Audio & Subtitles shows both lists on one panel with the current choices ticked,
+  in Live TV and in films and series. Live TV track names are in words ("English · Stereo · AAC"
+  instead of "eng · mp4a-latm · 2 ch"); film track names are unchanged.
+- Sources lists: "Automatic (recommended)" first, then each source by provider and name, the one
+  on screen marked Playing.
+- Live TV Options keeps Pause/Play, Programme information, Audio & subtitles, Source and
+  Reconnect. The player event log moved to Settings → System → Troubleshooting, and the
+  "Player status" row was removed.
+- Films and series: Subtitle timing stays open while adjusting and shows the offset; the Sleep
+  timer ticks the current choice and shows the minutes left.
+
 - Films and series switch to another source when the picture freezes for 12 seconds without the
   player reporting buffering or an error. A failure that happens while a menu is open is handled
   when the menu closes instead of being ignored.
