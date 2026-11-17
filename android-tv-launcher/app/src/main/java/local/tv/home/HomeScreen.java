@@ -266,6 +266,7 @@ final class HomeScreen {
             summary.setText(item.optString("overview", ""));
             open.setText("View details");
             open.setOnClickListener(v -> activity.posters.tmdbTitle(item));
+            open.setVisibility(View.VISIBLE); // hidden until there is a title to open
             String art = item.optString("backdrop_path");
             if (pendingArt != null) activity.handler.removeCallbacks(pendingArt);
             pendingArt = () -> {
