@@ -46,6 +46,11 @@ final class SetupScreens {
         );
 
         settings.heading(body, "Live TV");
+        settings.accountCard(
+            body,
+            NuvioSports.SERVICE,
+            "Optional live sports matches and 24/7 channels from a Nuvio Live Sports server"
+        );
         settings.settingCard(
             body,
             "Free channels",

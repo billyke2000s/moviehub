@@ -201,7 +201,8 @@ final class LiveUpgrade {
             found.source.provider == null &&
             found.source.relay == null &&
             !PlutoSource.nativeUrl(found.locator) &&
-            !EngineSources.locator(found.locator)
+            !EngineSources.locator(found.locator) &&
+            !NuvioSports.locator(found.locator)
         );
     }
 

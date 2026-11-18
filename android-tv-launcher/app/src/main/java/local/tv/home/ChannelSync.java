@@ -52,7 +52,11 @@ final class ChannelSync {
      */
     static void refreshIfStale(Context context, boolean liveTvOpened) {
         Secrets secrets = new Secrets(context);
-        boolean provider = secrets.has("m3u") || secrets.has("xtream") || secrets.has("masqueradarr");
+        boolean provider = secrets.has("m3u") || secrets.has("xtream") ||
+            secrets.has("masqueradarr") || secrets.has(NuvioSports.SOURCE);
+        // Match fixtures change much faster than the ordinary 12-hour channel/EPG refresh.
+        // Only the sports source is refreshed; never re-import all providers every 15 minutes.
+        if (liveTvOpened) NuvioSports.queueIfStale(context);
         if (!provider && (!liveTvOpened || FreeChannels.playlist(context, false).isEmpty())) return;
         ChannelImporter.Status status = ChannelImporter.status(context);
         // A refresh that finished counts, even when some services failed: lastSuccess needs no

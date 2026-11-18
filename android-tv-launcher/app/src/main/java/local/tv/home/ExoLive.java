@@ -320,6 +320,7 @@ final class ExoLive {
         // time) before trying the others kept the picture black for a long time.
         if (listener != null && listener.hasAlternative()) {
             if (AdapterSources.locator(url)) AdapterSources.failed(url);
+            if (NuvioSports.locator(url)) NuvioSports.failed(url);
             status = "Failed: " + reason;
             event("Moving to another source (" + reasonShort(reason) + ")");
             listener.failed(reason);
@@ -332,6 +333,7 @@ final class ExoLive {
         }
         // Retire the selected upstream player, rather than preferring the same failed one again.
         if (AdapterSources.locator(url)) AdapterSources.failed(url);
+        if (NuvioSports.locator(url)) NuvioSports.failed(url);
         // Look the link up afresh rather than reusing a cached one.
         if (EngineSources.locator(url) && !engineRefreshed) {
             engineRefreshed = true;
@@ -377,7 +379,8 @@ final class ExoLive {
         closeRelay();
         status = "Finding the stream";
         long started = SystemClock.elapsedRealtime();
-        if (!(PlutoSource.nativeUrl(locator) || EngineSources.locator(locator))) {
+        if (!(PlutoSource.nativeUrl(locator) || EngineSources.locator(locator) ||
+            NuvioSports.locator(locator))) {
             start(ticket, locator, null, null, null, 0);
             return;
         }

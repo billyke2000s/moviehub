@@ -31,9 +31,11 @@ final class LiveStream {
         String resolved =
             stream != null
                 ? stream.url
-                : fixture == null
-                  ? PlutoSource.resolve(locator, http)
-                  : fixture.resolve(locator, http);
+                : NuvioSports.locator(locator)
+                  ? NuvioSports.resolve(context, locator, http)
+                  : fixture == null
+                    ? PlutoSource.resolve(locator, http)
+                    : fixture.resolve(locator, http);
         ProviderRelay nextRelay =
             stream != null &&
             (ProviderRelay.needed(stream) ||
