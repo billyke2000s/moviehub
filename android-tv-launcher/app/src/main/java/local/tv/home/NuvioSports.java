@@ -123,9 +123,11 @@ final class NuvioSports {
                 errors.add(catalog);
             }
         }
-        if (combined.length() == 0) throw new IOException(
-            "Nuvio Sports has no channels (unavailable: " + String.join(", ", errors) + ")"
+        // Do not replace a complete saved sports lineup with half of an upstream response.
+        if (!errors.isEmpty()) throw new IOException(
+            "Nuvio Sports catalogue unavailable: " + String.join(", ", errors)
         );
+        if (combined.length() == 0) throw new IOException("Nuvio Sports has no channels");
         ChannelDatabase.Writer writer = db.writer(SOURCE, cancel, n -> {});
         try {
             Set<String> seen = new HashSet<>();
@@ -153,7 +155,10 @@ final class NuvioSports {
             cancel.check();
             writer.commit();
             context.getSharedPreferences("nuvioSportsSync", 0)
-                .edit().putLong("lastSuccess", System.currentTimeMillis()).apply();
+                .edit()
+                .putLong("lastSuccess", System.currentTimeMillis())
+                .putLong("lastRequested", System.currentTimeMillis())
+                .apply();
             return writer.count();
         } finally {
             writer.abort();
