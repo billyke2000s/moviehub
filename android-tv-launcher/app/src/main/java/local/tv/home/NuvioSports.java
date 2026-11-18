@@ -197,7 +197,8 @@ final class NuvioSports {
         Set<String> seen = new HashSet<>();
         for (int i = 0; i < Math.min(50, streams.length()); i++) {
             JSONObject item = streams.optJSONObject(i);
-            if (item == null || item.has("externalUrl") || item.has("ytId")) continue;
+            if (item == null || !item.optString("externalUrl", "").isEmpty() ||
+                !item.optString("ytId", "").isEmpty()) continue;
             String url = item.optString("url", "");
             try {
                 url = Playlist.networkUrl(url, allowHttp);
