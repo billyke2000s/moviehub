@@ -93,6 +93,18 @@ final class ChannelImporter {
                         problems.add("Masqueradarr: " + describe(e));
                     }
                 }
+                String sports = secrets.get(NuvioSports.SOURCE);
+                if (!sports.isEmpty()) {
+                    anySource = true;
+                    configured.add(NuvioSports.SOURCE);
+                    try {
+                        total += NuvioSports.refresh(context, db, cancel);
+                    } catch (Exception e) {
+                        cancel.check();
+                        Diagnostics.recovered("Refreshing Nuvio Live Sports", e);
+                        problems.add("Nuvio Sports unavailable; saved channels kept.");
+                    }
+                }
                 String account = secrets.get("xtream");
                 if (!account.isEmpty()) {
                     anySource = true;
@@ -216,6 +228,14 @@ final class ChannelImporter {
             );
             edit.apply();
             return problems.isEmpty();
+        }
+    }
+
+    /** Targeted sports refresh shares the import lock, preserving database transactions. */
+    static int refreshNuvio(Context context, ChannelDatabase.Cancel cancel) throws Exception {
+        synchronized (LOCK) {
+            if (!NuvioSports.connected(context)) return 0;
+            return NuvioSports.refresh(context, ChannelDatabase.get(context), cancel);
         }
     }
 
