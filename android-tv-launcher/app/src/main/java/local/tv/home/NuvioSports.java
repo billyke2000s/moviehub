@@ -29,6 +29,7 @@ final class NuvioSports {
     private static final class Failed {
         String last;
         long at;
+        final Set<String> burnt = new HashSet<>();
     }
 
     private NuvioSports() {}
@@ -170,21 +171,24 @@ final class NuvioSports {
         if (candidates.isEmpty()) throw new IOException("No supported direct sports stream");
         http.check();
         synchronized (failed) {
-            Failed previous = failed.get(locator);
-            if (previous != null && System.currentTimeMillis() - previous.at < 120_000 &&
-                candidates.size() > 1) {
-                for (String candidate : candidates) if (!candidate.equals(previous.last)) {
-                    previous.last = candidate;
-                    return candidate;
-                }
+            Failed choice = failed.get(locator);
+            if (choice == null || System.currentTimeMillis() - choice.at > 600_000) {
+                choice = new Failed();
+                failed.put(locator, choice);
             }
-            Failed next = new Failed();
-            next.last = candidates.get(0);
-            next.at = System.currentTimeMillis();
-            failed.put(locator, next);
-            if (failed.size() > 256) failed.clear();
+            for (String candidate : candidates) {
+                if (choice.burnt.contains(candidate)) continue;
+                choice.last = candidate;
+                choice.at = System.currentTimeMillis();
+                if (failed.size() > 256) failed.clear();
+                return candidate;
+            }
+            // Everything was rejected. On the next cycle, try the list afresh.
+            choice.burnt.clear();
+            choice.last = candidates.get(0);
+            choice.at = System.currentTimeMillis();
+            return choice.last;
         }
-        return candidates.get(0);
     }
 
     /** Do not hand browser-only embeds, YouTube pages or malformed URLs to ExoPlayer. */
@@ -215,7 +219,10 @@ final class NuvioSports {
         if (!locator(locator)) return;
         synchronized (failed) {
             Failed item = failed.get(locator);
-            if (item != null) item.at = System.currentTimeMillis();
+            if (item != null && item.last != null) {
+                item.burnt.add(item.last);
+                item.at = System.currentTimeMillis();
+            }
         }
     }
 
