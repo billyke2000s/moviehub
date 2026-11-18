@@ -1,5 +1,9 @@
 <div align="center">
 
+Unreleased sports compatibility repair: ZLive's current player key and FreeShot's new WideIPTV CDN
+are supported, with scoped rejection of short completed clips. Live availability and continuous
+site-message feeds still require verification; see [testing evidence](TESTING.md#sports-loader-regression-checks--1-november-2026).
+
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names

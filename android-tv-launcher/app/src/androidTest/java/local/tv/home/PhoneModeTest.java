@@ -13,12 +13,14 @@ import android.widget.Button;
 import android.widget.TextView;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry;
+import androidx.test.runner.lifecycle.Stage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
-/** The first-start TV or phone question, and Live TV in the phone layout. */
+/** The first-start TV or phone question, and the phone layout: the TV pages, sideways, by touch. */
 @RunWith(AndroidJUnit4.class)
 public class PhoneModeTest {
 
@@ -89,8 +91,29 @@ public class PhoneModeTest {
         return null;
     }
 
+    /**
+     * The MainActivity on screen now (choosing the phone layout rebuilds the screen). Call on the
+     * main thread, as {@link #await}'s checks are.
+     */
+    static MainActivity resumed() {
+        MainActivity found = null;
+        for (android.app.Activity each : ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(
+            Stage.RESUMED
+        ))
+            if (each instanceof MainActivity) found = (MainActivity) each;
+        return found;
+    }
+
+    static boolean shows(View view, String text) {
+        if (view instanceof TextView && ((TextView) view).getText().toString().equals(text)) return true;
+        if (view instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) {
+            if (shows(((ViewGroup) view).getChildAt(i), text)) return true;
+        }
+        return false;
+    }
+
     @Test
-    public void asksOnFirstStartThenShowsLiveTvForTouch() {
+    public void asksOnFirstStartThenShowsTheTvPagesSidewaysForTouch() {
         activity = (MainActivity) remote.startActivitySync(
             new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         );
@@ -100,12 +123,43 @@ public class PhoneModeTest {
             return phone.get() != null && find(activity.page, "📺") != null;
         });
         UiEvidence.capture("layout-question");
+        MainActivity first = activity;
         remote.runOnMainSync(() -> phone.get().performClick());
-        await("phone Live TV", () -> DeviceMode.phone(context) && activity.phoneLive.items.size() == 3);
-        UiEvidence.capture("phone-live-tv");
 
-        // Tap a channel: Live TV goes full screen with the touch buttons on its banner.
-        remote.runOnMainSync(() -> activity.phoneLive.watchForTest(1));
+        // The screen is rebuilt with the phone scale and opens Home: the same pages as the TV.
+        AtomicReference<MainActivity> phoneScreen = new AtomicReference<>();
+        await("phone Home", () -> {
+            MainActivity now = resumed();
+            if (now == null || now == first || !DeviceMode.phone(context)) return false;
+            phoneScreen.set(now);
+            return shows(now.page, "Live TV") && shows(now.page, "Settings");
+        });
+        activity = phoneScreen.get();
+        remote.runOnMainSync(() ->
+            assertEquals(
+                "sideways, either way round",
+                android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE,
+                activity.getRequestedOrientation()
+            )
+        );
+        remote.runOnMainSync(() -> {
+            android.util.DisplayMetrics metrics = activity.getResources().getDisplayMetrics();
+            int shortSide = Math.min(metrics.widthPixels, metrics.heightPixels);
+            assertEquals(
+                "density set by PhoneScale",
+                PhoneScale.densityDpi(shortSide),
+                activity.getResources().getConfiguration().densityDpi,
+                1
+            );
+        });
+        UiEvidence.capture("phone-home");
+
+        // Live TV is the TV guide; a channel goes full screen with the touch buttons on its banner.
+        remote.runOnMainSync(() -> activity.liveTv.show("all", ""));
+        ChannelDatabase.Row row = ChannelDatabase.get(context)
+            .browse("all", "", java.util.Collections.emptySet(), 0)
+            .get(1);
+        remote.runOnMainSync(() -> activity.liveTv.play(row, 1));
         await(
             "touch controls",
             () ->

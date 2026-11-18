@@ -1,5 +1,17 @@
 # Architecture
 
+## Sports player compatibility — 1 November 2026
+
+ZLive's bundled resolver follows public client `D4Mt3-Uz.js`'s current v6 key. FreeShot accepts
+both the observed exact `cdn.wideiptv.top` host and the existing single-label Bluetier hosts;
+`PlaylistSession` retains origin/channel-bound renewal at the existing anonymous endpoint.
+Package capability `sportsPlayers: 1` prevents older signed modules overriding either fix.
+`AdapterSources` marks these two sources for `LivePlaylistPolicy`, applied to each HLS child in
+`ProviderRelay.rewrite`: completed clips of at most 120 seconds are rejected, while sliding live
+windows and longer finished recordings remain valid. This is a structural check, not recognition
+of text burned into a continuous feed. DaddyLive and VOD do not receive this policy.
+
+
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed
 DriveSeed public cloud/file-button exchange on its issuing origin. New host-button source names
@@ -174,8 +186,8 @@ once, when the activity is constructed, and keep almost no state of their own.
 | `ContinueWatching`                  | Plain-Java rules for the Continue watching rows: only titles watched for 3 minutes or more, one row per film or series whichever source played it, and a series as its newest episode in progress or, once that episode is finished, the next one (looked up with `SeriesPlayback.resolve`; the row goes when there is none). |
 | `CloudScreens`                      | Premiumize cloud folders and transfers.                                                                                                                                                                                                                                                                                       |
 | `LiveTvScreen`                      | Live TV as a classic TV guide grid: ten channels per page in satellite number order, time slots, colour-key paging, number entry, favourites, the live picture in the corner.                                                                                                                                                 |
-| `DeviceMode`, `LayoutChooser`       | TV or phone layout: the first-start question (best guess suggested), kept in preferences, changeable in Settings.                                                                                                                                                                                                             |
-| `PhoneLive`                         | Live TV in the phone layout: portrait touch channel list with tabs, search, now and next; the player gets touch buttons on its banner.                                                                                                                                                                                        |
+| `DeviceMode`, `LayoutChooser`       | TV or phone layout: the first-start question, kept in preferences, changeable in Settings. Phone: the same TV pages, sideways, scaled by `PhoneScale`.                                                                                                                                                                        |
+| `PhoneLive`                         | The former portrait Live TV list. Since the phone layout uses the TV pages it is no longer opened; kept until removed in a separate change.                                                                                                                                                                                   |
 | `GuideFrame`                        | The guide's fixed parts in the dark-blue classic look (as in 0.26): clock, list name and status, Options and the live picture, time slots, colour keys.                                                                                                                                                                       |
 | `KeyBar`                            | The colour keys at the bottom of the guide and its menu, always drawn as focusable buttons for remotes without coloured buttons; the first BACK highlights them. |
 | `GuideMenu`                         | The numbered guide menu (1 All Channels … 0 Music, one page) that Live TV opens first and BACK from the guide returns to; Options, Reminders and Search are on its colour buttons. |

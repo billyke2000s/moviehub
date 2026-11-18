@@ -1,5 +1,35 @@
 # Testing
 
+## 1.0.20 integration candidate — 18 November 2026
+
+Combined core rules pass locally with Eclipse JDT targeting Java 17; 144 Python provider
+regressions pass. Phone/menu and sports-policy test lists are both retained. Final Android
+CI, actual dual-ARM APK inspection and signed updater compatibility are required before
+merging and publication. This candidate does not certify the unfinished movie-source audits.
+
+## Sports loader regression checks — 1 November 2026
+
+New fixtures decrypt ZLive v6 requests using the current public client key, resolve FreeShot on
+both CDN families, and reject lookalike hosts, mismatched channel paths, userinfo and custom ports.
+`PlaylistSessionTest` verifies new-CDN renewal and scope. `ProviderEngineDeviceTest` verifies
+old signed sports modules fall back to bundled implementations until the matching capability exists.
+`LivePlaylistPolicyTest` checks short completed clips, legitimate live windows, master playlists,
+longer recordings and invalid durations. The production relay fixture checks policy scope independently
+of VOD. These fixtures do not establish real provider availability.
+
+Live inspection: FreeShot's WideIPTV Main Event configuration advertised the new CDN. An eight-second
+FFmpeg sample decoded both tracks (573 audio/video frame rows); the inspected frame showed Sky
+Sports Main Event's Toto Wolff interview, not a site-message card. FreeShot's outer channel/embed
+pages returned Site Unavailable here, so the full current chain remains unverified. ZLive's updated
+resolver returned HTTP 200; F1 UK2's media URL returned 404, while F1 UK3 returned a sliding HLS
+playlist with wrapped segments. A downloaded UK3 segment passed the production carrier decoder and a four-second FFmpeg
+audio/video sample; the inspected picture showed the actual Sky Sports F1 broadcast. Full live
+relay playback was blocked here by upstream DNS lookup failure. This sample is not a sustained
+Android playback test. All 35 core suites, 3 Node tests and provider verification passed locally
+(21 engine checks, 48 multi-provider checks, 17 PNG checks, 9 carrier checks, TCP/DASH relay
+checks and 6 fast-runtime checks). Android CI is tracked in PR #210.
+
+
 ## Published 1.0.19 validation — 29 October 2026
 
 Source: `8759c88e0e2e72227c06bc1751ae1836ef241c53`. Signed publisher
@@ -186,6 +216,12 @@ opened from Setup), `DiagnosticsTest` (Engineer view returns to Setup; new Help 
 `PosterFeedTest` (one Browse sheet, no Library button, Premiumize not in Accounts), `AllAppsTest`
 ("Box settings") and `PlaybackTest` (no raw download speed on the player). None of them proves
 the layout on a real TV box.
+
+`PhoneScaleTest` (core) checks the phone layout's scale: the short side becomes 540 units for
+720p to 1600p screens, a 1080p TV box keeps 320 dpi, and very small screens stop at 120 dpi.
+`PhoneModeTest` (device) chooses the phone layout, follows the rebuilt screen to Home, checks the
+sideways orientation and the applied density, and plays a channel from the guide with touch
+buttons. The CI emulator has a TV's density, so it cannot show the pages shrinking.
 
 ## Device tests
 

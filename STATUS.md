@@ -1,5 +1,13 @@
 # Status
 
+## 1.0.20 release candidate — 18 November 2026
+
+Combines current main menu/settings work with PR #203 phone scaling and PR #210 sports
+protocol repairs. Preserves the newer removal of the Settings layout selector. PR #185 is
+excluded because its metadata subsystem was intentionally removed by rollback e95b11a;
+PRs #198, #211 and #213 remain unfinished audits. Combined CI and signed publication
+are required before this candidate is an available update.
+
 ## Menu audit sheet — 17 November 2026 (pull request, not merged or published)
 
 The owner's MovieHub menu audit sheet (100 rows, a decision on each) is applied on a branch
@@ -20,6 +28,18 @@ remain intact. [Android CI 41866897273](https://github.com/billyke2000s/moviehub
 at code revision `f62b3eb` passed all six jobs. All 35 local core suites pass, including
 62 phone-entry checks.
 The settings stack at `9ebfca1` also passed all six jobs in [CI 41867094618](https://github.com/billyke2000s/moviehub/actions/runs/41867094618), plus all 36 local core suites.
+The phone-layout stack at `e64f49f` passed all six jobs in [CI 41867359952](https://github.com/billyke2000s/moviehub/actions/runs/41867359952), plus all 37 local core suites, including 12 phone-scale checks.
+
+## Sports loader repair — 1 November 2026 (unpublished)
+
+Current-player inspection found ZLive's changed public v6 key and FreeShot's new exact WideIPTV
+CDN, both incompatible with the bundled loaders. The repair updates those two protocols, retains
+legacy CDN/session support, and prevents older signed sports modules overriding the fixes.
+A scoped relay guard rejects short finished HLS clips but cannot identify every continuous decoy.
+DaddyLive, UI and saved data are unchanged. See TESTING.md and the associated PR for evidence and
+remaining limits: FreeShot outer pages are unavailable here and ZLive F1 UK2 currently returns 404.
+This work is not a published TV update.
+
 
 ## Current release — MovieHub 1.0.19 (code 119)
 
@@ -251,9 +271,12 @@ Historical checkpoint: 25 October 2026 (1.0 promoted the experimental line into 
    not yet checked on a phone or the X905X5M box. Earlier notes below about the retained
    SurfaceTexture describe the replaced design.
 
-9. **Phone layout covers Live TV only.** Films, series, My List and settings still open in the TV
-   layout. MainActivity now handles rotation itself (configChanges), so screens are not rebuilt
-   when a phone turns.
+9. **Phone layout is the TV pages, sideways (31 October 2026, unreleased).** Phone mode opens Home
+   in landscape (either way round) and scales every screen so the phone's short side is 540 units,
+   the TV pages' design height (`PhoneScale`, applied in both activities). Live TV uses the TV
+   guide; the player keeps its touch buttons. Text is smaller than on a TV. The portrait
+   `PhoneLive` list is no longer opened. The emulator CI uses the TV density, so the scaling itself
+   is only checked by core tests; [Unverified] on a real phone.
 
 10. **Live TV stream rules ported from the LibVLC player (27 October 2026).** Buffering, dead-stream,
     reconnect-budget and provider-link-renewal rules now apply to the ExoPlayer live player

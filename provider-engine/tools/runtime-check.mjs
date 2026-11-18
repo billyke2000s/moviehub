@@ -347,7 +347,7 @@ function zTransport(slug, status = 200, location = sessionLocation) {
         assert.equal(payload.d, date);
         assert.equal(payload.e, "fixture-ticket");
         const initial = createHash("sha256")
-            .update("Asq3YkZdzBICwscY4OO1PFAes1Mv1vJ8vxZbzYQeHZE:" + date)
+            .update("SfrcOczV4qSNuSMiouJIDtTOVXUYWzbgFnLDdF9DUSf:" + date)
             .digest();
         const one = createHmac("sha256", initial).update("k6").digest();
         const key = createHmac("sha256", one)
@@ -441,6 +441,42 @@ assert.equal(freeStream.playlistSession.token, "YWJjZA==.signature");
 assert.equal(freeStream.playlistSession.expiresAtMs, 1792440300000);
 assert.equal(lastInput.responses.length, 3);
 checks++;
+// The current player moved to this exact CDN; older Bluetier hosts remain supported.
+for (const host of ["cdn.wideiptv.top", "ds2.bluetier.top"]) {
+    const current = drive("freeshot", "resolve", freeRows[0], (req, n) => {
+        if (n === 0) return '<iframe src="/embed/MainEvent.php"></iframe>';
+        if (n === 1) return '<iframe src="https://wideiptv.top/player/skysportsmainevent"></iframe>';
+        return (
+            'const config = {streamUrl: "https://' +
+            host +
+            '/skysportsmainevent/index.m3u8?token=abc.signature", channelSlug:"skysportsmainevent"};'
+        );
+    });
+    assert.equal(new URL(current.url).hostname, host);
+    assert.equal(current.playlistSession.endpoint, "https://wideiptv.top/api/refresh_token.php");
+    checks++;
+}
+for (const address of [
+    "https://cdn.wideiptv.top.evil.example/skysportsmainevent/index.m3u8?token=abc",
+    "https://cdn.wideiptv.top/other-channel/index.m3u8?token=abc",
+    "https://user@cdn.wideiptv.top/skysportsmainevent/index.m3u8?token=abc",
+    "https://cdn.wideiptv.top:8443/skysportsmainevent/index.m3u8?token=abc",
+]) {
+    assert.throws(
+        () =>
+            drive("freeshot", "resolve", freeRows[0], (req, n) => {
+                if (n === 0) return '<iframe src="/embed/MainEvent.php"></iframe>';
+                if (n === 1) return '<iframe src="https://wideiptv.top/player/skysportsmainevent"></iframe>';
+                return (
+                    "const config = {streamUrl: " +
+                    JSON.stringify(address) +
+                    ', channelSlug:"skysportsmainevent"};'
+                );
+            }),
+        address.includes("user@") ? /Invalid URL/ : /FreeShot stream scope rejected/,
+    );
+    checks++;
+}
 assert.throws(
     () =>
         drive("freeshot", "resolve", { channelId: "../../outside" }, () => {

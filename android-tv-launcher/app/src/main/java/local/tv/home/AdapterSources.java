@@ -329,6 +329,7 @@ final class AdapterSources {
                 resolved.getJSONObject("headers").put(key, supplied.getString(key));
             }
         }
+        if (id.equals("zlive") || id.equals("freeshot")) resolved.put("livePlaylist", true);
         EngineSources.Stream stream = new EngineSources.Stream(resolved);
         if (id.equals("dlhd")) rememberPlayer(url, resolved.optInt("playerIndex", 0));
         return stream;

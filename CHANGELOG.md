@@ -1,5 +1,7 @@
 ## Unreleased
 
+## 1.0.20 (18 November 2026)
+
 Menu audit sheet (owner's decisions, 17 November 2026; builds on the earlier menu clean-up):
 
 - Settings → **Setup**, a new last tab with no PIN, for whoever looks after the box: Premiumize
@@ -28,6 +30,11 @@ Menu audit sheet (owner's decisions, 17 November 2026; builds on the earlier men
   "no stream found" says how many websites were checked.
 - All apps: banners are no longer cropped, focused tiles grow less, "Android" is "Box settings".
 - New permission ACCESS_NETWORK_STATE (granted automatically) so Help can tell when Wi-Fi is off.
+
+- Phone layout: the same pages as the TV (Home, Movies, Series, My list, Continue watching,
+  Settings, Live TV guide and the players), held sideways and scaled to fit the phone's height.
+  Touch works throughout; the Live TV player keeps its touch buttons. The first-start choice
+  rebuilds the screen in the chosen layout. The portrait phone channel list is no longer used.
 
 - Settings → Accounts lists every account, including Masqueradarr (moved from Free channels →
   Advanced). Back from an account screen returns to where it was opened (Home, a film list,
@@ -80,6 +87,12 @@ Menu audit sheet (owner's decisions, 17 November 2026; builds on the earlier men
 - Parental lock can lock all films and series (one PIN, then three hours unlocked so episodes
   continue). The lock is also in Settings → System, its help no longer suggests that locking the
   Movies guide section locks the films library, and its phone menu no longer draws the TV guide.
+
+- Update ZLive's public player key and FreeShot's current WideIPTV CDN scope without changing
+  DaddyLive, channel identities or saved data. Preserve anonymous token renewal on the new CDN.
+- Reject short finished HLS clips on ZLive/FreeShot so a placeholder can fail over; ordinary
+  short sliding live windows remain valid. Continuous message feeds still need visual verification.
+- Keep the bundled sports loaders when an older installed provider package lacks this protocol.
 
 ## 1.0.19 (29 October 2026)
 

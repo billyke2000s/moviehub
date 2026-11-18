@@ -21,6 +21,7 @@ final class ProviderRelay implements AutoCloseable {
     private final PlaylistSession playlistSession;
     private final boolean segmentContainers;
     private final boolean boundedRanges;
+    private final boolean livePlaylist;
     private final Set<HttpURLConnection> active = ConcurrentHashMap.newKeySet();
     private final Set<Socket> clients = ConcurrentHashMap.newKeySet();
     // Four, so a slow segment download never holds up the playlist refresh behind it.
@@ -81,6 +82,7 @@ final class ProviderRelay implements AutoCloseable {
             stream.playlistSession == null ? null : new PlaylistSession(stream.url, stream.playlistSession);
         segmentContainers = stream.segmentContainers || playlistSession != null;
         boundedRanges = stream.boundedRanges;
+        livePlaylist = stream.livePlaylist;
         headers = new LinkedHashMap<>();
         for (Iterator<String> keys = stream.headers.keys(); keys.hasNext(); ) {
             String key = keys.next(),
@@ -519,6 +521,7 @@ final class ProviderRelay implements AutoCloseable {
     }
 
     String rewrite(String playlist, URI base) throws IOException {
+        if (livePlaylist) LivePlaylistPolicy.validate(playlist);
         StringBuilder result = new StringBuilder();
         Pattern attributes = Pattern.compile("URI=\"([^\"]+)\"");
         boolean variant = false;

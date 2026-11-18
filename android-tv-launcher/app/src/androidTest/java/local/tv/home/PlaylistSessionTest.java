@@ -52,6 +52,30 @@ public final class PlaylistSessionTest {
     }
 
     @Test
+    public void currentCdnRenewsWithoutGrantingOtherHostsOrChannels() throws Exception {
+        PlaylistSession grant = new PlaylistSession("https://cdn.wideiptv.top/sky/index.m3u8", session());
+        URI media = grant.authorize(
+            URI.create("https://cdn.wideiptv.top/sky/one.ts"),
+            false,
+            false,
+            (endpoint, body) ->
+                new JSONObject().put("success", true).put("token", "new.signature").put("expires_in", 300)
+        );
+        assertEquals("token=new.signature", media.getRawQuery());
+        assertFalse(grant.applies(URI.create("https://cdn.wideiptv.top/other/index.m3u8"), true));
+        assertFalse(grant.applies(URI.create("https://cdn.wideiptv.top.evil.example/sky/index.m3u8"), true));
+        for (String host : new String[] {
+            "cdn.wideiptv.top.evil.example",
+            "evil.bluetier.top.evil.example",
+        }) {
+            try {
+                new PlaylistSession("https://" + host + "/sky/index.m3u8", session());
+                fail("Untrusted CDN accepted");
+            } catch (java.io.IOException expected) {}
+        }
+    }
+
+    @Test
     public void untrustedRenewalDestinationsAndCdnScopesAreRejected() throws Exception {
         try {
             new PlaylistSession(
