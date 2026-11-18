@@ -115,7 +115,10 @@ final class ChannelImporter {
                         problems.add("Xtream: " + describe(e));
                     }
                 }
-                boolean providerConnected = anySource;
+                // A sports-only addon must not hide the public free-TV lists in auto mode.
+                // Only a viewer's actual IPTV account/playlist counts as a TV provider.
+                boolean providerConnected = !playlist.isEmpty() || !masqueradarr.isEmpty() ||
+                    !account.isEmpty();
                 // Pluto and the free lists first: they hold most channels and are plain downloads,
                 // while each optional provider below may take minutes (ProviderBroker allows a
                 // catalogue four minutes). Channels appear in the guide as each source commits.
