@@ -2,6 +2,11 @@
 
 ## 1.0.20 (18 November 2026)
 
+- Optional **Nuvio Live Sports** connection in Settings → Setup. Imports live-match
+  fixtures and 24/7 sports channels without changing existing providers, refreshes
+  sports listings separately, and requests fresh playable HLS links at play time.
+  Requires a reachable Nuvio service; live-video playback still needs TV-box verification.
+
 Menu audit sheet (owner's decisions, 17 November 2026; builds on the earlier menu clean-up):
 
 - Settings → **Setup**, a new last tab with no PIN, for whoever looks after the box: Premiumize
