@@ -128,7 +128,9 @@ final class SettingsScreens {
               ? "m3u"
               : service.equals("Masqueradarr")
                 ? "masqueradarr"
-                : service.equals("TMDB")
+                : service.equals(NuvioSports.SERVICE)
+                  ? NuvioSports.SOURCE
+                  : service.equals("TMDB")
                   ? "tmdb"
                   : "premiumize";
     }
@@ -223,8 +225,10 @@ final class SettingsScreens {
             ? "Live TV\nEnter the server address, username and password supplied by your TV provider."
             : service.equals("Masqueradarr")
               ? "Live TV\nConnect your own Masqueradarr M3U export. Your other IPTV accounts remain separate."
-              : service.equals("M3U playlist")
-                ? "Live TV\nPaste the playlist link supplied by your TV provider. Channels refresh automatically."
+              : service.equals(NuvioSports.SERVICE)
+                ? "Live sports\nConnect a Nuvio Live Sports server for live matches and 24/7 channels."
+                : service.equals("M3U playlist")
+                  ? "Live TV\nPaste the playlist link supplied by your TV provider. Channels refresh automatically."
                 : service.equals("TMDB")
                   ? "Movies, series & artwork\nUse the API Key (v3 auth) from your TMDB account’s API settings."
                   : "Playback & cloud library\nUse the API key from your Premiumize account.";
@@ -281,8 +285,10 @@ final class SettingsScreens {
             inputs.add(activity.field(form, "Password", true, ""));
         } else {
             String label =
-                service.equals("M3U playlist") || service.equals("Masqueradarr")
-                    ? "Playlist URL"
+                service.equals(NuvioSports.SERVICE)
+                    ? "Sports server URL"
+                    : service.equals("M3U playlist") || service.equals("Masqueradarr")
+                      ? "Playlist URL"
                     : service.equals("TMDB")
                       ? "API Key (v3 auth)"
                       : "API key";
@@ -290,22 +296,29 @@ final class SettingsScreens {
                 activity.field(
                     form,
                     label,
-                    !(service.equals("M3U playlist") || service.equals("Masqueradarr")),
-                    ""
+                    !(service.equals("M3U playlist") || service.equals("Masqueradarr") ||
+                        service.equals(NuvioSports.SERVICE)),
+                    service.equals(NuvioSports.SERVICE)
+                        ? (connected ? activity.secrets.get(NuvioSports.SOURCE) : "https://nuviosports.xyz")
+                        : ""
                 )
             );
             inputs
                 .get(0)
                 .setHint(
-                    service.equals("M3U playlist") || service.equals("Masqueradarr")
-                        ? "https://provider.example/playlist.m3u"
+                    service.equals(NuvioSports.SERVICE)
+                        ? "https://sports-server.example:7000"
+                        : service.equals("M3U playlist") || service.equals("Masqueradarr")
+                          ? "https://provider.example/playlist.m3u"
                         : "Enter your key"
                 );
         }
         if (
-            service.equals("Xtream") || service.equals("M3U playlist") || service.equals("Masqueradarr")
+            service.equals("Xtream") || service.equals("M3U playlist") ||
+            service.equals("Masqueradarr") || service.equals(NuvioSports.SERVICE)
         ) formSwitch(form, "Allow http:// links (for the whole app)", "http", false);
-        if (!service.equals("M3U playlist") && !service.equals("Masqueradarr")) {
+        if (!service.equals("M3U playlist") && !service.equals("Masqueradarr") &&
+            !service.equals(NuvioSports.SERVICE)) {
             CheckBox reveal = new CheckBox(activity);
             reveal.setText("Show " + (service.equals("Xtream") ? "password" : "key"));
             reveal.setTextColor(0xffaab4c4);
@@ -354,7 +367,10 @@ final class SettingsScreens {
                         values.get(2),
                         allowHttp
                     ).toString();
-                    else if (service.equals("M3U playlist") || service.equals("Masqueradarr")) {
+                    else if (service.equals(NuvioSports.SERVICE)) {
+                        credential = NuvioSports.base(credential, allowHttp);
+                        NuvioSports.verify(credential, allowHttp);
+                    } else if (service.equals("M3U playlist") || service.equals("Masqueradarr")) {
                         credential = Playlist.networkUrl(credential, allowHttp);
                         if (!activity.liveTv.hasChannel(credential)) throw new Exception();
                     } else if (service.equals("TMDB")) new JSONObject(
@@ -367,8 +383,10 @@ final class SettingsScreens {
                 } catch (Exception error) {
                     result = service.equals("Xtream")
                         ? "Could not connect. Check the server address, username, password and HTTP setting."
-                        : service.equals("M3U playlist") || service.equals("Masqueradarr")
-                          ? "Could not read this playlist. Check the URL, provider access and HTTP setting."
+                        : service.equals(NuvioSports.SERVICE)
+                          ? "Could not reach a Nuvio Live Sports server. Check its address and HTTP setting."
+                          : service.equals("M3U playlist") || service.equals("Masqueradarr")
+                            ? "Could not read this playlist. Check the URL, provider access and HTTP setting."
                           : "Could not verify this key. Check the key and your internet connection.";
                 }
                 final boolean ok = success;
@@ -385,14 +403,16 @@ final class SettingsScreens {
                         if (
                             service.equals("Xtream") ||
                             service.equals("M3U playlist") ||
-                            service.equals("Masqueradarr")
+                            service.equals("Masqueradarr") ||
+                            service.equals(NuvioSports.SERVICE)
                         ) ChannelSync.refreshNow(activity);
                         accountScreen(service, back);
                         activity.toast(
                             "Connected" +
                                 (service.equals("Xtream") ||
                                 service.equals("M3U playlist") ||
-                                service.equals("Masqueradarr")
+                                service.equals("Masqueradarr") ||
+                                service.equals(NuvioSports.SERVICE)
                                     ? " · importing channels"
                                     : "")
                         );
