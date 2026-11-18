@@ -198,7 +198,7 @@ final class LiveRace {
         String locator = Playlist.networkUrl(db.url(row.id, row.key), allowHttp);
         // Plain stream addresses need no lookup; provider channels do (as ExoLive.open).
         LiveStream.Resolution source =
-            PlutoSource.nativeUrl(locator) || EngineSources.locator(locator)
+            PlutoSource.nativeUrl(locator) || EngineSources.locator(locator) || NuvioSports.locator(locator)
                 ? LiveStream.resolve(context, locator, http, ExoLive.testResolver)
                 : new LiveStream.Resolution(null, locator, null);
         return new Found(locator, source);
