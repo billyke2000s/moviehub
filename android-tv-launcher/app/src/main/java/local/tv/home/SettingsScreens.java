@@ -299,7 +299,7 @@ final class SettingsScreens {
                     !(service.equals("M3U playlist") || service.equals("Masqueradarr") ||
                         service.equals(NuvioSports.SERVICE)),
                     service.equals(NuvioSports.SERVICE)
-                        ? (connected ? activity.secrets.get(NuvioSports.SOURCE) : "https://nuviosports.xyz")
+                        ? (connected ? NuvioSports.saved(activity) : "https://nuviosports.xyz")
                         : ""
                 )
             );
