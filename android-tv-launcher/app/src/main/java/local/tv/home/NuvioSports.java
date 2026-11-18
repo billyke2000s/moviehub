@@ -38,8 +38,17 @@ final class NuvioSports {
         return new Secrets(context).has(SOURCE);
     }
 
-    static String service(Context context) {
+    static String service(Context context) throws Exception {
         return new Secrets(context).get(SOURCE);
+    }
+
+    static String saved(Context context) {
+        try {
+            return service(context);
+        } catch (Exception e) {
+            Diagnostics.recovered("Reading saved Nuvio service", e);
+            return "";
+        }
     }
 
     /** A user-configured server base, never a full media/manifest link or an embedded credential. */
