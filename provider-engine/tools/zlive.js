@@ -1,4 +1,4 @@
-// ZLive's public player protocol observed in /assets/DOoCRg-K.js, 25 October 2026.
+// ZLive's public player protocol observed in /assets/D4Mt3-Uz.js, 1 November 2026.
 // Ticket -> AES-GCM request -> JSON location. Never fall back around a refusal.
 var __provider = "zlive";
 var __zCrypto = require("node:crypto");
@@ -48,7 +48,7 @@ function __zPayload(slug, ticket) {
         throw new Error("Invalid ZLive ticket");
     var day = new Date(Date.now()).toISOString().slice(0, 10);
     // This is the public web client's protocol constant, not a user credential.
-    var seed = "Asq3YkZdzBICwscY4OO1PFAes1Mv1vJ8vxZbzYQeHZE";
+    var seed = "SfrcOczV4qSNuSMiouJIDtTOVXUYWzbgFnLDdF9DUSf";
     var key = __zCrypto
         .createHash("sha256")
         .update(seed + ":" + day)

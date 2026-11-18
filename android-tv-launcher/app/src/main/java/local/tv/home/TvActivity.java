@@ -20,6 +20,13 @@ import org.json.*;
  */
 abstract class TvActivity extends Activity {
 
+    /** Phone layout: the TV pages scaled to fit a phone held sideways (see DeviceMode). */
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        DeviceMode.scaleForPhone(this, base);
+    }
+
     SharedPreferences prefs;
 
     int accent() {
@@ -431,25 +438,18 @@ abstract class TvActivity extends Activity {
         BackdropView backdrop = new BackdropView(this);
         root.addView(backdrop, new FrameLayout.LayoutParams(-1, -1));
         root.addView(
-            shade(GradientDrawable.Orientation.LEFT_RIGHT, new int[] {
-                0xff090d14,
-                0xf0090d14,
-                0xb3090d14,
-                0x40090d14,
-                0x00090d14,
-                0x00090d14,
-            })
+            shade(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[] { 0xff090d14, 0xf0090d14, 0xb3090d14, 0x40090d14, 0x00090d14, 0x00090d14 }
+            )
         );
         root.addView(
-            shade(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {
-                0xb3090d14,
-                0x00090d14,
-                0x00090d14,
-                0x99090d14,
-                0xf2090d14,
-                0xff090d14,
-                0xff090d14,
-            })
+            shade(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[] {
+                    0xb3090d14, 0x00090d14, 0x00090d14, 0x99090d14, 0xf2090d14, 0xff090d14, 0xff090d14,
+                }
+            )
         );
         if (dim) {
             View veil = new View(this);

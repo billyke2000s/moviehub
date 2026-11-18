@@ -35,7 +35,8 @@ final class PlaylistSession {
               endpoint.getPort() == -1 &&
               "/api/refresh_token.php".equals(endpoint.getRawPath()) &&
               endpoint.getRawQuery() == null &&
-              stream.getHost().endsWith(".bluetier.top") &&
+              ("cdn.wideiptv.top".equals(stream.getHost()) ||
+                  stream.getHost().matches("[A-Za-z0-9-]+\\.bluetier\\.top")) &&
               (stream.getPort() == -1 || stream.getPort() == 443)
             : sameOrigin(endpoint) &&
               "/api/playlist-token".equals(endpoint.getRawPath()) &&
