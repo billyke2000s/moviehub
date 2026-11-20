@@ -95,6 +95,8 @@ final class ExoLive {
     private static Future<?> resolution;
     private static NativeHttp resolvingHttp;
     private static boolean hlsRetried;
+    /** Set only once a DaddyLive link has reached the player; zero after its first frame or expiry. */
+    private static long daddyAwaitingFirstFrameAt;
     private static String status = "Idle";
     /** Paused by the viewer since the stream last joined the live edge (see {@link #behindLive}). */
     private static boolean behindLive;
@@ -227,6 +229,7 @@ final class ExoLive {
                     // Reconnects are refilled by 30 s of moving picture (LiveStallRules), not by
                     // one frame: a stream that plays briefly and dies must not reopen forever.
                     rules.firstPicture();
+                    daddyAwaitingFirstFrameAt = 0;
                     if (listener != null) listener.playing();
                 }
 
@@ -267,6 +270,20 @@ final class ExoLive {
     private static void checkStalls() {
         if (player == null || url == null || listener == null || pendingReopen != null) return;
         if (resolution != null && !resolution.isDone()) return;
+        if (
+            LiveSourceDeadline.daddyFirstFrameMissing(
+                daddyAwaitingFirstFrameAt,
+                SystemClock.elapsedRealtime(),
+                player.getPlayWhenReady()
+            )
+        ) {
+            // The HLS address resolved, but the decoder has still never drawn a picture. The
+            // ordinary stall rules only start after a first frame, so they cannot catch this.
+            daddyAwaitingFirstFrameAt = 0; // one report/reconnect per opening, not every tick
+            event("DaddyLive has not displayed a first picture");
+            reopen("DaddyLive opened without video");
+            return;
+        }
         long frames = -1;
         DecoderCounters counters = player.getVideoDecoderCounters();
         if (counters != null) {
@@ -305,6 +322,7 @@ final class ExoLive {
     }
 
     private static void newSelection() {
+        daddyAwaitingFirstFrameAt = 0;
         rules.newSelection();
         engineRefreshed = false;
         cancelRenewal();
@@ -374,6 +392,7 @@ final class ExoLive {
         int ticket = ++generation;
         String locator = url;
         if (locator == null || player == null) return;
+        daddyAwaitingFirstFrameAt = 0;
         player.stop();
         applyLanguages();
         closeRelay();
@@ -441,6 +460,10 @@ final class ExoLive {
             return;
         }
         relay = next;
+        daddyAwaitingFirstFrameAt =
+            url != null && url.startsWith(AdapterSources.ROOT + "dlhd/")
+                ? SystemClock.elapsedRealtime()
+                : 0;
         // A fresh opening starts at the live edge.
         behindLive = false;
         rules.opened();
@@ -456,9 +479,14 @@ final class ExoLive {
         }
         MediaItem.Builder item = new MediaItem.Builder().setUri(stream);
         String lower = stream.toLowerCase(Locale.ROOT);
-        if (hlsRetried || lower.contains(".m3u8") || lower.contains("m3u8?")) item.setMimeType(
-            MimeTypes.APPLICATION_M3U8
-        );
+        // DaddyLive's resolver can return signed, extensionless HLS URLs through the relay.
+        // Do not mistake those for a progressive MP4 and waste a whole lookup on retry.
+        if (
+            hlsRetried ||
+            lower.contains(".m3u8") ||
+            lower.contains("m3u8?") ||
+            (url != null && url.startsWith(AdapterSources.ROOT + "dlhd/"))
+        ) item.setMimeType(MimeTypes.APPLICATION_M3U8);
         player.setMediaSource(new DefaultMediaSourceFactory(http).createMediaSource(item.build()));
         player.prepare();
         player.play();
@@ -626,6 +654,7 @@ final class ExoLive {
         rules.newSelection();
         engineRefreshed = false;
         hlsRetried = false;
+        daddyAwaitingFirstFrameAt = 0;
         closeRelay();
         url = null;
         owner = null;
@@ -693,7 +722,11 @@ final class ExoLive {
     }
 
     static void resume() {
-        if (player != null) player.play();
+        if (player != null) {
+            // A viewer pause never consumes DaddyLive's first-picture timeout.
+            if (daddyAwaitingFirstFrameAt > 0) daddyAwaitingFirstFrameAt = SystemClock.elapsedRealtime();
+            player.play();
+        }
     }
 
     static String currentUrl() {
