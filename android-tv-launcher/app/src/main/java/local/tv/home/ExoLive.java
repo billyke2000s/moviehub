@@ -274,7 +274,7 @@ final class ExoLive {
             LiveSourceDeadline.daddyFirstFrameMissing(
                 daddyAwaitingFirstFrameAt,
                 SystemClock.elapsedRealtime(),
-                player.getPlayWhenReady() && !behindLive
+                player.getPlayWhenReady()
             )
         ) {
             // The HLS address resolved, but the decoder has still never drawn a picture. The
@@ -322,6 +322,7 @@ final class ExoLive {
     }
 
     private static void newSelection() {
+        daddyAwaitingFirstFrameAt = 0;
         rules.newSelection();
         engineRefreshed = false;
         cancelRenewal();
@@ -391,6 +392,7 @@ final class ExoLive {
         int ticket = ++generation;
         String locator = url;
         if (locator == null || player == null) return;
+        daddyAwaitingFirstFrameAt = 0;
         player.stop();
         applyLanguages();
         closeRelay();
@@ -477,9 +479,14 @@ final class ExoLive {
         }
         MediaItem.Builder item = new MediaItem.Builder().setUri(stream);
         String lower = stream.toLowerCase(Locale.ROOT);
-        if (hlsRetried || lower.contains(".m3u8") || lower.contains("m3u8?")) item.setMimeType(
-            MimeTypes.APPLICATION_M3U8
-        );
+        // DaddyLive's resolver can return signed, extensionless HLS URLs through the relay.
+        // Do not mistake those for a progressive MP4 and waste a whole lookup on retry.
+        if (
+            hlsRetried ||
+            lower.contains(".m3u8") ||
+            lower.contains("m3u8?") ||
+            (url != null && url.startsWith(AdapterSources.ROOT + "dlhd/"))
+        ) item.setMimeType(MimeTypes.APPLICATION_M3U8);
         player.setMediaSource(new DefaultMediaSourceFactory(http).createMediaSource(item.build()));
         player.prepare();
         player.play();
@@ -647,6 +654,7 @@ final class ExoLive {
         rules.newSelection();
         engineRefreshed = false;
         hlsRetried = false;
+        daddyAwaitingFirstFrameAt = 0;
         closeRelay();
         url = null;
         owner = null;
@@ -714,7 +722,11 @@ final class ExoLive {
     }
 
     static void resume() {
-        if (player != null) player.play();
+        if (player != null) {
+            // A viewer pause never consumes DaddyLive's first-picture timeout.
+            if (daddyAwaitingFirstFrameAt > 0) daddyAwaitingFirstFrameAt = SystemClock.elapsedRealtime();
+            player.play();
+        }
     }
 
     static String currentUrl() {
