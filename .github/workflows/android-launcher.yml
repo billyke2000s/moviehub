@@ -55,7 +55,7 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk
           sha256sum android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk > android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk.sha256
       - name: Upload installable debug APK
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: android-tv-launcher-debug-apk
           path: |
@@ -64,7 +64,7 @@ jobs:
           if-no-files-found: error
       - name: Upload diagnostics
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: android-launcher-diagnostics
           path: android-tv-launcher/app/build/reports/
@@ -74,7 +74,7 @@ jobs:
           gradle -p android-tv-launcher --no-daemon -Pexperimental assembleDebug
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk | head -1 | grep -q "name='local.tv.home.experimental'"
       - name: Upload installable experimental debug APK
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: moviehub-experimental-debug-apk
           path: android-tv-launcher/app/build/outputs/apk/debug/app-debug.apk
@@ -116,7 +116,7 @@ jobs:
         run: python3 android-tv-launcher/tests/report-test-failures.py android-tv-launcher/app/build/outputs/androidTest-results
       - name: Upload device test reports
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: android-tv-device-tests
           path: |
@@ -160,7 +160,7 @@ jobs:
         run: python3 android-tv-launcher/tests/report-test-failures.py android-tv-launcher/app/build/outputs/androidTest-results
       - name: Upload device test reports
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: vod-recovery-device-tests
           path: |
@@ -235,7 +235,7 @@ jobs:
           cp android-tv-launcher/app/build/outputs/apk/release/app-release.apk android-tv-launcher/app/build/outputs/apk/test/moviehub-test.apk
           sha256sum android-tv-launcher/app/build/outputs/apk/test/moviehub-test.apk > android-tv-launcher/app/build/outputs/apk/test/moviehub-test.apk.sha256
       - name: Upload installable signed test APK
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: moviehub-signed-test-apk
           path: android-tv-launcher/app/build/outputs/apk/test/moviehub-test.apk*
@@ -295,7 +295,7 @@ jobs:
         run: python3 android-tv-launcher/tests/report-test-failures.py android-tv-launcher/app/build/outputs/androidTest-results
       - name: Upload experimental reports
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: moviehub-experimental-device-tests
           path: android-tv-launcher/app/build/reports/
