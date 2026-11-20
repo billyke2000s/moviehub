@@ -2,16 +2,17 @@
 
 Status (20 November 2026): [MovieHub 1.0.21](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21) is published. The [signed release workflow](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) passed. The optional integration was merged in [PR #216](https://github.com/billyke2000s/moviehub/pull/216). **No real provider playback has been verified.**
 
+For hosting this service with Masqueradarr on one home server, see the [LAN Docker guide](../deploy/home-server/README.md). The existing Android free-provider engine stays independent.
+
 ## Connect and use
 
-1. Run a Nuvio Live Sports service you are authorised to access, or enter the community
-   instance address if it is online. The upstream source is
-   https://github.com/rajhodedara/live-sport-plugin; that server is **not embedded** in
-   MovieHub. The connection field offers `https://nuviosports.xyz` only as an editable
-   suggestion; its current reachability is not guaranteed.
-2. On the box, open **Settings → Setup → Nuvio Sports**. Enter the server's base address
-   (no `/manifest.json`, token, username or password). **Connect** verifies the
-   addon's manifest before storing the address in the Android Keystore-backed store.
+1. Run a Nuvio Live Sports service you are authorised to access. The upstream project is
+   https://github.com/rajhodedara/live-sport-plugin; its Node server is **not embedded** in
+   MovieHub. The connection field starts empty rather than preselecting a community server.
+2. On the box, open **Settings → Setup → Nuvio Sports**. Enter the **base address**
+   such as `http://192.168.1.50:7000` (no `/manifest.json`, token, username or password).
+   Use the server's LAN IP, **not localhost**. Connect verifies the addon's manifest before
+   storing the address in the Android Keystore-backed store.
 3. For a trusted local HTTP server, turn on the existing **Allow http:// links** setting.
    Do not expose a locally hosted server to the public internet without access controls.
 4. Open **Live TV → Sports**. Live matches and the 24/7 sports channel catalogue import
@@ -23,7 +24,7 @@ Status (20 November 2026): [MovieHub 1.0.21](https://github.com/billyke2000s/mov
 ## Constraints
 
 - An empty, failed or interrupted catalogue update never erases the last good Nuvio rows.
-  Disconnecting removes only the Nuvio source during the next channel refresh.
+  Disconnecting queues a refresh to remove only the Nuvio source; other providers remain.
 - User favourites and channel identity retain Nuvio's stable event ID; expiring HLS
   tokens are not stored in channel rows.
 - Direct HLS and supported proxied HLS URLs can be handed to MovieHub's existing

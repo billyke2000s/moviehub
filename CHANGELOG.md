@@ -1,5 +1,13 @@
 ## Unreleased
 
+- Restore the Masqueradarr connection in **Settings → Setup** even without a saved
+  connection, alongside Nuvio Sports and the existing locally running free providers.
+- Add clear LAN address guidance for both services; Nuvio no longer pre-fills an
+  unrelated public server and refreshes its channels when disconnected.
+- Provide an optional LAN-only Docker deployment for both server services with
+  separate ports and persistent Masqueradarr/MongoDB storage; see
+  [home-server guide](deploy/home-server/README.md).
+
 **Version notes describe code changes, not proof of an installable release.** Check the [latest published release](https://github.com/billyke2000s/moviehub/releases/latest) or [signed update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest). Older "Unreleased" headings further down are retained historical development records.
 
 ## 1.0.21 (18 November 2026)

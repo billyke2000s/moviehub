@@ -11,3 +11,6 @@ provider-engine/dist/
 
 __pycache__/
 *.pyc
+
+# Local upstream checkout for the optional home-server Docker setup.
+deploy/home-server/nuvio-source/

@@ -2,15 +2,17 @@
 
 Masqueradarr is an **optional separate server**. MovieHub does not run or bundle that server, and connecting it does not guarantee a working stream.
 
+If you also run Nuvio Sports on the same mini PC, follow the [home-server Docker guide](../deploy/home-server/README.md). The two connections and MovieHub's local free-provider engine stay independent.
+
 ## How to connect
 
 1. Deploy a Masqueradarr instance you are authorised to use, following the [upstream project](https://github.com/TheBinaryNinja/masqueradarr).
 2. Obtain your M3U export URL. Confirm that it returns an M3U playlist and is reachable **from the TV box**, not only from your server.
-3. In MovieHub, open **Settings → Accounts → Masqueradarr** and enter the export URL. Alternatively, use **Accounts → M3U playlist** to add a normal playlist without a dedicated Masqueradarr account.
+3. In MovieHub, open **Settings → Setup → Masqueradarr** and enter the export URL. Alternatively, use **Accounts → M3U playlist** to add a normal playlist without a dedicated Masqueradarr account.
 4. Connect, refresh channels and try an authorised stream in **Live TV**. Check programme information, switching, guide/fullscreen continuity and playback.
 5. For a trusted local HTTP server, use the **Allow http:// links** setting under Playback → Connections. Never expose a server without appropriate access controls.
 
-A connected Masqueradarr account also appears in **Settings → Setup** so it can be managed or disconnected. Other sources and accounts are separate.
+Masqueradarr always appears in **Settings → Setup**, including before the first connection. Paste the **whole personal M3U export URL**, not only the server's homepage. A disconnected or offline hosted service does not disable the existing local free-provider engine.
 
 ## Important limitations
 
