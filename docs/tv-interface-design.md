@@ -1,5 +1,7 @@
 # MovieHub TV interface
 
+**Historical design reference.** Some destinations and options below were reorganised in MovieHub 1.0.20. The [user guide](../README.md) lists the current main navigation and Settings paths; [CHANGELOG.md](../CHANGELOG.md) records the changes. Keep this reference as design context, not a current user manual.
+
 The TV home is a fixed viewport. Main navigation, the featured title, category controls, a poster shelf and the installed-app dock must fit together without vertical scrolling. Horizontal shelves can contain additional titles or pinned apps. The catalogue is a separate destination with a stationary category menu and a scrolling results pane.
 
 ## Reference decisions

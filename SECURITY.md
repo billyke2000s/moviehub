@@ -1,5 +1,7 @@
 # Security
 
+This document covers security implementation and dated reviews, not installation. See the [reader guide](README.md) for everyday setup and [Status](STATUS.md) for current releases. Do not include account credentials, playlist tokens or signed streaming URLs in public issues.
+
 ## Sports CDN compatibility — 1 November 2026
 
 FreeShot permits the exact observed `cdn.wideiptv.top` media origin alongside single-label

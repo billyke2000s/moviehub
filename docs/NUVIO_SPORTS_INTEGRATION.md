@@ -1,6 +1,6 @@
 # Nuvio Live Sports integration
 
-Status: optional connection / Android test build candidate. **No real provider playback has been verified.**
+Status at the 20 November 2026 documentation audit: the optional connection was **merged in source** in [PR #216](https://github.com/billyke2000s/moviehub/pull/216) for 1.0.21. The [signed publisher](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) was still running. Check the [public releases](https://github.com/billyke2000s/moviehub/releases/latest) for an installable version. **No real provider playback has been verified.**
 
 ## Connect and use
 

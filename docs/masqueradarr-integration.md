@@ -1,53 +1,26 @@
-# Masqueradarr integration — staged migration
+# Connecting Masqueradarr to MovieHub
 
-Status: optional hosted connection implemented; see [native implementation and verification](NATIVE_FREE_SOURCES.md) for the server-free path.
+Masqueradarr is an **optional separate server**. MovieHub does not run or bundle that server, and connecting it does not guarantee a working stream.
 
-## Existing functionality we can reuse
+## How to connect
 
-MovieHub already supports user-entered M3U playlists in Settings → Accounts → M3U playlist, with encrypted on-device storage, background channel import, 12-hour refresh, SQLite channel management, guide display and a separate LibVLC Live TV player. No new video player is needed for a standards-compliant Masqueradarr M3U.
+1. Deploy a Masqueradarr instance you are authorised to use, following the [upstream project](https://github.com/TheBinaryNinja/masqueradarr).
+2. Obtain your M3U export URL. Confirm that it returns an M3U playlist and is reachable **from the TV box**, not only from your server.
+3. In MovieHub, open **Settings → Accounts → Masqueradarr** and enter the export URL. Alternatively, use **Accounts → M3U playlist** to add a normal playlist without a dedicated Masqueradarr account.
+4. Connect, refresh channels and try an authorised stream in **Live TV**. Check programme information, switching, guide/fullscreen continuity and playback.
+5. For a trusted local HTTP server, use the **Allow http:// links** setting under Playback → Connections. Never expose a server without appropriate access controls.
 
-## First smoke test (no code change needed)
+A connected Masqueradarr account also appears in **Settings → Setup** so it can be managed or disconnected. Other sources and accounts are separate.
 
-1. Deploy your own Masqueradarr instance according to https://github.com/TheBinaryNinja/masqueradarr and configure sources you are authorised to access.
-2. Open its web interface and obtain your own tokenised M3U export URL. **Never commit or paste it in a public issue.**
-3. Confirm the playlist returns `#EXTM3U` and a channel entry. Check that the URL is reachable **from the TV box**, not only from the server.
-4. In MovieHub, open Settings → Accounts → M3U playlist, enter the export URL and connect. Enable HTTP only if needed for a trusted local server.
-5. Verify channels import, EPG alignment, playback, back-to-guide continuity, and channel switching on the TV box.
-6. Test an unavailable source to ensure it doesn't break other channels. Do not retire the existing public lists or FreeLinks until this passes.
+## Important limitations
 
-## Constraints
+- Stream and proxy URLs may require the Masqueradarr server to stay online.
+- M3U export links can contain access tokens. Keep them private; do not include them in an issue, screenshot or source-code commit.
+- Successful channel import does not certify live playback. Actual streams can fail due to server errors, expiry, network restrictions and unsupported media.
+- Current Live TV uses **Media3 ExoPlayer**. Older October 2026 notes that call it a LibVLC live player describe a historical implementation.
 
-- Masqueradarr is a **running server**, not a static GitHub playlist converter. Resolve-on-play and proxy URLs require it to remain online and reachable.
-- The M3U export may contain bearer-like tokens. Keep it private and store it only through MovieHub's existing encrypted provider account path.
-- Do not embed personal server URLs, credentials, provider tokens or access-control workarounds in the app or public repository.
-- Existing Live TV favourites, channel numbers and database migrations must remain intact.
-- Films/series and Premiumize/Torrentio remain separate and unchanged.
-- Upstream MIT source code can be reused with attribution if copying any of it; none is copied in this stage.
-- Do not replace the existing Free-TV, iptv-org or The Loop sources before real-device validation.
+## Engineering history
 
-## After the smoke test
+The dedicated optional Masqueradarr connection was added in October 2026 using the existing channel import and encrypted account paths. Early notes proposing that it first be implemented as a generic M3U account are superseded. Source history retains those proposals. No Masqueradarr server is embedded in MovieHub.
 
-If the current M3U integration works, prefer a clearly named optional Masqueradarr connection in Settings, backed by the **existing** M3U importer. Add tests for reconnect, empty exports, token redaction and server outages. Avoid a new playback stack or duplicate database.
-
-## Acceptance criteria
-
-- A valid user-authorised export connects without exposing credentials.
-- Live TV loads channels and plays at least one authorised test stream.
-- Going from fullscreen to mini-player doesn't reconnect the stream.
-- An offline Masqueradarr server produces a clear error and preserves the last good channel list.
-- Movies, series, Premiumize, Xtream and ordinary M3U continue to work.
-- Automated checks pass; playback verified separately on an actual TV device.
-
-## Related experimental work
-
-The independent FreeLinks branch `feature/masqueradarr-bridge` contains an optional Python M3U importer. It is **not required** for the direct MovieHub-to-Masqueradarr approach and should not be merged just to enable this smoke test.
-
-## Implementation update (19 October 2026)
-
-- Accounts has a separate **Masqueradarr** connection, stored under encrypted key `masqueradarr`.
-- It accepts a user-entered M3U export URL, checks it using the existing channel probe, and refreshes its own database source `masqueradarr`.
-- Xtream and personal M3U remain separate and usable alongside Masqueradarr.
-- FreeLinks' `loophost` entry in `FreeChannels.EXTRA` is commented out, not deleted. The independent FreeLinks repository remains unchanged.
-- The existing Live TV player and movies/series providers were not changed.
-- No Masqueradarr server URL is bundled. Real connectivity and playback are **not verified**.
-- The app is **not released**. Run CI/build/lint and TV testing before merge or publishing.
+See [native source notes](NATIVE_FREE_SOURCES.md), [security](../SECURITY.md) and [testing](../TESTING.md) for implementation details and verification limits.
