@@ -95,6 +95,8 @@ final class ExoLive {
     private static Future<?> resolution;
     private static NativeHttp resolvingHttp;
     private static boolean hlsRetried;
+    /** Set only once a DaddyLive link has reached the player; zero after its first frame or expiry. */
+    private static long daddyAwaitingFirstFrameAt;
     private static String status = "Idle";
     /** Paused by the viewer since the stream last joined the live edge (see {@link #behindLive}). */
     private static boolean behindLive;
@@ -227,6 +229,7 @@ final class ExoLive {
                     // Reconnects are refilled by 30 s of moving picture (LiveStallRules), not by
                     // one frame: a stream that plays briefly and dies must not reopen forever.
                     rules.firstPicture();
+                    daddyAwaitingFirstFrameAt = 0;
                     if (listener != null) listener.playing();
                 }
 
@@ -267,6 +270,20 @@ final class ExoLive {
     private static void checkStalls() {
         if (player == null || url == null || listener == null || pendingReopen != null) return;
         if (resolution != null && !resolution.isDone()) return;
+        if (
+            LiveSourceDeadline.daddyFirstFrameMissing(
+                daddyAwaitingFirstFrameAt,
+                SystemClock.elapsedRealtime(),
+                player.getPlayWhenReady() && !behindLive
+            )
+        ) {
+            // The HLS address resolved, but the decoder has still never drawn a picture. The
+            // ordinary stall rules only start after a first frame, so they cannot catch this.
+            daddyAwaitingFirstFrameAt = 0; // one report/reconnect per opening, not every tick
+            event("DaddyLive has not displayed a first picture");
+            reopen("DaddyLive opened without video");
+            return;
+        }
         long frames = -1;
         DecoderCounters counters = player.getVideoDecoderCounters();
         if (counters != null) {
@@ -441,6 +458,10 @@ final class ExoLive {
             return;
         }
         relay = next;
+        daddyAwaitingFirstFrameAt =
+            url != null && url.startsWith(AdapterSources.ROOT + "dlhd/")
+                ? SystemClock.elapsedRealtime()
+                : 0;
         // A fresh opening starts at the live edge.
         behindLive = false;
         rules.opened();
