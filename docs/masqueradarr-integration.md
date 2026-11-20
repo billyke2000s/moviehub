@@ -2,6 +2,11 @@
 
 Status: optional hosted connection implemented; see [native implementation and verification](NATIVE_FREE_SOURCES.md) for the server-free path.
 
+For running Masqueradarr together with Nuvio Sports on one mini PC, see the
+[home-server Docker deployment guide](../deploy/home-server/README.md). MovieHub now always
+shows **Settings → Setup → Masqueradarr** whether or not an account is connected. This is a
+separate connection; built-in local provider switches remain under **Setup → Free channels**.
+
 ## Existing functionality we can reuse
 
 MovieHub already supports user-entered M3U playlists in Settings → Accounts → M3U playlist, with encrypted on-device storage, background channel import, 12-hour refresh, SQLite channel management, guide display and a separate LibVLC Live TV player. No new video player is needed for a standards-compliant Masqueradarr M3U.
@@ -11,7 +16,9 @@ MovieHub already supports user-entered M3U playlists in Settings → Accounts �
 1. Deploy your own Masqueradarr instance according to https://github.com/TheBinaryNinja/masqueradarr and configure sources you are authorised to access.
 2. Open its web interface and obtain your own tokenised M3U export URL. **Never commit or paste it in a public issue.**
 3. Confirm the playlist returns `#EXTM3U` and a channel entry. Check that the URL is reachable **from the TV box**, not only from the server.
-4. In MovieHub, open Settings → Accounts → M3U playlist, enter the export URL and connect. Enable HTTP only if needed for a trusted local server.
+4. In MovieHub, open **Settings → Setup → Masqueradarr**, enter the **entire personal M3U export URL**
+   (not merely your server's home page) and connect. Enable HTTP only if needed for a trusted
+   local server, and ensure the exported proxy URLs refer to an IP/address reachable from the TV.
 5. Verify channels import, EPG alignment, playback, back-to-guide continuity, and channel switching on the TV box.
 6. Test an unavailable source to ensure it doesn't break other channels. Do not retire the existing public lists or FreeLinks until this passes.
 
