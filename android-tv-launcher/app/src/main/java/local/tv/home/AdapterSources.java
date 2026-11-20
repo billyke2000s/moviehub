@@ -97,6 +97,8 @@ final class AdapterSources {
                 return "M3U";
             case "masqueradarr":
                 return "Masqueradarr";
+            case NuvioSports.SOURCE:
+                return NuvioSports.SERVICE;
             case "fta":
                 return "Free-TV";
             case "free":
