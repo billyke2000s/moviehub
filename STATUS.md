@@ -1,12 +1,16 @@
 # Status
 
-## Current release and update status (checked 20 November 2026)
+## Current release and update status (20 November 2026)
 
-For the version you can install, use the [latest numbered release](https://github.com/billyke2000s/moviehub/releases/latest) and the [signed updater feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest). A merged feature is not a published APK.
+**MovieHub 1.0.21 (code 121) is published.** The [signed publisher run](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) passed core tests, Android device tests, release build, signing/ABI checks and asset upload. The [version-specific release workflow](https://github.com/billyke2000s/moviehub/actions/runs/44648333364) passed, and the [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21) and [in-app updater feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) list matching APK asset digests:
 
-At this check, **1.0.20 (code 120)** was the latest completed public release. Its [signed publisher](https://github.com/billyke2000s/moviehub/actions/runs/44231414573) and [release copier](https://github.com/billyke2000s/moviehub/actions/runs/44232764334) passed. Nuvio Sports was merged in [PR #216](https://github.com/billyke2000s/moviehub/pull/216), and the 1.0.21 runner fix in [PR #218](https://github.com/billyke2000s/moviehub/pull/218). The [1.0.21 signed publisher](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) was still in progress at this check, so **1.0.21 is not certified as published here**.
+- APK size: **133,276,236 bytes** in both release listings.
+- Reported APK SHA-256: `8953e5d3de794e1eacc6d0262e4704acd29c26ef90bb8c6ce75a75110c9f17f7`.
+- The publication includes optional Nuvio Live Sports from [PR #216](https://github.com/billyke2000s/moviehub/pull/216); stream availability and real-device playback remain unverified by the release workflow.
 
-All following sections are **dated historical engineering checkpoints**. Words such as "unpublished", "current", "candidate" and "pending" in them reflect the original date, not a live release status.
+For the always-current installable version, follow [latest releases](https://github.com/billyke2000s/moviehub/releases/latest). GitHub release metadata parity is not presented as an independent local APK download-and-hash test.
+
+The sections below are **dated historical engineering checkpoints**. Old words such as "current", "unpublished", "candidate" and "pending" describe their original dates, not the live release state.
 
 ## Historical checkpoint: 1.0.20 release candidate — 18 November 2026
 

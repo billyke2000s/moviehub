@@ -2,7 +2,7 @@
 
 ## Current implementation orientation
 
-This is an engineering reference; the [README](README.md) is for people installing MovieHub. The current mainline app uses **Media3 ExoPlayer for Live TV** and **LibVLC for films and series**. Settings → Setup contains free-channel controls, Nuvio Sports, parental lock and engineer tools. Nuvio was merged into 1.0.21 source; check [releases](https://github.com/billyke2000s/moviehub/releases/latest) before assuming an APK is published.
+This is an engineering reference; the [README](README.md) is for people installing MovieHub. The current mainline app uses **Media3 ExoPlayer for Live TV** and **LibVLC for films and series**. Settings → Setup contains free-channel controls, Nuvio Sports, parental lock and engineer tools. Nuvio was included in the [published 1.0.21 release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21), without a guarantee that any external sports stream will play.
 
 The dated experiments below include earlier LibVLC Live TV and menu designs. Their notes are historical and do not override the current implementation. See [Status](STATUS.md) and [Testing](TESTING.md).
 

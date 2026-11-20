@@ -2,10 +2,9 @@
 
 ## Published updates
 
-Check [the latest numbered release](https://github.com/billyke2000s/moviehub/releases/latest) and [the in-app update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) for the live published version. At the 20 November 2026 documentation audit, the latest completed signed update was **1.0.20 (code 120)**, published 18 November. Its [signed publisher](https://github.com/billyke2000s/moviehub/actions/runs/44231414573) and [release copier](https://github.com/billyke2000s/moviehub/actions/runs/44232764334) passed. The 1.0.21 source was merged, but its [publisher](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) was still running; merging alone does not produce a downloadable update.
+**MovieHub 1.0.21 (code 121)** was published on 20 November 2026 through the existing signed process. The [publisher](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) and [release orchestration](https://github.com/billyke2000s/moviehub/actions/runs/44648333364) passed. The [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21) and [in-app update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) show the same APK SHA-256 `8953e5d3de794e1eacc6d0262e4704acd29c26ef90bb8c6ce75a75110c9f17f7` and size 133,276,236 bytes.
 
-The standard APK includes both `armeabi-v7a` and `arm64-v8a` using the established signing identity and `local.tv.home` package. No historical heading here supersedes the live feed.
-
+For newer versions, use the [latest release](https://github.com/billyke2000s/moviehub/releases/latest) and update feed rather than relying on a historical paragraph. The standard signed APK includes both `armeabi-v7a` and `arm64-v8a`, using the established signing identity and `local.tv.home` package.
 
 The home screen checks the public `android-tv-latest` release in billyke2000s/moviehub when opened, at most once per six hours during an app process. The Update button beside Settings stays hidden if the release is missing, unreachable, invalid or not newer than the installed version. No account token is needed for this public feed.
 
