@@ -1,17 +1,20 @@
 # Nuvio Live Sports integration
 
-Status: optional connection / Android test build candidate. **No real provider playback has been verified.**
+Status: optional hosted connection / Android test build candidate. **No real provider playback has been verified.**
+
+For one-machine hosting alongside Masqueradarr, follow the [LAN Docker guide](../deploy/home-server/README.md).
+This is a server-based option: it does not replace MovieHub's existing built-in free providers.
 
 ## Connect and use
 
-1. Run a Nuvio Live Sports service you are authorised to access, or enter the community
-   instance address if it is online. The upstream source is
-   https://github.com/rajhodedara/live-sport-plugin; that server is **not embedded** in
-   MovieHub. The connection field offers `https://nuviosports.xyz` only as an editable
-   suggestion; its current reachability is not guaranteed.
-2. On the box, open **Settings → Setup → Nuvio Sports**. Enter the server's base address
-   (no `/manifest.json`, token, username or password). **Connect** verifies the
-   addon's manifest before storing the address in the Android Keystore-backed store.
+1. Run your own Nuvio Live Sports service, or supply another instance you are authorised to
+   use. The upstream is https://github.com/rajhodedara/live-sport-plugin; its Node server is
+   **not embedded** in MovieHub. The field starts empty rather than silently favouring a
+   public community server. For a home server, use a static LAN IP and `ADDON_URL` matching
+   that reachable IP so the stream URLs are valid from the TV.
+2. On the TV box open **Settings → Setup → Nuvio Sports**. Enter the **base address** such
+   as `http://192.168.1.50:7000`, not `/manifest.json` and not `localhost`. Connect
+   verifies the addon's manifest before storing the address in the Android Keystore-backed store.
 3. For a trusted local HTTP server, turn on the existing **Allow http:// links** setting.
    Do not expose a locally hosted server to the public internet without access controls.
 4. Open **Live TV → Sports**. Live matches and the 24/7 sports channel catalogue import
@@ -23,7 +26,7 @@ Status: optional connection / Android test build candidate. **No real provider p
 ## Constraints
 
 - An empty, failed or interrupted catalogue update never erases the last good Nuvio rows.
-  Disconnecting removes only the Nuvio source during the next channel refresh.
+  Disconnecting queues a channel refresh to remove Nuvio's source while retaining all other providers.
 - User favourites and channel identity retain Nuvio's stable event ID; expiring HLS
   tokens are not stored in channel rows.
 - Direct HLS and supported proxied HLS URLs can be handed to MovieHub's existing
