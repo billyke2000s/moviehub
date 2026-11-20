@@ -15,7 +15,7 @@ jobs:
         timeout-minutes: 20
         steps:
             - name: Require the combined candidate and dispatch the standard publisher
-              uses: actions/github-script@v8
+              uses: actions/github-script@v9
               with:
                   script: |
                       const candidate = context.sha;
