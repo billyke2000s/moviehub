@@ -1,4 +1,5 @@
 name: Publish MovieHub 1.0.21 Nuvio live sports integration
+# Retrigger 1.0.21 only after the Android emulator runner stabilisation is merged.
 on:
     push:
         branches: [main]

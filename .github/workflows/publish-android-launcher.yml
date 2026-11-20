@@ -15,7 +15,9 @@ concurrency:
   cancel-in-progress: false
 jobs:
   release:
-    runs-on: ubuntu-latest
+    # API 28's emulator/SurfaceFlinger is unstable on the current ubuntu-latest image.
+    # Keep the same full device suite, signing, ABI checks and publisher.
+    runs-on: ubuntu-22.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
