@@ -1,5 +1,13 @@
 ## Unreleased
 
+- Restore the Masqueradarr server connection card in **Settings → Setup** even when
+  not connected. It remains independent of Nuvio Sports and the built-in free-provider engine.
+- Explain which LAN URL each hosted source accepts. Nuvio starts without a prefilled
+  community-server URL and now refreshes its channels after disconnecting.
+- Add a LAN-only Docker Compose setup for Masqueradarr, MongoDB and Nuvio Sports
+  on one home server, with persistent volumes and distinct service ports. No source
+  engines, account migrations or updater behaviour are replaced.
+
 ## 1.0.21 (18 November 2026)
 
 - Optional **Nuvio Live Sports** connection in Settings → Setup. Imports live-match
