@@ -38,11 +38,11 @@ final class SetupScreens {
 
         settings.heading(body, "Accounts");
         settings.accountCard(body, "Premiumize", "Playback sources and your cloud library");
-        // Masqueradarr is offered only while connected, so an existing connection can be removed.
-        if (activity.secrets.has("masqueradarr")) settings.accountCard(
+        // Both hosted services are independent options, even before first connection.
+        settings.accountCard(
             body,
             "Masqueradarr",
-            "Your own Masqueradarr server's playlist"
+            "Connect the M3U export from your own Masqueradarr server"
         );
 
         settings.heading(body, "Live TV");
