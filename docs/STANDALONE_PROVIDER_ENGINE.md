@@ -1,8 +1,6 @@
 # Standalone provider engine — experimental Android port
 
-This draft ports the available historical Masqueradarr provider code to Android. It uses no home
-server. It is opt-in under Settings → Free channels → Free services. Main and
-production releases are unchanged. Existing native Pluto, IPTV/M3U/Xtream and VOD remain intact.
+**Historical experimental implementation notes.** This draft ported the available historical Masqueradarr provider code to Android without requiring a home server. Current free-channel controls are under **Settings → Setup → Free channels**. This report does not prove that every adapter is currently active or that a stream plays in the latest signed APK. Existing native Pluto, IPTV/M3U/Xtream and VOD are separate. Check the [public release](https://github.com/billyke2000s/moviehub/releases/latest) for shipped functionality.
 
 ## Source provenance and compatibility
 

@@ -1,11 +1,16 @@
-# Native Android TV launcher
+# MovieHub Android application
 
-This is the repository's Android application. See the [root README](../README.md) for features and documentation, [ARCHITECTURE.md](../ARCHITECTURE.md) for the code map, [TESTING.md](../TESTING.md) for tests, and [UPDATES.md](UPDATES.md) for signed release publication.
+This directory contains the native Android app. To **download, install and use MovieHub**, start with the [main README](../README.md).
 
-The app is native Android, not a WebView. Playback uses LibVLC. It has no custom product wordmark or logo. The HTML visual reference is not bundled as firmware or used as the application runtime.
+## What runs here
 
-Streaming screens share fixed headers, remote focus styling and scrollable content. Catalogue grids preserve complete poster aspect ratios and restore loaded titles, scroll position and focus when returning from details. Browse and advanced filters remain in side sheets.
+- Java-based launcher with Home, Movies, Series, My list, Continue watching, Live TV and installed apps.
+- **Media3 ExoPlayer** for Live TV in the guide and fullscreen; **LibVLC** for films and episodes.
+- Settings → Setup for free-channel services, optional Nuvio Sports, saved links, parental controls and engineer tools; Settings → System → Help for everyday troubleshooting.
+- Standard signed package `local.tv.home`, with **ARM32 and ARM64** libraries in one APK. Experimental builds use a separate package and app data.
 
-Title pages include TMDB metadata, cast filmographies, collection browsing, recommendations, My List and official trailers when available. Search stores up to 12 distinct recent queries locally. My List supports media filters and alphabetical/recent ordering; Continue Watching adds artwork, saved duration, resume/start-over and removal controls. Episodes can be marked watched, and completed playback marks an episode automatically.
+These are source-code capabilities, not guarantees that every external service works. See [latest releases](https://github.com/billyke2000s/moviehub/releases/latest) for published features.
 
-Live TV keeps database pagination without a channel-count limit and adds exact channel-group filtering. Source quality filters operate on the fetched results without repeating provider calls. Playback options include speed, picture ratio, subtitle timing and a session sleep timer. Trailers open the installed YouTube/browser handler; no trailer or stream quality is invented when metadata is absent.
+## Contributing
+
+See [Development](../DEVELOPMENT.md), [Architecture](../ARCHITECTURE.md), [Testing](../TESTING.md), [signed updates](UPDATES.md) and [contributor rules](../AGENTS.md). Do not publish an APK as a side effect of an ordinary documentation change.

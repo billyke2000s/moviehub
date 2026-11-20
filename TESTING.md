@@ -1,6 +1,14 @@
 # Testing
 
-## 1.0.20 integration candidate — 18 November 2026
+## Published release evidence (20 November 2026)
+
+The [MovieHub 1.0.21 signed publisher](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) passed the core rules, emulator device tests, signed build/manifest generation, ABI inspection, certificate checks and asset upload. The [one-off release workflow](https://github.com/billyke2000s/moviehub/actions/runs/44648333364) passed, and the [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21) was published. Both listed APK assets have digest `8953e5d3de794e1eacc6d0262e4704acd29c26ef90bb8c6ce75a75110c9f17f7` and size 133,276,236 bytes. This confirms GitHub's reported release parity, **not** independent media playback on a real TV box.
+
+Earlier 1.0.20 [signed publisher](https://github.com/billyke2000s/moviehub/actions/runs/44231414573) and [numbered-release copier](https://github.com/billyke2000s/moviehub/actions/runs/44232764334) also passed. For later versions use the [release list](https://github.com/billyke2000s/moviehub/releases/latest).
+
+The following sections preserve dated test and development records, not current service guarantees. Device tests and fixtures do not establish live playback on every TV.
+
+## Historical 1.0.20 integration candidate — 18 November 2026
 
 Combined core rules pass locally with Eclipse JDT targeting Java 17; 144 Python provider
 regressions pass. Phone/menu and sports-policy test lists are both retained. Final Android

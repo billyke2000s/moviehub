@@ -1,13 +1,10 @@
 # App updates
 
-## Current published update
+## Published updates
 
-MovieHub 1.0.19 (code 119), published 29 October 2026, includes the CineStream source/format
-additions and redirect corrections. It retains both `armeabi-v7a` and `arm64-v8a` in one signed APK
-and updates 1.0.18 with the same signing certificate. The package,
-certificate and feed paths are unchanged. [Release validation](../STATUS.md) records the
-public checksum and completed CI.
+**MovieHub 1.0.21 (code 121)** was published on 20 November 2026 through the existing signed process. The [publisher](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) and [release orchestration](https://github.com/billyke2000s/moviehub/actions/runs/44648333364) passed. The [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21) and [in-app update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) show the same APK SHA-256 `8953e5d3de794e1eacc6d0262e4704acd29c26ef90bb8c6ce75a75110c9f17f7` and size 133,276,236 bytes.
 
+For newer versions, use the [latest release](https://github.com/billyke2000s/moviehub/releases/latest) and update feed rather than relying on a historical paragraph. The standard signed APK includes both `armeabi-v7a` and `arm64-v8a`, using the established signing identity and `local.tv.home` package.
 
 The home screen checks the public `android-tv-latest` release in billyke2000s/moviehub when opened, at most once per six hours during an app process. The Update button beside Settings stays hidden if the release is missing, unreachable, invalid or not newer than the installed version. No account token is needed for this public feed.
 
@@ -25,8 +22,6 @@ Keep and back up that signing key; use it for the first release installation and
 Run Publish Android TV launcher update on the intended source branch, with a visible version name and an integer version code greater than every previous release. It builds and lints the release, verifies its signature, and publishes home.apk and update.json. Publishing is not triggered by ordinary debug builds or merges. Explicit owner-authorized
 one-off `release-moviehub-<version>.yml` workflows can dispatch this standard publisher when
 their release-preparation PR is merged; those are release actions, not ordinary app builds. The permanent signing secrets are configured, and the initial signed release has been published.
-
-The HTML preview hides the button normally. Append `?updateDemo=1` to its URL to see the illustrative update-available state. It does not perform a live release check or install anything.
 
 The release workflow runs core checks and Android database/player tests before signing. It
 also requires both ARM ABIs, matching native-library coverage and stripped debug sections in

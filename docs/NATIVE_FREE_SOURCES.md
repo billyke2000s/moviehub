@@ -1,8 +1,10 @@
 # Native free TV — implementation and verification
 
+**Historical implementation review (19 October 2026).** The evidence below describes that checkpoint. The current app shows free services under **Settings → Setup → Free channels** and uses **Media3 ExoPlayer for Live TV**, not the previous LibVLC live player. See the [reader guide](../README.md) and [latest releases](https://github.com/billyke2000s/moviehub/releases/latest).
+
 MovieHub resolves Pluto TV directly on Android. It does not bundle or start Masqueradarr,
 Node.js, MongoDB, Chromium or the Rust proxy. An optional user-hosted Masqueradarr M3U export
-remains separate from Xtream and personal M3U. Settings → Free channels contains all free-source
+remains separate from Xtream and personal M3U. Settings → Setup → Free channels contains free-source
 controls; the FreeLinks entry remains disabled and that repository is unchanged.
 
 ## Native Pluto TV
@@ -34,13 +36,12 @@ controls; the FreeLinks entry remains disabled and that repository is unchanged.
   between batches, capped at 50,000 programmes. The guide is committed atomically after fetching;
   a failure keeps its previous data. Native and existing XMLTV listings refresh independently. Native guide lookups use the provider ID
   in every region, rather than the UK XMLTV filter or an ambiguous channel name.
-- LibVLC handles HLS adaptation and transport streams. No claim of 4K, HDR, surround or low latency
-  is made. Native Pluto carries the tested browser User-Agent; other sources retain their rules.
+- In this October implementation, LibVLC handled live HLS and transport streams. Newer releases use Media3 ExoPlayer for Live TV. No claim of 4K, HDR, surround or low latency is made. Native Pluto carries the tested browser User-Agent; other sources retain their rules.
 
 The global free-channel choice applies to native Pluto as well as public lists. The default
 is automatic only without a connected TV provider. The Pluto switch independently disables
 that adapter. The popup shows the last successful native catalogue count; recovered failures
-appear by operation/type in Troubleshooting, without URLs or tokens.
+appear by operation/type in **Settings → Setup → Engineer view**, without URLs or tokens.
 
 ## Upstream audit and provider scope
 

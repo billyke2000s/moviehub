@@ -1,6 +1,8 @@
 # Movie and series categories
 
-Movies and Series open directly on **All categories**. The Home screen and its artwork shelf are unchanged.
+**Historical catalogue design notes.** The 1.0.20 interface combines Browse and Filters in one **Browse** sheet with Genre, Year, Rating and Sort, then Popular & new, Genres, Languages and People. Region and streaming-service browsing were removed. The routes described below document the earlier implementation, not current visible menu choices. See the [changelog](../CHANGELOG.md).
+
+At this earlier checkpoint, Movies and Series opened directly on **All categories**. The Home screen and its artwork shelf were unchanged.
 
 All official genre baselines are immediately available; successful TMDB genre responses are cached and merged by genre ID so additional genres are included without an arbitrary count limit. An unavailable metadata server does not remove the category controls.
 

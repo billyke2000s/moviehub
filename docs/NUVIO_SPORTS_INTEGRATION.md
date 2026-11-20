@@ -1,6 +1,6 @@
 # Nuvio Live Sports integration
 
-Status: optional connection / Android test build candidate. **No real provider playback has been verified.**
+Status (20 November 2026): [MovieHub 1.0.21](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21) is published. The [signed release workflow](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) passed. The optional integration was merged in [PR #216](https://github.com/billyke2000s/moviehub/pull/216). **No real provider playback has been verified.**
 
 ## Connect and use
 
