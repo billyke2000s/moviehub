@@ -1,6 +1,14 @@
 # Status
 
-## 1.0.20 release candidate — 18 November 2026
+## Current release and update status (checked 20 November 2026)
+
+For the version you can install, use the [latest numbered release](https://github.com/billyke2000s/moviehub/releases/latest) and the [signed updater feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest). A merged feature is not a published APK.
+
+At this check, **1.0.20 (code 120)** was the latest completed public release. Its [signed publisher](https://github.com/billyke2000s/moviehub/actions/runs/44231414573) and [release copier](https://github.com/billyke2000s/moviehub/actions/runs/44232764334) passed. Nuvio Sports was merged in [PR #216](https://github.com/billyke2000s/moviehub/pull/216), and the 1.0.21 runner fix in [PR #218](https://github.com/billyke2000s/moviehub/pull/218). The [1.0.21 signed publisher](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) was still in progress at this check, so **1.0.21 is not certified as published here**.
+
+All following sections are **dated historical engineering checkpoints**. Words such as "unpublished", "current", "candidate" and "pending" in them reflect the original date, not a live release status.
+
+## Historical checkpoint: 1.0.20 release candidate — 18 November 2026
 
 Combines current main menu/settings work with PR #203 phone scaling and PR #210 sports
 protocol repairs. Preserves the newer removal of the Settings layout selector. PR #185 is
@@ -8,7 +16,7 @@ excluded because its metadata subsystem was intentionally removed by rollback e9
 PRs #198, #211 and #213 remain unfinished audits. Combined CI and signed publication
 are required before this candidate is an available update.
 
-## Menu audit sheet — 17 November 2026 (pull request, not merged or published)
+## Historical checkpoint: menu audit sheet — 17 November 2026
 
 The owner's MovieHub menu audit sheet (100 rows, a decision on each) is applied on a branch
 built on #202 (which contains #199, #201 and #200). Settings gains a Setup tab and a family Help
@@ -30,7 +38,7 @@ at code revision `f62b3eb` passed all six jobs. All 35 local core suites pass, i
 The settings stack at `9ebfca1` also passed all six jobs in [CI 41867094618](https://github.com/billyke2000s/moviehub/actions/runs/41867094618), plus all 36 local core suites.
 The phone-layout stack at `e64f49f` passed all six jobs in [CI 41867359952](https://github.com/billyke2000s/moviehub/actions/runs/41867359952), plus all 37 local core suites, including 12 phone-scale checks.
 
-## Sports loader repair — 1 November 2026 (unpublished)
+## Historical checkpoint: sports loader repair — 1 November 2026
 
 Current-player inspection found ZLive's changed public v6 key and FreeShot's new exact WideIPTV
 CDN, both incompatible with the bundled loaders. The repair updates those two protocols, retains
@@ -41,7 +49,7 @@ remaining limits: FreeShot outer pages are unavailable here and ZLive F1 UK2 cur
 This work is not a published TV update.
 
 
-## Current release — MovieHub 1.0.19 (code 119)
+## Historical published release — MovieHub 1.0.19 (code 119)
 
 [1.0.19 is published](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.19)
 from `8759c88e0e2e72227c06bc1751ae1836ef241c53`, following the owner's publication request.
@@ -105,7 +113,7 @@ comparison on unchanged main passed 8/8; the feature audit had one unverified 4K
 Not merged or published.
 
 
-Last updated: 29 October 2026.
+Historical checkpoint recorded: 29 October 2026.
 
 ## Previous published release — MovieHub 1.0.18 (code 118)
 

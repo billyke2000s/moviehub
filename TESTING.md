@@ -1,6 +1,12 @@
 # Testing
 
-## 1.0.20 integration candidate — 18 November 2026
+## Published release evidence
+
+At this documentation check (20 November 2026), the latest completed signed release was **1.0.20**. Its [publisher](https://github.com/billyke2000s/moviehub/actions/runs/44231414573), [release copier](https://github.com/billyke2000s/moviehub/actions/runs/44232764334) and [post-merge Android CI](https://github.com/billyke2000s/moviehub/actions/runs/44231403574) all passed. The [1.0.21 publisher](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) was still running at this check. For live status use [GitHub Releases](https://github.com/billyke2000s/moviehub/releases/latest).
+
+The following sections preserve dated test and development records, not current service guarantees. Device tests and fixtures do not establish live playback on every TV.
+
+## Historical 1.0.20 integration candidate — 18 November 2026
 
 Combined core rules pass locally with Eclipse JDT targeting Java 17; 144 Python provider
 regressions pass. Phone/menu and sports-policy test lists are both retained. Final Android

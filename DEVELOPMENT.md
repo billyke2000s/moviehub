@@ -69,13 +69,12 @@ See [TESTING.md](TESTING.md). The minimum before opening a pull request:
 
 1. Core checks pass locally.
 2. The debug build and lint pass.
-3. Open a pull request and read the CI result. Device tests are currently flaky, so compare failures
-   against unchanged `main`.
+3. Open a pull request and inspect actual CI jobs and test counts. Investigate device-test
+   failures; compare against unchanged `main` before attributing them to an emulator.
 
 ## Branches and releases
 
 - Work on a branch and open a pull request against `main`. CI runs on pull requests.
 - Merging to `main` does **not** publish an update to TVs. Publishing is a separate, manual workflow
   (`publish-android-launcher.yml`) described in [android-tv-launcher/UPDATES.md](android-tv-launcher/UPDATES.md).
-- `release/moviehub-*` branches each hold a one-off publish workflow for that version. They are
-  intentionally never merged.
+- Version-specific release workflows may be merged to `main` **only when the owner has explicitly authorised publishing**. They dispatch the normal signed publisher and check the feed before creating a numbered release. Normal documentation updates do not publish an APK.
