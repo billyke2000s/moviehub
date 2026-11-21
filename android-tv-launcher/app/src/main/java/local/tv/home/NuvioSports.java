@@ -218,8 +218,10 @@ final class NuvioSports {
                 url = Playlist.networkUrl(url, allowHttp);
                 URI uri = URI.create(url);
                 String path = uri.getPath().toLowerCase(Locale.ROOT);
-                if (!(path.endsWith(".m3u8") || path.endsWith(".ts") ||
-                    path.endsWith("/api/manifest") || path.endsWith("/api/manifest.m3u8") ||
+                if (!(path.endsWith(".m3u8") || path.endsWith(".ts") || path.endsWith(".mpd") ||
+                    path.equals("/api/dash") || path.startsWith("/api/dash/") ||
+                    path.equals("/api/manifest") || path.startsWith("/api/manifest/") ||
+                    path.endsWith("/api/manifest.m3u8") ||
                     path.endsWith("/stream") || path.endsWith("/playlist"))) continue;
                 if (seen.add(url)) result.add(url);
             } catch (Exception ignored) {
@@ -227,6 +229,26 @@ final class NuvioSports {
             }
         }
         return result;
+    }
+
+    /** Extensionless addon proxy endpoints need their real container type in Media3. */
+    static boolean hlsProxy(String url) {
+        try {
+            String path = URI.create(url).getPath().toLowerCase(Locale.ROOT);
+            return path.equals("/api/manifest") || path.startsWith("/api/manifest/") ||
+                path.equals("/api/manifest.m3u8") || path.endsWith("/playlist");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    static boolean dashProxy(String url) {
+        try {
+            String path = URI.create(url).getPath().toLowerCase(Locale.ROOT);
+            return path.equals("/api/dash") || path.startsWith("/api/dash/");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /** Mark the current candidate failed so an ExoPlayer reconnect tries the next one. */
