@@ -186,9 +186,13 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
             key = provider.episode(key, imdb, tmdb, '', info.get('episodeTitle',''), info.get('premiered',''),
                                    season, episode)
         stage = "extraction"
-        candidates = provider.sources(key, list(_HOSTS)) or []
+        # 4KHDHub can expose each genuine mirror immediately while it keeps
+        # discovering later backups. Other adapters retain their list contract.
+        streaming = callable(getattr(provider, 'iter_sources', None))
+        candidates = (provider.iter_sources(key, list(_HOSTS)) if streaming
+                      else provider.sources(key, list(_HOSTS)) or [])
         client.check()
-        extracted = len(candidates)
+        extracted = 0 if streaming else len(candidates)
         rejected = 0
         errors = 0
         unsupported = 0
@@ -196,7 +200,13 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
         # Host/media resolution gets a fresh scope with whatever remains of the site's budget.
         client.scope(cancel, timeout=max(.1, deadline-time.monotonic()), http=info.get('http', False), preserve=True)
         sources=[]; seen=set(); timed_out=False
-        for item in candidates[:200]:
+        candidate_limit = not streaming and len(candidates) > 200
+        for item in candidates if streaming else candidates[:200]:
+            if streaming:
+                if extracted >= 200:
+                    candidate_limit = True
+                    break
+                extracted += 1
             try:
                 client.check()
                 from moviehub_identity import matches
@@ -258,11 +268,11 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
         status = ('complete' if sources else 'timeout' if timed_out else client.failure() or lookup_failure or
                   ('rejected_media' if rejected else 'resolution_failed' if errors else
                    'unsupported_host' if unsupported else 'no_matches'))
-        if not candidates and client.diagnostics()['hostAttempts']:
+        if not extracted and client.diagnostics()['hostAttempts']:
             stage = 'hosts'
         return json.dumps({'status':status,'sources':sources,'extracted':extracted,
                            'rejected':rejected,'resolutionErrors':errors,'unsupportedHosts':unsupported,
-                           'stage':stage,'candidateLimitReached':len(candidates)>200, **client.diagnostics()})
+                           'stage':stage,'candidateLimitReached':candidate_limit, **client.diagnostics()})
     except client.Cancelled:
         return json.dumps({'status':'timeout','sources':[],'stage':stage, **client.diagnostics()})
     except Exception as error:
