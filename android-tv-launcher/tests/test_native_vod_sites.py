@@ -134,8 +134,8 @@ class NativeSiteTests(unittest.TestCase):
             return iter([dict(url='https://cdn.example/Film.2020.mkv',
                               direct=True, quality=quality, source='HubDrive')])
 
-        with patch.object(client, 'request', side_effect=legacy_request), \\
-             patch.object(client, 'safe', side_effect=lambda url: url), \\
+        with patch.object(client, 'request', side_effect=legacy_request), \
+             patch.object(client, 'safe', side_effect=lambda url: url), \
              patch.object(fourkhdhub, 'follow_changed_mirror', side_effect=resolve):
             key = provider.movie('tt1', '1', 'Film', 'Film', [], '2020')
             results = provider.sources(key, [])
