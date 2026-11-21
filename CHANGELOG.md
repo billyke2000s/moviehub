@@ -2,6 +2,12 @@
 
 **Version notes describe code changes, not proof of an installable release.** Check the [latest published release](https://github.com/billyke2000s/moviehub/releases/latest) or [signed update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest). Older "Unreleased" headings further down are retained historical development records.
 
+- Recover 4K film-source discovery after site migrations: UHDMovies now uses its
+  observed `.ceo` address, and 4KHDHub can fall back to the bounded shared redirect
+  resolver when its original HubCloud chain no longer matches. Exclude archive
+  downloads from playable mirror results. No source menu or playback-engine changes.
+  Live media playback and site availability remain unverified.
+
 ## 1.0.21 (18 November 2026)
 
 - Optional **Nuvio Live Sports** connection in Settings → Setup. Imports live-match
