@@ -110,6 +110,50 @@ class NativeSiteTests(unittest.TestCase):
         self.assertEqual(calls, ['https://greenmotors.club/start',
                                  'https://greenmotors.cc/next', hubcloud])
 
+    def test_live_greenmotors_id_mirror_timeout_does_not_block_the_next(self):
+        provider = fourkhdhub.source()
+        search = ('<a class="movie-card" href="/film">'
+                  '<h3 class="movie-card-title">Film</h3>'
+                  '<div class="movie-card-meta">2020</div></a>')
+        detail = ('<div class="download-item"><div class="file-title">Film 1080p.mkv</div>'
+                  '<a href="https://greenmotors.club/?id=slow">Download HubCloud</a>'
+                  '<a href="https://greenmotors.club/?id=working">Download HubDrive</a></div>')
+        visited = []
+
+        def legacy_request(url, **kwargs):
+            if '?s=' in url:
+                return search
+            if url.endswith('/film'):
+                return detail
+            raise AssertionError('Migrated links should not use the legacy page parser')
+
+        def resolve(entry, referer, filename, quality, info):
+            visited.append(entry)
+            if 'id=slow' in entry:
+                raise client.Cancelled()
+            return iter([dict(url='https://cdn.example/Film.2020.mkv',
+                              direct=True, quality=quality, source='HubDrive')])
+
+        with patch.object(client, 'request', side_effect=legacy_request), \\
+             patch.object(client, 'safe', side_effect=lambda url: url), \\
+             patch.object(fourkhdhub, 'follow_changed_mirror', side_effect=resolve):
+            key = provider.movie('tt1', '1', 'Film', 'Film', [], '2020')
+            results = provider.sources(key, [])
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['quality'], '1080p')
+        self.assertEqual(len(visited), 2)
+        self.assertEqual([row['status'] for row in client.diagnostics()['hostAttempts']
+                          if row['status'] == 'mirror_timeout'], ['mirror_timeout'])
+
+    def test_mirror_deadline_restores_parent_search_deadline(self):
+        client.scope(lambda: False, timeout=50)
+        original = client._STATE.deadline
+        with client.time_budget(10):
+            self.assertLess(client._STATE.deadline, original)
+        self.assertEqual(client._STATE.deadline, original)
+        client.check()
+
     def test_hubdrive_download_button_after_double_quoted_redirect_reaches_video(self):
         provider = fourkhdhub.source()
         search = ('<a class="movie-card" href="/film">'
