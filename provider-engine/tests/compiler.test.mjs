@@ -65,3 +65,12 @@ test("unknown operations and Node modules fail closed", () => {
     assert.equal(pkg.runtime, 2);
     assert.match(pkg.upstream, /^[a-f0-9]{40}$/);
 });
+
+test("DaddyLive bundled mirror matches its current default source", () => {
+    const source = readFileSync(new URL("../upstream/modules/dlhd/config.ts", import.meta.url), "utf8");
+    const match = source.match(/DLHD_DEFAULT_DOMAIN = '([^']+)'/);
+    assert.ok(match);
+    assert.equal(match[1], "thedaddy.li");
+    assert.ok(pkg.modules.dlhd.includes(`exports.DLHD_DEFAULT_DOMAIN = '${match[1]}';`));
+    assert.equal(pkg.capabilities.dlhdCurrentMirror, 1);
+});
