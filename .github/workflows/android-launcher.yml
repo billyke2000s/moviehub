@@ -297,6 +297,23 @@ jobs:
                      for row in rows):
               raise SystemExit('UHDMovies live source extraction not established')
           PY
+      - name: Require actual sources from both live sites
+        # The earlier run timed out on 4KHDHub but appeared green because the
+        # diagnostic steps were continue-on-error. Do not call that verified.
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for provider, filename in (
+              ('native:fourkhdhub', 'fourkhdhub-smoke.jsonl'),
+              ('native:uhdmovies', 'uhdmovies-smoke.jsonl'),
+          ):
+              file = Path(filename)
+              rows = [json.loads(line) for line in file.read_text().splitlines()] if file.exists() else []
+              if not any(row.get('provider') == provider and row.get('streams', 0) > 0 for row in rows):
+                  raise SystemExit(provider + ': live source extraction not verified')
+          print('Both sites returned at least one validated media source.')
+          PY
       - name: Upload redacted 4K extraction reports
         if: always()
         uses: actions/upload-artifact@v6
