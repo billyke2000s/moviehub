@@ -82,6 +82,7 @@ class source:
         info = json.loads(key)
         page = client.request(self.base_link + '/?' + urlencode({'s': info['title']}))
         found = None
+        aliases = [{'title': info['title']}] + list(info.get('aliases') or [])
         for card in dom_parser.parse_dom(page, 'a', {'class': 'movie-card'}, req='href'):
             titles = dom_parser.parse_dom(card.content, 'h3', {'class': 'movie-card-title'})
             if not titles:
@@ -89,7 +90,7 @@ class source:
             title = text(titles[0].content) if titles else card.attrs.get('aria-label', '').removesuffix(' details')
             years = dom_parser.parse_dom(card.content, 'div', {'class': 'movie-card-meta'})
             year_text = text(years[0].content) if years else text(card.content)
-            if cleantitle.match_alias(title, info['aliases']) and re.search(r'\b' + re.escape(info['year']) + r'\b', year_text):
+            if cleantitle.match_alias(title, aliases) and re.search(r'\b' + re.escape(info['year']) + r'\b', year_text):
                 found = public_link(self.base_link, card.attrs['href'])
                 break
         if found is None:
@@ -105,7 +106,8 @@ class source:
             size = re.search(r'\b[0-9.]+\s*[GM]B\b', text(card.content))
             extra_info = (filename + (' · ' + size[0] if size else ''))[:500]
             for link in anchors(card.content):
-                if 'HubCloud' not in text(link.content):
+                # The live catalogue exposes HubCloud and HubDrive as separate mirrors.
+                if not re.search(r'\bHub(?:Cloud|Drive)\b', text(link.content), re.I):
                     continue
                 entry = None
                 before = len(results)
