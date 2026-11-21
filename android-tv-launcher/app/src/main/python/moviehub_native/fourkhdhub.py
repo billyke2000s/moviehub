@@ -146,7 +146,7 @@ class source:
                                     client.host_result(host, 'unsupported_host')
                                 else:
                                     match = re.search(
-                                        r"\bvar\s+url\s*=\s*['\\"]([^'\\"]+)['\\"]", landing)
+                                        r'''\bvar\s+url\s*=\s*['"]([^'"]+)['"]''', landing)
                                     if not match:
                                         client.host_result(host, 'no_matches')
                                     else:
