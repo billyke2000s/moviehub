@@ -10,7 +10,11 @@ The [MovieHub 1.0.21 signed publisher](https://github.com/billyke2000s/moviehub/
 `greenmotors.club` to `.cc`, then a rotated `hubcloud.pw` page with both an MKV
 and a ZIP download button. Only the MKV may become a direct 2160p movie source;
 the existing test still covers the earlier `hubcloud.ist` chain and independent
-mirrors. A UHDMovies catalogue fixture checks the new `.ceo` search origin.
+mirrors. An additional HubDrive case covers the new Download-button page,
+double-quoted redirect payload and a movie without alternate titles. A UHDMovies
+catalogue fixture checks the new `.ceo` search origin. PR CI also probes source
+extraction for two identifiable live movies; an unsuccessful extraction is reported
+as a diagnostic failure, not confused with a working video.
 These are mocked HTTP responses, not evidence of a current successful remote
 search, decoded 4K frames, audio playback, seek or Android TV installation.
 
