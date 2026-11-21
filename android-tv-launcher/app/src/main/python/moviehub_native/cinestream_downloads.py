@@ -257,7 +257,7 @@ class RogMovies(MoviesDrive):
 
 class UHDMovies(DownloadCatalogue):
     name = 'UHDMovies'
-    base_link = 'https://uhdmovies.beauty'
+    base_link = 'https://uhdmovies.ceo'
     search_path = '/search/{query}'
 
     def search(self, q):
