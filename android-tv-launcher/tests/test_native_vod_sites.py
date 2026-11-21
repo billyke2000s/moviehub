@@ -162,6 +162,30 @@ class NativeSiteTests(unittest.TestCase):
         self.assertEqual(seen, ['https://greenmotors.club/hubdrive',
                                 'https://greenmotors.cc/next', hubdrive, hubcloud])
 
+    def test_changed_host_traversal_emits_before_the_second_media_button(self):
+        from moviehub_native.cinestream_links import Links
+        delivered = []
+
+        def follow(linker, entry, referer, filename):
+            yield dict(url='https://cdn.example/Film.2020.one.mkv', direct=True,
+                       source='Mirror One')
+            self.assertEqual(delivered, ['first'])
+            yield dict(url='https://cdn.example/Film.2020.two.mkv', direct=True,
+                       source='Mirror Two')
+
+        with patch.object(Links, 'follow', follow):
+            mirror = fourkhdhub.follow_changed_mirror(
+                'https://greenmotors.cc/page', 'https://4khdhub.one/film',
+                'Film 1080p.mkv', '1080p', 'Film 2020')
+            first = next(mirror)
+            self.assertEqual(first['quality'], '1080p')
+            delivered.append('first')
+            second = next(mirror)
+            self.assertIn('two.mkv', second['url'])
+            with self.assertRaises(StopIteration):
+                next(mirror)
+        self.assertEqual(delivered, ['first'])
+
     def test_moviehub_emits_4khdhub_results_before_searching_remaining_mirrors(self):
         import moviehub_vod as vod
 
