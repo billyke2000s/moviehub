@@ -118,10 +118,22 @@ class NativeSiteTests(unittest.TestCase):
         self.assertEqual(provider.base_link, 'https://uhdmovies.ceo')
         doc = tree('<article><a href="/film-2020">Film</a></article>')
         query = {'title': 'Film', 'year': '2020', 'imdb': 'tt1'}
-        with patch.object(provider, 'page', return_value=(doc, provider.base_link, '')), \
+        calls = []
+
+        def page(url, referer=''):
+            calls.append(url)
+            if '/search/' in url:
+                return tree(''), url, ''
+            return doc, url, ''
+
+        with patch.object(provider, 'page', side_effect=page), \
              patch.object(client, 'safe', side_effect=lambda value: value):
             self.assertEqual(list(provider.search(query)),
                              ['https://uhdmovies.ceo/film-2020'])
+        self.assertEqual(len(calls), 2)
+        self.assertIn('/search/Film%202020', calls[0])
+        self.assertIn('/?s=Film%202020', calls[1])
+        self.assertEqual(provider.search_path, '/search/{query}')
 
     def test_missing_matching_year_does_not_guess_a_detail_url(self):
         provider = fourkhdhub.source()
