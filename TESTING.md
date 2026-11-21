@@ -15,6 +15,11 @@ double-quoted redirect payload and a movie without alternate titles. A UHDMovies
 catalogue fixture checks the new `.ceo` search origin. PR CI also probes source
 extraction for two identifiable live movies; an unsuccessful extraction is reported
 as a diagnostic failure, not confused with a working video.
+The first targeted live 4KHDHub check timed out at 170 seconds without returning
+results; UHDMovies produced one stream in 3.2 seconds. A new regression tests
+that a 4KHDHub mirror is emitted to the UI before the next mirror is queried.
+The diagnostic `probe-free-vod.py --stop-after-first` stops just the audit after
+one validated link; normal MovieHub discovery continues through later mirrors.
 These are mocked HTTP responses, not evidence of a current successful remote
 search, decoded 4K frames, audio playback, seek or Android TV installation.
 
