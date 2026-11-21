@@ -54,7 +54,6 @@ def follow_changed_mirror(entry, referer, filename, quality, info):
     session.trust_env = False
     _HTTP.session = session
     try:
-        rows = []
         for row in Links('4KHDHub').follow(entry, referer, filename):
             if not row or not row.get('direct'):
                 continue
@@ -65,8 +64,9 @@ def follow_changed_mirror(entry, referer, filename, quality, info):
             row['quality'] = quality
             row['info'] = info
             row['boundedRanges'] = not re.search(r'\.(?:m3u8|mpd)(?:$|\?)', media_url, re.I)
-            rows.append(row)
-        return rows
+            # A file host may offer several mirrors. Publish each immediately,
+            # then continue traversing the remaining host buttons for backups.
+            yield row
     finally:
         _HTTP.session = previous
         session.close()
@@ -157,8 +157,8 @@ class source:
                     # Media host and redirect domains now change independently of 4KHDHub.
                     # Try the shared public-host protocol without discarding healthy mirrors.
                     try:
-                        mirror_results.extend(
-                            follow_changed_mirror(entry, found, filename, quality, extra_info))
+                        yield from follow_changed_mirror(
+                            entry, found, filename, quality, extra_info)
                     except client.Cancelled:
                         raise
                     except Exception as error:
