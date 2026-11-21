@@ -488,8 +488,6 @@ final class ExoLive {
             (url != null && url.startsWith(AdapterSources.ROOT + "dlhd/")) ||
             (NuvioSports.locator(url) && NuvioSports.hlsProxy(stream))
         ) item.setMimeType(MimeTypes.APPLICATION_M3U8);
-        else if (NuvioSports.locator(url) && NuvioSports.dashProxy(stream))
-            item.setMimeType(MimeTypes.APPLICATION_MPD);
         player.setMediaSource(new DefaultMediaSourceFactory(http).createMediaSource(item.build()));
         player.prepare();
         player.play();
