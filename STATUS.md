@@ -10,6 +10,17 @@
 
 For the always-current installable version, follow [latest releases](https://github.com/billyke2000s/moviehub/releases/latest). GitHub release metadata parity is not presented as an independent local APK download-and-hash test.
 
+## Pending 4K source recovery — 21 November 2026
+
+The development branch updates UHDMovies' search root from `uhdmovies.beauty` to the
+observed redirect destination `uhdmovies.ceo`. The 4KHDHub provider retains its
+original HubCloud extraction and attempts the existing bounded public redirect/file-host
+resolver for unsuccessful mirrors, while rejecting ZIP/RAR/7Z links as video.
+This is a proposed code change, **not a published update or a verified fix for live
+4K playback**. Current pages exhibit changing mediator hosts; expired links, provider
+outages, and codec/transport failures can still prevent playback. Regression fixtures
+are described in TESTING.md. No server-side relay or UI changes are introduced.
+
 The sections below are **dated historical engineering checkpoints**. Old words such as "current", "unpublished", "candidate" and "pending" describe their original dates, not the live release state.
 
 ## Historical checkpoint: 1.0.20 release candidate — 18 November 2026

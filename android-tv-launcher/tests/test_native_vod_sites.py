@@ -58,6 +58,83 @@ class NativeSiteTests(unittest.TestCase):
         self.assertIn('Film%20%2B%20Cut.mkv', rows[0]['url'])
         self.assertFalse(any(x.endswith('/wrong') for x in calls))
 
+    def test_changed_4k_mediator_and_hubcloud_domain_keep_video_but_not_archives(self):
+        provider = fourkhdhub.source()
+        search = '<a class="movie-card" href="/film"><h3 class="movie-card-title">Film</h3><div class="movie-card-meta">2020</div></a>'
+        detail = ('<div class="download-item"><div class="file-title">Film 2160p.mkv</div>'
+                  '<a href="https://greenmotors.club/start">Download HubCloud</a></div>')
+        hubcloud = 'https://hubcloud.pw/file/one'
+
+        def legacy_request(url, **kwargs):
+            if '?s=' in url:
+                return search
+            if url.endswith('/film'):
+                return detail
+            if url == 'https://greenmotors.club/start':
+                return '<p>Landing format changed</p>'
+            raise AssertionError('Unexpected legacy URL ' + url)
+
+        calls = []
+
+        def fetch(url, headers, **kwargs):
+            calls.append(url)
+            response = requests.Response()
+            response.url = url
+            response.status_code = 200
+            if url == 'https://greenmotors.club/start':
+                response.status_code = 302
+                response.headers['Location'] = 'https://greenmotors.cc/next'
+                body = ''
+            elif url == 'https://greenmotors.cc/next':
+                body = "s('o','" + self.payload(hubcloud) + "',180000)"
+            elif url == hubcloud:
+                body = ('<div class="card-header">Film 2160p.mkv</div>'
+                        '<a href="https://cdn.example/Film.mkv">Download File</a>'
+                        '<a href="https://cdn.example/Film.zip">Download File</a>')
+            else:
+                raise AssertionError('Unexpected fallback URL ' + url)
+            response._content = body.encode()
+            return response
+
+        with patch.object(client, 'request', side_effect=legacy_request), \
+             patch.object(client, 'fetch', side_effect=fetch), \
+             patch.object(client, 'safe', side_effect=lambda value: value):
+            key = provider.movie('tt1', '1', 'Film', 'Film', [{'title': 'Film'}], '2020')
+            rows = provider.sources(key, [])
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['quality'], '2160p')
+        self.assertTrue(rows[0]['direct'] and rows[0]['boundedRanges'])
+        self.assertIn('cdn.example/Film.mkv', rows[0]['url'])
+        self.assertIn('4KHDHub', rows[0]['source'])
+        self.assertEqual(calls, ['https://greenmotors.club/start',
+                                 'https://greenmotors.cc/next', hubcloud])
+
+    def test_uhdmovies_search_uses_the_redirect_destination_as_its_origin(self):
+        from moviehub_native.cinestream_downloads import UHDMovies
+        from moviehub_native.cinestream_dom import tree
+
+        provider = UHDMovies()
+        self.assertEqual(provider.base_link, 'https://uhdmovies.ceo')
+        doc = tree('<article><a href="/film-2020">Film</a></article>')
+        query = {'title': 'Film', 'year': '2020', 'imdb': 'tt1'}
+        calls = []
+
+        def page(url, referer=''):
+            calls.append(url)
+            if '/search/' in url:
+                return tree(''), url, ''
+            return doc, url, ''
+
+        with patch.object(provider, 'page', side_effect=page), \
+             patch.object(client, 'safe', side_effect=lambda value: value):
+            self.assertEqual(list(provider.search(query)),
+                             ['https://uhdmovies.ceo/film-2020'])
+        self.assertEqual(len(calls), 2)
+        self.assertIn('/search/Film%202020', calls[0])
+        self.assertIn('/?s=Film%202020', calls[1])
+        self.assertEqual(provider.search_path, '/search/{query}')
+
     def test_missing_matching_year_does_not_guess_a_detail_url(self):
         provider = fourkhdhub.source()
         with patch.object(client, 'request', return_value='<a class="movie-card" href="/wrong">Film 2021</a>') as call:

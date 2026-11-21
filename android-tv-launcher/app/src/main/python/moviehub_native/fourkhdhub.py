@@ -40,6 +40,38 @@ def landing_target(page):
     return base64.b64decode(data['o'], validate=True).decode('utf-8')
 
 
+def follow_changed_mirror(entry, referer, filename, quality, info):
+    """Fallback for public redirect/file-host layouts no longer handled by the original parser.
+
+    Use the existing bounded, cookie-preserving CineStream traversal; never execute page scripts,
+    treat a landing page as media, or promote a non-media/hosted link to direct playback.
+    """
+    from .cinestream_api import _HTTP, http_session
+    from .cinestream_links import Links
+
+    previous = http_session()
+    session = client.requests.Session()
+    session.trust_env = False
+    _HTTP.session = session
+    try:
+        rows = []
+        for row in Links('4KHDHub').follow(entry, referer, filename):
+            if not row or not row.get('direct'):
+                continue
+            media_url = row['url'].split('|', 1)[0]
+            if re.search(r'\.(?:zip|rar|7z)(?:$|\?)', media_url, re.I):
+                continue
+            row['filename'] = filename
+            row['quality'] = quality
+            row['info'] = info
+            row['boundedRanges'] = not re.search(r'\.(?:m3u8|mpd)(?:$|\?)', media_url, re.I)
+            rows.append(row)
+        return rows
+    finally:
+        _HTTP.session = previous
+        session.close()
+
+
 class source:
     base_link = 'https://4khdhub.one'
 
@@ -70,9 +102,13 @@ class source:
             filename = text(labels[0].content) if labels else text(card.content)
             quality = re.search(r'\b(2160|1080|720|480)p\b', filename, re.I)
             quality = quality[1] + 'p' if quality else 'SD'
+            size = re.search(r'\b[0-9.]+\s*[GM]B\b', text(card.content))
+            extra_info = (filename + (' · ' + size[0] if size else ''))[:500]
             for link in anchors(card.content):
                 if 'HubCloud' not in text(link.content):
                     continue
+                entry = None
+                before = len(results)
                 try:
                     entry = public_link(found, link.attrs['href'])
                     landing = client.request(entry, referer=found)
@@ -81,32 +117,46 @@ class source:
                         entry = public_link(entry, target)
                         landing = client.request(entry, referer=found)
                     host = urlparse(entry).hostname or ''
-                    if host != 'hubcloud.ist':
+                    if not host.startswith('hubcloud.'):
                         client.host_result(host, 'unsupported_host')
-                        continue
-                    match = re.search(r"\bvar\s+url\s*=\s*'([^']+)'", landing)
-                    if not match:
-                        client.host_result(host, 'no_matches')
-                        continue
-                    files_url = public_link(entry, match[1])
-                    files = client.request(files_url, referer=entry)
-                    for media in anchors(files):
-                        label = text(media.content)
-                        if not any(value in label for value in ('Download File', 'PixelServer', 'ZipDisk', 'FSL')):
-                            continue
-                        address = public_link(files_url, media.attrs['href'])
-                        if not re.search(r'\.(?:mkv|mp4|m3u8)(?:$|\?)', address, re.I):
-                            client.host_result(urlparse(address).hostname or 'HubCloud mirror', 'unsupported_host')
-                            continue
-                        provider = 'HubCloud · ' + (urlparse(address).hostname or 'Media')
-                        item = direct(address, 'https://hubcloud.ist/', provider, quality)
-                        size = re.search(r'\b[0-9.]+\s*[GM]B\b', text(card.content))
-                        item['info'] = (filename + (' · ' + size[0] if size else ''))[:500]
-                        item['boundedRanges'] = True
-                        results.append(item)
+                    else:
+                        match = re.search(r"\bvar\s+url\s*=\s*['\"]([^'\"]+)['\"]", landing)
+                        if not match:
+                            client.host_result(host, 'no_matches')
+                        else:
+                            files_url = public_link(entry, match[1])
+                            files = client.request(files_url, referer=entry)
+                            for media in anchors(files):
+                                label = text(media.content)
+                                if not any(value in label for value in
+                                           ('Download File', 'PixelServer', 'ZipDisk', 'FSL')):
+                                    continue
+                                address = public_link(files_url, media.attrs['href'])
+                                if not re.search(r'\.(?:mkv|mp4|m3u8)(?:$|\?)', address, re.I):
+                                    client.host_result(
+                                        urlparse(address).hostname or 'HubCloud mirror',
+                                        'unsupported_host')
+                                    continue
+                                provider = 'HubCloud · ' + (urlparse(address).hostname or 'Media')
+                                item = direct(address, urlparse(entry).scheme + '://' + host + '/',
+                                              provider, quality)
+                                item['info'] = extra_info
+                                item['boundedRanges'] = True
+                                results.append(item)
+                except client.Cancelled:
+                    raise
                 except Exception as error:
                     client.host_result('HubCloud', type(error).__name__)
-                    continue
+                if entry and len(results) == before:
+                    # Media host and redirect domains now change independently of 4KHDHub.
+                    # Try the shared public-host protocol without discarding healthy mirrors.
+                    try:
+                        results.extend(
+                            follow_changed_mirror(entry, found, filename, quality, extra_info))
+                    except client.Cancelled:
+                        raise
+                    except Exception as error:
+                        client.host_result('4KHDHub redirect', type(error).__name__)
         return results
 
     def resolve(self, url):
