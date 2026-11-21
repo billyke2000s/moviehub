@@ -188,9 +188,16 @@ def query(provider_id, raw, cancelled, emit=None, deadline=None):
         stage = "extraction"
         # 4KHDHub can expose each genuine mirror immediately while it keeps
         # discovering later backups. Other adapters retain their list contract.
-        # Mock objects synthesize arbitrary attributes, including iter_sources.
-        # Only select streaming when the provider class genuinely implements it.
-        streaming = callable(getattr(type(provider), 'iter_sources', None))
+        # Only enable streaming for an actual class implementation, and not
+        # when a test or adapter has intentionally replaced sources() on this
+        # instance. A mocked source provider must retain the list-based API.
+        declared_sources = getattr(type(provider), 'sources', None)
+        bound_sources = getattr(provider, 'sources', None)
+        streaming = (
+            callable(getattr(type(provider), 'iter_sources', None))
+            and (declared_sources is None
+                 or getattr(bound_sources, '__func__', None) is declared_sources)
+        )
         candidates = (provider.iter_sources(key, list(_HOSTS)) if streaming
                       else provider.sources(key, list(_HOSTS)) or [])
         client.check()
