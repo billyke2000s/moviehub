@@ -79,6 +79,11 @@ class source:
         return json.dumps(dict(title=title, year=str(year), aliases=aliases))
 
     def sources(self, key, hosts):
+        # Preserve the list-based provider contract for direct callers and existing tests.
+        return list(self.iter_sources(key, hosts))
+
+    def iter_sources(self, key, hosts):
+        """Yield each mirror as soon as it resolves; do not delay it behind later mirrors."""
         info = json.loads(key)
         page = client.request(self.base_link + '/?' + urlencode({'s': info['title']}))
         found = None
@@ -94,9 +99,8 @@ class source:
                 found = public_link(self.base_link, card.attrs['href'])
                 break
         if found is None:
-            return []
+            return
         detail = client.request(found, referer=self.base_link + '/')
-        results = []
         for card in dom_parser.parse_dom(detail, 'div', {'class': 'download-item'}):
             client.check()
             labels = dom_parser.parse_dom(card.content, 'div', {'class': 'file-title'})
@@ -110,7 +114,7 @@ class source:
                 if not re.search(r'\bHub(?:Cloud|Drive)\b', text(link.content), re.I):
                     continue
                 entry = None
-                before = len(results)
+                mirror_results = []
                 try:
                     entry = public_link(found, link.attrs['href'])
                     landing = client.request(entry, referer=found)
@@ -144,22 +148,22 @@ class source:
                                               provider, quality)
                                 item['info'] = extra_info
                                 item['boundedRanges'] = True
-                                results.append(item)
+                                mirror_results.append(item)
                 except client.Cancelled:
                     raise
                 except Exception as error:
                     client.host_result('HubCloud', type(error).__name__)
-                if entry and len(results) == before:
+                if entry and not mirror_results:
                     # Media host and redirect domains now change independently of 4KHDHub.
                     # Try the shared public-host protocol without discarding healthy mirrors.
                     try:
-                        results.extend(
+                        mirror_results.extend(
                             follow_changed_mirror(entry, found, filename, quality, extra_info))
                     except client.Cancelled:
                         raise
                     except Exception as error:
                         client.host_result('4KHDHub redirect', type(error).__name__)
-        return results
+                yield from mirror_results
 
     def resolve(self, url):
         return url
