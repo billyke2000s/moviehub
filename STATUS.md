@@ -20,6 +20,10 @@ The follow-up accepts both HubCloud and HubDrive links and follows file-host
 Download buttons that now lead to another resolver page. Primary-title matching
 no longer depends on TMDB returning an alias list. A separate non-blocking PR
 smoke check targets current film pages rather than treating fixture tests as live.
+The live targeted smoke on the first implementation returned one UHDMovies source,
+but the 4KHDHub extraction did not finish within 170 seconds. The follow-up
+streams individual 4KHDHub candidates immediately into the app; its diagnostic
+smoke cancels after one validated source, without changing production searches.
 This is a proposed code change, **not a published update or a verified fix for live
 4K playback**. Current pages exhibit changing mediator hosts; expired links, provider
 outages, and codec/transport failures can still prevent playback. Regression fixtures
