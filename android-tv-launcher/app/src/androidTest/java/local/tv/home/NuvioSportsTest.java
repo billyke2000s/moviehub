@@ -47,29 +47,23 @@ public final class NuvioSportsTest {
             .put(new JSONObject().put("name", "Website").put("externalUrl", "https://stream.example/embed"))
             .put(new JSONObject().put("name", "YouTube").put("ytId", "someid"))
             .put(new JSONObject().put("url", "https://source.example/watch/player"))
-            .put(new JSONObject().put("url", "https://source.example/live.mpd"))
-            .put(new JSONObject().put("url", "https://server.example/api/dash/channel-42?token=abc"))
             .put(new JSONObject().put("url", "https://source.example/live.m3u8?token=one"))
             .put(new JSONObject().put("url", "https://source.example/live.m3u8?token=one"))
             .put(new JSONObject().put("url", "https://server.example/api/manifest?url=opaque"));
         List<String> choices = NuvioSports.candidates(streams, false);
-        assertEquals(4, choices.size());
-        assertEquals("https://source.example/live.mpd", choices.get(0));
-        assertEquals("https://server.example/api/dash/channel-42?token=abc", choices.get(1));
-        assertEquals("https://source.example/live.m3u8?token=one", choices.get(2));
-        assertEquals("https://server.example/api/manifest?url=opaque", choices.get(3));
+        assertEquals(2, choices.size());
+        assertEquals("https://source.example/live.m3u8?token=one", choices.get(0));
+        assertEquals("https://server.example/api/manifest?url=opaque", choices.get(1));
     }
 
     @Test
     public void extensionlessProxyUrlsGetCorrectMediaTypes() {
         assertTrue(NuvioSports.hlsProxy("https://server.example/api/manifest?url=opaque"));
-        assertTrue(NuvioSports.hlsProxy("https://server.example/api/manifest/event?token=abc"));
+        assertTrue(NuvioSports.hlsProxy("https://server.example/api/manifest.m3u8?token=abc"));
         assertTrue(NuvioSports.hlsProxy("https://server.example/playlist?key=abc"));
-        assertFalse(NuvioSports.hlsProxy("https://server.example/api/dash/event?token=abc"));
-        assertTrue(NuvioSports.dashProxy("https://server.example/api/dash/event?token=abc"));
-        assertTrue(NuvioSports.dashProxy("https://server.example/api/dash?key=abc"));
-        assertFalse(NuvioSports.dashProxy("https://server.example/api/dashboard"));
-        assertFalse(NuvioSports.dashProxy("not a url"));
+        assertFalse(NuvioSports.hlsProxy("https://server.example/api/dash/index.m3u8?d=signed"));
+        assertFalse(NuvioSports.hlsProxy("https://server.example/api/dashboard"));
+        assertFalse(NuvioSports.hlsProxy("not a url"));
     }
 
     @Test
