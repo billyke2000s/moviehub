@@ -162,6 +162,47 @@ class NativeSiteTests(unittest.TestCase):
         self.assertEqual(seen, ['https://greenmotors.club/hubdrive',
                                 'https://greenmotors.cc/next', hubdrive, hubcloud])
 
+    def test_moviehub_emits_4khdhub_results_before_searching_remaining_mirrors(self):
+        import moviehub_vod as vod
+
+        emitted = []
+        testcase = self
+        class Fixture:
+            base_link = 'https://4khdhub.one'
+
+            def movie(self, *args):
+                return 'film'
+
+            def iter_sources(self, key, hosts):
+                yield dict(url='https://cdn.example/Film.2020.one.mkv', direct=True,
+                           filename='Film.2020.one.mkv', quality='1080p', source='Mirror One')
+                # This generator cannot resume until the first candidate has been
+                # validated and reported to MovieHub's source-display callback.
+                testcase.assertEqual(len(emitted), 1)
+                yield dict(url='https://cdn.example/Film.2020.two.mkv', direct=True,
+                           filename='Film.2020.two.mkv', quality='2160p', source='Mirror Two')
+
+            def resolve(self, url):
+                return url
+
+        class Report:
+            def ready(self, value):
+                emitted.append(json.loads(value))
+
+        raw = json.dumps(dict(title='Film', year='2020', imdb='tt1', tmdb=1,
+                              season=-1, episode=-1, http=False))
+        with patch.object(fourkhdhub, 'source', return_value=Fixture()), \
+             patch('moviehub_identity.matches', return_value=True), \
+             patch.object(vod, 'playable', side_effect=lambda url, quality, expected_seconds=0:
+                          dict(url=url, headers={}, verifiedQuality=None)):
+            report = json.loads(vod.query_site('native:fourkhdhub', raw,
+                                               lambda: False, Report()))
+
+        self.assertEqual(report['status'], 'complete')
+        self.assertEqual(len(report['sources']), 2)
+        self.assertEqual(len(emitted), 2)
+        self.assertEqual({item['quality'] for item in emitted}, {'1080p', '2160p'})
+
     def test_uhdmovies_search_uses_the_redirect_destination_as_its_origin(self):
         from moviehub_native.cinestream_downloads import UHDMovies
         from moviehub_native.cinestream_dom import tree
