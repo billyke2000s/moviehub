@@ -274,7 +274,7 @@ jobs:
         run: |
           set -o pipefail
           timeout 170s python -u android-tv-launcher/tests/probe-free-vod.py \
-            --provider native:fourkhdhub --movie Psycho 1960 tt0054215 539 | tee fourkhdhub-smoke.jsonl
+            --stop-after-first --provider native:fourkhdhub --movie Psycho 1960 tt0054215 539 | tee fourkhdhub-smoke.jsonl
           python - <<'PY'
           import json
           from pathlib import Path
