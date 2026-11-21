@@ -4,6 +4,16 @@
 
 The [MovieHub 1.0.21 signed publisher](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) passed the core rules, emulator device tests, signed build/manifest generation, ABI inspection, certificate checks and asset upload. The [one-off release workflow](https://github.com/billyke2000s/moviehub/actions/runs/44648333364) passed, and the [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21) was published. Both listed APK assets have digest `8953e5d3de794e1eacc6d0262e4704acd29c26ef90bb8c6ce75a75110c9f17f7` and size 133,276,236 bytes. This confirms GitHub's reported release parity, **not** independent media playback on a real TV box.
 
+## 4K film source recovery fixtures — 21 November 2026 (development only)
+
+`test_native_vod_sites.py` has a changed redirect-chain case:
+`greenmotors.club` to `.cc`, then a rotated `hubcloud.pw` page with both an MKV
+and a ZIP download button. Only the MKV may become a direct 2160p movie source;
+the existing test still covers the earlier `hubcloud.ist` chain and independent
+mirrors. A UHDMovies catalogue fixture checks the new `.ceo` search origin.
+These are mocked HTTP responses, not evidence of a current successful remote
+search, decoded 4K frames, audio playback, seek or Android TV installation.
+
 Earlier 1.0.20 [signed publisher](https://github.com/billyke2000s/moviehub/actions/runs/44231414573) and [numbered-release copier](https://github.com/billyke2000s/moviehub/actions/runs/44232764334) also passed. For later versions use the [release list](https://github.com/billyke2000s/moviehub/releases/latest).
 
 The following sections preserve dated test and development records, not current service guarantees. Device tests and fixtures do not establish live playback on every TV.
