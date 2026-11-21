@@ -41,18 +41,6 @@ public final class DlhdStartupTest {
     }
 
     @Test
-    public void seventhPlayerIsRememberedAndRetiredAfterPlaybackFailure() throws Exception {
-        String locator = AdapterSources.locator("dlhd", "seven-player-fixture");
-        JSONObject row = new JSONObject().put("channelId", "42");
-        AdapterSources.rememberPlayer(locator, 7);
-        assertEquals(7, AdapterSources.playerRow(locator, row).getInt("preferredPlayer"));
-        AdapterSources.failed(locator);
-        JSONObject retry = AdapterSources.playerRow(locator, row);
-        assertEquals(0, retry.getInt("preferredPlayer"));
-        assertEquals(7, retry.getJSONArray("burntPlayers").getInt(0));
-    }
-
-    @Test
     public void oneIsolatedProcessPerLookupAndWarmPageSkipsOneRequest() throws Exception {
         String module = ProviderPackages.module(context, "dlhd");
         AtomicInteger requests = new AtomicInteger();

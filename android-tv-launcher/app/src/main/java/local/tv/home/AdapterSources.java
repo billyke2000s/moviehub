@@ -40,8 +40,7 @@ final class AdapterSources {
         }
     }
 
-    /** Package-private for a device regression: the live page can advertise Player 7 or later. */
-    static synchronized JSONObject playerRow(String url, JSONObject row) throws Exception {
+    private static synchronized JSONObject playerRow(String url, JSONObject row) throws Exception {
         JSONObject copy = new JSONObject(row.toString());
         PlayerMemo memo = players.get(url);
         if (memo == null) return copy;
@@ -53,9 +52,8 @@ final class AdapterSources {
         return copy;
     }
 
-    /** Match the upstream resolver's dynamic list rather than silently dropping Player 7. */
-    static synchronized void rememberPlayer(String url, int player) {
-        if (player < 1 || player > 12) return;
+    private static synchronized void rememberPlayer(String url, int player) {
+        if (player < 1 || player > 6) return;
         PlayerMemo memo = players.get(url);
         if (memo == null) {
             memo = new PlayerMemo();

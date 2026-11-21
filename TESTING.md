@@ -1,19 +1,5 @@
 # Testing
 
-## DaddyLive first-frame recovery candidate — 20 November 2026
-
-The live playback watchdog previously waited for the first rendered frame before monitoring
-buffering, leaving a resolved DaddyLive HLS URL black indefinitely if no frame arrived. The
-DaddyLive-only fix starts a 15-second clock when ExoPlayer opens the resolved stream, detects
-missing first video, retires the failing player and retries another candidate with the existing
-bounded reconnect process. It also marks signed extensionless DaddyLive manifests as HLS.
-
-`LiveSourceDeadlineTest` now includes seven bounded first-frame cases (startup, pause, expiration
-and cleared/reversed timestamps). `DlhdStartupTest` adds a Player 7 memory/retirement fixture.
-Run the existing full core and Android CI; these regression cases do **not** prove live DaddyLive
-access, correct video/audio decoding or sustained playback on real TV hardware. Do not merge or
-publish based on this note alone; inspect the PR's actual CI results.
-
 ## Published release evidence (20 November 2026)
 
 The [MovieHub 1.0.21 signed publisher](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) passed the core rules, emulator device tests, signed build/manifest generation, ABI inspection, certificate checks and asset upload. The [one-off release workflow](https://github.com/billyke2000s/moviehub/actions/runs/44648333364) passed, and the [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21) was published. Both listed APK assets have digest `8953e5d3de794e1eacc6d0262e4704acd29c26ef90bb8c6ce75a75110c9f17f7` and size 133,276,236 bytes. This confirms GitHub's reported release parity, **not** independent media playback on a real TV box.

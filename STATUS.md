@@ -1,14 +1,5 @@
 # Status
 
-## DaddyLive playback recovery candidate — 20 November 2026
-
-DaddyLive may return a plausible HLS link without any rendered video. The proposed source-only
-player fix bounds the wait after opening the link and attempts a different DaddyLive player when
-available. It also forces HLS media type for extensionless signed manifests. This work is on a
-separate fix branch until CI is reviewed; **published MovieHub 1.0.21 does not contain it**.
-No live channel/video/audio/seek proof is claimed. An HTTP success or recognised playlist is
-not decoded playback; current mirror or provider outages can still prevent playback.
-
 ## Current release and update status (20 November 2026)
 
 **MovieHub 1.0.21 (code 121) is published.** The [signed publisher run](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) passed core tests, Android device tests, release build, signing/ABI checks and asset upload. The [version-specific release workflow](https://github.com/billyke2000s/moviehub/actions/runs/44648333364) passed, and the [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21) and [in-app updater feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) list matching APK asset digests:

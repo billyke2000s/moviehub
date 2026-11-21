@@ -1,14 +1,5 @@
 ## Unreleased
 
-- DaddyLive: if a resolved channel never renders its first video frame, retry another available
-  player after 15 seconds of actual playback startup instead of remaining black indefinitely.
-  Waiting for the provider lookup does not consume this deadline, and pausing does not exhaust it.
-- Recognise DaddyLive's extensionless signed HLS streams as HLS in ExoPlayer, avoiding a
-  progressive-media parse failure and redundant lookup. Preserve other providers' formats.
-- Remember and retire DaddyLive Player 7 (and later reported player indices up to 12) when a
-  playback failure is reported. This is a recovery fix, not certification that third-party
-  streams currently decode on every device.
-
 **Version notes describe code changes, not proof of an installable release.** Check the [latest published release](https://github.com/billyke2000s/moviehub/releases/latest) or [signed update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest). Older "Unreleased" headings further down are retained historical development records.
 
 ## 1.0.21 (18 November 2026)

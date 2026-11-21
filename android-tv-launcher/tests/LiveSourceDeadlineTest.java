@@ -20,25 +20,6 @@ public final class LiveSourceDeadlineTest {
                 "Startup budget case " + i
             );
         }
-        daddyLiveFirstFrameDeadline();
-        System.out.println((cases.length + 7) + " live source deadline checks passed");
-    }
-
-    private static void daddyLiveFirstFrameDeadline() {
-        long opened = 1_000;
-        long limit = LiveSourceDeadline.DADDYLIVE_FIRST_FRAME_MS;
-        boolean[] actual = {
-            LiveSourceDeadline.daddyFirstFrameMissing(0, opened + limit, true),
-            LiveSourceDeadline.daddyFirstFrameMissing(opened, opened + limit, false),
-            LiveSourceDeadline.daddyFirstFrameMissing(opened, opened - 1, true),
-            LiveSourceDeadline.daddyFirstFrameMissing(opened, opened + limit - 1, true),
-            LiveSourceDeadline.daddyFirstFrameMissing(opened, opened + limit, true),
-            LiveSourceDeadline.daddyFirstFrameMissing(opened, opened + limit + 1, true),
-            LiveSourceDeadline.daddyFirstFrameMissing(0, opened + 2 * limit, true),
-        };
-        boolean[] expected = { false, false, false, false, true, true, false };
-        for (int i = 0; i < actual.length; i++) {
-            if (actual[i] != expected[i]) throw new AssertionError("DaddyLive first-frame case " + i);
-        }
+        System.out.println(cases.length + " live source deadline checks passed");
     }
 }
