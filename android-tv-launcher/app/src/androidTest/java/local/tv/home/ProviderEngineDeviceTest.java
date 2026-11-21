@@ -126,7 +126,7 @@ public final class ProviderEngineDeviceTest {
         JSONObject pkg = new JSONObject(ProviderPackages.asset(context, "builtin.json"));
         pkg.put("version", 2);
         pkg.getJSONObject("capabilities").remove("sportsPlayers");
-        for (String id : new String[] { "zlive", "freeshot" }) {
+        for (String id : new String[] { "zlive", "freeshot", "dlhd" }) {
             pkg.getJSONObject("modules").put(
                 id,
                 "function invoke(){return {provider:'" + id + "',runtime:2,marker:'obsolete'};}"
@@ -134,15 +134,20 @@ public final class ProviderEngineDeviceTest {
         }
         byte[] bytes = pkg.toString().getBytes(StandardCharsets.UTF_8);
         ProviderPackages.install(context, bytes, signature(keys, bytes));
-        for (String id : new String[] { "zlive", "freeshot" }) {
+        for (String id : new String[] { "zlive", "freeshot", "dlhd" }) {
             assertEquals(ProviderPackages.builtinModule(context, id), ProviderPackages.module(context, id));
         }
-        pkg.put("version", 3).getJSONObject("capabilities").put("sportsPlayers", 1);
+        pkg.put("version", 3).getJSONObject("capabilities")
+            .put("sportsPlayers", 1).put("dlhdCurrentMirror", 1);
         bytes = pkg.toString().getBytes(StandardCharsets.UTF_8);
         ProviderPackages.install(context, bytes, signature(keys, bytes));
         assertEquals(
             pkg.getJSONObject("modules").getString("freeshot"),
             ProviderPackages.module(context, "freeshot")
+        );
+        assertEquals(
+            pkg.getJSONObject("modules").getString("dlhd"),
+            ProviderPackages.module(context, "dlhd")
         );
     }
 
