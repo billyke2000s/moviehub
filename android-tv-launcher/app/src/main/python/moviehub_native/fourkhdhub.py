@@ -95,7 +95,7 @@ class source:
             title = text(titles[0].content) if titles else card.attrs.get('aria-label', '').removesuffix(' details')
             years = dom_parser.parse_dom(card.content, 'div', {'class': 'movie-card-meta'})
             year_text = text(years[0].content) if years else text(card.content)
-            if cleantitle.match_alias(title, aliases) and re.search(r'\\b' + re.escape(info['year']) + r'\\b', year_text):
+            if cleantitle.match_alias(title, aliases) and re.search(r'\b' + re.escape(info['year']) + r'\b', year_text):
                 found = public_link(self.base_link, card.attrs['href'])
                 break
         if found is None:
@@ -106,13 +106,13 @@ class source:
             client.check()
             labels = dom_parser.parse_dom(card.content, 'div', {'class': 'file-title'})
             filename = text(labels[0].content) if labels else text(card.content)
-            quality = re.search(r'\\b(2160|1080|720|480)p\\b', filename, re.I)
+            quality = re.search(r'\b(2160|1080|720|480)p\b', filename, re.I)
             quality = quality[1] + 'p' if quality else 'SD'
-            size = re.search(r'\\b[0-9.]+\\s*[GM]B\\b', text(card.content))
+            size = re.search(r'\b[0-9.]+\s*[GM]B\b', text(card.content))
             extra_info = (filename + (' · ' + size[0] if size else ''))[:500]
             for link in anchors(card.content):
                 mirror_name = text(link.content)
-                if not re.search(r'\\bHub(?:Cloud|Drive)\\b', mirror_name, re.I):
+                if not re.search(r'\bHub(?:Cloud|Drive)\b', mirror_name, re.I):
                     continue
 
                 entry = None
@@ -146,7 +146,7 @@ class source:
                                     client.host_result(host, 'unsupported_host')
                                 else:
                                     match = re.search(
-                                        r"\\bvar\\s+url\\s*=\\s*['\\\"]([^'\\\"]+)['\\\"]", landing)
+                                        r"\bvar\s+url\s*=\s*['\\"]([^'\\"]+)['\\"]", landing)
                                     if not match:
                                         client.host_result(host, 'no_matches')
                                     else:
@@ -158,7 +158,7 @@ class source:
                                                        ('Download File', 'PixelServer', 'ZipDisk', 'FSL')):
                                                 continue
                                             address = public_link(files_url, media.attrs['href'])
-                                            if not re.search(r'\\.(?:mkv|mp4|m3u8)(?:$|\\?)', address, re.I):
+                                            if not re.search(r'\.(?:mkv|mp4|m3u8)(?:$|\?)', address, re.I):
                                                 client.host_result(
                                                     urlparse(address).hostname or 'HubCloud mirror',
                                                     'unsupported_host')
