@@ -59,6 +59,8 @@ def follow_changed_mirror(entry, referer, filename, quality, info):
             if not row or not row.get('direct'):
                 continue
             media_url = row['url'].split('|', 1)[0]
+            if re.search(r'\.(?:zip|rar|7z)(?:$|\?)', media_url, re.I):
+                continue
             row['filename'] = filename
             row['quality'] = quality
             row['info'] = info
