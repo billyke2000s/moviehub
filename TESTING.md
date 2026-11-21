@@ -14,7 +14,7 @@ mirrors. An additional HubDrive case covers the new Download-button page,
 double-quoted redirect payload and a movie without alternate titles. A UHDMovies
 catalogue fixture checks the new `.ceo` search origin. PR CI also probes source
 extraction for two identifiable live movies; an unsuccessful extraction is reported
-as a diagnostic failure, not confused with a working video.
+as a failed 4K smoke-check job, not confused with a working video.
 The first targeted live 4KHDHub check timed out at 170 seconds without returning
 results; UHDMovies produced one stream in 3.2 seconds. A new regression tests
 that a 4KHDHub mirror is emitted to the UI before the next mirror is queried.
