@@ -110,6 +110,58 @@ class NativeSiteTests(unittest.TestCase):
         self.assertEqual(calls, ['https://greenmotors.club/start',
                                  'https://greenmotors.cc/next', hubcloud])
 
+    def test_hubdrive_download_button_after_double_quoted_redirect_reaches_video(self):
+        provider = fourkhdhub.source()
+        search = ('<a class="movie-card" href="/film">'
+                  '<h3 class="movie-card-title">Film</h3>'
+                  '<div class="movie-card-meta">2020</div></a>')
+        detail = ('<div class="download-item"><div class="file-title">Film 1080p.mkv</div>'
+                  '<a href="https://greenmotors.club/hubdrive">Download HubDrive</a></div>')
+        hubdrive = 'https://hubdrive.pw/file/one'
+        hubcloud = 'https://hubcloud.pw/drive/two'
+        seen = []
+
+        def legacy_request(url, **kwargs):
+            if '?s=' in url:
+                return search
+            if url.endswith('/film'):
+                return detail
+            if url == 'https://greenmotors.club/hubdrive':
+                return '<p>Changed landing</p>'
+            raise AssertionError('Unexpected legacy URL ' + url)
+
+        def fetch(url, headers, **kwargs):
+            seen.append(url)
+            response = requests.Response()
+            response.url = url
+            response.status_code = 200
+            if url == 'https://greenmotors.club/hubdrive':
+                response.status_code = 302
+                response.headers['Location'] = 'https://greenmotors.cc/next'
+                body = ''
+            elif url == 'https://greenmotors.cc/next':
+                body = 's("o","' + self.payload(hubdrive) + '",180000)'
+            elif url == hubdrive:
+                body = '<a id="download" href="' + hubcloud + '">Download</a>'
+            elif url == hubcloud:
+                body = '<a href="https://cdn.example/Film.mp4">Download File</a>'
+            else:
+                raise AssertionError('Unexpected URL ' + url)
+            response._content = body.encode()
+            return response
+
+        with patch.object(client, 'request', side_effect=legacy_request), \
+             patch.object(client, 'fetch', side_effect=fetch), \
+             patch.object(client, 'safe', side_effect=lambda value: value):
+            rows = provider.sources(provider.movie('tt1', '1', 'Film', 'Film', [], '2020'), [])
+
+        self.assertEqual(len(rows), 1)
+        self.assertIn('cdn.example/Film.mp4', rows[0]['url'])
+        self.assertEqual(rows[0]['quality'], '1080p')
+        self.assertTrue(rows[0]['direct'] and rows[0]['boundedRanges'])
+        self.assertEqual(seen, ['https://greenmotors.club/hubdrive',
+                                'https://greenmotors.cc/next', hubdrive, hubcloud])
+
     def test_uhdmovies_search_uses_the_redirect_destination_as_its_origin(self):
         from moviehub_native.cinestream_downloads import UHDMovies
         from moviehub_native.cinestream_dom import tree
