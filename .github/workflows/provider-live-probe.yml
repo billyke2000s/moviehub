@@ -4,7 +4,7 @@ name: Live provider probe
 # country, so this never runs on pull requests or blocks a build. Re-run it from the Actions tab.
 on:
     push:
-        branches: [feature/standalone-provider-engine]
+        branches: [feature/standalone-provider-engine, fix/sports-nuvio-playback-20261121]
         paths: ['provider-engine/tools/live-probe*.mjs', '.github/workflows/provider-live-probe.yml']
     workflow_dispatch:
         inputs:
@@ -39,7 +39,7 @@ jobs:
                   javac -cp "$RUNNER_TEMP/rhino.jar" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderCodec,ProviderSignature,ProviderUrls,ProviderSegments}.java android-tv-launcher/tests/ProviderProbeCli.java
             - name: Probe providers
               env:
-                  PROVIDERS: ${{ inputs.providers }}
+                  PROVIDERS: ${{ inputs.providers || 'dlhd zlive freeshot' }}
               # Word splitting of PROVIDERS is intended: one argument per id.
               run: RHINO_JAR="$RUNNER_TEMP/rhino.jar" node provider-engine/tools/live-probe.mjs $PROVIDERS
             - name: Report providers 1-8
