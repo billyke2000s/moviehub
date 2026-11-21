@@ -8,7 +8,9 @@
   downloads from playable mirror results. No source menu or playback-engine changes.
   4KHDHub now checks both advertised HubCloud and HubDrive mirrors, accepts the
   primary title when TMDB provides no alias list, and follows ordinary HubCloud
-  download buttons and changed quoted redirect payloads. PR CI separately probes
+  download buttons and changed quoted redirect payloads. Individual 4KHDHub
+  sources now reach the source list as soon as they validate, while remaining
+  mirrors continue searching. PR CI separately probes
   current 4K source extraction; short playback cannot establish sustained playback.
 
 ## 1.0.21 (18 November 2026)
