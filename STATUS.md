@@ -16,6 +16,10 @@ The development branch updates UHDMovies' search root from `uhdmovies.beauty` to
 observed redirect destination `uhdmovies.ceo`. The 4KHDHub provider retains its
 original HubCloud extraction and attempts the existing bounded public redirect/file-host
 resolver for unsuccessful mirrors, while rejecting ZIP/RAR/7Z links as video.
+The follow-up accepts both HubCloud and HubDrive links and follows file-host
+Download buttons that now lead to another resolver page. Primary-title matching
+no longer depends on TMDB returning an alias list. A separate non-blocking PR
+smoke check targets current film pages rather than treating fixture tests as live.
 This is a proposed code change, **not a published update or a verified fix for live
 4K playback**. Current pages exhibit changing mediator hosts; expired links, provider
 outages, and codec/transport failures can still prevent playback. Regression fixtures
