@@ -6,7 +6,10 @@
   observed `.ceo` address, and 4KHDHub can fall back to the bounded shared redirect
   resolver when its original HubCloud chain no longer matches. Exclude archive
   downloads from playable mirror results. No source menu or playback-engine changes.
-  Live media playback and site availability remain unverified.
+  4KHDHub now checks both advertised HubCloud and HubDrive mirrors, accepts the
+  primary title when TMDB provides no alias list, and follows ordinary HubCloud
+  download buttons and changed quoted redirect payloads. PR CI separately probes
+  current 4K source extraction; short playback cannot establish sustained playback.
 
 ## 1.0.21 (18 November 2026)
 
