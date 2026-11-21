@@ -259,6 +259,52 @@ jobs:
         continue-on-error: true
         run: timeout 330s python -u android-tv-launcher/tests/probe-free-vod.py
 
+  fourk-provider-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install source probe dependencies
+        run: python -m pip install requests==2.32.5 six==1.17.0
+      - name: Check live 4KHDHub film extraction
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          timeout 170s python -u android-tv-launcher/tests/probe-free-vod.py \
+            --provider native:fourkhdhub --movie Psycho 1960 tt0054215 539 | tee fourkhdhub-smoke.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows = [json.loads(line) for line in Path('fourkhdhub-smoke.jsonl').read_text().splitlines()]
+          if not any(row.get('provider') == 'native:fourkhdhub' and row.get('streams', 0) > 0
+                     for row in rows):
+              raise SystemExit('4KHDHub live source extraction not established')
+          PY
+      - name: Check live UHDMovies film extraction
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          timeout 170s python -u android-tv-launcher/tests/probe-free-vod.py \
+            --provider native:uhdmovies --movie 'Spider-Man: Brand New Day' 2026 tt22084616 969681 | tee uhdmovies-smoke.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows = [json.loads(line) for line in Path('uhdmovies-smoke.jsonl').read_text().splitlines()]
+          if not any(row.get('provider') == 'native:uhdmovies' and row.get('streams', 0) > 0
+                     for row in rows):
+              raise SystemExit('UHDMovies live source extraction not established')
+          PY
+      - name: Upload redacted 4K extraction reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: fourk-provider-smoke
+          path: '*-smoke.jsonl'
+          if-no-files-found: warn
+
   experimental-device-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 25
