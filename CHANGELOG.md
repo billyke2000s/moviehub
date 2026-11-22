@@ -1,5 +1,11 @@
 ## Unreleased
 
+- Added experimental movie-only PrimeWire catalogue discovery at `primewire1.buzz/watch/<slug>`: only explicit HTTPS player links on a matching title/year page enter normal ResolveURL/media validation. No player URLs are guessed and no claim of working live playback is made.
+- Free VOD source rows now suppress identical resolved URLs with identical playback headers across different catalogue websites; distinct cookies, signed URLs and headers remain independent choices.
+- Added periodic read-only diagnostics: DaddyLive/ZLive/FreeShot every two hours and a full free-VOD audit every twelve hours in GitHub Actions. These **monitor** failures and preserve reports; they do not automatically invent or deploy parser changes.
+- The provider-engine signed update path remains inactive when `providers/trust.json` has an empty public key or the GitHub signing/update settings are unconfigured. Automatic code updates are not enabled by these changes.
+
+
 - DaddyLive: update its default mirror from unresponsive `dlive.sx` to `thedaddy.li`,
   which served current channel pages on 21 November 2026. Older installed signed
   modules without `dlhdCurrentMirror` now fall back to the bundled updated module.
