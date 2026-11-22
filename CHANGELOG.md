@@ -5,6 +5,13 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+## 1.0.26 (22 November 2026)
+
+- FreeShot: repair HLS playback by giving decoded MPEG-TS segments a .ts extension on MovieHub's local playback relay, rather than a generic .bin filename. The actual production Java relay decoded 30 seconds of video and audio in CI both at startup and after forced playlist-token renewal; playback on physical TV boxes still needs user confirmation.
+- DaddyLive's classic `thedaddy.li` provider: recognise the seventh `hub` player from the current watch-page buttons, remember players beyond six and improve fallback to a working player. This does not guarantee every channel works when upstream players return HTTP 403.
+- Fix false-positive Live TV smoke tests: require actual decoded video and audio frames rather than just FFmpeg exiting successfully.
+- Browser-only diagnostics now inspect the separately supplied `daddylive.app` event API and its current embedded players. That site is a different service from the classic DaddyLive channel resolver and **is not yet a verified playable source**; sampled event embeds reached a third-party player that returned 4xx.
+
 ## 1.0.25 (22 November 2026)
 
 - ZLive: decode PNG-wrapped video when the current player places image rows before the media header.
