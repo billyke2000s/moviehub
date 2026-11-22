@@ -257,11 +257,29 @@ class RogMovies(MoviesDrive):
 
 class UHDMovies(DownloadCatalogue):
     name = 'UHDMovies'
-    base_link = 'https://uhdmovies.beauty'
+    base_link = 'https://uhdmovies.ceo'
     search_path = '/search/{query}'
 
     def search(self, q):
-        yield from super().search(dict(q, imdb=''))
+        query = dict(q, imdb='')
+        # The migrated WordPress site may expose either search route. Prefer
+        # the historical route and only spend another request if it is empty.
+        try:
+            found = list(super().search(query))
+        except client.Cancelled:
+            raise
+        except Exception as error:
+            client.host_result(self.name, type(error).__name__)
+            found = []
+        if found:
+            yield from found
+            return
+        original = self.search_path
+        self.search_path = '/?s={query}'
+        try:
+            yield from super().search(query)
+        finally:
+            self.search_path = original
 
 
 class DudeFilms(DownloadCatalogue):
