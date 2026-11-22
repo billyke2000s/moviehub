@@ -47,7 +47,13 @@ function invoke(operation, payload) {
 `;
 const pkg = {
     runtime: 2,
-    capabilities: { zliveSources: 1, sportsPlayers: 1, dlhdCurrentMirror: 1, freeShotCdnV2: 1 },
+    capabilities: {
+        zliveSources: 1,
+        sportsPlayers: 1,
+        dlhdCurrentMirror: 1,
+        freeShotCdnV2: 1,
+        dlhdPlayerSources: 1,
+    },
     version: Number(process.env.PROVIDER_VERSION || "1"),
     upstream: process.env.UPSTREAM_SHA || "3b860294ecb4a9ebca8819adfc061162fbbb7f99",
     modules: { freelivesports: prelude + compiled.outputText + wrapper },
@@ -137,6 +143,7 @@ const dlhdFactories = dlhdFiles
 pkg.modules.dlhd =
     compatibility +
     readFileSync(root + "tools/dlhd-session.js", "utf8") +
+    readFileSync(root + "tools/dlhd-sources.js", "utf8") +
     `
 var __provider='dlhd',exports,__baseRequire=require,__dlhd;
 function __load(){
@@ -152,8 +159,8 @@ function __load(){
   exports=require('./config.js'); __dlhd=require('./resolveStream.js');
 }
 function __run(operation,row){
-  if(operation==='catalogue')return fetch(exports.getBase()+'/24-7-channels.php',{headers:{Referer:exports.getReferer(),'User-Agent':exports.UA}}).then(function(r){if(!r.ok)throw new Error('Directory unavailable');return r.text();}).then(function(html){return require('./parseDirectory.js').parseChannels(html).map(function(r){return {channelId:String(r.id),name:r.name,category:r.group};});});
-  if(operation==='resolve'){var memo=require('./playerMemory.js');if(row.preferredPlayer)memo.noteGood(row.channelId,row.preferredPlayer);(row.burntPlayers||[]).forEach(function(p){memo.noteBad(row.channelId,p);});return __dlhd.resolveStreamUrl(row.channelId,{deep:true}).then(__dlhdResult);}
+  if(operation==='catalogue')return __dlhdCatalogue();
+  if(operation==='resolve')return __dlhdResolve(row);
   throw new Error('Unsupported operation');
 }
 `;

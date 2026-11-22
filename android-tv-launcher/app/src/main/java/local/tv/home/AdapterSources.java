@@ -53,7 +53,7 @@ final class AdapterSources {
     }
 
     private static synchronized void rememberPlayer(String url, int player) {
-        if (player < 1 || player > 6) return;
+        if (player < 1 || player > 32) return;
         PlayerMemo memo = players.get(url);
         if (memo == null) {
             memo = new PlayerMemo();
@@ -221,6 +221,7 @@ final class AdapterSources {
             Diagnostics.recovered("Saving TCL resolver hints", e);
         }
         if (id.equals("zlive")) ZliveSources.save(c, module, rows);
+        if (id.equals("dlhd")) DlhdSources.save(c, module, rows);
         synchronized (AdapterSources.class) {
             cache.put(id, rows);
             expiry.put(id, System.currentTimeMillis() + 600_000);
@@ -250,6 +251,10 @@ final class AdapterSources {
 
     static JSONObject resolverRow(Context c, String id, String wanted, NativeHttp http) throws Exception {
         http.check();
+        if (id.equals("dlhd")) {
+            JSONObject hint = DlhdSources.hint(c, ProviderPackages.module(c, id), wanted);
+            if (hint != null) return hint;
+        }
         if (id.equals("zlive")) {
             JSONObject hint = ZliveSources.hint(c, ProviderPackages.module(c, id), wanted);
             if (hint != null) return hint;

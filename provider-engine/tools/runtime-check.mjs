@@ -207,6 +207,117 @@ assert.equal(tokenStream.playlistSession.token, "fixture-token");
 assert.equal(tokenStream.playlistSession.slug, "premium42");
 assert.equal(tokenCalls.filter((u) => u.includes("/api/playlist-token")).length, 1);
 checks++;
+// The current site advertises seven independent players. Keep each one as a
+// selectable copy, and verify choosing the last never tries the first six.
+const daddyPrefixes = ["stream", "cast", "watch", "plus", "casting", "player", "hub"];
+const daddyButtons =
+    daddyPrefixes
+        .map((prefix) => `<button data-url="https://thedaddy.li/${prefix}/stream-38.php"></button>`)
+        .join("") + '<button data-url="https://thedaddy.li/stream/stream-999.php"></button>';
+const daddyRows = drive("dlhd", "catalogue", null, (req) => {
+    if (req.url.endsWith("/24-7-channels.php"))
+        return '<a class="card" href="watch.php?id=38"><div class="card__title">Sky Sports Main Event UK</div></a>';
+    assert.ok(req.url.endsWith("/watch.php?id=38"));
+    return daddyButtons;
+});
+assert.equal(daddyRows.length, 7);
+assert.equal(daddyRows[0].channelId, "38");
+assert.equal(daddyRows[6].channelId, "38--player--hub");
+assert.ok(daddyRows.every((row) => row.name === "Sky Sports Main Event UK" && row.guideChannelId === "38"));
+assert.deepEqual(
+    daddyRows.map((row) => row.sourceLabel),
+    daddyPrefixes.map((_, i) => "Player " + (i + 1)),
+);
+const selectedCalls = [];
+const seventh = drive("dlhd", "resolve", daddyRows[6], (req) => {
+    selectedCalls.push(req.url);
+    if (req.url.includes("watch.php?id=38")) return daddyButtons;
+    if (req.url.includes("stream-38.php")) {
+        assert.ok(req.url.includes("/hub/"), "selected Player 7 fell back to another player");
+        return '<iframe src="https://player.example/seventh"></iframe>';
+    }
+    if (req.url.includes("player.example")) return 'source:"https://media.example/seventh.m3u8"';
+    return "#EXTM3U\n#EXTINF:4,\nsegment.ts\n";
+});
+assert.equal(seventh.playerIndex, 7);
+assert.equal(seventh.url, "https://media.example/seventh.m3u8");
+assert.equal(selectedCalls.filter((url) => url.includes("stream-38.php")).length, 1);
+checks++;
+assert.throws(
+    () =>
+        drive(
+            "dlhd",
+            "resolve",
+            daddyRows[6],
+            () => '<button data-url="https://thedaddy.li/stream/stream-38.php"></button>',
+        ),
+    /no longer advertises/,
+);
+assert.throws(
+    () =>
+        drive("dlhd", "resolve", { channelId: "38", playerPath: "/stream/stream-999.php" }, () => {
+            throw new Error("invalid player must make no requests");
+        }),
+    /Invalid DaddyLive player path/,
+);
+checks++;
+const mirrorCalls = [];
+const mirrored = drive("dlhd", "catalogue", null, (req) => {
+    mirrorCalls.push(req.url);
+    if (req.url === "https://thedaddy.li/24-7-channels.php") return { transport: { status: 503 } };
+    if (req.url === "https://daddylive.pk/") return '<a href="https://dlhd.st/">Visit</a>';
+    assert.equal(req.url, "https://dlhd.st/24-7-channels.php");
+    return '<a class="card" href="watch.php?id=42"><div class="card__title">Fixture</div></a>';
+});
+assert.equal(mirrored.length, 1);
+assert.equal(mirrorCalls.length, 3);
+checks++;
+const refusalCalls = [];
+assert.throws(
+    () =>
+        drive("dlhd", "catalogue", null, (req) => {
+            refusalCalls.push(req.url);
+            return { transport: { status: 403 } };
+        }),
+    /directory HTTP 403/,
+);
+assert.equal(refusalCalls.length, 1);
+checks++;
+// Observed Player 5: a BINTV wrapper creates a shadow-root iframe from data=,
+// leaving no literal iframe src for the old reader to follow.
+const encodedFrame = Buffer.from("https://justembeds.xyz/embed/fixture").toString("base64");
+const shadowPlayer = drive("dlhd", "resolve", { channelId: "38--player--casting" }, (req) => {
+    if (req.url.includes("watch.php?id=38")) return daddyButtons;
+    if (req.url.includes("/casting/stream-38.php"))
+        return `<iframe src="https://bintv.pages.dev/?id=fixture&data=${encodedFrame}"></iframe>`;
+    if (req.url.startsWith("https://bintv.pages.dev/"))
+        return "const encoded = urlParams.get('data'); realUrl = atob(encoded); realIframe.src = realUrl;";
+    if (req.url === "https://justembeds.xyz/embed/fixture") {
+        assert.equal(req.headers.Referer, "https://bintv.pages.dev/");
+        return 'source:"https://media.example/shadow-player.m3u8"';
+    }
+    return "#EXTM3U\n#EXTINF:4,\nsegment.ts\n";
+});
+assert.equal(shadowPlayer.url, "https://media.example/shadow-player.m3u8");
+checks++;
+for (const target of ["http://127.0.0.1/private", "https://other.example/embed/fixture"]) {
+    const encoded = Buffer.from(target).toString("base64");
+    assert.throws(
+        () =>
+            drive("dlhd", "resolve", { channelId: "38--player--casting" }, (req) => {
+                if (req.url.includes("watch.php?id=38")) return daddyButtons;
+                if (req.url.includes("stream-38.php"))
+                    return `<iframe src="https://bintv.pages.dev/?data=${encoded}"></iframe>`;
+                assert.ok(
+                    req.url.startsWith("https://bintv.pages.dev/"),
+                    "unsafe wrapper target was fetched",
+                );
+                return "const encoded = urlParams.get('data'); realUrl = atob(encoded); realIframe.src = realUrl;";
+            }),
+        /no playlist URL/,
+    );
+}
+checks++;
 const tubi = drive("tubi", "resolve", { channelId: "42" }, (req, n) => {
     if (req.url.includes("signing_key"))
         return { id: "sign-id", key: Buffer.from("server-signing-key").toString("base64") };

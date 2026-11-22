@@ -274,6 +274,36 @@ function iframeSrcs(html: string, pageUrl: string): string[] {
   return out;
 }
 
+/** BINTV's current wrapper creates its real iframe in an open shadow root. */
+function encodedPlayerFrame(html: string, pageUrl: string): string | undefined {
+  const page = new URL(pageUrl);
+  if (page.origin !== 'https://bintv.pages.dev' || page.pathname !== '/') return undefined;
+  if (
+    !/urlParams\.get\(['"]data['"]\)/.test(html) ||
+    !/atob\(encoded\)/.test(html) ||
+    !/realIframe\.src\s*=\s*realUrl/.test(html)
+  )
+    return undefined;
+  const encoded = page.searchParams.get('data') || '';
+  if (!/^[A-Za-z0-9+/=]{1,4096}$/.test(encoded)) return undefined;
+  try {
+    const target = new URL(Buffer.from(encoded, 'base64').toString('utf8'));
+    if (
+      target.origin === 'https://justembeds.xyz' &&
+      !target.username &&
+      !target.password &&
+      !target.search &&
+      !target.hash &&
+      /^\/embed\/[A-Za-z0-9_-]{1,160}$/.test(target.pathname)
+    ) {
+      return target.href;
+    }
+  } catch {
+    /* malformed data is not an iframe */
+  }
+  return undefined;
+}
+
 /** Extract the numeric channel id from a number, "51", a watch.php?id=51, or a stream-51.php URL. */
 export function channelId(input: string | number): string {
   if (typeof input === 'number' && Number.isInteger(input)) return String(input);
@@ -314,7 +344,7 @@ function staticPage(id: string, playerIndex: number): PlayerPage {
 // mirror, not whatever host the button happened to name. Falls back to the last-known PLAYER_PREFIXES when
 // watch.php can't be parsed (layout change / fetch error) so selection + fallback still work. A parsed list is
 // cached per channel (./resolveCache.ts); the static fallback is not, so the next walk tries watch.php again.
-async function listPlayerPages(id: string): Promise<PlayerPage[]> {
+export async function listPlayerPages(id: string, advertisedOnly = false): Promise<PlayerPage[]> {
   const base = getBase();
   const known = cachedPlayerPaths(base, id);
   if (known) return known.map((p, i) => ({ url: `${base}${p}`, playerIndex: i + 1 }));
@@ -328,9 +358,11 @@ async function listPlayerPages(id: string): Promise<PlayerPage[]> {
       // data-url="https://<host>/<prefix>/stream-<id>.php" → keep the "/<prefix>/stream-<id>.php" path, in order.
       for (const m of html.matchAll(/data-url=["'][^"']*?(\/[a-z]+\/stream-\d+\.php)["']/gi)) {
         const path = m[1].toLowerCase();
+        if (!new RegExp(`^/[a-z]{1,32}/stream-${id}\\.php$`).test(path)) continue;
         if (!seen.has(path)) {
           seen.add(path);
           paths.push(m[1]);
+          if (paths.length >= 32) break;
         }
       }
       if (paths.length) {
@@ -341,7 +373,21 @@ async function listPlayerPages(id: string): Promise<PlayerPage[]> {
   } catch {
     /* fall through to the last-known prefixes */
   }
+  if (advertisedOnly) throw new Error('DaddyLive player list unavailable');
   return PLAYER_PREFIXES.map((_, i) => staticPage(id, i + 1));
+}
+
+/** Resolve exactly the advertised player selected in MovieHub's source list. */
+export async function resolvePlayerPage(id: string, path: string): Promise<ResolvedStream> {
+  if (!/^\d{1,8}$/.test(id) || !new RegExp(`^/[a-z]{1,32}/stream-${id}\\.php$`).test(path)) {
+    throw new Error('Invalid DaddyLive player path');
+  }
+  const pages = await listPlayerPages(id, true);
+  const page = pages.find((candidate) => new URL(candidate.url).pathname === path);
+  if (!page) throw new Error('DaddyLive no longer advertises this player');
+  // An explicit choice must never quietly turn back into Player 1 or consume the
+  // legacy Auto walk's budget before a later player gets its own attempt.
+  return resolveViaStreamPage(page.url, id, page.playerIndex, pages.length, true);
 }
 
 /** Raised by hop 1 so the caller can tell "the mirror is unreachable" from "this provider is dead". */
@@ -439,7 +485,9 @@ async function readEmbed(
     const html = await d.text();
     const candidates = extractMasterUrls(html, url);
     if (candidates.length) return { playerUrl: url, candidates };
-    const next = depth < MAX_FRAME_DEPTH ? iframeSrcs(html, url).find((u) => u !== url) : undefined;
+    const next = depth < MAX_FRAME_DEPTH
+      ? encodedPlayerFrame(html, url) || iframeSrcs(html, url).find((u) => u !== url)
+      : undefined;
     if (!next) {
       const nested = depth ? ` (${depth} frame${depth > 1 ? 's' : ''} deep)` : '';
       reasons.push(`${hostOf(url)}: no playlist URL in the embed${nested}`);

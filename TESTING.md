@@ -334,9 +334,24 @@ remain separate; see [evidence and limitations](docs/STANDALONE_PROVIDER_ENGINE.
 
 The provider verifier now also runs `runtime-check.mjs`, which drives the compiled upstream modules through
 the real JVM interpreter with recorded HTTP fixtures. It checks POST resolution, compressed catalogues,
-long async walks, DaddyLive embed resolution, Tubi signatures and Samsung filtering. `ProviderAdaptersTest`
+long async walks, DaddyLive embed resolution, Tubi signatures and Samsung filtering. DaddyLive fixtures
+also check seven separately labelled copies, unchanged primary/guide identities, direct selection of
+Player 7 without visiting Players 1–6, rejection of another channel's button, removed-player handling,
+official-directory mirror recovery and no mirror retries after HTTP 403. The BINTV fixture follows
+the encoded JustEmbeds shadow-root frame, preserves its Referer and rejects private/unrelated targets.
+`DlhdSourcesTest` checks
+encrypted primary/alternate hints, module-change rejection and exact route persistence; it requires
+the Android device suite. `ProviderAdaptersTest`
 exercises isolated Android calls, API capabilities, stable compound IDs and the loopback relay with fixture
 upstream connections. See [the evidence distinction](docs/STANDALONE_PROVIDER_ENGINE.md).
+
+Local validation of the DaddyLive player-source change passed 55 JVM runtime checks, four Node tests,
+40 core suites, 151 VOD tests and six scraper-loader tests. A live import returned 1,043 source rows
+in 25 requests, including all seven advertised Main Event players. Direct live selection reached
+Players 4, 5 and 7 independently. After the BINTV correction, Player 5 reached JustEmbeds and received
+HTTP 503; Player 7's manifest received HTTP 403. No decoded live playback, Android build or device
+suite result is established by these checks. This change is not a verified restoration of all sports
+providers.
 
 ZLive fixtures run the actual resolver and Node IP/subnet compatibility through token reuse, persisted
 403 cooldowns, decoy detection/latching, corrupt history refusal and cancellation recovery. Device tests

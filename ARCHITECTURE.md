@@ -335,12 +335,26 @@ resolver without repeating those requests, preserving token reuse, cooldowns and
 disposable processes. Native IP/subnet primitives supply the required Node `net` subset. Signed token
 expiry can renew an actively playing live stream; stopping, switching or pausing does not auto-start video.
 
-DaddyLive's current anonymous playlist protocol is adapted by `provider-engine/tools/dlhd-session.js`
-without modifying the historical upstream files. It learns literal CDN/channel declarations from player
+DaddyLive's legacy anonymous playlist protocol is adapted by `provider-engine/tools/dlhd-session.js`.
+It learns literal CDN/channel declarations from player
 HTML and returns session metadata after validating a tokenized manifest. `PlaylistSession` renews tokens
 inside the existing `ProviderRelay`, scoped to one HTTPS authority and channel directory. The relay uses
 `ProviderPngSegments` for bounded PNG-to-MPEG-TS unpacking only for this session type. Direct sources and
 other providers retain their existing paths; fullscreen/mini-player share the same relay session.
+
+`dlhd-sources.js` discovers the current watch-page buttons for up to 24 Sky/TNT/BT Sports channels
+per import, within the broker request budget. Each advertised player becomes a separate source copy;
+the `/stream/` choice retains the original channel key, and all copies keep the original guide identity.
+`DlhdSources` persists bounded encrypted player hints tied to the module hash. Explicit choices validate
+the current button list and resolve only that player, allowing the existing source race and failover
+to reach later players independently of the legacy Auto walk's time budget. Older signed packages
+without `dlhdPlayerSources` cannot override this routing. Network/server failures of the catalogue
+entrance can discover alternatives from `daddylive.pk`; HTTP refusals and rate limits stop retries.
+Challenge/ticket exchanges not supported by an extractor still fail; player enumeration is not
+decoded playback evidence.
+The observed BINTV Player 5 wrapper encodes a JustEmbeds iframe in its `data` query. The resolver
+recognizes that exact wrapper and embed scope without executing its page scripts; the downstream
+page still has to provide a valid playlist through the normal bounded extractor/transport.
 
 `ProviderFailure` classifies fixed diagnostic summaries and HTTP status codes without copying exception
 messages. `ProviderBroker` retains safe transport failure categories across replay and wraps failed script

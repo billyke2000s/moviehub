@@ -5,6 +5,13 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+- DaddyLive: discover separate player choices for Sky/TNT/BT Sports source lists. Selecting a later
+  player goes directly to it, so automatic fallback can try it independently of the old first-player
+  walk. Keep the primary channel's saved identity and guide information. Use the official mirror
+  directory when the catalogue entrance has a network/server failure. Live playback remains unverified.
+- DaddyLive Player 5: follow the current BINTV encoded JustEmbeds frame instead of stopping at its
+  empty literal iframe. This parser correction does not establish downstream playback availability.
+
 ## 1.0.24 (22 November 2026)
 
 - Live TV: keep the original channel name when selecting backup feeds, group duplicate copies and preserve distinct country/region channels. Cached channel identities migrate without removing saved stream keys or favourites.

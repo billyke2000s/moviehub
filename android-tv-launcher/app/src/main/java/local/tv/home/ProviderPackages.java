@@ -109,6 +109,9 @@ final class ProviderPackages {
         if (id.equals("dlhd") && (capabilities == null || capabilities.optInt("dlhdCurrentMirror") < 1)) {
             return builtinModule(c, id);
         }
+        if (id.equals("dlhd") && (capabilities == null || capabilities.optInt("dlhdPlayerSources") < 1)) {
+            return builtinModule(c, id);
+        }
         // Previous signed sports packages reject the new FreeShot CDN even after APK updates.
         if (id.equals("freeshot") && (capabilities == null || capabilities.optInt("freeShotCdnV2") < 1)) {
             return builtinModule(c, id);
