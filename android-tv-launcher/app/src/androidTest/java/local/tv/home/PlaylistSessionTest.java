@@ -79,7 +79,9 @@ public final class PlaylistSessionTest {
     public void latestFreeShotCdnRetainsAnonymousTokenRefreshAndHostIsolation() throws Exception {
         PlaylistSession grant = new PlaylistSession("https://cdn.hdm1.net/sky/index.m3u8", session());
         URI media = grant.authorize(
-            URI.create("https://cdn.hdm1.net/sky/segment.ts"), false, false,
+            URI.create("https://cdn.hdm1.net/sky/segment.ts"),
+            false,
+            false,
             (endpoint, body) -> {
                 assertEquals("wideiptv.top", endpoint.getHost());
                 assertEquals("sky", body.getString("channel"));
