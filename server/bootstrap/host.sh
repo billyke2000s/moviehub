@@ -5,7 +5,8 @@
 #
 # (Download first, then run: piping into bash would let later commands swallow the script.)
 #
-# Creates ONE new unprivileged Debian 12 container (4 cores, 4 GB RAM, CPU priority below the default
+# Creates ONE new unprivileged Debian 12 container (4 cores, 1.5 GB RAM + 1 GB swap by default; set
+# MOVIEHUB_MEMORY / MOVIEHUB_SWAP in MB to change; CPU priority below the default
 # so other containers such as Minecraft always win), then runs container.sh inside it. It never
 # touches existing containers or VMs. Everything is logged to /root/moviehub-bootstrap.log.
 set -euo pipefail
@@ -38,7 +39,7 @@ pveam list "$TSTORE" | grep -q "$TEMPLATE" || pveam download "$TSTORE" "$TEMPLAT
 step "Creating container $CTID (moviehub)"
 ROOTPW=$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-20)
 pct create "$CTID" "$TSTORE:vztmpl/$TEMPLATE" \
-    --hostname moviehub --cores 4 --memory 4096 --swap 512 --cpuunits 50 \
+    --hostname moviehub --cores 4 --memory "${MOVIEHUB_MEMORY:-1536}" --swap "${MOVIEHUB_SWAP:-1024}" --cpuunits 50 \
     --rootfs "$RSTORE:32" --net0 name=eth0,bridge=vmbr0,ip=dhcp,ip6=auto \
     --unprivileged 1 --features nesting=1 --onboot 1 --password "$ROOTPW"
 pct start "$CTID"
@@ -46,7 +47,8 @@ pct start "$CTID"
 step "Waiting for the container's network"
 IP=""
 for _ in $(seq 1 60); do
-    IP=$(pct exec "$CTID" -- hostname -I 2>/dev/null | awk '{print $1}') || true
+    # First IPv4 address: Forgejo's web address cannot be a bare IPv6 address.
+    IP=$(pct exec "$CTID" -- hostname -I 2>/dev/null | tr ' ' '\n' | grep -m1 -E '^[0-9]+(\.[0-9]+){3}$') || true
     if [ -n "$IP" ] && pct exec "$CTID" -- getent hosts github.com >/dev/null 2>&1; then break; fi
     sleep 2
 done
