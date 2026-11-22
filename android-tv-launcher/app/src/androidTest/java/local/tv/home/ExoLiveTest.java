@@ -474,9 +474,19 @@ public final class ExoLiveTest {
         );
         // The stalling copy shows pictures first, so its buffering counts (startup does not).
         await(() -> ExoLive.isPlaying() && rendered() > 5);
-        // LiveBuffering's twelve unbroken seconds without pictures move it to the working copy.
+        ExoPlayer[] frozen = { null };
+        remote.runOnMainSync(() -> frozen[0] = ExoLive.player());
+        // LiveBuffering's twelve unbroken seconds without pictures: the working copy is loaded
+        // in a second player while the frozen one stays, and takes over once it really plays.
         await(() -> ExoLive.eventLog().contains("This source kept buffering"));
         await(() -> activity.stage.zapper().selectedCopy() == 1 && ExoLive.isPlaying());
+        remote.runOnMainSync(() -> {
+            String log = ExoLive.eventLog();
+            assertTrue("Loaded before the switch", log.contains("Loading source 2 in the background"));
+            assertTrue("Switched once loaded", log.contains("Switched to a source that had already loaded"));
+            assertFalse("No break-before-make failover", log.contains("Moving to another source"));
+            assertNotSame("The loaded player took over", frozen[0], ExoLive.player());
+        });
         picturesAdvance();
         assertEquals("The stalled copy is not reopened while another works", 1, stallRequests.get());
     }

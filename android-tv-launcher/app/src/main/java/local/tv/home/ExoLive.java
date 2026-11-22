@@ -67,6 +67,15 @@ final class ExoLive {
          * the owner may look for a smoother copy and check it before moving to it.
          */
         default void poor(String reason) {}
+
+        /**
+         * The picture froze for a long time (LiveStallRules.STUCK). Return true when the owner
+         * loads another copy in the background while the frozen picture stays; it then calls
+         * {@link ExoLive#stuckAfterAll} if none takes over. False: the usual move on or reconnect.
+         */
+        default boolean stuck(String reason) {
+            return false;
+        }
     }
 
     /** Reopens per selection before the owner is told it failed (see {@link LiveStallRules}). */
@@ -308,8 +317,58 @@ final class ExoLive {
         if (verdict == LiveStallRules.POOR) {
             event("Poor picture: this source kept pausing");
             if (listener != null) listener.poor("This source kept pausing");
-        } else if (verdict == LiveStallRules.STUCK) stalled("This source kept buffering", false);
-        else if (verdict == LiveStallRules.DEAD) stalled("This source stopped playing", true);
+        } else if (verdict == LiveStallRules.STUCK) {
+            String reason = "This source kept buffering";
+            event(reason);
+            // Another copy loads while the frozen picture stays (and may still recover).
+            if (listener != null && listener.stuck(reason)) return;
+            reopen(reason, false);
+        } else if (verdict == LiveStallRules.DEAD) stalled("This source stopped playing", true);
+    }
+
+    /**
+     * No other copy could be loaded in the background for a picture that froze (see
+     * {@link Listener#stuck}): the usual move on to another source, else a reconnect.
+     */
+    static void stuckAfterAll(String reason) {
+        if (player == null || url == null || player.isPlaying()) return;
+        event("No other source loaded in time");
+        reopen(reason, false);
+    }
+
+    /**
+     * Moves the picture and sound to {@code standby}: another copy that has already loaded and
+     * played silently in a second player. That player becomes the one on screen (only its
+     * picture surface and volume change, so there is no gap) and the old one is closed. A new
+     * selection: fresh reconnects and rules, and the copy's own link renewal.
+     */
+    static void promote(Context context, ExoStandby standby) {
+        app = context.getApplicationContext();
+        ExoPlayer next = standby.take();
+        if (next == null) return;
+        cancelReopen();
+        cancelResolution();
+        newSelection();
+        generation++;
+        ExoPlayer old = player;
+        ProviderRelay oldRelay = relay;
+        if (old != null) old.removeListener(playerEvents);
+        player = next;
+        relay = standby.relay();
+        url = standby.locator;
+        hlsRetried = false;
+        behindLive = false;
+        wire(next);
+        next.setAudioAttributes(LIVE_AUDIO, true);
+        next.setVolume(1f);
+        if (view != null) view.setPlayer(next);
+        status = next.isPlaying() ? "Playing" : "Buffering";
+        event("Switched to a source that had already loaded");
+        if (old != null) old.release();
+        if (oldRelay != null) oldRelay.close();
+        scheduleRenewal(generation, standby.expiresAt());
+        main.removeCallbacks(watch);
+        main.postDelayed(watch, 1000);
     }
 
     /** A rule above says this source is stuck: another source when one waits, else a reconnect. */
@@ -618,11 +677,16 @@ final class ExoLive {
      * menu lasts until the next channel opens.
      */
     private static void applyLanguages() {
-        if (player == null || app == null) return;
+        if (player != null) applyLanguages(player);
+    }
+
+    /** Settings → Playback's languages on {@code target} (also a player loading in the background). */
+    static void applyLanguages(ExoPlayer target) {
+        if (target == null || app == null) return;
         android.content.SharedPreferences prefs = app.getSharedPreferences("ui", Context.MODE_PRIVATE);
         String audio = prefs.getString("audioLanguage", "eng,en"),
             subtitles = prefs.getString("subtitleLanguage", "none");
-        androidx.media3.common.TrackSelectionParameters.Builder wanted = player
+        androidx.media3.common.TrackSelectionParameters.Builder wanted = target
             .getTrackSelectionParameters()
             .buildUpon()
             .clearOverrides()
@@ -633,7 +697,7 @@ final class ExoLive {
         else wanted
             .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
             .setPreferredTextLanguages(subtitles.split(","));
-        player.setTrackSelectionParameters(wanted.build());
+        target.setTrackSelectionParameters(wanted.build());
     }
 
     /** Subtitle size and background from Settings → Playback ({@link SubtitleStyle}). */

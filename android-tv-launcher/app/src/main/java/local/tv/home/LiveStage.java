@@ -93,6 +93,16 @@ final class LiveStage implements LiveScreen {
         }
 
         @Override
+        public boolean stuck(String reason) {
+            if (!full || !foreground) return false;
+            // Another copy loads in the background while the frozen picture stays; if none takes
+            // over in time, the usual move on to another source (or a reconnect) follows.
+            return upgrade.rescue(() -> {
+                if (full && foreground) ExoLive.stuckAfterAll(reason);
+            });
+        }
+
+        @Override
         public boolean hasAlternative() {
             if (!full || !foreground) return false;
             // An upgraded copy on trial: the copy before it is waiting to come back.
@@ -638,21 +648,23 @@ final class LiveStage implements LiveScreen {
     }
 
     /**
-     * LiveUpgrade found and checked a better copy, or a smoother one ({@code replacing} one that
-     * kept pausing): it plays now, on trial, with the race's short startup budget.
+     * LiveUpgrade loaded a better copy, or a smoother one ({@code replacing} one that kept pausing
+     * or froze), and it already plays silently in {@code standby}: it takes over the picture now,
+     * with no gap, on trial.
      */
-    void upgradeTo(int index, String locator, LiveStream.Resolution source, boolean replacing) {
+    void upgradeTo(int index, ExoStandby standby, boolean replacing) {
         if (!full || !foreground || zapper == null) {
-            if (source != null && source.relay != null) source.relay.close();
+            standby.release();
             return;
         }
         // The copy leaving may have played properly: it is the one to come back to if all fail.
         retries().stopped(SystemClock.elapsedRealtime());
-        url = locator;
+        url = standby.locator;
         zapper.raceSelected(index);
+        liveFailed = false;
         status.setVisibility(View.GONE);
         ExoLive.attach(this, surface, events);
-        ExoLive.playResolved(a, locator, source);
+        ExoLive.promote(a, standby);
         // The copy before is ready to come back, as a race standby would be.
         overlayHandler.removeCallbacks(startupDeadline);
         overlayHandler.postDelayed(
@@ -662,8 +674,8 @@ final class LiveStage implements LiveScreen {
         Toast.makeText(
             a,
             replacing
-                ? "The picture kept pausing: trying another source"
-                : "Better picture found: switching source",
+                ? "The picture kept pausing: switched to another source"
+                : "Better picture found: switched source",
             Toast.LENGTH_SHORT
         ).show();
     }

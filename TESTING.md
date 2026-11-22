@@ -16,9 +16,13 @@ but not stuck, stuck at 12 s, dead stream and reconnect budget unchanged), `Live
 minimum, last working copy remembered only after 10 s and tried every other time, reset on a held
 picture and on another channel) and `LiveProbeTest` (playlist parsing, plus a local HTTP server:
 media and master playlists, plain streams, missing playlists or segments, a web page instead of a
-playlist, empty answers, refused schemes, headers sent).
+playlist, empty answers, refused schemes, headers sent) and `LiveStandbyCheckTest` (a background
+copy is ready only after 1.5 s of unbroken playing; a break or a jump back restarts the count; 10 s
+limit, including a stuttering copy that never gets there).
 
-Device tests changed: `ExoLiveTest.unavailableZliveKeepsRetryingWithGrowingWaitsAndAllowsAChannelChange`
+Device tests changed: `ExoLiveTest.aSourceThatKeepsBufferingMovesToTheNextSource` now also checks the
+working copy was loaded in a second player before the switch and that player took over (no
+break-before-make failover); `ExoLiveTest.unavailableZliveKeepsRetryingWithGrowingWaitsAndAllowsAChannelChange`
 replaces the test that required ZLive to stop after its sources were exhausted;
 `aBetterCopyThatKeepsBufferingFallsBackAndCoolsDownAcrossChannels` allows for the pre-switch check's
 own segment request. These fixtures do not prove behaviour with real providers or on a TV box.

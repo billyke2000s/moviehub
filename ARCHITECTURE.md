@@ -412,19 +412,33 @@ LiveZapper owns the per-channel Automatic/manual source policy and two-step Back
 
 Three paths, from mildest to worst:
 
+Every planned switch is **make-before-break**: the new copy loads and plays silently in a second
+ExoPlayer (`ExoStandby`: no audio focus, volume 0, no picture surface, the same media source and
+headers as `ExoLive`) while the copy on screen carries on. Only once it has played without a break
+for 1.5 s, within 10 s (`LiveStandbyCheck`, core-tested), does `ExoLive.promote` move the picture
+surface and sound to that player, which becomes the one on screen; the old player and its relay
+are closed. If it fails or runs out of time it is closed and nothing changes on screen. [Unverified]
+on boxes: whether a second hardware video decoder opens without a surface is device-dependent; if
+it cannot, that copy simply fails to load and the old behaviour follows.
+
 1. **Poor picture** (the copy plays but keeps pausing): `LiveUpgrade.replace` picks another copy
    (`LiveUpgradePlan.chooseReplacement`: any untried copy not cooling down, best name claim first),
-   takes the race's standby link for it or looks it up, and checks it with `LiveProbe` (the
-   playlist the player would open, then the start of its first segment, through a quality variant
-   if needed, with the provider's headers) — all while the pausing copy keeps playing. Only a copy
-   that answers plays, on the same 60 s trial as a quality upgrade: if it fails or is poor too, the
-   copy before comes back and the other cools down. The race keeps owning a standby it was asked
-   about (`LiveRace.peek`/`drop`) until it is checked and taken. With nothing to try, the copy stays.
-   Quality upgrades are checked with `LiveProbe` before switching too (previously only plain
-   addresses were).
-2. **Stuck, dead or failed copy**: as before, the race's next copy or `LiveZapper.failover` plays at
-   once, unchecked, since the copy on screen no longer plays.
-3. **Every copy failed**: `LiveStage.waitAndRetry` never gives up while a copy might come back
+   takes the race's standby link for it or looks it up, checks it with `LiveProbe` (the playlist the
+   player would open, then the start of its first segment, through a quality variant if needed,
+   with the provider's headers), then loads it in an `ExoStandby` — all while the pausing copy keeps
+   playing. It takes over on the same 60 s trial as a quality upgrade: if it fails or is poor too,
+   the copy before comes back and the other cools down. The race keeps owning a standby it was
+   asked about (`LiveRace.peek`/`drop`) until it is checked and taken; one that then fails to load
+   is reported back (`LiveRace.fellBack`). With nothing to try, the copy stays. Quality upgrades go
+   through the same check and background load.
+2. **Frozen copy** (stuck: 12 s without a break): `ExoLive` asks `Listener.stuck`, and
+   `LiveUpgrade.rescue` loads other copies the same way, one after another, while the frozen picture
+   stays (it may still recover by itself, in which case the loaded copy is discarded). If none takes
+   over within `LiveUpgrade.RESCUE_MS` (20 s), or none is left, `ExoLive.stuckAfterAll` falls back to
+   the usual move on or reconnect. A copy on trial that freezes goes straight back to the copy before.
+3. **Dead or failed copy** (an error, a dead or ended stream): as before, the race's next copy or
+   `LiveZapper.failover` plays at once, unchecked, since the copy on screen no longer plays.
+4. **Every copy failed**: `LiveStage.waitAndRetry` never gives up while a copy might come back
    (before, ZLive stopped with "This source is unavailable" and others retried every 15 s from copy
    0). The last picture stays under "Still trying this channel… Trying again in N s", and `LiveRetryPlan`
    (core-tested) sets growing waits: 2, 5, 10, 15, 30, then every 60 s, never under 15 s for ZLive,
@@ -434,8 +448,11 @@ Three paths, from mildest to worst:
    for 10 s starts the waits short again; another channel forgets it all.
 
 Every step is written to the Live TV event log (Engineer view) with its reason: "Poor picture",
-"Looking up/Checking smoother source N", "Moving to smoother source N on trial", "Other source did
-no better", "Every source failed (…); trying again in N s (try K)", "Trying the last working source".
+"Picture froze; loading another source while it waits", "Looking up/Checking smoother source N",
+"Loading source N in the background before switching", "Switched to a source that had already
+loaded", "Other source N did not load within 10 s; staying", "Frozen source recovered by itself",
+"Moving to smoother source N on trial", "Other source did no better", "Every source failed (…);
+trying again in N s (try K)", "Trying the last working source".
 
 `provider-engine/tools/freeshot.js` parses the FreeShot related-channel directory and follows only the selected UK sports channel’s two literal iframe links. ProviderBroker permits only FreeShot directory/embed and WideIPTV player paths. PlaylistSession supports the fixed WideIPTV anonymous JSON renewal endpoint, scoped to one discovered BlueTier origin/channel path; ProviderRelay posts renewal bodies and rewrites tokens without exposing them to VLC. Zero-to-end range requests fetch and decode the complete wrapped segment rather than applying decoded offsets to its PNG container.
 

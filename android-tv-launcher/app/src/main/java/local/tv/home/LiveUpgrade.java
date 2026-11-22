@@ -38,6 +38,17 @@ final class LiveUpgrade {
     private String previousUrl;
     /** The copy looked for or on trial replaces one that kept pausing (not a better picture). */
     private boolean replacing;
+    /** The copy chosen, loading silently in a second player until it really plays. */
+    private ExoStandby loading;
+    /**
+     * The picture froze ({@link #rescue}): the copy playing is not playing at all, so a copy that
+     * cannot be loaded leads on to the next, and {@link #giveUp} runs when none can.
+     */
+    private boolean urgent;
+    private Runnable giveUp;
+    /** How long a frozen picture waits for another copy to load before the usual failover. */
+    static final long RESCUE_MS = 20_000;
+    private final Runnable rescueTimeout = this::rescueTimedOut;
 
     LiveUpgrade(LiveStage stage) {
         this.stage = stage;
@@ -50,6 +61,7 @@ final class LiveUpgrade {
 
     /** A new channel or a copy chosen another way: forget any upgrade, and keep watching. */
     void reset() {
+        endUrgent();
         cancelLookup();
         plan = new LiveUpgradePlan(cooldowns, trialMs);
         previousUrl = null;
@@ -60,6 +72,7 @@ final class LiveUpgrade {
 
     /** Full screen ended or MovieHub left: stop looking. */
     void stop() {
+        endUrgent();
         cancelLookup();
         plan = new LiveUpgradePlan(cooldowns, trialMs);
         previousUrl = null;
@@ -100,6 +113,8 @@ final class LiveUpgrade {
         if (task != null) task.cancel(true);
         http = null;
         task = null;
+        if (loading != null) loading.release();
+        loading = null;
     }
 
     private void tick() {
@@ -120,6 +135,71 @@ final class LiveUpgrade {
     void replace() {
         if (!stage.upgradeWatching() || !plan.idle()) return;
         if (!look(true)) ExoLiveLog.event("Picture keeps pausing; no other source to try, staying");
+    }
+
+    /**
+     * The copy playing froze (ExoLive's stuck rule). Another copy is loaded in the background
+     * while the frozen picture stays on screen (it may still recover by itself); it takes over
+     * only once it really plays. Returns false when there is nothing to load, or a copy is on
+     * trial (its failure brings the copy before back). Otherwise {@code whenNone} runs if no copy
+     * takes over within {@link #RESCUE_MS}, or every copy fails to load.
+     */
+    boolean rescue(Runnable whenNone) {
+        if (plan.trial()) return false;
+        if (plan.looking()) {
+            // Already looking for a smoother copy: it now hurries.
+            startUrgent(whenNone);
+            ExoLiveLog.event("Picture froze; still loading another source");
+            return true;
+        }
+        if (!stage.upgradeWatching()) return false;
+        startUrgent(whenNone);
+        if (!look(true)) {
+            endUrgent();
+            return false;
+        }
+        ExoLiveLog.event("Picture froze; loading another source while it waits");
+        return true;
+    }
+
+    private void startUrgent(Runnable whenNone) {
+        urgent = true;
+        giveUp = whenNone;
+        main.removeCallbacks(rescueTimeout);
+        main.postDelayed(rescueTimeout, RESCUE_MS);
+    }
+
+    private void endUrgent() {
+        urgent = false;
+        giveUp = null;
+        main.removeCallbacks(rescueTimeout);
+    }
+
+    /** A copy failed to load during a rescue: the next one, or give up when none is left. */
+    private void continueUrgent() {
+        if (!urgent) return;
+        if (ExoLive.isPlaying()) {
+            ExoLiveLog.event("Frozen source recovered by itself");
+            endUrgent();
+            return;
+        }
+        if (!look(true)) giveUpNow();
+    }
+
+    private void rescueTimedOut() {
+        if (!urgent) return;
+        ExoLiveLog.event("No other source loaded within " + RESCUE_MS / 1000 + " s");
+        // A copy taken from the race to load did not take over: the race is told so.
+        if (loading != null && plan.looking()) undoRace(plan.target());
+        cancelLookup();
+        plan.notFound();
+        giveUpNow();
+    }
+
+    private void giveUpNow() {
+        Runnable whenNone = giveUp;
+        endUrgent();
+        if (whenNone != null) whenNone.run();
     }
 
     /** Chooses a copy to look for (a better one, or any as a {@code replacement}) and starts. */
@@ -219,6 +299,7 @@ final class LiveUpgrade {
             plan.notFound();
             // Tried: neither upgrades nor failover try it again this visit.
             zapper.raceFailed(new int[] { index });
+            continueUrgent();
             return;
         }
         if (
@@ -227,6 +308,7 @@ final class LiveUpgrade {
             // The screen or the copy playing changed meanwhile: try again from what plays now.
             if (!fromRace) close(found);
             plan.notFound();
+            if (urgent) giveUpNow();
             return;
         }
         LiveRace.Found taken = race == null ? null : race.take(index);
@@ -234,14 +316,86 @@ final class LiveUpgrade {
             if (taken == null) {
                 // The race let go of its standby meanwhile (and closed it).
                 plan.notFound();
+                continueUrgent();
                 return;
             }
             found = taken;
         } else close(taken);
-        begin(index, found);
+        load(index, zapper, found);
     }
 
-    private void begin(int index, LiveRace.Found found) {
+    /**
+     * Loads copy {@code index} silently in a second player while the copy on screen carries on
+     * (or stays frozen); it takes over only once it has really played (ExoStandby).
+     */
+    private void load(int index, LiveZapper zapper, LiveRace.Found found) {
+        int mine = ticket;
+        ExoLiveLog.event("Loading source " + (index + 1) + " in the background before switching");
+        loading = new ExoStandby(
+            stage.activity(),
+            found.locator,
+            found.source,
+            new ExoStandby.Callback() {
+                @Override
+                public void ready(ExoStandby standby) {
+                    loaded(mine, index, zapper, standby);
+                }
+
+                @Override
+                public void failed(ExoStandby standby, String reason) {
+                    notLoaded(mine, index, zapper, standby, reason);
+                }
+            }
+        );
+    }
+
+    private void loaded(int mine, int index, LiveZapper zapper, ExoStandby standby) {
+        if (mine != ticket || standby != loading || !plan.looking() || plan.target() != index) {
+            standby.release();
+            return;
+        }
+        loading = null;
+        if (
+            !stage.upgradeWatching() || stage.zapper() != zapper || zapper.selectedCopy() != plan.previous()
+        ) {
+            standby.release();
+            undoRace(index);
+            plan.notFound();
+            if (urgent) giveUpNow();
+            return;
+        }
+        if (urgent && ExoLive.isPlaying()) {
+            // The frozen picture came back by itself while the other copy loaded: keep it.
+            ExoLiveLog.event("Frozen source recovered by itself; staying");
+            standby.release();
+            undoRace(index);
+            plan.notFound();
+            endUrgent();
+            return;
+        }
+        endUrgent();
+        begin(index, standby);
+    }
+
+    private void notLoaded(int mine, int index, LiveZapper zapper, ExoStandby standby, String reason) {
+        standby.release();
+        if (mine != ticket || standby != loading) return;
+        loading = null;
+        ExoLiveLog.event("Other source " + (index + 1) + " " + reason + "; staying");
+        undoRace(index);
+        plan.notFound();
+        // Tried: neither upgrades nor failover try it again this visit.
+        zapper.raceFailed(new int[] { index });
+        continueUrgent();
+    }
+
+    /** The race was told copy {@code index} plays; it did not, so the copy before still does. */
+    private void undoRace(int index) {
+        LiveRace race = stage.race();
+        if (race != null && plan.previous() >= 0) race.fellBack(plan.previous(), index);
+    }
+
+    private void begin(int index, ExoStandby standby) {
         previousUrl = stage.playbackUrl();
         plan.started(SystemClock.elapsedRealtime());
         ExoLiveLog.event(
@@ -249,7 +403,7 @@ final class LiveUpgrade {
                 (index + 1) +
                 " on trial"
         );
-        stage.upgradeTo(index, found.locator, found.source, replacing);
+        stage.upgradeTo(index, standby, replacing);
     }
 
     private static void close(LiveRace.Found found) {

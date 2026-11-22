@@ -11,6 +11,10 @@ version when it is published. This is the only dated history file (see AGENTS.md
   alone; a picture that keeps pausing (a fifth of the last minute) looks for a smoother copy and
   checks it actually sends video before switching, while the current one keeps playing, and goes
   back if it is no better. A copy's link is only blacklisted for real errors, not slowness.
+- Live TV switches without a gap: the other copy loads and plays silently in the background, and
+  only takes over once it has played for a second and a half. Until then the current picture stays
+  (even if it has frozen, as it may come back); a copy that never loads is dropped without anything
+  changing on screen. This also applies to "better picture" upgrades.
 - Live TV: when every copy fails, the channel is never given up on. It shows "Still trying this channel…" over the
   last picture and tries again after 2, 5, 10, 15, 30 and then every 60 seconds (ZLive no sooner
   than 15 s), trying the copy that last worked first. OK tries straight away.
