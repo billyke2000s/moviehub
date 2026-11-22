@@ -4,7 +4,7 @@ name: Live provider probe
 # country, so this never runs on pull requests or blocks a build. Re-run it from the Actions tab.
 on:
     push:
-        branches: [feature/standalone-provider-engine, fix/sports-nuvio-playback-20261121]
+        branches: [feature/standalone-provider-engine]
         paths: ['provider-engine/tools/live-probe*.mjs', '.github/workflows/provider-live-probe.yml']
     workflow_dispatch:
         inputs:
@@ -39,50 +39,9 @@ jobs:
                   javac -cp "$RUNNER_TEMP/rhino.jar" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderCodec,ProviderSignature,ProviderUrls,ProviderSegments}.java android-tv-launcher/tests/ProviderProbeCli.java
             - name: Probe providers
               env:
-                  PROVIDERS: ${{ inputs.providers || 'dlhd zlive freeshot' }}
+                  PROVIDERS: ${{ inputs.providers }}
               # Word splitting of PROVIDERS is intended: one argument per id.
               run: RHINO_JAR="$RUNNER_TEMP/rhino.jar" node provider-engine/tools/live-probe.mjs $PROVIDERS
-            - name: Examine current FreeShot stream scopes and DaddyLive mirror availability
-              run: |
-                  node --input-type=module <<'NODE'
-                  const ua="Mozilla/5.0 (Linux; Android 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
-                  async function get(url) {
-                    const r=await fetch(url,{headers:{"User-Agent":ua},redirect:"follow",signal:AbortSignal.timeout(7000)});
-                    return {status:r.status,text:await r.text(),url:r.url};
-                  }
-                  function frame(html,check,base) {
-                    for(const m of html.matchAll(/<iframe\b[^>]*\bsrc=["']([^"']+)["']/gi)){
-                      const u=new URL(m[1].trim(),base);
-                      if(check.test(u.href))return u.href;
-                    }
-                    throw Error("No matching iframe");
-                  }
-                  try {
-                    const page="https://www.freeshot.live/live-tv/sky-sports-action-uk/21";
-                    const a=await get(page); console.log("FreeShot channel HTTP",a.status);
-                    const embed=frame(a.text,/^https:\/\/(?:www\.)?freeshot\.live\/embed\//,page);
-                    const b=await get(embed);console.log("FreeShot embed HTTP",b.status);
-                    const player=frame(b.text,/^https:\/\/wideiptv\.top\/player\//,embed);
-                    const c=await get(player);console.log("FreeShot player HTTP",c.status);
-                    const item=/\bstreamUrl:\s*("(?:\\.|[^"\\])*")/.exec(c.text);
-                    if(item){
-                      const u=new URL(JSON.parse(item[1]));
-                      const slug=player.substring(player.lastIndexOf("/")+1);
-                      console.log("FreeShot stream diagnostic",JSON.stringify({
-                        host:u.hostname,scheme:u.protocol,port:u.port,hasHash:!!u.hash,
-                        pathnameShape:u.pathname.replace(/[A-Za-z0-9_-]{3,}/g,"X"),
-                        slugPrefix:u.pathname.startsWith("/"+slug+"/"),
-                        tokenPresent:u.searchParams.has("token"),queryNames:[...u.searchParams.keys()]
-                      }));
-                    }else console.log("FreeShot missing literal streamUrl config");
-                  }catch(e){console.log("FreeShot diagnostic unavailable:",e.cause?.code||e.message)}
-                  for(const host of ["dlive.sx","dlhd.sx","daddylive.app","daddylive.stream","thedaddy.li","dlhd.st"]){
-                    try{
-                      const x=await get("https://"+host+"/watch.php?id=42");
-                      console.log("DaddyLive mirror",host,"status",x.status,"finalHost",new URL(x.url).hostname,"buttons",x.text.includes("data-url="));
-                    }catch(e){console.log("DaddyLive mirror",host,"error",e.cause?.code||e.name)}
-                  }
-                  NODE
             - name: Report providers 1-8
               if: always()
               run: node provider-engine/tools/live-probe-report.mjs 0 8
