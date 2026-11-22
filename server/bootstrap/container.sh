@@ -42,7 +42,7 @@ chmod 755 /usr/local/bin/forgejo
 mkdir -p /var/lib/forgejo /etc/forgejo
 chown git:git /var/lib/forgejo
 chmod 750 /var/lib/forgejo
-chown root:git /etc/forgejo; chmod 750 /etc/forgejo
+chown root:git /etc/forgejo; chmod 770 /etc/forgejo
 if [ ! -f /etc/forgejo/app.ini ]; then
     cat > /etc/forgejo/app.ini <<EOF
 APP_NAME = MovieHub
@@ -60,6 +60,10 @@ DOMAIN = $CONTAINER_IP
 ROOT_URL = http://$CONTAINER_IP:3000/
 DISABLE_SSH = true
 LFS_START_SERVER = false
+LFS_JWT_SECRET = $(/usr/local/bin/forgejo generate secret LFS_JWT_SECRET)
+
+[oauth2]
+JWT_SECRET = $(/usr/local/bin/forgejo generate secret JWT_SECRET)
 
 [security]
 INSTALL_LOCK = true
@@ -77,7 +81,8 @@ DEFAULT_PRIVATE = private
 ENABLED = true
 EOF
 fi
-chown root:git /etc/forgejo/app.ini; chmod 640 /etc/forgejo/app.ini
+# Forgejo may add generated settings to its own config on first start, so it must be able to write it.
+chown root:git /etc/forgejo/app.ini; chmod 660 /etc/forgejo/app.ini
 cat > /etc/systemd/system/forgejo.service <<'EOF'
 [Unit]
 Description=Forgejo (MovieHub)
