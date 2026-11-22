@@ -1,6 +1,6 @@
 # TESTING.md history
 
-Old sections moved out of [TESTING.md](../../TESTING.md) on 22 November 2026, unchanged. They describe
+Old sections moved out of [TESTING.md](../../TESTING.md) on 22 November 2026, unchanged apart from relative links. They describe
 the state on their own dates and may no longer be true. Use the main file for current information.
 
 ## Published release evidence (20 November 2026)
@@ -33,7 +33,7 @@ passed its build/lint, normal/experimental suites, provider probe and focused re
 normal-device attempt failed its emulator connection before running tests; its unchanged-code
 targeted retry passed. No gate or test was removed or weakened.
 The existing 23 full native-source passes and unresolved live failures remain separate evidence
-below and in the [source report](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+below and in the [source report](../CINESTREAM_ADDITIONS_2026_10_29.md).
 
 
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
@@ -46,7 +46,7 @@ Android CI jobs passed and the fifteen-site audit verified 21 individual sources
 Application revision `925af7c` passed all six Android jobs in run 40913881846. Final live checks
 include 23 verified sources (eleven movies and twelve episodes); the episode retry passed after an EGL crash.
 Vidy playback failures and other site/host errors remain unresolved; registration is not playback proof.
-See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+See [dated evidence and limits](../CINESTREAM_ADDITIONS_2026_10_29.md).
 
 
 Earlier checkpoint: current-site inspection corrected the new adapters. Application revision
@@ -55,7 +55,7 @@ DeadSystemException). Its native Vidy samples still failed and remain draft-PR b
 The final KissKH decimal episode-number correction passed the 116-test Python suite and a
 public-ID-only API check; Android CI for that small final correction is pending. Unattended
 audits continue to block external decoder uploads of site tokens/encrypted responses.
-See the [direct-site findings](docs/CINESTREAM_ADDITIONS_2026_10_29.md#direct-website-and-current-client-investigation--follow-up-29-october).
+See the [direct-site findings](../CINESTREAM_ADDITIONS_2026_10_29.md#direct-website-and-current-client-investigation--follow-up-29-october).
 
 ## Published 1.0.18 validation — 29 October 2026
 

@@ -1,6 +1,7 @@
 # STATUS.md history
 
-The full STATUS.md as it was on 22 November 2026 (latest commit f1e3aca), unchanged. It is a
+The full STATUS.md as it was on 22 November 2026 (latest commit f1e3aca), unchanged apart from
+relative links. It is a
 running log of dated engineering notes; much of it is out of date. Current state is in
 [STATUS.md](../../STATUS.md).
 
@@ -113,7 +114,7 @@ Android CI jobs passed and the fifteen-site audit verified 21 individual sources
 Application revision `925af7c` passed all six Android jobs in run 40913881846. Final live checks
 include 23 verified sources (eleven movies and twelve episodes); the episode retry passed after an EGL crash.
 Vidy playback failures and other site/host errors remain unresolved; registration is not playback proof.
-See [dated evidence and limits](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+See [dated evidence and limits](../CINESTREAM_ADDITIONS_2026_10_29.md).
 
 
 Earlier checkpoint: current-site inspection corrected the new adapters. Application revision
@@ -122,7 +123,7 @@ DeadSystemException). Its native Vidy samples still failed and remain draft-PR b
 The final KissKH decimal episode-number correction passed the 116-test Python suite and a
 public-ID-only API check; Android CI for that small final correction is pending. Unattended
 audits continue to block external decoder uploads of site tokens/encrypted responses.
-See the [direct-site findings](docs/CINESTREAM_ADDITIONS_2026_10_29.md#direct-website-and-current-client-investigation--follow-up-29-october).
+See the [direct-site findings](../CINESTREAM_ADDITIONS_2026_10_29.md#direct-website-and-current-client-investigation--follow-up-29-october).
 
 ## Earlier CineStream source/metadata checkpoint — 29 October 2026
 
@@ -137,7 +138,7 @@ provider requests keep the same behavior. Local checks: 116 Python tests; 34 cor
 checks. Application revision `a9974b6` passed all six Android CI jobs in run 40856772393,
 including 208 regular cases plus the opt-in audit assumption, 27 experimental cases and ten
 focused VOD cases. Its two normal Hexa Alpha live checks also passed. The separate Movy
-comparison on unchanged main passed 8/8; the feature audit had one unverified 4K audio sample. See the [inventory and evidence](docs/CINESTREAM_ADDITIONS_2026_10_29.md).
+comparison on unchanged main passed 8/8; the feature audit had one unverified 4K audio sample. See the [inventory and evidence](../CINESTREAM_ADDITIONS_2026_10_29.md).
 Not merged or published.
 
 
@@ -234,7 +235,7 @@ midpoint playback and decoded/output audio. Other links failed or remained unver
 The inventory is 38 enabled websites and 41 adapters, plus excluded auditable sites, with 68
 original Kodi modules and four native modules. Rive is the first addition in the new
 FMHY-only batch; desktop movie/episode decoding passed, with Android validation tracked in
-[the addition report](docs/FMHY_ADDITIONS_2026_10_26.md). Four additional exclusions have fresh sale/parking
+[the addition report](../FMHY_ADDITIONS_2026_10_26.md). Four additional exclusions have fresh sale/parking
 or unrelated gambling evidence. Historical notes below describe earlier snapshots.
 
 ## Continuous series and automatic playback
@@ -415,7 +416,7 @@ Historical checkpoint: 25 October 2026 (1.0 promoted the experimental line into 
 
 ## Native free-TV work (19 October 2026)
 
-PR #81 adds native regional Pluto discovery, resolve-on-play, source cancellation, guide data and Settings → Free channels controls on top of #80’s optional hosted connection. A real GB catalogue returned 187 channels; one sample decoded successfully on desktop. Other upstream providers are not advertised as native. Validation and release status are linked in the PR and GitHub release; physical TV checks remain outstanding. See [the full evidence record](docs/NATIVE_FREE_SOURCES.md).
+PR #81 adds native regional Pluto discovery, resolve-on-play, source cancellation, guide data and Settings → Free channels controls on top of #80’s optional hosted connection. A real GB catalogue returned 187 channels; one sample decoded successfully on desktop. Other upstream providers are not advertised as native. Validation and release status are linked in the PR and GitHub release; physical TV checks remain outstanding. See [the full evidence record](../NATIVE_FREE_SOURCES.md).
 
 ## Standalone engine development
 
@@ -423,7 +424,7 @@ Experimental local JS engine and FreeLiveSports wiring are implemented on a deve
 This is incomplete, opt-in and not a production release. The current Masqueradarr server submodule
 returns 404; current adapter parity and automatic inheritance are blocked by source access.
 Signing-key setup and physical ARM64 playback checks remain outstanding. Full implementation,
-provider matrix and evidence: [standalone provider engine](docs/STANDALONE_PROVIDER_ENGINE.md).
+provider matrix and evidence: [standalone provider engine](../STANDALONE_PROVIDER_ENGINE.md).
 
 ## Extended Android provider port
 
@@ -822,7 +823,7 @@ Only Levidia remains restored after positive verification. The other 18 provisio
 
 ## Site-by-site VOD recovery (26 October 2026)
 
-Site-by-site recovery is in progress on `fix/site-by-site-vod`. All 63 public website roots were inspected; reachable sites were traced into current searches, detail pages and player protocols. The website/host list is separated, and concrete parser/transport repairs are documented in [the audit](docs/FREE_VOD_SITE_AUDIT_2026_10_26.md). Inconclusive responses are not treated as closure; no excluded site is restored in this work. Offline/core and exact-head runner validation are required before completion. No new APK published.
+Site-by-site recovery is in progress on `fix/site-by-site-vod`. All 63 public website roots were inspected; reachable sites were traced into current searches, detail pages and player protocols. The website/host list is separated, and concrete parser/transport repairs are documented in [the audit](../FREE_VOD_SITE_AUDIT_2026_10_26.md). Inconclusive responses are not treated as closure; no excluded site is restored in this work. Offline/core and exact-head runner validation are required before completion. No new APK published.
 
 Initial runner audit [40251539758](https://github.com/billyke2000s/moviehub/actions/runs/40251539758) at `4522a1c` completed 57 movie-site and 48 episode-site checks, covering all 63 public sites. The focused Inception probe returned eight validated media links from FZMovies, AnyMovies, M4uHD and Iwaatch. Tubi’s current anonymous movie protocol and Waffi’s separate mirrors/online player were then inspected and adapted; their exact-head runner results are still pending. Browser-challenge and unsupported downstream-host cases remain explicitly unresolved.
 

@@ -1,6 +1,6 @@
 # ARCHITECTURE.md history
 
-Old sections moved out of [ARCHITECTURE.md](../../ARCHITECTURE.md) on 22 November 2026, unchanged. They describe
+Old sections moved out of [ARCHITECTURE.md](../../ARCHITECTURE.md) on 22 November 2026, unchanged apart from relative links. They describe
 the state on their own dates and may no longer be true. Use the main file for current information.
 
 ## Reviewed playback integration (22 October 2026)
