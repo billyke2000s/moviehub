@@ -12,6 +12,13 @@ on:
                 ".github/workflows/dlhd-playback.yml",
             ]
     workflow_dispatch:
+    pull_request:
+        paths:
+            - "provider-engine/tools/dlhd-playback.mjs"
+            - "provider-engine/upstream/modules/dlhd/**"
+            - "android-tv-launcher/app/src/main/java/local/tv/home/ProviderRelay.java"
+            - "android-tv-launcher/app/src/main/java/local/tv/home/PlaylistSession.java"
+            - ".github/workflows/dlhd-playback.yml"
 permissions:
     contents: read
 jobs:
@@ -43,8 +50,22 @@ jobs:
               run: |
                   mkdir -p build/provider-tests
                   javac -cp "$RUNNER_TEMP/rhino.jar:$RUNNER_TEMP/json.jar" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderCodec,ProviderSignature,ProviderUrls,ProviderSegments,ProviderFileRanges,LivePlaylistPolicy,DashManifest,ProviderRelay,StreamRate,PlaylistSession,ProviderPngSegments,ProviderContainerSegments}.java android-tv-launcher/tests/{ProviderProbeCli,ProviderRelayProbe}.java
-            - name: Resolve and decode both tracks for 150 seconds per channel
+            - name: Decode FreeShot through the production relay, requiring video and audio
+              env:
+                  STREAM_SECONDS: ${{ github.event_name == 'pull_request' && '30' || '150' }}
               run: SPORTS_PROBE_ONLY=freeshot RHINO_JAR="$RUNNER_TEMP/rhino.jar" JSON_JAR="$RUNNER_TEMP/json.jar" node provider-engine/tools/dlhd-playback.mjs
+            - name: Require decoded frames and audio from the real relay
+              run: |
+                  node --input-type=module -e '
+                    import {readFileSync} from "node:fs";
+                    const rows = JSON.parse(readFileSync("build/provider-tests/dlhd-playback.json", "utf8"));
+                    const sample = rows.find(r => r.provider === "freeshot");
+                    if (!sample?.bothDecoded) {
+                      console.error("Production FreeShot relay did not decode both tracks: " + JSON.stringify(sample));
+                      process.exit(1);
+                    }
+                    console.log("Real production FreeShot relay decoded audio and video.");
+                  '
             - name: Upload numerical results only
               if: always()
               uses: actions/upload-artifact@v6
