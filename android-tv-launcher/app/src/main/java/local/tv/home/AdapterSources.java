@@ -313,7 +313,8 @@ final class AdapterSources {
     static EngineSources.Stream resolve(Context c, String url, NativeHttp http) throws Exception {
         String id = provider(url),
             wanted = channel(url);
-        JSONObject row = resolverRow(c, id, wanted, http);
+        try {
+            JSONObject row = resolverRow(c, id, wanted, http);
         JSONObject resolved = (JSONObject) ProviderBroker.call(
             c,
             id,
@@ -333,6 +334,11 @@ final class AdapterSources {
         EngineSources.Stream stream = new EngineSources.Stream(resolved);
         if (id.equals("dlhd")) rememberPlayer(url, resolved.optInt("playerIndex", 0));
         return stream;
+        } catch (Exception failure) {
+            // Keep the current failover fast; a signed update check runs separately.
+            ProviderRecovery.afterResolveFailure(c);
+            throw failure;
+        }
     }
 
     static int refresh(
