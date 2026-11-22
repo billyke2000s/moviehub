@@ -109,6 +109,12 @@ final class ProviderPackages {
         if (id.equals("dlhd") && (capabilities == null || capabilities.optInt("dlhdCurrentMirror") < 1)) {
             return builtinModule(c, id);
         }
+        // An installed, older signed module may have the right mirror but still
+        // know only six players. Keep the APK's seven-player parser unless the
+        // module explicitly declares support for the current hub route.
+        if (id.equals("dlhd") && (capabilities == null || capabilities.optInt("dlhdHubPlayer") < 1)) {
+            return builtinModule(c, id);
+        }
         // Previous signed sports packages reject the new FreeShot CDN even after APK updates.
         if (id.equals("freeshot") && (capabilities == null || capabilities.optInt("freeShotCdnV2") < 1)) {
             return builtinModule(c, id);

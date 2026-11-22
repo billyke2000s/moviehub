@@ -305,16 +305,33 @@ function decode(stream) {
     for (const [k, v] of Object.entries(stream.headers || {}))
         if (!/^(user-agent|referer)$/i.test(k)) extra.push(k + ": " + v);
     if (extra.length) args.push("-headers", extra.join("\r\n") + "\r\n");
-    args.push("-t", "4", "-i", stream.url, "-map", "0:v:0?", "-map", "0:a:0?", "-f", "null", "-");
-    const p = spawnSync("ffmpeg", args, { encoding: "utf8", timeout: 45000 });
+    // Do not count a playable source merely because ffmpeg exits successfully
+    // with optional maps: that can mean it decoded **zero** audio/video frames.
+    args.push("-i", stream.url, "-t", "6", "-map", "0:v:0", "-map", "0:a:0", "-f", "framemd5", "pipe:1");
+    const p = spawnSync("ffmpeg", args, {
+        encoding: "utf8",
+        timeout: 45000,
+        maxBuffer: 4 * 1024 * 1024,
+    });
+    const frames = [0, 0];
+    for (const line of (p.stdout || "").split("\n")) {
+        const m = /^([01]),\s*\d+,/.exec(line);
+        if (m) frames[Number(m[1])]++;
+    }
+    const ok = p.status === 0 && frames[0] >= 10 && frames[1] >= 10;
     const error = (p.stderr || "")
         .split("\n")
         .map((l) => l.replace(/https?:\/\/[^\s'"]+/g, "<url>").trim())
         .filter(Boolean)
         .slice(-1)[0];
     return {
-        ok: p.status === 0,
-        error: p.status === 0 ? "" : (error || "ffmpeg exit " + p.status).slice(0, 140),
+        ok,
+        frames,
+        error: ok
+            ? ""
+            : p.status === 0
+              ? "No sustained decoded video/audio (" + frames.join("/") + " frames)"
+              : (error || "ffmpeg exit " + p.status).slice(0, 140),
     };
 }
 
@@ -371,11 +388,18 @@ if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
         // being mistaken for playback while respecting the upstream IP rate cap.
         // Scheduled sweeps remain catalogue-only; this explicit PR diagnostic
         // performs at most one ZLive live request.
-        const playbackSamples = id === "zlive"
-            ? (process.env.ZLIVE_LIVE_TEST === "1" ? samples.slice(0, 1) : [])
-            : samples;
-        if (id === "zlive" && playbackSamples.length === 0)
-            result.playbackScope = "not_tested";
+        if (id === "dlhd" && process.env.DLHD_HUB_TEST === "1" && samples.length) {
+            // Probe the site's seventh player independently, without assuming it
+            // actually carries this channel or counting it as auto-mode success.
+            samples.unshift({
+                ...samples[0],
+                preferredPlayer: 7,
+                name: samples[0].name + " (Player 7 hub)",
+            });
+        }
+        const playbackSamples =
+            id === "zlive" ? (process.env.ZLIVE_LIVE_TEST === "1" ? samples.slice(0, 1) : []) : samples;
+        if (id === "zlive" && playbackSamples.length === 0) result.playbackScope = "not_tested";
         for (const row of playbackSamples) {
             const sample = { name: String(row.name).slice(0, 60), resolve: "", play: "" };
             const rstats = {

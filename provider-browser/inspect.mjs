@@ -109,6 +109,17 @@ async function inspect(browser, target) {
         await page.waitForTimeout(1_000);
         report.iframeCount = Math.min(100, await page.locator("iframe").count());
         report.playerControls = Math.min(100, await page.locator(CONTROL_SELECTOR).count());
+        if (target.id.startsWith("dlhd-channel-")) {
+            const prefixes = await page.locator("[data-url]").evaluateAll(elements =>
+                elements.map(element => {
+                    try {
+                        const path = new URL(element.getAttribute("data-url"), location.href).pathname;
+                        return /^\/([a-z0-9-]{1,24})\/stream-\d{1,8}\.php$/i.exec(path)?.[1] || null;
+                    } catch { return null; }
+                }).filter(Boolean)
+            );
+            report.playerPrefixes = [...new Set(prefixes)].slice(0, 16);
+        }
         if (target.id === "daddylive-app") {
             // This is NOT the classic watch.php/channel-number service. Its public
             // site documents /api/events -> /player/embed.php?id=...&source=tvN.
@@ -206,6 +217,15 @@ async function inspect(browser, target) {
                     await page.waitForTimeout(600);
                 } catch {
                     // One missing server control must not suppress other observations.
+                }
+            }
+            if (target.id === "dlhd-channel-302" && report.playerControls >= 7) {
+                try {
+                    await page.locator("button[data-url]").nth(6).click({ timeout: 2_500 });
+                    report.hubClicked = true;
+                    await page.waitForTimeout(1_800);
+                } catch {
+                    report.hubClicked = false;
                 }
             }
         }

@@ -53,7 +53,8 @@ final class AdapterSources {
     }
 
     private static synchronized void rememberPlayer(String url, int player) {
-        if (player < 1 || player > 6) return;
+        // The current website exposes seven players; keep the dynamically parsed winner.
+        if (player < 1 || player > 12) return;
         PlayerMemo memo = players.get(url);
         if (memo == null) {
             memo = new PlayerMemo();

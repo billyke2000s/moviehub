@@ -19,6 +19,8 @@ final class ProviderRelay implements AutoCloseable {
     private final Map<String, String> headers;
     private final String credentialAuthority;
     private final PlaylistSession playlistSession;
+    /** FreeShot's HLS segments are decoded TS, not opaque binary resources. */
+    private final boolean freeShotTs;
     private final boolean segmentContainers;
     private final boolean boundedRanges;
     private final boolean livePlaylist;
@@ -80,6 +82,8 @@ final class ProviderRelay implements AutoCloseable {
         credentialAuthority = URI.create(stream.url).getAuthority();
         playlistSession =
             stream.playlistSession == null ? null : new PlaylistSession(stream.url, stream.playlistSession);
+        freeShotTs =
+            stream.playlistSession != null && "freeshot".equals(stream.playlistSession.optString("type"));
         segmentContainers = stream.segmentContainers || playlistSession != null;
         boundedRanges = stream.boundedRanges;
         livePlaylist = stream.livePlaylist;
@@ -157,7 +161,10 @@ final class ProviderRelay implements AutoCloseable {
                 if (oldest == null) throw new IOException("Playlist grant limit");
                 targets.remove(oldest);
             }
-            token = UUID.randomUUID().toString() + (playlist ? ".m3u8" : ".bin");
+            // HLS decoders examine the local media extension as well as its
+            // bytes. Give FreeShot's decoded MPEG-TS segments .ts instead of
+            // the generic .bin grant, while preserving other providers' types.
+            token = UUID.randomUUID().toString() + (playlist ? ".m3u8" : freeShotTs ? ".ts" : ".bin");
             targets.put(token, safe);
         }
         if (playlist) playlists.add(token);
