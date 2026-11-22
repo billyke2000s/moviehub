@@ -8,8 +8,8 @@ _Last updated: 22 November 2026._
 
 ## Published
 
-- **MovieHub 1.0.24 (version code 125)**, published 22 November 2026: the
-  [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.24) and the
+- **MovieHub 1.0.25 (version code 126)**, published 22 November 2026: the
+  [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.25) and the
   [in-app update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest).
   The feed's `update.json` is authoritative; this line can lag behind it.
 - **MovieHub Experimental exp-15** (`android-tv-experimental`, 24 October 2026). Since 1.0 the
@@ -17,15 +17,18 @@ _Last updated: 22 November 2026._
 
 ## Included and remaining work
 
-The combined release includes the guide focus/preview fixes, channel duplicate/name corrections,
-and optional signed scraper update support. Self-hosted maintenance is inactive until the feed
+This release adds the verified ZLive PNG media-header correction and retains the guide focus/preview
+fixes, channel duplicate/name corrections and optional signed scraper update support. A captured F1
+backup decoded audio/video; a fresh primary F1 probe still returned HTTP 404 and FreeShot's public page
+returned HTTP 403. DaddyLive remains unresolved; this release does not establish that every sports
+source plays. Self-hosted maintenance is inactive until the feed
 and signing key are configured; the APK does not automatically fix sports player protocols.
 
-Signed publisher [44996773389](https://github.com/billyke2000s/moviehub/actions/runs/44996773389)
-and numbered-release copier [44997818732](https://github.com/billyke2000s/moviehub/actions/runs/44997818732)
-passed. Both public APKs were independently downloaded: 133,318,212 bytes, SHA-256
-`9fc60d8dc37b2a922e94c64cfbaddc7201ea96b6e0ab5473d28e099d96c4e3d6`.
-Signature verification matches 1.0.23, and actual native libraries cover ARM32 and ARM64.
+Signed publisher [45031535188](https://github.com/billyke2000s/moviehub/actions/runs/45031535188)
+and numbered-release copier [45032659975](https://github.com/billyke2000s/moviehub/actions/runs/45032659975)
+passed. Both public APKs were independently downloaded: 133,318,200 bytes, SHA-256
+`1a7223fda153b721cf4531a2b32d4ab708f7479fffbabb36a5f133430c090238`.
+Signature verification matches 1.0.24, and actual native libraries cover ARM32 and ARM64.
 The unchanged UHDMovies scraper returned no link for its smoke-test film twice; this is unresolved.
 
 ## Not yet verified
