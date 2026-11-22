@@ -126,6 +126,7 @@ public final class ProviderEngineDeviceTest {
         JSONObject pkg = new JSONObject(ProviderPackages.asset(context, "builtin.json"));
         pkg.put("version", 2);
         pkg.getJSONObject("capabilities").remove("sportsPlayers");
+        pkg.getJSONObject("capabilities").remove("dlhdCurrentMirror");
         for (String id : new String[] { "zlive", "freeshot", "dlhd" }) {
             pkg.getJSONObject("modules").put(
                 id,
