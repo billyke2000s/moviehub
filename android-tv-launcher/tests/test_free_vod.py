@@ -571,8 +571,8 @@ class FreeVodTests(unittest.TestCase):
 
     def test_all_bundled_provider_constructors_import(self):
         rows=json.loads(vod.providers())
-        self.assertEqual(len(rows),111)
-        self.assertEqual(len({r['id'] for r in rows}),111)
+        self.assertEqual(len(rows),112)
+        self.assertEqual(len({r['id'] for r in rows}),112)
         for row in rows:
             with self.subTest(provider=row['id']):
                 self.assertTrue(hasattr(getattr(importlib.import_module(row['module']), row.get('factory','source'))(),'sources'))
