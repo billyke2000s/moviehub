@@ -127,6 +127,12 @@ final class GuideRows {
                 if (!cells.isEmpty()) focus(cells, 0);
                 return true;
             }
+            if (key == KeyEvent.KEYCODE_DPAD_LEFT) {
+                // The channel names are the leftmost column, so ◀ has nothing else to do: it goes
+                // to the preview from any row of any page (Options when the preview is off).
+                if (!guide.focusPicture(row)) guide.focusTabs();
+                return true;
+            }
             if (key == KeyEvent.KEYCODE_INFO) {
                 guide.panels.programmeInfo(channel, position);
                 return true;
