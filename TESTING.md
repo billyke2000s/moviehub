@@ -1,5 +1,12 @@
 # Testing
 
+## Unreleased: expanded monitoring verification
+
+The scheduled live probe runs all built-in provider-module IDs across four independent groups; the separate public-TV workflow runs a network-free parser/Pluto allow-list fixture before the public catalogue checks. These workflows report upstream HTTP/network errors and bounded catalogue/media evidence without exposing signed stream URLs or tokens. Their checks are not proof that every TV channel plays in the UK.
+
+Provider-engine failures queue a signed update check outside the playback path, subject to the global 15-minute cooldown and configured trusted public key. Validate the final Android CI build/emulator tests and inspect the PR before merge. No current live device proof or signed OTA test with a configured key is claimed.
+
+
 ## Unreleased: PrimeWire and provider drift diagnostics
 
 `android-tv-launcher/tests/test_primewire.py` checks the movie slug route, strict title/year evidence, multiple explicit player links, duplicate controls, unavailable AJAX-only buttons, and unsafe/insecure URL rejection using offline fixtures. `VodSourceIdentityTest` tests that two catalogue routes returning the same URL/headers collapse into one source but header- or token-distinct fallbacks survive. Existing `test_free_vod.py` inventory counts include the additional movie-only site.
