@@ -35,8 +35,13 @@ avoid downloading video. Observing an endpoint is not playback verification.
 The inventory includes known public Live TV website landing pages and the
 enabled film/series site roots. It also inspects two concrete public Live TV
 watch-page fixtures: DaddyLive's channel 302 (up to four player-button clicks)
-and FreeShot's Sky Sports Action page (passive iframe observation). The
-PrimeWire movie watch-page fixture remains a clickable VOD target. These
+and FreeShot's Sky Sports Action page (passive iframe observation).
+The separately provided **daddylive.app** is a different live-event service:
+its page documents /api/events and rotating /player/embed.php?id=...&source=tvN
+links. The inspection resolves one currently advertised Live Events embed at
+runtime and records only safe route metadata, never the returned embed URL,
+token or media payload. This does not add a playable source to the APK.
+The PrimeWire movie watch-page fixture remains a clickable VOD target. These
 fixtures help catch changes that homepage-only checks missed. Media requests
 are still aborted, so they cannot establish decoded audio or video. ZLive's
 landing-page requests also remain **diagnostic only**, not stream verification;
