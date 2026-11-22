@@ -133,11 +133,29 @@ final class ChannelIdentity {
     }
 
     /**
+     * "Backup", "Alt" and numbered failover labels describe a stream, not the TV channel.
+     * Keep its proper title on the guide and player; source details belong in the source menu.
+     * A genuine channel named just "Backup" is never reduced to an empty name.
+     */
+    private static final java.util.regex.Pattern BACKUP_TAG = java.util.regex.Pattern.compile(
+        "(?i)(?:\\s+|\\s*[-|:]\\s*)(?:\\(\\s*|\\[\\s*)?(?:backup|alt(?:ernative)?)" +
+            "(?:\\s*#?\\d+)?(?:\\s*\\)|\\s*\\])?" +
+            "(?=\\s*(?:(?:\\(|\\[)?\\s*(?:4k|uhd|2160p|1080p|1080i|720p|fhd|hd)\\s*(?:\\)|\\])?)?\\s*$)"
+    );
+
+    static String displayName(String name) {
+        if (name == null) return "";
+        String original = name.trim();
+        String clean = BACKUP_TAG.matcher(original).replaceFirst(" ").replaceAll("\\s{2,}", " ").trim();
+        return clean.isEmpty() ? original : clean;
+    }
+
+    /**
      * The identity of a channel from its guide id, name, group and the country its provider serves
      * ({@code sourceCountry}, "" when it serves several or is not known).
      */
     static ChannelIdentity of(String epg, String name, String group, String sourceCountry) {
-        String original = name == null ? "" : name;
+        String original = displayName(name);
         String country = "";
         java.util.regex.Matcher prefix = PREFIX.matcher(original);
         if (prefix.find()) {
@@ -157,7 +175,14 @@ final class ChannelIdentity {
             height = Math.max(height, height(token));
             if (UHD.contains(token)) uhd = true;
         }
-        original = original.replaceAll("\\([^)]*\\)|\\[[^]]*]", " ");
+        // Keep meaningful bracketed qualifiers (countries, regions, +1) in the identity.
+        // The previous blanket bracket removal merged unrelated regional channels.
+        original = original.replaceAll(
+            "(?i)\\((?:geo[- ]?blocked|no signal|offline|not working|no epg)\\)|" +
+                "\\[(?:geo[- ]?blocked|no signal|offline|not working|no epg)\\]",
+            " "
+        );
+        original = original.replace('(', ' ').replace(')', ' ').replace('[', ' ').replace(']', ' ');
         List<String> tokens = new ArrayList<>();
         // Whether each token was written in capitals: "Sky Sports F1 UK" is tagged UK, while
         // "Love It" or "Stay In" end in ordinary words.

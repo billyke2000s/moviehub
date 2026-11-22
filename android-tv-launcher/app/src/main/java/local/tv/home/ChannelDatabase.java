@@ -148,7 +148,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     private ChannelDatabase(Context context) {
-        super(context, "channels-v2.db", null, 10);
+        super(context, "channels-v2.db", null, 11);
         this.context = context;
         secrets = new Secrets(context);
         setWriteAheadLoggingEnabled(true);
@@ -345,8 +345,17 @@ final class ChannelDatabase extends SQLiteOpenHelper {
      * engine's channels; playlist order within each. A provider copy of a channel that a
      * list already has is its backup.
      */
+    // A provider's "Backup" or "Alt" is still playable, but should not displace a normally
+    // named feed as the channel's principal row (or the first source tried).
     static final String ORDER =
-        "CASE WHEN source='xtream' THEN 0 WHEN source='m3u' THEN 1 WHEN source='nativepluto' THEN 2 WHEN source='fta' THEN 3 WHEN source LIKE 'engine%' THEN 5 ELSE 4 END";
+        "(CASE WHEN LOWER(TRIM(name)) LIKE '% backup' " +
+        "OR LOWER(TRIM(name)) LIKE '% backup %' " +
+        "OR LOWER(TRIM(name)) LIKE '%(backup%' " +
+        "OR LOWER(TRIM(name)) LIKE '%[backup%' " +
+        "OR LOWER(TRIM(name)) LIKE '% alt' " +
+        "OR LOWER(TRIM(name)) LIKE '%(alt%' " +
+        "OR LOWER(TRIM(name)) LIKE '%[alt%' THEN 10 ELSE 0 END) + " +
+        "(CASE WHEN source='xtream' THEN 0 WHEN source='m3u' THEN 1 WHEN source='nativepluto' THEN 2 WHEN source='fta' THEN 3 WHEN source LIKE 'engine%' THEN 5 ELSE 4 END)";
     /** One row per channel: duplicates (same non-empty dkey) collapse to the first in ORDER. */
     static final String GROUP = "CASE WHEN dkey='' THEN 'id'||_id ELSE dkey END";
     /** The preferred copy of a channel: SQLite takes the other columns from the MIN row. */
@@ -410,7 +419,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     private static Row row(Cursor c) {
         return new Row(
             c.getLong(0),
-            c.getString(1),
+            ChannelIdentity.displayName(c.getString(1)),
             c.getString(2),
             c.getString(3),
             c.getString(4),

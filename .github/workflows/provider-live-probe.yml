@@ -9,6 +9,15 @@ on:
     schedule:
         - cron: "13 */2 * * *" # Diagnostic probes; does not deploy or rewrite providers.
     workflow_dispatch:
+    pull_request:
+        paths:
+            - 'provider-browser/**'
+            - 'provider-engine/tools/live-probe*.mjs'
+            - 'provider-engine/tools/freeshot.js'
+            - 'provider-engine/tools/zlive.js'
+            - 'provider-engine/upstream/modules/dlhd/**'
+            - 'android-tv-launcher/app/src/main/assets/providers/builtin.json'
+            - '.github/workflows/provider-live-probe.yml'
 permissions:
     contents: read
 jobs:
@@ -47,6 +56,9 @@ jobs:
             - name: Probe providers
               env:
                   PROVIDERS: ${{ matrix.group.providers }}
+                  # At most one live ZLive sample for this PR investigation;
+                  # scheduled checks continue avoiding unnecessary ticket churn.
+                  ZLIVE_LIVE_TEST: ${{ github.event_name == 'pull_request' && '1' || '0' }}
               # Matrix groups cover each compiled provider exactly once.
               run: RHINO_JAR="$RUNNER_TEMP/rhino.jar" node provider-engine/tools/live-probe.mjs $PROVIDERS
             - name: Report providers 1-8

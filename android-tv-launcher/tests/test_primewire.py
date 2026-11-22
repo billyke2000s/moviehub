@@ -1,4 +1,5 @@
 """Offline PrimeWire discovery fixtures. These do not establish real-site playback."""
+import socket
 import unittest
 from unittest.mock import patch
 import sys
@@ -52,7 +53,10 @@ class PrimeWireTests(unittest.TestCase):
             key = provider.movie('tt1234', '123', 'The Odyssey', 'The Odyssey', [], '2025')
             self.assertEqual(provider.sources(key, []), [])
 
-    def test_unsafe_schemes_and_same_origin_are_ignored(self):
+    @patch("moviehub_native.primewire.client.socket.getaddrinfo", return_value=[
+        (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", ("93.184.216.34", 443))
+    ])
+    def test_unsafe_schemes_and_same_origin_are_ignored(self, _dns):
         parser = PlayerLinks('https://primewire1.buzz/watch/the-odyssey')
         parser.feed('''<div class="server" data-url="javascript:alert(1)"></div>
                        <div class="server" data-src="http://insecure.example/vid"></div>

@@ -13,7 +13,12 @@ final class ProviderSignature {
     private ProviderSignature() {}
 
     static void verify(byte[] payload, byte[] signature, byte[] publicKey) throws Exception {
-        if (payload.length == 0 || payload.length > MAX_PACKAGE || signature.length > 1024) {
+        verify(payload, signature, publicKey, MAX_PACKAGE);
+    }
+
+    /** Same check with a different size limit (film scraper packages are larger). */
+    static void verify(byte[] payload, byte[] signature, byte[] publicKey, int max) throws Exception {
+        if (payload.length == 0 || payload.length > max || signature.length > 1024) {
             throw new IOException("Provider package size rejected");
         }
         PublicKey key = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKey));
