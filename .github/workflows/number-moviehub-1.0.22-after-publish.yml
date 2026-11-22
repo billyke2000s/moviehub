@@ -1,0 +1,18 @@
+name: Number MovieHub 1.0.22 after signed publisher succeeds
+on:
+  workflow_run:
+    workflows: [Publish Android TV launcher update]
+    types: [completed]
+permissions:
+  actions: write
+  contents: read
+jobs:
+  number-signed-release:
+    if: ${{ github.event.workflow_run.id == 44972795685 && github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create the numbered release from the signed update feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run release-android-launcher.yml --ref main
