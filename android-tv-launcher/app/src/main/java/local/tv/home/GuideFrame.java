@@ -107,6 +107,10 @@ final class GuideFrame {
                 guide.focusFirstRow();
                 return true;
             }
+            if (key == KeyEvent.KEYCODE_DPAD_RIGHT && pictureBox != null && pictureBox.isShown()) {
+                pictureBox.requestFocus();
+                return true;
+            }
             return false;
         });
         LinearLayout.LayoutParams optionsLayout = new LinearLayout.LayoutParams(-2, activity.dp(40));
@@ -118,7 +122,32 @@ final class GuideFrame {
         pictureLabel.setGravity(Gravity.CENTER);
         pictureLabel.setShadowLayer(activity.dp(4), 0, activity.dp(1), 0xcc000000);
         pictureBox.addView(pictureLabel, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
-        header.addView(pictureBox, new LinearLayout.LayoutParams(activity.dp(160), activity.dp(90)));
+        // Two fewer guide rows make room for a genuinely useful 16:9 preview, not a tiny icon.
+        // It is a remote target: Options → RIGHT → preview → OK returns to the channel.
+        pictureBox.setFocusable(true);
+        pictureBox.setFocusableInTouchMode(true);
+        pictureBox.setClickable(true);
+        pictureBox.setContentDescription("Return to live channel");
+        pictureBox.setOnClickListener(v -> guide.returnToPicture());
+        pictureBox.setOnFocusChangeListener((v, focused) -> {
+            GradientDrawable border = new GradientDrawable();
+            border.setColor(0x00000000);
+            border.setStroke(activity.dp(focused ? 4 : 1), focused ? LiveTvScreen.YELLOW : 0x66ffffff);
+            pictureBox.setForeground(border);
+        });
+        pictureBox.setOnKeyListener((v, key, event) -> {
+            if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+            if (key == KeyEvent.KEYCODE_DPAD_LEFT) {
+                optionsButton.requestFocus();
+                return true;
+            }
+            if (key == KeyEvent.KEYCODE_DPAD_DOWN && !guide.cells.isEmpty()) {
+                guide.focusFirstRow();
+                return true;
+            }
+            return false;
+        });
+        header.addView(pictureBox, new LinearLayout.LayoutParams(activity.dp(300), activity.dp(169)));
         page.addView(header);
 
         // Time slots, like "Today 8.00pm 8.30pm 9.00pm".
