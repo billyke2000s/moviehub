@@ -34,7 +34,7 @@ jobs:
           print('Current signed feed 1.0.25 code 126; candidate 1.0.26 code 127 is increasing.')
           PY
       - name: Dispatch the existing full-test signed publisher
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const {owner,repo}=context.repo;

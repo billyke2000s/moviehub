@@ -38,7 +38,7 @@ jobs:
             - name: Start the signed publisher
               id: dispatch
               if: steps.decide.outputs.action == 'publish'
-              uses: actions/github-script@v8
+              uses: actions/github-script@v9
               env:
                   VERSION_CODE: ${{ steps.decide.outputs.version_code }}
                   VERSION_NAME: ${{ steps.decide.outputs.version_name }}
@@ -60,7 +60,7 @@ jobs:
                       core.notice(`Started the signed publisher for MovieHub ${process.env.VERSION_NAME} (code ${process.env.VERSION_CODE})`);
             - name: Wait for the signed publisher to pass
               if: steps.decide.outputs.action == 'publish'
-              uses: actions/github-script@v8
+              uses: actions/github-script@v9
               env:
                   STARTED: ${{ steps.dispatch.outputs.started }}
               with:
@@ -104,7 +104,7 @@ jobs:
                   PY
             - name: Start the numbered-release copier
               if: steps.decide.outputs.action == 'publish'
-              uses: actions/github-script@v8
+              uses: actions/github-script@v9
               with:
                   script: |
                       const {owner, repo} = context.repo;
