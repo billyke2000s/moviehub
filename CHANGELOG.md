@@ -5,6 +5,8 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+## 1.0.25 (22 November 2026)
+
 - ZLive: decode PNG-wrapped video when the current player places image rows before the media header.
   Preserve the public player's bounded scan and existing PNG/gzip/TS validation. A sampled live F1
   backup decoded with video and audio locally; full TV playback remains to be verified.
