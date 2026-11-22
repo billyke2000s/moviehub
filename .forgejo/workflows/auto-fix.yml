@@ -29,7 +29,7 @@ jobs:
             - name: Let Codex try, then check it ourselves
               env:
                   RHINO_JAR: /srv/moviehub/tools/rhino-1.9.1.jar
-                  FORGEJO_URL: ${{ vars.FORGEJO_INTERNAL_URL }}
+                  FORGEJO_URL: ${{ vars.MOVIEHUB_FORGEJO_URL }}
                   FORGEJO_REPO: ${{ github.repository }}
                   FORGEJO_TOKEN: ${{ secrets.HEALTH_TOKEN }}
                   NTFY_URL: ${{ secrets.NTFY_URL }}

@@ -140,7 +140,7 @@ put_var() { curl -fsS "${auth[@]}" -H 'Content-Type: application/json' -X POST \
     || echo "WARNING: could not set variable $1 (set it in repository Settings > Actions > Variables)"; }
 put_secret HEALTH_TOKEN "$TOKEN"
 put_secret NTFY_URL "$NTFY_URL"
-put_var FORGEJO_INTERNAL_URL "http://127.0.0.1:3000"
+put_var MOVIEHUB_FORGEJO_URL "http://127.0.0.1:3000"
 
 step "Forgejo runner (runs the workflows directly in this container as user moviehub)"
 RUN_VER=$(curl -fsSL https://code.forgejo.org/api/v1/repos/forgejo/runner/releases/latest | jq -r .tag_name | sed 's/^v//')
@@ -154,17 +154,17 @@ if [ ! -f "$RUNNER_HOME/.runner" ]; then
     SECRET=$(rand 20)
     # Two documented ways to register; try the offline one first, then a registration token.
     if $FJCLI actions register --config /etc/forgejo/app.ini --name moviehub --labels moviehub:host --secret "$SECRET" >/dev/null 2>&1 \
-        && runuser -u moviehub -- bash -c "cd $RUNNER_HOME && forgejo-runner create-runner-file \
+        && runuser -u moviehub -- bash -c "cd $RUNNER_HOME && /usr/local/bin/forgejo-runner create-runner-file \
             --instance http://127.0.0.1:3000 --secret $SECRET --name moviehub" >/dev/null; then
         echo "Runner registered (offline secret)."
     else
         RTOKEN=$($FJ actions generate-runner-token 2>/dev/null | tail -1)
         [ -n "$RTOKEN" ] || fail "Could not register the workflow runner."
-        runuser -u moviehub -- bash -c "cd $RUNNER_HOME && forgejo-runner register --no-interactive \
+        runuser -u moviehub -- bash -c "cd $RUNNER_HOME && /usr/local/bin/forgejo-runner register --no-interactive \
             --instance http://127.0.0.1:3000 --token $RTOKEN --name moviehub --labels moviehub:host" >/dev/null
         echo "Runner registered (token)."
     fi
-    runuser -u moviehub -- bash -c "cd $RUNNER_HOME && forgejo-runner generate-config > config.yml"
+    runuser -u moviehub -- bash -c "cd $RUNNER_HOME && /usr/local/bin/forgejo-runner generate-config > config.yml"
 fi
 cat > /etc/systemd/system/forgejo-runner.service <<EOF
 [Unit]
@@ -183,7 +183,12 @@ EOF
 step "Gate (install codes + update feed)"
 FEED_KEY=$(rand 24)
 [ -d /srv/moviehub/repo/.git ] || git clone -q https://github.com/billyke2000s/moviehub /srv/moviehub/repo
+git config --global --add safe.directory /srv/moviehub/repo
 git -C /srv/moviehub/repo checkout -q "$BRANCH" 2>/dev/null || true
+git -C /srv/moviehub/repo pull -q --ff-only || echo "WARNING: could not update /srv/moviehub/repo"
+# Bring Forgejo's copy up to date with GitHub (fast-forward only; never overwrites newer work).
+git -C /srv/moviehub/repo push -q "http://$ADMIN:$ADMINPW@127.0.0.1:3000/$ADMIN/moviehub.git" "HEAD:refs/heads/main" \
+    || echo "WARNING: could not update Forgejo's copy (it has newer commits than GitHub?)"
 cat > /etc/moviehub-gate.env <<EOF
 FEED_DIR=/srv/moviehub/feed
 FEED_KEY=$FEED_KEY
