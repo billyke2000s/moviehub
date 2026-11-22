@@ -59,6 +59,7 @@ jobs:
                   # At most one live ZLive sample for this PR investigation;
                   # scheduled checks continue avoiding unnecessary ticket churn.
                   ZLIVE_LIVE_TEST: ${{ github.event_name == 'pull_request' && '1' || '0' }}
+                  DLHD_HUB_TEST: ${{ github.event_name == 'pull_request' && '1' || '0' }}
               # Matrix groups cover each compiled provider exactly once.
               run: RHINO_JAR="$RUNNER_TEMP/rhino.jar" node provider-engine/tools/live-probe.mjs $PROVIDERS
             - name: Report providers 1-8

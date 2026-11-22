@@ -12,6 +12,13 @@ on:
                 ".github/workflows/dlhd-playback.yml",
             ]
     workflow_dispatch:
+    pull_request:
+        paths:
+            - "provider-engine/tools/dlhd-playback.mjs"
+            - "provider-engine/upstream/modules/dlhd/**"
+            - "android-tv-launcher/app/src/main/java/local/tv/home/ProviderRelay.java"
+            - "android-tv-launcher/app/src/main/java/local/tv/home/PlaylistSession.java"
+            - ".github/workflows/dlhd-playback.yml"
 permissions:
     contents: read
 jobs:
@@ -31,9 +38,11 @@ jobs:
               run: |
                   sudo apt-get update -q
                   sudo apt-get install -y -q ffmpeg
-                  curl --fail --location --output "$RUNNER_TEMP/rhino.jar" https://repo.maven.apache.org/maven2/org/mozilla/rhino/1.9.1/rhino-1.9.1.jar
+                  # The shared Maven edge occasionally answers 429; never skip
+                  # playback checks because a dependency needs a bounded retry.
+                  curl --fail --location --retry 6 --retry-all-errors --retry-delay 5 --retry-max-time 180 --output "$RUNNER_TEMP/rhino.jar" https://repo.maven.apache.org/maven2/org/mozilla/rhino/1.9.1/rhino-1.9.1.jar
                   echo "12dbb224cea124a5d32968722e8eb161c967bf15f3c9a795d1b05592b1147975  $RUNNER_TEMP/rhino.jar" | sha256sum --check
-                  curl --fail --location --output "$RUNNER_TEMP/json.jar" https://repo.maven.apache.org/maven2/org/json/json/20250517/json-20250517.jar
+                  curl --fail --location --retry 6 --retry-all-errors --retry-delay 5 --retry-max-time 180 --output "$RUNNER_TEMP/json.jar" https://repo.maven.apache.org/maven2/org/json/json/20250517/json-20250517.jar
             - name: Format diagnostic sources and report changes
               run: |
                   npm install --no-save prettier@3 prettier-plugin-java
@@ -43,8 +52,23 @@ jobs:
               run: |
                   mkdir -p build/provider-tests
                   javac -cp "$RUNNER_TEMP/rhino.jar:$RUNNER_TEMP/json.jar" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderCodec,ProviderSignature,ProviderUrls,ProviderSegments,ProviderFileRanges,LivePlaylistPolicy,DashManifest,ProviderRelay,StreamRate,PlaylistSession,ProviderPngSegments,ProviderContainerSegments}.java android-tv-launcher/tests/{ProviderProbeCli,ProviderRelayProbe}.java
-            - name: Resolve and decode both tracks for 150 seconds per channel
+            - name: Decode FreeShot through the production relay, requiring video and audio
+              env:
+                  STREAM_SECONDS: ${{ github.event_name == 'pull_request' && '30' || '150' }}
+                  PROBE_RENEWAL: '1'
               run: SPORTS_PROBE_ONLY=freeshot RHINO_JAR="$RUNNER_TEMP/rhino.jar" JSON_JAR="$RUNNER_TEMP/json.jar" node provider-engine/tools/dlhd-playback.mjs
+            - name: Require decoded frames and audio from the real relay
+              run: |
+                  node --input-type=module -e '
+                    import {readFileSync} from "node:fs";
+                    const rows = JSON.parse(readFileSync("build/provider-tests/dlhd-playback.json", "utf8"));
+                    const samples = rows.filter(r => r.provider === "freeshot");
+                    if (samples.length !== 2 || samples.some(r => !r.bothDecoded)) {
+                      console.error("FreeShot relay normal-play and token-renewal checks: " + JSON.stringify(samples));
+                      process.exit(1);
+                    }
+                    console.log("Production FreeShot relay decoded video and audio both normally and after token renewal.");
+                  '
             - name: Upload numerical results only
               if: always()
               uses: actions/upload-artifact@v6

@@ -61,7 +61,7 @@ export const UA =
 
 // The "PLAYER 1..N" buttons on a channel's watch.php page: watch.php?id=N renders one <button data-url> per
 // player, in this DOM order on the active mirror: /stream/, /cast/, /watch/, /plus/, /casting/, /player/
-// (Player 1..6).
+// and /hub/ (Player 1..7, confirmed against the current public watch page).
 //
 // They are NOT redundant embeds of one feed. That was the original model and it was wrong — each button's
 // page embeds a DIFFERENT third-party provider, and they do not all carry the same channels. Observed live
@@ -73,7 +73,7 @@ export const UA =
 // This list is the LAST-KNOWN order used as a fallback and to build a hop-1 URL without an extra fetch;
 // resolveStream.ts prefers the live data-url list parsed from watch.php (self-healing if the site reorders
 // or renames). Index i (0-based) here == "Player i+1" in the UI.
-export const PLAYER_PREFIXES = ['stream', 'cast', 'watch', 'plus', 'casting', 'player'] as const;
+export const PLAYER_PREFIXES = ['stream', 'cast', 'watch', 'plus', 'casting', 'player', 'hub'] as const;
 
 // The source-wide DEFAULT player (0 = Auto/first; 1..N = a specific player) for every dlhd channel that
 // carries no per-channel override. Cached module-level (like _base) so the hot resolve path reads it with NO
