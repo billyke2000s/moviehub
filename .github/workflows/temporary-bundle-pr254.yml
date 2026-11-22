@@ -1,0 +1,40 @@
+name: Temporary generate reviewed PR 254 provider bundle
+on:
+  push:
+    branches:
+      - fix/daddylive-freeshot-actual-playback-20261122
+    paths:
+      - .github/workflows/temporary-bundle-pr254.yml
+permissions:
+  contents: write
+jobs:
+  compile:
+    if: github.repository == 'billyke2000s/moviehub'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned TypeScript compiler
+        run: npm ci --ignore-scripts --prefix provider-engine
+      - name: Regenerate shipped provider bundle from exact source tree
+        run: npm run build --prefix provider-engine
+      - name: Commit only the reproducibly generated bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          changed=$(git diff --name-only | grep -v '^android-tv-launcher/app/src/main/assets/providers/builtin.json$' || true)
+          test -z "$changed" || { echo "Unexpected build changes: $changed"; exit 1; }
+          if git diff --quiet -- android-tv-launcher/app/src/main/assets/providers/builtin.json; then
+            echo 'Provider bundle already up-to-date'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add android-tv-launcher/app/src/main/assets/providers/builtin.json
+          git commit -m 'build(providers): regenerate bundled DaddyLive player discovery'
+          git push origin HEAD:fix/daddylive-freeshot-actual-playback-20261122
