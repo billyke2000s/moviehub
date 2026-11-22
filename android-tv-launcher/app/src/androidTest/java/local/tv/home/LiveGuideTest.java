@@ -314,12 +314,12 @@ public class LiveGuideTest {
 
     @Test
     public void okOnPreviewReturnsToLastWatchedChannelInsteadOfTheHighlightedRow() {
-        remote.runOnMainSync(() -> activity.liveTv.live());
-        await("guide page", () -> activity.liveTv.cells.size() == 8);
         ChannelDatabase.Row last = ChannelDatabase.get(activity)
             .browse("all", "", java.util.Collections.emptySet(), 12).get(0);
         prefs.edit().putBoolean(LiveTvScreen.PICTURE, true)
             .putString(LiveTvScreen.LAST_CHANNEL, last.key).commit();
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await("guide page", () -> activity.liveTv.cells.size() == 8);
         remote.runOnMainSync(() -> activity.liveTv.frame.pictureBox.requestFocus());
         await("preview focus", () -> activity.liveTv.frame.pictureBox.hasFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
