@@ -325,12 +325,15 @@ async function listPlayerPages(id: string): Promise<PlayerPage[]> {
       const html = await r.text();
       const seen = new Set<string>();
       const paths: string[] = [];
-      // data-url="https://<host>/<prefix>/stream-<id>.php" → keep the "/<prefix>/stream-<id>.php" path, in order.
-      for (const m of html.matchAll(/data-url=["'][^"']*?(\/[a-z]+\/stream-\d+\.php)["']/gi)) {
+      // Read the live buttons, including newly added seventh (or later) players.
+      // Only retain bounded mirror-relative stream paths, never third-party URLs.
+      for (const m of html.matchAll(/\bdata-url=["'][^"']*?(\/[a-z0-9-]{1,24}\/stream-\d{1,8}\.php)(?:\?[^"']*)?["']/gi)) {
         const path = m[1].toLowerCase();
+        if (!path.endsWith("/stream-" + id + ".php")) continue;
         if (!seen.has(path)) {
           seen.add(path);
           paths.push(m[1]);
+          if (paths.length >= 12) break;
         }
       }
       if (paths.length) {
@@ -678,12 +681,18 @@ async function walkPlayers(
   // FAST PATH — one page, no watch.php fetch. The lead is the operator's pick, else the remembered winner,
   // else Player 1; the static prefix table gives its URL without enumerating. This keeps the common case at
   // exactly one hop-1 fetch, including after the memory has learned a non-default winner.
-  const lead = preferenceOrder(id, want, PLAYER_PREFIXES.length, strict)[0];
+  const cached = cachedPlayerPaths(base, id);
+  const knownCount = cached?.length ?? PLAYER_PREFIXES.length;
+  const lead = preferenceOrder(id, want, knownCount, strict)[0];
   if (lead === undefined) {
     throw new DlhdPlayersExhausted(`every player for channel ${id} is burnt — no alternate upstream left`);
   }
-  const leadPage = staticPage(id, lead);
-  const first = await attempt(leadPage, PLAYER_PREFIXES.length);
+  // A discovered Player 7+ must be eligible as the remembered *first* choice
+  // on subsequent channel resolves, not only at the end of a slow failed walk.
+  const leadPage = cached?.[lead - 1]
+    ? {url: `${base}${cached[lead - 1]}`, playerIndex: lead}
+    : staticPage(id, lead);
+  const first = await attempt(leadPage, knownCount);
   if (first) return first;
   stopIfMirrorSaidNo();
 
