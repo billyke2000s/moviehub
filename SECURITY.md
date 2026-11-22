@@ -1,5 +1,12 @@
 # Security
 
+## Unreleased: broadened provider monitoring and recovery
+
+All scheduled live and public-TV probes operate only on public built-in catalogues; private IPTV, Xtream, Nuvio and Masqueradarr credentials never enter GitHub Actions. The public-list checker permits fixed public HTTPS catalogue URLs and reads bounded response samples. Pluto's anonymous bearer token stays in memory and is sent only to the provider-returned validated `.pluto.tv` channels origin; no redirects are followed and no token appears in its report. Monitoring does not authorise or publish code.
+
+Provider engine failures can trigger `ProviderRecovery`, a throttled background request to the existing HTTPS pinned, RSA-signed feed. Existing signature verification and active/previous rollback remain mandatory; an empty trust key disables this path. Do not relax URL checks or substitute unsigned downloaded extractor scripts in an attempt to self-heal other sites.
+
+
 ## Unreleased: PrimeWire discovery and signed-update limits
 
 The PrimeWire catalogue adapter interprets only literal HTTPS links from identifiable player elements, applies `client.safe` to each URL, refuses same-site AJAX addresses as media, and does not evaluate arbitrary webpage JavaScript, solve challenges, or borrow website cookies into other hosts. Normal ResolveURL, public-address and decoded-media gates still apply. A button label alone never becomes a playable source. Movie title and year must match; episodes are not inferred.
