@@ -4,7 +4,7 @@
 
 `provider-browser/tests/protocol.test.mjs` contains offline network target restrictions, private IPv4 rejection, token/path redaction, signature comparison and inventory limits. The `playwright-provider-inspection.yml` PR job installs pinned Playwright 1.65.1 with headless Chromium, runs offline tests, creates a public target inventory and inspects public pages (one live and one VOD shard in PR). Scheduled checks subsequently cover the selected live websites and the complete enabled VOD registry in four shards. A browser page load, observed media request or report containing new patterns does **not** establish working playback or a repaired extractor.
 
-No completed browser/CI run is asserted here. Review the final pull-request workflow outcome before merging; no real TV-box playback was verified by this tooling.
+The standalone Playwright [PR #230](https://github.com/billyke2000s/moviehub/pull/230) passed its [GitHub Actions inspection run](https://github.com/billyke2000s/moviehub/actions/runs/44975213357), including four offline protocol fixtures and actual headless browser inspections for the live and first VOD shard. The other three PR shard jobs intentionally skipped the browser steps. The inspected PrimeWire page had an HTTP/navigation failure; neither that nor the passing job establishes playable media. The browser tooling was merged separately from the app changes. No real TV-box playback was verified.
 
 
 ## Unreleased: expanded monitoring verification
