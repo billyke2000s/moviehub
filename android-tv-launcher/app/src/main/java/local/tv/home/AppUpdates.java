@@ -10,13 +10,21 @@ import java.security.MessageDigest;
 import java.util.*;
 import org.json.JSONObject;
 
-/** Public release feed; credentials are never sent to the update server. */
+/**
+ * App update feeds (see UpdateFeeds): the self-hosted address first, then GitHub. Account details are
+ * never sent; only the feed access key, and only to the self-hosted host.
+ */
 final class AppUpdates {
 
-    /** A separate test build (-Pexperimental) has its own feed, so it never offers or installs the normal app. */
-    static final String ROOT = BuildConfig.EXPERIMENTAL
-        ? "https://github.com/billyke2000s/moviehub/releases/download/android-tv-experimental/"
-        : "https://github.com/billyke2000s/moviehub/releases/download/android-tv-latest/";
+    /** A separate test build (-Pexperimental) has its own feeds, so it never offers or installs the normal app. */
+    static List<UpdateFeeds.Feed> feeds() {
+        return UpdateFeeds.app(
+            BuildConfig.MOVIEHUB_FEED_URL,
+            BuildConfig.MOVIEHUB_FEED_KEY,
+            BuildConfig.EXPERIMENTAL
+        );
+    }
+
     static final long MAX_BYTES = 300L * 1024 * 1024;
 
     static final class Release {
@@ -25,21 +33,42 @@ final class AppUpdates {
         final String name, sha;
         /** "What's new" text from the feed, plain text; empty for feeds published before it existed. */
         final String notes;
+        /** The feed that offered this release; the APK is downloaded from the same place. */
+        final UpdateFeeds.Feed feed;
 
         Release(long version, String name, String sha) {
             this(version, name, sha, "");
         }
 
         Release(long version, String name, String sha, String notes) {
+            this(version, name, sha, notes, feeds().get(feeds().size() - 1));
+        }
+
+        Release(long version, String name, String sha, String notes, UpdateFeeds.Feed feed) {
             this.version = version;
             this.name = name;
             this.sha = sha;
             this.notes = notes;
+            this.feed = feed;
         }
     }
 
+    /** Asks each feed in turn; the first one that answers decides. */
     static Release check(Context context) throws Exception {
-        JSONObject json = new JSONObject(Network.text(ROOT + "update.json", null, false));
+        Exception last = null;
+        for (UpdateFeeds.Feed feed : feeds()) {
+            try {
+                return check(context, feed);
+            } catch (Exception e) {
+                if (Thread.currentThread().isInterrupted()) throw e;
+                last = e;
+            }
+        }
+        throw last != null ? last : new IOException("No update feed");
+    }
+
+    private static Release check(Context context, UpdateFeeds.Feed feed) throws Exception {
+        JSONObject json = new JSONObject(Network.text(feed.root + "update.json", feed.key, false));
         if (!context.getPackageName().equals(json.getString("packageName"))) throw new IOException(
             "Wrong package"
         );
@@ -52,7 +81,9 @@ final class AppUpdates {
             .getLongVersionCode();
         String notes = json.optString("notes", "");
         if (notes.length() > 2000) notes = notes.substring(0, 2000) + "…";
-        return version > installed ? new Release(version, json.getString("versionName"), sha, notes) : null;
+        return version > installed
+            ? new Release(version, json.getString("versionName"), sha, notes, feed)
+            : null;
     }
 
     static File download(Context context, Release release) throws Exception {
@@ -62,7 +93,8 @@ final class AppUpdates {
             apk = new File(directory, "update.apk");
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            URI current = URI.create(ROOT + "home.apk");
+            URI current = URI.create(release.feed.root + "home.apk");
+            String keyAuthority = current.getAuthority();
             boolean downloaded = false;
             for (int redirects = 0; redirects < 6; redirects++) {
                 if (
@@ -72,6 +104,10 @@ final class AppUpdates {
                 connection.setInstanceFollowRedirects(false);
                 connection.setConnectTimeout(15000);
                 connection.setReadTimeout(30000);
+                // The feed key goes only to the feed's own host, never to a redirect target.
+                if (
+                    !release.feed.key.isEmpty() && current.getAuthority().equalsIgnoreCase(keyAuthority)
+                ) connection.setRequestProperty("Authorization", "Bearer " + release.feed.key);
                 try {
                     int status = connection.getResponseCode();
                     if (status >= 300 && status < 400) {

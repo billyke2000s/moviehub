@@ -61,6 +61,9 @@ jobs:
           APK_KEY_PASSWORD: ${{ secrets.APK_KEY_PASSWORD }}
           APK_VERSION_CODE: ${{ inputs.version_code }}
           APK_VERSION_NAME: ${{ inputs.version_name }}
+          # Self-hosted update address (empty until set: GitHub-only, as before).
+          MOVIEHUB_FEED_URL: ${{ secrets.MOVIEHUB_FEED_URL }}
+          MOVIEHUB_FEED_KEY: ${{ secrets.MOVIEHUB_FEED_KEY }}
           GH_TOKEN: ${{ github.token }}
         run: |
           python - <<'PY'

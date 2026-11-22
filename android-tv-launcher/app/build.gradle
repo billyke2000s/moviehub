@@ -24,6 +24,12 @@ android {
             homeCategory: experimental ? 'android.intent.category.DEFAULT' : 'android.intent.category.HOME'
         ]
         buildConfigField 'boolean', 'EXPERIMENTAL', experimental ? 'true' : 'false'
+        // Self-hosted update address and its access key (see UpdateFeeds and server/README.md).
+        // Both empty by default: the app then uses only the GitHub feeds, exactly as before.
+        def feedUrl = (System.getenv('MOVIEHUB_FEED_URL') ?: '').replace('\\', '').replace('"', '')
+        def feedKey = (System.getenv('MOVIEHUB_FEED_KEY') ?: '').replace('\\', '').replace('"', '')
+        buildConfigField 'String', 'MOVIEHUB_FEED_URL', "\"${feedUrl}\""
+        buildConfigField 'String', 'MOVIEHUB_FEED_KEY', "\"${feedKey}\""
     }
     buildFeatures { buildConfig true }
     signingConfigs {

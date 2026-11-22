@@ -4,7 +4,10 @@ import android.content.Context;
 import java.io.*;
 import java.net.*;
 
-/** Checks only a pinned HTTPS release feed; authentication is the detached package signature. */
+/**
+ * Checks the provider feeds in UpdateFeeds (self-hosted first, then GitHub). Authentication is the
+ * detached package signature against the APK-pinned key, so the address is never trusted on its own.
+ */
 final class ProviderUpdates {
 
     private ProviderUpdates() {}
@@ -22,15 +25,27 @@ final class ProviderUpdates {
             .edit()
             .putLong("checked", System.currentTimeMillis())
             .apply();
-        String feed = ProviderPackages.trust(c).getString("feed");
-        // Only the application's fixed release location can supply remote packages.
-        if (
-            !feed.equals("https://github.com/billyke2000s/moviehub/releases/download/provider-engine-latest/")
-        ) {
-            throw new IOException("Provider feed rejected");
+        Exception last = null;
+        for (UpdateFeeds.Feed feed : UpdateFeeds.providers(
+            BuildConfig.MOVIEHUB_FEED_URL,
+            BuildConfig.MOVIEHUB_FEED_KEY
+        )) {
+            try {
+                check(c, feed);
+                return;
+            } catch (java.security.GeneralSecurityException e) {
+                throw e; // A bad signature is never retried elsewhere.
+            } catch (Exception e) {
+                if (Thread.currentThread().isInterrupted()) throw e;
+                last = e;
+            }
         }
-        byte[] payload = download(feed + "providers.json", ProviderSignature.MAX_PACKAGE);
-        byte[] sig = download(feed + "providers.sig", 1024);
+        if (last != null) throw last;
+    }
+
+    private static void check(Context c, UpdateFeeds.Feed feed) throws Exception {
+        byte[] payload = download(feed, feed.root + "providers.json", ProviderSignature.MAX_PACKAGE);
+        byte[] sig = download(feed, feed.root + "providers.sig", 1024);
         // Authenticate even an identical/stale version before deciding there is nothing to do.
         ProviderSignature.verify(
             payload,
@@ -45,20 +60,16 @@ final class ProviderUpdates {
         ProviderPackages.install(c, payload, sig);
     }
 
-    private static byte[] download(String address, int max) throws Exception {
+    /** Bounded HTTPS download that may only be redirected to hosts the feed allows. */
+    static byte[] download(UpdateFeeds.Feed feed, String address, int max) throws Exception {
         URI uri = URI.create(address);
+        String keyAuthority = uri.getAuthority();
         for (int hop = 0; hop < 5; hop++) {
-            String host = uri.getHost();
             if (
                 !"https".equals(uri.getScheme()) ||
                 uri.getUserInfo() != null ||
                 uri.getPort() != -1 ||
-                host == null ||
-                !(
-                    host.equals("github.com") ||
-                    host.equals("release-assets.githubusercontent.com") ||
-                    host.equals("objects.githubusercontent.com")
-                )
+                !feed.allows(uri.getHost())
             ) {
                 throw new IOException("Provider download host rejected");
             }
@@ -66,6 +77,9 @@ final class ProviderUpdates {
             connection.setInstanceFollowRedirects(false);
             connection.setConnectTimeout(8000);
             connection.setReadTimeout(8000);
+            if (!feed.key.isEmpty() && uri.getAuthority().equalsIgnoreCase(keyAuthority)) {
+                connection.setRequestProperty("Authorization", "Bearer " + feed.key);
+            }
             try {
                 int status = connection.getResponseCode();
                 if (status >= 300 && status < 400) {
