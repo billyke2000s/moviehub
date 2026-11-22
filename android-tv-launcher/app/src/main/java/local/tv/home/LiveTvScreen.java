@@ -267,7 +267,8 @@ final class LiveTvScreen {
             activity.toast("Watch a channel first");
             return;
         }
-        String currentFilter = filter, currentSearch = search;
+        String currentFilter = filter,
+            currentSearch = search;
         Set<String> favourites = favouriteKeys();
         int ticket = activity.generation;
         activity.async(
@@ -287,7 +288,7 @@ final class LiveTvScreen {
                     activity.toast("Last-watched channel is no longer available");
                     return;
                 }
-                if (!(Boolean) result[2]) {
+                if (!((Boolean) result[2])) {
                     filter = "all";
                     search = "";
                 }
