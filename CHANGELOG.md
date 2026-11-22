@@ -5,6 +5,9 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+- Live TV guide: press ◀ on any channel name to jump to the preview in the corner (then OK to watch it full screen, ▼ to go back to the same row). Before, the preview could only be reached from the very top of the list.
+- Live TV and channel updates are fast again: 1.0.24's check for "Backup"/"Alt" channel names ran on every channel for every guide page. It is now worked out once when channels are saved (channel database version 12); the order of channels and backups is unchanged.
+
 ## 1.0.24 (22 November 2026)
 
 - Live TV: keep the original channel name when selecting backup feeds, group duplicate copies and preserve distinct country/region channels. Cached channel identities migrate without removing saved stream keys or favourites.

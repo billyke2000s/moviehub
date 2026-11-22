@@ -148,7 +148,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
     }
 
     private ChannelDatabase(Context context) {
-        super(context, "channels-v2.db", null, 11);
+        super(context, "channels-v2.db", null, 12);
         this.context = context;
         secrets = new Secrets(context);
         setWriteAheadLoggingEnabled(true);
@@ -280,6 +280,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
         /** Commits the import, numbering the channels again. */
         void commit() {
+            markBackups(db, source);
             ChannelNumbers.renumber(db);
             db.setTransactionSuccessful();
             close(true);
@@ -347,15 +348,34 @@ final class ChannelDatabase extends SQLiteOpenHelper {
      */
     // A provider's "Backup" or "Alt" is still playable, but should not displace a normally
     // named feed as the channel's principal row (or the first source tried).
-    static final String ORDER =
-        "(CASE WHEN LOWER(TRIM(name)) LIKE '% backup' " +
+    /**
+     * Names tagged as a backup or alternative feed. Worked out once per row when it is saved
+     * (column {@code alt}), not in every guide query: run on every row of a large list for
+     * every page, these seven LIKEs made the guide and renumbering several times slower.
+     */
+    static final String BACKUP_NAME =
+        "LOWER(TRIM(name)) LIKE '% backup' " +
         "OR LOWER(TRIM(name)) LIKE '% backup %' " +
         "OR LOWER(TRIM(name)) LIKE '%(backup%' " +
         "OR LOWER(TRIM(name)) LIKE '%[backup%' " +
         "OR LOWER(TRIM(name)) LIKE '% alt' " +
         "OR LOWER(TRIM(name)) LIKE '%(alt%' " +
-        "OR LOWER(TRIM(name)) LIKE '%[alt%' THEN 10 ELSE 0 END) + " +
+        "OR LOWER(TRIM(name)) LIKE '%[alt%'";
+    static final String ORDER =
+        "alt*10 + " +
         "(CASE WHEN source='xtream' THEN 0 WHEN source='m3u' THEN 1 WHEN source='nativepluto' THEN 2 WHEN source='fta' THEN 3 WHEN source LIKE 'engine%' THEN 5 ELSE 4 END)";
+
+    /** Fills in {@code alt} for one source's rows (null: every row). */
+    static void markBackups(SQLiteDatabase db, String source) {
+        if (source == null) db.execSQL(
+            "UPDATE channels SET alt=CASE WHEN " + BACKUP_NAME + " THEN 1 ELSE 0 END"
+        );
+        else db.execSQL(
+            "UPDATE channels SET alt=CASE WHEN " + BACKUP_NAME + " THEN 1 ELSE 0 END WHERE source=?",
+            new Object[] { source }
+        );
+    }
+
     /** One row per channel: duplicates (same non-empty dkey) collapse to the first in ORDER. */
     static final String GROUP = "CASE WHEN dkey='' THEN 'id'||_id ELSE dkey END";
     /** The preferred copy of a channel: SQLite takes the other columns from the MIN row. */

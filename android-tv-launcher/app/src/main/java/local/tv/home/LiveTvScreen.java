@@ -162,6 +162,8 @@ final class LiveTvScreen {
     /** Shows the page starting at {@code start}, focusing row {@code focusRow} (-1 for the last). */
     void guide(int start, int focusRow) {
         pageStart = Math.max(0, start);
+        // A new page has other rows: ▼ from the preview then goes to its first row.
+        pictureReturnRow = -1;
         if (frameGeneration != activity.generation || frame.grid == null) buildFrame();
         frame.update(windowStart());
         loadPage(focusRow);
@@ -301,6 +303,24 @@ final class LiveTvScreen {
     /** Up from the top row of the first page: the Options button. */
     void focusTabs() {
         frame.focusTop();
+    }
+
+    /** The row ◀ left for the preview, so ▼ comes back to it; -1 means the first row. */
+    int pictureReturnRow = -1;
+
+    /** ◀ on a channel name: the preview in the corner, from any row. False when it is turned off. */
+    boolean focusPicture(int row) {
+        if (!frame.focusPicture()) return false;
+        pictureReturnRow = row;
+        return true;
+    }
+
+    /** ▼ from the preview: back to the row it was reached from, otherwise the first row. */
+    void returnFromPicture() {
+        int row = pictureReturnRow;
+        pictureReturnRow = -1;
+        if (row >= 0 && row < cells.size()) focusRow(row);
+        else focusFirstRow();
     }
 
     /** The first time slot shown: now's half hour, moved on by ◀ ▶. */

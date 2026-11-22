@@ -1,7 +1,7 @@
 # Testing
 
 Channel identity and database tests cover backup names, normal-feed priority and regional separation;
-Live guide device tests cover current-channel focus, CH+/CH- stepping, page wrap and preview placement.
+Live guide device tests cover current-channel focus, CH+/CH- stepping, page wrap, preview placement and reaching the preview with ◀ from any row.
 Combined-release checks run on the release PR and in the signed publisher.
 
 Older, dated sections are kept in [docs/history/TESTING.md](docs/history/TESTING.md).

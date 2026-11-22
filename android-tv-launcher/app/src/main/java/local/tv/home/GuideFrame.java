@@ -112,6 +112,7 @@ final class GuideFrame {
                 return true;
             }
             if (key == KeyEvent.KEYCODE_DPAD_RIGHT && pictureBox != null && pictureBox.isShown()) {
+                guide.pictureReturnRow = -1;
                 pictureBox.requestFocus();
                 return true;
             }
@@ -151,7 +152,7 @@ final class GuideFrame {
                 return true;
             }
             if (key == KeyEvent.KEYCODE_DPAD_DOWN && !guide.cells.isEmpty()) {
-                guide.focusFirstRow();
+                guide.returnFromPicture();
                 return true;
             }
             return false;
@@ -270,6 +271,11 @@ final class GuideFrame {
     /** Up from the top row, or nothing in the grid: the Options button. */
     void focusTop() {
         if (optionsButton != null) optionsButton.requestFocus();
+    }
+
+    /** Focuses the preview; false when it is turned off or not on screen. */
+    boolean focusPicture() {
+        return pictureBox != null && pictureBox.isShown() && pictureBox.requestFocus();
     }
 
     private TextView text(String value, int size, boolean bold) {

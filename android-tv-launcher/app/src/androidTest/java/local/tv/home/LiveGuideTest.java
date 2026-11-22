@@ -323,6 +323,35 @@ public class LiveGuideTest {
         await("grid from preview", () -> activity.liveTv.cells.get(0).hasFocus());
     }
 
+    /** ◀ on a channel name reaches the preview from any page; ▼ comes back to the same row. */
+    @Test
+    public void previewIsReachableWithLeftFromAnyRowAndDownReturnsThere() {
+        ChannelDatabase.Row last = ChannelDatabase.get(activity)
+            .browse("all", "", java.util.Collections.emptySet(), 12)
+            .get(0);
+        prefs
+            .edit()
+            .putBoolean(LiveTvScreen.PICTURE, true)
+            .putString(LiveTvScreen.LAST_CHANNEL, last.key)
+            .commit();
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        // Opens on the playing channel: the second page, its fifth row.
+        await(
+            "cursor on the playing channel",
+            () ->
+                activity.liveTv.pageStart == 8 &&
+                activity.liveTv.cells.size() == 8 &&
+                activity.liveTv.cells.get(4).hasFocus()
+        );
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
+        await("preview from the middle of page two", () -> activity.liveTv.frame.pictureBox.hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
+        await(
+            "back on the same row",
+            () -> activity.liveTv.pageStart == 8 && activity.liveTv.cells.get(4).hasFocus()
+        );
+    }
+
     /** As on the satellite guide: the cursor starts on the channel playing, and OK goes full screen. */
     @Test
     public void guideOpensOnThePlayingChannelAndOkMakesItFullScreen() {
