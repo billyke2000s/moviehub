@@ -355,7 +355,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
         "OR LOWER(TRIM(name)) LIKE '% alt' " +
         "OR LOWER(TRIM(name)) LIKE '%(alt%' " +
         "OR LOWER(TRIM(name)) LIKE '%[alt%' THEN 10 ELSE 0 END) + " +
-        "(CASE WHEN source='xtream' THEN 0 WHEN source='m3u' THEN 1 WHEN source='nativepluto' THEN 2 WHEN source='fta' THEN 3 WHEN source LIKE 'engine%' THEN 5 ELSE 4 END)"
+        "(CASE WHEN source='xtream' THEN 0 WHEN source='m3u' THEN 1 WHEN source='nativepluto' THEN 2 WHEN source='fta' THEN 3 WHEN source LIKE 'engine%' THEN 5 ELSE 4 END)";
     /** One row per channel: duplicates (same non-empty dkey) collapse to the first in ORDER. */
     static final String GROUP = "CASE WHEN dkey='' THEN 'id'||_id ELSE dkey END";
     /** The preferred copy of a channel: SQLite takes the other columns from the MIN row. */
