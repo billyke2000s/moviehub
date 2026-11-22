@@ -1,7 +1,7 @@
 // Sustained diagnostic only. Resolve using the actual bundled interpreter, then decode BOTH
 // tracks through production ProviderRelay/PlaylistSession/ProviderPngSegments on the JVM.
 // No provider URLs, tokens, pages or captured media are printed or uploaded.
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createInterface } from "node:readline";
 import { writeFileSync } from "node:fs";
 
@@ -20,6 +20,31 @@ const stats = () => ({
     networkErrors: [],
 });
 
+// Compare the publicly advertised HLS source with the Android production relay.
+// The existing quick sweep could return ffmpeg exit 0 despite zero decoded tracks.
+// Never retain direct URLs, signed query strings or ffmpeg stderr.
+function directDecode(stream) {
+    const args = ["-v", "error", "-rw_timeout", "20000000", "-allowed_extensions", "ALL"];
+    if (stream.userAgent) args.push("-user_agent", stream.userAgent);
+    const headers = Object.entries(stream.headers || {})
+        .filter(([key]) => !/^user-agent$/i.test(key))
+        .map(([key, value]) => key + ": " + value)
+        .join("\r\n");
+    if (headers) args.push("-headers", headers + "\r\n");
+    args.push("-i", stream.url, "-t", "6", "-map", "0:v:0", "-map", "0:a:0", "-f", "framemd5", "pipe:1");
+    const p = spawnSync("ffmpeg", args, {
+        encoding: "utf8",
+        timeout: 45000,
+        maxBuffer: 4 * 1024 * 1024,
+    });
+    const frames = [0, 0];
+    for (const line of (p.stdout || "").split("\n")) {
+        const m = /^([01]),\s*\d+,/.exec(line);
+        if (m) frames[Number(m[1])]++;
+    }
+    return { exit: p.status, frames, playable: p.status === 0 && frames.every((n) => n >= 10) };
+}
+
 async function inspect(provider, row, forceRenew = false) {
     const result = {
         provider,
@@ -31,6 +56,7 @@ async function inspect(provider, row, forceRenew = false) {
     const resolutionStats = stats();
     try {
         const stream = await run(provider, "resolve", row, resolutionStats);
+        if (provider === "freeshot" && !forceRenew) result.direct = directDecode(stream);
         relay = spawn(
             "java",
             [
@@ -81,11 +107,33 @@ async function inspect(provider, row, forceRenew = false) {
                 const stage = { status: response.status, mimeHls: /mpegurl/i.test(type) };
                 if (!stage.mimeHls && depth >= 2) {
                     const reader = response.body?.getReader();
-                    const packet = reader ? await reader.read() : { value: null };
-                    const bytes = packet.value || new Uint8Array();
+                    const chunks = [];
+                    let size = 0;
+                    if (reader)
+                        while (size < 32768) {
+                            const { value, done } = await reader.read();
+                            if (done) break;
+                            const chunk = value.slice(0, 32768 - size);
+                            chunks.push(chunk);
+                            size += chunk.length;
+                        }
+                    const bytes = Buffer.concat(chunks.map((v) => Buffer.from(v)), size);
+                    const packets = Math.floor(bytes.length / 188);
+                    let aligned = 0;
+                    const pids = new Set();
+                    for (let index = 0; index < packets; index++) {
+                        const at = index * 188;
+                        if (bytes[at] !== 0x47) break;
+                        aligned++;
+                        pids.add(((bytes[at + 1] & 0x1f) << 8) | bytes[at + 2]);
+                    }
                     stage.firstSegment = {
                         received: bytes.length > 0,
                         ts: bytes.length > 0 && bytes[0] === 0x47,
+                        tsAlignedPackets: aligned,
+                        tsAvailablePackets: packets,
+                        distinctPids: pids.size,
+                        hasPat: pids.has(0),
                         mp4: bytes.length > 8 && String.fromCharCode(...bytes.slice(4, 8)) === "ftyp",
                         html: bytes.length > 0 && bytes[0] === 0x3c,
                     };
