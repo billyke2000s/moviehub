@@ -131,7 +131,9 @@ step "Token, secrets and settings for the workflows"
 TOKEN=$(curl -fsS "${auth[@]}" -H 'Content-Type: application/json' -X POST "$API/users/$ADMIN/tokens" \
     -d "{\"name\": \"health-$(date +%s)\", \"scopes\": [\"write:repository\", \"write:issue\"]}" | jq -r .sha1)
 [ -n "$TOKEN" ] && [ "$TOKEN" != null ] || fail "Could not create the workflow token."
-NTFY_TOPIC="moviehub-$(rand 12)"
+# Keep the existing alert topic on a re-run (your phone is subscribed to it).
+NTFY_TOPIC=$(sed -n 's|^NTFY_URL=https://ntfy.sh/||p' /etc/moviehub-watchdog.env 2>/dev/null || true)
+[ -n "$NTFY_TOPIC" ] || NTFY_TOPIC="moviehub-$(rand 12)"
 NTFY_URL="https://ntfy.sh/$NTFY_TOPIC"
 put_secret() { curl -fsS "${auth[@]}" -H 'Content-Type: application/json' -X PUT \
     "$API/repos/$ADMIN/moviehub/actions/secrets/$1" -d "{\"data\": \"$2\"}" >/dev/null \
@@ -182,7 +184,9 @@ WantedBy=multi-user.target
 EOF
 
 step "Gate (install codes + update feed)"
-FEED_KEY=$(rand 24)
+# Keep the existing feed key on a re-run (it is built into the app).
+FEED_KEY=$(sed -n 's/^FEED_KEY=//p' /etc/moviehub-gate.env 2>/dev/null || true)
+[ -n "$FEED_KEY" ] || FEED_KEY=$(rand 24)
 [ -d /srv/moviehub/repo/.git ] || git clone -q https://github.com/billyke2000s/moviehub /srv/moviehub/repo
 git config --global --add safe.directory /srv/moviehub/repo
 git -C /srv/moviehub/repo checkout -q "$BRANCH" 2>/dev/null || true
@@ -203,6 +207,31 @@ chmod 711 /srv/moviehub/keys
 systemctl daemon-reload
 systemctl enable forgejo-runner moviehub-gate
 systemctl restart forgejo-runner moviehub-gate
+
+step "Watchdog (pings your phone if the server itself needs you)"
+printf 'NTFY_URL=%s\n' "$NTFY_URL" > /etc/moviehub-watchdog.env
+chmod 600 /etc/moviehub-watchdog.env
+cat > /etc/systemd/system/moviehub-watchdog.service <<'UNIT'
+[Unit]
+Description=MovieHub watchdog
+[Service]
+Type=oneshot
+User=moviehub
+EnvironmentFile=/etc/moviehub-watchdog.env
+ExecStart=/usr/bin/python3 /srv/moviehub/repo/server/health/watchdog.py
+UNIT
+cat > /etc/systemd/system/moviehub-watchdog.timer <<'UNIT'
+[Unit]
+Description=Run the MovieHub watchdog every 30 minutes
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=30min
+Persistent=true
+[Install]
+WantedBy=timers.target
+UNIT
+systemctl daemon-reload
+systemctl enable --now moviehub-watchdog.timer
 
 step "Codex (GPT) command line"
 npm install -g @openai/codex >/dev/null 2>&1 || echo "WARNING: Codex install failed; install later with: npm install -g @openai/codex"
@@ -227,7 +256,7 @@ chmod 600 "$CREDS"
 rm -f /root/moviehub-env
 
 step "Checks"
-for s in forgejo forgejo-runner moviehub-gate; do printf '%-16s %s\n' "$s" "$(systemctl is-active $s)"; done
+for s in forgejo forgejo-runner moviehub-gate moviehub-watchdog.timer; do printf '%-16s %s\n' "$s" "$(systemctl is-active $s)"; done
 curl -fs -o /dev/null -w 'gate public page: HTTP %{http_code}\n' http://127.0.0.1:8080/ || echo "gate public page: NOT ANSWERING"
 curl -fs -o /dev/null -w 'gate code page:   HTTP %{http_code}\n' http://127.0.0.1:8081/ || echo "gate code page: NOT ANSWERING"
 echo

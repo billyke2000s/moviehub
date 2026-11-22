@@ -176,5 +176,6 @@ request **only if streams come back**. You still merge. You can also run it by h
 | `server/gate/gate.py` | Install codes, one-time APK links, keyed update feed |
 | `server/health/check_sources.py` | Runs the probes, opens/closes issues, sends phone alerts |
 | `server/health/auto_fix.py` | Runs Codex, re-checks with the live probe, opens a PR only on success |
+| `server/health/watchdog.py` | Every 30 min: pings your phone if checks stop, a service dies, the disk fills or Codex needs logging in; weekly "all good" |
 | `server/tools/build-scrapers.py` | Builds and signs a scraper package (refuses the wrong key) |
 | `.forgejo/workflows/*.yml` | Health check (Live TV hourly, films 6-hourly), auto-fix on new issues, publish Live TV providers and film scrapers on merge |

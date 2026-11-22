@@ -5,6 +5,10 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+- Server watchdog (`server/health/watchdog.py`, every 30 minutes): phone alert when the health
+  check stops running, a server service is down, the disk is over 90 % full or Codex needs signing in
+  again, each with the command that fixes it, plus a weekly summary. Auto-fix failures also alert.
+
 ## 1.0.25 (22 November 2026)
 
 - ZLive: decode PNG-wrapped video when the current player places image rows before the media header.
