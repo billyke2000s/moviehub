@@ -1,6 +1,6 @@
 # Architecture
 
-## Unreleased: Playwright browser inspection of provider changes
+## Playwright browser inspection of provider changes (merged via PR #230)
 
 `provider-browser/` is a **separate desktop/CI Chromium dependency**, not an Android APK library or media proxy. Its `inventory.py` builds public-site targets from MovieHub's enabled VOD registry and a curated set of public Live TV websites; the supplied PrimeWire `/watch/the-odyssey` URL is the initial clickable player-page case. Other VOD root pages are passive landing-page checks until verified watch/episode routes are available. It observes current DOM server controls and browser-generated network requests, then emits redacted host/route/resource/HTTP/media-type signatures and diffs against an earlier audit artifact. It does not turn discovered requests into playable links or install executable code.
 
