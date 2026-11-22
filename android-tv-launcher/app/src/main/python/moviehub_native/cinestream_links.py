@@ -57,7 +57,11 @@ def script_string(value):
 
 
 def landing(page):
-    chunks = re.findall(r"s\('o','([A-Za-z0-9+/=]+)'|ck\('_wp_http_\d+','([^']+)'", page)
+    chunks = re.findall(
+        r'''s\(\s*['"]o['"]\s*,\s*['"]([A-Za-z0-9+/=]+)['"]|'''
+        r'''ck\(\s*['"]_wp_http_\d+['"]\s*,\s*['"]([^'"]+)['"]''',
+        page
+    )
     if not chunks:
         return None
     value = ''.join(a or b for a, b in chunks)
@@ -354,6 +358,11 @@ class Links:
             is_host = host_matches(urlparse(urljoin(url, address)).hostname or '', HOSTS)
             if MEDIA.search(urlparse(address).path):
                 add(address, True)
+            elif (anchor.attrs.get('id') == 'download' and
+                  host_matches(host, ('hubcloud.', 'hubdrive.', 'vcloud.'))):
+                # These file-host pages use a plain a#download to reveal the next
+                # resolver. Its target is still traversed, not treated as media.
+                add(address)
             elif is_host or re.search(r'btn-success|btn-info|buttonDownloadnew|get-link-btn', cls):
                 add(address)
             elif re.search(r'view-well|center_it|mirror-buttons', anchor.parent.attrs.get('class', '') or ''):
