@@ -133,6 +133,18 @@ async function inspect(browser, target) {
                     // One missing server control must not suppress other observations.
                 }
             }
+            // The current public DaddyLive watch page has seven independent
+            // players; the existing generic four-click cap missed its hub player.
+            // Observe route/status signatures only; abort media and keep no URLs.
+            if (target.id === "dlhd-channel-302" && report.playerControls >= 7) {
+                try {
+                    await page.locator("button[data-url]").nth(6).click({ timeout: 2_500 });
+                    report.hubClicked = true;
+                    await page.waitForTimeout(1_800);
+                } catch {
+                    report.hubClicked = false;
+                }
+            }
         }
     } catch (error) {
         report.outcome = error?.name === "TimeoutError" ? "timeout" : "browser_navigation_failed";
