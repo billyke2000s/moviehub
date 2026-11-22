@@ -6,6 +6,8 @@ on:
     push:
         branches: [feature/standalone-provider-engine]
         paths: ['provider-engine/tools/live-probe*.mjs', '.github/workflows/provider-live-probe.yml']
+    schedule:
+        - cron: "13 */2 * * *" # Diagnostic probes; does not deploy or rewrite providers.
     workflow_dispatch:
         inputs:
             providers:
@@ -39,7 +41,7 @@ jobs:
                   javac -cp "$RUNNER_TEMP/rhino.jar" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderCodec,ProviderSignature,ProviderUrls,ProviderSegments}.java android-tv-launcher/tests/ProviderProbeCli.java
             - name: Probe providers
               env:
-                  PROVIDERS: ${{ inputs.providers }}
+                  PROVIDERS: ${{ github.event_name == 'schedule' && 'dlhd zlive freeshot' || inputs.providers }}
               # Word splitting of PROVIDERS is intended: one argument per id.
               run: RHINO_JAR="$RUNNER_TEMP/rhino.jar" node provider-engine/tools/live-probe.mjs $PROVIDERS
             - name: Report providers 1-8
