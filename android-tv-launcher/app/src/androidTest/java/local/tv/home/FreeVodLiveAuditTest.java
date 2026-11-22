@@ -105,7 +105,7 @@ public final class FreeVodLiveAuditTest {
                         String label = SourcesScreen.provider(source.title);
                         int separator = label.indexOf(" · ");
                         if (separator < 0) continue;
-                        String backend = label.substring(separator + 3).trim();
+                        String backend = label.substring(separator + 3).split(" · ", 2)[0].trim();
                         if (
                             backend.matches("[A-Za-z][A-Za-z0-9 _-]{0,31}") &&
                             uniqueLabels.size() < 24
