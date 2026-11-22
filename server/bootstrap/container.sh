@@ -168,6 +168,10 @@ if [ ! -f "$RUNNER_HOME/.runner" ]; then
         echo "Runner registered (token)."
     fi
     runuser -u moviehub -- bash -c "cd $RUNNER_HOME && /usr/local/bin/forgejo-runner generate-config > config.yml"
+    # The daemon declares the labels from config.yml, not from registration; without this it
+    # starts with no labels and never picks up "runs-on: moviehub" jobs.
+    sed -i 's/^\(  *\)labels: \[\]/\1labels: ["moviehub:host"]/' "$RUNNER_HOME/config.yml"
+    grep -q '"moviehub:host"' "$RUNNER_HOME/config.yml" || fail "Could not set the runner label."
 fi
 cat > /etc/systemd/system/forgejo-runner.service <<EOF
 [Unit]
