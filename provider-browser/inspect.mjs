@@ -12,7 +12,9 @@ import { publicUrl, publicIPv4, observation, signatures, compare, readTargets } 
 
 const CONTROL_SELECTOR = [
     "button[data-server]", "button[data-url]", "button[data-src]",
-    "[class~='server'] button", ".server-list button", ".servers button",
+    "a[data-server]", "a[data-url]", "a[data-src]",
+    "[class~='server'] button", "[class~='server'] a",
+    ".server-list button", ".server-list a", ".servers button", ".servers a",
 ].join(", ");
 const dnsCache = new Map();
 
@@ -56,6 +58,18 @@ async function inspect(browser, target) {
             if (!["GET", "HEAD", "POST"].includes(request.method()))
                 throw new Error("Unexpected HTTP method");
             await publicDns(url.hostname);
+            // Inspect player-network discovery, not actual full video downloads.
+            // A blocked media request still contributes a redacted route fingerprint.
+            if (request.resourceType() === "media") {
+                const item = observation(request.url(), request.method(), "media", null, "video/unknown");
+                const key = JSON.stringify(item);
+                if (!dedup.has(key) && found.length < 250) {
+                    dedup.add(key);
+                    found.push(item);
+                }
+                await route.abort();
+                return;
+            }
             await route.continue();
         } catch {
             await route.abort().catch(() => {});
