@@ -134,6 +134,9 @@ final class GuideFrame {
             border.setColor(0x00000000);
             border.setStroke(activity.dp(focused ? 4 : 1), focused ? LiveTvScreen.YELLOW : 0x66ffffff);
             pictureBox.setForeground(border);
+            // The video surface is drawn above the guide. Its label is drawn above the surface,
+            // so highlighting that label keeps the remote focus visible even during playback.
+            pictureLabel.setTextColor(focused ? LiveTvScreen.YELLOW : 0xffffffff);
         });
         pictureBox.setOnKeyListener((v, key, event) -> {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
