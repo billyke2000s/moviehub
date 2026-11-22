@@ -19,6 +19,7 @@ import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.DecoderCounters;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
+import androidx.media3.exoplayer.source.MediaSource;
 import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.CaptionStyleCompat;
 import androidx.media3.ui.PlayerView;
@@ -194,75 +195,85 @@ final class ExoLive {
 
     private static void ensurePlayer() {
         if (player != null) return;
-        player = new ExoPlayer.Builder(app).build();
-        player.setAudioAttributes(
-            new AudioAttributes.Builder()
-                .setUsage(C.USAGE_MEDIA)
-                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-                .build(),
-            true
-        );
+        player = newPlayer(app, true);
         if (view != null) view.setPlayer(player);
-        player.addListener(
-            new Player.Listener() {
-                @Override
-                public void onPlaybackStateChanged(int state) {
-                    if (state == Player.STATE_BUFFERING) {
-                        if (!"Buffering".equals(status) && !"Opening".equals(status)) event("Buffering");
-                        status = "Buffering";
-                        if (listener != null) listener.buffering(true);
-                        judged(
-                            rules.buffering(SystemClock.elapsedRealtime(), true, player.getPlayWhenReady())
-                        );
-                    } else if (state == Player.STATE_READY) {
-                        status = "Playing";
-                        if (listener != null) listener.buffering(false);
-                        judged(
-                            rules.buffering(SystemClock.elapsedRealtime(), false, player.getPlayWhenReady())
-                        );
-                    } else if (state == Player.STATE_ENDED) {
-                        event("Stream ended");
-                        reopen("The live stream ended", true);
-                    }
-                }
-
-                @Override
-                public void onRenderedFirstFrame() {
-                    // Reconnects are refilled by 30 s of moving picture (LiveStallRules), not by
-                    // one frame: a stream that plays briefly and dies must not reopen forever.
-                    rules.firstPicture();
-                    if (listener != null) listener.playing();
-                }
-
-                @Override
-                public void onPlayerError(PlaybackException error) {
-                    Diagnostics.recovered("ExoPlayer live " + error.getErrorCodeName(), error);
-                    event("Error " + error.getErrorCodeName());
-                    if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
-                        // Fell behind the live window: rejoin live without reopening the channel.
-                        behindLive = false;
-                        player.seekToDefaultPosition();
-                        player.prepare();
-                        return;
-                    }
-                    if (
-                        !hlsRetried &&
-                        (error.errorCode == PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED ||
-                            error.errorCode == PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED)
-                    ) {
-                        // An address without an extension may still be an HLS playlist.
-                        hlsRetried = true;
-                        open();
-                        return;
-                    }
-                    reopen("This source could not be played (" + error.getErrorCodeName() + ")", true);
-                }
-            }
-        );
-        player.addAnalyticsListener(ExoLiveLog.analytics());
+        wire(player);
         main.removeCallbacks(watch);
         main.postDelayed(watch, 1000);
     }
+
+    /**
+     * A live player as Live TV uses it. {@code audioFocus}: whether it takes the audio focus; a
+     * second player loading in the background must not, or the one on screen would pause.
+     */
+    static ExoPlayer newPlayer(Context context, boolean audioFocus) {
+        ExoPlayer made = new ExoPlayer.Builder(context).build();
+        made.setAudioAttributes(LIVE_AUDIO, audioFocus);
+        return made;
+    }
+
+    private static final AudioAttributes LIVE_AUDIO = new AudioAttributes.Builder()
+        .setUsage(C.USAGE_MEDIA)
+        .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+        .build();
+
+    /** Connects {@code made} to the rules and the event log, as the player on screen. */
+    private static void wire(ExoPlayer made) {
+        made.addListener(playerEvents);
+        made.addAnalyticsListener(ExoLiveLog.analytics());
+    }
+
+    /** What the player on screen reports; acts on {@link #player}. */
+    private static final Player.Listener playerEvents = new Player.Listener() {
+        @Override
+        public void onPlaybackStateChanged(int state) {
+            if (state == Player.STATE_BUFFERING) {
+                if (!"Buffering".equals(status) && !"Opening".equals(status)) event("Buffering");
+                status = "Buffering";
+                if (listener != null) listener.buffering(true);
+                judged(rules.buffering(SystemClock.elapsedRealtime(), true, player.getPlayWhenReady()));
+            } else if (state == Player.STATE_READY) {
+                status = "Playing";
+                if (listener != null) listener.buffering(false);
+                judged(rules.buffering(SystemClock.elapsedRealtime(), false, player.getPlayWhenReady()));
+            } else if (state == Player.STATE_ENDED) {
+                event("Stream ended");
+                reopen("The live stream ended", true);
+            }
+        }
+
+        @Override
+        public void onRenderedFirstFrame() {
+            // Reconnects are refilled by 30 s of moving picture (LiveStallRules), not by
+            // one frame: a stream that plays briefly and dies must not reopen forever.
+            rules.firstPicture();
+            if (listener != null) listener.playing();
+        }
+
+        @Override
+        public void onPlayerError(PlaybackException error) {
+            Diagnostics.recovered("ExoPlayer live " + error.getErrorCodeName(), error);
+            event("Error " + error.getErrorCodeName());
+            if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
+                // Fell behind the live window: rejoin live without reopening the channel.
+                behindLive = false;
+                player.seekToDefaultPosition();
+                player.prepare();
+                return;
+            }
+            if (
+                !hlsRetried &&
+                (error.errorCode == PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED ||
+                    error.errorCode == PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED)
+            ) {
+                // An address without an extension may still be an HLS playlist.
+                hlsRetried = true;
+                open();
+                return;
+            }
+            reopen("This source could not be played (" + error.getErrorCodeName() + ")", true);
+        }
+    };
 
     /**
      * Once a second: the buffering and dead-stream rules (see {@link LiveStallRules}). Nothing is
@@ -468,6 +479,24 @@ final class ExoLive {
         // A fresh opening starts at the live edge.
         behindLive = false;
         rules.opened();
+        player.setMediaSource(liveSource(url, stream, userAgent, referer, hlsRetried));
+        player.prepare();
+        player.play();
+        status = "Opening";
+        scheduleRenewal(ticket, expiresAt);
+    }
+
+    /**
+     * The media source for live link {@code stream} of channel {@code locator}, with the
+     * provider's headers. {@code hls}: treat it as an HLS playlist whatever its address says.
+     */
+    static MediaSource liveSource(
+        String locator,
+        String stream,
+        String userAgent,
+        String referer,
+        boolean hls
+    ) {
         DefaultHttpDataSource.Factory http = new DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(15_000)
@@ -485,16 +514,12 @@ final class ExoLive {
             );
         String lower = stream.toLowerCase(Locale.ROOT);
         if (
-            hlsRetried ||
+            hls ||
             lower.contains(".m3u8") ||
             lower.contains("m3u8?") ||
-            (NuvioSports.locator(url) && NuvioSports.hlsProxy(stream))
+            (locator != null && NuvioSports.locator(locator) && NuvioSports.hlsProxy(stream))
         ) item.setMimeType(MimeTypes.APPLICATION_M3U8);
-        player.setMediaSource(new DefaultMediaSourceFactory(http).createMediaSource(item.build()));
-        player.prepare();
-        player.play();
-        status = "Opening";
-        scheduleRenewal(ticket, expiresAt);
+        return new DefaultMediaSourceFactory(http).createMediaSource(item.build());
     }
 
     /**
