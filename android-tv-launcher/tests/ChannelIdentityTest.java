@@ -76,6 +76,63 @@ public class ChannelIdentityTest {
         check(ChannelIdentity.of("", "Sky Sports F1 4K", "", "").uhd, "4K marked");
         check(key("", "(HD)", "", "").isEmpty(), "nothing usable is never merged");
 
+        // Backup and alternative labels are stream metadata, never the name of a TV channel.
+        check(
+            ChannelIdentity.displayName("Sky Sports Main Event Backup").equals("Sky Sports Main Event"),
+            "plain backup suffix removed from display"
+        );
+        check(
+            ChannelIdentity.displayName("Sky Sports Main Event [Backup]").equals("Sky Sports Main Event"),
+            "bracketed backup suffix removed from display"
+        );
+        check(
+            ChannelIdentity.displayName("Sky Sports Main Event (Backup) (1080p)")
+                .equals("Sky Sports Main Event (1080p)"),
+            "backup removed without losing source quality label"
+        );
+        check(ChannelIdentity.displayName("The Backup Plan").equals("The Backup Plan"), "real name retained");
+        check(ChannelIdentity.displayName("Backup").equals("Backup"), "single word retained");
+        same(
+            "Main Event backup shares primary identity",
+            ch("", "Sky Sports Main Event", "Sports", "m3u"),
+            ch("", "Sky Sports Main Event (Backup)", "Sports", "xtream")
+        );
+        same(
+            "PokerGO backup is another stream of same service",
+            ch("", "PokerGO", "Sports", "m3u"),
+            ch("", "PokerGO Backup 2", "Sports", "xtream")
+        );
+        same(
+            "World Poker Tour HD copy",
+            ch("", "World Poker Tour", "Sports", "m3u"),
+            ch("", "World Poker Tour (1080p)", "Sports", "free")
+        );
+        same(
+            "regional bracket and plain spelling",
+            ch("", "World Poker Tour (Poland)", "Sports", "m3u"),
+            ch("", "World Poker Tour Poland", "Sports", "free")
+        );
+        different(
+            "World Poker Tour Poland is not international original",
+            ch("", "World Poker Tour", "Sports", "m3u"),
+            ch("", "World Poker Tour (Poland)", "Sports", "free")
+        );
+        different(
+            "World Poker Tour Poland and Germany are distinct",
+            ch("", "World Poker Tour [Poland]", "Sports", "m3u"),
+            ch("", "World Poker Tour (Germany)", "Sports", "free")
+        );
+        different(
+            "bracketed national feed is not the generic one",
+            ch("", "World Poker Tour", "Sports", "m3u"),
+            ch("", "World Poker Tour (US)", "Sports", "free")
+        );
+        different(
+            "regional bracket changes a channel's identity",
+            ch("", "BBC One (Scotland)", "UK", "free"),
+            ch("", "BBC One", "UK", "m3u")
+        );
+
         // Provider spellings keep the UK satellite number; other feeds do not take it.
         check(SkyNumbers.number("enginedlhd:60", "Sky Sports F1 UK", true) == 407, "F1 UK numbered");
         check(SkyNumbers.number("", "Sky Sports Formula 1", true) == 407, "Formula 1 numbered");
