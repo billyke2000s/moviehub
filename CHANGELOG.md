@@ -1,11 +1,15 @@
 ## Unreleased
 
-- DaddyLive: update its default mirror from unresponsive `dlive.sx` to `thedaddy.li`,
-  which served current channel pages on 21 November 2026. Older installed signed
-  modules without `dlhdCurrentMirror` now fall back to the bundled updated module.
-  Decodable playback was not verified; this is a domain fix, not a stream guarantee.
-
 **Version notes describe code changes, not proof of an installable release.** Check the [latest published release](https://github.com/billyke2000s/moviehub/releases/latest) or [signed update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest). Older "Unreleased" headings further down are retained historical development records.
+
+## 1.0.22 (22 November 2026)
+
+- Live TV guide now shows 8 channel rows instead of 10, with a much larger 300 × 169 dp 16:9 preview. From Options press Right to focus the preview, then OK to return to the last-watched channel; Down returns to the grid.
+- DaddyLive: refresh its default mirror from the unresponsive dlive.sx to the current thedaddy.li site; prevent older signed provider modules from restoring the obsolete address.
+- FreeShot: recognise its observed new cdn.hdm1.net stream host and keep token renewal scoped to the right channel and CDN, even when an older provider package was installed.
+- Nuvio Sports: recognise extensionless HLS manifest links so the player uses HLS instead of progressive decoding, without adding server-side relaying or enabling upstream-disabled DASH routes.
+- Films: refresh UHDMovies search and 4KHDHub/HubCloud redirect handling, preserving ordinary HD providers and continuing to discover other source options.
+- External live providers can change at any time; these repairs and automated tests are not proof of sustained sports playback on a physical TV box.
 
 ## 1.0.21 (18 November 2026)
 
