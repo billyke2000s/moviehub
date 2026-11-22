@@ -76,7 +76,7 @@ chown -R moviehub: /srv/moviehub
    forgejo-runner register --no-interactive --instance http://localhost:3000 \
      --token <token from Site administration → Actions → Runners> --name moviehub --labels moviehub:host
    ```
-5. Repository **Settings → Actions → Variables**: `FORGEJO_INTERNAL_URL` = `http://localhost:3000`.
+5. Repository **Settings → Actions → Variables**: `MOVIEHUB_FORGEJO_URL` = `http://localhost:3000`.
    **Secrets**: `HEALTH_TOKEN` (a token from your user settings with repository and issue write
    access) and `NTFY_URL` (step 6).
 6. Phone alerts: install the **ntfy** app, subscribe to a topic with a long random name
