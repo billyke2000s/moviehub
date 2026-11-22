@@ -392,7 +392,8 @@ if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
             // Probe the site's seventh player independently, without assuming it
             // actually carries this channel or counting it as auto-mode success.
             samples.unshift({
-                ...samples[0], preferredPlayer: 7,
+                ...samples[0],
+                preferredPlayer: 7,
                 name: samples[0].name + " (Player 7 hub)",
             });
         }
