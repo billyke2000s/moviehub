@@ -38,9 +38,11 @@ jobs:
               run: |
                   sudo apt-get update -q
                   sudo apt-get install -y -q ffmpeg
-                  curl --fail --location --output "$RUNNER_TEMP/rhino.jar" https://repo.maven.apache.org/maven2/org/mozilla/rhino/1.9.1/rhino-1.9.1.jar
+                  # The shared Maven edge occasionally answers 429; never skip
+                  # playback checks because a dependency needs a bounded retry.
+                  curl --fail --location --retry 6 --retry-all-errors --retry-delay 5 --retry-max-time 180 --output "$RUNNER_TEMP/rhino.jar" https://repo.maven.apache.org/maven2/org/mozilla/rhino/1.9.1/rhino-1.9.1.jar
                   echo "12dbb224cea124a5d32968722e8eb161c967bf15f3c9a795d1b05592b1147975  $RUNNER_TEMP/rhino.jar" | sha256sum --check
-                  curl --fail --location --output "$RUNNER_TEMP/json.jar" https://repo.maven.apache.org/maven2/org/json/json/20250517/json-20250517.jar
+                  curl --fail --location --retry 6 --retry-all-errors --retry-delay 5 --retry-max-time 180 --output "$RUNNER_TEMP/json.jar" https://repo.maven.apache.org/maven2/org/json/json/20250517/json-20250517.jar
             - name: Format diagnostic sources and report changes
               run: |
                   npm install --no-save prettier@3 prettier-plugin-java
