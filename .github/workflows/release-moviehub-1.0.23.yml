@@ -1,6 +1,7 @@
 name: Publish MovieHub 1.0.23 provider-maintenance update
 # Explicitly owner-authorised release: only dispatch after the provider PR is merged.
 # This file only starts the existing signed publisher; it never signs its own APK.
+# MovieHub 1.0.22 already shipped with code 123; 1.0.23 must use code 124.
 on:
     push:
         branches: [main]
@@ -25,9 +26,9 @@ jobs:
                       if (!work.merged) throw new Error('PR #229 has not merged: refuse to publish an old APK');
                       await github.rest.actions.createWorkflowDispatch({
                         owner, repo, workflow_id: 'publish-android-launcher.yml', ref: 'main',
-                        inputs: {version_code: '123', version_name: '1.0.23'}
+                        inputs: {version_code: '124', version_name: '1.0.23'}
                       });
-                      core.notice('Started the existing signed APK publisher for MovieHub 1.0.23 (code 123)');
+                      core.notice('Started the existing signed APK publisher for MovieHub 1.0.23 (code 124)');
     release-page:
         needs: dispatch
         runs-on: ubuntu-latest
@@ -58,13 +59,13 @@ jobs:
                   GH_TOKEN: \${{ github.token }}
                   GH_REPO: \${{ github.repository }}
               run: |
-                  mkdir -p "$RUNNER_TEMP/moviehub-123-feed"
-                  gh release download android-tv-latest --pattern update.json --dir "$RUNNER_TEMP/moviehub-123-feed"
+                  mkdir -p "$RUNNER_TEMP/moviehub-124-feed"
+                  gh release download android-tv-latest --pattern update.json --dir "$RUNNER_TEMP/moviehub-124-feed"
                   python - <<'PY'
                   import json, os, pathlib
-                  path = pathlib.Path(os.environ['RUNNER_TEMP'])/'moviehub-123-feed/update.json'
+                  path = pathlib.Path(os.environ['RUNNER_TEMP'])/'moviehub-124-feed/update.json'
                   manifest = json.loads(path.read_text())
-                  if (manifest['packageName'], manifest['versionCode'], manifest['versionName']) != ('local.tv.home', 123, '1.0.23'):
+                  if (manifest['packageName'], manifest['versionCode'], manifest['versionName']) != ('local.tv.home', 124, '1.0.23'):
                       raise SystemExit('Updater feed is not the intended MovieHub 1.0.23 build')
                   PY
             - name: Dispatch the standard numbered-release copier
