@@ -2,7 +2,7 @@
 
 ## Published updates
 
-**MovieHub 1.0.24 (code 125)** was published on 22 November 2026 through the existing signed process. The [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.24) and [in-app update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) carry the APK (133,318,212 bytes in the numbered release); the feed's `update.json` lists SHA-256 `9fc60d8dc37b2a922e94c64cfbaddc7201ea96b6e0ab5473d28e099d96c4e3d6`. Older published versions are listed on the [releases page](https://github.com/billyke2000s/moviehub/releases).
+**MovieHub 1.0.25 (code 126)** was published on 22 November 2026 through the existing signed process. The [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.25) and [in-app update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) carry the APK (133,318,200 bytes in the numbered release); the feed's `update.json` lists SHA-256 `1a7223fda153b721cf4531a2b32d4ab708f7479fffbabb36a5f133430c090238`. Older published versions are listed on the [releases page](https://github.com/billyke2000s/moviehub/releases).
 
 For newer versions, use the [latest release](https://github.com/billyke2000s/moviehub/releases/latest) and update feed rather than relying on a historical paragraph. The standard signed APK includes both `armeabi-v7a` and `arm64-v8a`, using the established signing identity and `local.tv.home` package.
 
