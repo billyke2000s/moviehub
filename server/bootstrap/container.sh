@@ -212,6 +212,33 @@ systemctl daemon-reload
 systemctl enable forgejo-runner moviehub-gate
 systemctl restart forgejo-runner moviehub-gate
 
+step "Keep the server's copy in step with GitHub (until GitHub is retired)"
+printf 'FORGEJO_PUSH_URL=http://%s:%s@127.0.0.1:3000/%s/moviehub.git\n' "$ADMIN" "$TOKEN" "$ADMIN" > /etc/moviehub-sync.env
+chmod 600 /etc/moviehub-sync.env
+cat > /etc/systemd/system/moviehub-sync.service <<'UNIT'
+[Unit]
+Description=Fast-forward MovieHub from GitHub into Forgejo
+[Service]
+Type=oneshot
+User=moviehub
+EnvironmentFile=/etc/moviehub-sync.env
+WorkingDirectory=/srv/moviehub/repo
+# Fast-forward only: never overwrites newer work on either side.
+ExecStart=/bin/sh -c 'git pull -q --ff-only origin main && git push -q "$FORGEJO_PUSH_URL" HEAD:refs/heads/main'
+UNIT
+cat > /etc/systemd/system/moviehub-sync.timer <<'UNIT'
+[Unit]
+Description=Sync MovieHub from GitHub every 10 minutes
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+[Install]
+WantedBy=timers.target
+UNIT
+chown -R moviehub:moviehub /srv/moviehub/repo
+systemctl daemon-reload
+systemctl enable --now moviehub-sync.timer
+
 step "Watchdog (pings your phone if the server itself needs you)"
 printf 'NTFY_URL=%s\n' "$NTFY_URL" > /etc/moviehub-watchdog.env
 chmod 600 /etc/moviehub-watchdog.env
@@ -260,7 +287,7 @@ chmod 600 "$CREDS"
 rm -f /root/moviehub-env
 
 step "Checks"
-for s in forgejo forgejo-runner moviehub-gate moviehub-watchdog.timer; do printf '%-16s %s\n' "$s" "$(systemctl is-active $s)"; done
+for s in forgejo forgejo-runner moviehub-gate moviehub-watchdog.timer moviehub-sync.timer; do printf '%-16s %s\n' "$s" "$(systemctl is-active $s)"; done
 curl -fs -o /dev/null -w 'gate public page: HTTP %{http_code}\n' http://127.0.0.1:8080/ || echo "gate public page: NOT ANSWERING"
 curl -fs -o /dev/null -w 'gate code page:   HTTP %{http_code}\n' http://127.0.0.1:8081/ || echo "gate code page: NOT ANSWERING"
 echo
