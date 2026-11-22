@@ -1,5 +1,12 @@
 # Architecture
 
+## Unreleased: Playwright browser inspection of provider changes
+
+`provider-browser/` is a **separate desktop/CI Chromium dependency**, not an Android APK library or media proxy. Its `inventory.py` builds public-site targets from MovieHub's enabled VOD registry and a curated set of public Live TV websites; the supplied PrimeWire `/watch/the-odyssey` URL is the initial clickable player-page case. Other VOD root pages are passive landing-page checks until verified watch/episode routes are available. It observes current DOM server controls and browser-generated network requests, then emits redacted host/route/resource/HTTP/media-type signatures and diffs against an earlier audit artifact. It does not turn discovered requests into playable links or install executable code.
+
+`.github/workflows/playwright-provider-inspection.yml` schedules public-live browser observation every two hours and VOD page observation every twelve hours (four shards); PRs use a smaller sample. Existing native Android, LibVLC/Media3, headers, background discovery, player fallback and signed module release paths remain unchanged.
+
+
 ## Unreleased: all-public-source monitoring and non-blocking signed repair
 
 The live provider probe now shards all 15 bundled JS provider modules, including DaddyLive, ZLive and FreeShot, over four scheduled jobs. `provider-engine/tools/public-tv-probe.mjs` samples the documented Free-TV and iptv-org public playlists and checks Pluto's anonymous regional bootstrap/catalogue. Public monitoring and account-based sources are different: user Xtream/M3U, Masqueradarr and Nuvio configurations remain private and are handled by the device's existing scheduled import and playback failover.
