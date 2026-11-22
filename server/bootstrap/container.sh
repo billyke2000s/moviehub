@@ -37,8 +37,9 @@ step "Forgejo"
 id git >/dev/null 2>&1 || adduser --system --group --home /home/git --shell /bin/bash git
 FJ_VER=$(curl -fsSL https://codeberg.org/api/v1/repos/forgejo/forgejo/releases/latest | jq -r .tag_name | sed 's/^v//')
 [ -n "$FJ_VER" ] && [ "$FJ_VER" != null ] || fail "Could not find the latest Forgejo version."
-curl -fsSL -o /usr/local/bin/forgejo "https://codeberg.org/forgejo/forgejo/releases/download/v$FJ_VER/forgejo-$FJ_VER-linux-amd64"
-chmod 755 /usr/local/bin/forgejo
+# Download beside the old file and swap it in, so a re-run works while Forgejo is running.
+curl -fsSL -o /usr/local/bin/forgejo.new "https://codeberg.org/forgejo/forgejo/releases/download/v$FJ_VER/forgejo-$FJ_VER-linux-amd64"
+chmod 755 /usr/local/bin/forgejo.new && mv -f /usr/local/bin/forgejo.new /usr/local/bin/forgejo
 mkdir -p /var/lib/forgejo /etc/forgejo
 chown git:git /var/lib/forgejo
 chmod 750 /var/lib/forgejo
@@ -99,7 +100,9 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
-systemctl enable --now forgejo
+systemctl enable forgejo
+systemctl reset-failed forgejo 2>/dev/null || true
+systemctl restart forgejo
 for _ in $(seq 1 60); do curl -fs http://127.0.0.1:3000/api/healthz >/dev/null && break; sleep 2; done
 curl -fs http://127.0.0.1:3000/api/healthz >/dev/null || fail "Forgejo did not start (journalctl -u forgejo)."
 
@@ -142,9 +145,9 @@ put_var FORGEJO_INTERNAL_URL "http://127.0.0.1:3000"
 step "Forgejo runner (runs the workflows directly in this container as user moviehub)"
 RUN_VER=$(curl -fsSL https://code.forgejo.org/api/v1/repos/forgejo/runner/releases/latest | jq -r .tag_name | sed 's/^v//')
 [ -n "$RUN_VER" ] && [ "$RUN_VER" != null ] || fail "Could not find the latest runner version."
-curl -fsSL -o /usr/local/bin/forgejo-runner \
+curl -fsSL -o /usr/local/bin/forgejo-runner.new \
     "https://code.forgejo.org/forgejo/runner/releases/download/v$RUN_VER/forgejo-runner-$RUN_VER-linux-amd64"
-chmod 755 /usr/local/bin/forgejo-runner
+chmod 755 /usr/local/bin/forgejo-runner.new && mv -f /usr/local/bin/forgejo-runner.new /usr/local/bin/forgejo-runner
 RUNNER_HOME=/srv/moviehub/runner
 mkdir -p "$RUNNER_HOME"; chown moviehub:moviehub "$RUNNER_HOME"
 if [ ! -f "$RUNNER_HOME/.runner" ]; then
@@ -192,7 +195,8 @@ chown root:root /srv/moviehub/keys
 chown moviehub:moviehub /srv/moviehub/keys/signing.pem
 chmod 711 /srv/moviehub/keys
 systemctl daemon-reload
-systemctl enable --now forgejo-runner moviehub-gate
+systemctl enable forgejo-runner moviehub-gate
+systemctl restart forgejo-runner moviehub-gate
 
 step "Codex (GPT) command line"
 npm install -g @openai/codex >/dev/null 2>&1 || echo "WARNING: Codex install failed; install later with: npm install -g @openai/codex"
