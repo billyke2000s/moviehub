@@ -124,8 +124,7 @@ async function inspect(browser, target) {
                 const data = JSON.parse(text);
                 const current = Array.isArray(data?.categories?.["Live Events"])
                     ? data.categories["Live Events"] : [];
-                let next = null;
-                const sources = new Set();
+                const sources = new Map();
                 for (const event of current.slice(0, 100)) {
                     for (const channel of (event.channels || []).slice(0, 12)) {
                         try {
@@ -140,8 +139,7 @@ async function inspect(browser, target) {
                                     ? !/^[a-z0-9/_-]{1,120}$/i.test(id || "")
                                     : !/^[a-z0-9]{5}$/i.test(id || "")))
                                 continue;
-                            sources.add(source);
-                            if (!next) next = url.href;
+                            if (!sources.has(source)) sources.set(source, url.href);
                         } catch {}
                     }
                 }
@@ -149,7 +147,7 @@ async function inspect(browser, target) {
                     apiStatus: response.status,
                     liveEvents: current.length,
                     sourceKinds: sources.size,
-                    selectedEmbed: next,
+                    selectedEmbeds: [...sources.entries()].slice(0, 6).map(([source, url]) => ({source, url})),
                 };
             });
             report.eventsApi = {
@@ -158,19 +156,26 @@ async function inspect(browser, target) {
                 sourceKinds: details.sourceKinds || 0,
                 oversized: !!details.oversized,
             };
-            if (details.selectedEmbed) {
+            // Inspect at most one currently active event per *distinct source*.
+            // The public API advertises up to 19 source groups, but the live
+            // subset changes; one embed cannot represent all available players.
+            report.embeds = [];
+            for (const item of (details.selectedEmbeds || [])) {
+                const evidence = { source: item.source, outcome: "not_loaded" };
                 try {
-                    const embed = await page.goto(details.selectedEmbed, {
+                    const embed = await page.goto(item.url, {
                         waitUntil: "domcontentloaded", timeout: 12_000,
                     });
-                    report.embedOutcome = embed?.ok() ? "page_loaded" : "http_or_navigation_failure";
+                    evidence.outcome = embed?.ok() ? "page_loaded" : "http_or_navigation_failure";
                     await page.waitForTimeout(1_000);
-                    report.embedIframes = Math.min(100, await page.locator("iframe").count());
-                    report.embedControls = Math.min(100, await page.locator(CONTROL_SELECTOR).count());
+                    evidence.iframes = Math.min(100, await page.locator("iframe").count());
+                    evidence.controls = Math.min(100, await page.locator(CONTROL_SELECTOR).count());
                 } catch {
-                    report.embedOutcome = "browser_navigation_failed";
+                    evidence.outcome = "browser_navigation_failed";
                 }
-            } else report.embedOutcome = "no_current_public_embed";
+                report.embeds.push(evidence);
+            }
+            if (!report.embeds.length) report.embedOutcome = "no_current_public_embed";
         }
         if (target.kind === "player") {
             const clicks = Math.min(report.playerControls, target.maxClicks);
