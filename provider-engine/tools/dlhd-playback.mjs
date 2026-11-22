@@ -69,6 +69,22 @@ async function inspect(provider, row, forceRenew = false) {
         if (forceRenew && stream.playlistSession) stream.playlistSession.expiresAtMs = 0;
         relay.stdin.write(JSON.stringify(stream) + "\n");
         const url = await ready;
+        // Check the *production relay's* first response, not the upstream URL.
+        // Keep only structural flags and status; never retain segment URLs or tokens.
+        try {
+            const first = await fetch(url, {signal: AbortSignal.timeout(12000)});
+            const body = await first.text();
+            result.manifestCheck = {
+                status: first.status,
+                mimeHls: /mpegurl|application\\/x-mpegurl/i.test(first.headers.get("content-type") || ""),
+                hls: body.trimStart().startsWith("#EXTM3U"),
+                bytes: body.length,
+                variants: (body.match(/#EXT-X-STREAM-INF:/g) || []).length,
+                segments: (body.match(/#EXTINF:/g) || []).length,
+            };
+        } catch (error) {
+            result.manifestCheck = {failure: error.constructor.name};
+        }
         const tracks = [0, 1].map(() => ({ frames: 0, unique: 0, start: null, end: null, maxGap: 0 }));
         const bases = [];
         const hashes = [new Set(), new Set()];
