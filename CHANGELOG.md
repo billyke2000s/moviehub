@@ -5,6 +5,10 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+- Pins the home server's 3072-bit RSA signing key in `providers/trust.json`. APKs built from this
+  version accept signed Live TV provider packages and film/series scraper packages from the feeds;
+  the private key exists only on the home server.
+
 ## 1.0.25 (22 November 2026)
 
 - ZLive: decode PNG-wrapped video when the current player places image rows before the media header.
