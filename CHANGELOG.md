@@ -1,7 +1,9 @@
 ## Unreleased
 
 - Live TV guide: opens with the cursor on the channel playing in the corner, as on Sky, so OK makes it full screen. Search results and lists without that channel still start at the top.
-- Live TV guide: the hint line now says BACK reaches the colour buttons (for remotes without colour keys).
+- Live TV guide: the hint line now says BACK reaches the buttons (for remotes without colour keys).
+- Live TV guide: CH+ / CH- (and Page Up / Page Down) move one channel, as on a TV and in the player; CH+ goes to the next channel number. Whole pages are the Page up / Page down buttons (or red / green keys).
+- The guide, guide menu and player banner buttons no longer show coloured squares. Remotes with real colour keys still press them in the same order (red, green, yellow, blue).
 - Fixed: the channel name under the guide's preview was drawn over the time slots; it now sits inside the bottom of the preview.
 
 ## 1.0.23 (22 November 2026)

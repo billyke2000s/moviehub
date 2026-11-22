@@ -538,19 +538,68 @@ public class LiveGuideTest {
         );
         for (int round = 0; round < 4; round++) {
             // Paging must not depend on a channel cell retaining focus during row replacement.
+            // Whole pages are red and green; CH+ / CH- move one channel (see below).
             remote.runOnMainSync(() -> activity.liveTv.frame.focusTop());
-            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PAGE_UP);
+            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_RED);
             await(
                 "last page from header",
                 () -> activity.liveTv.pageStart == 24 && activity.liveTv.cells.size() == 1
             );
             remote.runOnMainSync(() -> activity.liveTv.frame.focusTop());
-            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PAGE_DOWN);
+            remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
             await(
                 "first page again from header",
                 () -> activity.liveTv.pageStart == 0 && activity.liveTv.cells.size() == 8
             );
         }
+    }
+
+    /** CH+ / CH- (and Page Up / Down) move one channel, as on a TV, turning pages at the edges. */
+    @Test
+    public void channelKeysMoveOneChannelLikeATv() {
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await(
+            "first page",
+            () -> activity.liveTv.cells.size() == 8 && focused().startsWith("101  Channel 00")
+        );
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_CHANNEL_UP);
+        await("CH+ to 102", () -> focused().startsWith("102  Channel 01"));
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PAGE_UP);
+        await("Page Up to 103", () -> focused().startsWith("103  Channel 02"));
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_CHANNEL_DOWN);
+        await("CH- back to 102", () -> focused().startsWith("102  Channel 01"));
+        remote.runOnMainSync(() -> activity.liveTv.cells.get(7).requestFocus());
+        await("on 108", () -> focused().startsWith("108  Channel 07"));
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_CHANNEL_UP);
+        await(
+            "CH+ past the page to 109",
+            () -> activity.liveTv.pageStart == 8 && focused().startsWith("109  Channel 08")
+        );
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_CHANNEL_DOWN);
+        await(
+            "CH- back to 108",
+            () -> activity.liveTv.pageStart == 0 && focused().startsWith("108  Channel 07")
+        );
+        remote.runOnMainSync(() -> activity.liveTv.cells.get(0).requestFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_CHANNEL_DOWN);
+        await(
+            "CH- from the first channel wraps to the last",
+            () -> activity.liveTv.pageStart == 24 && focused().startsWith("125  Channel 24")
+        );
+    }
+
+    /** The on-screen buttons are plain labelled buttons: no coloured squares. */
+    @Test
+    public void guideButtonsHaveNoColourSquares() {
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await("eight guide rows", () -> activity.liveTv.cells.size() == 8);
+        remote.runOnMainSync(() -> {
+            for (View key : activity.liveTv.frame.bar.keys) {
+                ViewGroup button = (ViewGroup) key;
+                assertEquals("Only the label", 1, button.getChildCount());
+                assertTrue(button.getChildAt(0) instanceof TextView);
+            }
+        });
     }
 
     @Test

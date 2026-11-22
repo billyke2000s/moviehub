@@ -196,7 +196,12 @@ final class LiveTvScreen {
         else cells.get(last).requestFocus();
     }
 
-    /** Paging is a screen action even when row replacement has moved focus to the header. */
+    /**
+     * CH+ / CH- (and Page Up / Page Down) move one channel, as on a TV and as in the full-screen
+     * player: CH+ to the next channel number, CH- to the one before. Pages turn at the edges, so
+     * this works even when row replacement has moved focus to the header. Whole pages are the
+     * red and green buttons.
+     */
     boolean handlePageKey(KeyEvent event) {
         if (
             frameGeneration != activity.generation || frame.grid == null || !frame.grid.isShown()
@@ -204,16 +209,48 @@ final class LiveTvScreen {
         int key = event.getKeyCode();
         int direction =
             key == KeyEvent.KEYCODE_PAGE_UP || key == KeyEvent.KEYCODE_CHANNEL_UP
-                ? -1
+                ? 1
                 : key == KeyEvent.KEYCODE_PAGE_DOWN || key == KeyEvent.KEYCODE_CHANNEL_DOWN
-                  ? 1
+                  ? -1
                   : 0;
         if (direction == 0) return false;
-        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) turnPage(
-            direction,
-            focusedRow()
-        );
+        if (event.getAction() == KeyEvent.ACTION_DOWN) stepChannel(direction);
         return true;
+    }
+
+    /** One channel on ({@code +1}) or back ({@code -1}), turning the page at its first or last row. */
+    void stepChannel(int direction) {
+        if (pageLoading || cells.isEmpty()) return;
+        int row = gridRow();
+        if (row < 0) {
+            focusFirstRow();
+            return;
+        }
+        int target = row + direction;
+        boolean onePage = pageStart == 0 && !hasMore;
+        // A list on one page wraps round within it; longer lists turn the page (and wrap round).
+        if (target >= cells.size()) {
+            if (onePage) focusRow(0);
+            else turnPage(1, 0);
+        } else if (target < 0) {
+            if (onePage) focusRow(cells.size() - 1);
+            else turnPage(-1, -1);
+        } else focusRow(target);
+    }
+
+    private void focusRow(int row) {
+        if (programmeFocus) rows.focusAt(row, cursorTime);
+        else cells.get(row).requestFocus();
+    }
+
+    /** The grid row that has the focus, or -1 when the focus is elsewhere (Options, the preview). */
+    private int gridRow() {
+        for (int i = 0; i < cells.size(); i++) {
+            if (cells.get(i).hasFocus()) return i;
+            if (i < rows.programmes.size()) for (View item : rows.programmes.get(i))
+                if (item.hasFocus()) return i;
+        }
+        return -1;
     }
 
     /** Page up or Page down tapped in the key guide (touch screens). */
@@ -528,16 +565,14 @@ final class LiveTvScreen {
         );
     }
 
-    /** Red, CH+ or Page Up: the page before, as on the satellite guide. */
+    /** Red: the page before, as on the satellite guide (CH+ / CH- move one channel instead). */
     private boolean isPageUp(int key) {
-        return colour(key) == 'r' || key == KeyEvent.KEYCODE_CHANNEL_UP || key == KeyEvent.KEYCODE_PAGE_UP;
+        return colour(key) == 'r';
     }
 
-    /** Green, CH- or Page Down: the next page. */
+    /** Green: the next page. */
     private boolean isPageDown(int key) {
-        return (
-            colour(key) == 'g' || key == KeyEvent.KEYCODE_CHANNEL_DOWN || key == KeyEvent.KEYCODE_PAGE_DOWN
-        );
+        return colour(key) == 'g';
     }
 
     /** The row that has the focus (its name or a programme), so a refresh keeps the place. */

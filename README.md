@@ -51,7 +51,7 @@ Go to **Settings** to choose what MovieHub can access:
 
 **Films and series:** open a title, select Play or Sources, and choose a stream if more than one is found. Use the Browse controls to narrow down what you're looking for.
 
-**Live TV:** choose a channel in the guide. The on-screen colour buttons provide shortcuts even if your remote has no coloured keys. You can open sources, audio and subtitle options from the player.
+**Live TV:** choose a channel in the guide. Use the on-screen buttons at the bottom (press BACK to reach them); remotes with real colour keys can press them directly. CH+ and CH- move one channel at a time. You can open sources, audio and subtitle options from the player.
 
 **Help:** go to **Settings → System → Help** for common problems such as missing internet or low playback quality. Technical information lives under **Settings → Setup → Engineer view**.
 
