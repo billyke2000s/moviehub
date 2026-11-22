@@ -5,6 +5,16 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+- No internet: when the box has no Wi-Fi and no cable, MovieHub now shows "Connect to the internet"
+  with a moving Wi-Fi and cable picture and buttons that open the box's Wi-Fi or network settings,
+  instead of empty pages that never load. It waits 8 seconds first (a box that has just been
+  switched on is still joining its Wi-Fi), closes by itself once online and reloads Home. "Not now"
+  or Back hides it until the connection drops again or MovieHub is reopened.
+- First start: the connection message comes first (only when offline), then the free TV providers
+  question and the safety notice as before, then a new one-time "Set up films and series" message
+  that opens the TMDB setup page (skipped if TMDB is already set up). Other accounts stay in
+  Settings only.
+
 ## 1.0.26 (22 November 2026)
 
 - FreeShot: repair HLS playback by giving decoded MPEG-TS segments a .ts extension on MovieHub's local playback relay, rather than a generic .bin filename. The actual production Java relay decoded 30 seconds of video and audio in CI both at startup and after forced playlist-token renewal; playback on physical TV boxes still needs user confirmation.
