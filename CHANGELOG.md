@@ -1,9 +1,13 @@
 # Changelog
 
-User-visible changes by version. Add new entries under `## 1.0.24 (22 November 2026)`; rename that heading to the
+User-visible changes by version. Add new entries under `## Unreleased`; rename that heading to the
 version when it is published. This is the only dated history file (see AGENTS.md).
 
 ## Unreleased
+
+## 1.0.24 (22 November 2026)
+
+- Live TV: keep the original channel name when selecting backup feeds, group duplicate copies and preserve distinct country/region channels. Cached channel identities migrate without removing saved stream keys or favourites.
 
 - Live TV guide: opens with the cursor on the channel playing in the corner, as on Sky, so OK makes it full screen. Search results and lists without that channel still start at the top.
 - Live TV guide: the hint line now says BACK reaches the buttons (for remotes without colour keys).
@@ -20,6 +24,8 @@ version when it is published. This is the only dated history file (see AGENTS.md
 - New `server/` folder: install-code gate and keyed update feed, source health checker with phone
   alerts, Codex auto-fix runner that only opens a fix when the live probe passes, scraper package
   builder, Forgejo workflows and a setup guide. New playbook `docs/FIX_A_BROKEN_SOURCE.md`.
+
+- Known availability limit: the release smoke check found a 4KHDHub link but no UHDMovies link for its test film on two attempts. The UHDMovies resolver is unchanged; sports provider repairs are not claimed.
 
 ## 1.0.23 (22 November 2026)
 
