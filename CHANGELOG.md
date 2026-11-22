@@ -1,5 +1,10 @@
 ## Unreleased
 
+- DaddyLive: update its default mirror from unresponsive `dlive.sx` to `thedaddy.li`,
+  which served current channel pages on 21 November 2026. Older installed signed
+  modules without `dlhdCurrentMirror` now fall back to the bundled updated module.
+  Decodable playback was not verified; this is a domain fix, not a stream guarantee.
+
 **Version notes describe code changes, not proof of an installable release.** Check the [latest published release](https://github.com/billyke2000s/moviehub/releases/latest) or [signed update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest). Older "Unreleased" headings further down are retained historical development records.
 
 ## 1.0.21 (18 November 2026)

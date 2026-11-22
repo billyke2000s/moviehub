@@ -14,7 +14,7 @@
 // resolved playlist, and setBase() keeps the mirror host in it.
 
 /** The committed default — DaddyLive's content mirror as last known. Also the playlist config default. */
-export const DLHD_DEFAULT_DOMAIN = 'dlive.sx';
+export const DLHD_DEFAULT_DOMAIN = 'thedaddy.li';
 
 function cleanBase(u: string): string {
   return String(u || '').trim().replace(/\/+$/, ''); // strip trailing slash(es)

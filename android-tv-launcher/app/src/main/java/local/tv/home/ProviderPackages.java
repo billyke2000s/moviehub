@@ -104,6 +104,11 @@ final class ProviderPackages {
             (id.equals("zlive") || id.equals("freeshot")) &&
             (capabilities == null || capabilities.optInt("sportsPlayers") < 1)
         ) return builtinModule(c, id);
+        // An older signed DaddyLive module can pin the retired mirror. New APKs
+        // prefer the refreshed builtin until a signed package declares this capability.
+        if (id.equals("dlhd") && (capabilities == null || capabilities.optInt("dlhdCurrentMirror") < 1)) {
+            return builtinModule(c, id);
+        }
         if (modules.has(id)) return modules.getString(id);
         // Older signed runtime-1 packages cannot remove the newer APK's built-in capabilities.
         return validate(asset(c, "builtin.json").getBytes(StandardCharsets.UTF_8))
