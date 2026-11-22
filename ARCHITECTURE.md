@@ -1,5 +1,12 @@
 # Architecture
 
+## Unreleased: all-public-source monitoring and non-blocking signed repair
+
+The live provider probe now shards all 15 bundled JS provider modules, including DaddyLive, ZLive and FreeShot, over four scheduled jobs. `provider-engine/tools/public-tv-probe.mjs` samples the documented Free-TV and iptv-org public playlists and checks Pluto's anonymous regional bootstrap/catalogue. Public monitoring and account-based sources are different: user Xtream/M3U, Masqueradarr and Nuvio configurations remain private and are handled by the device's existing scheduled import and playback failover.
+
+`ProviderRecovery` starts a background, globally throttled check for a newer RSA-signed provider package after a provider-engine resolve failure. It never blocks failover or installs unsigned code. It is inert while the committed trust public key is empty. Signed provider modules are currently a restricted Live TV runtime, not general VOD/Kodi Python hot-updates. External player protocols that change incompatibly still require a verified parser update.
+
+
 ## Unreleased: catalogue rediscovery and provider monitoring
 
 `moviehub_native/primewire.py` treats the supplied `/watch/<slug>` address as a movie catalogue page. It verifies title/year, extracts explicit server/iframe HTTPS links without executing site scripts, and passes only those links into the existing hosted-link resolver and media validator. Missing player URLs and undocumented AJAX APIs are reported as unavailable, not guessed. Series are excluded pending verifiable season/episode mapping. This introduces one new website search path, not a duplicate VidCore/VixSrc/VidRock provider.
