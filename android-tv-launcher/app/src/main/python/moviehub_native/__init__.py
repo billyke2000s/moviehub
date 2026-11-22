@@ -63,7 +63,7 @@ for name, factory, site, module, movies in (
     ('topmovies', 'TopMovies', 'moviesleech.club', 'cinestream_downloads', True),
     ('moviesmod', 'MoviesMod', 'moviesmod.meme', 'cinestream_downloads', True),
     ('moviesdrive', 'MoviesDrive', 'new1.moviesdrive.cyou', 'cinestream_downloads', True),
-    ('uhdmovies', 'UHDMovies', 'uhdmovies.beauty', 'cinestream_downloads', True),
+    ('uhdmovies', 'UHDMovies', 'uhdmovies.ceo', 'cinestream_downloads', True),
     ('dudefilms', 'DudeFilms', 'dudefilms.red', 'cinestream_downloads', True),
     ('vegamovies', 'VegaMovies', '1vegamovies.shop', 'cinestream_downloads', True),
     ('rogmovies', 'RogMovies', 'rogmovies.im', 'cinestream_downloads', True),
