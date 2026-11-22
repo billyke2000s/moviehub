@@ -38,6 +38,10 @@ final class SourceRepository {
                     .append(':')
                     .append(JSONObject.quote(value.getValue()))
                     .append(',');
+            // Two catalogue routes returning the identical verified media URL and
+            // playback headers are one choice, regardless of website/display label.
+            // Different cookies, tokens or request headers remain distinct fallbacks.
+            if (!site.isEmpty() && files != null) return "vod\n" + uri + "\n" + canonical;
             return site + "\n" + title + "\n" + uri + "\n" + canonical;
         }
 

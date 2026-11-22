@@ -1,5 +1,26 @@
 # Security
 
+## Playwright browser evidence boundaries (merged via PR #230)
+
+Playwright runs only in disposable GitHub Actions/explicit workstation runs with no private IPTV, Xtream, Nuvio or Premiumize credentials. It blocks HTTP, local names, IP-literal destinations, non-public IPv4 DNS results, unsupported methods and browser popups; it aborts media-resource downloads. These application-layer checks are **not** DNS pinning or a substitute for network egress isolation on self-hosted runners. No browser challenges, logins or DRM restrictions are bypassed.
+
+Reports contain only sanitised hosts, coarse path patterns, resource types, response-status groups, content-type categories, control/iframe counts and failures—not full URLs, query values, headers, cookies, stream content, screenshots or JavaScript source. Browser inspection is diagnostic and has no permissions to sign, publish, write the repository or remotely update the APK. New protocol patterns need audited code, media/playback tests and a valid signed release before deployment.
+
+
+## Unreleased: broadened provider monitoring and recovery
+
+All scheduled live and public-TV probes operate only on public built-in catalogues; private IPTV, Xtream, Nuvio and Masqueradarr credentials never enter GitHub Actions. The public-list checker permits fixed public HTTPS catalogue URLs and reads bounded response samples. Pluto's anonymous bearer token stays in memory and is sent only to the provider-returned validated `.pluto.tv` channels origin; no redirects are followed and no token appears in its report. Monitoring does not authorise or publish code.
+
+Provider engine failures can trigger `ProviderRecovery`, a throttled background request to the existing HTTPS pinned, RSA-signed feed. Existing signature verification and active/previous rollback remain mandatory; an empty trust key disables this path. Do not relax URL checks or substitute unsigned downloaded extractor scripts in an attempt to self-heal other sites.
+
+
+## Unreleased: PrimeWire discovery and signed-update limits
+
+The PrimeWire catalogue adapter interprets only literal HTTPS links from identifiable player elements, applies `client.safe` to each URL, refuses same-site AJAX addresses as media, and does not evaluate arbitrary webpage JavaScript, solve challenges, or borrow website cookies into other hosts. Normal ResolveURL, public-address and decoded-media gates still apply. A button label alone never becomes a playable source. Movie title and year must match; episodes are not inferred.
+
+Free VOD duplicate identity combines final media URL and case-insensitive playback header names and values, ensuring a link with separate authentication or header requirements remains selectable. Scheduled GitHub Actions probes are read-only and cannot publish code or APKs. The checked-in RSA public-key trust field is empty; do not substitute an unsigned remote provider feed for it.
+
+
 This document covers security implementation and dated reviews, not installation. See the [reader guide](README.md) for everyday setup and [Status](STATUS.md) for current releases. Do not include account credentials, playlist tokens or signed streaming URLs in public issues.
 
 ## Sports CDN compatibility — 1 November 2026

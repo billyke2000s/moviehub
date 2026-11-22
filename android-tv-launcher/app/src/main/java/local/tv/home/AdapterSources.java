@@ -313,26 +313,32 @@ final class AdapterSources {
     static EngineSources.Stream resolve(Context c, String url, NativeHttp http) throws Exception {
         String id = provider(url),
             wanted = channel(url);
-        JSONObject row = resolverRow(c, id, wanted, http);
-        JSONObject resolved = (JSONObject) ProviderBroker.call(
-            c,
-            id,
-            "resolve",
-            id.equals("dlhd") ? playerRow(url, row) : row,
-            http
-        );
-        if (id.equals("zlive")) {
-            resolved.put("segmentContainers", true);
-            JSONObject supplied = row.optJSONObject("sourceHeaders");
-            if (supplied != null) for (Iterator<String> keys = supplied.keys(); keys.hasNext(); ) {
-                String key = keys.next();
-                resolved.getJSONObject("headers").put(key, supplied.getString(key));
+        try {
+            JSONObject row = resolverRow(c, id, wanted, http);
+            JSONObject resolved = (JSONObject) ProviderBroker.call(
+                c,
+                id,
+                "resolve",
+                id.equals("dlhd") ? playerRow(url, row) : row,
+                http
+            );
+            if (id.equals("zlive")) {
+                resolved.put("segmentContainers", true);
+                JSONObject supplied = row.optJSONObject("sourceHeaders");
+                if (supplied != null) for (Iterator<String> keys = supplied.keys(); keys.hasNext(); ) {
+                    String key = keys.next();
+                    resolved.getJSONObject("headers").put(key, supplied.getString(key));
+                }
             }
+            if (id.equals("zlive") || id.equals("freeshot")) resolved.put("livePlaylist", true);
+            EngineSources.Stream stream = new EngineSources.Stream(resolved);
+            if (id.equals("dlhd")) rememberPlayer(url, resolved.optInt("playerIndex", 0));
+            return stream;
+        } catch (Exception failure) {
+            // Never delay failover with a network repair check.
+            ProviderRecovery.afterResolveFailure(c);
+            throw failure;
         }
-        if (id.equals("zlive") || id.equals("freeshot")) resolved.put("livePlaylist", true);
-        EngineSources.Stream stream = new EngineSources.Stream(resolved);
-        if (id.equals("dlhd")) rememberPlayer(url, resolved.optInt("playerIndex", 0));
-        return stream;
     }
 
     static int refresh(

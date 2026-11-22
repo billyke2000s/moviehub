@@ -6,18 +6,25 @@ on:
     push:
         branches: [feature/standalone-provider-engine]
         paths: ['provider-engine/tools/live-probe*.mjs', '.github/workflows/provider-live-probe.yml']
+    schedule:
+        - cron: "13 */2 * * *" # Diagnostic probes; does not deploy or rewrite providers.
     workflow_dispatch:
-        inputs:
-            providers:
-                description: "Provider ids to probe, separated by spaces (empty probes all)"
-                required: false
-                default: ""
 permissions:
     contents: read
 jobs:
     probe:
+        # The full public engine is sharded so an unresponsive catalogue cannot
+        # prevent the other TV providers from being inspected.
         runs-on: ubuntu-latest
         timeout-minutes: 40
+        strategy:
+            fail-fast: false
+            matrix:
+                group:
+                    - { name: fast-a, providers: 'freelivesports stirr tcl xumo' }
+                    - { name: fast-b, providers: 'lg whale vizio roku' }
+                    - { name: fast-c, providers: 'plex tubi samsung localnow' }
+                    - { name: sports, providers: 'dlhd zlive freeshot' }
         steps:
             - uses: actions/checkout@v5
             - uses: actions/setup-node@v5
@@ -39,8 +46,8 @@ jobs:
                   javac -cp "$RUNNER_TEMP/rhino.jar" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderCodec,ProviderSignature,ProviderUrls,ProviderSegments}.java android-tv-launcher/tests/ProviderProbeCli.java
             - name: Probe providers
               env:
-                  PROVIDERS: ${{ inputs.providers }}
-              # Word splitting of PROVIDERS is intended: one argument per id.
+                  PROVIDERS: ${{ matrix.group.providers }}
+              # Matrix groups cover each compiled provider exactly once.
               run: RHINO_JAR="$RUNNER_TEMP/rhino.jar" node provider-engine/tools/live-probe.mjs $PROVIDERS
             - name: Report providers 1-8
               if: always()
@@ -55,7 +62,7 @@ jobs:
               if: always()
               uses: actions/upload-artifact@v6
               with:
-                  name: live-provider-probe
+                  name: live-provider-probe-${{ matrix.group.name }}
                   path: |
                       build/provider-tests/live-probe.json
                       build/provider-tests/live-probe.md

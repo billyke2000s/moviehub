@@ -19,6 +19,9 @@ media.add_argument('--movie', nargs=4, metavar=('TITLE', 'YEAR', 'IMDB', 'TMDB')
                    help='Probe another film using its complete catalogue identity')
 parser.add_argument('--include-retired', action='store_true',
                     help='Audit excluded adapters too, without changing app discovery')
+parser.add_argument('--shard', help='Audit one INDEX/COUNT partition of the website inventory')
+parser.add_argument('--timeout-seconds', type=int, default=400,
+                    help='Per-website cancellation budget for scheduled checks (1-400)')
 parser.add_argument('--provider', action='append', default=[],
                     help='Audit a website id (repeat to select several)')
 parser.add_argument('--stop-after-first', action='store_true',
@@ -44,7 +47,9 @@ def probe(row):
         class Found:
             def ready(self, payload):
                 found.set()
-        cancel = lambda: time.monotonic()-started > 420 or (args.stop_after_first and found.is_set())
+        cancel = lambda: (time.monotonic()-started > 420 or
+                         time.monotonic()-begin > args.timeout_seconds or
+                         (args.stop_after_first and found.is_set()))
         result = json.loads(vod.query_site(
             row['id'], query, cancel, Found() if args.stop_after_first else None))
         return {'provider':row['id'], 'status':result['status'], 'streams':len(result['sources']),
@@ -61,6 +66,16 @@ if args.provider:
     unknown = set(args.provider) - {row['id'] for row in rows}
     if unknown: parser.error('Unknown or excluded website id: ' + ', '.join(sorted(unknown)))
     rows = [row for row in rows if row['id'] in args.provider]
+if not 1 <= args.timeout_seconds <= 400:
+    parser.error('--timeout-seconds must be between 1 and 400')
+if args.shard:
+    try:
+        part, count = (int(x) for x in args.shard.split('/'))
+    except (ValueError, TypeError):
+        parser.error('--shard requires INDEX/COUNT, for example 0/4')
+    if count < 1 or not 0 <= part < count:
+        parser.error('--shard index must be within COUNT')
+    rows = [row for i, row in enumerate(rows) if i % count == part]
 with concurrent.futures.ThreadPoolExecutor(max_workers=8) as workers:
     pending = [workers.submit(probe,row) for row in rows if row['series' if args.series else 'movies']]
     for future in concurrent.futures.as_completed(pending):

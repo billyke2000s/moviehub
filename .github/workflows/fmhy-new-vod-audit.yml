@@ -27,7 +27,7 @@ jobs:
                     - { provider: "native:movy", names: "Boise,Miami" }
                 include:
                     - media: series
-                      route: { provider: "native:rive", names: "Vanguard" }
+                      route: { provider: "native:rive", names: "" }
         steps:
             - uses: actions/checkout@v5
             - uses: actions/setup-java@v5
@@ -72,7 +72,11 @@ jobs:
                   failed = [row for row in links if row.get('website') != os.environ['EXPECTED_PROVIDER'] or row.get('status') != 'verified' or not row.get('separateSource')]
                   if failed:
                       raise SystemExit(f'{len(failed)} of {len(links)} new links failed verification; inspect the redacted artifact')
-                  for name in os.environ['EXPECTED_NAMES'].split(','):
+                  # Rive is the site: its backend names may change. When none is
+                  # specified, audit every returned source rather than assuming
+                  # a particular internal player such as Vanguard.
+                  expected = [name for name in os.environ['EXPECTED_NAMES'].split(',') if name]
+                  for name in expected:
                       if not any(' · ' + name in row.get('provider', '') for row in links):
                           raise SystemExit(f'{name} did not return a verified source')
                   print(f'All {len(links)} returned new-provider links passed individual playback checks')

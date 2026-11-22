@@ -93,15 +93,36 @@ public final class FreeVodLiveAuditTest {
                     cancelled.set(true);
                     timer.cancel();
                 }
-                record(lookup);
                 String sourceNames = arguments.getString("vodSourceNames", "");
-                if (!sourceNames.isEmpty()) sources.removeIf(source -> {
-                    String label = SourcesScreen.provider(source.title);
-                    for (String name : sourceNames.split(",")) {
-                        if (label.contains(" · " + name)) return false;
+                if (!sourceNames.isEmpty()) {
+                    // Public backend labels only, no source URLs, headers or media tokens.
+                    // Report labels even when a named delivery route has disappeared.
+                    org.json.JSONArray labels = new org.json.JSONArray();
+                    java.util.Set<String> uniqueLabels = new java.util.LinkedHashSet<>();
+                    for (SourceRepository.Source source : sources) {
+                        // Source labels are website + a backend name. Never include a
+                        // provider-controlled URL, token, filename or arbitrary suffix.
+                        String label = SourcesScreen.provider(source.title);
+                        int separator = label.indexOf(" · ");
+                        if (separator < 0) continue;
+                        String backend = label.substring(separator + 3).split(" · ", 2)[0].trim();
+                        if (
+                            backend.matches("[A-Za-z][A-Za-z0-9 _-]{0,31}") &&
+                            uniqueLabels.size() < 24
+                        ) uniqueLabels.add(backend);
                     }
-                    return true;
-                });
+                    for (String label : uniqueLabels) labels.put(label);
+                    lookup.put("observedPlayerLabels", labels);
+                    sources.removeIf(source -> {
+                        String label = SourcesScreen.provider(source.title);
+                        for (String name : sourceNames.split(",")) {
+                            if (label.contains(" · " + name)) return false;
+                        }
+                        return true;
+                    });
+                    lookup.put("matchingNamedPlayerSources", sources.size());
+                }
+                record(lookup);
                 Set<String> keys = new HashSet<>();
                 for (SourceRepository.Source source : sources) {
                     boolean separate = keys.add(VodSearch.sourceKey(source));

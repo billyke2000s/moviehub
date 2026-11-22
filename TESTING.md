@@ -1,5 +1,26 @@
 # Testing
 
+## Unreleased: Playwright provider analysis
+
+`provider-browser/tests/protocol.test.mjs` contains offline network target restrictions, private IPv4 rejection, token/path redaction, signature comparison and inventory limits. The `playwright-provider-inspection.yml` PR job installs pinned Playwright 1.65.1 with headless Chromium, runs offline tests, creates a public target inventory and inspects public pages (one live and one VOD shard in PR). Scheduled checks subsequently cover the selected live websites and the complete enabled VOD registry in four shards. A browser page load, observed media request or report containing new patterns does **not** establish working playback or a repaired extractor.
+
+The standalone Playwright [PR #230](https://github.com/billyke2000s/moviehub/pull/230) passed its [GitHub Actions inspection run](https://github.com/billyke2000s/moviehub/actions/runs/44975213357), including four offline protocol fixtures and actual headless browser inspections for the live and first VOD shard. The other three PR shard jobs intentionally skipped the browser steps. The inspected PrimeWire page had an HTTP/navigation failure; neither that nor the passing job establishes playable media. The browser tooling was merged separately from the app changes. No real TV-box playback was verified.
+
+
+## Unreleased: expanded monitoring verification
+
+The scheduled live probe runs all built-in provider-module IDs across four independent groups; the separate public-TV workflow runs a network-free parser/Pluto allow-list fixture before the public catalogue checks. These workflows report upstream HTTP/network errors and bounded catalogue/media evidence without exposing signed stream URLs or tokens. Their checks are not proof that every TV channel plays in the UK.
+
+Provider-engine failures queue a signed update check outside the playback path, subject to the global 15-minute cooldown and configured trusted public key. Validate the final Android CI build/emulator tests and inspect the PR before merge. No current live device proof or signed OTA test with a configured key is claimed.
+
+
+## Unreleased: PrimeWire and provider drift diagnostics
+
+`android-tv-launcher/tests/test_primewire.py` checks the movie slug route, strict title/year evidence, multiple explicit player links, duplicate controls, unavailable AJAX-only buttons, and unsafe/insecure URL rejection using offline fixtures. `VodSourceIdentityTest` tests that two catalogue routes returning the same URL/headers collapse into one source but header- or token-distinct fallbacks survive. Existing `test_free_vod.py` inventory counts include the additional movie-only site.
+
+The Live provider probe and full free-VOD site audit now also have schedules; their artifacts are diagnostics only. The PrimeWire domain did not return inspectable live page HTML through the available tools, so the new adapter has **not** been verified against its current HTML, let alone decoded on a real Android device. CI and device tests must run on the final PR head before merge.
+
+
 ## Published release evidence (20 November 2026)
 
 The [MovieHub 1.0.21 signed publisher](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) passed the core rules, emulator device tests, signed build/manifest generation, ABI inspection, certificate checks and asset upload. The [one-off release workflow](https://github.com/billyke2000s/moviehub/actions/runs/44648333364) passed, and the [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21) was published. Both listed APK assets have digest `8953e5d3de794e1eacc6d0262e4704acd29c26ef90bb8c6ce75a75110c9f17f7` and size 133,276,236 bytes. This confirms GitHub's reported release parity, **not** independent media playback on a real TV box.

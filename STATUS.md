@@ -1,5 +1,24 @@
 # Status
 
+## Playwright protocol-inspection work — 22 November 2026
+
+The standalone Playwright browser-inspection job and protocol fixtures were merged to `main` in [PR #230](https://github.com/billyke2000s/moviehub/pull/230). It is intended to identify site changes that static HTTP scrapers miss, including dynamically rendered player buttons and request/iframe shapes. Initial browser targets include known public Live TV landing pages, a PrimeWire watch-page fixture and enabled VOD website roots. The generated reports are redacted and may include site-block/geo failures. They do not contain functional extractor patches.
+
+This is **not yet an automatic new-protocol repair engine**: AI code generation, end-to-end media validation, secure reviewed package generation and enabled signed OTA publishing remain separate missing stages. Playwright is not bundled in the APK; private account sources stay on-device. The browser tooling is merged, but the separate PrimeWire/Live TV app changes in PR #229 remain unmerged and unpublished.
+
+
+## Unreleased expansion — 22 November 2026
+
+Provider monitoring on the open PrimeWire PR now covers every bundled public TV engine module (15), plus separate public Free-TV, iptv-org and Pluto catalogues. Existing scheduled VOD audits cover bundled film/series sites. Account-based M3U/Xtream, Nuvio and Masqueradarr remain on-device only; their existing refresh/failover applies, but they cannot be checked by a public GitHub runner without user credentials. TimStreams is not currently a registered MovieHub provider.
+
+A failed Live TV module resolve can request an updated **signed** module asynchronously, once per 15-minute cooldown. In this checkout the trust public key is blank and the feed is not provisioned; it does **not** automatically repair arbitrary player changes yet. The feature remains in an unmerged PR pending CI and live playback evidence.
+
+
+## Unreleased development — 22 November 2026
+
+PrimeWire movie-only HTML player discovery, exact media/header deduplication and scheduled provider diagnostics are on a feature branch for review. No PrimeWire live page HTML or decoded playback has been confirmed. The scheduled audits can highlight changed sites but cannot repair arbitrary new player protocols by themselves. The built-in signed Live provider updater is unconfigured in this checkout (`providers/trust.json` has an empty public key), and film/series adapters remain bundled Python; automatic over-the-air fixes for every provider are **not** operational. Do not describe the branch as a published MovieHub update.
+
+
 ## Current release and update status (20 November 2026)
 
 **MovieHub 1.0.21 (code 121) is published.** The [signed publisher run](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) passed core tests, Android device tests, release build, signing/ABI checks and asset upload. The [version-specific release workflow](https://github.com/billyke2000s/moviehub/actions/runs/44648333364) passed, and the [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21) and [in-app updater feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) list matching APK asset digests:
