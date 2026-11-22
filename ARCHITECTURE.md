@@ -56,6 +56,11 @@ Package capability `sportsPlayers: 1` prevents older signed modules overriding e
 windows and longer finished recordings remain valid. This is a structural check, not recognition
 of text burned into a continuous feed. DaddyLive and VOD do not receive this policy.
 
+The current ZLive PNG carrier can place its `TIKTIKPX` payload after decorative image rows.
+`ProviderPngSegments` follows the public player's bounded first-MiB RGB marker search instead of
+assuming a marker at pixel zero. Matching spans scanlines and excludes RGBA alpha bytes. CRC,
+dimensions, inflate/payload bounds, gzip validation and MPEG-TS packet checks remain in force.
+
 
 CineStream additions, published in 1.0.19: 74 websites / 77 enabled adapters, with all fifteen added catalogue
 routes retained. Current redirect fixes decode escaped URL literals and support the observed

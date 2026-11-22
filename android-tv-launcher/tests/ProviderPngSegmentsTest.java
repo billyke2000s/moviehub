@@ -35,17 +35,21 @@ public final class ProviderPngSegmentsTest {
     }
 
     static byte[] png(byte[] payload, int color, int filter) throws Exception {
+        return png(payload, color, filter, new byte[0], 7);
+    }
+
+    static byte[] png(byte[] payload, int color, int filter, byte[] prefix, int width) throws Exception {
         ByteArrayOutputStream gzip = new ByteArrayOutputStream();
         try (GZIPOutputStream out = new GZIPOutputStream(gzip)) {
             out.write(payload);
         }
         ByteArrayOutputStream rgb = new ByteArrayOutputStream();
         DataOutputStream values = new DataOutputStream(rgb);
+        values.write(prefix);
         values.writeBytes("TIKTIKPX");
         values.writeInt(gzip.size());
         values.write(gzip.toByteArray());
-        int width = 7,
-            height = (rgb.size() + width * 3 - 1) / (width * 3),
+        int height = (rgb.size() + width * 3 - 1) / (width * 3),
             channels = color == 6 ? 4 : 3;
         byte[] data = Arrays.copyOf(rgb.toByteArray(), width * height * 3);
         ByteArrayOutputStream pixels = new ByteArrayOutputStream();
@@ -114,6 +118,24 @@ public final class ProviderPngSegmentsTest {
                 ProviderPngSegments.write(new ByteArrayInputStream(png), out);
                 check(Arrays.equals(ts, out.toByteArray()));
             }
+        // Current public player: 512-pixel RGB image, 16 decorative rows,
+        // then the gzip header. Also split the marker across a row boundary.
+        for (int prefixSize : new int[] { 512 * 3 * 16, 512 * 3 * 16 - 4 }) {
+            byte[] prefix = new byte[prefixSize];
+            for (int i = 0; i < prefix.length; i++) prefix[i] = (byte) (i % 127);
+            for (int color : new int[] { 2, 6 })
+                for (int filter = 0; filter < 5; filter++) {
+                    byte[] current = png(ts, color, filter, prefix, 512);
+                    ByteArrayOutputStream decoded = new ByteArrayOutputStream();
+                    ProviderPngSegments.write(new ByteArrayInputStream(current), decoded);
+                    check(Arrays.equals(ts, decoded.toByteArray()));
+                }
+        }
+        byte[] boundary = png(ts, 2, 0, new byte[1 << 20], 512);
+        ByteArrayOutputStream boundaryOut = new ByteArrayOutputStream();
+        ProviderPngSegments.write(new ByteArrayInputStream(boundary), boundaryOut);
+        check(Arrays.equals(ts, boundaryOut.toByteArray()));
+        rejected(png(ts, 2, 0, new byte[(1 << 20) + 1], 512));
         byte[] png = png(ts, 2, 0);
         ByteArrayOutputStream appended = new ByteArrayOutputStream();
         appended.write(png);
