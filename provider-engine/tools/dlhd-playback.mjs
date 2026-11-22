@@ -127,7 +127,8 @@ async function inspect(provider, row, forceRenew = false) {
                     [/Stream map .*matches no streams/i, "missing_required_track"],
                     [/connection refused|Connection timed out/i, "transport_failed"],
                     [/Invalid playlist|Error parsing playlist/i, "playlist_invalid"],
-                ]) if (pattern.test(line)) decoderReasons.add(label);
+                ])
+                    if (pattern.test(line)) decoderReasons.add(label);
             }
         });
         const code = await new Promise((resolve) => {
