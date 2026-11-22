@@ -8,6 +8,8 @@ on:
                 fix/vod-provider-recovery,
                 fix/site-by-site-vod,
             ]
+    schedule:
+        - cron: "27 */12 * * *" # Full VOD diagnostics, not automatic parser deployment.
     workflow_dispatch:
 permissions:
     contents: read
