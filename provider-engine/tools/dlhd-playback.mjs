@@ -117,7 +117,10 @@ async function inspect(provider, row, forceRenew = false) {
                             chunks.push(chunk);
                             size += chunk.length;
                         }
-                    const bytes = Buffer.concat(chunks.map((v) => Buffer.from(v)), size);
+                    const bytes = Buffer.concat(
+                        chunks.map((v) => Buffer.from(v)),
+                        size,
+                    );
                     const packets = Math.floor(bytes.length / 188);
                     let aligned = 0;
                     const pids = new Set();
