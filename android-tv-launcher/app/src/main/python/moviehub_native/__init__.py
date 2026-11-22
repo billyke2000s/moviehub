@@ -8,6 +8,10 @@ PROVIDERS = [dict(id='native:fourkhdhub', module='moviehub_native.fourkhdhub', f
     dict(id='native:movy', module='moviehub_native.movy', family='native',
     name='movy', site='movy.sx', movies=True, series=True)]
 
+PROVIDERS.append(dict(id='native:primewire', module='moviehub_native.primewire',
+    factory='PrimeWire', family='native', name='primewire', site='primewire1.buzz',
+    movies=True, series=False))
+
 # CineStream 487: separate modules, no changes to the four established native adapters.
 _CINESTREAM = [
     ('vaplayer', 'VaPlayer', 'streamdata.vaplayer.ru', True, True),
