@@ -24,7 +24,7 @@ jobs:
               run: node provider-engine/tools/public-tv-probe.mjs
             - name: Save report without any stream URLs, private playlists or tokens
               if: always()
-              uses: actions/upload-artifact@v6
+              uses: actions/upload-artifact@v7
               with:
                   name: public-tv-catalogue-audit
                   path: build/public-tv/
