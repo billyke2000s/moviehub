@@ -1,5 +1,15 @@
 ## Unreleased
 
+## 1.0.23 (22 November 2026)
+
+- Playwright browser inspection is now part of MovieHub's repository tooling, helping identify changes in public Live TV and film/series player requests without adding Chromium to the APK.
+- Expanded scheduled checks for bundled Live TV providers and public Free-TV, iptv-org and Pluto catalogues, plus independent website audits for film and series sources.
+- Added experimental PrimeWire movie discovery and prevented identical verified media links with matching playback headers from appearing as separate sources. Different URLs or playback headers remain separate alternatives.
+- Live TV module failures can trigger a non-blocking check for updated **signed** provider packages when a trusted update feed is configured; playback failover and continued background source discovery remain active.
+- Rive's site-level playback audit now checks the actual returned players rather than requiring Vanguard. Three alternative Rive episode streams passed real decoded-video/audio and midpoint-seek checks in CI.
+- Public provider availability varies: Movy's website returned HTTP 403 in the latest external audit and PrimeWire playback remains unverified. This release does **not** yet automatically generate patches for arbitrary new protocols; signed module update provisioning is still required.
+
+
 - Added a **Playwright/Chromium provider inspector** as a separate CI/browser tool, with a user-supplied PrimeWire watch-page fixture and target inventory generated from all active movie/series website registrations. Public live-site landing pages are also inspected. It captures only redacted network route shapes, host names, response classes, iframe counts and server-control counts; it never stores signed stream URLs, cookies, screenshots or account information.
 - Scheduled browser checks run on public live pages every two hours and enabled VOD website landing pages every twelve hours (four shards); each compares its signature against the previous successful saved report when available and highlights changed media/API routes. **Browser findings are diagnostic suggestions, not automatically generated or deployed extractor code.** No APK/runtime changes are made by this browser tool.
 
