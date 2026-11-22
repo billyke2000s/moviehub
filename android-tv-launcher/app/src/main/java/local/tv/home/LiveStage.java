@@ -278,13 +278,16 @@ final class LiveStage implements LiveScreen {
         lp.topMargin = box[1] - base[1];
         video.setLayoutParams(lp);
         if (anchorLabel != null) {
+            // The label covers the whole box with its text at the bottom, so it never depends on
+            // its own height. That height is not measured yet on the first placement, which put
+            // the name below the box, over the guide's time slots.
             FrameLayout.LayoutParams label = new FrameLayout.LayoutParams(
                 anchor.getWidth(),
-                -2,
+                anchor.getHeight(),
                 Gravity.TOP | Gravity.START
             );
             label.leftMargin = lp.leftMargin;
-            label.topMargin = lp.topMargin + anchor.getHeight() - anchorLabel.getHeight();
+            label.topMargin = lp.topMargin;
             anchorLabel.setLayoutParams(label);
             anchorLabel.setVisibility(View.VISIBLE);
         }

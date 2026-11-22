@@ -119,7 +119,9 @@ final class GuideFrame {
         pictureBox = new FrameLayout(activity);
         pictureBox.setBackground(box(0xff000000));
         pictureLabel = text("", 13, true);
-        pictureLabel.setGravity(Gravity.CENTER);
+        // Bottom of the box: LiveStage stretches the label over the whole picture.
+        pictureLabel.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM);
+        pictureLabel.setPadding(0, 0, 0, activity.dp(4));
         pictureLabel.setShadowLayer(activity.dp(4), 0, activity.dp(1), 0xcc000000);
         pictureBox.addView(pictureLabel, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
         // Two fewer guide rows make room for a genuinely useful 16:9 preview, not a tiny icon.
