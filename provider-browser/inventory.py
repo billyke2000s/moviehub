@@ -16,23 +16,28 @@ sys.path.insert(0, str(APP))
 import moviehub_vod
 
 
+# Landing pages alone cannot verify dynamically rendered player controls.
+# These two public, concrete watch routes were checked against the current
+# websites; media downloads remain blocked by inspect.mjs.
 LIVE = [
-    ("dlhd", "https://thedaddy.li/"),
-    ("zlive", "https://zlive.st/"),
-    ("freeshot", "https://freeshot.live/"),
-    ("tubi", "https://tubitv.com/"),
-    ("plex", "https://watch.plex.tv/"),
-    ("roku", "https://therokuchannel.roku.com/"),
-    ("stirr", "https://stirr.com/"),
-    ("localnow", "https://localnow.com/"),
+    ("dlhd", "https://thedaddy.li/", "landing", 0),
+    ("dlhd-channel-302", "https://thedaddy.li/watch.php?id=302", "player", 4),
+    ("zlive", "https://zlive.st/", "landing", 0),
+    ("freeshot", "https://freeshot.live/", "landing", 0),
+    ("freeshot-sky-action-21", "https://www.freeshot.live/live-tv/sky-sports-action-uk/21", "player", 0),
+    ("tubi", "https://tubitv.com/", "landing", 0),
+    ("plex", "https://watch.plex.tv/", "landing", 0),
+    ("roku", "https://therokuchannel.roku.com/", "landing", 0),
+    ("stirr", "https://stirr.com/", "landing", 0),
+    ("localnow", "https://localnow.com/", "landing", 0),
 ]
 
 
 def targets(kind, shard, total):
     if kind == "live":
         return [
-            dict(id=name, url=url, kind="landing", maxClicks=0)
-            for index, (name, url) in enumerate(LIVE) if index % total == shard
+            dict(id=name, url=url, kind=kind, maxClicks=max_clicks)
+            for index, (name, url, kind, max_clicks) in enumerate(LIVE) if index % total == shard
         ]
     rows = json.loads(moviehub_vod.search_providers())
     destinations = [
