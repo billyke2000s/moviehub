@@ -69,22 +69,47 @@ async function inspect(provider, row, forceRenew = false) {
         if (forceRenew && stream.playlistSession) stream.playlistSession.expiresAtMs = 0;
         relay.stdin.write(JSON.stringify(stream) + "\n");
         const url = await ready;
-        // Check the *production relay's* first response, not the upstream URL.
-        // Keep only structural flags and status; never retain segment URLs or tokens.
+        // Trace HLS master -> media playlist -> first segment through the exact
+        // production relay, never logging URLs, query values or media bytes.
+        const relayStages = [];
         try {
-            const first = await fetch(url, { signal: AbortSignal.timeout(12000) });
-            const body = await first.text();
-            result.manifestCheck = {
-                status: first.status,
-                mimeHls: /mpegurl/i.test(first.headers.get("content-type") || ""),
-                hls: body.trimStart().startsWith("#EXTM3U"),
-                bytes: body.length,
-                variants: (body.match(/#EXT-X-STREAM-INF:/g) || []).length,
-                segments: (body.match(/#EXTINF:/g) || []).length,
-            };
+            let child = url;
+            const origin = new URL(url).origin;
+            for (let depth = 0; depth < 3; depth++) {
+                const response = await fetch(child, { signal: AbortSignal.timeout(12000) });
+                const type = response.headers.get("content-type") || "";
+                const stage = { status: response.status, mimeHls: /mpegurl/i.test(type) };
+                if (!stage.mimeHls && depth >= 2) {
+                    const reader = response.body?.getReader();
+                    const packet = reader ? await reader.read() : {value: null};
+                    const bytes = packet.value || new Uint8Array();
+                    stage.firstSegment = {
+                        received: bytes.length > 0,
+                        ts: bytes.length > 0 && bytes[0] === 0x47,
+                        mp4: bytes.length > 8 && String.fromCharCode(...bytes.slice(4, 8)) === "ftyp",
+                        html: bytes.length > 0 && bytes[0] === 0x3c,
+                    };
+                    if (reader) await reader.cancel().catch(() => {});
+                    relayStages.push(stage);
+                    break;
+                }
+                const body = await response.text();
+                stage.hls = body.trimStart().startsWith("#EXTM3U");
+                stage.bytes = body.length;
+                stage.variants = (body.match(/#EXT-X-STREAM-INF:/g) || []).length;
+                stage.segments = (body.match(/#EXTINF:/g) || []).length;
+                relayStages.push(stage);
+                if (!stage.hls) break;
+                const next = body.split(/\\r?\\n/).map(line => line.trim()).find(line => line && !line.startsWith("#"));
+                if (!next) break;
+                const nextUrl = new URL(next, child);
+                if (nextUrl.origin !== origin) break;
+                child = nextUrl.href;
+            }
         } catch (error) {
-            result.manifestCheck = { failure: error.constructor.name };
+            relayStages.push({failure: error.constructor.name});
         }
+        result.relayStages = relayStages;
         const tracks = [0, 1].map(() => ({ frames: 0, unique: 0, start: null, end: null, maxGap: 0 }));
         const bases = [];
         const hashes = [new Set(), new Set()];
