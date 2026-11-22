@@ -1,5 +1,20 @@
 ## Unreleased
 
+- Added a **Playwright/Chromium provider inspector** as a separate CI/browser tool, with a user-supplied PrimeWire watch-page fixture and target inventory generated from all active movie/series website registrations. Public live-site landing pages are also inspected. It captures only redacted network route shapes, host names, response classes, iframe counts and server-control counts; it never stores signed stream URLs, cookies, screenshots or account information.
+- Scheduled browser checks run on public live pages every two hours and enabled VOD website landing pages every twelve hours (four shards); each compares its signature against the previous successful saved report when available and highlights changed media/API routes. **Browser findings are diagnostic suggestions, not automatically generated or deployed extractor code.** No APK/runtime changes are made by this browser tool.
+
+
+- All 15 bundled public TV provider modules now run in four independent scheduled GitHub Actions probe groups, rather than only DaddyLive, ZLive and FreeShot. Added a separate bounded public catalogue check for Pluto TV, Free-TV and UK/US/all iptv-org lists. No private account playlists or credentials are uploaded.
+- A failing provider-engine playback resolve schedules a throttled background check of the existing pinned RSA-signed update feed (only when configured and auto-updates are enabled), without delaying existing failover. A newly authenticated package invalidates the stale channel cache. The current checkout still has no configured public signing key, so this does not yet make autonomous parser repairs operational.
+
+
+- Added experimental movie-only PrimeWire catalogue discovery at `primewire1.buzz/watch/<slug>`: only explicit HTTPS player links on a matching title/year page enter normal ResolveURL/media validation. No player URLs are guessed and no claim of working live playback is made.
+- Free VOD source rows now suppress identical resolved URLs with identical playback headers across different catalogue websites; distinct cookies, signed URLs and headers remain independent choices.
+- Added periodic read-only diagnostics: DaddyLive/ZLive/FreeShot every two hours and a full free-VOD audit every twelve hours in GitHub Actions. These **monitor** failures and preserve reports; they do not automatically invent or deploy parser changes.
+- The provider-engine signed update path remains inactive when `providers/trust.json` has an empty public key or the GitHub signing/update settings are unconfigured. Automatic code updates are not enabled by these changes.
+
+
+
 **Version notes describe code changes, not proof of an installable release.** Check the [latest published release](https://github.com/billyke2000s/moviehub/releases/latest) or [signed update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest). Older "Unreleased" headings further down are retained historical development records.
 
 ## 1.0.22 (22 November 2026)
