@@ -1,5 +1,14 @@
 # Architecture
 
+## Unreleased: catalogue rediscovery and provider monitoring
+
+`moviehub_native/primewire.py` treats the supplied `/watch/<slug>` address as a movie catalogue page. It verifies title/year, extracts explicit server/iframe HTTPS links without executing site scripts, and passes only those links into the existing hosted-link resolver and media validator. Missing player URLs and undocumented AJAX APIs are reported as unavailable, not guessed. Series are excluded pending verifiable season/episode mapping. This introduces one new website search path, not a duplicate VidCore/VixSrc/VidRock provider.
+
+`SourceRepository.Source.key()` now deduplicates free VOD sources by the exact resolved media URL and normalized headers, not the catalogue name or displayed title. Header-distinct and signed-URL-distinct sources remain separate; refresh and background backup discovery stay unchanged.
+
+GitHub Actions periodically run the existing live and free-VOD diagnostics. Monitoring is not self-modifying code. The existing signed provider-engine updates require a configured RSA trust key and signing workflow; the checked-in trust key is empty and no VOD runtime-code update facility is included here.
+
+
 ## Current implementation orientation
 
 This is an engineering reference; the [README](README.md) is for people installing MovieHub. The current mainline app uses **Media3 ExoPlayer for Live TV** and **LibVLC for films and series**. Settings → Setup contains free-channel controls, Nuvio Sports, parental lock and engineer tools. Nuvio was included in the [published 1.0.21 release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21), without a guarantee that any external sports stream will play.
