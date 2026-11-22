@@ -5,6 +5,7 @@ import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import { writeFileSync } from "node:fs";
 
+const seconds = Math.max(30, Math.min(150, Number(process.env.STREAM_SECONDS || 150)));
 process.env.MOVIEHUB_PROBE_LIBRARY = "1";
 const { run } = await import("./live-probe.mjs");
 const report = [];
@@ -23,7 +24,7 @@ async function inspect(provider, row, forceRenew = false) {
     const result = {
         provider,
         channel: String(row.name).slice(0, 80),
-        seconds: 150,
+        seconds,
         forcedRenewal: forceRenew,
     };
     let relay;
@@ -84,7 +85,7 @@ async function inspect(provider, row, forceRenew = false) {
                 "-i",
                 url,
                 "-t",
-                "150",
+                String(seconds),
                 "-map",
                 "0:v:0",
                 "-map",
@@ -132,7 +133,7 @@ async function inspect(provider, row, forceRenew = false) {
         result.warningLines = warnings;
         result.relayErrors = relayErrors;
         result.bothDecoded =
-            code === 0 && result.tracks.every((track) => track.duration >= 145 && track.frames > 10);
+            code === 0 && result.tracks.every((track) => track.duration >= seconds - 5 && track.frames > 10);
     } catch (error) {
         result.failure = error.constructor.name;
         const safe = [
@@ -177,8 +178,10 @@ if (process.env.SPORTS_PROBE_ONLY !== "freeshot")
     }
 try {
     const rows = await run("freeshot", "catalogue", null, stats());
-    const row = rows.find((value) => /sky.*sports.*main.*event/i.test(value.name || ""));
-    if (!row) report.push({ provider: "freeshot", failure: "No Main Event catalogue row" });
+    const row =
+        rows.find((value) => /sky.*sports.*main.*event/i.test(value.name || "")) ||
+        rows.find((value) => /sky.*sports.*action/i.test(value.name || ""));
+    if (!row) report.push({ provider: "freeshot", failure: "No known sports channel in catalogue" });
     else report.push(await inspect("freeshot", row, true));
 } catch (error) {
     report.push({ provider: "freeshot", failure: error.constructor.name });
