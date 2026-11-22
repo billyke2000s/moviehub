@@ -35,7 +35,7 @@ final class ChannelNumbers {
                 dkeys.add(c.getString(4));
                 String source = c.getString(5);
                 boolean free = source.equals("fta") || source.equals("free");
-                entries.add(new GuideOrder.Entry(c.getString(1), c.getString(2), c.getString(3), free));
+                entries.add(new GuideOrder.Entry(ChannelIdentity.displayName(c.getString(1)), c.getString(2), c.getString(3), free));
             }
         }
         GuideOrder.plan(entries);
