@@ -1,0 +1,76 @@
+name: Inspect player changes with Playwright
+on:
+    pull_request:
+        paths:
+            - 'provider-browser/**'
+            - '.github/workflows/playwright-provider-inspection.yml'
+    workflow_dispatch:
+    schedule:
+        - cron: '19 */2 * * *'  # Public live website pages
+        - cron: '37 */12 * * *' # All enabled VOD catalogue websites
+permissions:
+    contents: read
+    actions: read
+concurrency:
+    group: browser-provider-${{ github.ref }}-${{ github.event.schedule || 'manual' }}
+    cancel-in-progress: true
+jobs:
+    inspect:
+        # PRs run one representative live and VOD shard; manual starts the full audit.
+        if: >-
+            github.event_name == 'workflow_dispatch' ||
+            github.event_name == 'pull_request' && (matrix.target == 'live' || matrix.target == 'vod-0') ||
+            github.event.schedule == '19 */2 * * *' && matrix.target == 'live' ||
+            github.event.schedule == '37 */12 * * *' && matrix.target != 'live'
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - { target: 'live', kind: 'live', shard: '0/1' }
+                    - { target: 'vod-0', kind: 'vod', shard: '0/4' }
+                    - { target: 'vod-1', kind: 'vod', shard: '1/4' }
+                    - { target: 'vod-2', kind: 'vod', shard: '2/4' }
+                    - { target: 'vod-3', kind: 'vod', shard: '3/4' }
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+            - uses: actions/setup-python@v5
+              with:
+                  python-version: '3.11'
+            - name: Install pinned inspection dependencies
+              run: |
+                  npm install --prefix provider-browser --ignore-scripts --no-audit --no-fund --package-lock=false
+                  python -m pip install requests==2.32.5 six==1.17.0
+                  ./provider-browser/node_modules/.bin/playwright install --with-deps chromium
+            - name: Check network redaction and inventory restrictions
+              run: node --test provider-browser/tests/*.test.mjs
+            - name: Generate public-only source inventory
+              run: |
+                  python provider-browser/inventory.py --kind '${{ matrix.kind }}' --shard '${{ matrix.shard }}' > browser-targets.json
+            - name: Restore prior successful protocol signatures if present
+              continue-on-error: true
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  ARTIFACT: browser-protocol-${{ matrix.target }}
+              run: |
+                  previous=$(gh run list --workflow playwright-provider-inspection.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+                  if [ -n "$previous" ]; then
+                      mkdir -p prior
+                      gh run download "$previous" --name "$ARTIFACT" --dir prior || true
+                  fi
+            - name: Inspect rendered players and sanitised browser requests
+              env:
+                  OUTPUT: build/browser-inspection/${{ matrix.target }}
+              run: |
+                  node provider-browser/inspect.mjs --targets browser-targets.json --baseline prior/report.json --output "$OUTPUT"
+            - name: Upload redacted protocol evidence
+              if: always()
+              uses: actions/upload-artifact@v6
+              with:
+                  name: browser-protocol-${{ matrix.target }}
+                  path: build/browser-inspection/${{ matrix.target }}/
+                  if-no-files-found: ignore
