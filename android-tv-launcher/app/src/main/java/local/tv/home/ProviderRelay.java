@@ -82,8 +82,8 @@ final class ProviderRelay implements AutoCloseable {
         credentialAuthority = URI.create(stream.url).getAuthority();
         playlistSession =
             stream.playlistSession == null ? null : new PlaylistSession(stream.url, stream.playlistSession);
-        freeShotTs = stream.playlistSession != null &&
-            "freeshot".equals(stream.playlistSession.optString("type"));
+        freeShotTs =
+            stream.playlistSession != null && "freeshot".equals(stream.playlistSession.optString("type"));
         segmentContainers = stream.segmentContainers || playlistSession != null;
         boundedRanges = stream.boundedRanges;
         livePlaylist = stream.livePlaylist;
