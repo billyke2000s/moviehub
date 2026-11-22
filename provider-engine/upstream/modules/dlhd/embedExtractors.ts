@@ -276,15 +276,31 @@ function fromB64(s: string): string {
 
 /** The JSON value hidden in `blob` under the chunk-shuffle layout above, or undefined when it isn't one. */
 function recoverShuffledJson(blob: string): unknown {
-  const text = fromB64(blob);
+  let text: string;
+  try {
+    text = fromB64(blob);
+  } catch {
+    return undefined;
+  }
   if (!/^[A-Za-z0-9+/=]{16}/.test(text)) return undefined; // the first layer must decode to more base64
   for (let n = 2; n <= MAX_SHUFFLE_PARTS; n++) {
     const size = Math.ceil(text.length / n);
     const chunks = Array.from({ length: n }, (_, i) => text.substr(i * size, size));
     for (let k = 0; k <= MAX_JUNK_INDEX; k++) {
-      const pieces = chunks.map((c) => fromB64(c.slice(0, k) + c.slice(k + 1)));
+      let pieces: string[];
+      try {
+        pieces = chunks.map((c) => fromB64(c.slice(0, k) + c.slice(k + 1)));
+      } catch {
+        // Node silently tolerates invalid base64 guesses; the APK's audited
+        // codec rejects them. Reject this layout, not the entire extractor.
+        continue;
+      }
       for (let lead = 0; lead < n; lead++) {
-        if (!fromB64(pieces[lead].slice(0, 4)).startsWith('{')) continue;
+        try {
+          if (!fromB64(pieces[lead].slice(0, 4)).startsWith('{')) continue;
+        } catch {
+          continue;
+        }
         const rest = pieces.filter((_, i) => i !== lead);
         for (const order of permutations(rest)) {
           try {

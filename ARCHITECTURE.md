@@ -348,13 +348,19 @@ the `/stream/` choice retains the original channel key, and all copies keep the 
 `DlhdSources` persists bounded encrypted player hints tied to the module hash. Explicit choices validate
 the current button list and resolve only that player, allowing the existing source race and failover
 to reach later players independently of the legacy Auto walk's time budget. Older signed packages
-without `dlhdPlayerSources` cannot override this routing. Network/server failures of the catalogue
-entrance can discover alternatives from `daddylive.pk`; HTTP refusals and rate limits stop retries.
+without `dlhdPlayerSources` cannot override this routing. Catalogue discovery reads mirror cards and
+their `check_status.php` results from `daddylive.pk`, and tries only mirrors reported online. Fonts,
+stylesheet and canonical links are excluded. An observed redirect establishes the canonical origin
+for subsequent page requests and Referers. HTTP refusals and rate limits stop retries.
 Challenge/ticket exchanges not supported by an extractor still fail; player enumeration is not
 decoded playback evidence.
 The observed BINTV Player 5 wrapper encodes a JustEmbeds iframe in its `data` query. The resolver
 recognizes that exact wrapper and embed scope without executing its page scripts; the downstream
 page still has to provide a valid playlist through the normal bounded extractor/transport.
+Player 2's shuffled configuration search tolerates invalid layout guesses rejected by the APK's
+strict base64 codec, then validates the recovered JSON through the existing bounded extractor.
+The observed `*.7odxv0l067ka.net:8443/hls/` HTTPS media scope is permitted only for DaddyLive;
+other providers, ports and paths retain their original restrictions and public-address checks.
 
 `ProviderFailure` classifies fixed diagnostic summaries and HTTP status codes without copying exception
 messages. `ProviderBroker` retains safe transport failure categories across replay and wraps failed script

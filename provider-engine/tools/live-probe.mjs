@@ -29,7 +29,18 @@ function allowed(provider, url) {
     } catch {
         return false;
     }
-    if (u.protocol !== "https:" || u.username || u.password || (u.port && u.port !== "443")) return false;
+    if (u.protocol !== "https:" || u.username || u.password) return false;
+    if (
+        u.port &&
+        u.port !== "443" &&
+        !(
+            provider === "dlhd" &&
+            u.port === "8443" &&
+            /^[A-Za-z0-9-]+\.7odxv0l067ka\.net$/.test(u.hostname) &&
+            u.pathname.startsWith("/hls/")
+        )
+    )
+        return false;
     const host = u.hostname,
         path = u.pathname;
     switch (provider) {
@@ -371,11 +382,9 @@ if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
         // being mistaken for playback while respecting the upstream IP rate cap.
         // Scheduled sweeps remain catalogue-only; this explicit PR diagnostic
         // performs at most one ZLive live request.
-        const playbackSamples = id === "zlive"
-            ? (process.env.ZLIVE_LIVE_TEST === "1" ? samples.slice(0, 1) : [])
-            : samples;
-        if (id === "zlive" && playbackSamples.length === 0)
-            result.playbackScope = "not_tested";
+        const playbackSamples =
+            id === "zlive" ? (process.env.ZLIVE_LIVE_TEST === "1" ? samples.slice(0, 1) : []) : samples;
+        if (id === "zlive" && playbackSamples.length === 0) result.playbackScope = "not_tested";
         for (const row of playbackSamples) {
             const sample = { name: String(row.name).slice(0, 60), resolve: "", play: "" };
             const rstats = {

@@ -16,6 +16,7 @@ function __dlhdDirectoryAt(base) {
             error.httpStatus = response.status;
             throw error;
         }
+        if (response.url) exports.setBase(__dlhdMirror(new URL(response.url).origin));
         return response.text().then(function (html) {
             var rows = require("./parseDirectory.js").parseChannels(html);
             if (!rows.length) throw new Error("DaddyLive directory is empty");
@@ -24,40 +25,56 @@ function __dlhdDirectoryAt(base) {
     });
 }
 function __dlhdDirectory() {
-    return __dlhdDirectoryAt(exports.getBase()).catch(function (first) {
-        // A refusal/rate limit is not permission to retry through another entrance.
-        if (first.httpStatus === 401 || first.httpStatus === 403 || first.httpStatus === 429) throw first;
-        return fetch(__dlhdDirectoryUrl, { headers: { "User-Agent": exports.UA } })
-            .then(function (response) {
-                if (!response.ok) throw first;
-                return response.text();
-            })
-            .then(function (html) {
-                var matches = /href=["'](https:\/\/[^/"'?#]+)\/?["']/gi;
-                var seen = {},
-                    mirrors = [],
-                    match;
-                while ((match = matches.exec(html))) {
-                    try {
-                        var mirror = __dlhdMirror(match[1]);
-                        if (!seen[mirror] && mirror !== exports.getBase()) {
-                            seen[mirror] = true;
-                            mirrors.push(mirror);
-                        }
-                    } catch (_) {}
-                    if (mirrors.length >= 8) break;
-                }
-                function next(index) {
-                    if (index >= mirrors.length) throw first;
-                    return __dlhdDirectoryAt(mirrors[index]).catch(function (error) {
-                        if (error.httpStatus === 401 || error.httpStatus === 403 || error.httpStatus === 429)
-                            throw error;
-                        return next(index + 1);
+    return fetch(__dlhdDirectoryUrl, { headers: { "User-Agent": exports.UA } })
+        .then(function (response) {
+            if (!response.ok) throw new Error("DaddyLive mirror directory unavailable");
+            return response.text();
+        })
+        .then(function (html) {
+            var matches = /\bdata-url=["'](https:\/\/[^/"'?#]+)\/?["']/gi;
+            var seen = {},
+                mirrors = [],
+                online = [],
+                match;
+            while ((match = matches.exec(html))) {
+                try {
+                    var mirror = __dlhdMirror(match[1]);
+                    if (!seen[mirror]) {
+                        seen[mirror] = true;
+                        mirrors.push(mirror);
+                    }
+                } catch (_) {}
+                if (mirrors.length >= 8) break;
+            }
+            if (!mirrors.length) throw new Error("DaddyLive mirror cards unavailable");
+            function check(index) {
+                if (index >= mirrors.length) return open(0);
+                var mirror = mirrors[index];
+                return fetch(__dlhdDirectoryUrl + "check_status.php?url=" + encodeURIComponent(mirror), {
+                    headers: { "User-Agent": exports.UA, Referer: __dlhdDirectoryUrl },
+                })
+                    .then(function (response) {
+                        if (!response.ok) return null;
+                        return response.json();
+                    })
+                    .catch(function () {
+                        return null;
+                    })
+                    .then(function (status) {
+                        if (status && status.status === "online") online.push(mirror);
+                        return check(index + 1);
                     });
-                }
-                return next(0);
-            });
-    });
+            }
+            function open(index) {
+                if (index >= online.length) throw new Error("No usable online DaddyLive mirror");
+                return __dlhdDirectoryAt(online[index]).catch(function (error) {
+                    if (error.httpStatus === 401 || error.httpStatus === 403 || error.httpStatus === 429)
+                        throw error;
+                    return open(index + 1);
+                });
+            }
+            return check(0);
+        });
 }
 function __dlhdCatalogue() {
     return __dlhdDirectory().then(function (channels) {

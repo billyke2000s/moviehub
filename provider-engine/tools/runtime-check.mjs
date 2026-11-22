@@ -156,11 +156,19 @@ const tclStream = drive("tcl", "resolve", tcl[0], (req) => {
 });
 assert.equal(tclStream.url, "https://media.example/fresh.m3u8");
 checks++;
+const daddyDirectoryCard = '<div class="mirror-card" data-url="https://thedaddy.li"></div>';
+function daddyDirectoryFixture(req) {
+    if (req.url === "https://daddylive.pk/") return daddyDirectoryCard;
+    if (req.url.startsWith("https://daddylive.pk/check_status.php?")) return { status: "online" };
+    return undefined;
+}
 const dlhd = drive(
     "dlhd",
     "catalogue",
     null,
-    () => '<a class="card" href="watch.php?id=42"><div class="card__title">Test &amp; Sport</div></a>',
+    (req) =>
+        daddyDirectoryFixture(req) ??
+        '<a class="card" href="watch.php?id=42"><div class="card__title">Test &amp; Sport</div></a>',
 );
 assert.equal(dlhd[0].name, "Test & Sport");
 checks++;
@@ -215,6 +223,8 @@ const daddyButtons =
         .map((prefix) => `<button data-url="https://thedaddy.li/${prefix}/stream-38.php"></button>`)
         .join("") + '<button data-url="https://thedaddy.li/stream/stream-999.php"></button>';
 const daddyRows = drive("dlhd", "catalogue", null, (req) => {
+    const directory = daddyDirectoryFixture(req);
+    if (directory !== undefined) return directory;
     if (req.url.endsWith("/24-7-channels.php"))
         return '<a class="card" href="watch.php?id=38"><div class="card__title">Sky Sports Main Event UK</div></a>';
     assert.ok(req.url.endsWith("/watch.php?id=38"));
@@ -243,6 +253,35 @@ assert.equal(seventh.playerIndex, 7);
 assert.equal(seventh.url, "https://media.example/seventh.m3u8");
 assert.equal(selectedCalls.filter((url) => url.includes("stream-38.php")).length, 1);
 checks++;
+// Current Player 2's four-piece shuffled config. Wrong layouts can have an
+// invalid base64 length: the APK codec must keep looking for the valid one.
+const shuffledJson = Buffer.from(
+    JSON.stringify({
+        stream_url: "https://media.example/shuffled.m3u8",
+        padding: "x".repeat(1200),
+    }),
+).toString("base64");
+const shuffledSize = shuffledJson.length / 4;
+const shuffledPieces = Array.from({ length: 4 }, (_, i) =>
+    shuffledJson.slice(i * shuffledSize, (i + 1) * shuffledSize),
+);
+const shuffledBlob = Buffer.from(
+    [2, 0, 3, 1]
+        .map((i) => {
+            const piece = Buffer.from(shuffledPieces[i]).toString("base64");
+            return piece.slice(0, 3) + "A" + piece.slice(3);
+        })
+        .join(""),
+).toString("base64");
+const shuffledStream = drive("dlhd", "resolve", { channelId: "38--player--cast" }, (req) => {
+    if (req.url.includes("watch.php")) return daddyButtons;
+    if (req.url.includes("stream-38.php")) return '<iframe src="https://player.example/shuffled"></iframe>';
+    if (req.url.includes("player.example")) return "window._econfig='" + shuffledBlob + "';";
+    return "#EXTM3U\n#EXTINF:4,\nsegment.ts\n";
+});
+assert.equal(shuffledStream.url, "https://media.example/shuffled.m3u8");
+assert.equal(shuffledStream.playerIndex, 2);
+checks++;
 assert.throws(
     () =>
         drive(
@@ -262,26 +301,61 @@ assert.throws(
 );
 checks++;
 const mirrorCalls = [];
+const officialMirrors = ["dlhd.pk", "dlhd.st", "dlstreams.st", "thedaddy.pk", "dlive.sx"];
 const mirrored = drive("dlhd", "catalogue", null, (req) => {
     mirrorCalls.push(req.url);
-    if (req.url === "https://thedaddy.li/24-7-channels.php") return { transport: { status: 503 } };
-    if (req.url === "https://daddylive.pk/") return '<a href="https://dlhd.st/">Visit</a>';
+    if (req.url === "https://daddylive.pk/")
+        return (
+            '<link href="https://fonts.example">' +
+            officialMirrors
+                .map(
+                    (host) =>
+                        `<div class="mirror-card" data-url="https://${host}"><a href="https://${host}">Visit</a></div>`,
+                )
+                .join("")
+        );
+    if (req.url.startsWith("https://daddylive.pk/check_status.php?")) {
+        const mirror = new URL(req.url).searchParams.get("url");
+        return { status: /dlstreams|dlive/.test(mirror) ? "offline" : "online" };
+    }
+    if (req.url === "https://dlhd.pk/24-7-channels.php") return { transport: { status: 503 } };
     assert.equal(req.url, "https://dlhd.st/24-7-channels.php");
     return '<a class="card" href="watch.php?id=42"><div class="card__title">Fixture</div></a>';
 });
 assert.equal(mirrored.length, 1);
-assert.equal(mirrorCalls.length, 3);
+assert.equal(mirrorCalls.length, 8);
+assert.equal(mirrorCalls.filter((url) => url.includes("/check_status.php?")).length, 5);
+assert.ok(!mirrorCalls.some((url) => /https:\/\/(?:fonts|dlstreams|dlive)\./.test(url)));
+checks++;
+const redirectedMirror = drive("dlhd", "catalogue", null, (req) => {
+    if (req.url === "https://daddylive.pk/")
+        return '<div class="mirror-card" data-url="https://dlhd.pk"></div>';
+    if (req.url.includes("/check_status.php?")) return { status: "online" };
+    if (req.url === "https://dlhd.pk/24-7-channels.php")
+        return {
+            transport: {
+                url: "https://thedaddy.li/24-7-channels.php",
+                text: '<a class="card" href="watch.php?id=38"><div class="card__title">Sky Sports Main Event UK</div></a>',
+            },
+        };
+    assert.equal(req.url, "https://thedaddy.li/watch.php?id=38");
+    return daddyButtons;
+});
+assert.equal(redirectedMirror.length, 7);
+assert.ok(redirectedMirror.every((row) => row.mirror === "https://thedaddy.li"));
 checks++;
 const refusalCalls = [];
 assert.throws(
     () =>
         drive("dlhd", "catalogue", null, (req) => {
             refusalCalls.push(req.url);
+            const directory = daddyDirectoryFixture(req);
+            if (directory !== undefined) return directory;
             return { transport: { status: 403 } };
         }),
     /directory HTTP 403/,
 );
-assert.equal(refusalCalls.length, 1);
+assert.equal(refusalCalls.length, 3);
 checks++;
 // Observed Player 5: a BINTV wrapper creates a shadow-root iframe from data=,
 // leaving no literal iframe src for the old reader to follow.

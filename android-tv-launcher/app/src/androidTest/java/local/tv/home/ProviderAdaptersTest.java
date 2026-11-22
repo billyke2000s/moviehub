@@ -19,6 +19,18 @@ public final class ProviderAdaptersTest {
 
     private final Context context = ApplicationProvider.getApplicationContext();
 
+    @Test
+    public void daddyCurrentCdnPortIsLimitedToItsSignedHlsScope() {
+        String media = "https://8z09jo.7odxv0l067ka.net:8443/hls/fixture.m3u8?s=fixture";
+        assertTrue(ProviderBroker.allowed("dlhd", media));
+        assertFalse(ProviderBroker.allowed("zlive", media));
+        assertFalse(ProviderBroker.allowed("dlhd", media.replace(":8443", ":8444")));
+        assertFalse(ProviderBroker.allowed("dlhd", media.replace("/hls/", "/admin/")));
+        assertFalse(ProviderBroker.allowed("dlhd", media.replace("7odxv0l067ka.net", "unrelated.example")));
+        assertFalse(ProviderBroker.allowed("dlhd", media.replace("https://", "https://user@")));
+        assertFalse(ProviderBroker.allowed("dlhd", media.replace("https://", "http://")));
+    }
+
     @After
     public void cleanup() {
         ProviderRelay.testConnections = null;

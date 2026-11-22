@@ -7,10 +7,14 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 - DaddyLive: discover separate player choices for Sky/TNT/BT Sports source lists. Selecting a later
   player goes directly to it, so automatic fallback can try it independently of the old first-player
-  walk. Keep the primary channel's saved identity and guide information. Use the official mirror
-  directory when the catalogue entrance has a network/server failure. Live playback remains unverified.
+  walk. Keep the primary channel's saved identity and guide information. Read all listed mirrors'
+  current online status from the official directory, use only online entrances and retain their
+  canonical redirects. Live playback remains unverified.
 - DaddyLive Player 5: follow the current BINTV encoded JustEmbeds frame instead of stopping at its
   empty literal iframe. This parser correction does not establish downstream playback availability.
+- DaddyLive Player 2: continue through invalid shuffled-configuration guesses in the APK's strict
+  decoder and permit the currently advertised CDN's scoped HTTPS HLS endpoint on port 8443.
+  Full playback through that endpoint remains unverified from this workspace.
 
 ## 1.0.24 (22 November 2026)
 

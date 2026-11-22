@@ -253,6 +253,11 @@ channel's playlists, never segments or another host. Renewal bodies are capped a
 10 minutes, and a rejected token gets at most one renewal retry per relay request. Existing public-DNS,
 redirect, header and cancellation checks apply. Tokens are not persisted or published.
 
+DaddyLive's current Player 2 advertises HTTPS media on a CDN-specific port 8443 endpoint. The broker
+permits that port only for DaddyLive, a single-label `7odxv0l067ka.net` subdomain and the `/hls/` path.
+It does not grant other providers or destinations arbitrary ports. HTTPS, userinfo rejection,
+per-connection public-address validation and credential-origin restrictions remain enforced.
+
 PNG segment decoding checks chunk bounds and CRCs, 8-bit RGB/RGBA layout and row filters before extracting
 a recognized payload. Encoded data is capped at 16 MiB, dimensions at 8192 per axis and inflated/decoded
 data at 24 MiB; a valid five-packet TS sync is required. No Android bitmap allocation, downloaded code,
