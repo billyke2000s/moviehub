@@ -1,6 +1,6 @@
 # Security
 
-## Unreleased: Playwright browser evidence boundaries
+## Playwright browser evidence boundaries (merged via PR #230)
 
 Playwright runs only in disposable GitHub Actions/explicit workstation runs with no private IPTV, Xtream, Nuvio or Premiumize credentials. It blocks HTTP, local names, IP-literal destinations, non-public IPv4 DNS results, unsupported methods and browser popups; it aborts media-resource downloads. These application-layer checks are **not** DNS pinning or a substitute for network egress isolation on self-hosted runners. No browser challenges, logins or DRM restrictions are bypassed.
 
