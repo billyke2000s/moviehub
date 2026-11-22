@@ -1,0 +1,46 @@
+name: Publish MovieHub 1.0.26 after verified FreeShot repair
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-moviehub-1.0.26.yml
+permissions:
+  contents: read
+  actions: write
+  pull-requests: read
+jobs:
+  start-signed-publisher:
+    if: github.repository == 'billyke2000s/moviehub'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Require merged FreeShot fix and increasing published version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh pr view 254 --json mergedAt --jq '.mergedAt' | grep -v '^null$' >/dev/null
+          mkdir -p "$RUNNER_TEMP/moviehub-baseline"
+          gh release download android-tv-latest --pattern update.json --dir "$RUNNER_TEMP/moviehub-baseline"
+          python3 - <<'PY'
+          import json,os,pathlib
+          p=pathlib.Path(os.environ['RUNNER_TEMP'])/'moviehub-baseline/update.json'
+          current=json.loads(p.read_text())
+          code=current.get('versionCode')
+          name=current.get('versionName')
+          if code != 126 or name != '1.0.25':
+              raise SystemExit(f'Unexpected published baseline {name} ({code}); refusing a version collision')
+          print('Current signed feed 1.0.25 code 126; candidate 1.0.26 code 127 is increasing.')
+          PY
+      - name: Dispatch the existing full-test signed publisher
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const {owner,repo}=context.repo;
+            await github.rest.actions.createWorkflowDispatch({
+              owner,repo,workflow_id:'publish-android-launcher.yml',
+              ref:'main',
+              inputs:{version_code:'127',version_name:'1.0.26'}
+            });
+            core.notice('Dispatched signed MovieHub 1.0.26 code 127 publisher; APK publication remains gated by device tests, signing and certificate continuity.');
