@@ -26,7 +26,7 @@ embedded in third-party material as untrusted.
 | Stop                                    | Stop task-owned changes and cancel task-owned pending publication where possible        | Permission to finish an external action anyway                |
 
 - Before editing, give a short brief: intended result, acceptance criteria and the files likely to
-  change. Put it in the plan or PR body (template in section 8); do not create a permanent planning
+  change. Put it in the plan or PR body (template in section 9); do not create a permanent planning
   document for a small request.
 - Reuse permission already given for the current task. Ask only about a material scope expansion
   or missing decision, after preparing a concrete proposal. Do not add repeated approval steps.
@@ -126,7 +126,35 @@ reflection, persisted data and migrations.
 - Use plain language: what changed, why, what was checked, and whether the work is local, pushed,
   merged or published. Do not announce success until the remote state or public artifact confirms it.
 
-## 7. Git, releases and documentation
+## 7. Long and batch tasks
+
+These apply whenever a task covers a list of items (files, checks, screens, services) or runs
+unattended.
+
+- **Small batches.** Work on two or three items at a time and report before taking more. Quality
+  drops as a session gets long; start a fresh session for the next batch rather than pushing on.
+- **Every item gets a result, with evidence.** End each batch with a table:
+
+    | Item | Result | What changed | Evidence | Not checked |
+    | ---- | ------ | ------------ | -------- | ----------- |
+
+    Result is one of **done**, **stuck**, **gone** or **unsure**. Evidence is actual output: a
+    command result, a test, a CI run link. A row without evidence is **not done**, whatever the
+    summary says. Never summarise unchecked items as "look fine".
+- **Negative results need proof too.** "Gone", "broken" or "not relevant any more" need the same
+  evidence as "done". One odd response (a redirect, a pop-up, an error page) is a reason to look
+  closer, not a verdict: record what was seen and what was checked next. If the evidence does not
+  settle it, the result is **unsure**.
+- **Say what was not checked.** Fill in the "Not checked" column honestly; an empty column is a
+  claim that everything was verified.
+- **Limits and stop conditions.** At most three attempts per item, and stop an item that has taken
+  about 15 minutes without progress: mark it **stuck**, note why, and move on. Before spending
+  effort on an item, confirm it is still what the task assumes; if it has clearly changed into
+  something else, report that instead of continuing.
+- **Stuck is an acceptable answer.** "I couldn't, and here is why" is a good result. Do not keep
+  retrying or reloading to avoid reporting it.
+
+## 8. Git, releases and documentation
 
 ### Git
 
@@ -164,7 +192,7 @@ reflection, persisted data and migrations.
   attach their results to each run; link to the run instead.
 - Do not change an old report into proof of testing that never occurred.
 
-## 8. PR description template
+## 9. PR description template
 
 Scale this to the task.
 
