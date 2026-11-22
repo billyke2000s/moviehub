@@ -1,5 +1,9 @@
 ## Unreleased
 
+- All 15 bundled public TV provider modules now run in four independent scheduled GitHub Actions probe groups, rather than only DaddyLive, ZLive and FreeShot. Added a separate bounded public catalogue check for Pluto TV, Free-TV and UK/US/all iptv-org lists. No private account playlists or credentials are uploaded.
+- A failing provider-engine playback resolve schedules a throttled background check of the existing pinned RSA-signed update feed (only when configured and auto-updates are enabled), without delaying existing failover. A newly authenticated package invalidates the stale channel cache. The current checkout still has no configured public signing key, so this does not yet make autonomous parser repairs operational.
+
+
 - Added experimental movie-only PrimeWire catalogue discovery at `primewire1.buzz/watch/<slug>`: only explicit HTTPS player links on a matching title/year page enter normal ResolveURL/media validation. No player URLs are guessed and no claim of working live playback is made.
 - Free VOD source rows now suppress identical resolved URLs with identical playback headers across different catalogue websites; distinct cookies, signed URLs and headers remain independent choices.
 - Added periodic read-only diagnostics: DaddyLive/ZLive/FreeShot every two hours and a full free-VOD audit every twelve hours in GitHub Actions. These **monitor** failures and preserve reports; they do not automatically invent or deploy parser changes.
