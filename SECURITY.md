@@ -1,5 +1,12 @@
 # Security
 
+## Unreleased: Playwright browser evidence boundaries
+
+Playwright runs only in disposable GitHub Actions/explicit workstation runs with no private IPTV, Xtream, Nuvio or Premiumize credentials. It blocks HTTP, local names, IP-literal destinations, non-public IPv4 DNS results, unsupported methods and browser popups; it aborts media-resource downloads. These application-layer checks are **not** DNS pinning or a substitute for network egress isolation on self-hosted runners. No browser challenges, logins or DRM restrictions are bypassed.
+
+Reports contain only sanitised hosts, coarse path patterns, resource types, response-status groups, content-type categories, control/iframe counts and failures—not full URLs, query values, headers, cookies, stream content, screenshots or JavaScript source. Browser inspection is diagnostic and has no permissions to sign, publish, write the repository or remotely update the APK. New protocol patterns need audited code, media/playback tests and a valid signed release before deployment.
+
+
 ## Unreleased: broadened provider monitoring and recovery
 
 All scheduled live and public-TV probes operate only on public built-in catalogues; private IPTV, Xtream, Nuvio and Masqueradarr credentials never enter GitHub Actions. The public-list checker permits fixed public HTTPS catalogue URLs and reads bounded response samples. Pluto's anonymous bearer token stays in memory and is sent only to the provider-returned validated `.pluto.tv` channels origin; no redirects are followed and no token appears in its report. Monitoring does not authorise or publish code.
