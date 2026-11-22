@@ -21,6 +21,8 @@ parser.add_argument('--include-retired', action='store_true',
                     help='Audit excluded adapters too, without changing app discovery')
 parser.add_argument('--provider', action='append', default=[],
                     help='Audit a website id (repeat to select several)')
+parser.add_argument('--stop-after-first', action='store_true',
+                    help='Diagnostic only: stop a single provider after its first validated media source')
 args=parser.parse_args()
 info = {'imdb':'tt0063350','tmdb':10331,'title':'Night of the Living Dead',
                    'year':'1968','season':-1,'episode':-1,'http':False}
@@ -38,7 +40,13 @@ results = []
 def probe(row):
     begin = time.monotonic()
     try:
-        result = json.loads(vod.query_site(row['id'], query, lambda: time.monotonic()-started > 420))
+        found = threading.Event()
+        class Found:
+            def ready(self, payload):
+                found.set()
+        cancel = lambda: time.monotonic()-started > 420 or (args.stop_after_first and found.is_set())
+        result = json.loads(vod.query_site(
+            row['id'], query, cancel, Found() if args.stop_after_first else None))
         return {'provider':row['id'], 'status':result['status'], 'streams':len(result['sources']),
                 'seconds':round(time.monotonic()-begin, 1), 'extracted':result.get('extracted',0),
                 'rejected':result.get('rejected',0),'resolutionErrors':result.get('resolutionErrors',0),

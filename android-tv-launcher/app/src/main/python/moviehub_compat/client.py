@@ -1,4 +1,5 @@
 """Bounded requests adapter shared by bundled provider modules."""
+from contextlib import contextmanager
 import ipaddress
 import json
 import socket
@@ -19,6 +20,21 @@ def scope(cancel, timeout=18, http=False, preserve=False):
     _STATE.failure = None
     if not preserve:
         _STATE.trace, _STATE.hosts = [], {}
+
+@contextmanager
+def time_budget(seconds):
+    """Shorten this thread's current deadline temporarily, without losing site cancellation.
+
+    Always restore the site's deadline after a mirror fails. A provider can then
+    try the next mirror rather than cancelling its entire source discovery.
+    """
+    previous = getattr(_STATE, 'deadline', float('inf'))
+    _STATE.deadline = min(previous, time.monotonic() + seconds)
+    try:
+        yield
+    finally:
+        _STATE.deadline = previous
+
 
 def check():
     callback = getattr(_STATE, 'cancel', None)
