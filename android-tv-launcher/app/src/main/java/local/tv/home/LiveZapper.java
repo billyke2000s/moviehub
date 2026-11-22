@@ -73,6 +73,8 @@ final class LiveZapper {
      * next copy before it has been tried.
      */
     private boolean switching;
+    /** The channel's title, not the name of whichever backup copy is currently playing. */
+    private String tunedChannelTitle = "";
     private boolean automaticSources = true,
         backControls;
     private final Set<Integer> attemptedCopies = new HashSet<>();
@@ -327,6 +329,7 @@ final class LiveZapper {
                             if (activeAttempts.contains(found.get(i).key)) attemptedCopies.add(i);
                         }
                         switching = false;
+                        tunedChannelTitle = row.name;
                         if (play) {
                             automaticSources = true;
                             backControls = false;
@@ -454,7 +457,7 @@ final class LiveZapper {
                     if (ticket != request || player.activity().isFinishing() || list != copies) return;
                     copy = index;
                     switching = false;
-                    player.switchTo(row.name, url, row.key);
+                    player.switchTo(tunedChannelTitle.isEmpty() ? row.name : tunedChannelTitle, url, row.key);
                     rememberSources();
                     if (automatic) Toast.makeText(
                         player.activity(),
