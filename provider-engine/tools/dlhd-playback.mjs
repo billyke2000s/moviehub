@@ -72,7 +72,7 @@ async function inspect(provider, row, forceRenew = false) {
         // Check the *production relay's* first response, not the upstream URL.
         // Keep only structural flags and status; never retain segment URLs or tokens.
         try {
-            const first = await fetch(url, {signal: AbortSignal.timeout(12000)});
+            const first = await fetch(url, { signal: AbortSignal.timeout(12000) });
             const body = await first.text();
             result.manifestCheck = {
                 status: first.status,
@@ -83,7 +83,7 @@ async function inspect(provider, row, forceRenew = false) {
                 segments: (body.match(/#EXTINF:/g) || []).length,
             };
         } catch (error) {
-            result.manifestCheck = {failure: error.constructor.name};
+            result.manifestCheck = { failure: error.constructor.name };
         }
         const tracks = [0, 1].map(() => ({ frames: 0, unique: 0, start: null, end: null, maxGap: 0 }));
         const bases = [];
