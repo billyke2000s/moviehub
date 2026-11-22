@@ -76,6 +76,27 @@ public final class PlaylistSessionTest {
     }
 
     @Test
+    public void latestFreeShotCdnRetainsAnonymousTokenRefreshAndHostIsolation() throws Exception {
+        PlaylistSession grant = new PlaylistSession("https://cdn.hdm1.net/sky/index.m3u8", session());
+        URI media = grant.authorize(
+            URI.create("https://cdn.hdm1.net/sky/segment.ts"), false, false,
+            (endpoint, body) -> {
+                assertEquals("wideiptv.top", endpoint.getHost());
+                assertEquals("sky", body.getString("channel"));
+                return new JSONObject().put("success", true).put("token", "fresh").put("expires_in", 60);
+            }
+        );
+        assertEquals("token=fresh", media.getRawQuery());
+        assertFalse(grant.applies(URI.create("https://cdn.hdm1.net/other/index.m3u8"), true));
+        for (String bad : new String[] { "cdn.hdm1.net.evil.example", "evilcdn.hdm1.net" }) {
+            try {
+                new PlaylistSession("https://" + bad + "/sky/index.m3u8", session());
+                fail("Untrusted CDN accepted");
+            } catch (java.io.IOException expected) {}
+        }
+    }
+
+    @Test
     public void untrustedRenewalDestinationsAndCdnScopesAreRejected() throws Exception {
         try {
             new PlaylistSession(
