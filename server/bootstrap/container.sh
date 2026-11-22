@@ -5,6 +5,7 @@
 set -euo pipefail
 . /root/moviehub-env
 export DEBIAN_FRONTEND=noninteractive
+export HOME=/root   # pct exec starts without HOME; git needs it
 step() { echo; echo "==== [container] $* ($(date +%H:%M:%S))"; }
 fail() { echo "SETUP STOPPED: $*"; exit 1; }
 rand() { openssl rand -hex "${1:-24}"; }
