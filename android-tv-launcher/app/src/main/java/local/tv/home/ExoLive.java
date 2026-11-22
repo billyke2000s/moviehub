@@ -60,6 +60,12 @@ final class ExoLive {
         default boolean hasAlternative() {
             return false;
         }
+
+        /**
+         * The picture still plays but keeps pausing (LiveStallRules.POOR). Nothing is torn down:
+         * the owner may look for a smoother copy and check it before moving to it.
+         */
+        default void poor(String reason) {}
     }
 
     /** Reopens per selection before the owner is told it failed (see {@link LiveStallRules}). */
@@ -68,6 +74,12 @@ final class ExoLive {
     static final long RENEW_MIN_MS = 30_000,
         RENEW_MAX_MS = 3 * 3600_000L,
         RENEW_AHEAD_MS = 60_000;
+    /**
+     * Live TV stays at least this far behind the live edge, so short pauses in the provider's
+     * delivery are covered by the buffer instead of stopping the picture. Streams whose own
+     * playlist asks for more keep their larger offset (Media3 3 segments by default for HLS).
+     */
+    static final long LIVE_MIN_OFFSET_MS = 10_000;
     /** Events kept for the log. */
     static final int LOG_SIZE = ExoLiveLog.SIZE;
 
@@ -199,26 +211,18 @@ final class ExoLive {
                         if (!"Buffering".equals(status) && !"Opening".equals(status)) event("Buffering");
                         status = "Buffering";
                         if (listener != null) listener.buffering(true);
-                        if (
-                            rules.buffering(
-                                SystemClock.elapsedRealtime(),
-                                true,
-                                player.getPlayWhenReady(),
-                                hasAlternative()
-                            )
-                        ) stalled("This source kept buffering");
+                        judged(
+                            rules.buffering(SystemClock.elapsedRealtime(), true, player.getPlayWhenReady())
+                        );
                     } else if (state == Player.STATE_READY) {
                         status = "Playing";
                         if (listener != null) listener.buffering(false);
-                        rules.buffering(
-                            SystemClock.elapsedRealtime(),
-                            false,
-                            player.getPlayWhenReady(),
-                            hasAlternative()
+                        judged(
+                            rules.buffering(SystemClock.elapsedRealtime(), false, player.getPlayWhenReady())
                         );
                     } else if (state == Player.STATE_ENDED) {
                         event("Stream ended");
-                        reopen("The live stream ended");
+                        reopen("The live stream ended", true);
                     }
                 }
 
@@ -251,7 +255,7 @@ final class ExoLive {
                         open();
                         return;
                     }
-                    reopen("This source could not be played (" + error.getErrorCodeName() + ")");
+                    reopen("This source could not be played (" + error.getErrorCodeName() + ")", true);
                 }
             }
         );
@@ -273,26 +277,34 @@ final class ExoLive {
             counters.ensureUpdated();
             frames = counters.renderedOutputBufferCount;
         }
-        if (
+        judged(
             rules.tick(
                 SystemClock.elapsedRealtime(),
                 player.getCurrentPosition(),
                 frames,
                 player.isPlaying(),
-                player.getPlayWhenReady(),
-                hasAlternative()
+                player.getPlayWhenReady()
             )
-        ) stalled(rules.lastWasBuffering() ? "This source kept buffering" : "This source stopped playing");
+        );
+    }
+
+    /**
+     * Acts on a LiveStallRules verdict. A poor picture is only reported (it still plays); a stuck
+     * stream moves on or reconnects without blacklisting its link, as a slow connection is not a
+     * broken link; a dead stream is a real failure.
+     */
+    private static void judged(int verdict) {
+        if (verdict == LiveStallRules.POOR) {
+            event("Poor picture: this source kept pausing");
+            if (listener != null) listener.poor("This source kept pausing");
+        } else if (verdict == LiveStallRules.STUCK) stalled("This source kept buffering", false);
+        else if (verdict == LiveStallRules.DEAD) stalled("This source stopped playing", true);
     }
 
     /** A rule above says this source is stuck: another source when one waits, else a reconnect. */
-    private static void stalled(String reason) {
+    private static void stalled(String reason, boolean broken) {
         event(reason);
-        reopen(reason);
-    }
-
-    private static boolean hasAlternative() {
-        return listener != null && listener.hasAlternative();
+        reopen(reason, broken);
     }
 
     private static void event(String text) {
@@ -312,15 +324,17 @@ final class ExoLive {
 
     /**
      * Reopens the channel (a fresh link lookup), or tells the owner once the reconnect budget
-     * ({@link #MAX_REOPENS}, refilled after 30 s of moving picture) is used.
+     * ({@link #MAX_REOPENS}, refilled after 30 s of moving picture) is used. {@code broken} (an
+     * error, a dead or ended stream, a link not found) retires the provider's upstream player
+     * link; a stream that only stalled keeps it, so a slow connection never blacklists a link
+     * that works.
      */
-    private static void reopen(String reason) {
+    private static void reopen(String reason, boolean broken) {
         if (url == null) return;
         // Another copy is waiting: go to it now. Reopening a failed source (a fresh lookup each
         // time) before trying the others kept the picture black for a long time.
         if (listener != null && listener.hasAlternative()) {
-            if (AdapterSources.locator(url)) AdapterSources.failed(url);
-            if (NuvioSports.locator(url)) NuvioSports.failed(url);
+            if (broken) retireUpstream();
             status = "Failed: " + reason;
             event("Moving to another source (" + reasonShort(reason) + ")");
             listener.failed(reason);
@@ -332,8 +346,7 @@ final class ExoLive {
             return;
         }
         // Retire the selected upstream player, rather than preferring the same failed one again.
-        if (AdapterSources.locator(url)) AdapterSources.failed(url);
-        if (NuvioSports.locator(url)) NuvioSports.failed(url);
+        if (broken) retireUpstream();
         // Look the link up afresh rather than reusing a cached one.
         if (EngineSources.locator(url) && !engineRefreshed) {
             engineRefreshed = true;
@@ -349,6 +362,12 @@ final class ExoLive {
             if (ticket == generation && url != null && player != null) open();
         };
         main.postDelayed(pendingReopen, 1000);
+    }
+
+    /** The provider's upstream player link for this channel failed: prefer another next time. */
+    private static void retireUpstream() {
+        if (AdapterSources.locator(url)) AdapterSources.failed(url);
+        if (NuvioSports.locator(url)) NuvioSports.failed(url);
     }
 
     private static String reasonShort(String reason) {
@@ -379,8 +398,13 @@ final class ExoLive {
         closeRelay();
         status = "Finding the stream";
         long started = SystemClock.elapsedRealtime();
-        if (!(PlutoSource.nativeUrl(locator) || EngineSources.locator(locator) ||
-            NuvioSports.locator(locator))) {
+        if (
+            !(
+                PlutoSource.nativeUrl(locator) ||
+                EngineSources.locator(locator) ||
+                NuvioSports.locator(locator)
+            )
+        ) {
             start(ticket, locator, null, null, null, 0);
             return;
         }
@@ -425,7 +449,7 @@ final class ExoLive {
             AdapterSources.failed(locator);
             status = "Failed: " + reason;
             if (listener != null) listener.failed(reason);
-        } else reopen(reason);
+        } else reopen(reason, true);
     }
 
     private static void start(
@@ -454,12 +478,18 @@ final class ExoLive {
             headers.put("Referer", referer);
             http.setDefaultRequestProperties(headers);
         }
-        MediaItem.Builder item = new MediaItem.Builder().setUri(stream);
+        MediaItem.Builder item = new MediaItem.Builder()
+            .setUri(stream)
+            .setLiveConfiguration(
+                new MediaItem.LiveConfiguration.Builder().setMinOffsetMs(LIVE_MIN_OFFSET_MS).build()
+            );
         String lower = stream.toLowerCase(Locale.ROOT);
-        if (hlsRetried || lower.contains(".m3u8") || lower.contains("m3u8?") ||
-            (NuvioSports.locator(url) && NuvioSports.hlsProxy(stream))) item.setMimeType(
-            MimeTypes.APPLICATION_M3U8
-        );
+        if (
+            hlsRetried ||
+            lower.contains(".m3u8") ||
+            lower.contains("m3u8?") ||
+            (NuvioSports.locator(url) && NuvioSports.hlsProxy(stream))
+        ) item.setMimeType(MimeTypes.APPLICATION_M3U8);
         player.setMediaSource(new DefaultMediaSourceFactory(http).createMediaSource(item.build()));
         player.prepare();
         player.play();

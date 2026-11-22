@@ -402,11 +402,40 @@ Three small helpers sit alongside these. `LiveMenus` is the interface for the Li
 (audio/subtitles, sources, options) that the banner and colour keys open; `ExoMenus` implements it for
 `LiveStage`. `LiveSourceDeadline`
 (core-tested) gives `LiveStage` its source budgets: 15 s before trying an alternative, 8 s when sources are
-raced, and 60 s for a final ZLive attempt with no alternative. `ProviderUrls.playback` validates
+raced, and 60 s for a ZLive attempt with no alternative. `ProviderUrls.playback` validates
 provider-supplied playback URLs (length, line breaks, literal spaces from browser User-Agent macros) for
 `EngineSources`, `NativeHttp` and the ZLive address setting.
 
-LiveZapper owns the per-channel Automatic/manual source policy and two-step Back interaction. PlayerMenus lists Automatic followed by saved copies; The source name in SkyOverlay's title strip is text only; the green Source key opens the list. Listing copies is a local database operation; only the selected copy is looked up (`ExoLive`, or the source race). Automatic failover visits the remaining saved copies once and stops.
+LiveZapper owns the per-channel Automatic/manual source policy and two-step Back interaction. PlayerMenus lists Automatic followed by saved copies; The source name in SkyOverlay's title strip is text only; the green Source key opens the list. Listing copies is a local database operation; only the selected copy is looked up (`ExoLive`, or the source race). Automatic failover visits the remaining saved copies once; what happens after that is below.
+
+### Source failover
+
+Three paths, from mildest to worst:
+
+1. **Poor picture** (the copy plays but keeps pausing): `LiveUpgrade.replace` picks another copy
+   (`LiveUpgradePlan.chooseReplacement`: any untried copy not cooling down, best name claim first),
+   takes the race's standby link for it or looks it up, and checks it with `LiveProbe` (the
+   playlist the player would open, then the start of its first segment, through a quality variant
+   if needed, with the provider's headers) — all while the pausing copy keeps playing. Only a copy
+   that answers plays, on the same 60 s trial as a quality upgrade: if it fails or is poor too, the
+   copy before comes back and the other cools down. The race keeps owning a standby it was asked
+   about (`LiveRace.peek`/`drop`) until it is checked and taken. With nothing to try, the copy stays.
+   Quality upgrades are checked with `LiveProbe` before switching too (previously only plain
+   addresses were).
+2. **Stuck, dead or failed copy**: as before, the race's next copy or `LiveZapper.failover` plays at
+   once, unchecked, since the copy on screen no longer plays.
+3. **Every copy failed**: `LiveStage.waitAndRetry` never gives up while a copy might come back
+   (before, ZLive stopped with "This source is unavailable" and others retried every 15 s from copy
+   0). The last picture stays under "Reconnecting… Trying again in N s", and `LiveRetryPlan`
+   (core-tested) sets growing waits: 2, 5, 10, 15, 30, then every 60 s, never under 15 s for ZLive,
+   whose stopped session is reopened on the next try. The copy that last showed a picture for at
+   least 10 s is remembered and tried on its own first and every other try; the others try every
+   copy from the first. OK tries at once; BACK and the channel keys work as usual. A picture held
+   for 10 s starts the waits short again; another channel forgets it all.
+
+Every step is written to the Live TV event log (Engineer view) with its reason: "Poor picture",
+"Looking up/Checking smoother source N", "Moving to smoother source N on trial", "Other source did
+no better", "Every source failed (…); trying again in N s (try K)", "Trying the last working source".
 
 `provider-engine/tools/freeshot.js` parses the FreeShot related-channel directory and follows only the selected UK sports channel’s two literal iframe links. ProviderBroker permits only FreeShot directory/embed and WideIPTV player paths. PlaylistSession supports the fixed WideIPTV anonymous JSON renewal endpoint, scoped to one discovered BlueTier origin/channel path; ProviderRelay posts renewal bodies and rewrites tokens without exposing them to VLC. Zero-to-end range requests fetch and decode the complete wrapped segment rather than applying decoded offsets to its PNG container.
 
@@ -416,10 +445,14 @@ Restoring a retained source compares saved hashes rather than decrypting every b
 
 ## Live buffering thresholds
 
-`LiveBuffering` owns monotonic, edge-counted live thresholds: 8 seconds or 3 starts per 60
-seconds, excluding startup and pause. Movies/series retain their independent 4-second/2-start
-rules (`VodSourceFailover`) and the LibVLC network buffer `PlaybackBuffer.VOD_MS`. `ExoLive`
-applies the live thresholds through `LiveStallRules`; provider link renewal is in `ExoLive` too.
+`LiveBuffering` owns monotonic live thresholds, excluding startup and pause, and tells two things
+apart: **stuck** (one unbroken 12 s stall) and **poor** (12 s spent buffering within the last 60 s,
+however split up; the count then starts afresh). Short pauses are normal for live HLS and reach
+neither, so a stream that only lagged a little is never torn down (the old rule, 8 s or 3 stalls a
+minute, moved a working source away as soon as a backup existed). Movies/series retain their
+independent 4-second/2-start rules (`VodSourceFailover`) and the LibVLC network buffer
+`PlaybackBuffer.VOD_MS`. `ExoLive` applies the live thresholds through `LiveStallRules`; provider
+link renewal is in `ExoLive` too.
 
 ## Live TV control consistency
 
@@ -518,14 +551,17 @@ then `LiveZapper.failover` moves to a backup copy. `ExoLiveTracks` holds audio/s
 
 ### Live stream rules ported from the LibVLC player
 
-`LiveStallRules` (pure, core-tested) gives `ExoLive` the general rules the LibVLC live player had,
-reusing its rule classes unchanged. Buffering (`LiveBuffering`): 8 s stuck or 3 stalls a minute,
-counted only after the first picture of an opening and never while paused. With another source
-waiting (`Listener.hasAlternative`), that source is reported failed at once, so `LiveStage` moves to
-the race's next copy or `LiveZapper.failover`; with none, only a long stall with no picture movement
-in the last 2 s reconnects. Dead stream (`LiveProgress`): playing with neither picture nor clock
-moving for 8 s and no error recovers the same way; a still picture while the clock (sound) moves is
-only logged. Reconnects (`LiveRestartBudget`): two per selection, refilled after 30 s of moving
+`LiveStallRules` (pure, core-tested) returns a verdict to `ExoLive`, counted only after the first
+picture of an opening and never while paused. **Poor** (`LiveBuffering`): only reported
+(`Listener.poor`); nothing is torn down, and `LiveStage` asks `LiveUpgrade.replace` to look for a
+smoother copy while this one plays on (see "Source failover" below). **Stuck** (`LiveBuffering`, one
+unbroken 12 s stall with no picture movement in the last 2 s): with another source waiting
+(`Listener.hasAlternative`), that source is reported failed, so `LiveStage` moves to the race's next
+copy or `LiveZapper.failover`; with none, it reconnects. **Dead** (`LiveProgress`): playing with
+neither picture nor clock moving for 8 s and no error recovers the same way; a still picture while
+the clock (sound) moves is only logged. Only real failures (a player error, a dead or ended stream, a
+link not found) retire the provider's upstream player link (`AdapterSources.failed`,
+`NuvioSports.failed`); a stuck stream keeps it, as a slow connection is not a broken link. Reconnects (`LiveRestartBudget`): two per selection, refilled after 30 s of moving
 picture, replacing the old reset on every first frame, which let a stream that played briefly and
 died reopen forever. A reopen clears the provider cache once per selection (`EngineSources.invalidate`)
 and Pluto's session, so the link is looked up afresh. Provider links with an expiry
@@ -538,7 +574,9 @@ Not ported, as LibVLC-specific workarounds (since removed with that player): vie
 still picture and their repair budget, surface probes, software-video fallback, native stop
 serialisation and the muted prepared backup (the source race's standbys serve that purpose). The 4 s
 relayed-stream buffer was a LibVLC option and was not ported either; ExoPlayer keeps its default
-buffering. The LibVLC screen's picture click (an air mouse's OK, a phone tap) was ported to
+buffering, except that Live TV stays at least `ExoLive.LIVE_MIN_OFFSET_MS` (10 s) behind the live
+edge (`MediaItem.LiveConfiguration.minOffsetMs`), so short delivery gaps are covered by the buffer.
+Streams whose playlist asks for more (Media3 holds HLS three segments back by default) keep that. The LibVLC screen's picture click (an air mouse's OK, a phone tap) was ported to
 `LiveStage`.
 
 ### Experimental retry and screen lifetime

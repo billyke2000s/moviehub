@@ -110,6 +110,23 @@ final class LiveRace {
         return source == null ? null : new Found(locator, source);
     }
 
+    /**
+     * Copy {@code index}'s link, found and waiting, without taking it: the race keeps owning it
+     * (and closes it if unused) until {@link #take} or {@link #drop}. Null when none waits.
+     */
+    Found peek(int index) {
+        if (cancelled) return null;
+        LiveStream.Resolution source = ready.get(index);
+        return source == null ? null : new Found(locators.get(index), source);
+    }
+
+    /** Copy {@code index}'s waiting link did not deliver a stream: it is closed and not tried again. */
+    void drop(int index) {
+        if (cancelled) return;
+        close(ready.remove(index));
+        plan.failed(index);
+    }
+
     /** The upgraded copy {@code failed} did not hold: copy {@code previous} plays again. */
     void fellBack(int previous, int failed) {
         if (cancelled) return;

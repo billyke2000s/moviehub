@@ -351,7 +351,7 @@ public final class ExoLiveTest {
     }
 
     @Test
-    public void unavailableZliveStopsAndAllowsManualReconnectWithoutEndlessRetries() throws Exception {
+    public void unavailableZliveKeepsRetryingWithGrowingWaitsAndAllowsAChannelChange() throws Exception {
         ChannelDatabase db = ChannelDatabase.get(remote.getTargetContext());
         ChannelDatabase.Writer writer = db.writer("enginezlive", () -> {}, n -> {});
         try {
@@ -374,17 +374,29 @@ public final class ExoLiveTest {
         );
         await(() -> activity.stage.liveFailed());
         remote.runOnMainSync(() -> {
-            assertFalse("No automatic reopen after sources are exhausted", ExoLive.retryPending());
+            assertFalse(
+                "The player itself does not reopen once sources are exhausted",
+                ExoLive.retryPending()
+            );
             assertTrue(activity.stage.full());
             assertTrue(activity.stage.zapper().sourceProvider().contains("Fixture server"));
+            assertTrue(
+                "Never a dead end: the stage tries again, ZLive no sooner than its minimum",
+                ExoLive.eventLog().contains(
+                    "trying again in " + LiveRetryPlan.ZLIVE_MIN_MS / 1000 + " s (try 1)"
+                )
+            );
         });
-        SystemClock.sleep(LiveStage.RETRY_MS + 500);
+        // The next automatic try happens, fails again and waits longer (bounded, not a tight loop).
+        SystemClock.sleep(LiveRetryPlan.ZLIVE_MIN_MS);
+        await(() -> ExoLive.eventLog().contains("(try 2)"));
         remote.runOnMainSync(() -> {
-            assertTrue("Failure stays bounded", activity.stage.liveFailed());
-            assertFalse(ExoLive.retryPending());
+            assertTrue(activity.stage.liveFailed());
+            assertFalse("No third try yet", ExoLive.eventLog().contains("(try 3)"));
             activity.stage.switchTo("Working channel", link("/media.m3u8"), "working");
         });
         await(() -> ExoLive.isPlaying() && rendered() > 5);
+        remote.runOnMainSync(() -> assertFalse(activity.stage.liveFailed()));
     }
 
     /** One channel, three copies from three lists, in guide order: dead, working, slow. */
@@ -462,7 +474,7 @@ public final class ExoLiveTest {
         );
         // The stalling copy shows pictures first, so its buffering counts (startup does not).
         await(() -> ExoLive.isPlaying() && rendered() > 5);
-        // LiveBuffering's eight seconds without pictures move it to the working copy.
+        // LiveBuffering's twelve unbroken seconds without pictures move it to the working copy.
         await(() -> ExoLive.eventLog().contains("This source kept buffering"));
         await(() -> activity.stage.zapper().selectedCopy() == 1 && ExoLive.isPlaying());
         picturesAdvance();
@@ -806,10 +818,12 @@ public final class ExoLiveTest {
             upgradeChannel("/stall-hd.m3u8");
             String[] hdKey = new String[1];
             remote.runOnMainSync(() -> hdKey[0] = activity.stage.zapper().copies().get(1).key);
-            // The HD copy takes over, shows pictures, then stalls: the buffering rules send it back.
-            await(() -> stallRequests.get() == 1);
+            // The HD copy is checked (LiveProbe asks for its first segment), takes over, shows
+            // pictures, then stalls: the buffering rules send it back.
+            await(() -> stallRequests.get() >= 1);
             await(() -> ExoLive.eventLog().contains("Better source did not hold"));
             await(() -> activity.stage.zapper().selectedCopy() == 0 && ExoLive.isPlaying() && rendered() > 5);
+            int stalled = stallRequests.get();
             remote.runOnMainSync(() -> {
                 assertEquals(link("/media.m3u8"), ExoLive.currentUrl());
                 assertTrue(LiveUpgrade.cooling(hdKey[0], SystemClock.elapsedRealtime()));
@@ -817,7 +831,7 @@ public final class ExoLiveTest {
             // Cooling down: it is not chosen again, so the picture does not flip back and forth.
             SystemClock.sleep(4000);
             remote.runOnMainSync(() -> assertEquals(0, activity.stage.zapper().selectedCopy()));
-            assertEquals(1, stallRequests.get());
+            assertEquals(stalled, stallRequests.get());
 
             // Another channel and back: the race and upgrades still leave the cooling copy alone.
             int[] here = new int[1];
@@ -839,7 +853,7 @@ public final class ExoLiveTest {
                 assertEquals(0, activity.stage.zapper().selectedCopy());
                 assertEquals(link("/media.m3u8"), ExoLive.currentUrl());
             });
-            assertEquals("The cooling copy was not played again", 1, stallRequests.get());
+            assertEquals("The cooling copy was not played again", stalled, stallRequests.get());
         } finally {
             restoreChannelPrefs();
         }

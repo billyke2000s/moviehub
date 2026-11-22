@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -39,8 +40,12 @@ final class LiveStage implements LiveScreen {
     /** Looks up several copies at once when a channel starts (see LiveRace); null when idle. */
     private LiveRace race;
     private int[] raceCopies = new int[0];
-    /** Moves to a better copy as soon as one is found, and back if it does not hold. */
+    /** Moves to a better (or, when this one keeps pausing, a smoother) copy, and back if it does not hold. */
     private final LiveUpgrade upgrade = new LiveUpgrade(this);
+    /** Once every copy failed: the last working copy and the growing waits between tries. */
+    private final LiveRetryPlan retryPlan = new LiveRetryPlan();
+    /** The copies {@link #retryPlan} describes; another list means another channel. */
+    private java.util.List<ChannelDatabase.Row> retryCopies;
     private String url, title;
     /** The guide's corner box the picture sits over, or null when no guide is showing. */
     private View anchor;
@@ -51,6 +56,11 @@ final class LiveStage implements LiveScreen {
     private final ExoLive.Listener events = new ExoLive.Listener() {
         @Override
         public void playing() {
+            if (full && zapper != null) retries().pictureShown(
+                zapper.selectedCopy(),
+                url,
+                SystemClock.elapsedRealtime()
+            );
             liveFailed = false;
             overlayHandler.removeCallbacks(startupDeadline);
             overlayHandler.removeCallbacks(slow);
@@ -71,6 +81,15 @@ final class LiveStage implements LiveScreen {
         @Override
         public void failed(String reason) {
             if (full) showError(reason);
+        }
+
+        @Override
+        public void poor(String reason) {
+            if (!full || !foreground) return;
+            // A copy on trial that keeps pausing did no better: the copy before comes back.
+            if (upgrade.failed()) return;
+            // Otherwise look for a smoother copy, checked while this one plays on.
+            upgrade.replace();
         }
 
         @Override
@@ -414,7 +433,9 @@ final class LiveStage implements LiveScreen {
         boolean select = code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER;
         if (liveFailed && select && !zapper.browsing()) {
             if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
-                if (!zapper.retryFromFirst()) reconnect();
+                // Try now rather than waiting for the next automatic try.
+                overlayHandler.removeCallbacks(retry);
+                retryNow();
             }
             return true;
         }
@@ -496,13 +517,22 @@ final class LiveStage implements LiveScreen {
         ExoLive.play(a, url, true);
     }
 
-    /** Every copy failed: keep the player open and keep trying, every {@link #RETRY_MS}. */
-    static final long RETRY_MS = 15_000;
-
     private final Runnable retry = this::retryNow;
+
+    /** The copies of the channel on screen, for {@link #retryPlan}; a new list starts it afresh. */
+    private LiveRetryPlan retries() {
+        java.util.List<ChannelDatabase.Row> copies = zapper == null ? null : zapper.copies();
+        if (copies != retryCopies) {
+            retryPlan.newChannel();
+            retryCopies = copies;
+        }
+        return retryPlan;
+    }
 
     private void showError(String reason) {
         if (!full || !foreground) return;
+        // The copy on screen stopped: if it had played properly, it is the one to come back to.
+        retries().stopped(SystemClock.elapsedRealtime());
         // An upgraded copy on trial failed or kept buffering: the copy before it comes back.
         if (upgrade.failed()) return;
         if (race != null) {
@@ -515,38 +545,71 @@ final class LiveStage implements LiveScreen {
             endRace(true);
         }
         if (zapper != null && zapper.failover(reason)) return;
-        if (zliveSource()) {
-            liveFailed = true;
-            overlayHandler.removeCallbacks(slow);
-            overlayHandler.removeCallbacks(retry);
-            overlayHandler.removeCallbacks(startupDeadline);
-            ExoLive.stopIfOwner(this);
-            status.setText(
-                "This source is unavailable. Choose another source or reconnect.\n\nBACK  guide     ▲ ▼  another channel"
-            );
-            status.setBackgroundColor(0x99000000);
-            status.setVisibility(View.VISIBLE);
-            return;
-        }
+        waitAndRetry(reason);
+    }
+
+    /**
+     * Every copy failed. Nothing is given up while a copy might come back: the last picture stays
+     * under a "Reconnecting" message, and the channel is tried again after a growing wait
+     * (LiveRetryPlan), the last working copy first. OK tries at once; BACK and channel keys work.
+     */
+    private void waitAndRetry(String reason) {
+        liveFailed = true;
+        overlayHandler.removeCallbacks(slow);
+        overlayHandler.removeCallbacks(retry);
+        overlayHandler.removeCallbacks(startupDeadline);
+        boolean zlive = zliveSource();
+        // A ZLive session is costly to keep open while waiting; the next try opens a new one.
+        if (zlive) ExoLive.stopIfOwner(this);
+        long delay = retries().nextDelay(zlive);
+        long seconds = Math.max(1, delay / 1000);
+        ExoLiveLog.event(
+            "Every source failed (" +
+                reason +
+                "); trying again in " +
+                seconds +
+                " s (try " +
+                retryPlan.attempts() +
+                ")"
+        );
         status.setText(
-            "Still trying this channel…\nIt may not be available right now.\n\nBACK  guide     ▲ ▼  another channel"
+            "Reconnecting…\nThis channel isn't working right now. Trying again in " +
+                seconds +
+                " s.\n\nOK  try now     BACK  guide     ▲ ▼  another channel"
         );
         status.setBackgroundColor(0x99000000);
         status.setVisibility(View.VISIBLE);
-        overlayHandler.removeCallbacks(slow);
-        overlayHandler.removeCallbacks(retry);
-        overlayHandler.postDelayed(retry, RETRY_MS);
+        overlayHandler.postDelayed(retry, delay);
     }
 
     private void retryNow() {
         if (!full || !foreground || ExoLive.isPlaying()) return;
-        // Start again from the first copy, so every copy gets another go; or the one copy again.
-        if (zapper == null || !zapper.retryFromFirst()) {
+        LiveRetryPlan plan = retries();
+        if (zapper != null && plan.goodTurn()) {
+            // The copy that last played properly gets the first try, on its own.
+            ExoLiveLog.event("Trying the last working source (" + (plan.good() + 1) + ") again");
+            playCopy(plan.good(), plan.goodUrl(), "Reconnecting…");
+        } else if (zapper == null || !zapper.retryFromFirst()) {
+            // Every copy again from the first, so each gets another go; or the one copy again.
             upgrade.reset();
+            liveFailed = false;
+            opening("Reconnecting…");
             ExoLive.attach(this, surface, events);
             ExoLive.play(a, url, true);
         }
         // The new attempt schedules its next retry only after it actually fails.
+    }
+
+    /** Plays copy {@code index} from {@code locator} again, with a fresh lookup, saying {@code text}. */
+    private void playCopy(int index, String locator, String text) {
+        endRace(false);
+        upgrade.reset();
+        url = locator;
+        if (zapper != null) zapper.raceSelected(index);
+        liveFailed = false;
+        opening(text);
+        ExoLive.attach(this, surface, events);
+        ExoLive.play(a, url, true);
     }
 
     // ---- Quality upgrades (LiveUpgrade) ---------------------------------------------------------
@@ -574,12 +637,17 @@ final class LiveStage implements LiveScreen {
         return a.http();
     }
 
-    /** LiveUpgrade found a better copy: it plays now, with the race's short startup budget. */
-    void upgradeTo(int index, String locator, LiveStream.Resolution source) {
+    /**
+     * LiveUpgrade found and checked a better copy, or a smoother one ({@code replacing} one that
+     * kept pausing): it plays now, on trial, with the race's short startup budget.
+     */
+    void upgradeTo(int index, String locator, LiveStream.Resolution source, boolean replacing) {
         if (!full || !foreground || zapper == null) {
             if (source != null && source.relay != null) source.relay.close();
             return;
         }
+        // The copy leaving may have played properly: it is the one to come back to if all fail.
+        retries().stopped(SystemClock.elapsedRealtime());
         url = locator;
         zapper.raceSelected(index);
         status.setVisibility(View.GONE);
@@ -591,7 +659,13 @@ final class LiveStage implements LiveScreen {
             startupDeadline,
             LiveSourceDeadline.milliseconds(true, zliveSource(), true)
         );
-        Toast.makeText(a, "Better picture found: switching source", Toast.LENGTH_SHORT).show();
+        Toast.makeText(
+            a,
+            replacing
+                ? "The picture kept pausing: trying another source"
+                : "Better picture found: switching source",
+            Toast.LENGTH_SHORT
+        ).show();
     }
 
     /** The upgraded copy {@code failed} did not hold: copy {@code previous} at {@code previousUrl} plays again. */

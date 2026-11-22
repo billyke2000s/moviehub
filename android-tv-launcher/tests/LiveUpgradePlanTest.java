@@ -15,6 +15,7 @@ public final class LiveUpgradePlanTest {
         aTrialThatHoldsIsKeptAndCanBeUpgradedAgain();
         aBufferingUpgradeFallsBackAndCoolsDown();
         cooldownsSurviveAChannelChangeAndDouble();
+        aPausingCopyIsReplacedByAnyOtherAndComesBackIfNoBetter();
         pictureLines();
         System.out.println(checks + " live upgrade checks passed");
     }
@@ -117,6 +118,59 @@ public final class LiveUpgradePlanTest {
         cooldowns.held("fhd");
         cooldowns.start("fhd", 0);
         check("short again", !cooldowns.active("fhd", LiveUpgradePlan.COOLDOWN_MS));
+    }
+
+    private static void aPausingCopyIsReplacedByAnyOtherAndComesBackIfNoBetter() {
+        LiveUpgradePlan.Cooldowns cooldowns = new LiveUpgradePlan.Cooldowns();
+        LiveUpgradePlan plan = new LiveUpgradePlan(cooldowns, 60_000);
+        // The 1080p copy keeps pausing: lower copies may replace it, best claim first.
+        same(
+            "best other copy",
+            1,
+            plan.chooseReplacement(2, LINES, KEYS, untried(true, true, false, true), 0)
+        );
+        same(
+            "one at a time",
+            -1,
+            plan.chooseReplacement(2, LINES, KEYS, untried(true, true, false, true), 0)
+        );
+        same("previous is the pausing copy", 2, plan.previous());
+        plan.started(1000);
+        check("on trial", plan.trial());
+        // It did no better: the pausing copy comes back and the replacement cools down.
+        same("back", 2, plan.fallBack(5000));
+        check("cooling", cooldowns.active("hd", 5000));
+        // Next time another copy is tried; the cooling one is skipped.
+        same(
+            "next other copy",
+            0,
+            plan.chooseReplacement(2, LINES, KEYS, untried(true, false, false, true), 6000)
+        );
+        plan.notFound();
+        same(
+            "guide order breaks ties",
+            3,
+            plan.chooseReplacement(2, LINES, KEYS, untried(false, false, false, true), 7000)
+        );
+        plan.notFound();
+        same(
+            "nothing left",
+            -1,
+            plan.chooseReplacement(2, LINES, KEYS, untried(false, false, false, false), 8000)
+        );
+        same(
+            "not playing",
+            -1,
+            plan.chooseReplacement(-1, LINES, KEYS, untried(true, true, true, true), 8000)
+        );
+
+        // A replacement that holds its trial is kept.
+        LiveUpgradePlan kept = new LiveUpgradePlan(cooldowns, 60_000);
+        same("replace", 0, kept.chooseReplacement(1, LINES, KEYS, untried(true, false, false, false), 0));
+        kept.started(0);
+        check("not yet", !kept.held(59_999));
+        check("kept", kept.held(60_000));
+        check("idle", kept.idle());
     }
 
     private static void pictureLines() {
