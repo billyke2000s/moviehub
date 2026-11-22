@@ -28,7 +28,7 @@ On the Proxmox host shell (as root):
 curl -fsSL https://raw.githubusercontent.com/billyke2000s/moviehub/main/server/bootstrap/host.sh -o /root/mh.sh && bash /root/mh.sh
 ```
 
-It does steps 1–4 and 6 below by itself: creates one new capped container (never touches others),
+It does steps 1–4 and 6 below by itself: creates one new capped container (1.5 GB RAM + 1 GB swap by default; never touches others),
 installs Forgejo with a private copy of the repo, the runner, the signing key, the gate and Codex,
 and writes every password and key to `/root/moviehub-credentials.txt` inside the container. Log:
 `/root/moviehub-bootstrap.log` on the host. Still manual: Codex sign-in, Cloudflare (step 5),
