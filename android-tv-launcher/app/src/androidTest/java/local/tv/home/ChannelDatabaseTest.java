@@ -344,6 +344,49 @@ public class ChannelDatabaseTest {
         assertEquals(1, db.listCount("all", "Main Event", Collections.emptySet()));
     }
 
+    /** Upgrading from version 11 fills in the backup column and keeps the normal feed first. */
+    @Test
+    public void versionElevenUpgradeFillsTheBackupColumnAndKeepsTheNormalFeedFirst() throws Exception {
+        importSource("xtream", new String[] {
+            "Sky Sports Main Event [Backup]",
+            "SkySportsMainEvent.uk",
+            "Sports",
+        });
+        importSource("free", new String[] { "Sky Sports Main Event", "SkySportsMainEvent.uk", "Sports" });
+        db.close();
+        Context context = ApplicationProvider.getApplicationContext();
+        try (
+            SQLiteDatabase old = SQLiteDatabase.openDatabase(
+                context.getDatabasePath("channels-v2.db").getPath(),
+                null,
+                SQLiteDatabase.OPEN_READWRITE
+            )
+        ) {
+            // DROP COLUMN needs a newer SQLite than some test devices have; clearing the flag
+            // means only the upgrade can set it again.
+            old.execSQL("UPDATE channels SET alt=0");
+            old.setVersion(11);
+        }
+        List<ChannelDatabase.Row> visible = db.browse("all", "", Collections.emptySet(), 0);
+        assertEquals("One channel, not two visible streams", 1, visible.size());
+        assertEquals("free", visible.get(0).source);
+        List<ChannelDatabase.Row> copies = db.copies(visible.get(0));
+        assertEquals(2, copies.size());
+        assertEquals("Backup still second after the upgrade", "xtream", copies.get(1).source);
+        try (
+            Cursor flags = db
+                .getReadableDatabase()
+                .rawQuery("SELECT source,alt FROM channels ORDER BY source", null)
+        ) {
+            assertTrue(flags.moveToNext());
+            assertEquals("free", flags.getString(0));
+            assertEquals(0, flags.getInt(1));
+            assertTrue(flags.moveToNext());
+            assertEquals("xtream", flags.getString(0));
+            assertEquals(1, flags.getInt(1));
+        }
+    }
+
     @Test
     public void regionalWorldPokerTourChannelsStayDistinct() throws Exception {
         importSource(

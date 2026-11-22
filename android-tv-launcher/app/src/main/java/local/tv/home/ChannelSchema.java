@@ -26,6 +26,17 @@ final class ChannelSchema {
         addDuplicateKey(db);
         addNumbers(db);
         addColumn(db, "channels", "source_label", "TEXT NOT NULL DEFAULT ''");
+        addBackupFlag(db);
+    }
+
+    /**
+     * Version 12: 1 on rows whose name marks a backup or alternative feed (see
+     * {@link ChannelDatabase#BACKUP_NAME}), so the guide's ordering reads a column instead of
+     * matching every name on every query. Same result as version 11; safe to run twice.
+     */
+    private static void addBackupFlag(SQLiteDatabase db) {
+        addColumn(db, "channels", "alt", "INTEGER NOT NULL DEFAULT 0");
+        ChannelDatabase.markBackups(db, null);
     }
 
     /**
@@ -83,6 +94,8 @@ final class ChannelSchema {
      */
     static java.util.Map<String, String> upgrade(SQLiteDatabase db, int from) {
         java.util.Map<String, String> moved = new java.util.HashMap<>();
+        // Version 12's backup flag first: every renumber() below orders copies by it.
+        if (from < 12) addBackupFlag(db);
         if (from < 2) db.execSQL("CREATE TABLE IF NOT EXISTS favourite_keys(key TEXT PRIMARY KEY)");
         if (from < 3) createGuideTables(db);
         if (from < 4) addDuplicateKey(db); // filled in by the next import
