@@ -109,6 +109,94 @@ async function inspect(browser, target) {
         await page.waitForTimeout(1_000);
         report.iframeCount = Math.min(100, await page.locator("iframe").count());
         report.playerControls = Math.min(100, await page.locator(CONTROL_SELECTOR).count());
+        if (target.id === "daddylive-app") {
+            // This is NOT the classic watch.php/channel-number service. Its public
+            // site documents /api/events -> /player/embed.php?id=...&source=tvN.
+            // Resolve a current event dynamically: five-character identifiers
+            // rotate, so a hard-coded player URL would be stale on every run.
+            const details = await page.evaluate(async () => {
+                const response = await fetch("/api/events", {
+                    credentials: "omit", cache: "no-store",
+                });
+                if (!response.ok) return { apiStatus: response.status };
+                const text = await response.text();
+                if (text.length > 512 * 1024) return { apiStatus: response.status, oversized: true };
+                const data = JSON.parse(text);
+                const current = Array.isArray(data?.categories?.["Live Events"])
+                    ? data.categories["Live Events"] : [];
+                const sources = new Map();
+                for (const event of current.slice(0, 100)) {
+                    for (const channel of (event.channels || []).slice(0, 12)) {
+                        try {
+                            const url = new URL(channel.url, location.origin);
+                            const source = url.searchParams.get("source");
+                            const id = url.searchParams.get("id");
+                            if (url.origin !== location.origin ||
+                                url.pathname !== "/player/embed.php" ||
+                                url.searchParams.size !== 2 ||
+                                !/^tv(?:[1-9]|1[0-9])$/.test(source || "") ||
+                                (source === "tv2" || source === "tv3"
+                                    ? !/^[a-z0-9/_-]{1,120}$/i.test(id || "")
+                                    : !/^[a-z0-9]{5}$/i.test(id || "")))
+                                continue;
+                            if (!sources.has(source)) sources.set(source, url.href);
+                        } catch {}
+                    }
+                }
+                return {
+                    apiStatus: response.status,
+                    liveEvents: current.length,
+                    sourceKinds: sources.size,
+                    selectedEmbeds: [...sources.entries()].slice(0, 6).map(([source, url]) => ({source, url})),
+                };
+            });
+            report.eventsApi = {
+                status: details.apiStatus || null,
+                liveEvents: details.liveEvents || 0,
+                sourceKinds: details.sourceKinds || 0,
+                oversized: !!details.oversized,
+            };
+            // Inspect at most one currently active event per *distinct source*.
+            // The public API advertises up to 19 source groups, but the live
+            // subset changes; one embed cannot represent all available players.
+            report.embeds = [];
+            for (const item of (details.selectedEmbeds || [])) {
+                const evidence = { source: item.source, outcome: "not_loaded" };
+                try {
+                    const embed = await page.goto(item.url, {
+                        waitUntil: "domcontentloaded", timeout: 12_000,
+                    });
+                    evidence.outcome = embed?.ok() ? "page_loaded" : "http_or_navigation_failure";
+                    await page.waitForTimeout(1_000);
+                    evidence.iframes = Math.min(100, await page.locator("iframe").count());
+                    evidence.controls = Math.min(100, await page.locator(CONTROL_SELECTOR).count());
+                } catch {
+                    evidence.outcome = "browser_navigation_failed";
+                }
+                report.embeds.push(evidence);
+            }
+            if (!report.embeds.length) report.embedOutcome = "no_current_public_embed";
+        }
+        if (target.id === "daddylive-app-channels") {
+            // Its seven "List" tabs are a different catalogue from /api/events.
+            // Observe two tabs without collecting channel names or play URLs.
+            report.channelTabs = [];
+            const lists = page.getByRole("button", { name: /List\s*-\s*[1-7]/i });
+            const count = Math.min(2, await lists.count());
+            for (let i = 0; i < count; i++) {
+                const tab = { index: i + 1 };
+                try {
+                    await lists.nth(i).click({ timeout: 2_500 });
+                    await page.waitForTimeout(650);
+                    tab.playerLinks = Math.min(500, await page.locator('a[href*="/player/"]').count());
+                    tab.iframes = Math.min(100, await page.locator("iframe").count());
+                    tab.outcome = "clicked";
+                } catch {
+                    tab.outcome = "click_failed";
+                }
+                report.channelTabs.push(tab);
+            }
+        }
         if (target.kind === "player") {
             const clicks = Math.min(report.playerControls, target.maxClicks);
             for (let i = 0; i < clicks; i++) {
