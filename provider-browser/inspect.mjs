@@ -109,6 +109,69 @@ async function inspect(browser, target) {
         await page.waitForTimeout(1_000);
         report.iframeCount = Math.min(100, await page.locator("iframe").count());
         report.playerControls = Math.min(100, await page.locator(CONTROL_SELECTOR).count());
+        if (target.id === "daddylive-app") {
+            // This is NOT the classic watch.php/channel-number service. Its public
+            // site documents /api/events -> /player/embed.php?id=...&source=tvN.
+            // Resolve a current event dynamically: five-character identifiers
+            // rotate, so a hard-coded player URL would be stale on every run.
+            const details = await page.evaluate(async () => {
+                const response = await fetch("/api/events", {
+                    credentials: "omit", cache: "no-store",
+                });
+                if (!response.ok) return { apiStatus: response.status };
+                const text = await response.text();
+                if (text.length > 512 * 1024) return { apiStatus: response.status, oversized: true };
+                const data = JSON.parse(text);
+                const current = Array.isArray(data?.categories?.["Live Events"])
+                    ? data.categories["Live Events"] : [];
+                let next = null;
+                const sources = new Set();
+                for (const event of current.slice(0, 100)) {
+                    for (const channel of (event.channels || []).slice(0, 12)) {
+                        try {
+                            const url = new URL(channel.url, location.origin);
+                            const source = url.searchParams.get("source");
+                            const id = url.searchParams.get("id");
+                            if (url.origin !== location.origin ||
+                                url.pathname !== "/player/embed.php" ||
+                                url.searchParams.size !== 2 ||
+                                !/^tv(?:[1-9]|1[0-9])$/.test(source || "") ||
+                                (source === "tv2" || source === "tv3"
+                                    ? !/^[a-z0-9/_-]{1,120}$/i.test(id || "")
+                                    : !/^[a-z0-9]{5}$/i.test(id || "")))
+                                continue;
+                            sources.add(source);
+                            if (!next) next = url.href;
+                        } catch {}
+                    }
+                }
+                return {
+                    apiStatus: response.status,
+                    liveEvents: current.length,
+                    sourceKinds: sources.size,
+                    selectedEmbed: next,
+                };
+            });
+            report.eventsApi = {
+                status: details.apiStatus || null,
+                liveEvents: details.liveEvents || 0,
+                sourceKinds: details.sourceKinds || 0,
+                oversized: !!details.oversized,
+            };
+            if (details.selectedEmbed) {
+                try {
+                    const embed = await page.goto(details.selectedEmbed, {
+                        waitUntil: "domcontentloaded", timeout: 12_000,
+                    });
+                    report.embedOutcome = embed?.ok() ? "page_loaded" : "http_or_navigation_failure";
+                    await page.waitForTimeout(1_000);
+                    report.embedIframes = Math.min(100, await page.locator("iframe").count());
+                    report.embedControls = Math.min(100, await page.locator(CONTROL_SELECTOR).count());
+                } catch {
+                    report.embedOutcome = "browser_navigation_failed";
+                }
+            } else report.embedOutcome = "no_current_public_embed";
+        }
         if (target.kind === "player") {
             const clicks = Math.min(report.playerControls, target.maxClicks);
             for (let i = 0; i < clicks; i++) {
