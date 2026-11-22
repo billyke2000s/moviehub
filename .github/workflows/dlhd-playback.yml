@@ -53,18 +53,19 @@ jobs:
             - name: Decode FreeShot through the production relay, requiring video and audio
               env:
                   STREAM_SECONDS: ${{ github.event_name == 'pull_request' && '30' || '150' }}
+                  PROBE_RENEWAL: '1'
               run: SPORTS_PROBE_ONLY=freeshot RHINO_JAR="$RUNNER_TEMP/rhino.jar" JSON_JAR="$RUNNER_TEMP/json.jar" node provider-engine/tools/dlhd-playback.mjs
             - name: Require decoded frames and audio from the real relay
               run: |
                   node --input-type=module -e '
                     import {readFileSync} from "node:fs";
                     const rows = JSON.parse(readFileSync("build/provider-tests/dlhd-playback.json", "utf8"));
-                    const sample = rows.find(r => r.provider === "freeshot");
-                    if (!sample?.bothDecoded) {
-                      console.error("Production FreeShot relay did not decode both tracks: " + JSON.stringify(sample));
+                    const samples = rows.filter(r => r.provider === "freeshot");
+                    if (samples.length !== 2 || samples.some(r => !r.bothDecoded)) {
+                      console.error("FreeShot relay normal-play and token-renewal checks: " + JSON.stringify(samples));
                       process.exit(1);
                     }
-                    console.log("Real production FreeShot relay decoded audio and video.");
+                    console.log("Production FreeShot relay decoded video and audio both normally and after token renewal.");
                   '
             - name: Upload numerical results only
               if: always()
