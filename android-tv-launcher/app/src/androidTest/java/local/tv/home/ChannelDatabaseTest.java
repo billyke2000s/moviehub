@@ -324,6 +324,44 @@ public class ChannelDatabaseTest {
     }
 
     @Test
+    public void backupFeedDoesNotRenameOrDisplaceMainEvent() throws Exception {
+        // The saved account's backup used to win solely by provider priority.
+        importSource("xtream", new String[] {
+            "Sky Sports Main Event [Backup]", "SkySportsMainEvent.uk", "Sports"
+        });
+        importSource("free", new String[] {
+            "Sky Sports Main Event", "SkySportsMainEvent.uk", "Sports"
+        });
+        List<ChannelDatabase.Row> visible = db.browse("all", "", Collections.emptySet(), 0);
+        assertEquals("One channel, not two visible streams", 1, visible.size());
+        assertEquals("Sky Sports Main Event", visible.get(0).name);
+        assertEquals("Normal feed preferred before backup", "free", visible.get(0).source);
+        List<ChannelDatabase.Row> copies = db.copies(visible.get(0));
+        assertEquals("Backup remains available to fail over to", 2, copies.size());
+        assertEquals("free", copies.get(0).source);
+        assertEquals("xtream", copies.get(1).source);
+        assertEquals("Sky Sports Main Event", copies.get(1).name);
+        assertEquals(1, db.listCount("all", "Main Event", Collections.emptySet()));
+    }
+
+    @Test
+    public void regionalWorldPokerTourChannelsStayDistinct() throws Exception {
+        importSource(
+            "m3u",
+            new String[] { "World Poker Tour (1080p)", "", "Sports" },
+            new String[] { "World Poker Tour (Poland)", "", "Sports" },
+            new String[] { "World Poker Tour Poland", "", "Sports" },
+            new String[] { "World Poker Tour (Germany)", "", "Sports" }
+        );
+        List<ChannelDatabase.Row> visible = db.browse("all", "World Poker Tour", Collections.emptySet(), 0);
+        assertEquals("Plain, Polish and German stations; duplicate Poland grouped", 3, visible.size());
+        ChannelDatabase.Row poland = null;
+        for (ChannelDatabase.Row row : visible) if (row.name.contains("Poland")) poland = row;
+        assertNotNull(poland);
+        assertEquals("Two names for the Polish station are backups", 2, db.copies(poland).size());
+    }
+
+    @Test
     public void channelsGetSatelliteNumbersAndSections() throws Exception {
         ChannelDatabase.Writer writer = db.writer("m3u", () -> {}, n -> {});
         try {
