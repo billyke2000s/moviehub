@@ -1,0 +1,42 @@
+name: Publish Live TV providers
+# Runs on your home server when a Live TV provider fix (DaddyLive, ZLive, FreeShot ...) is merged to
+# main, or by hand. Builds, checks in the app's own restricted interpreter, signs with the same key as
+# the scrapers and puts it in the update feed. Boxes check within 12 hours, and straight away (at
+# most every 15 minutes) when a Live TV stream fails to play. No reinstall.
+on:
+    push:
+        branches: [main]
+        paths: ["provider-engine/**"]
+    workflow_dispatch:
+jobs:
+    publish:
+        runs-on: moviehub
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+            - name: Build and test (uses the upstream copy committed in the repository)
+              run: |
+                  npm ci --ignore-scripts --prefix provider-engine
+                  # Versions only go up on the boxes; Unix time is always above the old GitHub numbers.
+                  PROVIDER_VERSION=$(date +%s) npm run build --prefix provider-engine
+                  npm test --prefix provider-engine
+            - name: Check in the app's restricted interpreter
+              run: RHINO_JAR=/srv/moviehub/tools/rhino-1.9.1.jar bash provider-engine/tools/verify.sh
+            - name: Sign (refuses a key that does not match trust.json)
+              run: PROVIDER_SIGNING_KEY_B64=$(base64 -w0 /srv/moviehub/keys/signing.pem) node provider-engine/tools/sign.mjs
+            - name: Put in the feed
+              run: |
+                  set -euo pipefail
+                  feed=/srv/moviehub/feed/providers
+                  mkdir -p "$feed"
+                  cp provider-engine/dist/providers.json "$feed/.providers.json.new"
+                  cp provider-engine/dist/providers.sig "$feed/.providers.sig.new"
+                  mv "$feed/.providers.json.new" "$feed/providers.json"
+                  mv "$feed/.providers.sig.new" "$feed/providers.sig"
+            - name: Tell your phone
+              if: always()
+              env:
+                  NTFY_URL: ${{ secrets.NTFY_URL }}
+              run: |
+                  [ -n "$NTFY_URL" ] || exit 0
+                  curl -fsS -H "Title: MovieHub Live TV ${{ job.status }}" -d "Live TV provider publish: ${{ job.status }} (${{ github.sha }})" "$NTFY_URL" || true

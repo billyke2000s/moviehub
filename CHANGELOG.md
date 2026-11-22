@@ -7,7 +7,8 @@
 - App, Live TV provider and scraper updates check a self-hosted address first (set at build time
   with `MOVIEHUB_FEED_URL`/`MOVIEHUB_FEED_KEY`), with the existing GitHub feeds kept as a fallback.
 - New `server/` folder: install-code gate and keyed update feed, source health checker with phone
-  alerts, Codex auto-fix runner that only opens a fix when the live probe passes, scraper package
+  alerts (Live TV checked hourly with a 5-minute re-test, films every 6 hours), Live TV provider
+  publishing, Codex auto-fix runner that only opens a fix when the live probe passes, scraper package
   builder, Forgejo workflows and a setup guide. New playbook `docs/FIX_A_BROKEN_SOURCE.md`.
 
 ## 1.0.23 (22 November 2026)
