@@ -1,5 +1,12 @@
 ## Unreleased
 
+- Added experimental movie-only PrimeWire catalogue discovery at `primewire1.buzz/watch/<slug>`: only explicit HTTPS player links on a matching title/year page enter normal ResolveURL/media validation. No player URLs are guessed and no claim of working live playback is made.
+- Free VOD source rows now suppress identical resolved URLs with identical playback headers across different catalogue websites; distinct cookies, signed URLs and headers remain independent choices.
+- Added periodic read-only diagnostics: DaddyLive/ZLive/FreeShot every two hours and a full free-VOD audit every twelve hours in GitHub Actions. These **monitor** failures and preserve reports; they do not automatically invent or deploy parser changes.
+- The provider-engine signed update path remains inactive when `providers/trust.json` has an empty public key or the GitHub signing/update settings are unconfigured. Automatic code updates are not enabled by these changes.
+
+
+
 **Version notes describe code changes, not proof of an installable release.** Check the [latest published release](https://github.com/billyke2000s/moviehub/releases/latest) or [signed update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest). Older "Unreleased" headings further down are retained historical development records.
 
 ## 1.0.22 (22 November 2026)

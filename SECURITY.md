@@ -1,5 +1,12 @@
 # Security
 
+## Unreleased: PrimeWire discovery and signed-update limits
+
+The PrimeWire catalogue adapter interprets only literal HTTPS links from identifiable player elements, applies `client.safe` to each URL, refuses same-site AJAX addresses as media, and does not evaluate arbitrary webpage JavaScript, solve challenges, or borrow website cookies into other hosts. Normal ResolveURL, public-address and decoded-media gates still apply. A button label alone never becomes a playable source. Movie title and year must match; episodes are not inferred.
+
+Free VOD duplicate identity combines final media URL and case-insensitive playback header names and values, ensuring a link with separate authentication or header requirements remains selectable. Scheduled GitHub Actions probes are read-only and cannot publish code or APKs. The checked-in RSA public-key trust field is empty; do not substitute an unsigned remote provider feed for it.
+
+
 This document covers security implementation and dated reviews, not installation. See the [reader guide](README.md) for everyday setup and [Status](STATUS.md) for current releases. Do not include account credentials, playlist tokens or signed streaming URLs in public issues.
 
 ## Sports CDN compatibility — 1 November 2026

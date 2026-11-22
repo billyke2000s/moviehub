@@ -1,5 +1,10 @@
 # Status
 
+## Unreleased development — 22 November 2026
+
+PrimeWire movie-only HTML player discovery, exact media/header deduplication and scheduled provider diagnostics are on a feature branch for review. No PrimeWire live page HTML or decoded playback has been confirmed. The scheduled audits can highlight changed sites but cannot repair arbitrary new player protocols by themselves. The built-in signed Live provider updater is unconfigured in this checkout (`providers/trust.json` has an empty public key), and film/series adapters remain bundled Python; automatic over-the-air fixes for every provider are **not** operational. Do not describe the branch as a published MovieHub update.
+
+
 ## Current release and update status (20 November 2026)
 
 **MovieHub 1.0.21 (code 121) is published.** The [signed publisher run](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) passed core tests, Android device tests, release build, signing/ABI checks and asset upload. The [version-specific release workflow](https://github.com/billyke2000s/moviehub/actions/runs/44648333364) passed, and the [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21) and [in-app updater feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) list matching APK asset digests:

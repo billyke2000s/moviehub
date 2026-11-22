@@ -1,5 +1,12 @@
 # Testing
 
+## Unreleased: PrimeWire and provider drift diagnostics
+
+`android-tv-launcher/tests/test_primewire.py` checks the movie slug route, strict title/year evidence, multiple explicit player links, duplicate controls, unavailable AJAX-only buttons, and unsafe/insecure URL rejection using offline fixtures. `VodSourceIdentityTest` tests that two catalogue routes returning the same URL/headers collapse into one source but header- or token-distinct fallbacks survive. Existing `test_free_vod.py` inventory counts include the additional movie-only site.
+
+The Live provider probe and full free-VOD site audit now also have schedules; their artifacts are diagnostics only. The PrimeWire domain did not return inspectable live page HTML through the available tools, so the new adapter has **not** been verified against its current HTML, let alone decoded on a real Android device. CI and device tests must run on the final PR head before merge.
+
+
 ## Published release evidence (20 November 2026)
 
 The [MovieHub 1.0.21 signed publisher](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) passed the core rules, emulator device tests, signed build/manifest generation, ABI inspection, certificate checks and asset upload. The [one-off release workflow](https://github.com/billyke2000s/moviehub/actions/runs/44648333364) passed, and the [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21) was published. Both listed APK assets have digest `8953e5d3de794e1eacc6d0262e4704acd29c26ef90bb8c6ce75a75110c9f17f7` and size 133,276,236 bytes. This confirms GitHub's reported release parity, **not** independent media playback on a real TV box.
