@@ -382,8 +382,12 @@ public class LiveGuideTest {
             .putString(LiveTvScreen.LAST_CHANNEL, last.key)
             .commit();
         remote.runOnMainSync(() -> activity.liveTv.live());
-        await("preview label", () ->
-            activity.liveTv.frame.pictureLabel.getText().toString().contains("Channel 12")
+        // The guide is drawn once the playing channel's place in the list is found.
+        await(
+            "preview label",
+            () ->
+                activity.liveTv.frame.pictureLabel != null &&
+                activity.liveTv.frame.pictureLabel.getText().toString().contains("Channel 12")
         );
         remote.waitForIdleSync();
         SystemClock.sleep(300);
