@@ -22,6 +22,10 @@ import moviehub_vod
 LIVE = [
     ("dlhd", "https://thedaddy.li/", "landing", 0),
     ("dlhd-channel-302", "https://thedaddy.li/watch.php?id=302", "player", 4),
+    # Different service from the classic DaddyLive channel watch.php system:
+    # the .app site generates per-event embed.php links from /api/events.
+    ("daddylive-app", "https://daddylive.app/", "player", 0),
+    ("daddylive-app-api", "https://daddylive.app/api", "landing", 0),
     ("zlive", "https://zlive.st/", "landing", 0),
     ("freeshot", "https://freeshot.live/", "landing", 0),
     ("freeshot-sky-action-21", "https://www.freeshot.live/live-tv/sky-sports-action-uk/21", "player", 0),
