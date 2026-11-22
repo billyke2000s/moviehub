@@ -109,6 +109,19 @@ async function inspect(browser, target) {
         await page.waitForTimeout(1_000);
         report.iframeCount = Math.min(100, await page.locator("iframe").count());
         report.playerControls = Math.min(100, await page.locator(CONTROL_SELECTOR).count());
+        // Record only bounded, public route prefixes, never full data-url values.
+        // A channel page can add/reorder players without changing its homepage.
+        if (target.id.startsWith("dlhd-channel-")) {
+            const prefixes = await page.locator("[data-url]").evaluateAll(elements =>
+                elements.map(element => {
+                    try {
+                        const path = new URL(element.getAttribute("data-url"), location.href).pathname;
+                        return /^\\/([a-z0-9-]{1,24})\\/stream-\\d{1,8}\\.php$/i.exec(path)?.[1] || null;
+                    } catch { return null; }
+                }).filter(Boolean)
+            );
+            report.playerPrefixes = [...new Set(prefixes)].slice(0, 16);
+        }
         if (target.kind === "player") {
             const clicks = Math.min(report.playerControls, target.maxClicks);
             for (let i = 0; i < clicks; i++) {
