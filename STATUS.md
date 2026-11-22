@@ -1,5 +1,12 @@
 # Status
 
+## Unreleased expansion — 22 November 2026
+
+Provider monitoring on the open PrimeWire PR now covers every bundled public TV engine module (15), plus separate public Free-TV, iptv-org and Pluto catalogues. Existing scheduled VOD audits cover bundled film/series sites. Account-based M3U/Xtream, Nuvio and Masqueradarr remain on-device only; their existing refresh/failover applies, but they cannot be checked by a public GitHub runner without user credentials. TimStreams is not currently a registered MovieHub provider.
+
+A failed Live TV module resolve can request an updated **signed** module asynchronously, once per 15-minute cooldown. In this checkout the trust public key is blank and the feed is not provisioned; it does **not** automatically repair arbitrary player changes yet. The feature remains in an unmerged PR pending CI and live playback evidence.
+
+
 ## Unreleased development — 22 November 2026
 
 PrimeWire movie-only HTML player discovery, exact media/header deduplication and scheduled provider diagnostics are on a feature branch for review. No PrimeWire live page HTML or decoded playback has been confirmed. The scheduled audits can highlight changed sites but cannot repair arbitrary new player protocols by themselves. The built-in signed Live provider updater is unconfigured in this checkout (`providers/trust.json` has an empty public key), and film/series adapters remain bundled Python; automatic over-the-air fixes for every provider are **not** operational. Do not describe the branch as a published MovieHub update.
