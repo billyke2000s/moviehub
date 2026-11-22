@@ -1,5 +1,9 @@
 ## Unreleased
 
+- Added a **Playwright/Chromium provider inspector** as a separate CI/browser tool, with a user-supplied PrimeWire watch-page fixture and target inventory generated from all active movie/series website registrations. Public live-site landing pages are also inspected. It captures only redacted network route shapes, host names, response classes, iframe counts and server-control counts; it never stores signed stream URLs, cookies, screenshots or account information.
+- Scheduled browser checks run on public live pages every two hours and enabled VOD website landing pages every twelve hours (four shards); each compares its signature against the previous successful saved report when available and highlights changed media/API routes. **Browser findings are diagnostic suggestions, not automatically generated or deployed extractor code.** No APK/runtime changes are made by this browser tool.
+
+
 - All 15 bundled public TV provider modules now run in four independent scheduled GitHub Actions probe groups, rather than only DaddyLive, ZLive and FreeShot. Added a separate bounded public catalogue check for Pluto TV, Free-TV and UK/US/all iptv-org lists. No private account playlists or credentials are uploaded.
 - A failing provider-engine playback resolve schedules a throttled background check of the existing pinned RSA-signed update feed (only when configured and auto-updates are enabled), without delaying existing failover. A newly authenticated package invalidates the stale channel cache. The current checkout still has no configured public signing key, so this does not yet make autonomous parser repairs operational.
 
