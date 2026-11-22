@@ -60,8 +60,9 @@ Never commit keys, tokens, account details or playback URLs with tokens in them.
   the server checks them, signs a package and puts it in the update feed. Boxes install it in the
   background within about 6 hours, with no app update. A package that fails to load on a box is
   thrown away automatically and the box keeps its previous scrapers.
-- **Live TV providers** (`provider-engine/`): ship in the signed provider package, or the next app
-  release.
+- **Live TV providers** (`provider-engine/`): `publish-providers.yml` on the server builds, checks
+  and signs the provider package and puts it in the feed. A box fetches it as soon as a stream fails
+  to play (at most every 15 minutes), otherwise within 12 hours. No app update.
 - **Java/app code**: needs a normal app release. If a scraper fix needs a Java change too, say so
   in the pull request; raise `ScraperBundle.API` in the same change if the Java-to-Python contract
   changed.

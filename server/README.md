@@ -1,14 +1,17 @@
 # MovieHub home server
 
-Your server is the **workshop**. It checks every source every 6 hours from your UK home connection,
+Your server is the **workshop**. It checks Live TV every hour and films every 6 hours from your UK
+home connection,
 lets Codex (GPT) try a fix and proves it plays, and publishes fixes. The boxes still do all the
 scraping themselves, and they keep working with their last scrapers if the server is off.
 
 ```
- every 6 h          broken twice in a row        Codex tries         script re-runs the live probe
- health check  ──►  issue + phone ping     ──►  a fix         ──►  streams? ─► pull request + ping
+ Live TV hourly      fails, and again 5 min later   Codex tries      script re-runs the live probe
+ (films every 6 h)   ─► issue + phone ping     ──►  a fix      ──►  streams? ─► pull request + ping
                                                                     no?     ─► comment, nothing opened
- you tap Merge ──►  publish-scrapers: test, sign, put in feed ──► boxes update quietly within ~6 h
+ you tap Merge ──►  publish-providers (Live TV) / publish-scrapers (films): test, sign, put in feed
+               ──►  boxes update quietly: Live TV as soon as a stream fails to play (at most every
+                    15 min), otherwise within 12 h; films within 6 h
 ```
 
 New installs: someone types your Downloader code → "Enter login" → the code your phone just made →
@@ -138,7 +141,8 @@ request **only if streams come back**. You still merge. You can also run it by h
 2. Publish the next release through GitHub as usual. That APK checks your server first and GitHub
    second, and has the signing key from step 3.
 3. Copy the release's `home.apk` and `update.json` into `/srv/moviehub/feed/app/`.
-4. Run **Actions → Publish scrapers** once in Forgejo, to put the first package in the feed.
+4. Run **Actions → Publish scrapers** and **Actions → Publish Live TV providers** once in Forgejo,
+   to put the first packages in the feed.
 5. Wait about a week, until every box has updated (check the MovieHub version on each one).
    Then make the GitHub repo private or delete it. Boxes that missed the update would need a
    reinstall through the gate.
@@ -159,4 +163,4 @@ request **only if streams come back**. You still merge. You can also run it by h
 | `server/health/check_sources.py` | Runs the probes, opens/closes issues, sends phone alerts |
 | `server/health/auto_fix.py` | Runs Codex, re-checks with the live probe, opens a PR only on success |
 | `server/tools/build-scrapers.py` | Builds and signs a scraper package (refuses the wrong key) |
-| `.forgejo/workflows/*.yml` | Health check every 6 h, auto-fix on new issues, publish on merge |
+| `.forgejo/workflows/*.yml` | Health check (Live TV hourly, films 6-hourly), auto-fix on new issues, publish Live TV providers and film scrapers on merge |

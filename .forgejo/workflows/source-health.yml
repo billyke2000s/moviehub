@@ -1,15 +1,19 @@
 name: Source health
 # Runs on your home server (Forgejo runner labelled "moviehub", host mode), so sites are tested from a
-# UK home connection like the family's boxes. Opens/closes "[broken source]" issues and pings your
-# phone. Never changes code or publishes anything. GitHub ignores this folder.
+# UK home connection like the family's boxes. Live TV every hour (a failing source is re-tested
+# 5 minutes later before it counts); films every 6 hours. Opens/closes "[broken source]" issues and
+# pings your phone. Never changes code or publishes anything. GitHub ignores this folder.
 on:
     schedule:
-        - cron: "17 */6 * * *"
+        - cron: "17 * * * *"
     workflow_dispatch:
+concurrency:
+    group: source-health
+    cancel-in-progress: false
 jobs:
     check:
         runs-on: moviehub
-        timeout-minutes: 90
+        timeout-minutes: 55
         steps:
             - uses: actions/checkout@v4
             - name: Compile the app's JavaScript interpreter for the Live TV probe
@@ -23,4 +27,8 @@ jobs:
                   FORGEJO_REPO: ${{ github.repository }}
                   FORGEJO_TOKEN: ${{ secrets.HEALTH_TOKEN }}
                   NTFY_URL: ${{ secrets.NTFY_URL }}
-              run: python3 server/health/check_sources.py
+              run: |
+                  # Films only every 6 hours (00:17, 06:17, 12:17, 18:17) or when run by hand.
+                  hour=$(date +%H)
+                  if [ "${{ github.event_name }}" = schedule ] && [ $((10#$hour % 6)) -ne 0 ]; then export SKIP_VOD=1; fi
+                  python3 server/health/check_sources.py

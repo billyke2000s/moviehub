@@ -7,9 +7,13 @@ does this every few hours):
     python3 server/health/check_sources.py
 
 What it does
-  1. Runs the film/series probe (android-tv-launcher/tests/probe-free-vod.py) for two well-known films
-     and the Live TV probe (provider-engine/tools/live-probe.mjs).
-  2. A source counts as broken after FAIL_RUNS failed runs in a row (default 2), so one blip is ignored.
+  1. Runs the Live TV probe (provider-engine/tools/live-probe.mjs) and, unless SKIP_VOD=1, the
+     film/series probe (android-tv-launcher/tests/probe-free-vod.py) for two well-known films.
+     The workflow runs Live TV every hour and films every 6 hours.
+  2. A Live TV source that fails is tested again LIVE_RETRY_SECONDS later (default 300) in the same
+     run, so a blip is ignored but a real break is reported within about an hour. Film sites count
+     as broken after VOD_FAIL_RUNS failed runs in a row (default 2); Live TV after LIVE_FAIL_RUNS
+     (default 1, because of the retry).
   3. Broken: opens one Forgejo issue titled "[broken source] <id>" with the probe result and the saved
      page, labelled "broken-source", and sends one push notification. Already open: adds a short
      comment at most once a day. Working again: closes the issue and notifies.
@@ -21,7 +25,7 @@ Settings (environment variables)
   NTFY_URL        e.g. https://ntfy.sh/moviehub-<long random words>   (empty = no notifications)
   STATE_FILE      default /srv/moviehub/health/state.json
   EVIDENCE_DIR    default /srv/moviehub/health/evidence
-  FAIL_RUNS       default 2
+  LIVE_FAIL_RUNS  default 1        VOD_FAIL_RUNS  default 2       LIVE_RETRY_SECONDS  default 300
   SKIP_LIVE / SKIP_VOD   set to 1 to skip a probe
 """
 import datetime
@@ -92,7 +96,12 @@ def live_results(results):
 
 
 def decide(state, results, fail_runs, now):
-    """Updates per-source counters; returns (newly_broken, still_broken, recovered) lists of ids."""
+    """Updates per-source counters; returns (newly_broken, still_broken, recovered) lists of ids.
+
+    fail_runs: a number, or a function of the source id giving the number for that source.
+    Sources not in results (e.g. films on an hourly Live TV run) are left untouched.
+    """
+    runs_for = fail_runs if callable(fail_runs) else (lambda key: fail_runs)
     newly, still, recovered = [], [], []
     for key, result in results.items():
         entry = state.setdefault(key, {'fails': 0, 'broken': False, 'lastComment': 0})
@@ -104,7 +113,7 @@ def decide(state, results, fail_runs, now):
         entry['fails'] += 1
         if entry['broken']:
             still.append(key)
-        elif entry['fails'] >= fail_runs:
+        elif entry['fails'] >= runs_for(key):
             entry['broken'] = True
             entry['lastComment'] = now
             newly.append(key)
@@ -124,12 +133,13 @@ def run_vod():
     return outputs
 
 
-def run_live():
+def run_live(ids=()):
+    """Runs the Live TV probe for all providers, or only the given provider ids."""
     rhino = os.environ.get('RHINO_JAR', '')
     if not rhino or not Path(rhino).is_file():
         sys.stderr.write('RHINO_JAR not set; skipping Live TV probe\n')
         return []
-    done = subprocess.run(['node', str(LIVE_PROBE)], cwd=ROOT, capture_output=True, text=True,
+    done = subprocess.run(['node', str(LIVE_PROBE), *ids], cwd=ROOT, capture_output=True, text=True,
                           timeout=3600, env={**os.environ, 'RHINO_JAR': rhino})
     if done.returncode != 0:
         sys.stderr.write('Live probe exited %s: %s\n' % (done.returncode, done.stderr[-500:]))
@@ -150,6 +160,20 @@ def site_of(provider_id):
     except Exception:
         return None
     return None
+
+
+def live_with_retry(run, wait, sleep=time.sleep):
+    """Live TV results; failing providers are probed once more after `wait` seconds."""
+    results = live_results(run())
+    failing = [key[5:] for key, r in results.items() if not r['ok']]
+    if failing and wait > 0:
+        sleep(wait)
+        retried = live_results(run(failing))
+        for key, result in retried.items():
+            if not result['ok']:
+                result['summary'] += ' (failed twice, %d s apart)' % wait
+            results[key] = result
+    return results
 
 
 def save_evidence(evidence_dir, result, stamp):
@@ -232,12 +256,15 @@ def main():
     env = os.environ
     state_file = Path(env.get('STATE_FILE', '/srv/moviehub/health/state.json'))
     evidence = env.get('EVIDENCE_DIR', '/srv/moviehub/health/evidence')
-    fail_runs = int(env.get('FAIL_RUNS', '2'))
+    live_runs = int(env.get('LIVE_FAIL_RUNS', '1'))
+    vod_runs = int(env.get('VOD_FAIL_RUNS', '2'))
+    def fail_runs(key):
+        return live_runs if key.startswith('live:') else vod_runs
     results = {}
+    if env.get('SKIP_LIVE') != '1':
+        results.update(live_with_retry(run_live, int(env.get('LIVE_RETRY_SECONDS', '300'))))
     if env.get('SKIP_VOD') != '1':
         results.update(vod_results(run_vod()))
-    if env.get('SKIP_LIVE') != '1':
-        results.update(live_results(run_live()))
     if not results:
         sys.exit('No probe produced results; check the logs above.')
 

@@ -48,6 +48,48 @@ class Decisions(unittest.TestCase):
         self.assertEqual(c.decide(state, good, 2, 0), ([], [], ['vod:a']))
         self.assertFalse(state['vod:a']['broken'])
 
+    def test_live_and_film_sources_use_their_own_thresholds(self):
+        state = {}
+        runs = lambda key: 1 if key.startswith('live:') else 2
+        bad = {'live:dlhd': {'ok': False}, 'vod:a': {'ok': False}}
+        self.assertEqual(c.decide(state, bad, runs, 0), (['live:dlhd'], [], []))
+        self.assertEqual(c.decide(state, bad, runs, 0), (['vod:a'], ['live:dlhd'], []))
+
+    def test_hourly_live_run_leaves_film_state_alone(self):
+        state = {'vod:a': {'fails': 1, 'broken': False, 'lastComment': 0}}
+        c.decide(state, {'live:x': {'ok': True}}, 1, 0)
+        self.assertEqual(state['vod:a']['fails'], 1)
+
+    def test_live_blip_is_retried_before_counting(self):
+        calls, waits = [], []
+        rows = {
+            (): [{'id': 'dlhd', 'catalogue': 'ok', 'channels': 3, 'samples': [{'play': 'PROVIDER?: 403'}]},
+                 {'id': 'zlive', 'catalogue': 'ok', 'channels': 9, 'samples': []},
+                 {'id': 'freeshot', 'catalogue': 'PROVIDER: HTTP 503', 'samples': []}],
+            ('dlhd', 'freeshot'): [
+                {'id': 'dlhd', 'catalogue': 'ok', 'channels': 3, 'samples': [{'play': 'ok'}]},
+                {'id': 'freeshot', 'catalogue': 'PROVIDER: HTTP 503', 'samples': []}],
+        }
+
+        def run(ids=()):
+            calls.append(tuple(ids))
+            return rows[tuple(ids)]
+
+        results = c.live_with_retry(run, 300, sleep=waits.append)
+        self.assertEqual(calls, [(), ('dlhd', 'freeshot')])  # only the failing ones re-tested
+        self.assertEqual(waits, [300])
+        self.assertTrue(results['live:dlhd']['ok'])  # blip: recovered on retry
+        self.assertTrue(results['live:zlive']['ok'])
+        self.assertFalse(results['live:freeshot']['ok'])
+        self.assertIn('failed twice', results['live:freeshot']['summary'])
+
+    def test_no_retry_when_everything_works(self):
+        calls = []
+        results = c.live_with_retry(lambda ids=(): calls.append(ids) or [
+            {'id': 'zlive', 'catalogue': 'ok', 'channels': 9, 'samples': []}], 300, sleep=None)
+        self.assertEqual(len(calls), 1)
+        self.assertTrue(results['live:zlive']['ok'])
+
     def test_issue_body_points_at_playbook_and_reproduction(self):
         result = {'id': 'vod:free99:levidia_ch', 'kind': 'film/series site', 'summary': 'no streams',
                   'records': [{'provider': 'free99:levidia_ch', 'streams': 0}]}
