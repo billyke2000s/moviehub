@@ -1,0 +1,40 @@
+name: Auto-fix broken source
+# When the health checker opens a "[broken source]" issue, Codex tries a fix on the home server.
+# The script re-runs the live probe itself and opens a pull request only if streams come back.
+# You still merge; nothing reaches the boxes without that.
+on:
+    issues:
+        types: [opened, labeled]
+    workflow_dispatch:
+        inputs:
+            issue:
+                description: "Issue number to try"
+                required: true
+jobs:
+    fix:
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'broken-source')
+        runs-on: moviehub
+        timeout-minutes: 60
+        concurrency:
+            group: auto-fix
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  ref: main
+                  token: ${{ secrets.HEALTH_TOKEN }}
+            - name: Compile the app's JavaScript interpreter for the Live TV probe
+              run: |
+                  mkdir -p build/provider-tests
+                  javac -cp "/srv/moviehub/tools/rhino-1.9.1.jar" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderCodec,ProviderSignature,ProviderUrls,ProviderSegments}.java android-tv-launcher/tests/ProviderProbeCli.java
+            - name: Let Codex try, then check it ourselves
+              env:
+                  RHINO_JAR: /srv/moviehub/tools/rhino-1.9.1.jar
+                  FORGEJO_URL: ${{ vars.FORGEJO_INTERNAL_URL }}
+                  FORGEJO_REPO: ${{ github.repository }}
+                  FORGEJO_TOKEN: ${{ secrets.HEALTH_TOKEN }}
+                  NTFY_URL: ${{ secrets.NTFY_URL }}
+                  CODEX_CMD: ${{ vars.CODEX_CMD || 'codex exec --full-auto' }}
+              run: |
+                  git config user.name "MovieHub auto-fix"
+                  git config user.email "autofix@localhost"
+                  python3 server/health/auto_fix.py "${{ inputs.issue || github.event.issue.number }}"
