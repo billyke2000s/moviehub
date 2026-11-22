@@ -42,19 +42,14 @@ final class KeyBar {
     KeyBar add(int colour, String label, Runnable action) {
         LinearLayout key = activity.row();
         key.setGravity(Gravity.CENTER_VERTICAL);
-        key.setPadding(activity.dp(6), activity.dp(3), activity.dp(10), activity.dp(3));
+        key.setPadding(activity.dp(10), activity.dp(3), activity.dp(10), activity.dp(3));
         // Buttons for remotes without colour keys: focusable from the start (D-pad and touch).
         key.setFocusable(true);
         key.setFocusableInTouchMode(true);
         key.setContentDescription(label);
-        View swatch = new View(activity);
-        swatch.setBackground(box(colour, 0x55ffffff));
-        LinearLayout.LayoutParams swatchLayout = new LinearLayout.LayoutParams(
-            activity.dp(18),
-            activity.dp(18)
-        );
-        swatchLayout.rightMargin = activity.dp(6);
-        key.addView(swatch, swatchLayout);
+        // No colour swatch: the owner's remotes have coloured buttons that are programmable shortcuts,
+        // not colour keys, so a coloured square suggested a button that does nothing here. The
+        // colour still decides which physical colour key (on remotes that have them) presses it.
         TextView text = activity.compactText(label, 17);
         text.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         key.addView(text);
