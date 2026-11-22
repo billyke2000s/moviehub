@@ -1,0 +1,59 @@
+# Independent LAN services for MovieHub. Keep this host private; no router port forwards.
+# Nuvio's source is cloned into ./nuvio-source before running Compose.
+services:
+  masqueradarr:
+    image: iflip721/masqueradarr:latest
+    user: "1000:1000"
+    restart: unless-stopped
+    ports:
+      - "${SERVER_LAN_IP:?Set SERVER_LAN_IP in .env}:3000:3000"
+    environment:
+      MONGO_ROOT_USER: ${MONGO_ROOT_USER:?Set MONGO_ROOT_USER in .env}
+      MONGO_ROOT_PASS: ${MONGO_ROOT_PASS:?Set MONGO_ROOT_PASS in .env}
+      DOMAIN: "http://${SERVER_LAN_IP}:3000"
+      DISPLAY_NAME: masqueradarr
+      TZ: ${TZ:-Europe/London}
+      MASQ_EDGE: ""
+    volumes:
+      - masq-compose:/app/compose
+      - masq-backups:/backups
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  mongo:
+    image: mongo:7.0.15
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?Set MONGO_ROOT_USER in .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASS:?Set MONGO_ROOT_PASS in .env}
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # MongoDB is never published to the LAN.
+
+  nuvio:
+    build:
+      context: ./nuvio-source
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${SERVER_LAN_IP:?Set SERVER_LAN_IP in .env}:7000:7000"
+    environment:
+      PORT: "7000"
+      NODE_ENV: production
+      TZ: ${TZ:-Europe/London}
+      ADDON_URL: "http://${SERVER_LAN_IP}:7000"
+      STREAM_URL: "http://${SERVER_LAN_IP}:7000"
+      APP_SECRET: ${NUVIO_APP_SECRET:?Set NUVIO_APP_SECRET in .env}
+      TIKTOK_SEGMENT_MODE: direct
+      HLSCUNK_FALLBACK: "off"
+
+volumes:
+  mongo-data:
+  masq-compose:
+  masq-backups:

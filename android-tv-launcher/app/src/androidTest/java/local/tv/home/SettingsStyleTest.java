@@ -121,6 +121,18 @@ public class SettingsStyleTest {
     }
 
     @Test
+    public void setupKeepsHostedServicesSeparateFromLocalFreeProviders() {
+        remote.runOnMainSync(() -> activity.settingsScreens.setup());
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            View decor = activity.getWindow().getDecorView();
+            assertNotNull("Masqueradarr is always available to connect", find(decor, "Masqueradarr"));
+            assertNotNull("Nuvio can be connected independently", find(decor, NuvioSports.SERVICE));
+            assertNotNull("Built-in free channels remain available", find(decor, "Free channels"));
+        });
+    }
+
+    @Test
     public void everyTabUsesTheAccountCardStyle() {
         remote.runOnMainSync(() -> activity.settingsScreens.settings());
         remote.waitForIdleSync();

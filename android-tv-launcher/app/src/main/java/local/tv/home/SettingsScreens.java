@@ -258,6 +258,21 @@ final class SettingsScreens {
         if (service.equals("Premiumize")) form.addView(
             activity.compactText("Find your API key at premiumize.me/account", 13)
         );
+        if (service.equals("Masqueradarr")) form.addView(
+            activity.compactText(
+                "Open Masqueradarr on your server (for example http://192.168.1.50:3000), " +
+                    "then copy your personal M3U export URL. Paste that whole link here, " +
+                    "not just the server address.",
+                13
+            )
+        );
+        if (service.equals(NuvioSports.SERVICE)) form.addView(
+            activity.compactText(
+                "Enter your Nuvio server's address (for example http://192.168.1.50:7000), " +
+                    "without /manifest.json. Use the server's LAN IP, not localhost.",
+                13
+            )
+        );
         TextView status = activity.compactText(
             connected
                 ? "Connected · saved credentials are kept until a replacement is verified"
@@ -299,7 +314,7 @@ final class SettingsScreens {
                     !(service.equals("M3U playlist") || service.equals("Masqueradarr") ||
                         service.equals(NuvioSports.SERVICE)),
                     service.equals(NuvioSports.SERVICE)
-                        ? (connected ? NuvioSports.saved(activity) : "https://nuviosports.xyz")
+                        ? (connected ? NuvioSports.saved(activity) : "")
                         : ""
                 )
             );
@@ -307,7 +322,7 @@ final class SettingsScreens {
                 .get(0)
                 .setHint(
                     service.equals(NuvioSports.SERVICE)
-                        ? "https://sports-server.example:7000"
+                        ? "http://192.168.1.50:7000"
                         : service.equals("M3U playlist") || service.equals("Masqueradarr")
                           ? "https://provider.example/playlist.m3u"
                         : "Enter your key"
@@ -436,7 +451,8 @@ final class SettingsScreens {
                         if (
                             service.equals("Xtream") ||
                             service.equals("M3U playlist") ||
-                            service.equals("Masqueradarr")
+                            service.equals("Masqueradarr") ||
+                            service.equals(NuvioSports.SERVICE)
                         ) ChannelSync.refreshNow(activity);
                         back.run();
                     })
