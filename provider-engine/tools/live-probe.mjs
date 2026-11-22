@@ -309,7 +309,9 @@ function decode(stream) {
     // with optional maps: that can mean it decoded **zero** audio/video frames.
     args.push("-i", stream.url, "-t", "6", "-map", "0:v:0", "-map", "0:a:0", "-f", "framemd5", "pipe:1");
     const p = spawnSync("ffmpeg", args, {
-        encoding: "utf8", timeout: 45000, maxBuffer: 4 * 1024 * 1024,
+        encoding: "utf8",
+        timeout: 45000,
+        maxBuffer: 4 * 1024 * 1024,
     });
     const frames = [0, 0];
     for (const line of (p.stdout || "").split("\n")) {
@@ -325,9 +327,11 @@ function decode(stream) {
     return {
         ok,
         frames,
-        error: ok ? "" : p.status === 0
-            ? "No sustained decoded video/audio (" + frames.join("/") + " frames)"
-            : (error || "ffmpeg exit " + p.status).slice(0, 140),
+        error: ok
+            ? ""
+            : p.status === 0
+              ? "No sustained decoded video/audio (" + frames.join("/") + " frames)"
+              : (error || "ffmpeg exit " + p.status).slice(0, 140),
     };
 }
 
