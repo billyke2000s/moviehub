@@ -1,5 +1,12 @@
 # Status
 
+## Playwright protocol-inspection work — 22 November 2026
+
+The open provider-maintenance PR now includes a standalone Playwright browser-inspection job and parser fixtures. It is intended to identify site changes that static HTTP scrapers miss, including dynamically rendered player buttons and request/iframe shapes. Initial browser targets include known public Live TV landing pages, a PrimeWire watch-page fixture and enabled VOD website roots. The generated reports are redacted and may include site-block/geo failures. They do not contain functional extractor patches.
+
+This is **not yet an automatic new-protocol repair engine**: AI code generation, end-to-end media validation, secure reviewed package generation and enabled signed OTA publishing remain separate missing stages. Playwright is not bundled in the APK; private account sources stay on-device. PR code has not been merged or published.
+
+
 ## Unreleased expansion — 22 November 2026
 
 Provider monitoring on the open PrimeWire PR now covers every bundled public TV engine module (15), plus separate public Free-TV, iptv-org and Pluto catalogues. Existing scheduled VOD audits cover bundled film/series sites. Account-based M3U/Xtream, Nuvio and Masqueradarr remain on-device only; their existing refresh/failover applies, but they cannot be checked by a public GitHub runner without user credentials. TimStreams is not currently a registered MovieHub provider.
