@@ -116,7 +116,7 @@ async function inspect(browser, target) {
                 elements.map(element => {
                     try {
                         const path = new URL(element.getAttribute("data-url"), location.href).pathname;
-                        return /^\\/([a-z0-9-]{1,24})\\/stream-\\d{1,8}\\.php$/i.exec(path)?.[1] || null;
+                        return /^\/([a-z0-9-]{1,24})\/stream-\d{1,8}\.php$/i.exec(path)?.[1] || null;
                     } catch { return null; }
                 }).filter(Boolean)
             );
