@@ -87,7 +87,7 @@ function __run(operation, row) {
                 (url.host !== url.hostname && url.host !== url.hostname + ":443") ||
                 url.hash ||
                 !(
-                    url.hostname === "cdn.wideiptv.top" || /^[A-Za-z0-9-]+\.bluetier\.top$/.test(url.hostname)
+                    url.hostname === "cdn.wideiptv.top" || url.hostname === "cdn.hdm1.net" || /^[A-Za-z0-9-]+\.bluetier\.top$/.test(url.hostname)
                 ) ||
                 url.pathname.indexOf("/" + playerSlug + "/") !== 0
             )
