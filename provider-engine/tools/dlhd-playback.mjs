@@ -100,7 +100,10 @@ async function inspect(provider, row, forceRenew = false) {
                 stage.segments = (body.match(/#EXTINF:/g) || []).length;
                 relayStages.push(stage);
                 if (!stage.hls) break;
-                const next = body.split(/\\r?\\n/).map(line => line.trim()).find(line => line && !line.startsWith("#"));
+                const next = body
+                    .split(/\r?\n/)
+                    .map((line) => line.trim())
+                    .find((line) => line && !line.startsWith("#"));
                 if (!next) break;
                 const nextUrl = new URL(next, child);
                 if (nextUrl.origin !== origin) break;
