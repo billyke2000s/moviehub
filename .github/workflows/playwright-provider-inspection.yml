@@ -1,0 +1,95 @@
+name: Inspect player changes with Playwright
+on:
+    pull_request:
+        paths:
+            - 'provider-browser/**'
+            - '.github/workflows/playwright-provider-inspection.yml'
+    workflow_dispatch:
+    schedule:
+        - cron: '19 */2 * * *'  # Public live website pages
+        - cron: '37 */12 * * *' # All enabled VOD catalogue websites
+permissions:
+    contents: read
+    actions: read
+concurrency:
+    group: browser-provider-${{ github.ref }}-${{ github.event.schedule || 'manual' }}
+    cancel-in-progress: true
+jobs:
+    inspect:
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - { target: 'live', kind: 'live', shard: '0/1' }
+                    - { target: 'vod-0', kind: 'vod', shard: '0/4' }
+                    - { target: 'vod-1', kind: 'vod', shard: '1/4' }
+                    - { target: 'vod-2', kind: 'vod', shard: '2/4' }
+                    - { target: 'vod-3', kind: 'vod', shard: '3/4' }
+        steps:
+            - name: Select scheduled/PR inspection shards
+              id: gate
+              env:
+                  EVENT: ${{ github.event_name }}
+                  SCHEDULE: ${{ github.event.schedule }}
+                  TARGET: ${{ matrix.target }}
+              run: |
+                  active=false
+                  if [ "$EVENT" = workflow_dispatch ]; then active=true; fi
+                  if [ "$EVENT" = pull_request ] && { [ "$TARGET" = live ] || [ "$TARGET" = vod-0 ]; }; then active=true; fi
+                  if [ "$EVENT" = schedule ] && [ "$SCHEDULE" = '19 */2 * * *' ] && [ "$TARGET" = live ]; then active=true; fi
+                  if [ "$EVENT" = schedule ] && [ "$SCHEDULE" = '37 */12 * * *' ] && [ "$TARGET" != live ]; then active=true; fi
+                  echo "active=$active" >> "$GITHUB_OUTPUT"
+            - if: steps.gate.outputs.active == 'true'
+              uses: actions/checkout@v5
+            - if: steps.gate.outputs.active == 'true'
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+            - if: steps.gate.outputs.active == 'true'
+              uses: actions/setup-python@v5
+              with:
+                  python-version: '3.11'
+            - name: Install pinned inspection dependencies
+              if: steps.gate.outputs.active == 'true'
+              run: |
+                  npm install --prefix provider-browser --ignore-scripts --no-audit --no-fund --package-lock=false
+                  python -m pip install requests==2.32.5 six==1.17.0
+                  ./provider-browser/node_modules/.bin/playwright install --with-deps chromium
+            - name: Check network redaction and inventory restrictions
+              if: steps.gate.outputs.active == 'true'
+              run: node --test provider-browser/tests/*.test.mjs
+            - name: Generate public-only source inventory
+              if: steps.gate.outputs.active == 'true'
+              run: |
+                  python provider-browser/inventory.py --kind '${{ matrix.kind }}' --shard '${{ matrix.shard }}' > browser-targets.json
+            - name: Restore prior successful protocol signatures if present
+              if: steps.gate.outputs.active == 'true'
+              continue-on-error: true
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  ARTIFACT: browser-protocol-${{ matrix.target }}
+              run: |
+                  mkdir -p prior
+                  # Live runs are more frequent than VOD. Find the most recent
+                  # successful artifact for *this shard*, not merely the last run.
+                  for previous in $(gh run list --workflow playwright-provider-inspection.yml --branch main --status success --limit 24 --json databaseId --jq '.[].databaseId'); do
+                      if gh run download "$previous" --name "$ARTIFACT" --dir prior >/dev/null 2>&1; then
+                          echo "Loaded previous redacted fingerprint for $ARTIFACT"
+                          break
+                      fi
+                  done
+            - name: Inspect rendered players and sanitised browser requests
+              if: steps.gate.outputs.active == 'true'
+              env:
+                  OUTPUT: build/browser-inspection/${{ matrix.target }}
+              run: |
+                  node provider-browser/inspect.mjs --targets browser-targets.json --baseline prior/report.json --output "$OUTPUT"
+            - name: Upload redacted protocol evidence
+              if: always() && steps.gate.outputs.active == 'true'
+              uses: actions/upload-artifact@v6
+              with:
+                  name: browser-protocol-${{ matrix.target }}
+                  path: build/browser-inspection/${{ matrix.target }}/
+                  if-no-files-found: ignore
