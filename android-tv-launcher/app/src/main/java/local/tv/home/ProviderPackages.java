@@ -109,6 +109,10 @@ final class ProviderPackages {
         if (id.equals("dlhd") && (capabilities == null || capabilities.optInt("dlhdCurrentMirror") < 1)) {
             return builtinModule(c, id);
         }
+        // Previous signed sports packages reject the new FreeShot CDN even after APK updates.
+        if (id.equals("freeshot") && (capabilities == null || capabilities.optInt("freeShotCdnV2") < 1)) {
+            return builtinModule(c, id);
+        }
         if (modules.has(id)) return modules.getString(id);
         // Older signed runtime-1 packages cannot remove the newer APK's built-in capabilities.
         return validate(asset(c, "builtin.json").getBytes(StandardCharsets.UTF_8))

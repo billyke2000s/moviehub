@@ -456,7 +456,8 @@ final class ExoLive {
         }
         MediaItem.Builder item = new MediaItem.Builder().setUri(stream);
         String lower = stream.toLowerCase(Locale.ROOT);
-        if (hlsRetried || lower.contains(".m3u8") || lower.contains("m3u8?")) item.setMimeType(
+        if (hlsRetried || lower.contains(".m3u8") || lower.contains("m3u8?") ||
+            (NuvioSports.locator(url) && NuvioSports.hlsProxy(stream))) item.setMimeType(
             MimeTypes.APPLICATION_M3U8
         );
         player.setMediaSource(new DefaultMediaSourceFactory(http).createMediaSource(item.build()));

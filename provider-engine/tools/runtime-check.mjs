@@ -442,7 +442,7 @@ assert.equal(freeStream.playlistSession.expiresAtMs, 1792440300000);
 assert.equal(lastInput.responses.length, 3);
 checks++;
 // The current player moved to this exact CDN; older Bluetier hosts remain supported.
-for (const host of ["cdn.wideiptv.top", "ds2.bluetier.top"]) {
+for (const host of ["cdn.wideiptv.top", "cdn.hdm1.net", "ds2.bluetier.top"]) {
     const current = drive("freeshot", "resolve", freeRows[0], (req, n) => {
         if (n === 0) return '<iframe src="/embed/MainEvent.php"></iframe>';
         if (n === 1) return '<iframe src="https://wideiptv.top/player/skysportsmainevent"></iframe>';

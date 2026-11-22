@@ -127,6 +127,7 @@ public final class ProviderEngineDeviceTest {
         pkg.put("version", 2);
         pkg.getJSONObject("capabilities").remove("sportsPlayers");
         pkg.getJSONObject("capabilities").remove("dlhdCurrentMirror");
+        pkg.getJSONObject("capabilities").remove("freeShotCdnV2");
         for (String id : new String[] { "zlive", "freeshot", "dlhd" }) {
             pkg.getJSONObject("modules").put(
                 id,
@@ -139,7 +140,7 @@ public final class ProviderEngineDeviceTest {
             assertEquals(ProviderPackages.builtinModule(context, id), ProviderPackages.module(context, id));
         }
         pkg.put("version", 3).getJSONObject("capabilities")
-            .put("sportsPlayers", 1).put("dlhdCurrentMirror", 1);
+            .put("sportsPlayers", 1).put("dlhdCurrentMirror", 1).put("freeShotCdnV2", 1);
         bytes = pkg.toString().getBytes(StandardCharsets.UTF_8);
         ProviderPackages.install(context, bytes, signature(keys, bytes));
         assertEquals(

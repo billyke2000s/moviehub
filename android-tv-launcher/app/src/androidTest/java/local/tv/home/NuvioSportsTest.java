@@ -58,6 +58,16 @@ public final class NuvioSportsTest {
     }
 
     @Test
+    public void extensionlessHlsManifestIsRecognisedWithoutEnablingRelayedDash() {
+        assertTrue(NuvioSports.hlsProxy("https://example.test/api/manifest?url=opaque"));
+        assertTrue(NuvioSports.hlsProxy("https://example.test/api/manifest.m3u8?token=abc"));
+        assertTrue(NuvioSports.hlsProxy("https://example.test/playlist?token=abc"));
+        assertFalse(NuvioSports.hlsProxy("https://example.test/api/dash/index.m3u8?d=signed"));
+        assertFalse(NuvioSports.hlsProxy("https://example.test/watch/player"));
+        assertFalse(NuvioSports.hlsProxy("not a url"));
+    }
+
+    @Test
     public void cleartextPlaybackRequiresExplicitHttpPreference() throws Exception {
         JSONArray streams = new JSONArray()
             .put(new JSONObject().put("url", "http://192.168.1.5:7000/api/manifest?url=test"));
