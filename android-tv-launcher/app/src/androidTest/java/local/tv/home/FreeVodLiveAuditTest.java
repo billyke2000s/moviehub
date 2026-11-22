@@ -100,10 +100,16 @@ public final class FreeVodLiveAuditTest {
                     org.json.JSONArray labels = new org.json.JSONArray();
                     java.util.Set<String> uniqueLabels = new java.util.LinkedHashSet<>();
                     for (SourceRepository.Source source : sources) {
-                        String label = SourcesScreen.provider(source.title)
-                            .replaceAll("[^A-Za-z0-9 _.-]", "").trim();
-                        if (label.length() > 60) label = label.substring(0, 60);
-                        if (!label.isEmpty() && uniqueLabels.size() < 24) uniqueLabels.add(label);
+                        // Source labels are website + a backend name. Never include a
+                        // provider-controlled URL, token, filename or arbitrary suffix.
+                        String label = SourcesScreen.provider(source.title);
+                        int separator = label.indexOf(" · ");
+                        if (separator < 0) continue;
+                        String backend = label.substring(separator + 3).trim();
+                        if (
+                            backend.matches("[A-Za-z][A-Za-z0-9 _-]{0,31}") &&
+                            uniqueLabels.size() < 24
+                        ) uniqueLabels.add(backend);
                     }
                     for (String label : uniqueLabels) labels.put(label);
                     lookup.put("observedPlayerLabels", labels);
