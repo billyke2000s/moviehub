@@ -388,6 +388,14 @@ if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
         // being mistaken for playback while respecting the upstream IP rate cap.
         // Scheduled sweeps remain catalogue-only; this explicit PR diagnostic
         // performs at most one ZLive live request.
+        if (id === "dlhd" && process.env.DLHD_HUB_TEST === "1" && samples.length) {
+            // Probe the site's seventh player independently, without assuming it
+            // actually carries this channel or counting it as auto-mode success.
+            samples.unshift({
+                ...samples[0], preferredPlayer: 7,
+                name: samples[0].name + " (Player 7 hub)",
+            });
+        }
         const playbackSamples =
             id === "zlive" ? (process.env.ZLIVE_LIVE_TEST === "1" ? samples.slice(0, 1) : []) : samples;
         if (id === "zlive" && playbackSamples.length === 0) result.playbackScope = "not_tested";
