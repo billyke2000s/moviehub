@@ -2,9 +2,9 @@
 
 ## Playwright protocol-inspection work — 22 November 2026
 
-The open provider-maintenance PR now includes a standalone Playwright browser-inspection job and parser fixtures. It is intended to identify site changes that static HTTP scrapers miss, including dynamically rendered player buttons and request/iframe shapes. Initial browser targets include known public Live TV landing pages, a PrimeWire watch-page fixture and enabled VOD website roots. The generated reports are redacted and may include site-block/geo failures. They do not contain functional extractor patches.
+The standalone Playwright browser-inspection job and protocol fixtures were merged to `main` in [PR #230](https://github.com/billyke2000s/moviehub/pull/230). It is intended to identify site changes that static HTTP scrapers miss, including dynamically rendered player buttons and request/iframe shapes. Initial browser targets include known public Live TV landing pages, a PrimeWire watch-page fixture and enabled VOD website roots. The generated reports are redacted and may include site-block/geo failures. They do not contain functional extractor patches.
 
-This is **not yet an automatic new-protocol repair engine**: AI code generation, end-to-end media validation, secure reviewed package generation and enabled signed OTA publishing remain separate missing stages. Playwright is not bundled in the APK; private account sources stay on-device. PR code has not been merged or published.
+This is **not yet an automatic new-protocol repair engine**: AI code generation, end-to-end media validation, secure reviewed package generation and enabled signed OTA publishing remain separate missing stages. Playwright is not bundled in the APK; private account sources stay on-device. The browser tooling is merged, but the separate PrimeWire/Live TV app changes in PR #229 remain unmerged and unpublished.
 
 
 ## Unreleased expansion — 22 November 2026
