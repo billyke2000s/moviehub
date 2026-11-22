@@ -1,5 +1,22 @@
 # Security
 
+## Over-the-air scraper packages and the self-hosted feed (unreleased)
+
+- Scraper packages run Python on every box, so the package signature is the security boundary:
+  RSA ≥3072 SHA-256 over the exact zip bytes, verified against the APK-pinned `trust.json` key
+  before the zip is opened. The private key lives only on the home server (`/srv/moviehub/keys`),
+  never in a repository or CI secret; `build-scrapers.py` refuses a key that does not match.
+- `ScraperBundle` accepts only `.py`, `.json` and `.txt` files under `python/`, refuses path
+  traversal, absolute and hidden paths, oversized packages and a replacement `moviehub_loader.py`.
+  Versions only increase (high-water mark). Packages built from older app source than the
+  installed APK, or for a different `ScraperBundle.API`, are ignored.
+- The feed key (`MOVIEHUB_FEED_KEY`) is inside every APK, so it only keeps casual visitors out; it
+  is not a secret. It is sent only to the self-hosted feed host, never to GitHub or redirect targets.
+  Feed downloads may only redirect to the feed's own host (GitHub feeds: GitHub's download hosts).
+- The gate's code page must stay on the home network. Codes are single-use and expire after 5
+  minutes; download links expire after 5 minutes, work only for the address that unlocked them
+  and at most 3 times; 5 wrong codes per address in 10 minutes are refused.
+
 ## Playwright browser evidence boundaries (merged via PR #230)
 
 Playwright runs only in disposable GitHub Actions/explicit workstation runs with no private IPTV, Xtream, Nuvio or Premiumize credentials. It blocks HTTP, local names, IP-literal destinations, non-public IPv4 DNS results, unsupported methods and browser popups; it aborts media-resource downloads. These application-layer checks are **not** DNS pinning or a substitute for network egress isolation on self-hosted runners. No browser challenges, logins or DRM restrictions are bypassed.

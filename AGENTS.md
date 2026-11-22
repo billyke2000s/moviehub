@@ -1,5 +1,9 @@
 # Rules for AI assistants working on this repository
 
+**Fixing a broken source (a `[broken source]` issue)?** Follow
+[docs/FIX_A_BROKEN_SOURCE.md](docs/FIX_A_BROKEN_SOURCE.md) only. Do not read the large documents
+below for that job. A fix counts only when the live probe finds streams again.
+
 Read [AI working rules](docs/AI_WORKING_RULES.md), [ARCHITECTURE.md](ARCHITECTURE.md),
 [TESTING.md](TESTING.md) and [STATUS.md](STATUS.md) before changing code. Use the
 [change checklist](docs/AI_CHANGE_CHECKLIST.md) before submitting or merging work.

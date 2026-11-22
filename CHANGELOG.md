@@ -1,5 +1,15 @@
 ## Unreleased
 
+- Film and series scrapers can now be updated over the air: a signed scraper package from the
+  self-hosted feed replaces the APK's own scrapers without an app update. A package that fails to
+  load on a box is rejected automatically and the previous scrapers are used. Needs the signing key
+  in `providers/trust.json` and a feed address; without them nothing changes.
+- App, Live TV provider and scraper updates check a self-hosted address first (set at build time
+  with `MOVIEHUB_FEED_URL`/`MOVIEHUB_FEED_KEY`), with the existing GitHub feeds kept as a fallback.
+- New `server/` folder: install-code gate and keyed update feed, source health checker with phone
+  alerts, Codex auto-fix runner that only opens a fix when the live probe passes, scraper package
+  builder, Forgejo workflows and a setup guide. New playbook `docs/FIX_A_BROKEN_SOURCE.md`.
+
 ## 1.0.23 (22 November 2026)
 
 - Playwright browser inspection is now part of MovieHub's repository tooling, helping identify changes in public Live TV and film/series player requests without adding Chromium to the APK.

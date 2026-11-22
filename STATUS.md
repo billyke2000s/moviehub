@@ -1,5 +1,14 @@
 # Status
 
+## Self-hosted maintenance (branch, 22 November 2026)
+
+Adds over-the-air film/series scraper packages, a self-hosted update address with GitHub fallback,
+and the `server/` tooling (gate, health checker, auto-fix, package builder). **Not active yet:**
+`trust.json` still has no public key and no feed address is set, so built APKs behave as before.
+Tested: core checks, `ScraperBundleTest`, loader, gate and health-checker tests, and an end-to-end
+package build/sign/verify/extract with a throwaway key. **Not tested:** loading a package under
+Chaquopy on a real box, the Forgejo workflows, Codex, Cloudflare, or the probes from the home server.
+
 ## Playwright protocol-inspection work — 22 November 2026
 
 The standalone Playwright browser-inspection job and protocol fixtures were merged to `main` in [PR #230](https://github.com/billyke2000s/moviehub/pull/230). It is intended to identify site changes that static HTTP scrapers miss, including dynamically rendered player buttons and request/iframe shapes. Initial browser targets include known public Live TV landing pages, a PrimeWire watch-page fixture and enabled VOD website roots. The generated reports are redacted and may include site-block/geo failures. They do not contain functional extractor patches.

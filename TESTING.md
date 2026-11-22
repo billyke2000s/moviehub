@@ -1,5 +1,13 @@
 # Testing
 
+## Unreleased: over-the-air scrapers and server tooling
+
+- `ScraperBundleTest` (core checks): package validation, path/loader refusal, compatibility and
+  update-address rules.
+- `test_scraper_loader.py` (Android CI, free VOD step): a package is used including subpackages;
+  broken packages fall back to the APK's scrapers. Desktop CPython only, not Chaquopy on a device.
+- `server/gate/test_gate.py`, `server/health/test_check_sources.py`: run with `python3`.
+
 ## Unreleased: Playwright provider analysis
 
 `provider-browser/tests/protocol.test.mjs` contains offline network target restrictions, private IPv4 rejection, token/path redaction, signature comparison and inventory limits. The `playwright-provider-inspection.yml` PR job installs pinned Playwright 1.65.1 with headless Chromium, runs offline tests, creates a public target inventory and inspects public pages (one live and one VOD shard in PR). Scheduled checks subsequently cover the selected live websites and the complete enabled VOD registry in four shards. A browser page load, observed media request or report containing new patterns does **not** establish working playback or a repaired extractor.
