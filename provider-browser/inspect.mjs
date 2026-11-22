@@ -177,6 +177,26 @@ async function inspect(browser, target) {
             }
             if (!report.embeds.length) report.embedOutcome = "no_current_public_embed";
         }
+        if (target.id === "daddylive-app-channels") {
+            // Its seven "List" tabs are a different catalogue from /api/events.
+            // Observe two tabs without collecting channel names or play URLs.
+            report.channelTabs = [];
+            const lists = page.getByRole("button", { name: /List\s*-\s*[1-7]/i });
+            const count = Math.min(2, await lists.count());
+            for (let i = 0; i < count; i++) {
+                const tab = { index: i + 1 };
+                try {
+                    await lists.nth(i).click({ timeout: 2_500 });
+                    await page.waitForTimeout(650);
+                    tab.playerLinks = Math.min(500, await page.locator('a[href*="/player/"]').count());
+                    tab.iframes = Math.min(100, await page.locator("iframe").count());
+                    tab.outcome = "clicked";
+                } catch {
+                    tab.outcome = "click_failed";
+                }
+                report.channelTabs.push(tab);
+            }
+        }
         if (target.kind === "player") {
             const clicks = Math.min(report.playerControls, target.maxClicks);
             for (let i = 0; i < clicks; i++) {
