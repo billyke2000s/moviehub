@@ -73,6 +73,7 @@ async function inspect(provider, row, forceRenew = false) {
         const bases = [];
         const hashes = [new Set(), new Set()];
         let warnings = 0;
+        const decoderReasons = new Set();
         const decoder = spawn(
             "ffmpeg",
             [
@@ -114,7 +115,20 @@ async function inspect(provider, row, forceRenew = false) {
             hashes[index].add(values[5]);
         });
         decoder.stderr.on("data", (bytes) => {
-            warnings += bytes.toString().split("\n").filter(Boolean).length;
+            for (const line of bytes.toString().split("\n").filter(Boolean)) {
+                warnings++;
+                // Report error classes, never media URLs, tokens or response bodies.
+                for (const [pattern, label] of [
+                    [/HTTP error (4\d\d|5\d\d)/i, "upstream_http_error"],
+                    [/403 Forbidden/i, "upstream_403"],
+                    [/Unable to open resource|Failed to open/i, "resource_unavailable"],
+                    [/Error when loading first segment/i, "first_segment_failed"],
+                    [/Invalid data found when processing input/i, "invalid_media"],
+                    [/Stream map .*matches no streams/i, "missing_required_track"],
+                    [/connection refused|Connection timed out/i, "transport_failed"],
+                    [/Invalid playlist|Error parsing playlist/i, "playlist_invalid"],
+                ]) if (pattern.test(line)) decoderReasons.add(label);
+            }
         });
         const code = await new Promise((resolve) => {
             const timer = setTimeout(() => decoder.kill("SIGKILL"), 240000);
@@ -131,6 +145,7 @@ async function inspect(provider, row, forceRenew = false) {
             maxGap: +track.maxGap.toFixed(3),
         }));
         result.warningLines = warnings;
+        result.decoderReasons = [...decoderReasons].slice(0, 8);
         result.relayErrors = relayErrors;
         result.bothDecoded =
             code === 0 && result.tracks.every((track) => track.duration >= seconds - 5 && track.frames > 10);
@@ -179,10 +194,15 @@ if (process.env.SPORTS_PROBE_ONLY !== "freeshot")
 try {
     const rows = await run("freeshot", "catalogue", null, stats());
     const row =
-        rows.find((value) => /sky.*sports.*main.*event/i.test(value.name || "")) ||
-        rows.find((value) => /sky.*sports.*action/i.test(value.name || ""));
+        rows.find((value) => /sky.*sports.*action/i.test(value.name || "")) ||
+        rows.find((value) => /sky.*sports.*main.*event/i.test(value.name || ""));
     if (!row) report.push({ provider: "freeshot", failure: "No known sports channel in catalogue" });
-    else report.push(await inspect("freeshot", row, true));
+    else {
+        // Direct decoding did not exercise the app's loopback relay. Test its
+        // normal starting token separately from a forced token renewal.
+        report.push(await inspect("freeshot", row, false));
+        if (process.env.PROBE_RENEWAL === "1") report.push(await inspect("freeshot", row, true));
+    }
 } catch (error) {
     report.push({ provider: "freeshot", failure: error.constructor.name });
 }
