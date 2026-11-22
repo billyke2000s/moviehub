@@ -18,8 +18,10 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 25
         strategy:
+            fail-fast: false
             matrix:
                 media: [movies, series]
+                shard: [0, 1, 2, 3]
         steps:
             - uses: actions/checkout@v5
             - uses: actions/setup-python@v5
@@ -34,9 +36,9 @@ jobs:
               run: |
                   args=()
                   if [ "${{ matrix.media }}" = series ]; then args+=(--series); fi
-                  python android-tv-launcher/tests/probe-free-vod.py --include-retired "${args[@]}" | tee provider-audit.jsonl
+                  python android-tv-launcher/tests/probe-free-vod.py --include-retired --shard "${{ matrix.shard }}/4" --timeout-seconds 75 "${args[@]}" | tee provider-audit.jsonl
             - name: Check a recent film with the repaired and previously productive scrapers
-              if: matrix.media == 'movies'
+              if: matrix.media == 'movies' && matrix.shard == 0
               run: |
                   python android-tv-launcher/tests/probe-free-vod.py \
                     --provider free99:levidia_ch --provider free99:fzmovies_live \
@@ -49,7 +51,7 @@ jobs:
                     --provider scrubs:projectfreetv_cyou \
                     --movie "Inception" 2010 tt1375666 27205 | tee focused-movie-audit.jsonl
             - name: Check the exact film from the reported TV failure
-              if: matrix.media == 'movies'
+              if: matrix.media == 'movies' && matrix.shard == 0
               run: |
                   python android-tv-launcher/tests/probe-free-vod.py \
                     --provider free99:levidia_ch --provider free99:fzmovies_live \
@@ -59,17 +61,17 @@ jobs:
                     --provider scrubs:pressplay_top \
                     --movie "Spider-Man: Brand New Day" 2026 tt22084616 969681 | tee reported-movie-audit.jsonl
             - name: Probe Tubi with a currently listed film
-              if: matrix.media == 'movies'
+              if: matrix.media == 'movies' && matrix.shard == 0
               run: |
                   python android-tv-launcher/tests/probe-free-vod.py --provider scrubs:tubitv_com \
                     --movie "Bikini Spring Break" 2012 tt2304517 0 | tee tubi-movie-audit.jsonl
             - name: Compare HTTP identity on challenge-blocked reachable websites
-              if: matrix.media == 'movies'
+              if: matrix.media == 'movies' && matrix.shard == 0
               run: python android-tv-launcher/tests/probe-vod-http.py | tee http-identity-audit.jsonl
             - uses: actions/upload-artifact@v6
               if: always()
               with:
-                  name: free-vod-provider-audit-${{ matrix.media }}
+                  name: free-vod-provider-audit-${{ matrix.media }}-${{ matrix.shard }}
                   path: |
                       provider-audit.jsonl
                       focused-movie-audit.jsonl
