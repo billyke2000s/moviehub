@@ -1,5 +1,12 @@
 # Testing
 
+## Unreleased: Playwright provider analysis
+
+`provider-browser/tests/protocol.test.mjs` contains offline network target restrictions, private IPv4 rejection, token/path redaction, signature comparison and inventory limits. The `playwright-provider-inspection.yml` PR job installs pinned Playwright 1.65.1 with headless Chromium, runs offline tests, creates a public target inventory and inspects public pages (one live and one VOD shard in PR). Scheduled checks subsequently cover the selected live websites and the complete enabled VOD registry in four shards. A browser page load, observed media request or report containing new patterns does **not** establish working playback or a repaired extractor.
+
+No completed browser/CI run is asserted here. Review the final pull-request workflow outcome before merging; no real TV-box playback was verified by this tooling.
+
+
 ## Unreleased: expanded monitoring verification
 
 The scheduled live probe runs all built-in provider-module IDs across four independent groups; the separate public-TV workflow runs a network-free parser/Pluto allow-list fixture before the public catalogue checks. These workflows report upstream HTTP/network errors and bounded catalogue/media evidence without exposing signed stream URLs or tokens. Their checks are not proof that every TV channel plays in the UK.
