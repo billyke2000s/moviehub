@@ -33,9 +33,14 @@ origins are admitted. Browser-generated **media requests are aborted** to
 avoid downloading video. Observing an endpoint is not playback verification.
 
 The inventory includes known public Live TV website landing pages and the
-enabled film/series site roots. Only the user-provided PrimeWire movie watch
-page is marked as a clickable player-page fixture; the other roots are passive
-checks until a verified title/episode-specific watch route has been identified.
+enabled film/series site roots. It also inspects two concrete public Live TV
+watch-page fixtures: DaddyLive's channel 302 (up to four player-button clicks)
+and FreeShot's Sky Sports Action page (passive iframe observation). The
+PrimeWire movie watch-page fixture remains a clickable VOD target. These
+fixtures help catch changes that homepage-only checks missed. Media requests
+are still aborted, so they cannot establish decoded audio or video. ZLive's
+landing-page requests also remain **diagnostic only**, not stream verification;
+its live stream protocol must be checked separately.
 Private Xtream/M3U, Nuvio, Masqueradarr or Premiumize accounts are never
 inspected by the GitHub Actions job.
 

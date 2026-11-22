@@ -102,6 +102,12 @@ final class ChannelSchema {
             ChannelNumbers.renumber(db);
         }
         if (from < 10) addColumn(db, "channels", "source_label", "TEXT NOT NULL DEFAULT ''");
+        // Version 11: recognise meaningful bracketed regions rather than merging them, and
+        // prefer ordinary names over backup-tagged copies. Keep URLs/favourite stream keys.
+        if (from >= 9 && from < 11) {
+            moved.putAll(rekey(db));
+            ChannelNumbers.renumber(db);
+        }
         return moved;
     }
 

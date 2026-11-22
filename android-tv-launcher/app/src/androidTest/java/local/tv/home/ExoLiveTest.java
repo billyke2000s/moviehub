@@ -674,7 +674,7 @@ public final class ExoLiveTest {
                 epg = "SkySportsMainEvent.uk";
             channels(new String[][] {
                 { "m3u", name, "/main.m3u8", epg },
-                { "free", name, "/backup.m3u8", epg },
+                { "free", name + " Backup", "/backup.m3u8", epg },
             });
             openGuide(1);
             remote.runOnMainSync(() -> activity.liveTv.cells.get(0).performClick());
@@ -696,6 +696,9 @@ public final class ExoLiveTest {
             });
             await(() -> ExoLive.isPlaying() && rendered() > 5 && chosen[0].equals(ExoLive.currentUrl()));
             await(() -> !activity.stage.zapper().automaticSources());
+            remote.runOnMainSync(() ->
+                assertEquals("Backup selection must not rename the channel", name, activity.stage.title())
+            );
             int requests = opens.get();
             ExoPlayer[] original = { null };
             remote.runOnMainSync(() -> original[0] = ExoLive.player());

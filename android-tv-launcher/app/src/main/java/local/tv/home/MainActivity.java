@@ -398,6 +398,11 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
         } catch (Exception e) {
             Diagnostics.recovered("Scheduling channel refresh", e);
         }
+        try {
+            ScraperPackages.schedule(this);
+        } catch (Exception e) {
+            Diagnostics.recovered("Scheduling scraper updates", e);
+        }
         // The first time: TV or phone? Then the chosen layout.
         if (DeviceMode.chosen(this).isEmpty()) LayoutChooser.show(this);
         else LayoutChooser.open(this);

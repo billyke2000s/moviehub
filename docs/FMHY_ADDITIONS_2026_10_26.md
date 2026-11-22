@@ -12,7 +12,7 @@ Sources: https://github.com/fmhy/FMHY/wiki/Streaming (retrieved 26 October 2026)
 
 ## Per-link desktop results
 
-The [redacted evidence](FMHY_RIVE_DESKTOP_AUDIT_2026_10_26.json) records every returned enabled-route link for the two tested identities. No signed playback URL is committed.
+The [redacted evidence](history/audits/FMHY_RIVE_DESKTOP_AUDIT_2026_10_26.json) records every returned enabled-route link for the two tested identities. No signed playback URL is committed.
 
 | Tested title | Links tested | Measured video | Duration | Audio | Start and midpoint |
 | --- | ---: | --- | --- | --- | --- |
@@ -49,7 +49,7 @@ Existing Rive-independent providers were not removed, repaired or reclassified b
 
 ## Initial packaged Android audit and targeted transport fix
 
-[Initial run 40375703384](https://github.com/billyke2000s/moviehub/actions/runs/40375703384) failed its strict verification gate: **two of seven movie links verified**, five did not. Primevids/dcloud and one Citadel route decoded video/audio, had plausible runtimes and decoded after seeking to the midpoint. The other routes raised relay IOExceptions. The [initial per-link results](FMHY_RIVE_ANDROID_INITIAL_2026_10_26.jsonl) are preserved. Desktop decoding did not establish packaged-player compatibility for those five links.
+[Initial run 40375703384](https://github.com/billyke2000s/moviehub/actions/runs/40375703384) failed its strict verification gate: **two of seven movie links verified**, five did not. Primevids/dcloud and one Citadel route decoded video/audio, had plausible runtimes and decoded after seeking to the midpoint. The other routes raised relay IOExceptions. The [initial per-link results](history/audits/FMHY_RIVE_ANDROID_INITIAL_2026_10_26.jsonl) are preserved. Desktop decoding did not establish packaged-player compatibility for those five links.
 
 Live inspection found raw MPEG-TS beginning with the TS sync byte served as image/jpeg on the failing English routes, while a passing route used application/octet-stream. A real-TCP regression reproduced the misleading image MIME type on an opted-in whole-entity zero-range read and failed before the fix. The relay now sniffs those opted-in whole-entity payloads too; Citadel selects the existing carrier flag. Media bytes and audio are unchanged, and ordinary unflagged range handling stays on its existing path. The targeted relay suite passes, including the existing finite-file and wrapped-media cases. No existing provider was removed or reconfigured.
 

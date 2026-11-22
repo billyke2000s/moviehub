@@ -1,0 +1,50 @@
+name: Publish scrapers
+# Runs on your home server when a scraper fix is merged to main (or by hand). Checks the scrapers,
+# builds a signed package and puts it in the update feed; boxes pick it up within about 6 hours,
+# with no reinstall. The private signing key never leaves the server and is never in this repository.
+on:
+    push:
+        branches: [main]
+        paths: ["android-tv-launcher/app/src/main/python/**"]
+    workflow_dispatch:
+        inputs:
+            target:
+                description: "normal (everyone) or experimental (MovieHub Experimental only)"
+                default: normal
+jobs:
+    publish:
+        runs-on: moviehub
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+            - name: Check the scrapers before anything is published
+              run: |
+                  python3 android-tv-launcher/tests/test_free_vod.py
+                  python3 android-tv-launcher/tests/test_primewire.py
+                  python3 android-tv-launcher/tests/test_scraper_loader.py
+            - name: Build, sign and publish
+              env:
+                  TARGET: ${{ inputs.target || 'normal' }}
+              run: |
+                  set -euo pipefail
+                  feed=/srv/moviehub/feed
+                  area=scrapers; app=app
+                  if [ "$TARGET" = experimental ]; then area=scrapers-experimental; app=experimental; fi
+                  # Target the APK version boxes actually run (the one in the feed).
+                  version_code=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['versionCode'])" "$feed/$app/update.json")
+                  python3 server/tools/build-scrapers.py --key /srv/moviehub/keys/signing.pem --app "$version_code" --out build/scrapers
+                  mkdir -p "$feed/$area"
+                  # Copy to temporary names, then rename (atomic). A box that downloads between the two
+                  # renames sees a signature mismatch, uses nothing, and simply tries again next check.
+                  cp build/scrapers/scrapers.zip "$feed/$area/.scrapers.zip.new"
+                  cp build/scrapers/scrapers.sig "$feed/$area/.scrapers.sig.new"
+                  mv "$feed/$area/.scrapers.zip.new" "$feed/$area/scrapers.zip"
+                  mv "$feed/$area/.scrapers.sig.new" "$feed/$area/scrapers.sig"
+                  echo "Published to $area for app version $version_code"
+            - name: Tell your phone
+              if: always()
+              env:
+                  NTFY_URL: ${{ secrets.NTFY_URL }}
+              run: |
+                  [ -n "$NTFY_URL" ] || exit 0
+                  curl -fsS -H "Title: MovieHub scrapers ${{ job.status }}" -d "Scraper publish: ${{ job.status }} (${{ github.sha }})" "$NTFY_URL" || true

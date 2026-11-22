@@ -493,19 +493,12 @@ final class SkyOverlay {
 
     private void colourKey(int colour, String text, Runnable action) {
         LinearLayout key = row();
-        key.setPadding(a.dp(6), a.dp(4), a.dp(10), a.dp(4));
+        key.setPadding(a.dp(10), a.dp(4), a.dp(10), a.dp(4));
         key.setFocusable(false);
         key.setClickable(true);
         key.setContentDescription(text);
-        View swatch = new View(a.activity());
-        GradientDrawable shape = new GradientDrawable();
-        shape.setColor(colour);
-        shape.setCornerRadius(a.dp(2));
-        shape.setStroke(a.dp(1), 0x66ffffff);
-        swatch.setBackground(shape);
-        LinearLayout.LayoutParams swatchLayout = new LinearLayout.LayoutParams(a.dp(16), a.dp(16));
-        swatchLayout.rightMargin = a.dp(6);
-        key.addView(swatch, swatchLayout);
+        // No colour swatch (see KeyBar). The buttons keep the remote colour keys' order: red, green,
+        // yellow, blue.
         TextView label = label(15, true, Color.WHITE);
         label.setText(text);
         key.addView(label, new LinearLayout.LayoutParams(0, -2, 1));

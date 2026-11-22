@@ -1,4 +1,25 @@
+# Changelog
+
+User-visible changes by version. Add new entries under `## 1.0.24 (22 November 2026)`; rename that heading to the
+version when it is published. This is the only dated history file (see AGENTS.md).
+
 ## Unreleased
+
+- Live TV guide: opens with the cursor on the channel playing in the corner, as on Sky, so OK makes it full screen. Search results and lists without that channel still start at the top.
+- Live TV guide: the hint line now says BACK reaches the buttons (for remotes without colour keys).
+- Live TV guide: CH+ / CH- (and Page Up / Page Down) move one channel, as on a TV and in the player; CH+ goes to the next channel number. Whole pages are the Page up / Page down buttons (or red / green keys).
+- The guide, guide menu and player banner buttons no longer show coloured squares. Remotes with real colour keys still press them in the same order (red, green, yellow, blue).
+- Fixed: the channel name under the guide's preview was drawn over the time slots; it now sits inside the bottom of the preview.
+
+- Film and series scrapers can now be updated over the air: a signed scraper package from the
+  self-hosted feed replaces the APK's own scrapers without an app update. A package that fails to
+  load on a box is rejected automatically and the previous scrapers are used. Needs the signing key
+  in `providers/trust.json` and a feed address; without them nothing changes.
+- App, Live TV provider and scraper updates check a self-hosted address first (set at build time
+  with `MOVIEHUB_FEED_URL`/`MOVIEHUB_FEED_KEY`), with the existing GitHub feeds kept as a fallback.
+- New `server/` folder: install-code gate and keyed update feed, source health checker with phone
+  alerts, Codex auto-fix runner that only opens a fix when the live probe passes, scraper package
+  builder, Forgejo workflows and a setup guide. New playbook `docs/FIX_A_BROKEN_SOURCE.md`.
 
 ## 1.0.23 (22 November 2026)
 
@@ -390,7 +411,9 @@ MovieHub 1.0: everything tested in MovieHub Experimental, up to exp-15, is now p
 - Preserve VOD buffering thresholds and prepared replacement playback.
 - Preserve host headers and record third-party provenance and outstanding release blockers.
 
-# Changelog
+## Older entries (0.51 and earlier)
+
+These entries come from an earlier copy of this file and were left in their original order.
 
 ## Unreleased
 

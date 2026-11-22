@@ -51,7 +51,7 @@ Go to **Settings** to choose what MovieHub can access:
 
 **Films and series:** open a title, select Play or Sources, and choose a stream if more than one is found. Use the Browse controls to narrow down what you're looking for.
 
-**Live TV:** choose a channel in the guide. The on-screen colour buttons provide shortcuts even if your remote has no coloured keys. You can open sources, audio and subtitle options from the player.
+**Live TV:** choose a channel in the guide. Use the on-screen buttons at the bottom (press BACK to reach them); remotes with real colour keys can press them directly. CH+ and CH- move one channel at a time. You can open sources, audio and subtitle options from the player.
 
 **Help:** go to **Settings → System → Help** for common problems such as missing internet or low playback quality. Technical information lives under **Settings → Setup → Engineer view**.
 
@@ -81,10 +81,10 @@ MovieHub is open source. Build instructions, implementation notes and verificati
 | [Architecture](ARCHITECTURE.md) | How the Android app and services are organised |
 | [Testing](TESTING.md) | Tests and what they do (and do not) prove |
 | [Updates](android-tv-launcher/UPDATES.md) | Signed publishing and the updater feed |
-| [Status](STATUS.md) | Current release, known limits and historical checkpoints |
+| [Status](STATUS.md) | Current release, known limits and open work (one page) |
 | [Changelog](CHANGELOG.md) | Changes by version |
 | [Security](SECURITY.md) | Credential handling and vulnerability reporting |
-| [Contributor instructions](AGENTS.md) | Rules for making changes to this repository |
+| [Contributor instructions](AGENTS.md) | Rules for making changes to this repository (the one rulebook for AI tools) |
 
 ## Content and privacy
 

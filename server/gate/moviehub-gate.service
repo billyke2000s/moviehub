@@ -1,0 +1,20 @@
+[Unit]
+Description=MovieHub gate (install codes and update feed)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=moviehub
+EnvironmentFile=/etc/moviehub-gate.env
+ExecStart=/usr/bin/python3 /srv/moviehub/repo/server/gate/gate.py
+Restart=always
+RestartSec=5
+# The gate only reads the feed folder; it never needs to write anything.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadOnlyPaths=/srv/moviehub
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,115 @@
+name: Publish from release request
+# The one way to ask for a release by changing a file, for AI tools that cannot press
+# "Run workflow". Changing .github/release-request.json on main (only when the owner has
+# authorised publishing) starts the existing signed publisher with that version, waits for it
+# to pass, checks the updater feed, then starts the numbered-release copier.
+# It never builds or signs anything itself. If the requested version is already published it
+# does nothing, so merging an unchanged or older request is safe.
+# Do not add one-off release-moviehub-<version>.yml workflows: edit the request file instead.
+on:
+    push:
+        branches: [main]
+        paths: [".github/release-request.json"]
+permissions:
+    contents: read
+    actions: write
+concurrency:
+    group: release-request
+    cancel-in-progress: false
+jobs:
+    release:
+        if: github.repository == 'billyke2000s/moviehub'
+        runs-on: ubuntu-latest
+        timeout-minutes: 55
+        steps:
+            - uses: actions/checkout@v5
+            - name: Compare the request with the published updater feed
+              id: decide
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
+              run: |
+                  mkdir -p "$RUNNER_TEMP/feed"
+                  gh release download android-tv-latest --pattern update.json --dir "$RUNNER_TEMP/feed"
+                  python3 .github/scripts/release_request.py .github/release-request.json "$RUNNER_TEMP/feed/update.json"
+            - name: Already published
+              if: steps.decide.outputs.action == 'skip'
+              run: echo "::notice::Nothing to publish - ${{ steps.decide.outputs.reason }}"
+            - name: Start the signed publisher
+              id: dispatch
+              if: steps.decide.outputs.action == 'publish'
+              uses: actions/github-script@v8
+              env:
+                  VERSION_CODE: ${{ steps.decide.outputs.version_code }}
+                  VERSION_NAME: ${{ steps.decide.outputs.version_name }}
+                  PRS: ${{ steps.decide.outputs.prs }}
+              with:
+                  script: |
+                      const {owner, repo} = context.repo;
+                      const {data: main} = await github.rest.repos.getBranch({owner, repo, branch: 'main'});
+                      if (main.commit.sha !== context.sha) throw new Error('main changed before publication');
+                      for (const number of (process.env.PRS || '').split(',').filter(Boolean)) {
+                        const {data: pr} = await github.rest.pulls.get({owner, repo, pull_number: Number(number)});
+                        if (!pr.merged) throw new Error(`PR #${number} has not merged: refusing to publish`);
+                      }
+                      core.setOutput('started', new Date(Date.now() - 60000).toISOString());
+                      await github.rest.actions.createWorkflowDispatch({
+                        owner, repo, workflow_id: 'publish-android-launcher.yml', ref: 'main',
+                        inputs: {version_code: process.env.VERSION_CODE, version_name: process.env.VERSION_NAME}
+                      });
+                      core.notice(`Started the signed publisher for MovieHub ${process.env.VERSION_NAME} (code ${process.env.VERSION_CODE})`);
+            - name: Wait for the signed publisher to pass
+              if: steps.decide.outputs.action == 'publish'
+              uses: actions/github-script@v8
+              env:
+                  STARTED: ${{ steps.dispatch.outputs.started }}
+              with:
+                  script: |
+                      const {owner, repo} = context.repo;
+                      for (let attempt = 0; attempt < 180; attempt++) {
+                        const {data: runs} = await github.rest.actions.listWorkflowRuns({
+                          owner, repo, workflow_id: 'publish-android-launcher.yml',
+                          head_sha: context.sha, event: 'workflow_dispatch', per_page: 10
+                        });
+                        const started = new Date(process.env.STARTED);
+                        const run = runs.workflow_runs.find(run => new Date(run.created_at) >= started);
+                        if (run?.status === 'completed') {
+                          if (run.conclusion !== 'success') throw new Error(`Signed publication failed: ${run.html_url}`);
+                          core.notice(`Signed publication passed: ${run.html_url}`);
+                          return;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 15000));
+                      }
+                      throw new Error('Signed publication did not finish in time: no numbered release created');
+            - name: Check the updater feed now has the requested version
+              if: steps.decide.outputs.action == 'publish'
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
+                  VERSION_CODE: ${{ steps.decide.outputs.version_code }}
+                  VERSION_NAME: ${{ steps.decide.outputs.version_name }}
+              run: |
+                  rm -rf "$RUNNER_TEMP/after" && mkdir -p "$RUNNER_TEMP/after"
+                  gh release download android-tv-latest --pattern update.json --dir "$RUNNER_TEMP/after"
+                  python3 - <<'PY'
+                  import json, os, pathlib
+                  manifest = json.loads((pathlib.Path(os.environ['RUNNER_TEMP']) / 'after/update.json').read_text())
+                  wanted = ('local.tv.home', int(os.environ['VERSION_CODE']), os.environ['VERSION_NAME'])
+                  actual = (manifest['packageName'], manifest['versionCode'], manifest['versionName'])
+                  if actual != wanted:
+                      raise SystemExit(f'Updater feed is {actual!r}, expected {wanted!r}')
+                  if not isinstance(manifest.get('sha256'), str) or len(manifest['sha256']) != 64:
+                      raise SystemExit('Update manifest is missing its SHA-256')
+                  print(f'Verified {wanted} in the published updater feed')
+                  PY
+            - name: Start the numbered-release copier
+              if: steps.decide.outputs.action == 'publish'
+              uses: actions/github-script@v8
+              with:
+                  script: |
+                      const {owner, repo} = context.repo;
+                      await github.rest.actions.createWorkflowDispatch({
+                        owner, repo, workflow_id: 'release-android-launcher.yml', ref: 'main',
+                        inputs: {notes: ''}
+                      });
+                      core.notice('Started the numbered release page');

@@ -2,7 +2,7 @@
 
 ## Published updates
 
-**MovieHub 1.0.21 (code 121)** was published on 20 November 2026 through the existing signed process. The [publisher](https://github.com/billyke2000s/moviehub/actions/runs/44648355873) and [release orchestration](https://github.com/billyke2000s/moviehub/actions/runs/44648333364) passed. The [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.21) and [in-app update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) show the same APK SHA-256 `8953e5d3de794e1eacc6d0262e4704acd29c26ef90bb8c6ce75a75110c9f17f7` and size 133,276,236 bytes.
+**MovieHub 1.0.23 (code 124)** was published on 22 November 2026 through the existing signed process. The [numbered release](https://github.com/billyke2000s/moviehub/releases/tag/moviehub-v1.0.23) and [in-app update feed](https://github.com/billyke2000s/moviehub/releases/tag/android-tv-latest) carry the APK (133,301,768 bytes in the numbered release); the feed's `update.json` lists SHA-256 `b4d36db14f3acd0db5f1fa53ea28d6015a7616888ba956165e144938b58b9561`. Older published versions are listed on the [releases page](https://github.com/billyke2000s/moviehub/releases).
 
 For newer versions, use the [latest release](https://github.com/billyke2000s/moviehub/releases/latest) and update feed rather than relying on a historical paragraph. The standard signed APK includes both `armeabi-v7a` and `arm64-v8a`, using the established signing identity and `local.tv.home` package.
 
@@ -19,13 +19,36 @@ The signed APK and update manifest are published in the `android-tv-latest` rele
 
 Keep and back up that signing key; use it for the first release installation and all future releases. Existing debug APKs are not a verified upgrade path to this release key. The updater refuses APKs signed with a different certificate; an initial move from a debug build may require a separate installation and data migration plan.
 
-Run Publish Android TV launcher update on the intended source branch, with a visible version name and an integer version code greater than every previous release. It builds and lints the release, verifies its signature, and publishes home.apk and update.json. Publishing is not triggered by ordinary debug builds or merges. Explicit owner-authorized
-one-off `release-moviehub-<version>.yml` workflows can dispatch this standard publisher when
-their release-preparation PR is merged; those are release actions, not ordinary app builds. The permanent signing secrets are configured, and the initial signed release has been published.
+Run Publish Android TV launcher update on the intended source branch, with a visible version name and an integer version code greater than every previous release. It builds and lints the release, verifies its signature, and publishes home.apk and update.json. Publishing is not triggered by ordinary debug builds or merges. The permanent signing secrets are configured, and the initial signed release has been published.
 
 The release workflow runs core checks and Android database/player tests before signing. It
 also requires both ARM ABIs, matching native-library coverage and stripped debug sections in
 the signed APK before upload. It downloads the current updater baseline, verifies its checksum and refuses publication if the new certificate differs. Same-repository PRs also build a signed candidate and check package, increasing version code and signing continuity without publishing it. The package remains `local.tv.home`, and the existing `android-tv-latest/home.apk` and `update.json` paths and manifest fields are unchanged. Since 0.15, `update.json` may also carry an optional `notes` field: the CHANGELOG section headed with the published version name (for example `## 0.15 (date)`), shown as "What's new" in the update prompt. Older app versions ignore it.
+
+## Publishing by changing a file
+
+Some AI tools cannot press **Run workflow**. Instead of writing a new one-off workflow for each
+version (the old `release-moviehub-<version>.yml` files, now removed), they change
+`.github/release-request.json` through a PR, only when the owner has authorised publishing:
+
+```json
+{
+    "version_code": 125,
+    "version_name": "1.0.24",
+    "requires_merged_prs": [229]
+}
+```
+
+When that file changes on `main`, **Publish from release request** (`release-request.yml`)
+compares it with the published `android-tv-latest/update.json`:
+
+- Same version as the feed: does nothing, so merging an unchanged request is safe.
+- Lower version code, or a reused code with a different name: fails without publishing.
+- Higher version code: checks `main` has not moved and every listed PR is merged, runs the normal
+  signed publisher above with that version, waits for it to pass, checks the feed now shows that
+  version and checksum, then runs the numbered-release copier below.
+
+It builds and signs nothing itself; every check of the normal publisher still applies.
 
 ## Numbered releases on the repository page
 

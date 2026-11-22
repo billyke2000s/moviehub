@@ -1,0 +1,26 @@
+name: Source health
+# Runs on your home server (Forgejo runner labelled "moviehub", host mode), so sites are tested from a
+# UK home connection like the family's boxes. Opens/closes "[broken source]" issues and pings your
+# phone. Never changes code or publishes anything. GitHub ignores this folder.
+on:
+    schedule:
+        - cron: "17 */6 * * *"
+    workflow_dispatch:
+jobs:
+    check:
+        runs-on: moviehub
+        timeout-minutes: 90
+        steps:
+            - uses: actions/checkout@v4
+            - name: Compile the app's JavaScript interpreter for the Live TV probe
+              run: |
+                  mkdir -p build/provider-tests
+                  javac -cp "$RHINO_JAR" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderCodec,ProviderSignature,ProviderUrls,ProviderSegments}.java android-tv-launcher/tests/ProviderProbeCli.java
+            - name: Check every source and update issues
+              env:
+                  RHINO_JAR: /srv/moviehub/tools/rhino-1.9.1.jar
+                  FORGEJO_URL: ${{ vars.FORGEJO_INTERNAL_URL }}
+                  FORGEJO_REPO: ${{ github.repository }}
+                  FORGEJO_TOKEN: ${{ secrets.HEALTH_TOKEN }}
+                  NTFY_URL: ${{ secrets.NTFY_URL }}
+              run: python3 server/health/check_sources.py

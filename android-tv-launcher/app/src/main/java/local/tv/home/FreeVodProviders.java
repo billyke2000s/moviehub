@@ -9,14 +9,44 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.json.*;
 
-/** The signed APK contains the Python modules; no Kodi install, server or downloaded code. */
+/**
+ * The signed APK contains the Python modules. A newer signed scraper package (ScraperPackages) can
+ * replace them over the air; moviehub_loader falls back to the APK's copy if a package fails to load.
+ */
 public final class FreeVodProviders {
 
     private FreeVodProviders() {}
 
+    /** Package folder currently in use ("" = the APK's own scrapers); null before the first call. */
+    private static String activated;
+    /**
+     * Long Python calls in progress. The scrapers import site modules lazily during a search, so a
+     * newly downloaded package is switched in only when none is running, never mid-search.
+     */
+    private static int inFlight;
+
+    private static synchronized PyObject enter(Context context) {
+        PyObject module = runtime(context);
+        inFlight++;
+        return module;
+    }
+
+    private static synchronized void leave() {
+        inFlight--;
+    }
+
     private static synchronized PyObject runtime(Context context) {
         if (!Python.isStarted()) Python.start(new AndroidPlatform(context.getApplicationContext()));
-        return Python.getInstance().getModule("moviehub_vod");
+        Python python = Python.getInstance();
+        String wanted = ScraperPackages.activePath(context);
+        if (!wanted.equals(activated) && (activated == null || inFlight == 0)) {
+            String result = python.getModule("moviehub_loader").callAttr("activate", wanted).toString();
+            if (!wanted.isEmpty() && !result.equals("overlay")) {
+                ScraperPackages.reject(context, wanted, result);
+                activated = "";
+            } else activated = wanted;
+        }
+        return python.getModule("moviehub_vod");
     }
 
     static List<String> ids(Context context) throws Exception {
@@ -59,7 +89,12 @@ public final class FreeVodProviders {
                 Diagnostics.recovered("Free source result", error);
             }
         };
-        return runtime(context).callAttr("query_site", id, query.toString(), cancelled, callback).toString();
+        PyObject module = enter(context);
+        try {
+            return module.callAttr("query_site", id, query.toString(), cancelled, callback).toString();
+        } finally {
+            leave();
+        }
     }
 
     public static final class RefreshCancellation {
@@ -131,16 +166,22 @@ public final class FreeVodProviders {
             JSONObject snapshot = new JSONObject(query.toString());
             source.refresh = () -> {
                 List<SourceRepository.Source> renewed = new ArrayList<>();
-                JSONObject replacement = new JSONObject(
-                    runtime(context)
-                        .callAttr(
-                            "refresh_source",
-                            recipe.toString(),
-                            snapshot.toString(),
-                            new RefreshCancellation()
-                        )
-                        .toString()
-                );
+                PyObject module = enter(context);
+                JSONObject replacement;
+                try {
+                    replacement = new JSONObject(
+                        module
+                            .callAttr(
+                                "refresh_source",
+                                recipe.toString(),
+                                snapshot.toString(),
+                                new RefreshCancellation()
+                            )
+                            .toString()
+                    );
+                } finally {
+                    leave();
+                }
                 parse(context, id, snapshot, replacement, renewed::add);
                 return renewed.isEmpty() ? null : renewed.get(0);
             };
