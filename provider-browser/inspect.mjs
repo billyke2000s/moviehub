@@ -49,6 +49,8 @@ async function inspect(browser, target) {
         signatures: [], changes: null, mediaEvidence: 0,
         candidateHostChanges: [],
     };
+    // WebSockets bypass normal HTTP request routing; deny them completely.
+    await context.routeWebSocket("**/*", socket => socket.close());
     // The runner is disposable; DNS validation is not DNS pinning.
     // Production deployment also requires network-level egress isolation.
     await context.route("**/*", async route => {
