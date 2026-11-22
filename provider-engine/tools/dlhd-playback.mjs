@@ -81,7 +81,7 @@ async function inspect(provider, row, forceRenew = false) {
                 const stage = { status: response.status, mimeHls: /mpegurl/i.test(type) };
                 if (!stage.mimeHls && depth >= 2) {
                     const reader = response.body?.getReader();
-                    const packet = reader ? await reader.read() : {value: null};
+                    const packet = reader ? await reader.read() : { value: null };
                     const bytes = packet.value || new Uint8Array();
                     stage.firstSegment = {
                         received: bytes.length > 0,
@@ -107,7 +107,7 @@ async function inspect(provider, row, forceRenew = false) {
                 child = nextUrl.href;
             }
         } catch (error) {
-            relayStages.push({failure: error.constructor.name});
+            relayStages.push({ failure: error.constructor.name });
         }
         result.relayStages = relayStages;
         const tracks = [0, 1].map(() => ({ frames: 0, unique: 0, start: null, end: null, maxGap: 0 }));
