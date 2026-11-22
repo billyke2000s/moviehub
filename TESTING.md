@@ -37,6 +37,14 @@ The Live provider probe and full free-VOD site audit now also have schedules; th
 
 ## Sports loader regression checks — 1 November 2026
 
+`ProviderPngSegmentsTest` covers the current image-prefix layout: 16 decorative rows, headers crossing
+scanlines, RGB/RGBA, all five PNG filters, the one-MiB scan boundary and refusal beyond that boundary.
+All 39 PNG checks and nine carrier checks pass locally. A current Sky Sports F1 backup segment failed
+before the change with `Unknown PNG payload`; the corrected production decoder recovered its TS and
+FFmpeg decoded four seconds with 200 video frames and 188 audio frames. The inspected frame showed
+Sky Sports F1 coverage. This proves the sampled media/decoder path, not sustained Android playback,
+availability of other channels, or restoration of DaddyLive/FreeShot.
+
 New fixtures decrypt ZLive v6 requests using the current public client key, resolve FreeShot on
 both CDN families, and reject lookalike hosts, mismatched channel paths, userinfo and custom ports.
 `PlaylistSessionTest` verifies new-CDN renewal and scope. `ProviderEngineDeviceTest` verifies

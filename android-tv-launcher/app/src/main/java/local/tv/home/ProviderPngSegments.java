@@ -9,6 +9,11 @@ final class ProviderPngSegments {
 
     static final int MAX_ENCODED = 16 * 1024 * 1024;
     static final int MAX_DECODED = 24 * 1024 * 1024;
+    private static final int MAX_PAYLOAD_PREFIX = 1 << 20;
+    private static final byte[] PAYLOAD_MAGIC = "TIKTIKPX".getBytes(
+        java.nio.charset.StandardCharsets.US_ASCII
+    );
+    private static final int[] PAYLOAD_PREFIX = { 0, 0, 0, 1, 2, 3, 0, 0 };
     private static final byte[] MAGIC = { (byte) 137, 80, 78, 71, 13, 10, 26, 10 };
 
     private ProviderPngSegments() {}
@@ -83,8 +88,12 @@ final class ProviderPngSegments {
         }
     }
 
-    private static byte[] pixels(InputStream compressed, int width, int height, int channels)
-        throws IOException {
+    private static byte[] pixels(
+        InputStream compressed,
+        int width,
+        int height,
+        int channels
+    ) throws IOException {
         int stride = width * channels;
         byte[] previous = new byte[stride],
             row = new byte[stride],
@@ -92,7 +101,9 @@ final class ProviderPngSegments {
             header = new byte[12],
             gzip = null;
         int found = 0,
-            written = 0;
+            written = 0,
+            scanned = 0,
+            markerOffset = -1;
         Inflater inflater = new Inflater();
         try (DataInputStream in = new DataInputStream(new InflaterInputStream(compressed, inflater, 32768))) {
             for (int y = 0; y < height; y++) {
@@ -123,19 +134,31 @@ final class ProviderPngSegments {
                 }
                 int offset = 0;
                 if (found < header.length) {
-                    int count = Math.min(header.length - found, width * 3);
-                    System.arraycopy(payload, 0, header, found, count);
-                    found += count;
-                    offset = count;
+                    // The current player scans the first MiB of RGB bytes for
+                    // its header; current live PNGs prepend 16 image rows.
+                    // Keep the match across rows and ignore RGBA alpha bytes.
+                    while (offset < width * 3 && found < header.length) {
+                        byte value = payload[offset++];
+                        if (found < PAYLOAD_MAGIC.length) {
+                            while (found > 0 && value != PAYLOAD_MAGIC[found])
+                                found = PAYLOAD_PREFIX[found - 1];
+                            if (value == PAYLOAD_MAGIC[found]) found++;
+                            scanned++;
+                            if (found == PAYLOAD_MAGIC.length) {
+                                markerOffset = scanned - PAYLOAD_MAGIC.length;
+                                System.arraycopy(PAYLOAD_MAGIC, 0, header, 0, PAYLOAD_MAGIC.length);
+                            }
+                            if (scanned - found > MAX_PAYLOAD_PREFIX) throw new IOException(
+                                "Unknown PNG payload"
+                            );
+                        } else {
+                            header[found++] = value;
+                        }
+                    }
                     if (found == header.length) {
-                        if (
-                            !new String(header, 0, 8, java.nio.charset.StandardCharsets.US_ASCII).equals(
-                                "TIKTIKPX"
-                            )
-                        ) throw new IOException("Unknown PNG payload");
                         long n = unsigned(header, 8);
                         if (
-                            n < 2 || n > MAX_ENCODED || n + 12 > (long) width * height * 3
+                            n < 2 || n > MAX_ENCODED || markerOffset + n + 12 > (long) width * height * 3
                         ) throw new IOException("Invalid PNG payload length");
                         gzip = new byte[(int) n];
                     }
