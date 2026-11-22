@@ -107,14 +107,48 @@ final class LiveTvScreen {
         menu.show();
     }
 
-    /** Straight to All Channels in the grid. */
+    /** Straight to All Channels in the grid, on the channel playing in the corner. */
     void live() {
         refreshChannels();
         filter = "all";
         search = "";
         windowOffset = 0;
         programmeFocus = false;
-        guide(0, 0);
+        openAtCurrentChannel();
+    }
+
+    /**
+     * Opens the list with the cursor on the channel playing in the corner, as the satellite guide
+     * did, so OK makes it full screen. The top of the list for search results, when nothing has
+     * been watched yet, or when the list does not have that channel.
+     */
+    private void openAtCurrentChannel() {
+        String key = activity.prefs.getString(LAST_CHANNEL, "");
+        if (key.isEmpty() || !search.isEmpty()) {
+            guide(0, 0);
+            return;
+        }
+        String listFilter = filter,
+            listSearch = search;
+        Set<String> favourites = favouriteKeys();
+        activity.async(
+            () -> {
+                try {
+                    ChannelDatabase db = channelsDb();
+                    ChannelDatabase.Row channel = db.byKey(key);
+                    if (channel == null) return -1;
+                    return db.position(listFilter, listSearch, favourites, channel.number, false);
+                } catch (Exception e) {
+                    Diagnostics.recovered("Finding the current channel in the guide", e);
+                    return -1;
+                }
+            },
+            position -> {
+                if (!listFilter.equals(filter) || !listSearch.equals(search)) return;
+                if (position < 0) guide(0, 0);
+                else guide(position - (position % ROWS), position % ROWS);
+            }
+        );
     }
 
     private void refreshChannels() {
@@ -731,7 +765,7 @@ final class LiveTvScreen {
         search = newSearch;
         windowOffset = 0;
         programmeFocus = false;
-        guide(0, 0);
+        openAtCurrentChannel();
     }
 
     private void showStatus(TextView status) {

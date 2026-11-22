@@ -22,6 +22,8 @@ public class LiveGuideTest {
     SharedPreferences prefs;
     String free;
     boolean updates;
+    String lastChannel;
+    java.util.Set<String> favourites;
 
     @Before
     public void start() throws Exception {
@@ -29,7 +31,15 @@ public class LiveGuideTest {
         prefs = context.getSharedPreferences("ui", 0);
         free = prefs.getString(FreeChannels.PREF, null);
         updates = prefs.getBoolean("autoUpdates", true);
-        prefs.edit().putString(FreeChannels.PREF, "off").putBoolean("autoUpdates", false).commit();
+        lastChannel = prefs.getString(LiveTvScreen.LAST_CHANNEL, null);
+        favourites = prefs.getStringSet("favourites", null);
+        // The guide opens on the last channel watched; start each test from none.
+        prefs
+            .edit()
+            .putString(FreeChannels.PREF, "off")
+            .putBoolean("autoUpdates", false)
+            .remove(LiveTvScreen.LAST_CHANNEL)
+            .commit();
         ChannelDatabase db = ChannelDatabase.get(context);
         db.clear();
         ChannelDatabase.Writer writer = db.writer("guide-test", () -> {}, n -> {});
@@ -59,6 +69,10 @@ public class LiveGuideTest {
         SharedPreferences.Editor edit = prefs.edit().putBoolean("autoUpdates", updates);
         if (free == null) edit.remove(FreeChannels.PREF);
         else edit.putString(FreeChannels.PREF, free);
+        if (lastChannel == null) edit.remove(LiveTvScreen.LAST_CHANNEL);
+        else edit.putString(LiveTvScreen.LAST_CHANNEL, lastChannel);
+        if (favourites == null) edit.remove("favourites");
+        else edit.putStringSet("favourites", new java.util.HashSet<>(favourites));
         edit.commit();
         ParentalLock.clear(remote.getTargetContext());
         ChannelDatabase.get(remote.getTargetContext()).clear();
@@ -170,10 +184,7 @@ public class LiveGuideTest {
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
             remote.waitForIdleSync();
         }
-        await(
-            "second page",
-            () -> activity.liveTv.pageStart == 8 && focused().startsWith("109  Channel 08")
-        );
+        await("second page", () -> activity.liveTv.pageStart == 8 && focused().startsWith("109  Channel 08"));
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN); // green: page down
         await("page down", () -> activity.liveTv.pageStart == 16 && activity.liveTv.cells.size() == 8);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
@@ -312,20 +323,111 @@ public class LiveGuideTest {
         await("grid from preview", () -> activity.liveTv.cells.get(0).hasFocus());
     }
 
+    /** As on the satellite guide: the cursor starts on the channel playing, and OK goes full screen. */
+    @Test
+    public void guideOpensOnThePlayingChannelAndOkMakesItFullScreen() {
+        ChannelDatabase.Row last = ChannelDatabase.get(activity)
+            .browse("all", "", java.util.Collections.emptySet(), 12)
+            .get(0);
+        prefs
+            .edit()
+            .putBoolean(LiveTvScreen.PICTURE, true)
+            .putString(LiveTvScreen.LAST_CHANNEL, last.key)
+            .commit();
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await(
+            "cursor on the playing channel",
+            () -> activity.liveTv.pageStart == 8 && focused().startsWith("113  Channel 12")
+        );
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        await("full screen", () -> activity.stage.full());
+        assertEquals("Same channel", last.key, prefs.getString(LiveTvScreen.LAST_CHANNEL, ""));
+    }
+
+    /** A list without the playing channel, and search results, start at the top. */
+    @Test
+    public void listsWithoutThePlayingChannelOpenAtTheTop() {
+        java.util.List<ChannelDatabase.Row> rows = ChannelDatabase.get(activity).browse(
+            "all",
+            "",
+            java.util.Collections.emptySet(),
+            0
+        );
+        prefs
+            .edit()
+            .putString(LiveTvScreen.LAST_CHANNEL, rows.get(12).key)
+            .putStringSet("favourites", new java.util.HashSet<>(java.util.Arrays.asList(rows.get(2).key)))
+            .commit();
+        remote.runOnMainSync(() -> activity.liveTv.show("favourites", ""));
+        await("favourites from the top", () -> focused().startsWith("103  ★ Channel 02"));
+        remote.runOnMainSync(() -> activity.liveTv.show("all", "Channel 1"));
+        await(
+            "search results from the top",
+            () ->
+                activity.liveTv.pageStart == 0 &&
+                !activity.liveTv.cells.isEmpty() &&
+                activity.liveTv.cells.get(0).hasFocus()
+        );
+    }
+
+    /** The channel name sits inside the bottom of the preview, never over the time slots below it. */
+    @Test
+    public void previewLabelStaysInsideThePicture() {
+        ChannelDatabase.Row last = ChannelDatabase.get(activity)
+            .browse("all", "", java.util.Collections.emptySet(), 12)
+            .get(0);
+        prefs
+            .edit()
+            .putBoolean(LiveTvScreen.PICTURE, true)
+            .putString(LiveTvScreen.LAST_CHANNEL, last.key)
+            .commit();
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await("preview label", () ->
+            activity.liveTv.frame.pictureLabel.getText().toString().contains("Channel 12")
+        );
+        remote.waitForIdleSync();
+        SystemClock.sleep(300);
+        remote.waitForIdleSync();
+        remote.runOnMainSync(() -> {
+            int[] box = new int[2],
+                label = new int[2];
+            View picture = activity.liveTv.frame.pictureBox;
+            TextView name = activity.liveTv.frame.pictureLabel;
+            picture.getLocationInWindow(box);
+            name.getLocationInWindow(label);
+            int boxBottom = box[1] + picture.getHeight();
+            int textBottom = label[1] + name.getHeight() - name.getPaddingBottom();
+            assertTrue("Label below the picture's top", label[1] >= box[1] - 1);
+            assertTrue(
+                "Text inside the picture: " + textBottom + " <= " + boxBottom,
+                textBottom <= boxBottom + 1
+            );
+        });
+        UiEvidence.capture("live-guide-preview-label");
+        assertTrue(GuideFrame.HINT.contains("BACK  for buttons"));
+    }
+
     @Test
     public void okOnPreviewReturnsToLastWatchedChannelInsteadOfTheHighlightedRow() {
         ChannelDatabase.Row last = ChannelDatabase.get(activity)
-            .browse("all", "", java.util.Collections.emptySet(), 12).get(0);
-        prefs.edit().putBoolean(LiveTvScreen.PICTURE, true)
-            .putString(LiveTvScreen.LAST_CHANNEL, last.key).commit();
+            .browse("all", "", java.util.Collections.emptySet(), 12)
+            .get(0);
+        prefs
+            .edit()
+            .putBoolean(LiveTvScreen.PICTURE, true)
+            .putString(LiveTvScreen.LAST_CHANNEL, last.key)
+            .commit();
         remote.runOnMainSync(() -> activity.liveTv.live());
         await("guide page", () -> activity.liveTv.cells.size() == 8);
         remote.runOnMainSync(() -> activity.liveTv.frame.pictureBox.requestFocus());
         await("preview focus", () -> activity.liveTv.frame.pictureBox.hasFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         await("preview returned to full-screen playback", () -> activity.stage.full());
-        assertEquals("Preview opens the saved channel", last.key,
-            prefs.getString(LiveTvScreen.LAST_CHANNEL, ""));
+        assertEquals(
+            "Preview opens the saved channel",
+            last.key,
+            prefs.getString(LiveTvScreen.LAST_CHANNEL, "")
+        );
     }
 
     @Test

@@ -241,7 +241,9 @@ repeated source names numbered ("copy 2") without merging, and the "no stream fo
 
 Device tests changed with the menu audit sheet: `SettingsStyleTest` (Setup tab; Free channels
 opened from Setup), `DiagnosticsTest` (Engineer view returns to Setup; new Help page test),
-`LiveGuideTest` (one-page guide menu, colour keys always buttons), `TvNavigationTest` and
+`LiveGuideTest` (one-page guide menu, colour keys always buttons; the guide opens on the playing
+channel and OK goes full screen, other lists and search start at the top, the preview's channel
+name stays inside the preview), `TvNavigationTest` and
 `PosterFeedTest` (one Browse sheet, no Library button, Premiumize not in Accounts), `AllAppsTest`
 ("Box settings") and `PlaybackTest` (no raw download speed on the player). None of them proves
 the layout on a real TV box.

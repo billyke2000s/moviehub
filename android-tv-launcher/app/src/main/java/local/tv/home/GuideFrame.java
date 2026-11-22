@@ -53,6 +53,10 @@ final class GuideFrame {
     private TextView when, listTitle, dayLabel;
     /** The channel number being typed, drawn by the guide itself (no Android toast). */
     private TextView numberBox;
+    /** The line under the colour keys (package-private for tests). */
+    static final String HINT =
+        "Press  SELECT  to view  ·  ◀ ▶ through the day  ·  Hold  SELECT  for favourites  ·  BACK  for buttons";
+
     /** Channels in the list shown, or -1 before its first page loads. */
     private int shownCount = -1;
     private final List<TextView> slotLabels = new ArrayList<>();
@@ -184,17 +188,18 @@ final class GuideFrame {
         bar.view.setPadding(0, activity.dp(4), 0, 0);
         page.addView(bar.view);
         // "Press SELECT to view", with SELECT on a yellow key as the old guide printed it.
-        android.text.SpannableString select = new android.text.SpannableString(
-            "Press  SELECT  to view  ·  ◀ ▶ through the day  ·  Hold  SELECT  for favourites"
-        );
-        for (
-            int at = select.toString().indexOf(" SELECT ");
-            at >= 0;
-            at = select.toString().indexOf(" SELECT ", at + 1)
-        ) {
-            select.setSpan(new android.text.style.BackgroundColorSpan(LiveTvScreen.YELLOW), at, at + 8, 0);
-            select.setSpan(new android.text.style.ForegroundColorSpan(LiveTvScreen.INK), at, at + 8, 0);
-        }
+        // BACK is named because it is the way to the colour buttons on a remote without colour keys.
+        android.text.SpannableString select = new android.text.SpannableString(HINT);
+        for (String key : new String[] { " SELECT ", " BACK " })
+            for (
+                int at = select.toString().indexOf(key);
+                at >= 0;
+                at = select.toString().indexOf(key, at + 1)
+            ) {
+                int end = at + key.length();
+                select.setSpan(new android.text.style.BackgroundColorSpan(LiveTvScreen.YELLOW), at, end, 0);
+                select.setSpan(new android.text.style.ForegroundColorSpan(LiveTvScreen.INK), at, end, 0);
+            }
         TextView press = text("", 16, true);
         press.setText(select);
         page.addView(press);

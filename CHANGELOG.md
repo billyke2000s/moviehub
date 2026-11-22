@@ -1,5 +1,9 @@
 ## Unreleased
 
+- Live TV guide: opens with the cursor on the channel playing in the corner, as on Sky, so OK makes it full screen. Search results and lists without that channel still start at the top.
+- Live TV guide: the hint line now says BACK reaches the colour buttons (for remotes without colour keys).
+- Fixed: the channel name under the guide's preview was drawn over the time slots; it now sits inside the bottom of the preview.
+
 ## 1.0.23 (22 November 2026)
 
 - Playwright browser inspection is now part of MovieHub's repository tooling, helping identify changes in public Live TV and film/series player requests without adding Chromium to the APK.
