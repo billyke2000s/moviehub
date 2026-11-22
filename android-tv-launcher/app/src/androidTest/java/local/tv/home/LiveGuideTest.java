@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
-/** The classic-guide Live TV grid with fixture channels: numbering, ten per page, paging by D-pad. */
+/** The classic-guide Live TV grid with fixture channels: numbering, eight per page, paging by D-pad. */
 @RunWith(AndroidJUnit4.class)
 public class LiveGuideTest {
 
@@ -84,7 +84,7 @@ public class LiveGuideTest {
     @Test
     public void failedLoadOnGuideFloatsSmallCardWithoutShrinkingGrid() {
         remote.runOnMainSync(() -> activity.liveTv.live());
-        await("ten guide rows", () -> activity.liveTv.cells.size() == 10);
+        await("eight guide rows", () -> activity.liveTv.cells.size() == 8);
         remote.waitForIdleSync();
         int[] before = new int[2];
         remote.runOnMainSync(() -> {
@@ -123,7 +123,7 @@ public class LiveGuideTest {
     @Test
     public void labelsFitShortGuideRowsInsteadOfBeingCutInHalf() {
         remote.runOnMainSync(() -> activity.liveTv.live());
-        await("ten guide rows", () -> activity.liveTv.cells.size() == 10);
+        await("eight guide rows", () -> activity.liveTv.cells.size() == 8);
         remote.runOnMainSync(() -> {
             LinearLayout grid = activity.liveTv.frame.grid;
             LinearLayout.LayoutParams layout = (LinearLayout.LayoutParams) grid.getLayoutParams();
@@ -158,36 +158,38 @@ public class LiveGuideTest {
     }
 
     @Test
-    public void tenChannelsPerPageNumberedFrom101AndPagedWithTheRemote() {
+    public void eightChannelsPerPageNumberedFrom101AndPagedWithTheRemote() {
         remote.runOnMainSync(() -> activity.liveTv.live());
         await(
             "first page",
-            () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
+            () -> activity.liveTv.cells.size() == 8 && focused().startsWith("101  Channel 00")
         );
         UiEvidence.capture("live-guide");
         // Down past the bottom row: the next page.
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 8; i++) {
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
             remote.waitForIdleSync();
         }
         await(
             "second page",
-            () -> activity.liveTv.pageStart == 10 && focused().startsWith("111  Channel 10")
+            () -> activity.liveTv.pageStart == 8 && focused().startsWith("109  Channel 08")
         );
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN); // green: page down
-        await("page down", () -> activity.liveTv.pageStart == 20 && activity.liveTv.cells.size() == 5);
+        await("page down", () -> activity.liveTv.pageStart == 16 && activity.liveTv.cells.size() == 8);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
+        await("last page", () -> activity.liveTv.pageStart == 24 && activity.liveTv.cells.size() == 1);
         // The whole list's size sits on the title line, not just this page's rows.
         remote.runOnMainSync(() ->
             assertEquals("ALL CHANNELS   25 channels", activity.liveTv.frame.titleText())
         );
         assertEquals("1 channel", GuideFrame.titleCount(1));
         assertEquals("11,000 channels", GuideFrame.titleCount(11000));
-        await("on the first row of the last page", () -> focused().startsWith("121  Channel 20"));
+        await("on the first row of the last page", () -> focused().startsWith("125  Channel 24"));
         // Up from the top row turns back a page and lands on its last row.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
         await(
             "back up to the previous page, last row",
-            () -> activity.liveTv.pageStart == 10 && focused().startsWith("120  Channel 19")
+            () -> activity.liveTv.pageStart == 16 && focused().startsWith("124  Channel 23")
         );
     }
 
@@ -196,7 +198,7 @@ public class LiveGuideTest {
         remote.runOnMainSync(() -> activity.liveTv.live());
         await(
             "first page",
-            () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
+            () -> activity.liveTv.cells.size() == 8 && focused().startsWith("101  Channel 00")
         );
         long started = SystemClock.uptimeMillis();
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
@@ -229,25 +231,25 @@ public class LiveGuideTest {
         remote.runOnMainSync(() -> activity.liveTv.live());
         await(
             "first page",
-            () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
+            () -> activity.liveTv.cells.size() == 8 && focused().startsWith("101  Channel 00")
         );
         // Typing a number goes straight to that channel, as on a satellite box.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_2);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_3);
-        await("typed 123", () -> activity.liveTv.pageStart == 20 && focused().startsWith("123  Channel 22"));
+        await("typed 123", () -> activity.liveTv.pageStart == 16 && focused().startsWith("123  Channel 22"));
         remote.waitForIdleSync();
         // Right moves onto the programmes, keeping the channel names on the left.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
-        await("on the programme", () -> activity.liveTv.rows.programmes.get(2).get(0).hasFocus());
+        await("on the programme", () -> activity.liveTv.rows.programmes.get(6).get(0).hasFocus());
         // Right again, past the last slot, moves the times on half an hour (same row).
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
         await(
             "times moved on",
             () ->
                 activity.liveTv.windowOffset == LiveTvScreen.HALF_HOUR &&
-                activity.liveTv.rows.programmes.size() == 5 &&
-                activity.liveTv.rows.programmes.get(2).get(0).hasFocus()
+                activity.liveTv.rows.programmes.size() == 8 &&
+                activity.liveTv.rows.programmes.get(6).get(0).hasFocus()
         );
         UiEvidence.capture("live-guide-later");
         // Left goes back to now, then onto the channel name.
@@ -256,8 +258,8 @@ public class LiveGuideTest {
             "back to now",
             () ->
                 activity.liveTv.windowOffset == 0 &&
-                activity.liveTv.rows.programmes.size() == 5 &&
-                activity.liveTv.rows.programmes.get(2).get(0).hasFocus()
+                activity.liveTv.rows.programmes.size() == 8 &&
+                activity.liveTv.rows.programmes.get(6).get(0).hasFocus()
         );
         remote.waitForIdleSync();
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
@@ -267,25 +269,63 @@ public class LiveGuideTest {
         await("programme information", () -> SidePanel.current != null && SidePanel.current.isShowing());
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
         // Options → Next day: the same time tomorrow (one day, not the whole week); Previous day returns.
-        remote.runOnMainSync(() -> activity.liveTv.nextDay(2));
+        remote.runOnMainSync(() -> activity.liveTv.nextDay(6));
         await(
             "tomorrow",
-            () -> activity.liveTv.windowOffset == LiveTvScreen.DAY && activity.liveTv.cells.size() == 5
+            () -> activity.liveTv.windowOffset == LiveTvScreen.DAY && activity.liveTv.cells.size() == 8
         );
         UiEvidence.capture("live-guide-tomorrow");
-        remote.runOnMainSync(() -> activity.liveTv.previousDay(2));
-        await("today", () -> activity.liveTv.windowOffset == 0 && activity.liveTv.cells.size() == 5);
+        remote.runOnMainSync(() -> activity.liveTv.previousDay(6));
+        await("today", () -> activity.liveTv.windowOffset == 0 && activity.liveTv.cells.size() == 8);
         // A locked channel asks for the PIN instead of playing.
         ChannelDatabase.Row row = ChannelDatabase.get(activity)
             .browse("all", "", java.util.Collections.emptySet(), 22)
             .get(0);
         ParentalLock.setPin(activity, "1234");
         ParentalLock.setChannel(activity, row, true);
-        await("guide still showing", () -> activity.liveTv.cells.size() == 5);
-        remote.runOnMainSync(() -> activity.liveTv.cells.get(2).performClick());
+        await("guide still showing", () -> activity.liveTv.cells.size() == 8);
+        remote.runOnMainSync(() -> activity.liveTv.cells.get(6).performClick());
         await("PIN asked", () -> SidePanel.current != null && SidePanel.current.isShowing());
         UiEvidence.capture("live-pin");
         remote.runOnMainSync(() -> SidePanel.current.dismiss());
+    }
+
+    @Test
+    public void previewIsLargerAndReachableFromOptionsWithRemote() {
+        prefs.edit().putBoolean(LiveTvScreen.PICTURE, true).commit();
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await("eight guide rows", () -> activity.liveTv.cells.size() == 8);
+        remote.runOnMainSync(() -> {
+            LinearLayout.LayoutParams preview =
+                (LinearLayout.LayoutParams) activity.liveTv.frame.pictureBox.getLayoutParams();
+            assertEquals(activity.dp(300), preview.width);
+            assertEquals(activity.dp(169), preview.height);
+        });
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        await("Options focused", () -> activity.liveTv.frame.optionsButton.hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        await("mini-player focused", () -> activity.liveTv.frame.pictureBox.hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
+        await("Options from preview", () -> activity.liveTv.frame.optionsButton.hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
+        await("grid from preview", () -> activity.liveTv.cells.get(0).hasFocus());
+    }
+
+    @Test
+    public void okOnPreviewReturnsToLastWatchedChannelInsteadOfTheHighlightedRow() {
+        ChannelDatabase.Row last = ChannelDatabase.get(activity)
+            .browse("all", "", java.util.Collections.emptySet(), 12).get(0);
+        prefs.edit().putBoolean(LiveTvScreen.PICTURE, true)
+            .putString(LiveTvScreen.LAST_CHANNEL, last.key).commit();
+        remote.runOnMainSync(() -> activity.liveTv.live());
+        await("guide page", () -> activity.liveTv.cells.size() == 8);
+        remote.runOnMainSync(() -> activity.liveTv.frame.pictureBox.requestFocus());
+        await("preview focus", () -> activity.liveTv.frame.pictureBox.hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+        await("preview returned to full-screen playback", () -> activity.stage.full());
+        assertEquals("Preview opens the saved channel", last.key,
+            prefs.getString(LiveTvScreen.LAST_CHANNEL, ""));
     }
 
     @Test
@@ -293,7 +333,7 @@ public class LiveGuideTest {
         remote.runOnMainSync(() -> activity.liveTv.live());
         await(
             "first page",
-            () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
+            () -> activity.liveTv.cells.size() == 8 && focused().startsWith("101  Channel 00")
         );
         UiEvidence.capture("live-guide-classic");
         // Up from the top row: the Options button; down again: the first row.
@@ -312,7 +352,7 @@ public class LiveGuideTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
         await(
             "all channels from the menu",
-            () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
+            () -> activity.liveTv.cells.size() == 8 && focused().startsWith("101  Channel 00")
         );
         // Blue: the sections (the guide menu), as on the satellite guide.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_BLUE);
@@ -388,7 +428,7 @@ public class LiveGuideTest {
         remote.runOnMainSync(() -> activity.liveTv.live());
         await(
             "first page",
-            () -> activity.liveTv.cells.size() == 10 && focused().startsWith("101  Channel 00")
+            () -> activity.liveTv.cells.size() == 8 && focused().startsWith("101  Channel 00")
         );
         for (int round = 0; round < 4; round++) {
             // Paging must not depend on a channel cell retaining focus during row replacement.
@@ -396,13 +436,13 @@ public class LiveGuideTest {
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PAGE_UP);
             await(
                 "last page from header",
-                () -> activity.liveTv.pageStart == 20 && activity.liveTv.cells.size() == 5
+                () -> activity.liveTv.pageStart == 24 && activity.liveTv.cells.size() == 1
             );
             remote.runOnMainSync(() -> activity.liveTv.frame.focusTop());
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PAGE_DOWN);
             await(
                 "first page again from header",
-                () -> activity.liveTv.pageStart == 0 && activity.liveTv.cells.size() == 10
+                () -> activity.liveTv.pageStart == 0 && activity.liveTv.cells.size() == 8
             );
         }
     }
@@ -438,22 +478,22 @@ public class LiveGuideTest {
     @Test
     public void physicalColoursWorkFromTheHeaderAndBackRevealsTheSameActions() {
         remote.runOnMainSync(() -> activity.liveTv.live());
-        await("first page", () -> activity.liveTv.cells.size() == 10);
+        await("first page", () -> activity.liveTv.cells.size() == 8);
         remote.runOnMainSync(() -> activity.liveTv.frame.optionsButton.requestFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
         await(
             "green pages from header",
-            () -> activity.liveTv.pageStart == 10 && activity.liveTv.cells.size() == 10
+            () -> activity.liveTv.pageStart == 8 && activity.liveTv.cells.size() == 8
         );
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         await("back focuses colour row", () -> activity.liveTv.frame.bar.focused() == 0);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
         await(
             "OK presses red page up",
-            () -> activity.liveTv.pageStart == 0 && activity.liveTv.cells.size() == 10
+            () -> activity.liveTv.pageStart == 0 && activity.liveTv.cells.size() == 8
         );
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_F2);
-        await("F2 also pages down", () -> activity.liveTv.pageStart == 10);
+        await("F2 also pages down", () -> activity.liveTv.pageStart == 8);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_RED);
         await("red pages up", () -> activity.liveTv.pageStart == 0);
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_BLUE);

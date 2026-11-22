@@ -16,7 +16,7 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Live TV as a classic satellite-box TV guide: a blue full-screen grid of ten channels per page,
+ * Live TV as a classic satellite-box TV guide: a blue full-screen grid of eight channels per page,
  * channel numbers and names on the left, the half-hour time slots across the top, the selected
  * channel in yellow, and a colour-key footer. Backed by the on-device channel database.
  *
@@ -27,7 +27,7 @@ import java.util.Set;
 final class LiveTvScreen {
 
     /** Channels per guide page, as on the classic guides. */
-    static final int ROWS = 10;
+    static final int ROWS = 8;
     /** The guide shows three half-hour slots. */
     static final long WINDOW_MS = 90L * 60 * 1000;
     /** Guide colours. */
@@ -252,6 +252,48 @@ final class LiveTvScreen {
             activity,
             frame.pictureBox,
             frame.pictureLabel
+        );
+    }
+
+    /**
+     * OK on the guide's mini-player returns to its actual last-watched channel. Use the same
+     * open/play route as selecting a channel row: it preserves the shared ExoPlayer and handles
+     * locked channels, source copies and the existing Back-to-guide session.
+     */
+    void returnToPicture() {
+        if (!activity.prefs.getBoolean(PICTURE, true)) return;
+        String key = activity.prefs.getString(LAST_CHANNEL, "");
+        if (key.isEmpty()) {
+            activity.toast("Watch a channel first");
+            return;
+        }
+        String currentFilter = filter,
+            currentSearch = search;
+        Set<String> favourites = favouriteKeys();
+        int ticket = activity.generation;
+        activity.async(
+            () -> {
+                ChannelDatabase db = channelsDb();
+                ChannelDatabase.Row channel = db.byKey(key);
+                if (channel == null) return new Object[] { null, -1, false };
+                int position = db.position(currentFilter, currentSearch, favourites, channel.number, false);
+                boolean inList = position >= 0;
+                if (!inList) position = db.position("all", "", favourites, channel.number, true);
+                return new Object[] { channel, position, inList };
+            },
+            result -> {
+                if (ticket != activity.generation) return; // Guide left while resolving the row.
+                ChannelDatabase.Row channel = (ChannelDatabase.Row) result[0];
+                if (channel == null || (Integer) result[1] < 0) {
+                    activity.toast("Last-watched channel is no longer available");
+                    return;
+                }
+                if (!((Boolean) result[2])) {
+                    filter = "all";
+                    search = "";
+                }
+                open(channel, (Integer) result[1]);
+            }
         );
     }
 
