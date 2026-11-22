@@ -39,7 +39,7 @@ class FreeVodTests(unittest.TestCase):
         levidia = next(r for r in rows if r['site'] == 'levidia.ch')
         self.assertEqual(levidia['adapters'], ['free99:levidia_ch', 'scrubs:levidia_ch'])
         self.assertTrue(levidia['movies'] and levidia['series'])
-        self.assertEqual(vod.validate(), 111)
+        self.assertEqual(vod.validate(), 112)
 
     def test_only_levidia_is_restored_from_the_original_26_exclusions(self):
         originally_excluded = set(('123-movies.golf 123moviestv.me 1movies.la 9pm.to cinebox.cc '
