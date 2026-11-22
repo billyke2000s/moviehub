@@ -1,0 +1,31 @@
+name: Public Live TV catalogue audit
+on:
+    schedule:
+        - cron: "47 */2 * * *"
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - 'provider-engine/tools/public-tv-probe.mjs'
+            - '.github/workflows/public-tv-audit.yml'
+permissions:
+    contents: read
+jobs:
+    public-catalogues:
+        runs-on: ubuntu-latest
+        timeout-minutes: 8
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+            - name: Test catalogue parsing and public host validation
+              run: node provider-engine/tools/public-tv-probe.mjs --self-test
+            - name: Check current public Free-TV, iptv-org and Pluto catalogues
+              run: node provider-engine/tools/public-tv-probe.mjs
+            - name: Save report without any stream URLs, private playlists or tokens
+              if: always()
+              uses: actions/upload-artifact@v6
+              with:
+                  name: public-tv-catalogue-audit
+                  path: build/public-tv/
+                  if-no-files-found: ignore
