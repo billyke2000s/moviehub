@@ -28,6 +28,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import check_sources as health  # noqa: E402
 
 ROOT = health.ROOT
+LOGIN_MARKER = Path('/srv/moviehub/health/codex-login-needed')
+LOGIN_WORDS = ('not logged in', 'login required', 'please log in', 'codex login', 'unauthorized',
+               '401', 'token expired', 'authentication')
+
+
+def needs_login(output):
+    """True when Codex's output says it needs signing in again (the watchdog then tells your phone)."""
+    text = output.lower()
+    return any(word in text for word in LOGIN_WORDS)
 ALLOWED = ('android-tv-launcher/app/src/main/python/', 'provider-engine/')
 
 
@@ -91,6 +100,11 @@ def main():
         codex_said = (codex.stdout + codex.stderr)[-2500:]
     except subprocess.TimeoutExpired:
         codex_said = 'Codex ran out of time.'
+    if needs_login(codex_said):
+        LOGIN_MARKER.parent.mkdir(parents=True, exist_ok=True)
+        LOGIN_MARKER.write_text(codex_said[-500:])
+    else:
+        LOGIN_MARKER.unlink(missing_ok=True)
 
     files = changed_files()
     outside = [f for f in files if not f.startswith(ALLOWED)]
@@ -105,6 +119,8 @@ def main():
             'Auto-fix attempt failed, nothing opened. %s\n\n**Probe after:**\n```\n%s\n```\n\n'
             '<details><summary>Codex output (last part)</summary>\n\n```\n%s\n```\n</details>'
             % (reason, after, codex_said))})
+        health.notify(env.get('NTFY_URL'), 'MovieHub: auto-fix failed for %s' % source,
+                      reason + ' The issue has the details.')
         return
 
     git('add', '--', *files)
