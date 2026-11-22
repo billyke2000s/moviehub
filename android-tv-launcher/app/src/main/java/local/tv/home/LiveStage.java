@@ -550,7 +550,7 @@ final class LiveStage implements LiveScreen {
 
     /**
      * Every copy failed. Nothing is given up while a copy might come back: the last picture stays
-     * under a "Reconnecting" message, and the channel is tried again after a growing wait
+     * under a "Still trying this channel" message, and the channel is tried again after a growing wait
      * (LiveRetryPlan), the last working copy first. OK tries at once; BACK and channel keys work.
      */
     private void waitAndRetry(String reason) {
@@ -573,7 +573,7 @@ final class LiveStage implements LiveScreen {
                 ")"
         );
         status.setText(
-            "Reconnecting…\nThis channel isn't working right now. Trying again in " +
+            "Still trying this channel…\nIt may not be available right now. Trying again in " +
                 seconds +
                 " s.\n\nOK  try now     BACK  guide     ▲ ▼  another channel"
         );

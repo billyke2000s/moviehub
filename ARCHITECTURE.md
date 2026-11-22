@@ -426,7 +426,7 @@ Three paths, from mildest to worst:
    once, unchecked, since the copy on screen no longer plays.
 3. **Every copy failed**: `LiveStage.waitAndRetry` never gives up while a copy might come back
    (before, ZLive stopped with "This source is unavailable" and others retried every 15 s from copy
-   0). The last picture stays under "Reconnecting… Trying again in N s", and `LiveRetryPlan`
+   0). The last picture stays under "Still trying this channel… Trying again in N s", and `LiveRetryPlan`
    (core-tested) sets growing waits: 2, 5, 10, 15, 30, then every 60 s, never under 15 s for ZLive,
    whose stopped session is reopened on the next try. The copy that last showed a picture for at
    least 10 s is remembered and tried on its own first and every other try; the others try every
