@@ -1,6 +1,10 @@
 """Offline PrimeWire discovery fixtures. These do not establish real-site playback."""
 import unittest
 from unittest.mock import patch
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'app/src/main/python'))
 
 from moviehub_native.primewire import PrimeWire, PlayerLinks, matching_title
 
