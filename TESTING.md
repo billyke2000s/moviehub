@@ -569,7 +569,7 @@ The live audit reports decoded audio and output audio-buffer counters separately
 Final validation on `f5b4e63e65788c512389ca31996c6a8d66d43474`: 51 offline Python tests,
 932 local core checks, all Android/build/lint/signing CI jobs and standalone engine checks passed.
 The focused live audit completed for Levidia, both native sites and a catalogue-listed Rarefilmm
-film. Read `docs/NATIVE_VOD_PLAYBACK_AUDIT_2026_10_26.jsonl` for each result; a completed audit
+film. Read `docs/history/audits/NATIVE_VOD_PLAYBACK_AUDIT_2026_10_26.jsonl` for each result; a completed audit
 does not assert all links passed. Product code is unchanged by the final documentation commit.
 
 ## Confirmed source quality (26 October 2026)

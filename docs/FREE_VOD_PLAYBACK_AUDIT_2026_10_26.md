@@ -102,7 +102,7 @@ which distinguishes valid passthrough from missing audio. Results remain pending
 
 [Focused Android audit on f5b4e63](https://github.com/billyke2000s/moviehub/actions/runs/40323734300)
 completed with the 4 MiB cap, corrected quality badges and decoded/output audio counters.
-Its companion `NATIVE_VOD_PLAYBACK_AUDIT_2026_10_26.jsonl` records every result. Levidia returned
+Its companion `history/audits/NATIVE_VOD_PLAYBACK_AUDIT_2026_10_26.jsonl` records every result. Levidia returned
 six links: four verified and two did not decode. 4KHDHub returned three 1080p links: one verified,
 one failed to decode and one decoded but did not verify midpoint playback. Vixsrc verified.
 Rarefilmm was retested with its actual catalogue film Anna (1967), TMDB 45486, reference runtime

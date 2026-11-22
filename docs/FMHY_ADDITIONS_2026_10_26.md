@@ -12,7 +12,7 @@ Sources: https://github.com/fmhy/FMHY/wiki/Streaming (retrieved 26 October 2026)
 
 ## Per-link desktop results
 
-The [redacted evidence](FMHY_RIVE_DESKTOP_AUDIT_2026_10_26.json) records every returned enabled-route link for the two tested identities. No signed playback URL is committed.
+The [redacted evidence](history/audits/FMHY_RIVE_DESKTOP_AUDIT_2026_10_26.json) records every returned enabled-route link for the two tested identities. No signed playback URL is committed.
 
 | Tested title | Links tested | Measured video | Duration | Audio | Start and midpoint |
 | --- | ---: | --- | --- | --- | --- |
