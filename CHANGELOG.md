@@ -1,3 +1,8 @@
+# Changelog
+
+User-visible changes by version. Add new entries under `## Unreleased`; rename that heading to the
+version when it is published. This is the only dated history file (see AGENTS.md).
+
 ## Unreleased
 
 ## 1.0.23 (22 November 2026)
@@ -390,7 +395,9 @@ MovieHub 1.0: everything tested in MovieHub Experimental, up to exp-15, is now p
 - Preserve VOD buffering thresholds and prepared replacement playback.
 - Preserve host headers and record third-party provenance and outstanding release blockers.
 
-# Changelog
+## Older entries (0.51 and earlier)
+
+These entries come from an earlier copy of this file and were left in their original order.
 
 ## Unreleased
 

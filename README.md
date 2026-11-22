@@ -81,10 +81,10 @@ MovieHub is open source. Build instructions, implementation notes and verificati
 | [Architecture](ARCHITECTURE.md) | How the Android app and services are organised |
 | [Testing](TESTING.md) | Tests and what they do (and do not) prove |
 | [Updates](android-tv-launcher/UPDATES.md) | Signed publishing and the updater feed |
-| [Status](STATUS.md) | Current release, known limits and historical checkpoints |
+| [Status](STATUS.md) | Current release, known limits and open work (one page) |
 | [Changelog](CHANGELOG.md) | Changes by version |
 | [Security](SECURITY.md) | Credential handling and vulnerability reporting |
-| [Contributor instructions](AGENTS.md) | Rules for making changes to this repository |
+| [Contributor instructions](AGENTS.md) | Rules for making changes to this repository (the one rulebook for AI tools) |
 
 ## Content and privacy
 
