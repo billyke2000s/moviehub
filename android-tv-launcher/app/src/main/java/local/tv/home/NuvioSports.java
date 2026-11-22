@@ -229,6 +229,17 @@ final class NuvioSports {
         return result;
     }
 
+    /** The Nuvio addon also serves live HLS through extensionless manifest URLs. */
+    static boolean hlsProxy(String address) {
+        try {
+            String path = URI.create(address).getPath().toLowerCase(Locale.ROOT);
+            return path.equals("/api/manifest") || path.equals("/api/manifest.m3u8") ||
+                path.endsWith("/playlist");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     /** Mark the current candidate failed so an ExoPlayer reconnect tries the next one. */
     static void failed(String locator) {
         if (!locator(locator)) return;
