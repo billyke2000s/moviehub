@@ -371,11 +371,9 @@ if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
         // being mistaken for playback while respecting the upstream IP rate cap.
         // Scheduled sweeps remain catalogue-only; this explicit PR diagnostic
         // performs at most one ZLive live request.
-        const playbackSamples = id === "zlive"
-            ? (process.env.ZLIVE_LIVE_TEST === "1" ? samples.slice(0, 1) : [])
-            : samples;
-        if (id === "zlive" && playbackSamples.length === 0)
-            result.playbackScope = "not_tested";
+        const playbackSamples =
+            id === "zlive" ? (process.env.ZLIVE_LIVE_TEST === "1" ? samples.slice(0, 1) : []) : samples;
+        if (id === "zlive" && playbackSamples.length === 0) result.playbackScope = "not_tested";
         for (const row of playbackSamples) {
             const sample = { name: String(row.name).slice(0, 60), resolve: "", play: "" };
             const rstats = {
