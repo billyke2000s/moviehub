@@ -76,7 +76,7 @@ async function inspect(provider, row, forceRenew = false) {
             const body = await first.text();
             result.manifestCheck = {
                 status: first.status,
-                mimeHls: /mpegurl|application\\/x-mpegurl/i.test(first.headers.get("content-type") || ""),
+                mimeHls: /mpegurl/i.test(first.headers.get("content-type") || ""),
                 hls: body.trimStart().startsWith("#EXTM3U"),
                 bytes: body.length,
                 variants: (body.match(/#EXT-X-STREAM-INF:/g) || []).length,
