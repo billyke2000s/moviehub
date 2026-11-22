@@ -138,9 +138,14 @@ unattended.
     | Item | Result | What changed | Evidence | Not checked |
     | ---- | ------ | ------------ | -------- | ----------- |
 
-    Result is one of **done**, **stuck**, **gone** or **unsure**. Evidence is actual output: a
+    Result is one of **done**, **stuck**, **gone**, **unsure** or **not started**. Evidence is actual output: a
     command result, a test, a CI run link. A row without evidence is **not done**, whatever the
     summary says. Never summarise unchecked items as "look fine".
+- **Only items you actually worked on get a result.** Every result, including **unsure**, needs
+  evidence of what was tried on that item. Items not yet worked on are **not started**, never
+  "unsure". Start the report with the count, for example "Checked 3 of 79; 76 not started", then
+  carry on with the next batch unless the owner said to stop. Labelling untouched items unsure (or
+  anything else) to end the task early is a false report.
 - **Negative results need proof too.** "Gone", "broken" or "not relevant any more" need the same
   evidence as "done". One odd response (a redirect, a pop-up, an error page) is a reason to look
   closer, not a verdict: record what was seen and what was checked next. If the evidence does not
