@@ -25,6 +25,7 @@ LIVE = [
     # Different service from the classic DaddyLive channel watch.php system:
     # the .app site generates per-event embed.php links from /api/events.
     ("daddylive-app", "https://daddylive.app/", "player", 0),
+    ("daddylive-app-channels", "https://daddylive.app/channel", "landing", 0),
     ("daddylive-app-api", "https://daddylive.app/api", "landing", 0),
     ("zlive", "https://zlive.st/", "landing", 0),
     ("freeshot", "https://freeshot.live/", "landing", 0),
