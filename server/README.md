@@ -20,6 +20,20 @@ the APK downloads. The code works once, for 5 minutes.
 Items marked **[check]** are commands I could not run from here. Check them against the tool's own
 docs the first time.
 
+## Quick setup (one command)
+
+On the Proxmox host shell (as root):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/billyke2000s/moviehub/main/server/bootstrap/host.sh -o /root/mh.sh && bash /root/mh.sh
+```
+
+It does steps 1–4 and 6 below by itself: creates one new capped container (never touches others),
+installs Forgejo with a private copy of the repo, the runner, the signing key, the gate and Codex,
+and writes every password and key to `/root/moviehub-credentials.txt` inside the container. Log:
+`/root/moviehub-bootstrap.log` on the host. Still manual: Codex sign-in, Cloudflare (step 5),
+the switchover (step 7). The sections below explain each part.
+
 ## 1. Container (Proxmox)
 
 One unprivileged Debian 12 container, capped so it can never starve Minecraft:
