@@ -38,16 +38,7 @@ final class ProviderBroker {
             if (!"https".equals(u.getScheme()) || u.getUserInfo() != null) return false;
             String host = u.getHost();
             if (host == null) return false;
-            if (u.getPort() != -1 && u.getPort() != 443) {
-                // Current Player 2 publishes signed HLS on this CDN's HTTPS
-                // 8443 endpoint. Keep other providers/hosts/paths restricted.
-                if (
-                    !provider.equals("dlhd") ||
-                    u.getPort() != 8443 ||
-                    !host.matches("[A-Za-z0-9-]+\\.7odxv0l067ka\\.net") ||
-                    !u.getPath().startsWith("/hls/")
-                ) return false;
-            }
+            if (!ProviderPorts.allowed(provider, u)) return false;
             switch (provider) {
                 case "localnow":
                     return (

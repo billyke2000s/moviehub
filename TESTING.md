@@ -347,7 +347,7 @@ exercises isolated Android calls, API capabilities, stable compound IDs and the 
 upstream connections. See [the evidence distinction](docs/STANDALONE_PROVIDER_ENGINE.md).
 
 Local validation of the DaddyLive player-source change passed 57 JVM runtime checks, four Node tests,
-40 core suites, 151 VOD tests and six scraper-loader tests. A live import returned 1,043 source rows
+41 core suites, 151 VOD tests and six scraper-loader tests. A live import returned 1,043 source rows
 in 31 requests, including all seven advertised Main Event players. Direct live selection reached
 Players 4, 5 and 7 independently. After the BINTV correction, Player 5 reached JustEmbeds and received
 HTTP 503; Player 7's manifest received HTTP 403. No decoded live playback, Android build or device
@@ -357,7 +357,8 @@ The current Player 2 configuration reproducer failed before strict-base64 candid
 resolved its fixture stream afterwards in the actual JVM. Its live media URL uses HTTPS port 8443;
 this workspace refuses that endpoint before a playable manifest can be verified. Android fixtures
 check the narrow provider/CDN/path port grant and reject unrelated hosts, ports, paths and credentials;
-those device checks are not yet run for the DaddyLive branch. The independent ZLive PNG correction
+those device checks are not yet run for the DaddyLive branch. There are 13 passing JVM checks on the
+production port policy, including encoded-path and lookalike-host rejection. The independent ZLive PNG correction
 passes 39 PNG checks and nine carrier checks and decodes the captured live media sample; its Android
 CI is tracked separately in PR #241. FreeShot's freshly acquired Main Event backend sample decoded
 four seconds (98 video / 188 audio frames), while its outer page still returned HTTP 403 here.
