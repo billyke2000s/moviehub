@@ -17,15 +17,18 @@ _Last updated: 22 November 2026._
 
 ## Included and remaining work
 
-This release adds the verified ZLive PNG media-header correction and retains the guide focus/preview fixes, channel duplicate/name corrections,
-and optional signed scraper update support. A captured F1 backup decoded audio/video; a fresh primary F1 probe still returned HTTP 404 and FreeShot's public page returned HTTP 403. DaddyLive remains unresolved; this release does not establish that every sports source plays. Self-hosted maintenance is inactive until the feed
+This release adds the verified ZLive PNG media-header correction and retains the guide focus/preview
+fixes, channel duplicate/name corrections and optional signed scraper update support. A captured F1
+backup decoded audio/video; a fresh primary F1 probe still returned HTTP 404 and FreeShot's public page
+returned HTTP 403. DaddyLive remains unresolved; this release does not establish that every sports
+source plays. Self-hosted maintenance is inactive until the feed
 and signing key are configured; the APK does not automatically fix sports player protocols.
 
 Signed publisher [45031535188](https://github.com/billyke2000s/moviehub/actions/runs/45031535188)
 and numbered-release copier [45032659975](https://github.com/billyke2000s/moviehub/actions/runs/45032659975)
 passed. Both public APKs were independently downloaded: 133,318,200 bytes, SHA-256
 `1a7223fda153b721cf4531a2b32d4ab708f7479fffbabb36a5f133430c090238`.
-Signature verification matches 1.0.23, and actual native libraries cover ARM32 and ARM64.
+Signature verification matches 1.0.24, and actual native libraries cover ARM32 and ARM64.
 The unchanged UHDMovies scraper returned no link for its smoke-test film twice; this is unresolved.
 
 ## Not yet verified
