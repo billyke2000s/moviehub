@@ -471,13 +471,26 @@ async function tryEmbeds(
 
     // Some CDNs' /secure/ gate folds the (rotating) player origin into the signature, so hop 3 goes out as the
     // player's own XHR would — and the same headers ride the resolve to the data plane for the rest of the stream.
-    const headers = streamHeaders(playerUrl);
+    const browserHeaders = streamHeaders(playerUrl);
 
     for (const { url: candidate, extractor } of candidates) {
       // ── hop 3: the signed playlist ──────────────────────────────────────────
+      // A browser normally sends an origin-only Referer across sites, but
+      // some player hosts require the exact public embed page URL. Try that
+      // alternate only after a CDN 403, then carry the *winning* headers into
+      // the player/segment requests. Never guess or modify signed URL tokens.
+      let headers = browserHeaders;
       let m: Response;
       try {
         m = await hop(candidate, headers);
+        if (m.status === 403 && playerUrl !== headers.Referer) {
+          const embedHeaders = { ...browserHeaders, Referer: playerUrl };
+          const alternate = await hop(candidate, embedHeaders);
+          if (alternate.ok) {
+            m = alternate;
+            headers = embedHeaders;
+          }
+        }
       } catch (err) {
         reasons.push(`${hostOf(candidate)}: ${shortErr(err)}`);
         continue;
