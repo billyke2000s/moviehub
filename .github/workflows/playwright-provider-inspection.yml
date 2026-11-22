@@ -71,11 +71,15 @@ jobs:
                   GH_TOKEN: ${{ github.token }}
                   ARTIFACT: browser-protocol-${{ matrix.target }}
               run: |
-                  previous=$(gh run list --workflow playwright-provider-inspection.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')
-                  if [ -n "$previous" ]; then
-                      mkdir -p prior
-                      gh run download "$previous" --name "$ARTIFACT" --dir prior || true
-                  fi
+                  mkdir -p prior
+                  # Live runs are more frequent than VOD. Find the most recent
+                  # successful artifact for *this shard*, not merely the last run.
+                  for previous in $(gh run list --workflow playwright-provider-inspection.yml --branch main --status success --limit 24 --json databaseId --jq '.[].databaseId'); do
+                      if gh run download "$previous" --name "$ARTIFACT" --dir prior >/dev/null 2>&1; then
+                          echo "Loaded previous redacted fingerprint for $ARTIFACT"
+                          break
+                      fi
+                  done
             - name: Inspect rendered players and sanitised browser requests
               if: steps.gate.outputs.active == 'true'
               env:
