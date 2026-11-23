@@ -193,7 +193,7 @@ async function inspect(browser, target) {
             // the event API. Inspect only the rendered page, without calling
             // /api/events, playing media, or persisting stream/token URLs.
             report.channelTabs = [];
-            const lists = page.getByRole("button", { name: /List\\s*-\\s*[1-7]/i });
+            const lists = page.getByRole("button", { name: /List\s*-\s*[1-7]/i });
             const count = Math.min(7, await lists.count());
             report.channelTabCount = count;
             for (let i = 0; i < count; i++) {
