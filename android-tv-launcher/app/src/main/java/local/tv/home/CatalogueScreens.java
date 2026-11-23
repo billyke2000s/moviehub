@@ -32,6 +32,10 @@ final class CatalogueScreens {
     final Map<String, CatalogueRows.Saved> rowStates = new HashMap<>();
 
     /** Opens the Movies or Series start page: Netflix-style rows of categories. */
+    /** The page's entrance: how long, and how far it rises (short enough never to feel slow). */
+    static final int ENTER_MILLIS = 220,
+        ENTER_RISE_DP = 18;
+
     void rows(String kind) {
         if (catalogue == null || !catalogue.kind.equals(kind)) {
             catalogue = new CatalogueScreen(kind);
@@ -105,8 +109,7 @@ final class CatalogueScreens {
                 activity.navigationButton("Search", () -> activity.catalogueSearch.searchCatalogue(kind)),
                 new LinearLayout.LayoutParams(activity.dp(88), activity.dp(36))
             );
-            // One Browse sheet (Browse and Filters were two). The Library button moved to
-            // Settings → Setup: links you added and Premiumize are the owner's.
+            // One Browse sheet (Browse and Filters were two).
             header.addView(
                 activity.navigationButton("Browse", () -> showOverlay("Browse", ":categories")),
                 new LinearLayout.LayoutParams(activity.dp(100), activity.dp(36))
@@ -141,6 +144,17 @@ final class CatalogueScreens {
             activity.page.setBackgroundColor(Color.TRANSPARENT);
             root.addView(activity.page, new FrameLayout.LayoutParams(-1, -1));
             activity.setContentView(root);
+            // A short entrance (fade in while settling up into place), so the page arrives as one
+            // instead of its parts appearing on a blank screen one by one.
+            root.setAlpha(0f);
+            root.setTranslationY(activity.dp(ENTER_RISE_DP));
+            root.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(ENTER_MILLIS)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                .withLayer()
+                .start();
             LinearLayout preview = activity.vertical();
             hero = preview;
             preview.setPadding(activity.dp(8), activity.dp(8), activity.dp(8), activity.dp(6));

@@ -21,6 +21,12 @@ version when it is published. This is the only dated history file (see AGENTS.md
 - Removed "Links you added" (Setup → Links you added, the Add source form, the Premiumize cloud
   "Add to Films/Series" option and the cloud's "Saved library" button). Premiumize cloud files and
   Transfers still open and play. Links saved before are left in storage, unread, not deleted.
+- Live TV: International and Channel Groups moved from Settings → Setup → More channel sections
+  into the TV Guide menu, under 0 More… (with Music), as on a Sky box. Each opens a numbered list
+  in the guide's style instead of a side panel, and Back from a country's channels returns to the
+  International list.
+- Films, Series and Anime open with a short fade-and-rise (0.22 s) instead of appearing piece by
+  piece; each row's posters fade in together, and each downloaded picture fades in (0.16 s).
 
 ## 1.0.26 (22 November 2026)
 

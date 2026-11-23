@@ -6,7 +6,7 @@ import android.widget.LinearLayout;
 /**
  * Settings → Setup: the last tab of Settings, for whoever looks after the box. Everything set up
  * once, or only for fixing problems, lives here so the other tabs hold only what the family uses:
- * Premiumize, the free channel services, extra guide sections,
+ * Premiumize, the free channel services,
  * clearing watch history, the engineer view and the TMDB credit. No PIN: nobody needs to come here.
  *
  * <p>Only where these are shown changed; every preference, account and saved list is kept.
@@ -62,19 +62,6 @@ final class SetupScreens {
             FreeChannelsPage.servicesOn(activity.prefs) > 0,
             "Open",
             () -> new FreeChannelsPage(activity).show()
-        );
-        settings.settingCard(
-            body,
-            "More channel sections",
-            "International channels by country, and the groups from your own channel lists",
-            null,
-            false,
-            "Open",
-            () ->
-                SidePanel.of(activity, "More channel sections")
-                    .option("International", activity.liveTv.panels::countries)
-                    .option("Channel groups from your lists", activity.liveTv.panels::groups)
-                    .show()
         );
 
         settings.heading(body, "Films and series");

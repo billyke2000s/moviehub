@@ -169,7 +169,7 @@ final class LiveTvScreen {
 
     /** The guide's fixed parts; BACK goes to the guide menu. */
     private void buildFrame() {
-        activity.fixedScreen(null, menu::show, true);
+        activity.fixedScreen(null, menu::reopen, true);
         frame.build();
         frameGeneration = activity.generation;
         activity.leaving = () -> {

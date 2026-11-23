@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * The Live TV guide's side panels: options, sections and groups, search, programme information
+ * The Live TV guide's side panels: options, search, programme information
  * with reminders, and colour-key set-up.
  */
 final class LiveTvPanels {
@@ -44,25 +44,6 @@ final class LiveTvPanels {
                 guide.guide(0, 0);
             })
             .show();
-    }
-
-    /** International channels by country: Ireland, the United States … then A to Z. */
-    void countries() {
-        activity.async(
-            () -> guide.channelsDb().countries(),
-            countries -> {
-                String[] names = new String[countries.size() + 1];
-                names[0] = "All international channels";
-                for (int i = 0; i < countries.size(); i++) names[i + 1] =
-                    GuideOrder.name(countries.get(i).name) + " · " + countries.get(i).count;
-                SidePanel.of(activity, "International")
-                    .choices(names, -1, which -> {
-                        if (which == 0) guide.show("section:" + GuideOrder.INTERNATIONAL, "");
-                        else guide.show("country:" + countries.get(which - 1).name, "");
-                    })
-                    .show();
-            }
-        );
     }
 
     // ---- Programme information (the i key) ----------------------------------------------------
@@ -195,22 +176,6 @@ final class LiveTvPanels {
         );
         activity.toast("Reminder cancelled");
         guide.guide(guide.pageStart, 0);
-    }
-
-    void groups() {
-        activity.async(
-            () -> guide.channelsDb().groups(),
-            groups -> {
-                String[] names = new String[groups.size()];
-                for (int i = 0; i < names.length; i++) names[i] =
-                    (groups.get(i).name.isEmpty() ? "Ungrouped" : groups.get(i).name) +
-                    " · " +
-                    groups.get(i).count;
-                SidePanel.of(activity, "Channel groups")
-                    .choices(names, -1, which -> guide.show("group:" + groups.get(which).name, ""))
-                    .show();
-            }
-        );
     }
 
     void searchPanel() {

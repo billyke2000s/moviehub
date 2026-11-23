@@ -476,8 +476,7 @@ public class LiveGuideTest {
         );
         remote.waitForIdleSync();
         UiEvidence.capture("live-guide-menu-first");
-        // Every section on one page now (no More…): Radio, Religion and Shopping were removed,
-        // International and channel groups moved to Settings → Setup.
+        // Nine sections and 0 More… (Music, International, Channel Groups), as on the satellite box.
         remote.runOnMainSync(() -> assertAllRowsOnScreen(10));
         for (int i = 0; i < 9; i++) remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
         await("on the last row", () -> activity.liveTv.menu.rows.get(9).hasFocus());
@@ -486,6 +485,12 @@ public class LiveGuideTest {
         await("round to the top", () -> activity.liveTv.menu.rows.get(0).hasFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
         await("round to the bottom", () -> activity.liveTv.menu.rows.get(9).hasFocus());
+        // 0 is More…: Music, International and Channel Groups in the same style; Back returns.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_0);
+        await("more page", () -> activity.liveTv.menu.page == 1 && activity.liveTv.menu.rows.size() == 3);
+        UiEvidence.capture("live-guide-menu-more");
+        remote.runOnMainSync(() -> activity.onBackPressed());
+        await("first page again", () -> activity.liveTv.menu.page == 0 && activity.liveTv.menu.rows.size() == 10);
         // A number opens its row: with Favourites second, 8 is Kids (9 is Options).
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_8);
         await("kids", () -> activity.liveTv.filter.equals("section:Kids"));

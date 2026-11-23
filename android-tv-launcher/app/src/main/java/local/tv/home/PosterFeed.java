@@ -298,7 +298,12 @@ final class PosterFeed extends RecyclerView implements AutoCloseable {
                         // The footer stays at the end; existing poster holders are never rebound on append.
                         if (!additions.isEmpty()) {
                             adapter.notifyItemRangeInserted(first, additions.size());
-                            if (first == 0) getLayoutManager().scrollToPosition(0);
+                            if (first == 0) {
+                                getLayoutManager().scrollToPosition(0);
+                                // The first posters fade in together rather than snapping on.
+                                setAlpha(0f);
+                                animate().alpha(1f).setDuration(Artwork.FADE_MILLIS).start();
+                            }
                         }
                         statusChanged();
                         post(() -> {
