@@ -10,7 +10,22 @@ import org.json.*;
 /** One bounded search continues collecting backups after the first stream has started. */
 final class VodSearch implements AutoCloseable {
 
-    private final ExecutorService workers = Executors.newFixedThreadPool(8);
+    /**
+     * Websites searched at once before a film starts: most of a search is waiting on the network,
+     * so more at once finds the first link sooner (70 film sites at 8 at a time took about nine
+     * rounds). Once a film plays, {@link #playing()} drops to {@link #WHILE_PLAYING} so the backup
+     * search cannot take processor time from playback on a small TV box.
+     */
+    static final int SEARCHING = 16,
+        WHILE_PLAYING = 4;
+
+    private final ThreadPoolExecutor workers = new ThreadPoolExecutor(
+        SEARCHING,
+        SEARCHING,
+        30,
+        TimeUnit.SECONDS,
+        new LinkedBlockingQueue<>()
+    );
     final AtomicBoolean cancelled = new AtomicBoolean();
     private final AtomicInteger pending = new AtomicInteger(1);
     private final SourceWindow<SourceRepository.Source> window;
@@ -244,6 +259,18 @@ final class VodSearch implements AutoCloseable {
 
     List<SourceRepository.Source> snapshot() {
         return window.snapshot();
+    }
+
+    /** A film from this search is playing: carry on finding backups, more gently. */
+    void playing() {
+        try {
+            // Shrinking: the core size first, as it may not exceed the maximum. Searches already
+            // running finish; no new ones start until fewer than WHILE_PLAYING are running.
+            workers.setCorePoolSize(WHILE_PLAYING);
+            workers.setMaximumPoolSize(WHILE_PLAYING);
+        } catch (RuntimeException error) {
+            Diagnostics.recovered("Slowing the backup search", error);
+        }
     }
 
     SourceRepository.Source selected() {
