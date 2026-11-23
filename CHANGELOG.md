@@ -5,6 +5,11 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+- Films and series: coming back to the player (after pressing Home or leaving it, even seconds
+  later) now asks the site for a new link instead of reusing the old one, as add-on apps do. Many
+  sites' links work once or only briefly, so a film that played fine could fail when you came back.
+  Automatic play still starts straight away with the link it found, and your position is kept.
+
 ## 1.0.26 (22 November 2026)
 
 - FreeShot: repair HLS playback by giving decoded MPEG-TS segments a .ts extension on MovieHub's local playback relay, rather than a generic .bin filename. The actual production Java relay decoded 30 seconds of video and audio in CI both at startup and after forced playlist-token renewal; playback on physical TV boxes still needs user confirmation.

@@ -99,7 +99,8 @@ headers/URLs, failed refresh and explicit epoch expiry. The Python media fixture
 
 `VodSessionTest` covers distinct header identities, expiry-triggered refresh, retained logical
 identity and explicit lookup provenance. `VodSessionPlaybackTest` exercises real LibVLC initial
-managed opening, one expired-link refresh and cookie-protected DASH audio/video through relative
+managed opening, one expired-link refresh, a new link when coming back to the player (the first
+link stops working, as some sites' links do) and cookie-protected DASH audio/video through relative
 segment templates. The six-second DASH asset is regenerated from the existing synthetic playback
 fixture; see its README. Full existing normal/experimental playback, cancellation, seek, short-clip
 and series fixtures remain required. Live provider/physical-TV success is not implied by fixtures.

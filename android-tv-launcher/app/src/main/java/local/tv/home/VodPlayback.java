@@ -58,9 +58,16 @@ final class VodPlayback {
         quality = new VodQuality(activity, session.sources, queue, session.free);
     }
 
+    /**
+     * Opens the active source at {@code position}. The first open uses the link the search just
+     * found, so automatic play starts at once; every later open (coming back to the player) gets a
+     * new link from the site first. A failure then still gets one more new link, then the next source.
+     */
     boolean startManaged(long position) {
         if (!session.managed) return false;
-        prepare(active, false, Math.max(position, activity.playedPosition()));
+        boolean reopen = session.opened && session.refresh != null;
+        session.opened = true;
+        prepare(active, reopen, Math.max(position, activity.playedPosition()));
         return true;
     }
 

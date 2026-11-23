@@ -25,6 +25,10 @@ public final class VodSessionPlaybackTest {
     private final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
     private final Map<String, byte[]> assets = new HashMap<>();
     private final AtomicInteger authorizedSegments = new AtomicInteger();
+    /** Link prefixes (such as "/link-1/") the fixture site no longer serves, like an expired link. */
+    private final Set<String> deadLinks = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /** Requests for a dead link: the player should not try one again. */
+    private final AtomicInteger deadRequests = new AtomicInteger();
     private ServerSocket server;
     private volatile boolean closed;
     private boolean oldHttp;
@@ -95,6 +99,12 @@ public final class VodSessionPlaybackTest {
                 line;
             if (first == null) return;
             String path = first.split(" ")[1];
+            // "/link-N/vod.mp4" is the same film behind a numbered link, until that link dies.
+            if (path.startsWith("/link-")) {
+                String prefix = path.substring(0, path.indexOf('/', 1) + 1);
+                if (deadLinks.contains(prefix)) deadRequests.incrementAndGet();
+                path = deadLinks.contains(prefix) ? "/dead" : path.substring(prefix.length() - 1);
+            }
             int start = 0;
             boolean range = false,
                 cookie = false;
@@ -191,6 +201,46 @@ public final class VodSessionPlaybackTest {
         assertEquals(1, refreshes.get());
         assertEquals(0, session.active);
         assertTrue(activity.getIntent().getStringExtra("url").endsWith("/vod.mp4"));
+    }
+
+    /**
+     * Leaving the player and coming back gets a new link from the site, as add-on apps do, even
+     * seconds later: the first link has stopped working, like a site whose links work once. The
+     * first play still uses the link the search found, so automatic play starts at once.
+     */
+    @Test
+    public void comingBackToThePlayerGetsANewLinkInsteadOfReusingTheOldOne() throws Exception {
+        String origin = "http://127.0.0.1:" + server.getLocalPort();
+        AtomicInteger refreshes = new AtomicInteger();
+        VodSources.Session session = session(index ->
+            new VodSources.Resolved(origin + "/link-1/vod.mp4", null)
+        );
+        session.refreshable = index -> true;
+        session.refresh = index ->
+            new VodSources.Resolved(origin + "/link-" + (2 + refreshes.getAndIncrement()) + "/vod.mp4", null);
+        open(session);
+        assertEquals("Automatic play uses the link the search found", 0, refreshes.get());
+
+        deadLinks.add("/link-1/");
+        instrumentation.runOnMainSync(() -> assertTrue(activity.moveTaskToBack(true)));
+        await(() -> !activity.foreground);
+        Context context = instrumentation.getTargetContext();
+        instrumentation.runOnMainSync(() ->
+            context.startActivity(
+                new Intent(context, VlcPlaybackActivity.class).addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                )
+            )
+        );
+        await(
+            () ->
+                activity.foreground &&
+                activity.player != null &&
+                activity.player.isPlaying() &&
+                activity.player.getTime() > 300
+        );
+        assertEquals("Coming back asked the site for one new link", 1, refreshes.get());
+        assertEquals("The old link was not tried again", 0, deadRequests.get());
     }
 
     @Test
