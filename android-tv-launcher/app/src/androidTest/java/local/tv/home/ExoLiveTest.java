@@ -487,8 +487,12 @@ public final class ExoLiveTest {
             assertFalse("No break-before-make failover", log.contains("Moving to another source"));
             assertNotSame("The loaded player took over", frozen[0], ExoLive.player());
         });
+        // While the other copy loaded, the frozen player kept trying its own stream (ExoPlayer may
+        // ask for the stalled segment again after its read timeout). Once replaced, never again.
+        int stalled = stallRequests.get();
         picturesAdvance();
-        assertEquals("The stalled copy is not reopened while another works", 1, stallRequests.get());
+        SystemClock.sleep(3000);
+        assertEquals("The stalled copy is not reopened while another works", stalled, stallRequests.get());
     }
 
     @Test

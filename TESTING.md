@@ -22,7 +22,8 @@ limit, including a stuttering copy that never gets there).
 
 Device tests changed: `ExoLiveTest.aSourceThatKeepsBufferingMovesToTheNextSource` now also checks the
 working copy was loaded in a second player before the switch and that player took over (no
-break-before-make failover); `ExoLiveTest.unavailableZliveKeepsRetryingWithGrowingWaitsAndAllowsAChannelChange`
+break-before-make failover), and that the stalled copy is never requested again once replaced (the
+frozen player may retry its own segment while the other loads, as intended); `ExoLiveTest.unavailableZliveKeepsRetryingWithGrowingWaitsAndAllowsAChannelChange`
 replaces the test that required ZLive to stop after its sources were exhausted;
 `aBetterCopyThatKeepsBufferingFallsBackAndCoolsDownAcrossChannels` allows for the pre-switch check's
 own segment request. These fixtures do not prove behaviour with real providers or on a TV box.
