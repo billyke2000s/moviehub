@@ -26,6 +26,8 @@ Settings (environment variables)
   STATE_FILE      default /srv/moviehub/health/state.json
   EVIDENCE_DIR    default /srv/moviehub/health/evidence
   LIVE_FAIL_RUNS  default 1        VOD_FAIL_RUNS  default 2       LIVE_RETRY_SECONDS  default 300
+  MASS_FAILURE_LIMIT default 3: more newly broken sources than this in one run = one alert, and their
+                     issues are opened "on-hold" so auto-fix does not try them one by one
   LIVE_SOAK_SECONDS  default 60: watch each Live TV provider's first playing sample this long
                      (0 = only the 6-second check). Pictures in server/health/bait-frames/ fail it.
   SKIP_LIVE / SKIP_VOD   set to 1 to skip a probe
@@ -54,6 +56,14 @@ FILMS = [
 ]
 LABEL = 'broken-source'
 TITLE = '[broken source] '
+# Auto-fix leaves issues with HOLD alone (remove the label to let it try); TRIED marks one it has done.
+HOLD = 'on-hold'
+TRIED = 'auto-fix-tried'
+LABELS = {
+    LABEL: ('#d73a4a', 'Opened by the source health checker'),
+    HOLD: ('#fbca04', 'Auto-fix waits: remove this label to let it try'),
+    TRIED: ('#c5def5', 'Auto-fix has already tried this issue'),
+}
 
 
 # ----------------------------------------------------------------------------- deciding health
@@ -132,6 +142,17 @@ def decide(state, results, fail_runs, now):
             entry['lastComment'] = now
             newly.append(key)
     return newly, still, recovered
+
+
+def mass_failure(newly, limit):
+    """Many sources breaking in the same run is usually one cause (the connection, a block on the home IP,
+    a shared player), not many separate faults. Returns the hold message, or '' when it is not that."""
+    if len(newly) <= limit:
+        return ''
+    return ('%d sources broke in the same run (%s). That is usually the connection, a block on the home IP '
+            'or one shared player, so auto-fix is not trying them one by one. Check the connection; to let '
+            'auto-fix try a source, remove the "%s" label from its issue.'
+            % (len(newly), ', '.join(sorted(newly)), HOLD))
 
 
 # ----------------------------------------------------------------------------- running probes
@@ -250,12 +271,15 @@ class Forgejo:
         issues = self.call('GET', '/issues?state=open&type=issues&limit=50&labels=' + LABEL) or []
         return {i['title'][len(TITLE):]: i for i in issues if i['title'].startswith(TITLE)}
 
-    def label_id(self):
+    def label_id(self, name=LABEL):
         for label in self.call('GET', '/labels?limit=50') or []:
-            if label['name'] == LABEL:
+            if label['name'] == name:
                 return label['id']
-        return self.call('POST', '/labels', {'name': LABEL, 'color': '#d73a4a',
-                                             'description': 'Opened by the source health checker'})['id']
+        color, description = LABELS[name]
+        return self.call('POST', '/labels', {'name': name, 'color': color, 'description': description})['id']
+
+    def add_label(self, number, name):
+        self.call('POST', '/issues/%d/labels' % number, {'labels': [self.label_id(name)]})
 
 
 def notify(url, title, message):
@@ -313,12 +337,17 @@ def main():
         forgejo = Forgejo(env['FORGEJO_URL'], env['FORGEJO_TOKEN'], env['FORGEJO_REPO'])
     issues = forgejo.open_issues() if forgejo else {}
 
+    mass = mass_failure(newly, int(env.get('MASS_FAILURE_LIMIT', '3')))
+    if mass:
+        notify(env.get('NTFY_URL'), 'MovieHub: %d sources broke at once' % len(newly), mass)
     for key in newly:
         folder = save_evidence(evidence, results[key], stamp)
         if forgejo and key not in issues:
-            forgejo.call('POST', '/issues', {'title': TITLE + key, 'body': issue_body(results[key], folder),
-                                             'labels': [forgejo.label_id()]})
-        notify(env.get('NTFY_URL'), 'MovieHub: %s broken' % key, results[key]['summary'])
+            labels = [forgejo.label_id()] + ([forgejo.label_id(HOLD)] if mass else [])
+            body = issue_body(results[key], folder) + (('\n\n**On hold:** ' + mass) if mass else '')
+            forgejo.call('POST', '/issues', {'title': TITLE + key, 'body': body, 'labels': labels})
+        if not mass:
+            notify(env.get('NTFY_URL'), 'MovieHub: %s broken' % key, results[key]['summary'])
     for key in still:
         entry = state[key]
         if forgejo and key in issues and now - entry.get('lastComment', 0) > 23 * 3600:
