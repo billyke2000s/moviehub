@@ -38,7 +38,18 @@ Change only the files for that one source. Do not reformat other files, rename t
 ## 3. Prove it
 
 Run the same reproduce command again. It must report `streams` greater than 0 (film sites) or a
-sample with `play: ok` (Live TV). Then run the offline checks:
+sample with `play: ok` (Live TV). For Live TV, also run it with the soak test, which keeps watching
+for 90 seconds; the sample must show `soak ok`:
+
+```sh
+MOVIEHUB_SOAK_SECONDS=90 RHINO_JAR=/srv/moviehub/tools/rhino-1.9.1.jar node provider-engine/tools/live-probe.mjs <id>
+```
+
+Open the pictures it saved in `build/provider-tests/frames/`. They must show the channel. A "go
+away" screen, captcha or wrong channel is not a fix. Never change `live-probe.mjs`, `soak.mjs` or
+`server/health/bait-frames/` to make a source pass: the auto-fix script rejects such changes.
+
+Then run the offline checks:
 
 ```sh
 python3 android-tv-launcher/tests/test_free_vod.py

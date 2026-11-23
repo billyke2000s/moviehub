@@ -145,8 +145,26 @@ different flags, set the repository variable `CODEX_CMD`. Codex needs internet a
 the sites; if its sandbox blocks the network, allow it in Codex's settings.
 
 Whatever Codex says, `server/health/auto_fix.py` re-runs the live probe itself and opens a pull
-request **only if streams come back**. You still merge. You can also run it by hand:
+request **only if streams come back**. For Live TV that means a sample must also keep playing for
+90 seconds (the soak test, below), and Codex may not change the probe or the block-screen pictures.
+You still merge. You can also run it by hand:
 **Actions → Auto-fix broken source → Run** with the issue number.
+
+### The soak test (Live TV)
+
+Decoding 6 seconds only proves *something* plays. Streams often die when a token expires (after
+30-60 seconds), and some sites send scrapers a "go away" video instead of the channel. So the probe
+also watches one playing sample per provider at real-time pace, and fails it if the picture or sound
+stops, the picture freezes, an HLS playlist is a fixed-length clip or stops moving forward, or a frame
+looks like a known block screen.
+
+- Hourly health check: 60 seconds per provider (`LIVE_SOAK_SECONDS`, `0` turns it off). This adds
+  roughly a minute per provider to each hourly run.
+- Automatic fixes: 90 seconds (`FIX_SOAK_SECONDS`).
+- It saves a picture every 20 seconds. They go in the evidence folder of an issue, and the pull
+  request lists them: **look at them before you merge**.
+- When you see a block screen, save a screenshot in `server/health/bait-frames/` (see the README
+  there). From then on any stream showing that picture fails.
 
 ## 7. Switch the boxes over (tomorrow)
 
@@ -164,7 +182,8 @@ request **only if streams come back**. You still merge. You can also run it by h
 ## Day to day
 
 - Phone says **"X broken"**: nothing to do. Codex is already trying.
-- Phone says **"fix ready for X"**: open Forgejo, look at the pull request, tap **Merge**.
+- Phone says **"fix ready for X"**: open Forgejo, look at the pull request and its soak pictures
+  (they must show the channel), then tap **Merge**.
 - Phone says **"Auto-fix attempt failed"**: ask an AI to fix it by hand using
   `docs/FIX_A_BROKEN_SOURCE.md`, or ignore it if the site is dead.
 - New box: open the code page, tap **New code**, read the code out.
@@ -176,5 +195,7 @@ request **only if streams come back**. You still merge. You can also run it by h
 | `server/gate/gate.py` | Install codes, one-time APK links, keyed update feed |
 | `server/health/check_sources.py` | Runs the probes, opens/closes issues, sends phone alerts |
 | `server/health/auto_fix.py` | Runs Codex, re-checks with the live probe, opens a PR only on success |
+| `server/health/bait-frames/` | Screenshots of known block screens; the soak test fails a stream that shows one |
+| `provider-engine/tools/soak.mjs` | The soak test the live probe runs after its 6-second check |
 | `server/tools/build-scrapers.py` | Builds and signs a scraper package (refuses the wrong key) |
 | `.forgejo/workflows/*.yml` | Health check (Live TV hourly, films 6-hourly), auto-fix on new issues, publish Live TV providers and film scrapers on merge |

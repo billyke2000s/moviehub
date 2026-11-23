@@ -99,6 +99,51 @@ class Decisions(unittest.TestCase):
         live = c.issue_body({'id': 'live:dlhd', 'kind': 'Live TV provider', 'summary': 's', 'records': []}, 'f')
         self.assertIn('live-probe.mjs dlhd', live)
 
+    def test_playing_for_six_seconds_is_not_enough_when_soaked(self):
+        results = [
+            {'id': 'dies', 'catalogue': 'ok', 'channels': 5,
+             'samples': [{'play': 'ok', 'soak': 'FAILED: picture stopped after 7 s of 60 s'}, {'play': 'ok'}]},
+            {'id': 'bait', 'catalogue': 'ok', 'channels': 5,
+             'samples': [{'play': 'ok', 'soak': 'FAILED: the picture matches a known block screen (x.jpg)'}]},
+            {'id': 'keeps', 'catalogue': 'ok', 'channels': 5, 'samples': [{'play': 'ok', 'soak': 'ok'}]},
+            {'id': 'unsoaked', 'catalogue': 'ok', 'channels': 5, 'samples': [{'play': 'ok'}]},
+        ]
+        live = c.live_results(results)
+        self.assertFalse(live['live:dies']['ok'])
+        self.assertIn('failed the soak test: picture stopped after 7 s', live['live:dies']['summary'])
+        self.assertFalse(live['live:bait']['ok'])
+        self.assertIn('block screen', live['live:bait']['summary'])
+        self.assertTrue(live['live:keeps']['ok'])
+        self.assertIn('soak passed', live['live:keeps']['summary'])
+        self.assertTrue(live['live:unsoaked']['ok'])
+
+    def test_soak_pictures_are_copied_into_the_evidence(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as work:
+            frame = Path(work) / 'dlhd-1-01.jpg'
+            frame.write_bytes(b'jpg')
+            result = {'id': 'live:dlhd', 'records': [{'samples': [
+                {'play': 'ok', 'soak': 'ok', 'soakDetail': {'frames': [str(frame), '/missing/x.jpg']}}]}]}
+            self.assertEqual(c.soak_frames(result), [frame])
+            folder = c.save_evidence(Path(work) / 'evidence', result, 'stamp')
+            self.assertTrue((folder / 'dlhd-1-01.jpg').is_file())
+
+
+class AutoFixRules(unittest.TestCase):
+    def test_a_fix_may_not_touch_the_checks(self):
+        import auto_fix
+        self.assertEqual(auto_fix.rejected([
+            'provider-engine/tools/freeshot.js',
+            'android-tv-launcher/app/src/main/python/moviehub_vod.py',
+        ]), [])
+        self.assertEqual(auto_fix.rejected([
+            'provider-engine/tools/live-probe.mjs',
+            'provider-engine/tools/soak.mjs',
+            'server/health/bait-frames/blocked.jpg',
+            'server/health/check_sources.py',
+        ]), ['provider-engine/tools/live-probe.mjs', 'provider-engine/tools/soak.mjs',
+             'server/health/bait-frames/blocked.jpg', 'server/health/check_sources.py'])
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
