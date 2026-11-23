@@ -596,30 +596,30 @@ public class LiveGuideTest {
     }
 
     @Test
-    public void theGuideMenuKeepsSectionsInBoxOrderOnOnePage() {
+    public void theGuideMenuKeepsSectionsInBoxOrderWithMoreAtZero() {
         remote.runOnMainSync(() -> activity.liveTv.start());
         await("menu", () -> activity.liveTv.menu.rows.size() == 10);
         String[][] first = GuideMenu.pageItems(0);
-        // Favourites and Options are on the one page; the sections keep the box's order.
+        // Favourites and Options on the first page in the box's order; 0 is More…, as on the box.
         assertEquals(10, first.length);
         assertEquals("All Channels", first[0][0]);
         assertEquals("Favourites", first[1][0]);
         assertEquals("Entertainment", first[2][0]);
         assertEquals("Kids", first[7][0]);
         assertEquals("Options", first[8][0]);
-        assertEquals("Music", first[9][0]);
+        assertEquals("More…", first[9][0]);
+        String[][] more = GuideMenu.pageItems(1);
+        assertEquals(3, more.length);
+        assertEquals("Music", more[0][0]);
+        assertEquals("International", more[1][0]);
+        assertEquals("Channel Groups", more[2][0]);
         for (String[] item : GuideMenu.ITEMS)
-            for (String gone : new String[] {
-                "Radio",
-                "Religion",
-                "Shopping",
-                "International",
-                "Channel groups from your lists",
-                "More…",
-            })
+            for (String gone : new String[] { "Radio", "Religion", "Shopping" })
                 assertFalse("Not in the guide menu: " + gone, item[0].equals(gone));
-        // 0 opens the tenth row, Music.
+        // 0 opens More…; 1 there opens Music.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_0);
+        await("more page", () -> activity.liveTv.menu.page == 1 && activity.liveTv.menu.rows.size() == 3);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
         await("music", () -> activity.liveTv.filter.equals("section:Music"));
     }
 
