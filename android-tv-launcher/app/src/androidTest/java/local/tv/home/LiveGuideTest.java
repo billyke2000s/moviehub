@@ -323,7 +323,13 @@ public class LiveGuideTest {
         await("grid from preview", () -> activity.liveTv.cells.get(0).hasFocus());
         // Not only on the first page: the guide usually opens on a later one (the last channel's).
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
-        await("second page", () -> activity.liveTv.pageStart == 8 && activity.liveTv.cells.get(0).hasFocus());
+        await(
+            "second page",
+            () ->
+                activity.liveTv.pageStart == 8 &&
+                activity.liveTv.cells.size() == 8 &&
+                activity.liveTv.cells.get(0).hasFocus()
+        );
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
         await(
             "mini-player from a later page",
@@ -333,7 +339,10 @@ public class LiveGuideTest {
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
         await(
             "previous page from the header",
-            () -> activity.liveTv.pageStart == 0 && activity.liveTv.cells.get(7).hasFocus()
+            () ->
+                activity.liveTv.pageStart == 0 &&
+                activity.liveTv.cells.size() == 8 &&
+                activity.liveTv.cells.get(7).hasFocus()
         );
     }
 
