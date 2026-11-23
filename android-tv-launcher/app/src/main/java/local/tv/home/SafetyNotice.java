@@ -28,12 +28,20 @@ final class SafetyNotice {
         return context.getSharedPreferences("ui", Context.MODE_PRIVATE).getBoolean(PREF, false);
     }
 
-    /** Shows the notice the first time MovieHub opens; it comes back until "I understand". */
-    static void showOnce(Activity activity) {
-        if (!seen(activity)) show(activity);
+    /**
+     * Shows the notice the first time MovieHub opens; it comes back until "I understand". Then
+     * {@code next} runs: straight away if the notice was read before, otherwise once it closes.
+     */
+    static void showOnce(Activity activity, Runnable next) {
+        if (!seen(activity)) show(activity, next);
+        else next.run();
     }
 
     static void show(Activity activity) {
+        show(activity, null);
+    }
+
+    private static void show(Activity activity, Runnable next) {
         SidePanel.of(activity, TITLE)
             .message(TEXT)
             .action("I understand", () ->
@@ -43,6 +51,7 @@ final class SafetyNotice {
                     .putBoolean(PREF, true)
                     .apply()
             )
+            .onDismiss(next)
             .show();
     }
 }

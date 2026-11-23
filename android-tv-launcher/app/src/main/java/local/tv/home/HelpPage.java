@@ -1,8 +1,6 @@
 package local.tv.home;
 
 import android.content.Intent;
-import android.net.ConnectivityManager;
-import android.net.NetworkCapabilities;
 import android.os.StatFs;
 import android.provider.Settings;
 import android.widget.LinearLayout;
@@ -68,7 +66,7 @@ final class HelpPage {
     /** What the box knows now, without waiting on the network (the speed test is on request). */
     private HelpChecks.Facts facts() {
         HelpChecks.Facts facts = new HelpChecks.Facts();
-        facts.connected = connected();
+        facts.connected = ConnectionPrompt.online(activity);
         facts.mbps = testedMbps >= 0 ? testedMbps : Timings.lastMbps;
         try {
             StatFs space = new StatFs(activity.getFilesDir().getAbsolutePath());
@@ -80,24 +78,6 @@ final class HelpPage {
         facts.preferredQuality = activity.prefs.getInt(AutoPlayback.QUALITY, 1080);
         facts.updateReady = activity.updates.availableUpdate != null;
         return facts;
-    }
-
-    /** True when the box has a network that reaches the internet (Wi-Fi or cable). */
-    private boolean connected() {
-        try {
-            ConnectivityManager manager = activity.getSystemService(ConnectivityManager.class);
-            android.net.Network network = manager.getActiveNetwork();
-            if (network == null) return false; // no Wi-Fi and no cable
-            NetworkCapabilities capabilities = manager.getNetworkCapabilities(network);
-            return (
-                capabilities != null &&
-                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            );
-        } catch (RuntimeException e) {
-            // Unknown is not "offline": never tell the family a problem that may not be there.
-            Diagnostics.recovered("Reading the network state", e);
-            return true;
-        }
     }
 
     private void fix(HelpChecks.Fix fix, HelpChecks.Facts facts) {

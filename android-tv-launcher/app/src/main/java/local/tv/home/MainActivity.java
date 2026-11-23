@@ -51,6 +51,7 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
     final LinkedHashMap<String, PosterFeed.State> catalogueStates = new LinkedHashMap<>();
     JSONObject playbackTitle;
     Runnable resumeRefresh, myListRefresh;
+    ConnectionPrompt connection;
     /** Runs once when the current screen closes or the app goes to the background (the guide picture). */
     Runnable leaving;
     /** The reminder panel on screen, so a second one never stacks on it. */
@@ -406,9 +407,8 @@ public class MainActivity extends TvActivity implements LiveScreen.Owner {
         // The first time: TV or phone? Then the chosen layout.
         if (DeviceMode.chosen(this).isEmpty()) LayoutChooser.show(this);
         else LayoutChooser.open(this);
-        // After the first frame, so the notice sits over Home.
-        // First the free-provider question (once), then the safety notice.
-        handler.post(() -> ProviderSettings.askOnce(this, () -> SafetyNotice.showOnce(this)));
+        // The first-start messages, once Home is on screen, and the "no internet" panel.
+        connection = FirstStart.begin(this);
     }
 
     private void tvFullscreen() {
