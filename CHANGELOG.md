@@ -5,6 +5,10 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+- Live TV guide: the buttons under the guide (Page up, Page down, Search, Sections) now work like
+  the mini-player above it. Down from the bottom row of any page stops on the buttons; Down again
+  goes to the next page, and Up goes back to the bottom row. BACK still reaches them too.
+
 ## 1.0.29 (23 November 2026)
 
 - Live TV guide: the mini-player can now be reached from any page. Up from the top row of the
