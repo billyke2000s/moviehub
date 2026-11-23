@@ -26,12 +26,15 @@ Settings (environment variables)
   STATE_FILE      default /srv/moviehub/health/state.json
   EVIDENCE_DIR    default /srv/moviehub/health/evidence
   LIVE_FAIL_RUNS  default 1        VOD_FAIL_RUNS  default 2       LIVE_RETRY_SECONDS  default 300
+  LIVE_SOAK_SECONDS  default 60: watch each Live TV provider's first playing sample this long
+                     (0 = only the 6-second check). Pictures in server/health/bait-frames/ fail it.
   SKIP_LIVE / SKIP_VOD   set to 1 to skip a probe
 """
 import datetime
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -43,6 +46,8 @@ ROOT = Path(__file__).resolve().parents[2]
 VOD_PROBE = ROOT / 'android-tv-launcher/tests/probe-free-vod.py'
 LIVE_PROBE = ROOT / 'provider-engine/tools/live-probe.mjs'
 LIVE_RESULT = ROOT / 'build/provider-tests/live-probe.json'
+# Screenshots of known block screens ("scraper go away" pictures). A soak frame that matches one fails.
+BAIT_DIR = ROOT / 'server/health/bait-frames'
 FILMS = [
     ['Night of the Living Dead', '1968', 'tt0063350', '10331'],
     ['Inception', '2010', 'tt1375666', '27205'],
@@ -76,19 +81,28 @@ def vod_results(runs):
 
 
 def live_results(results):
-    """results: parsed live-probe.json. Healthy = catalogue loads and at least one sample plays."""
+    """results: parsed live-probe.json. Healthy = catalogue loads and at least one sample plays.
+
+    When the probe ran a soak test (a sample has a 'soak' field), playing for 6 seconds is not
+    enough: at least one sample must also pass the soak."""
     sources = {}
     for r in results:
         key = 'live:' + r['id']
         samples = r.get('samples', [])
         catalogue_ok = r.get('catalogue') == 'ok'
         plays = [s for s in samples if s.get('play') == 'ok']
+        soaked = [s for s in samples if 'soak' in s]
+        soak_ok = [s for s in soaked if s['soak'] == 'ok']
         # ZLive has no sample playback in the probe; its catalogue is the signal.
-        ok = catalogue_ok and (bool(plays) or not samples)
+        ok = catalogue_ok and (bool(plays) or not samples) and (bool(soak_ok) or not soaked)
         if not catalogue_ok:
             summary = 'channel list failed: %s' % r.get('catalogue')
-        elif not ok:
+        elif not plays and samples:
             summary = 'channel list loads (%s channels) but no sample played' % r.get('channels')
+        elif not ok:
+            summary = 'played at first but failed the soak test: %s' % soaked[0]['soak'][len('FAILED: '):]
+        elif soaked:
+            summary = '%d of %d samples played; soak passed' % (len(plays), len(samples))
         else:
             summary = '%d of %d samples played' % (len(plays), len(samples))
         sources[key] = {'id': key, 'kind': 'Live TV provider', 'ok': ok, 'summary': summary, 'records': [r]}
@@ -133,14 +147,21 @@ def run_vod():
     return outputs
 
 
-def run_live(ids=()):
-    """Runs the Live TV probe for all providers, or only the given provider ids."""
+def run_live(ids=(), soak_seconds=None):
+    """Runs the Live TV probe for all providers, or only the given provider ids.
+
+    Each provider's first playing sample is also soak-tested for LIVE_SOAK_SECONDS (default 60, 0 = off),
+    so a stream that dies after a few seconds counts as broken."""
     rhino = os.environ.get('RHINO_JAR', '')
     if not rhino or not Path(rhino).is_file():
         sys.stderr.write('RHINO_JAR not set; skipping Live TV probe\n')
         return []
+    if soak_seconds is None:
+        soak_seconds = int(os.environ.get('LIVE_SOAK_SECONDS', '60'))
+    env = {**os.environ, 'RHINO_JAR': rhino, 'MOVIEHUB_SOAK_SECONDS': str(soak_seconds),
+           'MOVIEHUB_BAIT_DIR': str(BAIT_DIR)}
     done = subprocess.run(['node', str(LIVE_PROBE), *ids], cwd=ROOT, capture_output=True, text=True,
-                          timeout=3600, env={**os.environ, 'RHINO_JAR': rhino})
+                          timeout=3600, env=env)
     if done.returncode != 0:
         sys.stderr.write('Live probe exited %s: %s\n' % (done.returncode, done.stderr[-500:]))
     try:
@@ -176,11 +197,25 @@ def live_with_retry(run, wait, sleep=time.sleep):
     return results
 
 
+def soak_frames(result):
+    """Pictures the soak test saved for this source (Live TV only), as paths that exist."""
+    frames = []
+    for record in result.get('records', []):
+        for sample in record.get('samples', []):
+            for frame in sample.get('soakDetail', {}).get('frames', []):
+                path = Path(frame) if Path(frame).is_absolute() else ROOT / frame
+                if path.is_file():
+                    frames.append(path)
+    return frames
+
+
 def save_evidence(evidence_dir, result, stamp):
     """Stores the probe record and, for film sites, the site's current front page."""
     folder = Path(evidence_dir) / re.sub(r'[^A-Za-z0-9_.-]', '_', result['id']) / stamp
     folder.mkdir(parents=True, exist_ok=True)
     (folder / 'probe.json').write_text(json.dumps(result['records'], indent=2))
+    for frame in soak_frames(result):
+        shutil.copy(frame, folder / Path(frame).name)
     if result['id'].startswith('vod:'):
         site = site_of(result['id'][4:])
         if site:

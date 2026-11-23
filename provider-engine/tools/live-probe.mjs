@@ -11,6 +11,7 @@ import { readFileSync, writeFileSync, mkdirSync, appendFileSync } from "node:fs"
 import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import dns from "node:dns/promises";
+import { soak, baitHashes } from "./soak.mjs";
 
 const pkg = JSON.parse(readFileSync("android-tv-launcher/app/src/main/assets/providers/builtin.json"));
 const dir = "build/provider-tests";
@@ -339,6 +340,12 @@ export { run };
 
 if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
     const SKY = /sky\s*sports?/i;
+    // Soak test (tools/soak.mjs): after the 6-second check, watch up to SOAK_SAMPLES playing
+    // samples per provider for SOAK_SECONDS. Off (0) unless the health checker or auto-fix sets it.
+    const SOAK_SECONDS = Number(process.env.MOVIEHUB_SOAK_SECONDS || 0);
+    const SOAK_SAMPLES = Number(process.env.MOVIEHUB_SOAK_SAMPLES || 1);
+    const baits =
+        SOAK_SECONDS > 0 ? baitHashes(process.env.MOVIEHUB_BAIT_DIR || "server/health/bait-frames") : [];
     const results = [];
     const wanted = process.argv.slice(2);
     for (const id of Object.keys(pkg.modules)) {
@@ -400,6 +407,7 @@ if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
         const playbackSamples =
             id === "zlive" ? (process.env.ZLIVE_LIVE_TEST === "1" ? samples.slice(0, 1) : []) : samples;
         if (id === "zlive" && playbackSamples.length === 0) result.playbackScope = "not_tested";
+        let soaked = 0;
         for (const row of playbackSamples) {
             const sample = { name: String(row.name).slice(0, 60), resolve: "", play: "" };
             const rstats = {
@@ -418,12 +426,39 @@ if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
                 sample.resolve = "ok (" + new URL(value.url).hostname + ")";
                 const played = decode(value);
                 sample.play = played.ok ? "ok" : "PROVIDER?: " + played.error;
+                if (played.ok && SOAK_SECONDS > 0 && soaked < SOAK_SAMPLES) {
+                    soaked++;
+                    const watched = await soak(value, {
+                        seconds: SOAK_SECONDS,
+                        baits,
+                        frameDir: dir + "/frames",
+                        frameName: id.replace(/[^A-Za-z0-9_-]/g, "_") + "-" + soaked,
+                    });
+                    sample.soak = watched.ok ? "ok" : "FAILED: " + watched.reason;
+                    sample.soakDetail = {
+                        seconds: watched.seconds,
+                        videoSeconds: watched.videoSeconds,
+                        audioSeconds: watched.audioSeconds,
+                        longestGap: watched.longestGap,
+                        longestFreeze: watched.longestFreeze,
+                        playlist: watched.playlist,
+                        frames: watched.frames,
+                    };
+                }
             } catch (e) {
                 sample.resolve = (e instanceof Ours ? "OURS: " : "PROVIDER: ") + e.message;
                 if (rstats.httpErrors.length)
                     sample.resolve += " (HTTP " + rstats.httpErrors.slice(-3).join(", ") + ")";
             }
-            console.log("   " + sample.name + " | " + sample.resolve + " | " + sample.play);
+            console.log(
+                "   " +
+                    sample.name +
+                    " | " +
+                    sample.resolve +
+                    " | " +
+                    sample.play +
+                    (sample.soak ? " | soak " + sample.soak : ""),
+            );
             result.samples.push(sample);
         }
         console.log(
@@ -451,10 +486,13 @@ if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
             `| ${r.id} | ${r.catalogue.replace(/\|/g, "/")} | ${r.channels} | ${r.sky} | ${resolved}/${r.samples.length} | ${played}/${r.samples.length} | ` +
             `${s.requests} req, max ${s.maxResponseKB} KB, total ${s.totalKB} KB, slowest step ${s.slowestStepMs} ms |\n`;
     }
-    md += "\n### Samples\n\n| Provider | Channel | Resolve | Play |\n| --- | --- | --- | --- |\n";
+    md +=
+        "\n### Samples\n\n" +
+        (SOAK_SECONDS > 0 ? "Soak: watched for " + SOAK_SECONDS + " s at real-time pace.\n\n" : "") +
+        "| Provider | Channel | Resolve | Play | Soak |\n| --- | --- | --- | --- | --- |\n";
     for (const r of results)
         for (const s of r.samples)
-            md += `| ${r.id} | ${s.name.replace(/\|/g, "/")} | ${s.resolve.replace(/\|/g, "/")} | ${s.play.replace(/\|/g, "/")} |\n`;
+            md += `| ${r.id} | ${s.name.replace(/\|/g, "/")} | ${s.resolve.replace(/\|/g, "/")} | ${s.play.replace(/\|/g, "/")} | ${(s.soak || "not run").replace(/\|/g, "/")} |\n`;
     writeFileSync(dir + "/live-probe.md", md);
     if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
     console.log(md);
