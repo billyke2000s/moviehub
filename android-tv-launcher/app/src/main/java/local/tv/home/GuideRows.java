@@ -138,9 +138,10 @@ final class GuideRows {
                 return true;
             }
             if (key == KeyEvent.KEYCODE_DPAD_UP && row == 0) {
+                // Above the top row of any page: the header (mini-player and Options). UP again
+                // carries on to the previous page.
                 guide.programmeFocus = false;
-                if (guide.pageStart > 0) guide.guide(guide.pageStart - LiveTvScreen.ROWS, -1);
-                else guide.focusTabs();
+                guide.focusTabs();
                 return true;
             }
             return guide.sharedKey(key, row, more);
@@ -193,10 +194,6 @@ final class GuideRows {
                 if (key == KeyEvent.KEYCODE_DPAD_UP || key == KeyEvent.KEYCODE_DPAD_DOWN) {
                     int target = row + (key == KeyEvent.KEYCODE_DPAD_UP ? -1 : 1);
                     if (target >= 0 && target < programmes.size()) focusAt(target, guide.cursorTime);
-                    else if (target < 0 && guide.pageStart > 0) guide.guide(
-                        guide.pageStart - LiveTvScreen.ROWS,
-                        -1
-                    );
                     else if (target < 0) guide.focusTabs();
                     else if (target >= count) guide.turnPage(1, 0);
                     return true;

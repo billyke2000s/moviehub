@@ -298,9 +298,9 @@ final class LiveTvScreen {
         }
     }
 
-    /** Up from the top row of the first page: the Options button. */
+    /** Up from the top row of any page: the header (the mini-player, or Options). */
     void focusTabs() {
-        frame.focusTop();
+        frame.focusHeader();
     }
 
     /** The first time slot shown: now's half hour, moved on by ◀ ▶. */
