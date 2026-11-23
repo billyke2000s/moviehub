@@ -18,9 +18,9 @@ final class HelpPage {
     static final String TITLE = "Help";
 
     private final MainActivity activity;
-    /** The last speed test's result in Mb/s while MovieHub is open; below 0 when not run. */
-    private volatile float testedMbps = -1;
     private volatile boolean testing;
+    /** Why the last test on this page failed, in plain words; null when it didn't. */
+    private volatile String testFailure;
 
     HelpPage(MainActivity activity) {
         this.activity = activity;
@@ -51,15 +51,20 @@ final class HelpPage {
             settings.settingCard(body, problem.title, problem.detail, null, false, problem.action, () ->
                 fix(problem.fix, facts)
             );
+        SpeedTest.Result tested = SpeedTest.last;
         settings.settingCard(
             body,
             "Internet speed",
             testing
                 ? "Testing… this takes about 10 seconds"
-                : "Checks whether your internet is fast enough for films",
-            testedMbps < 0 ? null : String.format(java.util.Locale.ROOT, "%.0f Mb/s", testedMbps),
+                : testFailure != null
+                    ? "The test didn't finish: " + testFailure + ". Try again."
+                    : tested != null
+                        ? SpeedTest.summary(tested)
+                        : "Checks whether your internet is fast enough for films",
+            null,
             false,
-            testing ? null : "Test",
+            testing ? null : tested == null ? "Test" : "Test again",
             this::runSpeedTest
         );
         activity.settingsStyle(body);
@@ -69,7 +74,10 @@ final class HelpPage {
     private HelpChecks.Facts facts() {
         HelpChecks.Facts facts = new HelpChecks.Facts();
         facts.connected = connected();
-        facts.mbps = testedMbps >= 0 ? testedMbps : Timings.lastMbps;
+        // Only a real speed test judges the internet. The player's download rate (Timings.lastMbps)
+        // drops to almost nothing once a film has buffered, so it reported fast lines as too slow.
+        SpeedTest.Result tested = SpeedTest.last;
+        facts.mbps = tested == null ? -1 : tested.mbps;
         try {
             StatFs space = new StatFs(activity.getFilesDir().getAbsolutePath());
             facts.freeBytes = space.getAvailableBytes();
@@ -135,20 +143,21 @@ final class HelpPage {
     private void runSpeedTest() {
         if (testing) return;
         testing = true;
+        testFailure = null;
         show();
         activity.async(
             () -> {
                 try {
-                    SpeedTest.Result result = SpeedTest.run();
-                    testedMbps = result.mbps;
+                    SpeedTest.run(); // stores SpeedTest.last
                 } catch (Exception e) {
                     Diagnostics.recovered("Help speed test", e);
+                    testFailure = ErrorMessages.explain(e).title;
                 } finally {
                     testing = false;
                 }
-                return testedMbps;
+                return null;
             },
-            mbps -> show()
+            done -> show()
         );
     }
 }

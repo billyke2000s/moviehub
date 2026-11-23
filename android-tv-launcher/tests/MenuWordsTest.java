@@ -60,6 +60,10 @@ public final class MenuWordsTest {
         same(1080, HelpChecks.lowerQuality(slow));
         slow.mbps = 30;
         check(HelpChecks.problems(slow).isEmpty(), "fast enough for 4K");
+        HelpChecks.Facts fastLine = healthy();
+        fastLine.mbps = 400;
+        fastLine.preferredQuality = 2160;
+        check(HelpChecks.problems(fastLine).isEmpty(), "400 Mb/s is never 'too slow'");
         HelpChecks.Facts unmeasured = healthy();
         unmeasured.mbps = -1;
         check(HelpChecks.problems(unmeasured).isEmpty(), "no speed known: no speed problem");

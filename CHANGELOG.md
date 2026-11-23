@@ -5,6 +5,13 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+- Help page: stop telling fast connections they are "too slow" and to switch to 720p. Help no
+  longer judges the internet from the player's last download rate (which drops to almost nothing
+  once a film has buffered); only a real speed test counts. Help's speed test now shows the same
+  measurement as Engineer view in plain words (rating, download Mb/s, response time), shares its
+  result with Engineer view, and says when a test fails instead of showing nothing. A test that
+  receives no data is reported as failed, never as 0 Mb/s.
+
 ## 1.0.26 (22 November 2026)
 
 - FreeShot: repair HLS playback by giving decoded MPEG-TS segments a .ts extension on MovieHub's local playback relay, rather than a generic .bin filename. The actual production Java relay decoded 30 seconds of video and audio in CI both at startup and after forced playlist-token renewal; playback on physical TV boxes still needs user confirmation.

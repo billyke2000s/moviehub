@@ -36,7 +36,26 @@ final class SpeedTest {
         }
     }
 
+    /**
+     * The latest completed test while MovieHub is open, shared by Help and Engineer view so both
+     * show the same measurement; null until one has run.
+     */
+    static volatile Result last;
+
     private SpeedTest() {}
+
+    /**
+     * The family wording for a result, e.g. "Excellent for films · 412 Mb/s download · 18 ms
+     * response". The same measurement as Engineer view, without jitter and probe counts.
+     */
+    static String summary(Result r) {
+        String rating = rating(r.mbps, r.pingMs, r.jitterMs);
+        StringBuilder out = new StringBuilder();
+        if (!"Unrated".equals(rating)) out.append(rating).append(" for films  ·  ");
+        out.append(String.format(java.util.Locale.ROOT, "%.0f Mb/s download", Math.floor(r.mbps)));
+        if (r.pingMs >= 0) out.append("  ·  ").append(r.pingMs).append(" ms response");
+        return out.toString();
+    }
 
     static String rating(float mbps, long ping, long jitter) {
         if (ping < 0 || jitter < 0) return "Unrated";
@@ -92,7 +111,11 @@ final class SpeedTest {
             int n;
             while (System.nanoTime() < deadline && (n = in.read(buffer)) != -1) bytes += n;
             long millis = (System.nanoTime() - answered) / 1_000_000L;
-            return new Result(mbps(bytes, millis), (answered - asked) / 1_000_000L, bytes, latency[0], latency[1], (int) latency[2]);
+            // Nothing received is a failed test, never a "0 Mb/s" internet speed.
+            if (bytes <= 0 || millis <= 0) throw new java.io.IOException("The speed test received no data");
+            Result result = new Result(mbps(bytes, millis), (answered - asked) / 1_000_000L, bytes, latency[0], latency[1], (int) latency[2]);
+            last = result;
+            return result;
         }
     }
 }
