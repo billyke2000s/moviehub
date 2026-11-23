@@ -29,7 +29,7 @@ jobs:
           if [ '${{ matrix.scope }}' = downloads ]; then args+=(--downloads); fi
           if [ '${{ matrix.media }}' = series ]; then args+=(--series); fi
           python android-tv-launcher/tests/trace-cinestream.py "${args[@]}" | tee cinestream-protocols.jsonl
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: cinestream-protocols-${{ matrix.scope }}-${{ matrix.media }}
@@ -86,7 +86,7 @@ jobs:
           rows = [json.loads(line) for line in path.read_text().splitlines()]
           print(json.dumps(dict(outcomes=dict(collections.Counter(row.get('status') for row in rows if row.get('kind') == 'playback')))))
           PY
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: cinestream-playback-${{ strategy.job-index }}-${{ matrix.media }}

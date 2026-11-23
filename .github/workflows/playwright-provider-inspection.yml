@@ -88,7 +88,7 @@ jobs:
                   node provider-browser/inspect.mjs --targets browser-targets.json --baseline prior/report.json --output "$OUTPUT"
             - name: Upload redacted protocol evidence
               if: always() && steps.gate.outputs.active == 'true'
-              uses: actions/upload-artifact@v6
+              uses: actions/upload-artifact@v7
               with:
                   name: browser-protocol-${{ matrix.target }}
                   path: build/browser-inspection/${{ matrix.target }}/
