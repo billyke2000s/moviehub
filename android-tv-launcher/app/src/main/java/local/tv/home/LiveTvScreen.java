@@ -489,12 +489,7 @@ final class LiveTvScreen {
 
     /** The guide label for a channel: its number, a star for favourites, its name. */
     String label(ChannelDatabase.Row channel, boolean favourite) {
-        return (
-            channel.number +
-            "  " +
-            (favourite ? "★ " : "") +
-            channel.name
-        );
+        return channel.number + "  " + (favourite ? "★ " : "") + channel.name;
     }
 
     /**
