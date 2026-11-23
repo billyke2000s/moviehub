@@ -21,6 +21,10 @@ final class ChannelImporter {
     private static volatile boolean running;
     private static volatile int progress;
     private static volatile boolean queued;
+    // The slow part of a refresh after the playlists, named on screen so a long wait shows where
+    // it is (TV guide, FreeLiveSports, DaddyLive…) instead of an unchanging channel count.
+    private static volatile String step = "";
+    private static volatile long stepStarted;
 
     static void markQueued() {
         queued = true;
@@ -30,15 +34,41 @@ final class ChannelImporter {
 
         final boolean running, queued;
         final int progress;
-        final String message;
+        final String message, step;
+        final long stepStarted;
         final long lastSuccess;
 
-        Status(boolean running, boolean queued, int progress, String message, long lastSuccess) {
+        Status(
+            boolean running,
+            boolean queued,
+            int progress,
+            String message,
+            long lastSuccess,
+            String step,
+            long stepStarted
+        ) {
             this.running = running;
             this.queued = queued;
             this.progress = progress;
             this.message = message;
             this.lastSuccess = lastSuccess;
+            this.step = step;
+            this.stepStarted = stepStarted;
+        }
+
+        /** "Updating channels · DaddyLive 1:20 · 10,234 imported" while a named step runs. */
+        String runningText(long now) {
+            String count = String.format(Locale.getDefault(), "%,d imported", progress);
+            if (step.isEmpty()) return "Updating channels · " + count;
+            long seconds = Math.max(0, (now - stepStarted) / 1000);
+            return String.format(
+                Locale.getDefault(),
+                "Updating channels · %s %d:%02d · %s",
+                step,
+                seconds / 60,
+                seconds % 60,
+                count
+            );
         }
     }
 
@@ -53,7 +83,9 @@ final class ChannelImporter {
             queued && !running,
             progress,
             p.getString("message", ""),
-            p.getLong("lastSuccess", 0)
+            p.getLong("lastSuccess", 0),
+            step,
+            stepStarted
         );
     }
 
@@ -63,6 +95,7 @@ final class ChannelImporter {
             queued = false;
             running = true;
             progress = 0;
+            step("");
             Secrets secrets = new Secrets(context);
             ChannelDatabase db = ChannelDatabase.get(context);
             boolean http = context.getSharedPreferences("ui", Context.MODE_PRIVATE).getBoolean("http", false);
@@ -150,11 +183,13 @@ final class ChannelImporter {
                 boolean optionalSources = EngineSources.enabled(context, providerConnected);
                 for (String id : ProviderBroker.IDS)
                     optionalSources |= AdapterSources.enabled(context, id, providerConnected);
+                if ((anySource || optionalSources) && !guideKeys.isEmpty()) step("TV guide");
                 if ((anySource || optionalSources) && !guideKeys.isEmpty()) guideNote = refreshGuide(
                     context,
                     db,
                     cancel
                 );
+                step("Scraper updates");
                 try {
                     ProviderUpdates.check(context, false);
                 } catch (Exception e) {
@@ -163,6 +198,7 @@ final class ChannelImporter {
                 if (EngineSources.enabled(context, providerConnected)) {
                     configured.add(EngineSources.SOURCE);
                     anySource = true;
+                    step("FreeLiveSports");
                     try {
                         total += EngineSources.refresh(context, db, cancel);
                     } catch (Exception e) {
@@ -179,6 +215,7 @@ final class ChannelImporter {
                     if (AdapterSources.enabled(context, id, providerConnected)) {
                         configured.add(AdapterSources.source(id));
                         anySource = true;
+                        step(AdapterSources.sourceName(AdapterSources.source(id)));
                         try {
                             total += AdapterSources.refresh(context, id, db, cancel);
                             progress = total;
@@ -207,10 +244,14 @@ final class ChannelImporter {
                 // The free programme guide; a failure here never counts against the channels.
                 if (
                     anySource && db.count() > 0 && !guideKeys.equals(EpgImporter.wantedSnapshot(db))
-                ) guideNote = refreshGuide(context, db, cancel);
+                ) {
+                    step("TV guide");
+                    guideNote = refreshGuide(context, db, cancel);
+                }
             } catch (Exception e) {
                 problems.add(describe(e));
             } finally {
+                step("");
                 running = false;
             }
             String message = !anySource
@@ -232,6 +273,17 @@ final class ChannelImporter {
             edit.apply();
             return problems.isEmpty();
         }
+    }
+
+    /** Names the current slow step on screen and logs how long the previous one took. */
+    private static void step(String name) {
+        long now = System.currentTimeMillis();
+        if (!step.isEmpty()) android.util.Log.i(
+            "MovieHub",
+            "Channel refresh step \"" + step + "\" took " + (now - stepStarted) / 1000 + " s"
+        );
+        stepStarted = now;
+        step = name;
     }
 
     /** Targeted sports refresh shares the import lock, preserving database transactions. */

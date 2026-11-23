@@ -203,6 +203,16 @@ public class ChannelImporterTest {
         assertEquals("A failed replacement cannot reactivate the disabled FreeLinks source", 0, db.count());
     }
 
+    @Test
+    public void updatingStatusNamesTheSlowStepAndItsTime() {
+        ChannelImporter.Status counting = new ChannelImporter.Status(true, false, 42, "", 0, "", 0);
+        assertEquals("Updating channels · 42 imported", counting.runningText(1_000_000));
+        ChannelImporter.Status site = new ChannelImporter.Status(true, false, 42, "", 0, "DaddyLive", 1_000_000);
+        assertEquals("Updating channels · DaddyLive 1:20 · 42 imported", site.runningText(1_080_000));
+        // A clock change backwards never shows a negative time.
+        assertEquals("Updating channels · DaddyLive 0:00 · 42 imported", site.runningText(999_000));
+    }
+
     @After
     public void cleanup() throws Exception {
         EpgImporter.guideUrl = EpgImporter.COMBINED_GUIDE;

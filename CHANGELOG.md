@@ -5,6 +5,12 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+## 1.0.31 (23 November 2026)
+
+- Live TV guide: while channels update, the status line now names the slow step and how long it
+  has been running, for example "Updating channels · DaddyLive 1:20 · 10,234 imported", instead of
+  an unchanging count. Each step's time is also written to the Android log ("Channel refresh step").
+
 ## 1.0.30 (23 November 2026)
 
 - Older devices: MovieHub now installs on Android 7.1 and newer (was Android 9), so it runs on the
