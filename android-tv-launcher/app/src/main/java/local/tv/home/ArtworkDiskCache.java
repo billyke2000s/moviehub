@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.util.Arrays;
 
@@ -39,7 +38,7 @@ final class ArtworkDiskCache {
             file.delete();
             return null;
         }
-        try (InputStream input = Files.newInputStream(file.toPath())) {
+        try (InputStream input = new java.io.FileInputStream(file)) {
             ByteArrayOutputStream out = new ByteArrayOutputStream((int) file.length());
             byte[] buffer = new byte[8192];
             int read;

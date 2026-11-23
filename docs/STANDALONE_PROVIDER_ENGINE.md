@@ -17,7 +17,7 @@ classification and per-operation player/cache functions are bundled together. Tu
 PKCE, anonymous device-token, catalog and resolve modules run together. Samsung's four catalog,
 normalization and resolution functions are selected from its adapter AST; server database/EPG hooks
 are not executed. The Java segment-prefix port names its Rust upstream provenance. MIT notices ship
-in the APK; Rhino 1.9.1 is MPL-2.0 and TypeScript 5.7.2 is build-time Apache-2.0.
+in the APK; Rhino 1.8.0 is MPL-2.0 and TypeScript 5.7.2 is build-time Apache-2.0.
 
 A full Node/JNI runtime is not embedded: the inspected nodejs-mobile core was Node 18.20.4 (EOL).
 The alternative is an explicit compatibility layer, rather than replacing the providers with playlists.

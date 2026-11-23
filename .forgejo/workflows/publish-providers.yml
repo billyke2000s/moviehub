@@ -21,7 +21,7 @@ jobs:
                   PROVIDER_VERSION=$(date +%s) npm run build --prefix provider-engine
                   npm test --prefix provider-engine
             - name: Check in the app's restricted interpreter
-              run: RHINO_JAR=/srv/moviehub/tools/rhino-1.9.1.jar bash provider-engine/tools/verify.sh
+              run: RHINO_JAR=/srv/moviehub/tools/rhino-1.8.0.jar bash provider-engine/tools/verify.sh
             - name: Sign (refuses a key that does not match trust.json)
               run: PROVIDER_SIGNING_KEY_B64=$(base64 -w0 /srv/moviehub/keys/signing.pem) node provider-engine/tools/sign.mjs
             - name: Put in the feed

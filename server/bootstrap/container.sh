@@ -24,8 +24,8 @@ pip install -q --break-system-packages requests==2.32.5 six==1.17.0
 step "Folders and the JavaScript interpreter for the Live TV probe"
 id moviehub >/dev/null 2>&1 || adduser --system --group --home /srv/moviehub --shell /bin/bash moviehub
 mkdir -p /srv/moviehub/{feed/app,feed/experimental,feed/providers,feed/scrapers,feed/scrapers-experimental,keys,health,tools}
-curl -fsSL -o /srv/moviehub/tools/rhino-1.9.1.jar https://repo.maven.apache.org/maven2/org/mozilla/rhino/1.9.1/rhino-1.9.1.jar
-echo "12dbb224cea124a5d32968722e8eb161c967bf15f3c9a795d1b05592b1147975  /srv/moviehub/tools/rhino-1.9.1.jar" | sha256sum --check
+curl -fsSL -o /srv/moviehub/tools/rhino-1.8.0.jar https://repo.maven.apache.org/maven2/org/mozilla/rhino/1.8.0/rhino-1.8.0.jar
+echo "e7ff37ec00b4c19ea16f42b5b3a601616d559dbb76e65bc9d094bd6bda2a925d  /srv/moviehub/tools/rhino-1.8.0.jar" | sha256sum --check
 
 step "Signing key (stays on this server; back it up to a USB stick)"
 if [ ! -f /srv/moviehub/keys/signing.pem ]; then

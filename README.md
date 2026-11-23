@@ -6,7 +6,7 @@ MovieHub brings browsing, playback, live-channel guides and your installed TV ap
 
 MovieHub is an independent app. **It does not host films, series or live channels, and it is not a streaming subscription.** Content comes from public listings and services you choose to use. Availability varies.
 
-[![Android 9+](https://img.shields.io/badge/Android-9%2B-3DDC84?logo=android&logoColor=white)](https://www.android.com/tv/)
+[![Android 7.1+](https://img.shields.io/badge/Android-7.1%2B-3DDC84?logo=android&logoColor=white)](https://www.android.com/tv/)
 [![MIT license](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/billyke2000s/moviehub?style=flat-square&label=Latest%20version)](https://github.com/billyke2000s/moviehub/releases/latest)
 
@@ -14,7 +14,7 @@ MovieHub is an independent app. **It does not host films, series or live channel
 
 ## Install MovieHub
 
-MovieHub is made for **Android TV devices running Android 9 or newer**. Its standard APK includes support for both 32-bit and 64-bit ARM Android firmware.
+MovieHub is made for **Android TV devices running Android 7.1 or newer**, including the Fire TV Stick 4K (1st gen, Fire OS 6), where it runs as a normal app because Fire OS keeps its own home screen. Device tests in CI still run on Android 9 (API 28) only. Its standard APK includes support for both 32-bit and 64-bit ARM Android firmware.
 
 1. Download **home.apk** using the button above, or open the **Downloader** app on your TV device and enter code **5881724**.
 2. Open the downloaded file and allow installation from that source if Android asks.

@@ -66,6 +66,18 @@ public class VlcPlaybackActivity extends Activity {
     private float downloadMbps = -1;
     private AudioManager audio;
     private AudioFocusRequest audioFocus;
+    private AudioManager.OnAudioFocusChangeListener legacyFocusListener;
+
+    @SuppressWarnings("deprecation")
+    private int legacyRequestFocus(AudioManager.OnAudioFocusChangeListener listener) {
+        return audio.requestAudioFocus(listener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+    }
+
+    @SuppressWarnings("deprecation")
+    private void legacyAbandonFocus(AudioManager.OnAudioFocusChangeListener listener) {
+        audio.abandonAudioFocus(listener);
+    }
+
     android.view.View controls;
     /** A second Back within this time leaves the player. */
     static final long EXIT_WINDOW_MS = 3000;
@@ -344,24 +356,33 @@ public class VlcPlaybackActivity extends Activity {
         foreground = true;
         if (url == null) return;
         audio = (AudioManager) getSystemService(AUDIO_SERVICE);
-        audioFocus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-            .setAudioAttributes(
-                new AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
-                    .build()
-            )
-            .setOnAudioFocusChangeListener(change -> {
-                if (change < 0 && player != null) {
-                    player.pause();
-                    paused = true;
-                    if (vod != null) vod.pauseChanged();
-                    showPlaying(false);
-                    revealControls();
-                }
-            })
-            .build();
-        if (audio.requestAudioFocus(audioFocus) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) startPlayer();
+        AudioManager.OnAudioFocusChangeListener onFocusChange = change -> {
+            if (change < 0 && player != null) {
+                player.pause();
+                paused = true;
+                if (vod != null) vod.pauseChanged();
+                showPlaying(false);
+                revealControls();
+            }
+        };
+        int focus;
+        if (Build.VERSION.SDK_INT >= 26) {
+            audioFocus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                .setAudioAttributes(
+                    new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                        .build()
+                )
+                .setOnAudioFocusChangeListener(onFocusChange)
+                .build();
+            focus = audio.requestAudioFocus(audioFocus);
+        } else {
+            // Android 7 (Fire OS 6): AudioFocusRequest does not exist yet, use the older call.
+            legacyFocusListener = onFocusChange;
+            focus = legacyRequestFocus(onFocusChange);
+        }
+        if (focus == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) startPlayer();
         else showError("Audio is in use by another app.");
         overlayHandler.post(tick);
     }
@@ -682,7 +703,11 @@ public class VlcPlaybackActivity extends Activity {
             }
         }
         release();
-        if (audio != null && audioFocus != null) audio.abandonAudioFocusRequest(audioFocus);
+        if (audio != null) {
+            if (Build.VERSION.SDK_INT >= 26) {
+                if (audioFocus != null) audio.abandonAudioFocusRequest(audioFocus);
+            } else if (legacyFocusListener != null) legacyAbandonFocus(legacyFocusListener);
+        }
         super.onStop();
     }
 
