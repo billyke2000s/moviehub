@@ -55,7 +55,7 @@ dependencies {
     implementation 'androidx.media3:media3-ui:1.5.1'
     // Rhino 1.9+ needs Android 8 (MethodHandle.invoke); 1.8.0 keeps Fire TV Stick 4K 1st gen (Android 7.1)
     // supported. Keep the CI/server RHINO_JAR pins on the same version so scripts are tested on what ships.
-    implementation 'org.mozilla:rhino:1.8.0'
+    implementation 'org.mozilla:rhino:1.9.2'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     // QR codes for typing account details on a phone (PhoneKeyPanel); encoding only.
     implementation 'com.google.zxing:core:3.5.3'
