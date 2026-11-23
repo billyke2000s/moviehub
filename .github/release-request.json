@@ -1,7 +1,7 @@
 {
-    "version_code": 129,
-    "version_name": "1.0.28",
+    "version_code": 130,
+    "version_name": "1.0.29",
     "requires_merged_prs": [
-        261
+        264
     ]
 }
