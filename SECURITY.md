@@ -188,7 +188,8 @@ bundled ResolveURL), so Premiumize's approval page may name ResolveURL. No local
 
 - Updates come from the public `android-tv-latest` GitHub release. No token is sent to it.
 - Before installing, the app verifies the SHA-256 checksum, the package name, that the version code
-  increases, and that the signing certificate matches the installed app. It then hands the file to
+  increases, and that the signing certificate matches the installed app (Android 9+ reads it from
+  `signingInfo`; Android 7.1–8 reads the older `signatures` field). It then hands the file to
   Android's installer, which asks the user. There is no silent install and no root.
 - The permanent signing key is stored only in GitHub Actions secrets. Losing it means existing
   installs can never update again, so keep an offline backup. See
