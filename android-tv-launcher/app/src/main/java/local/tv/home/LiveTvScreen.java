@@ -797,7 +797,7 @@ final class LiveTvScreen {
         ChannelImporter.Status sync = ChannelImporter.status(activity);
         status.setText(
             sync.running
-                ? String.format(Locale.getDefault(), "Updating channels · %,d imported", sync.progress)
+                ? sync.runningText(System.currentTimeMillis())
                 : sync.queued
                   ? "Waiting for the network to update channels"
                   : sync.message
@@ -819,11 +819,7 @@ final class LiveTvScreen {
                         }
                         status.setText(
                             latest.running
-                                ? String.format(
-                                      Locale.getDefault(),
-                                      "Updating channels · %,d imported",
-                                      latest.progress
-                                  )
+                                ? latest.runningText(System.currentTimeMillis())
                                 : "Waiting for the network to update channels"
                         );
                         activity.handler.postDelayed(this, 2000);
