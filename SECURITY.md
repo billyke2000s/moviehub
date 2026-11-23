@@ -120,7 +120,7 @@ MovieHub stores provider accounts and installs its own updates, so these rules m
 
 - No credentials, API keys, signing keys or firmware images are committed to this repository.
   Account details are entered on the TV.
-- Account details (TMDB, Premiumize, Xtream, M3U), the saved library and recent playback are
+- Account details (TMDB, Premiumize, Xtream, M3U), the removed feature's saved library (no longer read) and recent playback are
   encrypted with AES-GCM using a device-bound Android Keystore key (`Secrets`).
   Once read, values are kept decrypted in the app's memory until it closes (not on disk), so
   every request does not have to go through the Keystore.

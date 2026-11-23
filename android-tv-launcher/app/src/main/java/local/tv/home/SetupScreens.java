@@ -6,7 +6,7 @@ import android.widget.LinearLayout;
 /**
  * Settings → Setup: the last tab of Settings, for whoever looks after the box. Everything set up
  * once, or only for fixing problems, lives here so the other tabs hold only what the family uses:
- * Premiumize and its library, the free channel services, extra guide sections,
+ * Premiumize, the free channel services, extra guide sections,
  * clearing watch history, the engineer view and the TMDB credit. No PIN: nobody needs to come here.
  *
  * <p>Only where these are shown changed; every preference, account and saved list is kept.
@@ -78,19 +78,6 @@ final class SetupScreens {
         );
 
         settings.heading(body, "Films and series");
-        settings.settingCard(
-            body,
-            "Links you added",
-            "Your own video links, for films and for series",
-            null,
-            false,
-            "Open",
-            () ->
-                SidePanel.of(activity, "Links you added")
-                    .option("Films", () -> activity.libraryScreens.savedLibrary("Movies"))
-                    .option("Series", () -> activity.libraryScreens.savedLibrary("Series"))
-                    .show()
-        );
         if (activity.secrets.has("premiumize")) settings.settingCard(
             body,
             "Premiumize cloud",

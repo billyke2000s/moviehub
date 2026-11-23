@@ -18,6 +18,9 @@ version when it is published. This is the only dated history file (see AGENTS.md
 - Removed the parental lock (Setup → Parental lock, "Lock this channel" in programme information,
   the phone Live TV menu entry, and the PIN before locked channels, sections, films and series).
   Anything previously locked now plays without a PIN.
+- Removed "Links you added" (Setup → Links you added, the Add source form, the Premiumize cloud
+  "Add to Films/Series" option and the cloud's "Saved library" button). Premiumize cloud files and
+  Transfers still open and play. Links saved before are left in storage, unread, not deleted.
 
 ## 1.0.26 (22 November 2026)
 

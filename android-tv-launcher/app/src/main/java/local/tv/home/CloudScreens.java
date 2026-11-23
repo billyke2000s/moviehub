@@ -44,7 +44,6 @@ final class CloudScreens {
         activity.screen(folderName, goBack);
         LinearLayout tools = activity.horizontal(activity.page);
         activity.chip(tools, "Transfers", () -> transfers(kind));
-        activity.chip(tools, "Saved library", () -> activity.libraryScreens.savedLibrary(kind));
         TextView loading = activity.text("Loading files…", 16);
         activity.page.addView(loading);
         activity.async(
@@ -107,19 +106,7 @@ final class CloudScreens {
                                 }
                             );
                         },
-                        directory
-                            ? null
-                            : () ->
-                                  SidePanel.of(activity, name)
-                                      .option("Add to " + kind, () -> {
-                                          try {
-                                              activity.media.addPremiumize(name, key, kind);
-                                              activity.toast("Added to " + kind);
-                                          } catch (Exception e) {
-                                              activity.toast("Could not add this file");
-                                          }
-                                      })
-                                      .show()
+                        null
                     );
                 }
             }
