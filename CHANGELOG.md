@@ -11,6 +11,10 @@ version when it is published. This is the only dated history file (see AGENTS.md
   measurement as Engineer view in plain words (rating, download Mb/s, response time), shares its
   result with Engineer view, and says when a test fails instead of showing nothing. A test that
   receives no data is reported as failed, never as 0 Mb/s.
+- Speed test: measure for the full 10 seconds on 4 connections and average after the first second,
+  instead of one 50 MB download that finished in about a second on fast lines (Cloudflare refuses
+  single requests of 100 MB or more, so each connection repeats 25 MB requests; stops early after
+  1 GB). Jitter no longer counts the first connection's set-up, which rated fast lines "Poor".
 
 ## 1.0.26 (22 November 2026)
 
