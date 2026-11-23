@@ -103,7 +103,9 @@ Missing evidence remains a provider lookup, not independent title verification.
 
 Source refresh recipes keep the original adapter, playback host and immutable query in memory.
 Before managed playback, stale/near-expiry links are rediscovered; a failed attempt can refresh once
-before failover. Cloud results reacquire direct links. Native decoders use a new session transport
+before failover. Only the player's first open of a session uses the link the search just found;
+every later open (coming back to the player) asks the site for a new link first, as add-on apps
+do, because many sites' links work once or only briefly. Cloud results reacquire direct links. Native decoders use a new session transport
 for each replacement, keeping the original picture and headers until adoption. Lookup and decoder
 startup have separate budgets and cancellation tickets reject late results. Initial open, retry,
 resume and next episode use managed sessions; next episodes rediscover fresh sources instead of

@@ -39,6 +39,12 @@ final class VodSources {
         java.util.function.BooleanSupplier searching = () -> false;
         java.util.function.Supplier<String> report = () -> "";
         int active;
+        /**
+         * True once the player has opened this session. Opening it again (coming back to the
+         * player) asks the site for a new link instead of reusing one, as add-on apps do: many
+         * sites' links work only once or only for a short time.
+         */
+        boolean opened;
 
         Session(List<VodSourceFailover.Source> sources, Resolve resolve, boolean pinned) {
             this.sources = new java.util.concurrent.CopyOnWriteArrayList<>(
