@@ -129,13 +129,99 @@ class Decisions(unittest.TestCase):
             self.assertTrue((folder / 'dlhd-1-01.jpg').is_file())
 
 
+class MassFailure(unittest.TestCase):
+    def test_a_few_broken_sources_are_tried_one_by_one(self):
+        self.assertEqual(c.mass_failure(['live:a', 'live:b', 'vod:c'], 3), '')
+
+    def test_many_at_once_is_one_alert_and_on_hold(self):
+        message = c.mass_failure(['live:a', 'live:b', 'vod:c', 'vod:d'], 3)
+        self.assertIn('4 sources broke in the same run', message)
+        self.assertIn('live:a, live:b, vod:c, vod:d', message)
+        self.assertIn(c.HOLD, message)
+
+
+def issue(number, source, labels=('broken-source',), state='open'):
+    return {'number': number, 'title': c.TITLE + source, 'state': state,
+            'labels': [{'name': name} for name in labels], 'body': ''}
+
+
+class AutoFixQueue(unittest.TestCase):
+    def test_skips_on_hold_tried_and_closed_issues(self):
+        import auto_fix
+        self.assertEqual(auto_fix.skip_reason(issue(1, 'live:a')), '')
+        self.assertIn('on hold', auto_fix.skip_reason(issue(2, 'live:a', ('broken-source', c.HOLD))))
+        self.assertIn('already tried', auto_fix.skip_reason(issue(3, 'live:a', ('broken-source', c.TRIED))))
+        self.assertIn('not an open', auto_fix.skip_reason(issue(4, 'live:a', state='closed')))
+
+    def test_next_is_live_tv_first_then_oldest(self):
+        import auto_fix
+        waiting = [issue(5, 'vod:x'), issue(9, 'live:late'), issue(7, 'live:early'),
+                   issue(3, 'live:held', ('broken-source', c.HOLD)), issue(2, 'vod:old')]
+        self.assertEqual(auto_fix.choose_next(waiting)['number'], 7)
+        self.assertEqual(auto_fix.choose_next([issue(5, 'vod:x'), issue(2, 'vod:old')])['number'], 2)
+        self.assertIsNone(auto_fix.choose_next([issue(1, 'live:a', ('broken-source', c.TRIED))]))
+
+
+class AutoFixPrompt(unittest.TestCase):
+    def test_finds_each_sources_scraper_files(self):
+        import auto_fix
+        self.assertEqual(auto_fix.scraper_files('live:freeshot'), ['provider-engine/tools/freeshot.js'])
+        dlhd = auto_fix.scraper_files('live:dlhd')
+        self.assertIn('provider-engine/upstream/modules/dlhd/resolveStream.ts', dlhd)
+        self.assertIn('provider-engine/tools/dlhd-session.js', dlhd)
+        self.assertEqual(auto_fix.scraper_files('vod:scrubs:watchserieshd_stream'),
+                         ['android-tv-launcher/app/src/main/python/moviehub_scrubs/providers/watchserieshd_stream.py'])
+        self.assertEqual(auto_fix.scraper_files('live:nonexistent'), [])
+
+    def test_prompt_has_the_code_the_failure_and_the_test(self):
+        import auto_fix
+        files = auto_fix.scraper_files('live:freeshot')
+        prompt = auto_fix.build_prompt('live:freeshot', 41, 'failed the soak test: picture stopped after 7 s',
+                                       'issue text', files)
+        code = (c.ROOT / files[0]).read_text()
+        self.assertIn(code.strip().splitlines()[0], prompt)
+        self.assertIn('picture stopped after 7 s', prompt)
+        self.assertIn('MOVIEHUB_SOAK_SECONDS=90', prompt)
+        self.assertIn('live-probe.mjs freeshot', prompt)
+        self.assertIn('npm run build --prefix provider-engine', prompt)
+        self.assertIn('change nothing and say so', prompt)
+        film = auto_fix.build_prompt('vod:scrubs:watchserieshd_stream', 3, 'no streams', '', [])
+        self.assertIn('probe-free-vod.py --provider scrubs:watchserieshd_stream', film)
+
+
+class SandboxPatch(unittest.TestCase):
+    def test_patch_paths_include_both_sides_of_a_rename(self):
+        import sandbox
+        patch = ('diff --git a/provider-engine/tools/freeshot.js b/provider-engine/tools/freeshot.js\n'
+                 'index 1..2 100644\n'
+                 'diff --git a/provider-engine/tools/a.js b/server/health/check_sources.py\n'
+                 'rename from provider-engine/tools/a.js\n')
+        self.assertEqual(sandbox.patch_paths(patch), ['provider-engine/tools/freeshot.js', 'provider-engine/tools/a.js',
+                                                      'server/health/check_sources.py'])
+
+    def test_a_renamed_file_outside_the_scrapers_is_refused(self):
+        import auto_fix
+        import sandbox
+        patch = 'diff --git a/provider-engine/tools/a.js b/server/gate/gate.py\n'
+        self.assertEqual(auto_fix.rejected(sandbox.patch_paths(patch)), ['server/gate/gate.py'])
+
+    def test_not_configured_without_all_settings(self):
+        import sandbox
+        self.assertFalse(sandbox.configured({'SANDBOX_HOST': 'root@x'}))
+        self.assertTrue(sandbox.configured({'SANDBOX_HOST': 'root@x', 'PVE_URL': 'https://h:8006',
+                                            'PVE_TOKEN': 't', 'SANDBOX_CTID': '105'}))
+
+
 class AutoFixRules(unittest.TestCase):
     def test_a_fix_may_not_touch_the_checks(self):
         import auto_fix
         self.assertEqual(auto_fix.rejected([
             'provider-engine/tools/freeshot.js',
             'android-tv-launcher/app/src/main/python/moviehub_vod.py',
+            'android-tv-launcher/app/src/main/assets/providers/builtin.json',
         ]), [])
+        self.assertEqual(auto_fix.rejected(['provider-engine/dist/providers.json']),
+                         ['provider-engine/dist/providers.json'])
         self.assertEqual(auto_fix.rejected([
             'provider-engine/tools/live-probe.mjs',
             'provider-engine/tools/soak.mjs',

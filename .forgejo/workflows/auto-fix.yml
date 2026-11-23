@@ -1,18 +1,21 @@
 name: Auto-fix broken source
-# When the health checker opens a "[broken source]" issue, Codex tries a fix on the home server.
+# When the health checker opens a "[broken source]" issue, Codex tries a fix in its sandbox machine.
 # The script re-runs the live probe itself and opens a pull request only if streams come back.
-# You still merge; nothing reaches the boxes without that.
+# You still merge; nothing reaches the boxes without that. Every hour it also takes the next issue
+# still waiting (Live TV first), so none is lost when several break close together.
 on:
     issues:
         types: [opened, labeled]
+    schedule:
+        - cron: "47 * * * *"
     workflow_dispatch:
         inputs:
             issue:
-                description: "Issue number to try"
-                required: true
+                description: "Issue number to try (empty = the next one waiting)"
+                required: false
 jobs:
     fix:
-        if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'broken-source')
+        if: github.event_name != 'issues' || contains(github.event.issue.labels.*.name, 'broken-source')
         runs-on: moviehub
         timeout-minutes: 60
         concurrency:
@@ -34,7 +37,13 @@ jobs:
                   FORGEJO_TOKEN: ${{ secrets.HEALTH_TOKEN }}
                   NTFY_URL: ${{ secrets.NTFY_URL }}
                   CODEX_CMD: ${{ vars.CODEX_CMD || 'codex exec --full-auto' }}
+                  SANDBOX_HOST: ${{ vars.SANDBOX_HOST }}
+                  SANDBOX_CTID: ${{ vars.SANDBOX_CTID }}
+                  PVE_URL: ${{ vars.PVE_URL }}
+                  PVE_NODE: ${{ vars.PVE_NODE || 'pve' }}
+                  PVE_TOKEN: ${{ secrets.PVE_SANDBOX_TOKEN }}
+                  CODEX_UNSANDBOXED: ${{ vars.CODEX_UNSANDBOXED }}
               run: |
                   git config user.name "MovieHub auto-fix"
                   git config user.email "autofix@localhost"
-                  python3 server/health/auto_fix.py "${{ inputs.issue || github.event.issue.number }}"
+                  python3 server/health/auto_fix.py "${{ inputs.issue || github.event.issue.number || '--next' }}"

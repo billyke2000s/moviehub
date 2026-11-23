@@ -42,6 +42,7 @@ sample with `play: ok` (Live TV). For Live TV, also run it with the soak test, w
 for 90 seconds; the sample must show `soak ok`:
 
 ```sh
+npm run build --prefix provider-engine      # Live TV code only reaches the probe after a build
 MOVIEHUB_SOAK_SECONDS=90 RHINO_JAR=/srv/moviehub/tools/rhino-1.9.1.jar node provider-engine/tools/live-probe.mjs <id>
 ```
 

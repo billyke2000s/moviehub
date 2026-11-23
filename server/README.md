@@ -144,6 +144,35 @@ sudo -u moviehub -H codex           # first run: choose "Sign in with ChatGPT"  
 different flags, set the repository variable `CODEX_CMD`. Codex needs internet access to look at
 the sites; if its sandbox blocks the network, allow it in Codex's settings.
 
+### Codex sandbox (do this before turning auto-fix on)
+
+Codex works on **its own Linux machine**: a separate container where it is root, with the internet, a
+real browser (Chromium), Node, Python, Java and ffmpeg. It gets a copy of the repository and a prompt
+with the broken source's current code, what failed and the test command, and works until the test
+passes. Only its file changes come back, and only inside the scraper folders.
+
+It has **no** signing key, Forgejo token or real repository, and the Proxmox firewall (on the host,
+so Codex cannot switch it off) blocks your whole home network. Before every fix it is rolled back to a
+clean snapshot. Without the sandbox, auto-fix refuses to run Codex, because on the server it could read
+the signing key (`CODEX_UNSANDBOXED=1` overrides that; not recommended).
+
+On the Proxmox host shell:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/billyke2000s/moviehub/main/server/bootstrap/sandbox.sh -o /root/sandbox.sh
+bash /root/sandbox.sh              # makes the container; asks before turning on the Proxmox firewall
+pct enter <number>                 # then: codex login (Sign in with ChatGPT), then: exit   [check]
+bash /root/sandbox.sh --snapshot   # saves the clean state
+```
+
+The script prints the Forgejo variables and the one secret (`PVE_SANDBOX_TOKEN`) to add. That token
+can only roll back, start and look at the sandbox. It needs container storage that can take snapshots
+(LVM-thin or ZFS, the Proxmox defaults). **[check]** the first rollback by hand: **Actions → Auto-fix
+broken source → Run** with an issue number.
+
+When the code changes in a way Codex's machine needs (new tools), run `pct enter <number>`, install
+them, exit and run `--snapshot` again.
+
 Whatever Codex says, `server/health/auto_fix.py` re-runs the live probe itself and opens a pull
 request **only if streams come back**. For Live TV that means a sample must also keep playing for
 90 seconds (the soak test, below), and Codex may not change the probe or the block-screen pictures.
@@ -186,6 +215,12 @@ looks like a known block screen.
   (they must show the channel), then tap **Merge**.
 - Phone says **"Auto-fix attempt failed"**: ask an AI to fix it by hand using
   `docs/FIX_A_BROKEN_SOURCE.md`, or ignore it if the site is dead.
+- Phone says **"N sources broke at once"**: usually your connection, a block on your home IP or one
+  shared player, so auto-fix waits (the issues are labelled `on-hold`). Check the connection. To let
+  auto-fix try one, remove `on-hold` from its issue. More than 3 at once counts (`MASS_FAILURE_LIMIT`).
+- Several broken at once but fewer than that: auto-fix takes them one at a time, Live TV first, and
+  every hour picks up the next one still waiting. Each issue is tried once (`auto-fix-tried` label);
+  remove that label to let it try again.
 - New box: open the code page, tap **New code**, read the code out.
 
 ## Files
@@ -195,6 +230,8 @@ looks like a known block screen.
 | `server/gate/gate.py` | Install codes, one-time APK links, keyed update feed |
 | `server/health/check_sources.py` | Runs the probes, opens/closes issues, sends phone alerts |
 | `server/health/auto_fix.py` | Runs Codex, re-checks with the live probe, opens a PR only on success |
+| `server/health/sandbox.py` | Resets Codex's machine, sends it the code, brings back only its change |
+| `server/bootstrap/sandbox.sh` | Makes Codex's machine on the Proxmox host (firewall, tools, reset-only token) |
 | `server/health/bait-frames/` | Screenshots of known block screens; the soak test fails a stream that shows one |
 | `provider-engine/tools/soak.mjs` | The soak test the live probe runs after its 6-second check |
 | `server/tools/build-scrapers.py` | Builds and signs a scraper package (refuses the wrong key) |
