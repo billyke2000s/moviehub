@@ -23,15 +23,21 @@ final class SourceWindowTest {
         empty.cancel();
         check(empty.pick(5200) == null);
         check(!empty.add("cancelled", 1080));
-        // Only a weak first choice waits longer: up to 8 s, or until the search finishes.
+        // Automatic play: good enough starts at once; a weak first choice waits up to 8 s, or until
+        // the search finishes.
         java.util.function.ToIntFunction<Integer> height = value -> value;
         SourceWindow<Integer> good = new SourceWindow<>(0, value -> value);
+        check(good.pick(0, false, 1080, height) == null);
         check(good.add("1080", 1080));
-        check(good.pick(3000, false, 1080, height) == 1080);
+        check(good.pick(400, false, 1080, height) == 1080);
+        check(good.add("2160", 2160));
+        check(good.pick(450, false, 1080, height) == 2160);
         SourceWindow<Integer> weak = new SourceWindow<>(0, value -> value);
         check(weak.add("480", 480));
+        check(weak.pick(500, false, 1080, height) == null);
         check(weak.pick(2999, false, 1080, height) == null);
         check(weak.pick(3000, false, 1080, height) == null);
+        check(weak.pick(1000, true, 1080, height) == 480);
         check(weak.pick(3000, true, 1080, height) == 480);
         check(weak.add("720", 720));
         check(weak.pick(7999, false, 1080, height) == null);
@@ -56,6 +62,6 @@ final class SourceWindowTest {
         );
         check(queue.failover().url.equals("c"));
         check(queue.failover() == null);
-        System.out.println("35 source selection and late-backup checks passed");
+        System.out.println("40 source selection and late-backup checks passed");
     }
 }

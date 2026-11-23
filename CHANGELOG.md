@@ -5,6 +5,14 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+## 1.0.28 (23 November 2026)
+
+- Films and series start sooner: a source at your preferred quality (1080p at most) now plays as
+  soon as it is found, instead of always waiting at least 3 seconds. A weaker first source still
+  waits up to 8 seconds for a better one. The search checks 16 websites at once instead of 8
+  (70 film sites took about nine rounds), dropping to 4 once a film is playing so the backup
+  search does not take processor time from playback.
+
 ## 1.0.27 (23 November 2026)
 
 - Help page: stop telling fast connections they are "too slow" and to switch to 720p. Help no

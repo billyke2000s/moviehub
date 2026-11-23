@@ -41,10 +41,7 @@ final class FreeVodScreen {
                 activity.secrets.has("premiumize"),
                 activity.prefs.getInt(AutoPlayback.QUALITY, 1080)
             );
-            TextView status = activity.muted(
-                "Finding streams… choosing the best available in 3 to 8 seconds.",
-                16
-            );
+            TextView status = activity.muted("Finding streams… a good one plays as soon as it is found.", 16);
             activity.page.addView(status);
             LinearLayout results = activity.vertical();
             activity.page.addView(results);
@@ -145,7 +142,6 @@ final class FreeVodScreen {
                               ? PlainWords.noStream(search.websitesChecked())
                               : "No stream yet · " + search.progress() + " · still searching…"
                     );
-                    // Even an immediate complete response waits for the original selection window.
                     if (!done || (automatic[0] && best == null && count > 0)) handler.postDelayed(this, 100);
                     else if (count == 0) search.close();
                 }
@@ -208,6 +204,7 @@ final class FreeVodScreen {
                 title,
                 pinned
             );
+            search.playing();
             activity.play(title, link, activity.id(selected.uri), false, metadata, session);
         } catch (Exception error) {
             Diagnostics.recovered("Opening free source", error);

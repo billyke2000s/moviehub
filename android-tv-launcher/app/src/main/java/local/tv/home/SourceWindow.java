@@ -37,14 +37,16 @@ final class SourceWindow<T> {
     }
 
     /**
-     * Like {@link #pick(long)}, but when the best source so far is below {@code target} quality
-     * (by {@code quality}), keeps waiting up to {@link #LONGER_WAIT_MS} for a better one, unless
-     * the search has {@code finished}. A good source found within three seconds starts as before.
+     * The choice for automatic play. The best source so far starts at once when it reaches
+     * {@code target} quality (by {@code quality}): waiting longer cannot beat good enough, and every
+     * second here is a second of "Finding streams…". Below that it keeps waiting up to
+     * {@link #LONGER_WAIT_MS} for a better one, unless the search has {@code finished}.
      */
     synchronized T pick(long now, boolean finished, int target, ToIntFunction<T> quality) {
-        T best = pick(now);
-        if (best == null || finished || now - started >= LONGER_WAIT_MS) return best;
-        return quality.applyAsInt(best) >= target ? best : null;
+        if (cancelled || ready.isEmpty()) return null;
+        T best = snapshot().get(0);
+        if (quality.applyAsInt(best) >= target) return best;
+        return finished || now - started >= LONGER_WAIT_MS ? best : null;
     }
 
     synchronized void cancel() {

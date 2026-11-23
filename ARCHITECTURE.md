@@ -443,9 +443,12 @@ Live TV never uses the film controls (PlayerOverlay); SkyOverlay is the sole vis
 
 ## Progressive free VOD discovery
 
-SourcesScreen delegates discovery to FreeVodScreen and VodSearch. SourceWindow holds the
-three-second initial ranking window. Eight workers query the bundled Scrubs/Free99 modules
-through FreeVodProviders and Chaquopy; an optional Premiumize search runs alongside them.
+SourcesScreen delegates discovery to FreeVodScreen and VodSearch. SourceWindow chooses for
+automatic play: the best source so far starts at once when it reaches the target quality (the
+preferred quality, at most 1080p), otherwise it waits up to eight seconds or until the search
+ends. Sixteen workers query the bundled website modules through FreeVodProviders and Chaquopy
+until a film plays, then four (`VodSearch.playing`) while backups are collected; an optional
+Premiumize search runs alongside them.
 The overall search budget is 120 seconds, with per-provider HTTP/processing deadlines.
 Free sources retain already-resolved file links and headers in SourceRepository.Source.
 VodSources.progressive appends late results without reordering existing session indices.
@@ -460,7 +463,7 @@ Free HLS and media-file sources use the existing session-scoped `ProviderRelay`,
 
 ## Free VOD diagnosis and safe replacement
 
-`VodSearch` records every module's sanitized outcome and permits 180 seconds for eight 18-second workers, while retaining the three-second first-selection window. `FreeVodProviders.search` returns the bridge outcome as well as progressive sources. `moviehub_compat.media` reads declared MP4/HLS/DASH duration from bounded probe bytes. Free videos with known duration below 120 seconds are rejected during probing and again by the active/prepared decoder. Unknown duration remains unknown; live/event playlist windows are not movie durations. `VodNative` reuses the existing off-main native-stop coordinator, retaining the player window and engine until shutdown completes. Free manual source choices allow cross-provider recovery; cloud pinning and buffering thresholds remain unchanged.
+`VodSearch` records every module's sanitized outcome and permits 180 seconds for eight 18-second workers (now sixteen until a film plays, then four; see above for the first selection). `FreeVodProviders.search` returns the bridge outcome as well as progressive sources. `moviehub_compat.media` reads declared MP4/HLS/DASH duration from bounded probe bytes. Free videos with known duration below 120 seconds are rejected during probing and again by the active/prepared decoder. Unknown duration remains unknown; live/event playlist windows are not movie durations. `VodNative` reuses the existing off-main native-stop coordinator, retaining the player window and engine until shutdown completes. Free manual source choices allow cross-provider recovery; cloud pinning and buffering thresholds remain unchanged.
 
 ## Provider compatibility follow-up
 
