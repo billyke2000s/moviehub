@@ -111,10 +111,11 @@ final class GuideFrame {
                 guide.focusFirstRow();
                 return true;
             }
-            if (key == KeyEvent.KEYCODE_DPAD_RIGHT && pictureBox != null && pictureBox.isShown()) {
+            if (key == KeyEvent.KEYCODE_DPAD_RIGHT && pictureShown()) {
                 pictureBox.requestFocus();
                 return true;
             }
+            if (key == KeyEvent.KEYCODE_DPAD_UP) return upFromHeader();
             return false;
         });
         LinearLayout.LayoutParams optionsLayout = new LinearLayout.LayoutParams(-2, activity.dp(40));
@@ -129,7 +130,8 @@ final class GuideFrame {
         pictureLabel.setShadowLayer(activity.dp(4), 0, activity.dp(1), 0xcc000000);
         pictureBox.addView(pictureLabel, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
         // Two fewer guide rows make room for a genuinely useful 16:9 preview, not a tiny icon.
-        // It is a remote target: Options → RIGHT → preview → OK returns to the channel.
+        // It is a remote target: UP from the top row of any page lands on it, and OK returns to
+        // the channel. LEFT is Options; UP again carries on to the previous page.
         pictureBox.setFocusable(true);
         pictureBox.setFocusableInTouchMode(true);
         pictureBox.setClickable(true);
@@ -154,6 +156,7 @@ final class GuideFrame {
                 guide.focusFirstRow();
                 return true;
             }
+            if (key == KeyEvent.KEYCODE_DPAD_UP) return upFromHeader();
             return false;
         });
         header.addView(pictureBox, new LinearLayout.LayoutParams(activity.dp(300), activity.dp(169)));
@@ -267,9 +270,33 @@ final class GuideFrame {
         return String.format(Locale.UK, "%,d %s", count, count == 1 ? "channel" : "channels");
     }
 
-    /** Up from the top row, or nothing in the grid: the Options button. */
+    /** Nothing in the grid: the Options button. */
     void focusTop() {
         if (optionsButton != null) optionsButton.requestFocus();
+    }
+
+    /**
+     * Up from the top row of any page: the header, as one stop on the way up. The mini-player
+     * when it is on (Options is LEFT of it), otherwise the Options button.
+     */
+    void focusHeader() {
+        if (pictureShown()) pictureBox.requestFocus();
+        else focusTop();
+    }
+
+    /**
+     * UP from the header carries on through the list: the previous page's bottom row, going round
+     * from the first page to the last. A list on one page goes round to its own bottom row.
+     */
+    private boolean upFromHeader() {
+        if (guide.cells.isEmpty()) return true;
+        if (guide.pageStart == 0 && !guide.hasMore) guide.focusLastRow();
+        else guide.turnPage(-1, -1);
+        return true;
+    }
+
+    private boolean pictureShown() {
+        return pictureBox != null && pictureBox.isShown();
     }
 
     private TextView text(String value, int size, boolean bold) {

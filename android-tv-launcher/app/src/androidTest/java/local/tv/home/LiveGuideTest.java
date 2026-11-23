@@ -24,6 +24,7 @@ public class LiveGuideTest {
     boolean updates;
     String lastChannel;
     java.util.Set<String> favourites;
+    boolean picture;
 
     @Before
     public void start() throws Exception {
@@ -33,6 +34,7 @@ public class LiveGuideTest {
         updates = prefs.getBoolean("autoUpdates", true);
         lastChannel = prefs.getString(LiveTvScreen.LAST_CHANNEL, null);
         favourites = prefs.getStringSet("favourites", null);
+        picture = prefs.getBoolean(LiveTvScreen.PICTURE, true);
         // The guide opens on the last channel watched; start each test from none.
         prefs
             .edit()
@@ -73,6 +75,7 @@ public class LiveGuideTest {
         else edit.putString(LiveTvScreen.LAST_CHANNEL, lastChannel);
         if (favourites == null) edit.remove("favourites");
         else edit.putStringSet("favourites", new java.util.HashSet<>(favourites));
+        edit.putBoolean(LiveTvScreen.PICTURE, picture);
         edit.commit();
         ChannelDatabase.get(remote.getTargetContext()).clear();
     }
@@ -195,7 +198,16 @@ public class LiveGuideTest {
         assertEquals("1 channel", GuideFrame.titleCount(1));
         assertEquals("11,000 channels", GuideFrame.titleCount(11000));
         await("on the first row of the last page", () -> focused().startsWith("125  Channel 24"));
-        // Up from the top row turns back a page and lands on its last row.
+        // Up from the top row stops once on the header (mini-player or Options), then UP again
+        // turns back a page and lands on its last row.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        await(
+            "header above the top row",
+            () ->
+                activity.liveTv.pageStart == 24 &&
+                (activity.liveTv.frame.optionsButton.hasFocus() ||
+                    activity.liveTv.frame.pictureBox.hasFocus())
+        );
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
         await(
             "back up to the previous page, last row",
@@ -290,7 +302,7 @@ public class LiveGuideTest {
     }
 
     @Test
-    public void previewIsLargerAndReachableFromOptionsWithRemote() {
+    public void previewIsLargerAndStraightUpFromTheTopRowOfAnyPage() {
         prefs.edit().putBoolean(LiveTvScreen.PICTURE, true).commit();
         remote.runOnMainSync(() -> activity.liveTv.live());
         await("eight guide rows", () -> activity.liveTv.cells.size() == 8);
@@ -300,15 +312,29 @@ public class LiveGuideTest {
             assertEquals(activity.dp(300), preview.width);
             assertEquals(activity.dp(169), preview.height);
         });
+        // Up from the top row: the mini-player itself.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
-        await("Options focused", () -> activity.liveTv.frame.optionsButton.hasFocus());
-        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
         await("mini-player focused", () -> activity.liveTv.frame.pictureBox.hasFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT);
         await("Options from preview", () -> activity.liveTv.frame.optionsButton.hasFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
+        await("mini-player from Options", () -> activity.liveTv.frame.pictureBox.hasFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
         await("grid from preview", () -> activity.liveTv.cells.get(0).hasFocus());
+        // Not only on the first page: the guide usually opens on a later one (the last channel's).
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN);
+        await("second page", () -> activity.liveTv.pageStart == 8 && activity.liveTv.cells.get(0).hasFocus());
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        await(
+            "mini-player from a later page",
+            () -> activity.liveTv.pageStart == 8 && activity.liveTv.frame.pictureBox.hasFocus()
+        );
+        // UP again carries on through the list: the first page's bottom row.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        await(
+            "previous page from the header",
+            () -> activity.liveTv.pageStart == 0 && activity.liveTv.cells.get(7).hasFocus()
+        );
     }
 
     /** As on the satellite guide: the cursor starts on the channel playing, and OK goes full screen. */
@@ -424,6 +450,8 @@ public class LiveGuideTest {
 
     @Test
     public void optionsAboveTheGridAndTheGuideMenuBehindBack() {
+        // With the mini-player turned off, the header is just the Options button.
+        prefs.edit().putBoolean(LiveTvScreen.PICTURE, false).commit();
         remote.runOnMainSync(() -> activity.liveTv.live());
         await(
             "first page",
@@ -490,7 +518,10 @@ public class LiveGuideTest {
         await("more page", () -> activity.liveTv.menu.page == 1 && activity.liveTv.menu.rows.size() == 3);
         UiEvidence.capture("live-guide-menu-more");
         remote.runOnMainSync(() -> activity.onBackPressed());
-        await("first page again", () -> activity.liveTv.menu.page == 0 && activity.liveTv.menu.rows.size() == 10);
+        await(
+            "first page again",
+            () -> activity.liveTv.menu.page == 0 && activity.liveTv.menu.rows.size() == 10
+        );
         // A number opens its row: with Favourites second, 8 is Kids (9 is Options).
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_8);
         await("kids", () -> activity.liveTv.filter.equals("section:Kids"));
