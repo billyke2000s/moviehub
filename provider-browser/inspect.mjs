@@ -189,18 +189,37 @@ async function inspect(browser, target) {
             if (!report.embeds.length) report.embedOutcome = "no_current_public_embed";
         }
         if (target.id === "daddylive-app-channels") {
-            // Its seven "List" tabs are a different catalogue from /api/events.
-            // Observe two tabs without collecting channel names or play URLs.
+            // This site's seven channel tabs are a separate catalogue from
+            // the event API. Inspect only the rendered page, without calling
+            // /api/events, playing media, or persisting stream/token URLs.
             report.channelTabs = [];
-            const lists = page.getByRole("button", { name: /List\s*-\s*[1-7]/i });
-            const count = Math.min(2, await lists.count());
+            const lists = page.getByRole("button", { name: /List\\s*-\\s*[1-7]/i });
+            const count = Math.min(7, await lists.count());
+            report.channelTabCount = count;
             for (let i = 0; i < count; i++) {
                 const tab = { index: i + 1 };
                 try {
                     await lists.nth(i).click({ timeout: 2_500 });
-                    await page.waitForTimeout(650);
-                    tab.playerLinks = Math.min(500, await page.locator('a[href*="/player/"]').count());
-                    tab.iframes = Math.min(100, await page.locator("iframe").count());
+                    await page.waitForTimeout(900);
+                    // Only count links visible in the selected tab. Counting
+                    // hidden tabs made separate lists appear identical.
+                    const links = await page.locator('a[href*="/player/"]:visible')
+                        .evaluateAll(elements => elements.slice(0, 500)
+                            .map(element => element.getAttribute("href"))
+                            .filter(Boolean));
+                    tab.playerLinks = links.length;
+                    tab.linkPatterns = [...new Set(links.map(href => {
+                        try {
+                            const item = observation(
+                                new URL(href, page.url()).href,
+                                "GET", "document", null, "",
+                            );
+                            return item.host + "/" + item.route;
+                        } catch {
+                            return null;
+                        }
+                    }).filter(Boolean))].slice(0, 12);
+                    tab.iframes = Math.min(100, await page.locator("iframe:visible").count());
                     tab.outcome = "clicked";
                 } catch {
                     tab.outcome = "click_failed";
