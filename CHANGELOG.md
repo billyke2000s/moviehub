@@ -5,6 +5,22 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+- Live TV: a channel that only lags a little is no longer switched away from. Before, three short
+  pauses in a minute (or one of 8 s) dropped a working source as soon as a backup existed, and when
+  the backups were dead the channel ended on "This source is unavailable". Now short pauses are left
+  alone; a picture that keeps pausing (a fifth of the last minute) looks for a smoother copy and
+  checks it actually sends video before switching, while the current one keeps playing, and goes
+  back if it is no better. A copy's link is only blacklisted for real errors, not slowness.
+- Live TV switches without a gap: the other copy loads and plays silently in the background, and
+  only takes over once it has played for a second and a half. Until then the current picture stays
+  (even if it has frozen, as it may come back); a copy that never loads is dropped without anything
+  changing on screen. This also applies to "better picture" upgrades.
+- Live TV: when every copy fails, the channel is never given up on. It shows "Still trying this channel…" over the
+  last picture and tries again after 2, 5, 10, 15, 30 and then every 60 seconds (ZLive no sooner
+  than 15 s), trying the copy that last worked first. OK tries straight away.
+- Live TV keeps at least 10 seconds behind the live edge, so short gaps in a provider's stream are
+  covered by the buffer instead of pausing the picture.
+
 ## 1.0.26 (22 November 2026)
 
 - FreeShot: repair HLS playback by giving decoded MPEG-TS segments a .ts extension on MovieHub's local playback relay, rather than a generic .bin filename. The actual production Java relay decoded 30 seconds of video and audio in CI both at startup and after forced playlist-token renewal; playback on physical TV boxes still needs user confirmation.

@@ -6,6 +6,28 @@ Combined-release checks run on the release PR and in the signed publisher.
 
 Older, dated sections are kept in [docs/history/TESTING.md](docs/history/TESTING.md).
 
+## Unreleased: Live TV failover keeps working sources
+
+Core checks: `LiveBufferingTest` (stuck after 12 s unbroken; poor after 12 s buffering in a minute;
+ten half-second pauses a minute reach neither; window edges; poor counts afresh; a stall in progress
+keeps its start), `LiveStallRulesTest` (verdicts: brief stalls never acted on, frequent pauses poor
+but not stuck, stuck at 12 s, dead stream and reconnect budget unchanged), `LiveUpgradePlanTest`
+(replacement choice, cooldown, fallback and keeping), `LiveRetryPlanTest` (growing waits, ZLive
+minimum, last working copy remembered only after 10 s and tried every other time, reset on a held
+picture and on another channel) and `LiveProbeTest` (playlist parsing, plus a local HTTP server:
+media and master playlists, plain streams, missing playlists or segments, a web page instead of a
+playlist, empty answers, refused schemes, headers sent) and `LiveStandbyCheckTest` (a background
+copy is ready only after 1.5 s of unbroken playing; a break or a jump back restarts the count; 10 s
+limit, including a stuttering copy that never gets there).
+
+Device tests changed: `ExoLiveTest.aSourceThatKeepsBufferingMovesToTheNextSource` now also checks the
+working copy was loaded in a second player before the switch and that player took over (no
+break-before-make failover), and that the stalled copy is never requested again once replaced (the
+frozen player may retry its own segment while the other loads, as intended); `ExoLiveTest.unavailableZliveKeepsRetryingWithGrowingWaitsAndAllowsAChannelChange`
+replaces the test that required ZLive to stop after its sources were exhausted;
+`aBetterCopyThatKeepsBufferingFallsBackAndCoolsDownAcrossChannels` allows for the pre-switch check's
+own segment request. These fixtures do not prove behaviour with real providers or on a TV box.
+
 ## Unreleased: over-the-air scrapers and server tooling
 
 - `ScraperBundleTest` (core checks): package validation, path/loader refusal, compatibility and

@@ -47,9 +47,6 @@ final class LiveZapper {
 
     static final Set<String> attemptedSources = new HashSet<>();
 
-    /** Buffering this long, or this many pauses in a minute, moves to the next backup. */
-    static final long STALL_MS = LiveBuffering.STALL_MS;
-    static final int STALLS_PER_MINUTE = LiveBuffering.STARTS_PER_MINUTE;
     /** The banner stays this long; browsing in it a little longer. */
     static final long BANNER_MS = 5000,
         BROWSE_MS = 8000;

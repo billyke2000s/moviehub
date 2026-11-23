@@ -107,6 +107,30 @@ final class LiveUpgradePlan {
         return best;
     }
 
+    /**
+     * The copy playing keeps pausing (LiveBuffering's poor picture): the copy to look for as its
+     * replacement, or -1. Any copy may replace it, whatever its name claims; the rules are
+     * otherwise those of {@link #choose}, so a replacement is tried on its own merits, checked
+     * before it plays, put on trial, and the copy before comes back if it does no better. The
+     * best claim wins, then the guide's copy order.
+     */
+    int chooseReplacement(int current, int[] lines, String[] keys, boolean[] untried, long now) {
+        if (phase != IDLE || current < 0) return -1;
+        int best = -1;
+        for (int i = 0; i < lines.length; i++) {
+            if (i == current) continue;
+            if (!untried[i] && !fellBack.contains(i)) continue;
+            if (cooldowns.active(keys[i], now)) continue;
+            if (best < 0 || lines[i] > lines[best]) best = i;
+        }
+        if (best < 0) return -1;
+        phase = LOOKING;
+        target = best;
+        previous = current;
+        targetKey = keys[best];
+        return best;
+    }
+
     /** The copy being looked for could not be reached: nothing changed on screen. */
     void notFound() {
         if (phase == LOOKING) phase = IDLE;
