@@ -132,9 +132,10 @@ final class GuideRows {
                 return true;
             }
             if (key == KeyEvent.KEYCODE_DPAD_DOWN && row == count - 1) {
-                // Below the bottom row: the next page (round to the first after the last).
+                // Below the bottom row of any page: the colour-key buttons, like the header above
+                // the top row. DOWN again carries on to the next page.
                 guide.programmeFocus = false;
-                guide.turnPage(1, 0);
+                guide.frame.focusBar();
                 return true;
             }
             if (key == KeyEvent.KEYCODE_DPAD_UP && row == 0) {
@@ -195,7 +196,7 @@ final class GuideRows {
                     int target = row + (key == KeyEvent.KEYCODE_DPAD_UP ? -1 : 1);
                     if (target >= 0 && target < programmes.size()) focusAt(target, guide.cursorTime);
                     else if (target < 0) guide.focusTabs();
-                    else if (target >= count) guide.turnPage(1, 0);
+                    else if (target >= count) guide.frame.focusBar();
                     return true;
                 }
                 if (key == KeyEvent.KEYCODE_INFO) {

@@ -50,7 +50,7 @@ Go to **Settings** to choose what MovieHub can access:
 
 **Films and series:** open a title, select Play or Sources, and choose a stream if more than one is found. Use the Browse controls to narrow down what you're looking for.
 
-**Live TV:** choose a channel in the guide. Use the on-screen buttons at the bottom (press BACK to reach them); remotes with real colour keys can press them directly. CH+ and CH- move one channel at a time. Up from the top row reaches the mini-player (OK goes back to that channel); Up again carries on to the previous page. You can open sources, audio and subtitle options from the player.
+**Live TV:** choose a channel in the guide. Use the on-screen buttons at the bottom (press BACK to reach them); remotes with real colour keys can press them directly. CH+ and CH- move one channel at a time. Up from the top row reaches the mini-player (OK goes back to that channel); Up again carries on to the previous page. Down from the bottom row works the same way: it stops on the buttons (Page up, Page down, Search, Sections), and Down again goes to the next page. You can open sources, audio and subtitle options from the player.
 
 **Help:** go to **Settings → System → Help** for common problems such as missing internet or low playback quality. Technical information lives under **Settings → Setup → Engineer view**.
 

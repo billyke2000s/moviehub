@@ -182,8 +182,11 @@ final class GuideFrame {
         page.addView(grid, new LinearLayout.LayoutParams(-1, 0, 1));
 
         // Colour keys, as on the remote (a guide to its buttons; the guide menu has the same jobs).
+        // Like the header above the grid, a stop on the way down: DOWN from the bottom row of any
+        // page lands here, and DOWN again carries on to the next page.
         bar = new KeyBar(activity)
             .onUp(guide::focusLastRow)
+            .onDown(this::downFromBar)
             .add(RED, "Page up", () -> guide.pageFromBar(-1))
             .add(GREEN, "Page down", () -> guide.pageFromBar(1))
             .add(YELLOW, "Search", guide.panels::searchPanel)
@@ -293,6 +296,21 @@ final class GuideFrame {
         if (guide.pageStart == 0 && !guide.hasMore) guide.focusLastRow();
         else guide.turnPage(-1, -1);
         return true;
+    }
+
+    /** Down from the bottom row of any page: the colour-key buttons, as one stop on the way down. */
+    void focusBar() {
+        if (bar != null) bar.focus(0);
+    }
+
+    /**
+     * DOWN from the buttons carries on through the list: the next page's top row, going round from
+     * the last page to the first. A list on one page goes round to its own top row.
+     */
+    private void downFromBar() {
+        if (guide.cells.isEmpty()) return;
+        if (guide.pageStart == 0 && !guide.hasMore) guide.focusFirstRow();
+        else guide.turnPage(1, 0);
     }
 
     private boolean pictureShown() {
