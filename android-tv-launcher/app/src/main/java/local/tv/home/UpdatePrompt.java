@@ -75,7 +75,9 @@ final class UpdatePrompt {
 
     void offerUpdate() {
         if (availableUpdate == null || updateBusy) return;
-        if (!activity.getPackageManager().canRequestPackageInstalls()) {
+        // Android 7 has no per-app install permission (canRequestPackageInstalls is Android 8+); the
+        // system installer handles "unknown sources" itself there.
+        if (Build.VERSION.SDK_INT >= 26 && !activity.getPackageManager().canRequestPackageInstalls()) {
             SidePanel.of(activity, "Allow app updates")
                 .message(
                     "Android needs your permission once before MovieHub can install its own updates. Allow it in the next screen, then select Update again."

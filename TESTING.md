@@ -331,7 +331,7 @@ Native guide lookup uses the provider's own channel identity, including outside 
 ## Standalone provider runtime
 
 Run `npm ci --ignore-scripts --prefix provider-engine`, `npm run build --prefix provider-engine` and
-`npm test --prefix provider-engine`. With Rhino 1.9.1 downloaded, run
+`npm test --prefix provider-engine`. With Rhino 1.8.0 downloaded, run
 `RHINO_JAR=/absolute/path/rhino.jar bash provider-engine/tools/verify.sh` for 21 checks on the actual
 JVM interpreter/signature verifier, codecs, URLs and segment handling, plus 40 multi-provider fixture checks. `ProviderEngineDeviceTest` covers isolated Binder calls and
 signed package installation, tampering, downgrade protection, rollback and corrupt-slot recovery.

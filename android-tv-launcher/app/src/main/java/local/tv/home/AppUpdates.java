@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.os.Build;
 import java.io.*;
 import java.net.*;
 import java.security.MessageDigest;
@@ -75,10 +76,8 @@ final class AppUpdates {
         long version = json.getLong("versionCode");
         String sha = json.getString("sha256");
         if (!sha.matches("[a-fA-F0-9]{64}")) throw new IOException("Invalid checksum");
-        long installed = context
-            .getPackageManager()
-            .getPackageInfo(context.getPackageName(), 0)
-            .getLongVersionCode();
+        PackageInfo installedInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+        long installed = versionCode(installedInfo);
         String notes = json.optString("notes", "");
         if (notes.length() > 2000) notes = notes.substring(0, 2000) + "…";
         return version > installed
@@ -144,23 +143,17 @@ final class AppUpdates {
                 "Checksum mismatch"
             );
             PackageManager manager = context.getPackageManager();
-            PackageInfo candidate = manager.getPackageArchiveInfo(
-                    part.getAbsolutePath(),
-                    PackageManager.GET_SIGNING_CERTIFICATES
-                ),
-                installed = manager.getPackageInfo(
-                    context.getPackageName(),
-                    PackageManager.GET_SIGNING_CERTIFICATES
-                );
+            PackageInfo candidate = manager.getPackageArchiveInfo(part.getAbsolutePath(), SIGNING_FLAG),
+                installed = manager.getPackageInfo(context.getPackageName(), SIGNING_FLAG);
             if (
                 candidate == null ||
                 !context.getPackageName().equals(candidate.packageName) ||
-                candidate.getLongVersionCode() != release.version ||
-                candidate.getLongVersionCode() <= installed.getLongVersionCode()
+                versionCode(candidate) != release.version ||
+                versionCode(candidate) <= versionCode(installed)
             ) throw new IOException("Invalid update version");
             if (
-                candidate.signingInfo == null ||
-                installed.signingInfo == null ||
+                !hasSigners(candidate) ||
+                !hasSigners(installed) ||
                 !certificates(candidate).equals(certificates(installed))
             ) throw new IOException("Update signing key does not match this installation");
             if (apk.exists() && !apk.delete()) throw new IOException("Cannot replace cached update");
@@ -171,9 +164,33 @@ final class AppUpdates {
         }
     }
 
+    // Android 9+ reports signing keys through signingInfo; Android 7-8 (e.g. Fire TV Stick 4K 1st gen,
+    // Fire OS 6) only has the older signatures field. Both list the APK's signing certificates.
+    @SuppressWarnings("deprecation")
+    private static final int SIGNING_FLAG =
+        Build.VERSION.SDK_INT >= 28 ? PackageManager.GET_SIGNING_CERTIFICATES : PackageManager.GET_SIGNATURES;
+
+    @SuppressWarnings("deprecation")
+    static long versionCode(PackageInfo info) {
+        return Build.VERSION.SDK_INT >= 28 ? info.getLongVersionCode() : info.versionCode;
+    }
+
+    private static boolean hasSigners(PackageInfo info) {
+        Signature[] signers = signers(info);
+        return signers != null && signers.length > 0;
+    }
+
+    @SuppressWarnings("deprecation")
+    private static Signature[] signers(PackageInfo info) {
+        if (Build.VERSION.SDK_INT >= 28) return info.signingInfo == null
+            ? null
+            : info.signingInfo.getApkContentsSigners();
+        return info.signatures;
+    }
+
     private static Set<String> certificates(PackageInfo info) throws Exception {
         Set<String> result = new HashSet<>();
-        for (Signature signature : info.signingInfo.getApkContentsSigners())
+        for (Signature signature : signers(info))
             result.add(hex(MessageDigest.getInstance("SHA-256").digest(signature.toByteArray())));
         return result;
     }

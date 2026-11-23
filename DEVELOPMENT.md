@@ -12,7 +12,8 @@ files (CLAUDE.md, GEMINI.md, Cursor, Copilot) only point to it. Its PR template 
 - Gradle 9.6.0 with Android Gradle plugin 9.4.1 (the project has no Gradle wrapper; CI installs this version)
 - Python 3.11 on the build machine (Chaquopy 17.1.0 packages the free film/series providers into the APK)
 - Node 22 for the provider engine (`npm ci --ignore-scripts --prefix provider-engine`)
-- An Android TV emulator or device for device tests (CI uses API 28, `tv_1080p` profile)
+- An Android TV emulator or device for device tests (CI uses API 28, `tv_1080p` profile). The app's minimum is API 25 (Android 7.1, Fire TV Stick 4K 1st gen), but CI has no API 25
+  emulator run
 
 Every build has the same features. The normal build is MovieHub (`local.tv.home`); adding
 `-Pexperimental` changes only the identity, to the separate MovieHub Experimental test app

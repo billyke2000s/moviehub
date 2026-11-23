@@ -13,7 +13,7 @@ def moviehubAbis = moviehubAbi == 'arm' ? ['armeabi-v7a', 'arm64-v8a'] : [movieh
 android {
     namespace 'local.tv.home'
     compileSdk 35
-    defaultConfig { applicationId 'local.tv.home'; minSdk 28; targetSdk 35; versionCode Integer.parseInt(System.getenv('APK_VERSION_CODE') ?: '2'); versionName System.getenv('APK_VERSION_NAME') ?: '0.2' }
+    defaultConfig { applicationId 'local.tv.home'; minSdk 25; targetSdk 35; versionCode Integer.parseInt(System.getenv('APK_VERSION_CODE') ?: '2'); versionName System.getenv('APK_VERSION_NAME') ?: '0.2' }
     ndkVersion '27.2.12479018'
     defaultConfig { ndk { abiFilters.addAll(moviehubAbis) } }
     defaultConfig { testInstrumentationRunner 'local.tv.home.MovieHubTestRunner' }
@@ -43,16 +43,19 @@ android {
         }
     }
     buildTypes { release { if (System.getenv('APK_KEYSTORE')) signingConfig signingConfigs.release } }
-    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    compileOptions { coreLibraryDesugaringEnabled true; sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     // Live TV engine.
     implementation 'androidx.media3:media3-exoplayer:1.5.1'
     implementation 'androidx.media3:media3-exoplayer-hls:1.5.1'
     // DASH (.mpd) channels: without it ExoPlayer cannot load DashMediaSource and the app crashes.
     implementation 'androidx.media3:media3-exoplayer-dash:1.5.1'
     implementation 'androidx.media3:media3-ui:1.5.1'
-    implementation 'org.mozilla:rhino:1.9.1'
+    // Rhino 1.9+ needs Android 8 (MethodHandle.invoke); 1.8.0 keeps Fire TV Stick 4K 1st gen (Android 7.1)
+    // supported. Keep the CI/server RHINO_JAR pins on the same version so scripts are tested on what ships.
+    implementation 'org.mozilla:rhino:1.8.0'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     // QR codes for typing account details on a phone (PhoneKeyPanel); encoding only.
     implementation 'com.google.zxing:core:3.5.3'

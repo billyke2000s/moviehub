@@ -5,8 +5,6 @@ import android.content.SharedPreferences;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 import org.xmlpull.v1.XmlPullParser;
@@ -43,11 +41,10 @@ final class CombinedEpg {
                 "Combined guide coverage fell unexpectedly"
             );
             EpgImporter.Result result = install(chosen, db, cancel);
-            if (candidate.isFile()) Files.move(
-                candidate.toPath(),
-                cached.toPath(),
-                StandardCopyOption.REPLACE_EXISTING,
-                StandardCopyOption.ATOMIC_MOVE
+            // File.renameTo is an atomic rename(2) that replaces the target on Android, so it keeps the
+            // old Files.move(REPLACE_EXISTING, ATOMIC_MOVE) behaviour on Android 7 (no java.nio.file).
+            if (candidate.isFile() && !candidate.renameTo(cached)) throw new IOException(
+                "Cannot replace cached guide"
             );
             SharedPreferences.Editor edit = prefs
                 .edit()

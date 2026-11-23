@@ -16,7 +16,7 @@ anything**:
 python3 android-tv-launcher/tests/probe-free-vod.py --provider <id> --movie "Inception" 2010 tt1375666 27205
 
 # Live TV provider (id from the issue, e.g. dlhd)
-RHINO_JAR=/srv/moviehub/tools/rhino-1.9.1.jar node provider-engine/tools/live-probe.mjs <id>
+RHINO_JAR=/srv/moviehub/tools/rhino-1.8.0.jar node provider-engine/tools/live-probe.mjs <id>
 ```
 
 If it now works, the site had a temporary outage: comment that on the issue and stop.

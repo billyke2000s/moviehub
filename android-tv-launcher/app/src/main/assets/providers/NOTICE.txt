@@ -6,7 +6,7 @@ Masqueradarr, Copyright (c) 2025-2026 BinaryNinja, MIT.
 Complete notice: LICENSE.masqueradarr.txt (alongside this file).
 Historical source: https://github.com/TheBinaryNinja/masqueradarr/tree/3b860294ecb4a9ebca8819adfc061162fbbb7f99
 
-Rhino 1.9.1: Mozilla Public License 2.0.
+Rhino 1.8.0: Mozilla Public License 2.0.
 Source and licence: https://github.com/mozilla/rhino
 https://www.mozilla.org/MPL/2.0/
 MovieHub uses the unmodified Maven Rhino library in interpreter mode.
