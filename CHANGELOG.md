@@ -5,6 +5,8 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+## 1.0.29 (23 November 2026)
+
 - Live TV guide: the mini-player can now be reached from any page. Up from the top row of the
   guide stops on the header (the mini-player, with Options to its left) before carrying on; Up
   again goes to the previous page as before, and OK on the mini-player returns to that channel.
