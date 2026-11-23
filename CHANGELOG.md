@@ -5,6 +5,8 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+## 1.0.27 (23 November 2026)
+
 - Help page: stop telling fast connections they are "too slow" and to switch to 720p. Help no
   longer judges the internet from the player's last download rate (which drops to almost nothing
   once a film has buffered); only a real speed test counts. Help's speed test now shows the same
