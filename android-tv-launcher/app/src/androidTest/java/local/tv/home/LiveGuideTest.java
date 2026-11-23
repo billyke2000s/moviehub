@@ -181,11 +181,21 @@ public class LiveGuideTest {
             () -> activity.liveTv.cells.size() == 8 && focused().startsWith("101  Channel 00")
         );
         UiEvidence.capture("live-guide");
-        // Down past the bottom row: the next page.
+        // Down past the bottom row stops once on the buttons (like the mini-player at the top),
+        // UP goes back to the bottom row, and DOWN from the buttons carries on to the next page.
         for (int i = 0; i < 8; i++) {
             remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
             remote.waitForIdleSync();
         }
+        await(
+            "buttons below the bottom row",
+            () -> activity.liveTv.pageStart == 0 && activity.liveTv.frame.bar.focused() == 0
+        );
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
+        await("back to the bottom row", () -> focused().startsWith("108  Channel 07"));
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
+        await("buttons again", () -> activity.liveTv.frame.bar.focused() == 0);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
         await("second page", () -> activity.liveTv.pageStart == 8 && focused().startsWith("109  Channel 08"));
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_PROG_GREEN); // green: page down
         await("page down", () -> activity.liveTv.pageStart == 16 && activity.liveTv.cells.size() == 8);

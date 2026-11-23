@@ -23,6 +23,8 @@ final class KeyBar {
     final List<View> keys = new ArrayList<>();
     /** Up from the bar: back to the list above it. */
     private Runnable up = () -> {};
+    /** DOWN from a key; null keeps the focus on the bar. */
+    private Runnable down;
     private final List<Runnable> actions = new ArrayList<>();
     /** The first BACK on a screen highlights the buttons; after that BACK goes back. */
     private boolean backHighlighted;
@@ -36,6 +38,11 @@ final class KeyBar {
 
     KeyBar onUp(Runnable up) {
         this.up = up;
+        return this;
+    }
+
+    KeyBar onDown(Runnable down) {
+        this.down = down;
         return this;
     }
 
@@ -66,7 +73,11 @@ final class KeyBar {
                 up.run();
                 return true;
             }
-            return code == KeyEvent.KEYCODE_DPAD_DOWN;
+            if (code == KeyEvent.KEYCODE_DPAD_DOWN) {
+                if (down != null) down.run();
+                return true;
+            }
+            return false;
         });
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-2, -2);
         layout.rightMargin = activity.dp(18);
