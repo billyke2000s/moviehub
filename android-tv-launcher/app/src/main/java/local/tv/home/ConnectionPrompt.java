@@ -32,9 +32,8 @@ final class ConnectionPrompt {
 
     static final String TITLE = "Connect to the internet";
     static final String TEXT =
-        "MovieHub needs the internet for TV, films and series.\n\n" +
-        "Connect this box to your Wi-Fi, or plug an internet cable (Ethernet) from your router into " +
-        "the back of the box.\n\nThis message closes by itself once the box is online.";
+        "MovieHub needs the internet for TV, films and series. Connect to your Wi-Fi, or plug an " +
+        "internet cable from your router into the box. This closes by itself once you're online.";
 
     /** How long the box may be offline before the panel appears. Tests shorten it. */
     static long graceMs = 8000;
@@ -212,7 +211,7 @@ final class ConnectionPrompt {
                 handled = true;
                 openSettings(Settings.ACTION_WIFI_SETTINGS);
             })
-            .option("Cable (Ethernet) and other network settings", () -> {
+            .option("Cable and other network settings", () -> {
                 handled = true;
                 openSettings(Settings.ACTION_WIRELESS_SETTINGS);
             })

@@ -65,7 +65,7 @@ final class ConnectionAnimation extends View {
 
     @Override
     protected void onMeasure(int widthSpec, int heightSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthSpec), dp(150));
+        setMeasuredDimension(MeasureSpec.getSize(widthSpec), dp(112));
     }
 
     @Override
@@ -74,8 +74,8 @@ final class ConnectionAnimation extends View {
         float labelY = getHeight() - dp(8);
         float left = width * 0.27f;
         float right = width * 0.68f;
-        wifi(canvas, left, dp(96));
-        cable(canvas, right, dp(78));
+        wifi(canvas, left, dp(74));
+        cable(canvas, right, dp(54));
         canvas.drawText("Wi-Fi", left, labelY, words);
         canvas.drawText("or", width / 2, labelY, words);
         canvas.drawText("Cable", right + dp(34), labelY, words);
