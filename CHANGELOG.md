@@ -5,6 +5,8 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+## 1.0.30 (23 November 2026)
+
 - Older devices: MovieHub now installs on Android 7.1 and newer (was Android 9), so it runs on the
   Fire TV Stick 4K (1st gen, Fire OS 6). Updates, VLC audio focus, the guide cache and artwork cache
   use the older Android calls on those devices. The scraper engine moves from Rhino 1.9.1 to 1.8.0,
