@@ -8,7 +8,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
-/** Programme reminders and the parental lock's storage (no screens). */
+/** Programme reminders' storage (no screens). */
 @RunWith(AndroidJUnit4.class)
 public class LiveExtrasTest {
 
@@ -29,7 +29,6 @@ public class LiveExtrasTest {
     @After
     public void clean() {
         context.getSharedPreferences("ui", 0).edit().remove(Reminders.PREF).commit();
-        ParentalLock.clear(context);
     }
 
     static ChannelDatabase.Programme programme(String title, long start) {
@@ -54,26 +53,5 @@ public class LiveExtrasTest {
         assertEquals(1, Reminders.all(context).size());
         Reminders.set(context, bbc, later, false);
         assertTrue(Reminders.all(context).isEmpty());
-    }
-
-    @Test
-    public void lockedChannelsAndSectionsNeedThePin() {
-        assertFalse("Nothing is locked without a PIN", ParentalLock.locked(context, bbc));
-        assertFalse(ParentalLock.valid("12a4"));
-        ParentalLock.setPin(context, "1234");
-        assertTrue(ParentalLock.matches(context, "1234"));
-        assertFalse(ParentalLock.matches(context, "4321"));
-        assertFalse(
-            "Only a hash is stored",
-            context.getSharedPreferences("ui", 0).getString(ParentalLock.PIN, "").contains("1234")
-        );
-        ParentalLock.setChannel(context, bbc, true);
-        assertTrue(ParentalLock.locked(context, bbc));
-        ParentalLock.setChannel(context, bbc, false);
-        assertFalse(ParentalLock.locked(context, bbc));
-        ParentalLock.setSection(context, "Entertainment", true);
-        assertTrue("A locked section locks its channels", ParentalLock.locked(context, bbc));
-        ParentalLock.clear(context);
-        assertFalse(ParentalLock.locked(context, bbc));
     }
 }

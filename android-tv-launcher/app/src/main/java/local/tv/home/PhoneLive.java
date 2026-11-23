@@ -273,7 +273,6 @@ final class PhoneLive {
     private void menu() {
         SidePanel.of(activity, "Live TV")
             .option("Reminders", tv.panels::reminders)
-            .option("Parental lock", () -> tv.panels.parentalLock(this::reload))
             .option("Refresh channels", () -> {
                 ChannelSync.refreshNow(activity);
                 reload();
@@ -342,8 +341,7 @@ final class PhoneLive {
             boolean favourite = tv.favouriteKeys().contains(item.channel.key);
             number.setText(String.valueOf(item.channel.number));
             name.setText(
-                (ParentalLock.locked(activity, item.channel) ? "🔒 " : "") +
-                    (favourite ? "★ " : "") +
+                (favourite ? "★ " : "") +
                     item.channel.name
             );
             now.setText(item.now == null ? "No programme information" : "Now  " + item.now.title);

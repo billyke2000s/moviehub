@@ -9,7 +9,7 @@ import java.util.Locale;
 
 /**
  * The Live TV guide's side panels: options, sections and groups, search, programme information
- * with reminders, the parental lock and colour-key set-up.
+ * with reminders, and colour-key set-up.
  */
 final class LiveTvPanels {
 
@@ -23,8 +23,7 @@ final class LiveTvPanels {
 
     /**
      * The guide's own options: what has no other home. Search, Reminders and Favourites are on the
-     * colour buttons; the parental lock is in Settings → Setup. A day choice is shown only when it
-     * would change something.
+     * colour buttons. A day choice is shown only when it would change something.
      */
     void options() {
         boolean picture = activity.prefs.getBoolean(LiveTvScreen.PICTURE, true);
@@ -104,10 +103,6 @@ final class LiveTvPanels {
                         () -> programme(channel, position, item)
                     );
                 }
-                boolean locked = ParentalLock.channelLocked(activity, channel);
-                panel.option(locked ? "Unlock this channel" : "Lock this channel", () ->
-                    lockChannel(channel, !locked)
-                );
                 panel.show();
             }
         );
@@ -200,80 +195,6 @@ final class LiveTvPanels {
         );
         activity.toast("Reminder cancelled");
         guide.guide(guide.pageStart, 0);
-    }
-
-    // ---- Parental lock ------------------------------------------------------------------------
-
-    /** Locks or unlocks one channel; both need the PIN (one is chosen first if there is none). */
-    private void lockChannel(ChannelDatabase.Row channel, boolean lock) {
-        Runnable apply = () -> {
-            ParentalLock.setChannel(activity, channel, lock);
-            activity.toast(lock ? channel.name + " is locked" : channel.name + " is unlocked");
-            guide.guide(guide.pageStart, 0);
-        };
-        if (!ParentalLock.hasPin(activity)) ParentalLock.choosePin(activity, apply);
-        else ParentalLock.check(activity, "Changing the lock", apply, null);
-    }
-
-    /** The lock's settings, behind the PIN: what is locked, a new PIN, or turning it off. */
-    void parentalLock() {
-        parentalLock(() -> guide.guide(guide.pageStart, 0));
-    }
-
-    /**
-     * The same, from anywhere (the guide, the phone list or Settings); {@code changed} redraws the
-     * screen it was opened from after something is locked or unlocked.
-     */
-    void parentalLock(Runnable changed) {
-        if (!ParentalLock.hasPin(activity)) {
-            SidePanel.of(activity, "Parental lock")
-                .message(
-                    "Lock Live TV channels, whole guide sections (such as Sports), " +
-                        "or all films and series, " +
-                        "so they need a four-digit PIN to watch. " +
-                        "Lock one channel from its programme information (\u25b6 in the guide)."
-                )
-                .action("Choose a PIN", () -> ParentalLock.choosePin(activity, () -> lockSettings(changed)))
-                .action("Close", null)
-                .show();
-            return;
-        }
-        ParentalLock.check(activity, "The parental lock", () -> lockSettings(changed), null);
-    }
-
-    private void lockSettings(Runnable changed) {
-        boolean films = ParentalLock.filmsLocked(activity);
-        SidePanel.of(activity, "Parental lock")
-            .option(films ? "Films and series \u00b7 Locked" : "Films and series \u00b7 Not locked", () -> {
-                ParentalLock.setFilmsLocked(activity, !films);
-                activity.toast(films ? "Films and series are unlocked" : "Films and series need the PIN");
-                changed.run();
-                lockSettings(changed);
-            })
-            .option("Locked Live TV guide sections", () -> sectionLocks(changed))
-            .option("Change PIN", () -> ParentalLock.choosePin(activity, null))
-            .option("Turn off the lock", () -> {
-                ParentalLock.clear(activity);
-                activity.toast("Parental lock turned off");
-                changed.run();
-            })
-            .show();
-    }
-
-    /** Ticks the locked sections; choosing one locks or unlocks it. */
-    private void sectionLocks(Runnable changed) {
-        String[] names = new String[SkyNumbers.SECTIONS.length];
-        for (int i = 0; i < names.length; i++) names[i] =
-            (ParentalLock.sectionLocked(activity, SkyNumbers.SECTIONS[i]) ? "🔒  " : "") +
-            SkyNumbers.SECTIONS[i];
-        SidePanel.of(activity, "Locked Live TV guide sections")
-            .choices(names, -1, which -> {
-                String section = SkyNumbers.SECTIONS[which];
-                ParentalLock.setSection(activity, section, !ParentalLock.sectionLocked(activity, section));
-                changed.run();
-                sectionLocks(changed);
-            })
-            .show();
     }
 
     void groups() {

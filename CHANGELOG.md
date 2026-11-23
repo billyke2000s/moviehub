@@ -15,6 +15,9 @@ version when it is published. This is the only dated history file (see AGENTS.md
   instead of one 50 MB download that finished in about a second on fast lines (Cloudflare refuses
   single requests of 100 MB or more, so each connection repeats 25 MB requests; stops early after
   1 GB). Jitter no longer counts the first connection's set-up, which rated fast lines "Poor".
+- Removed the parental lock (Setup → Parental lock, "Lock this channel" in programme information,
+  the phone Live TV menu entry, and the PIN before locked channels, sections, films and series).
+  Anything previously locked now plays without a PIN.
 
 ## 1.0.26 (22 November 2026)
 

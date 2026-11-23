@@ -6,7 +6,7 @@ import android.widget.LinearLayout;
 /**
  * Settings → Setup: the last tab of Settings, for whoever looks after the box. Everything set up
  * once, or only for fixing problems, lives here so the other tabs hold only what the family uses:
- * Premiumize and its library, the free channel services, extra guide sections, the parental lock,
+ * Premiumize and its library, the free channel services, extra guide sections,
  * clearing watch history, the engineer view and the TMDB credit. No PIN: nobody needs to come here.
  *
  * <p>Only where these are shown changed; every preference, account and saved list is kept.
@@ -75,16 +75,6 @@ final class SetupScreens {
                     .option("International", activity.liveTv.panels::countries)
                     .option("Channel groups from your lists", activity.liveTv.panels::groups)
                     .show()
-        );
-        boolean lockOn = ParentalLock.hasPin(activity);
-        settings.settingCard(
-            body,
-            "Parental lock",
-            "A PIN for chosen Live TV channels and guide sections, or for all films and series",
-            !lockOn ? "Off" : ParentalLock.filmsLocked(activity) ? "On · films and series locked" : "On",
-            lockOn,
-            "Manage",
-            () -> activity.liveTv.panels.parentalLock(back)
         );
 
         settings.heading(body, "Films and series");

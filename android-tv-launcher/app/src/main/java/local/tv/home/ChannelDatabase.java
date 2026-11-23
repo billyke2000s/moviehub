@@ -170,9 +170,7 @@ final class ChannelDatabase extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int from, int to) {
-        java.util.Map<String, String> moved = ChannelSchema.upgrade(db, from);
-        // Locked channels are stored by duplicate key: keep them locked under the new keys.
-        if (!moved.isEmpty()) ParentalLock.rekey(context, moved);
+        ChannelSchema.upgrade(db, from);
     }
 
     /**

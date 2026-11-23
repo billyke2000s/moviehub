@@ -220,7 +220,7 @@ lowering `user_version` on a version-8 table cannot catch this regression.
 Instrumentation tests drive the real app with D-pad key events on an emulator. They cover the
 encrypted channel database, imports and migrations, LibVLC playback, Home and dock navigation,
 catalogue paging and focus, the streaming menus and artwork loading, and Live TV: guide paging and
-number entry, the Options button and guide menu, moving along programmes and through time, programme information, the PIN lock, reminders, channel changing and browsing in the
+number entry, the Options button and guide menu, moving along programmes and through time, programme information, reminders, channel changing and browsing in the
 banner, the satellite-box overlay (banner, information panel, pause bar), pausing live TV, the
 guide's live picture, and moving the live picture between the guide and the full screen without
 reopening the stream (all played from a local test stream). Provider responses are local

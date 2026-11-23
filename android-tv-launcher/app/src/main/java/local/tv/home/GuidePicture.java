@@ -75,10 +75,6 @@ final class GuidePicture {
                 String name = row.number + " " + row.name;
                 label.setText(name);
                 if (carryOn) return;
-                if (ParentalLock.locked(activity, row)) {
-                    label.setText(name + "  ·  Locked");
-                    return;
-                }
                 try {
                     start(activity, holder, Playlist.networkUrl((String) result[1], activity.http()));
                 } catch (Exception e) {

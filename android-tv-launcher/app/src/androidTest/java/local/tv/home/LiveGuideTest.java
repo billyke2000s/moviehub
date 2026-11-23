@@ -74,7 +74,6 @@ public class LiveGuideTest {
         if (favourites == null) edit.remove("favourites");
         else edit.putStringSet("favourites", new java.util.HashSet<>(favourites));
         edit.commit();
-        ParentalLock.clear(remote.getTargetContext());
         ChannelDatabase.get(remote.getTargetContext()).clear();
     }
 
@@ -238,7 +237,7 @@ public class LiveGuideTest {
     }
 
     @Test
-    public void typedNumbersProgrammeInfoAndTheParentalLock() {
+    public void typedNumbersAndProgrammeInfo() {
         remote.runOnMainSync(() -> activity.liveTv.live());
         await(
             "first page",
@@ -288,17 +287,6 @@ public class LiveGuideTest {
         UiEvidence.capture("live-guide-tomorrow");
         remote.runOnMainSync(() -> activity.liveTv.previousDay(6));
         await("today", () -> activity.liveTv.windowOffset == 0 && activity.liveTv.cells.size() == 8);
-        // A locked channel asks for the PIN instead of playing.
-        ChannelDatabase.Row row = ChannelDatabase.get(activity)
-            .browse("all", "", java.util.Collections.emptySet(), 22)
-            .get(0);
-        ParentalLock.setPin(activity, "1234");
-        ParentalLock.setChannel(activity, row, true);
-        await("guide still showing", () -> activity.liveTv.cells.size() == 8);
-        remote.runOnMainSync(() -> activity.liveTv.cells.get(6).performClick());
-        await("PIN asked", () -> SidePanel.current != null && SidePanel.current.isShowing());
-        UiEvidence.capture("live-pin");
-        remote.runOnMainSync(() -> SidePanel.current.dismiss());
     }
 
     @Test
