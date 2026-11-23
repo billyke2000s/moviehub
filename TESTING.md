@@ -231,9 +231,12 @@ fixtures, so these tests **do not** prove that a real TMDB, Premiumize or Xtream
 bash android-tv-launcher/tests/run-device-tests.sh   # needs a running emulator or device
 ```
 
-The tests run through `MovieHubTestRunner`, which marks the first-start safety notice as read and
-chooses the TV layout, so neither covers the screens under test; `SafetyNoticeTest` and
-`PhoneModeTest` show them on purpose.
+The tests run through `MovieHubTestRunner`, which marks the first-start messages (providers
+question, safety notice, TMDB question) as answered, chooses the TV layout and treats the box as
+online (`ConnectionPrompt.testOnline`), so none of them covers the screens under test;
+`SafetyNoticeTest`, `FirstStartTest` and `PhoneModeTest` show them on purpose. `FirstStartTest`
+replaces the network state with that test hook, so it does not prove how a real box reports Wi-Fi
+or a cable.
 
 The script runs `connectedDebugAndroidTest` and then pulls the test screenshots off the device.
 CI runs it on an API 28 `tv_1080p` emulator. Note that the CI step is named "Verify real SQLite,

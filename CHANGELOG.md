@@ -9,6 +9,15 @@ version when it is published. This is the only dated history file (see AGENTS.md
   later) now asks the site for a new link instead of reusing the old one, as add-on apps do. Many
   sites' links work once or only briefly, so a film that played fine could fail when you came back.
   Automatic play still starts straight away with the link it found, and your position is kept.
+- No internet: when the box has no Wi-Fi and no cable, MovieHub now shows "Connect to the internet"
+  with a moving Wi-Fi and cable picture and buttons that open the box's Wi-Fi or network settings,
+  instead of empty pages that never load. It waits 8 seconds first (a box that has just been
+  switched on is still joining its Wi-Fi), closes by itself once online and reloads Home. "Not now"
+  or Back hides it until the connection drops again or MovieHub is reopened.
+- First start: the connection message comes first (only when offline), then the free TV providers
+  question and the safety notice as before, then a new one-time "Set up films and series" message
+  that opens the TMDB setup page (skipped if TMDB is already set up). Other accounts stay in
+  Settings only.
 
 ## 1.0.26 (22 November 2026)
 
