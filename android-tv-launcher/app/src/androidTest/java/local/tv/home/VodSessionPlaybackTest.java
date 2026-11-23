@@ -27,6 +27,8 @@ public final class VodSessionPlaybackTest {
     private final AtomicInteger authorizedSegments = new AtomicInteger();
     /** Link prefixes (such as "/link-1/") the fixture site no longer serves, like an expired link. */
     private final Set<String> deadLinks = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /** Requests for a dead link: the player should not try one again. */
+    private final AtomicInteger deadRequests = new AtomicInteger();
     private ServerSocket server;
     private volatile boolean closed;
     private boolean oldHttp;
@@ -100,6 +102,7 @@ public final class VodSessionPlaybackTest {
             // "/link-N/vod.mp4" is the same film behind a numbered link, until that link dies.
             if (path.startsWith("/link-")) {
                 String prefix = path.substring(0, path.indexOf('/', 1) + 1);
+                if (deadLinks.contains(prefix)) deadRequests.incrementAndGet();
                 path = deadLinks.contains(prefix) ? "/dead" : path.substring(prefix.length() - 1);
             }
             int start = 0;
@@ -237,6 +240,7 @@ public final class VodSessionPlaybackTest {
                 activity.player.getTime() > 300
         );
         assertEquals("Coming back asked the site for one new link", 1, refreshes.get());
+        assertEquals("The old link was not tried again", 0, deadRequests.get());
     }
 
     @Test
