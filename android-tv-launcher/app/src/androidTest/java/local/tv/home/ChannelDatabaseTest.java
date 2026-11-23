@@ -263,22 +263,10 @@ public class ChannelDatabaseTest {
             old.execSQL("UPDATE channels SET dkey=':skysportsf1uk' WHERE source='enginedlhd'");
             old.setVersion(8);
         }
-        android.content.SharedPreferences prefs = ParentalLock.prefs(context);
-        Set<String> oldLocks = prefs.getStringSet(ParentalLock.CHANNELS, null);
-        prefs.edit().putStringSet(ParentalLock.CHANNELS, Collections.singleton(":skysportsf1uk")).commit();
-        try {
-            List<ChannelDatabase.Row> all = db.browse("all", "", Collections.emptySet(), 0); // upgrades
-            assertEquals("The upgrade joins the two copies", 1, all.size());
-            assertEquals(2, db.copies(all.get(0)).size());
-            assertEquals(1, db.browse("favourites", "", Collections.singleton(favourite), 0).size());
-            assertTrue(
-                "A locked channel stays locked under its new key",
-                prefs.getStringSet(ParentalLock.CHANNELS, Collections.emptySet()).contains(all.get(0).dkey)
-            );
-        } finally {
-            if (oldLocks == null) prefs.edit().remove(ParentalLock.CHANNELS).commit();
-            else prefs.edit().putStringSet(ParentalLock.CHANNELS, oldLocks).commit();
-        }
+        List<ChannelDatabase.Row> all = db.browse("all", "", Collections.emptySet(), 0); // upgrades
+        assertEquals("The upgrade joins the two copies", 1, all.size());
+        assertEquals(2, db.copies(all.get(0)).size());
+        assertEquals(1, db.browse("favourites", "", Collections.singleton(favourite), 0).size());
     }
 
     @Test

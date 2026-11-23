@@ -16,6 +16,23 @@ public class TroubleshootingTest {
         check(SpeedTest.mbps(0, 1000) == 0, "nothing downloaded");
         check(SpeedTest.mbps(1000, 0) == 0, "no time measured");
 
+        // Steady speed: 1 s warm-up at 10 MB, then 450 MB more in 9 s is 400 Mb/s (not the slower whole).
+        check(Math.abs(SpeedTest.steadyMbps(10_000_000L, 1000, 460_000_000L, 10_000) - 400f) < 0.01f, "steady average");
+        check(Math.abs(SpeedTest.steadyMbps(5_000_000L, 1000, 5_000_000L, 1000) - 40f) < 0.01f, "too short: whole test");
+        check(SpeedTest.CHUNK_BYTES < 100_000_000L, "each request under Cloudflare's 100 MB limit");
+
+        // Help shows the same measurement as Engineer view, in family words.
+        SpeedTest.Result fast = new SpeedTest.Result(412.7f, 40, 50L << 20, 18, 3, 0);
+        check(
+            SpeedTest.summary(fast).equals("Excellent for films  ·  412 Mb/s download  ·  18 ms response"),
+            "fast line summary: " + SpeedTest.summary(fast)
+        );
+        SpeedTest.Result slow = new SpeedTest.Result(6.4f, 40, 8L << 20, 120, 10, 0);
+        check(SpeedTest.summary(slow).startsWith("Fair for films  ·  6 Mb/s"), "slow line summary");
+        SpeedTest.Result noPing = new SpeedTest.Result(300f, 40, 50L << 20, -1, -1, 5);
+        check(SpeedTest.summary(noPing).equals("300 Mb/s download"), "no latency: no rating, no ms");
+        check(SpeedTest.last == null, "no test run yet");
+
         // Recent errors: newest first, at most 50, and never the message.
         ErrorLog.clear();
         ErrorLog.add("First place", new IllegalStateException("https://provider.example/user/secret"));

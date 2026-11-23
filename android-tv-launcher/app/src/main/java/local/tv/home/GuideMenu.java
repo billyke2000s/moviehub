@@ -21,9 +21,9 @@ final class GuideMenu {
 
     /**
      * The menu: label and the guide list each opens. The sections keep the satellite box's order;
-     * Favourites (also on the blue key) and Options are among them. Radio, Religion and Shopping
-     * were removed; International and the channel groups are in Settings → Setup, so the menu fits
-     * on one page. A longer list would split into pages of nine with More… at the bottom.
+     * Favourites (also on the blue key) and Options are among them. As on the satellite box, 0 is
+     * More…, which holds Music, International and the channel groups from the viewer's own lists.
+     * "menu:" rows open a further numbered list in the same style rather than a side panel.
      */
     static final String[][] ITEMS = {
         { "All Channels", "all" },
@@ -36,13 +36,20 @@ final class GuideMenu {
         { "Kids", "section:Kids" },
         { "Options", "options" },
         { "Music", "section:Music" },
+        { "International", "menu:countries" },
+        { "Channel Groups", "menu:groups" },
     };
 
     /** Rows on a page, More… included. */
     static final int PAGE = 10;
 
-    /** The page shown (0 is the first). */
+    /** The page shown of the list shown (0 is the first). */
     int page;
+    /** The list shown: the menu itself, or the International or channel-group list. */
+    private String[][] shown = ITEMS;
+    private String heading = "";
+    /** Where BACK goes from the first page of the list shown. */
+    private Runnable leave;
 
     private final MainActivity activity;
     private final LiveTvScreen guide;
@@ -58,28 +65,84 @@ final class GuideMenu {
 
     /** Live TV opens here first, as the satellite box's TV Guide button did. */
     void show() {
-        page(0);
+        list(ITEMS, "", activity.homeScreen::home, 0);
     }
 
-    /** The items on page {@code index}: nine and More… while more follow, else the rest. */
+    /**
+     * BACK from the channel grid: the list and page it was opened from, so a country's channels go
+     * back to International. The menu's first page until something has been shown.
+     */
+    void reopen() {
+        if (leave == null) show();
+        else page(page);
+    }
+
+    /** The items on page {@code index} of the menu. */
     static String[][] pageItems(int index) {
+        return pageItems(ITEMS, index);
+    }
+
+    /** The items on page {@code index} of {@code all}: nine and More… while more follow, else the rest. */
+    static String[][] pageItems(String[][] all, int index) {
         List<String[]> out = new ArrayList<>();
         int from = 0;
         for (int i = 0; i < index; i++) from += PAGE - 1;
-        boolean last = ITEMS.length - from <= PAGE;
-        int to = last ? ITEMS.length : from + PAGE - 1;
-        for (int i = from; i < to; i++) out.add(ITEMS[i]);
+        boolean last = all.length - from <= PAGE;
+        int to = last ? all.length : from + PAGE - 1;
+        for (int i = from; i < to; i++) out.add(all[i]);
         if (!last) out.add(new String[] { "More…", "" });
         return out.toArray(new String[0][]);
     }
 
-    /** Shows a page of the menu; BACK goes up a page, then Home. */
+    /** Shows page {@code index} of a list; BACK goes up a page, then to {@code leave}. */
+    private void list(String[][] items, String title, Runnable leave, int index) {
+        shown = items;
+        heading = title;
+        this.leave = leave;
+        page(index);
+    }
+
     private void page(int index) {
         page = index;
-        build(
-            pageItems(index),
-            index == 0 ? "TV GUIDE" : "MORE",
-            index == 0 ? activity.homeScreen::home : () -> page(index - 1)
+        String sub = heading.isEmpty() ? (index == 0 ? "" : "MORE") : heading + (index == 0 ? "" : "  ·  MORE");
+        build(pageItems(shown, index), sub, index == 0 ? leave : () -> page(index - 1));
+    }
+
+    /** International: all of it first, then each country, in the menu's numbered style. */
+    private void countries(Runnable back) {
+        activity.async(
+            () -> guide.channelsDb().countries(),
+            countries -> {
+                String[][] items = new String[countries.size() + 1][];
+                items[0] = new String[] { "All International", "section:" + GuideOrder.INTERNATIONAL };
+                for (int i = 0; i < countries.size(); i++) items[i + 1] = new String[] {
+                    GuideOrder.name(countries.get(i).name) + "  (" + countries.get(i).count + ")",
+                    "country:" + countries.get(i).name,
+                };
+                list(items, "INTERNATIONAL", back, 0);
+            }
+        );
+    }
+
+    /** The groups from the viewer's own channel lists, in the menu's numbered style. */
+    private void groups(Runnable back) {
+        activity.async(
+            () -> guide.channelsDb().groups(),
+            groups -> {
+                if (groups.isEmpty()) {
+                    activity.toast("Your channel lists have no groups");
+                    return;
+                }
+                String[][] items = new String[groups.size()][];
+                for (int i = 0; i < items.length; i++) items[i] = new String[] {
+                    (groups.get(i).name.isEmpty() ? "Ungrouped" : groups.get(i).name) +
+                    "  (" +
+                    groups.get(i).count +
+                    ")",
+                    "group:" + groups.get(i).name,
+                };
+                list(items, "CHANNEL GROUPS", back, 0);
+            }
         );
     }
 
@@ -96,7 +159,7 @@ final class GuideMenu {
         TextView name = text("TV Guide", 30, true);
         name.setPadding(0, 0, activity.dp(30), 0);
         top.addView(name);
-        if (this.page > 0) top.addView(text(heading, 18, true)); // "MORE" on a second page
+        if (!heading.isEmpty()) top.addView(text(heading, 18, true)); // "MORE", "INTERNATIONAL" …
         page.addView(top);
 
         // The rows share the height, so every one fits on the screen with nothing to scroll.
@@ -169,12 +232,24 @@ final class GuideMenu {
     }
 
     private void open(String target) {
+        // A further list returns to this page of this list.
+        String[][] from = shown;
+        String fromHeading = heading;
+        Runnable fromLeave = leave;
+        int fromPage = page;
+        Runnable back = () -> list(from, fromHeading, fromLeave, fromPage);
         switch (target) {
             case "":
                 page(page + 1); // More…
                 break;
             case "options":
                 guide.panels.options();
+                break;
+            case "menu:countries":
+                countries(back);
+                break;
+            case "menu:groups":
+                groups(back);
                 break;
             default:
                 guide.show(target, "");

@@ -24,37 +24,6 @@ final class SettingsScreens {
         this.activity = activity;
     }
 
-    void addSource(String kind, String name, String link) {
-        LinearLayout content = activity.vertical();
-        EditText title = activity.field(content, "Title", false, name),
-            url = activity.field(content, "Authorized media URL", false, link);
-        CheckBox permission = new CheckBox(activity);
-        permission.setText("I have permission to play this source");
-        permission.setTextColor(0xfff8f8fc);
-        content.addView(permission);
-        Dialog dialog = activity.form("Add to " + kind, content);
-        content.addView(
-            activity.button("Save source", () -> {
-                if (!permission.isChecked()) {
-                    activity.toast("Confirm permission for this source");
-                    return;
-                }
-                try {
-                    activity.media.add(
-                        title.getText().toString(),
-                        url.getText().toString(),
-                        kind,
-                        activity.http()
-                    );
-                    dialog.dismiss();
-                    activity.libraryScreens.savedLibrary(kind);
-                } catch (Exception e) {
-                    activity.toast("Enter a title and valid media URL");
-                }
-            })
-        );
-    }
-
     void settings() {
         settingsTab(settingsLayout("Settings", activity.homeScreen::home, selectedTab), selectedTab);
     }

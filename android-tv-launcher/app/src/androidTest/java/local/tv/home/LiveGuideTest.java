@@ -74,7 +74,6 @@ public class LiveGuideTest {
         if (favourites == null) edit.remove("favourites");
         else edit.putStringSet("favourites", new java.util.HashSet<>(favourites));
         edit.commit();
-        ParentalLock.clear(remote.getTargetContext());
         ChannelDatabase.get(remote.getTargetContext()).clear();
     }
 
@@ -238,7 +237,7 @@ public class LiveGuideTest {
     }
 
     @Test
-    public void typedNumbersProgrammeInfoAndTheParentalLock() {
+    public void typedNumbersAndProgrammeInfo() {
         remote.runOnMainSync(() -> activity.liveTv.live());
         await(
             "first page",
@@ -288,17 +287,6 @@ public class LiveGuideTest {
         UiEvidence.capture("live-guide-tomorrow");
         remote.runOnMainSync(() -> activity.liveTv.previousDay(6));
         await("today", () -> activity.liveTv.windowOffset == 0 && activity.liveTv.cells.size() == 8);
-        // A locked channel asks for the PIN instead of playing.
-        ChannelDatabase.Row row = ChannelDatabase.get(activity)
-            .browse("all", "", java.util.Collections.emptySet(), 22)
-            .get(0);
-        ParentalLock.setPin(activity, "1234");
-        ParentalLock.setChannel(activity, row, true);
-        await("guide still showing", () -> activity.liveTv.cells.size() == 8);
-        remote.runOnMainSync(() -> activity.liveTv.cells.get(6).performClick());
-        await("PIN asked", () -> SidePanel.current != null && SidePanel.current.isShowing());
-        UiEvidence.capture("live-pin");
-        remote.runOnMainSync(() -> SidePanel.current.dismiss());
     }
 
     @Test
@@ -488,8 +476,7 @@ public class LiveGuideTest {
         );
         remote.waitForIdleSync();
         UiEvidence.capture("live-guide-menu-first");
-        // Every section on one page now (no More…): Radio, Religion and Shopping were removed,
-        // International and channel groups moved to Settings → Setup.
+        // Nine sections and 0 More… (Music, International, Channel Groups), as on the satellite box.
         remote.runOnMainSync(() -> assertAllRowsOnScreen(10));
         for (int i = 0; i < 9; i++) remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
         await("on the last row", () -> activity.liveTv.menu.rows.get(9).hasFocus());
@@ -498,6 +485,12 @@ public class LiveGuideTest {
         await("round to the top", () -> activity.liveTv.menu.rows.get(0).hasFocus());
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);
         await("round to the bottom", () -> activity.liveTv.menu.rows.get(9).hasFocus());
+        // 0 is More…: Music, International and Channel Groups in the same style; Back returns.
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_0);
+        await("more page", () -> activity.liveTv.menu.page == 1 && activity.liveTv.menu.rows.size() == 3);
+        UiEvidence.capture("live-guide-menu-more");
+        remote.runOnMainSync(() -> activity.onBackPressed());
+        await("first page again", () -> activity.liveTv.menu.page == 0 && activity.liveTv.menu.rows.size() == 10);
         // A number opens its row: with Favourites second, 8 is Kids (9 is Options).
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_8);
         await("kids", () -> activity.liveTv.filter.equals("section:Kids"));
@@ -603,30 +596,30 @@ public class LiveGuideTest {
     }
 
     @Test
-    public void theGuideMenuKeepsSectionsInBoxOrderOnOnePage() {
+    public void theGuideMenuKeepsSectionsInBoxOrderWithMoreAtZero() {
         remote.runOnMainSync(() -> activity.liveTv.start());
         await("menu", () -> activity.liveTv.menu.rows.size() == 10);
         String[][] first = GuideMenu.pageItems(0);
-        // Favourites and Options are on the one page; the sections keep the box's order.
+        // Favourites and Options on the first page in the box's order; 0 is More…, as on the box.
         assertEquals(10, first.length);
         assertEquals("All Channels", first[0][0]);
         assertEquals("Favourites", first[1][0]);
         assertEquals("Entertainment", first[2][0]);
         assertEquals("Kids", first[7][0]);
         assertEquals("Options", first[8][0]);
-        assertEquals("Music", first[9][0]);
+        assertEquals("More…", first[9][0]);
+        String[][] more = GuideMenu.pageItems(1);
+        assertEquals(3, more.length);
+        assertEquals("Music", more[0][0]);
+        assertEquals("International", more[1][0]);
+        assertEquals("Channel Groups", more[2][0]);
         for (String[] item : GuideMenu.ITEMS)
-            for (String gone : new String[] {
-                "Radio",
-                "Religion",
-                "Shopping",
-                "International",
-                "Channel groups from your lists",
-                "More…",
-            })
+            for (String gone : new String[] { "Radio", "Religion", "Shopping" })
                 assertFalse("Not in the guide menu: " + gone, item[0].equals(gone));
-        // 0 opens the tenth row, Music.
+        // 0 opens More…; 1 there opens Music.
         remote.sendKeyDownUpSync(KeyEvent.KEYCODE_0);
+        await("more page", () -> activity.liveTv.menu.page == 1 && activity.liveTv.menu.rows.size() == 3);
+        remote.sendKeyDownUpSync(KeyEvent.KEYCODE_1);
         await("music", () -> activity.liveTv.filter.equals("section:Music"));
     }
 

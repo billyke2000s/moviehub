@@ -103,10 +103,8 @@ public class ArtworkTest {
             if (!(card instanceof ImageView) || position < 0 || position >= 60) continue;
             ImageView image = (ImageView) card;
             if (colour(image, 0xff000000 | (position + 1))) continue;
-            String shown = "none";
-            if (image.getDrawable() instanceof BitmapDrawable) shown = Integer.toHexString(
-                ((BitmapDrawable) image.getDrawable()).getBitmap().getPixel(0, 0) & 0xffffff
-            );
+            Bitmap picture = shown(image);
+            String shown = picture == null ? "none" : Integer.toHexString(picture.getPixel(0, 0) & 0xffffff);
             out.append("; unready position=")
                 .append(position)
                 .append(" description=")
@@ -127,11 +125,17 @@ public class ArtworkTest {
         return image;
     }
 
+    /** The picture a card shows; a downloaded one is inside its fade-in (layer 1). */
+    static Bitmap shown(ImageView image) {
+        android.graphics.drawable.Drawable drawable = image.getDrawable();
+        if (drawable instanceof android.graphics.drawable.TransitionDrawable) drawable =
+            ((android.graphics.drawable.TransitionDrawable) drawable).getDrawable(1);
+        return drawable instanceof BitmapDrawable ? ((BitmapDrawable) drawable).getBitmap() : null;
+    }
+
     boolean colour(ImageView image, int colour) {
-        return (
-            image.getDrawable() instanceof BitmapDrawable &&
-            ((BitmapDrawable) image.getDrawable()).getBitmap().getPixel(0, 0) == colour
-        );
+        Bitmap picture = shown(image);
+        return picture != null && picture.getPixel(0, 0) == colour;
     }
 
     @Before

@@ -43,7 +43,6 @@ Go to **Settings** to choose what MovieHub can access:
 - **Setup → Free channels:** select public Live TV services and channel lists.
 - **Setup → Premiumize:** connect an optional Premiumize account and manage its cloud options.
 - **Setup → Nuvio Sports:** on version **1.0.21 or later**, connect an independent Nuvio Live Sports server if you use one. It is not bundled with MovieHub, and live-stream availability is not guaranteed.
-- **Setup → Parental lock:** choose which sections need a PIN.
 
 **TMDB provides film and series information, not streaming access.** You may need your own TMDB API key to use the film and series catalogue. Other services have their own requirements.
 

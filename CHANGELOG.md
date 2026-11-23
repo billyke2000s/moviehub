@@ -5,6 +5,31 @@ version when it is published. This is the only dated history file (see AGENTS.md
 
 ## Unreleased
 
+## 1.0.27 (23 November 2026)
+
+- Help page: stop telling fast connections they are "too slow" and to switch to 720p. Help no
+  longer judges the internet from the player's last download rate (which drops to almost nothing
+  once a film has buffered); only a real speed test counts. Help's speed test now shows the same
+  measurement as Engineer view in plain words (rating, download Mb/s, response time), shares its
+  result with Engineer view, and says when a test fails instead of showing nothing. A test that
+  receives no data is reported as failed, never as 0 Mb/s.
+- Speed test: measure for the full 10 seconds on 4 connections and average after the first second,
+  instead of one 50 MB download that finished in about a second on fast lines (Cloudflare refuses
+  single requests of 100 MB or more, so each connection repeats 25 MB requests; stops early after
+  1 GB). Jitter no longer counts the first connection's set-up, which rated fast lines "Poor".
+- Removed the parental lock (Setup → Parental lock, "Lock this channel" in programme information,
+  the phone Live TV menu entry, and the PIN before locked channels, sections, films and series).
+  Anything previously locked now plays without a PIN.
+- Removed "Links you added" (Setup → Links you added, the Add source form, the Premiumize cloud
+  "Add to Films/Series" option and the cloud's "Saved library" button). Premiumize cloud files and
+  Transfers still open and play. Links saved before are left in storage, unread, not deleted.
+- Live TV: International and Channel Groups moved from Settings → Setup → More channel sections
+  into the TV Guide menu, under 0 More… (with Music), as on a Sky box. Each opens a numbered list
+  in the guide's style instead of a side panel, and Back from a country's channels returns to the
+  International list.
+- Films, Series and Anime open with a short fade-and-rise (0.22 s) instead of appearing piece by
+  piece; each row's posters fade in together, and each downloaded picture fades in (0.16 s).
+
 ## 1.0.26 (22 November 2026)
 
 - FreeShot: repair HLS playback by giving decoded MPEG-TS segments a .ts extension on MovieHub's local playback relay, rather than a generic .bin filename. The actual production Java relay decoded 30 seconds of video and audio in CI both at startup and after forced playlist-token renewal; playback on physical TV boxes still needs user confirmation.

@@ -169,7 +169,7 @@ final class LiveTvScreen {
 
     /** The guide's fixed parts; BACK goes to the guide menu. */
     private void buildFrame() {
-        activity.fixedScreen(null, menu::show, true);
+        activity.fixedScreen(null, menu::reopen, true);
         frame.build();
         frameGeneration = activity.generation;
         activity.leaving = () -> {
@@ -487,26 +487,16 @@ final class LiveTvScreen {
         return "All channels";
     }
 
-    /** The guide label for a channel: its number, a lock, a star for favourites, its name. */
+    /** The guide label for a channel: its number, a star for favourites, its name. */
     String label(ChannelDatabase.Row channel, boolean favourite) {
-        return (
-            channel.number +
-            "  " +
-            (ParentalLock.locked(activity, channel) ? "🔒 " : "") +
-            (favourite ? "★ " : "") +
-            channel.name
-        );
+        return channel.number + "  " + (favourite ? "★ " : "") + channel.name;
     }
 
     /**
-     * Opens a channel full screen, asking for the PIN first when it is locked. Up and down in the
-     * player follow the list the guide shows; coming back shows the page of the last channel.
+     * Opens a channel full screen. Up and down in the player follow the list the guide shows;
+     * coming back shows the page of the last channel.
      */
     void open(ChannelDatabase.Row channel, int position) {
-        if (ParentalLock.locked(activity, channel)) {
-            ParentalLock.check(activity, channel.name, () -> play(channel, position), null);
-            return;
-        }
         play(channel, position);
     }
 

@@ -1,6 +1,10 @@
 package local.tv.home;
 
 import android.graphics.*;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.TransitionDrawable;
 import android.os.*;
 import android.util.LruCache;
 import android.view.View;
@@ -60,6 +64,26 @@ final class Artwork {
         public void onViewDetachedFromWindow(View view) {
             pump();
         }
+    }
+
+    /** How long a freshly downloaded picture takes to fade in. Pictures already in memory appear at once. */
+    static final int FADE_MILLIS = 160;
+
+    /**
+     * Shows a just-downloaded picture fading in over the card's placeholder colour, instead of
+     * popping on. Backdrops do their own cross-fade ({@link BackdropView}).
+     */
+    private static void fadeIn(ImageView view, Bitmap image) {
+        if (view instanceof BackdropView) {
+            view.setImageBitmap(image);
+            return;
+        }
+        TransitionDrawable fade = new TransitionDrawable(
+            new Drawable[] { new ColorDrawable(Color.TRANSPARENT), new BitmapDrawable(view.getResources(), image) }
+        );
+        fade.setCrossFadeEnabled(true);
+        view.setImageDrawable(fade);
+        fade.startTransition(FADE_MILLIS);
     }
 
     void load(ImageView view, String url) {
@@ -137,7 +161,7 @@ final class Artwork {
                 ImageView view = entry.getKey();
                 if (
                     view.isAttachedToWindow() && url.equals(entry.getValue().url) && url.equals(view.getTag())
-                ) view.setImageBitmap(image);
+                ) fadeIn(view, image);
             }
         } else if (visible(url)) {
             int attempt = failures.getOrDefault(url, 0) + 1;

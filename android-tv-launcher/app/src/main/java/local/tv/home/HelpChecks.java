@@ -40,7 +40,10 @@ final class HelpChecks {
 
         /** The box has a network connection (Wi-Fi or cable). */
         boolean connected = true;
-        /** Download speed in Mb/s from a speed test or the last thing played; below 0 when unknown. */
+        /**
+         * Download speed in Mb/s from a real speed test; below 0 when unknown. Never the player's
+         * download rate: that falls to almost nothing once a film has buffered, whatever the line.
+         */
         float mbps = -1;
         /** Free and total space where MovieHub keeps its data; 0 total when unknown. */
         long freeBytes, totalBytes;

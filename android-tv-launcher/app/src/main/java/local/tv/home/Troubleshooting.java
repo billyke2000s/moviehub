@@ -73,7 +73,7 @@ final class Troubleshooting {
         actions(new String[] { "Run speed test" }, new Runnable[] { this::runSpeedTest });
         body.addView(
             activity.muted(
-                "Tests download speed, HTTP latency, jitter and failed HTTP probes against Cloudflare, not your IPTV provider. Failed requests are not an ICMP packet-loss measurement. Upload speed is not yet tested. Ratings are indicative, not a guarantee of smooth playback. Pause playback first.",
+                "Tests download speed (4 connections for 10 seconds, averaged after the first second), HTTP latency, jitter and failed HTTP probes against Cloudflare, not your IPTV provider. Failed requests are not an ICMP packet-loss measurement. Upload speed is not yet tested. Ratings are indicative, not a guarantee of smooth playback. Pause playback first.",
                 13
             )
         );

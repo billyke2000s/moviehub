@@ -15,8 +15,7 @@ import java.util.concurrent.Executors;
  * Satellite-box behaviour while watching Live TV: channel up and down, typing a channel number,
  * the last-channel key, the now-and-next banner with a progress bar and description, browsing
  * other channels in the banner without leaving this one, backup copies of a channel (the same
- * channel from another list) with automatic switching when a stream fails or keeps buffering,
- * and the parental lock.
+ * channel from another list) with automatic switching when a stream fails or keeps buffering.
  */
 final class LiveZapper {
 
@@ -342,18 +341,7 @@ final class LiveZapper {
                         // A native resolver can fail before this initial database read finishes.
                         if (current && player.liveFailed()) failover("This source is unavailable");
                     };
-                    if (play && ParentalLock.locked(player.activity(), row)) {
-                        player.dialogOpen(true);
-                        ParentalLock.check(
-                            player.activity(),
-                            row.number + " " + row.name,
-                            () -> {
-                                player.panelClosed();
-                                apply.run();
-                            },
-                            player::panelClosed
-                        );
-                    } else apply.run();
+                    apply.run();
                 });
             } catch (Exception e) {
                 Diagnostics.recovered("Changing channel", e);
