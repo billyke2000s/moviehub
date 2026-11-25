@@ -162,7 +162,11 @@ def handle(forgejo, number, retry_diagnosis=True):
                     print('A diagnosis is already saved. Manually dispatch this issue to resume it.')
                     return False
             candidate = propose(source, issue, base, branch, previous)
-        paths, cases = verify(base, candidate, source, affected_cases(source, issue['body']))
+        reported = affected_cases(source, issue['body'])
+        paths, cases = verify(base, candidate, source, reported)
+        latest = forgejo.call('GET', issue_path)
+        if latest['state'] != 'open' or latest['title'] != issue['title'] or affected_cases(source, latest['body']) != reported:
+            raise ValueError('the incident closed or its playback cases changed during verification')
         refs = git('ls-remote', '--heads', 'origin', 'refs/heads/main', 'refs/heads/' + branch).decode()
         heads = {ref: sha for sha, ref in (line.split() for line in refs.splitlines())}
         if heads.get('refs/heads/main') != base or heads.get('refs/heads/' + branch) != candidate:

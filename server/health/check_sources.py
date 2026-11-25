@@ -29,6 +29,8 @@ Settings (environment variables)
   SKIP_LIVE / SKIP_VOD   set to 1 to skip a probe
 """
 import datetime
+import fcntl
+import tempfile
 import json
 import os
 import re
@@ -116,10 +118,12 @@ def decide(state, results, fail_runs, now):
         if result['ok'] is None:
             continue
         if result['ok']:
-            if entry['broken']:
+            if entry['broken'] and not entry.get('sampleResumed'):
                 recovered.append(key)
-            entry.update(fails=0, broken=False)
+                entry['sampleResumed'] = True
+            entry['fails'] = 0
             continue
+        entry.pop('sampleResumed', None)
         entry['fails'] += 1
         if entry['broken']:
             still.append(key)
@@ -297,6 +301,16 @@ def issue_body(result, folder):
 def main():
     env = os.environ
     state_file = Path(env.get('STATE_FILE', '/srv/moviehub/health/state.json'))
+    state_file.parent.mkdir(parents=True, exist_ok=True)
+    with state_file.with_suffix(state_file.suffix + '.lock').open('a') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            sys.exit('Another source health check is running')
+        check(env, state_file)
+
+
+def check(env, state_file):
     evidence = env.get('EVIDENCE_DIR', '/srv/moviehub/health/evidence')
     live_runs = int(env.get('LIVE_FAIL_RUNS', '1'))
     vod_runs = int(env.get('VOD_FAIL_RUNS', '2'))
@@ -346,8 +360,14 @@ def main():
                          {'body': 'A scheduled server sample decoded: %s. The originally reported '
                                   'channel or title still needs confirmation.' % results[key]['summary']})
 
-    state_file.parent.mkdir(parents=True, exist_ok=True)
-    state_file.write_text(json.dumps(state, indent=2, sort_keys=True))
+    with tempfile.NamedTemporaryFile('w', dir=state_file.parent, delete=False) as temp:
+        try:
+            json.dump(state, temp, indent=2, sort_keys=True)
+            temp.flush()
+            os.fsync(temp.fileno())
+            os.replace(temp.name, state_file)
+        finally:
+            Path(temp.name).unlink(missing_ok=True)
     healthy = sum(r['ok'] is True for r in results.values())
     unverified = sum(r['ok'] is None for r in results.values())
     print(json.dumps({'checked': len(results), 'samplesPlayed': healthy, 'unverified': unverified, 'newlyBroken': newly,

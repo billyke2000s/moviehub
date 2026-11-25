@@ -177,8 +177,8 @@ unset TOKEN_HEADER
 NTFY_URL="https://ntfy.sh/$NTFY_TOPIC"
 FJ_ADMIN_PASSWORD="$ADMINPW" FJ_BOT_PASSWORD="$BOTPW" FJ_NTFY_URL="$NTFY_URL" \
     python3 /srv/moviehub/repo/server/bootstrap/configure-repair.py
-runuser -u moviehub-release -- env HOME=/var/lib/moviehub-release git config --global credential.helper store
-runuser -u moviehub-release -- env HOME=/var/lib/moviehub-release git config --global credential.useHttpPath true
+runuser -u moviehub-release -- env HOME=/var/lib/moviehub-release git -C /var/lib/moviehub-release config --global credential.helper store
+runuser -u moviehub-release -- env HOME=/var/lib/moviehub-release git -C /var/lib/moviehub-release config --global credential.useHttpPath true
 bash /srv/moviehub/repo/server/bootstrap/install-publisher.sh
 
 step "Repository-scoped Forgejo runner"

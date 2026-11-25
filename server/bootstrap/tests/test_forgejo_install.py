@@ -131,10 +131,10 @@ LEVEL = Warn
                 self.assertEqual(api('GET',repo+'/actions/variables/MOVIEHUB_FORGEJO_URL')['data'],url)
                 if check_publisher:
                     release=['sudo','-n','-H','-u','moviehub-release','--']
-                    local(release+['git','credential-store','store'],input=(
+                    local(release+['git','-C','/var/lib/moviehub-release','credential-store','store'],input=(
                         'protocol=http\nhost=127.0.0.1:3000\npath=billy/moviehub.git\nusername='+bot+'\npassword='+read+'\n\n').encode(),check=True)
-                    local(release+['git','config','--global','credential.helper','store'],check=True)
-                    local(release+['git','config','--global','credential.useHttpPath','true'],check=True)
+                    local(release+['git','-C','/var/lib/moviehub-release','config','--global','credential.helper','store'],check=True)
+                    local(release+['git','-C','/var/lib/moviehub-release','config','--global','credential.useHttpPath','true'],check=True)
                     runner=['sudo','-n','-u','moviehub','--']
                     key='/srv/moviehub/keys/signing.pem'
                     self.assertNotEqual(local(runner+['test','-r',key]).returncode,0)

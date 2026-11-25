@@ -46,7 +46,9 @@ class Decisions(unittest.TestCase):
         self.assertEqual(c.decide(state, bad, 2, 0), (['vod:a'], [], []))
         self.assertEqual(c.decide(state, bad, 2, 0), ([], ['vod:a'], []))
         self.assertEqual(c.decide(state, good, 2, 0), ([], [], ['vod:a']))
-        self.assertFalse(state['vod:a']['broken'])
+        self.assertTrue(state['vod:a']['broken'])
+        self.assertEqual(c.decide(state, good, 2, 1), ([], [], []))
+        self.assertEqual(c.decide(state, bad, 2, 2), ([], ['vod:a'], []))
 
     def test_live_and_film_sources_use_their_own_thresholds(self):
         state = {}

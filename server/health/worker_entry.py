@@ -15,7 +15,8 @@ def main():
                               check=True, stdout=stdout).stdout
     git('init', '-q')
     git('add', '-A')
-    tree = git('write-tree', stdout=subprocess.PIPE).decode().strip()
+    git('-c', 'user.name=MovieHub', '-c', 'user.email=worker@localhost', 'commit', '-qm', 'Input snapshot')
+    tree = git('rev-parse', 'HEAD^{tree}', stdout=subprocess.PIPE).decode().strip()
     prompt = sys.stdin.read(16000)
     with open('/tmp/worker-output', 'w+b') as log:
         subprocess.run([*sys.argv[1:], prompt], cwd=work, stdout=log, stderr=log, check=True)
