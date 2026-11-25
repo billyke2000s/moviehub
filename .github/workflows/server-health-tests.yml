@@ -3,6 +3,9 @@ on:
     pull_request:
         paths:
             - "server/health/**"
+            - "server/bootstrap/**"
+            - "server/tools/publish-main.sh"
+            - "server/gate/moviehub-gate.service"
             - ".forgejo/workflows/*"
             - "provider-engine/tools/live-probe.mjs"
             - ".github/workflows/server-health-tests.yml"
@@ -23,3 +26,39 @@ jobs:
                   node-version: "22"
             - run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
             - run: python3 -m unittest discover -s server/health -v
+
+    forgejo:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - uses: actions/checkout@v5
+            - name: Install signed test server into the temporary workspace
+              run: bash server/bootstrap/forgejo-binary.sh forgejo 17.0.2 "$RUNNER_TEMP/forgejo"
+            - name: Create disposable runner and signing identities
+              run: |
+                  test ! -e /srv/moviehub
+                  sudo useradd --system --create-home --home-dir /var/lib/moviehub-release moviehub-release
+                  sudo useradd --system --create-home --home-dir /var/lib/moviehub-checks moviehub
+                  sudo install -d -m 755 /srv/moviehub /srv/moviehub/feed /srv/moviehub/feed/app
+                  sudo install -d -m 700 -o moviehub-release /srv/moviehub/keys
+                  sudo install -d -m 755 -o moviehub-release /srv/moviehub/feed/scrapers
+                  sudo -u moviehub-release openssl genrsa -out /srv/moviehub/keys/signing.pem 2048
+                  sudo -u moviehub-release openssl pkey -in /srv/moviehub/keys/signing.pem -pubout | sudo tee /srv/moviehub/public.pem >/dev/null
+                  echo '{"versionCode":1}' | sudo tee /srv/moviehub/feed/app/update.json >/dev/null
+                  sudo bash server/bootstrap/install-publisher.sh
+            - name: Check repeat setup, protected branches, release permissions and signed output
+              run: MOVIEHUB_TEST_PUBLISHER=1 FORGEJO_TEST_BINARY="$RUNNER_TEMP/forgejo" python3 server/bootstrap/tests/test_forgejo_install.py
+    isolated-worker:
+        runs-on: ubuntu-latest
+        timeout-minutes: 12
+        steps:
+            - uses: actions/checkout@v5
+            - name: Run the production worker boundary with a harmless offline fixture
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  command -v podman || (sudo apt-get update && sudo apt-get install -y podman)
+                  test "$(podman info --format '{{.Host.Security.Rootless}}')" = true
+                  image=$(podman pull -q docker.io/library/python:3.11-bookworm)
+                  export MOVIEHUB_WORKER_IMAGE="sha256:${image#sha256:}"
+                  python3 server/bootstrap/tests/test_worker_container.py

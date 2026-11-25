@@ -41,7 +41,7 @@ The Forgejo repair verifier runs clean base, candidate and base-control checkout
 reported case. Live TV needs decoded audio and video on the same channel ID. Films need the
 pinned Android player audit with audio, video, a plausible runtime and a midpoint seek.
 A healthy control, an unavailable player or a different working sample leaves the repair unverified.
-For runner setup, see [the server guide](../server/README.md#6-codex-gpt-for-automatic-fixes).
+For runner setup, see [the server guide](../server/README.md#6-configure-the-repair-worker).
 
 ## 4. Review the change
 

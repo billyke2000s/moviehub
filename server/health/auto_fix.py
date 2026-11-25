@@ -4,7 +4,6 @@ import contextlib
 import json
 import os
 import re
-import shlex
 import subprocess
 import sys
 import tempfile
@@ -12,6 +11,7 @@ from pathlib import Path
 
 import check_sources as health
 import playback_evidence as evidence
+import isolated_worker
 
 ROOT = health.ROOT
 SOURCE_ID = re.compile(r'(?:vod|live):[a-zA-Z0-9_][a-zA-Z0-9_.:-]*')
@@ -33,9 +33,9 @@ def checkout(revision):
             git('worktree', 'remove', '--force', temp)
 
 
-def allowed(path, source):
+def allowed(path, source, vod_paths):
     if source.startswith('vod:'):
-        return path.startswith(VOD_FOLDER) and path.endswith(('.py', '.json'))
+        return path in vod_paths
     provider = source.split(':', 1)[1]
     return ((path.startswith('provider-engine/upstream/modules/' + provider + '/') and path.endswith('.ts'))
             or (provider == 'freelivesports' and path == 'provider-engine/upstream/freelivesports.ts'))
@@ -43,49 +43,44 @@ def allowed(path, source):
 
 def check_changes(cwd, base, source):
     # Check deletions, both halves of a rename, modes, staged edits and any commits the worker made.
+    vod_paths = set()
+    if source.startswith('vod:'):
+        registry = json.loads(git('show', base + ':' + VOD_FOLDER + 'moviehub_providers.json', cwd=cwd))
+        for row in registry:
+            if row['id'] == source[4:] and re.fullmatch(r'[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*', row['module']):
+                vod_paths.add(VOD_FOLDER + row['module'].replace('.', '/') + '.py')
+        # Shared native engines and infrastructure changes require owner review outside this automation.
+        if re.fullmatch(r'vod:native:[a-z][a-z0-9_]*', source):
+            name = source.split(':')[-1]
+            if not name.startswith('_'):
+                vod_paths.add(VOD_FOLDER + 'moviehub_native/' + name + '.py')
     rows = git('diff', '--raw', '-z', '--no-renames', '--cached', base, cwd=cwd).split(b'\0')[:-1]
     paths = []
     for meta, raw in zip(rows[::2], rows[1::2]):
         path = os.fsdecode(raw)
         old, new = meta[1:].split()[:2]
-        if not allowed(path, source) or {old, new} - {b'000000', b'100644'}:
+        if not re.fullmatch(r'[A-Za-z0-9_./-]+', path) or not allowed(path, source, vod_paths) or {old, new} - {b'000000', b'100644'}:
             raise ValueError('candidate touches an unsupported path or file mode: ' + repr(path))
         paths.append(path)
     return paths
 
 
 def propose(source, issue, base, branch, previous=''):
-    # The worker gets a disposable clone with no remote or checkout credentials. Construct the
-    # candidate from its allowed file diff in a separate clean checkout.
-    with tempfile.TemporaryDirectory(prefix='moviehub-proposal-') as temp:
-        git('clone', '--quiet', '--no-local', '--no-checkout', str(ROOT), temp)
-        git('remote', 'remove', 'origin', cwd=temp)
-        git('checkout', '--quiet', '--detach', base, cwd=temp)
-        prompt = ('Prepare a local change for %s. The wrapper owns verification, commits and review.\n%s'
-                  % (source, issue['body'][:8000]))
-        if previous:
-            prompt += '\nSaved diagnosis from the earlier attempt:\n' + previous
-        env = {key: value for key, value in os.environ.items()
-               if not (key.startswith(('FORGEJO_', 'GITHUB_', 'GIT_CONFIG_', 'ACTIONS_', 'RUNNER_'))
-                       or key in ('GH_TOKEN', 'NTFY_URL'))}
-        cmd = shlex.split(env.get('CODEX_CMD', 'codex exec --full-auto')) + [prompt]
-        try:
-            worker = subprocess.run(cmd, cwd=temp, env=env, capture_output=True, text=True,
-                                    timeout=60 * int(env.get('CODEX_MINUTES', '30')), check=False)
-        except subprocess.TimeoutExpired:
-            raise ValueError('worker timed out; no completed proposal')
-        if worker.returncode:
-            raise ValueError('worker exited %d; no completed proposal' % worker.returncode)
-        git('add', '-A', cwd=temp)
-        paths = check_changes(temp, base, source)
-        if not paths:
-            # Quote the diagnosis as data; never use its wording as an issue-closing PR body.
-            diagnosis = (worker.stdout or '').strip()[-2000:]
-            diagnosis = re.sub(r'https?://\S+', '[address omitted]', diagnosis)
-            raise NoPatch(diagnosis or 'The worker returned no diagnosis.')
-        patch = git('diff', '--cached', '--binary', '--no-renames', base, cwd=temp)
+    prompt = ('Prepare a local change for %s. The wrapper owns verification, commits and review.\n%s'
+              % (source, issue['body'][:8000]))
+    if previous:
+        prompt += '\nSaved diagnosis from the earlier attempt:\n' + previous
+    patch, diagnosis = isolated_worker.proposal(ROOT, base, prompt)
+    if not patch:
+        diagnosis = re.sub(r'https?://\S+', '[address omitted]', diagnosis)
+        raise NoPatch(diagnosis or 'The worker returned no diagnosis.')
+    if b'GIT binary patch' in patch.splitlines():
+        raise ValueError('binary provider patches require manual review')
     with checkout(base) as clean:
-        git('apply', '--index', '--binary', '-', input=patch, cwd=clean)
+        # Only touch a temporary index until every changed path and file mode has been checked.
+        git('apply', '--cached', '--binary', '--whitespace=nowarn', '-', input=patch, cwd=clean)
+        if not check_changes(clean, base, source):
+            raise NoPatch('The patch contains no source change.')
         git('commit', '--quiet', '-m', 'Propose provider change for ' + source, cwd=clean)
         candidate = git('rev-parse', 'HEAD', cwd=clean).decode().strip()
         git('push', 'origin', 'HEAD:refs/heads/' + branch, cwd=clean)
@@ -120,14 +115,16 @@ def verify(base, candidate, source, cases):
                 raise ValueError('the original build already plays the measured case; no repair established')
             raise ValueError('the original case has no conclusive playback measurement')
         after = evidence.measure(patched, source)
-    if not evidence.transition(before, after, before):
+    if set(before) != cases or any(passed for passed, _ in before.values()):
+        raise ValueError('not every reported case reproduced on the original build')
+    if len(evidence.transition(before, after, before)) != len(cases):
         raise ValueError('the candidate did not pass a case that failed on the base')
     with checkout(base) as control:
         repeated = evidence.measure(control, source)
-    cases = evidence.transition(before, after, repeated)
-    if not cases:
+    observations = evidence.transition(before, after, repeated)
+    if len(observations) != len(cases):
         raise ValueError('the original failure did not repeat on the base; no repair established')
-    return paths, cases
+    return paths, observations
 
 
 DIAGNOSIS = 'Diagnosis only. No code changed.'
@@ -186,13 +183,22 @@ def handle(forgejo, number, retry_diagnosis=True):
             'The content identity still needs review.\n\nBase: `%s`\n\nCandidate: `%s`\n\nCases:\n%s\n\nChanged files:\n%s'
             % (number, measurement, base, candidate, '\n'.join('- ' + repr(case) for case in cases),
                '\n'.join('- `%s`' % p for p in paths)))
-    # Forgejo enforces one open PR per head/base pair. Rechecking an existing PR only adds evidence.
-    existing = forgejo.call('GET', '/pulls?state=open&head=' + forgejo.repo.split('/')[0] + ':' + branch) or []
-    if any(pr['head']['ref'] == branch and pr['base']['ref'] == 'main' for pr in existing):
+    review = 'review/issue-%d-%s' % (number, candidate)
+    # A pending retry can change the proposal branch. Keep the reviewed PR attached to
+    # the object that passed. A divergent review ref is never overwritten.
+    ref = 'refs/heads/' + review
+    current = git('ls-remote', '--heads', 'origin', ref).split()
+    if not current:
+        git('push', '--force-with-lease=' + ref + ':', 'origin', candidate + ':' + ref)
+    elif current[0].decode() != candidate:
+        comment(PENDING + ' The review reference no longer matches the measured commit.')
+        return False
+    existing = forgejo.call('GET', '/pulls?state=open&head=' + forgejo.repo.split('/')[0] + ':' + review) or []
+    if any(pr['head']['ref'] == review and pr['base']['ref'] == 'main' for pr in existing):
         comment(body)
     else:
         forgejo.call('POST', '/pulls', {'title': 'Review playback change for ' + source,
-                                        'head': branch, 'base': 'main', 'body': body})
+                                        'head': review, 'base': 'main', 'body': body})
     health.notify(os.environ.get('NTFY_URL'), 'MovieHub: playback sample passed', 'Review the candidate for ' + source)
     return True
 

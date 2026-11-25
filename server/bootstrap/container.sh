@@ -3,27 +3,69 @@
 # Installs tools, Forgejo (private git + workflows), its runner, the signing key, the gate and the
 # health checker settings. Passwords and keys go to /root/moviehub-credentials.txt (root only).
 set -euo pipefail
-. /root/moviehub-env
+if [[ -f /root/moviehub-env ]]; then
+    . /root/moviehub-env
+elif [[ -f /root/.moviehub-install ]]; then
+    . /root/.moviehub-install
+else
+    echo 'Missing installer inputs' >&2; exit 1
+fi
 export DEBIAN_FRONTEND=noninteractive
 export HOME=/root   # pct exec starts without HOME; git needs it
 step() { echo; echo "==== [container] $* ($(date +%H:%M:%S))"; }
 fail() { echo "SETUP STOPPED: $*"; exit 1; }
 rand() { openssl rand -hex "${1:-24}"; }
 CREDS=/root/moviehub-credentials.txt
-umask 022
+umask 077
+
+# Create the install identity once. A retry keeps the admin password, feed and notification keys.
+identity=/root/.moviehub-install
+if [[ ! -f "$identity" ]]; then
+    [[ ! -e /root/moviehub-credentials.txt && ! -e /etc/forgejo/app.ini ]] || fail "This existing installation has a different credential layout; its credentials were left intact."
+    ADMINPW=$(rand 24)
+    BOTPW=$(rand 24)
+    NTFY_TOPIC="moviehub-$(rand 12)"
+    FEED_KEY=$(rand 24)
+    tmp=$(mktemp /root/.moviehub-install.XXXXXXXX)
+    declare -p CONTAINER_IP ROOTPW BRANCH INSTALL_REV ADMINPW BOTPW NTFY_TOPIC FEED_KEY > "$tmp"
+    mv -fT "$tmp" "$identity"
+else
+    . "$identity"
+fi
 
 step "Installing packages"
 apt-get update -q
-apt-get install -y -q git python3 python3-pip openjdk-17-jdk-headless ffmpeg curl openssl ca-certificates jq sqlite3 gnupg
+apt-get install -y -q git python3 python3-pip openjdk-17-jdk-headless ffmpeg curl openssl ca-certificates jq sqlite3 gnupg sudo podman uidmap slirp4netns fuse-overlayfs
 if ! command -v node >/dev/null || [ "$(node -p 'process.versions.node.split(".")[0]')" -lt 22 ]; then
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key -o /root/.moviehub-node-key
+    fingerprint=$(gpg --batch --with-colons --show-keys /root/.moviehub-node-key |
+        awk -F: '$1=="pub"{primary=1; next} $1=="fpr" && primary {print $10; primary=0}')
+    [[ "$fingerprint" == 6F71F525282841EEDAF851B42F59B5F99B1BE0B4 ]] || fail "Unexpected NodeSource key."
+    install -m 0644 /root/.moviehub-node-key /usr/share/keyrings/moviehub-nodesource.asc
+    echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/moviehub-nodesource.asc] https://deb.nodesource.com/node_22.x nodistro main' > /etc/apt/sources.list.d/moviehub-node.list
+    chmod 644 /etc/apt/sources.list.d/moviehub-node.list
+    apt-get update -q
     apt-get install -y -q nodejs
 fi
-pip install -q --break-system-packages requests==2.32.5 six==1.17.0
+(umask 022; pip install -q --break-system-packages requests==2.32.5 six==1.17.0)
 
 step "Folders and the JavaScript interpreter for the Live TV probe"
-id moviehub >/dev/null 2>&1 || adduser --system --group --home /srv/moviehub --shell /bin/bash moviehub
-mkdir -p /srv/moviehub/{feed/app,feed/experimental,feed/providers,feed/scrapers,feed/scrapers-experimental,keys,health,tools}
+id moviehub >/dev/null 2>&1 || adduser --disabled-password --gecos "" --home /var/lib/moviehub-checks --shell /bin/bash moviehub
+id moviehub-release >/dev/null 2>&1 || adduser --system --group --home /var/lib/moviehub-release moviehub-release
+id moviehub-gate >/dev/null 2>&1 || adduser --system --group --no-create-home moviehub-gate
+install -d -m 0700 -o moviehub -g moviehub /var/lib/moviehub-checks /srv/moviehub/health /srv/moviehub/runner
+install -d -m 0755 -o root -g root /srv/moviehub /srv/moviehub/tools
+install -d -m 0700 -o moviehub-release -g moviehub-release /var/lib/moviehub-release /srv/moviehub/keys
+install -d -m 0755 -o moviehub-release -g moviehub-release /srv/moviehub/feed{,/app,/experimental,/providers,/scrapers,/scrapers-experimental}
+if [[ ! -d /srv/moviehub/repo/.git ]]; then
+    staged=$(mktemp -d /srv/moviehub/.checkout.XXXXXXXX)
+    git clone -q --no-checkout https://github.com/billyke2000s/moviehub.git "$staged"
+    mv -T "$staged" /srv/moviehub/repo
+fi
+[[ "$(stat -c %u /srv/moviehub/repo)" == 0 ]] || fail "Gate checkout must be owned by root."
+git -C /srv/moviehub/repo checkout -q --detach "${INSTALL_REV:?missing installer revision}"
+# The gate service reads its trusted script. The worker has no write access.
+chmod -R a+rX /srv/moviehub/repo
 curl -fsSL -o /srv/moviehub/tools/rhino-1.8.0.jar https://repo.maven.apache.org/maven2/org/mozilla/rhino/1.8.0/rhino-1.8.0.jar
 echo "e7ff37ec00b4c19ea16f42b5b3a601616d559dbb76e65bc9d094bd6bda2a925d  /srv/moviehub/tools/rhino-1.8.0.jar" | sha256sum --check
 
@@ -32,15 +74,13 @@ if [ ! -f /srv/moviehub/keys/signing.pem ]; then
     openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out /srv/moviehub/keys/signing.pem 2>/dev/null
 fi
 PUBKEY=$(openssl pkey -in /srv/moviehub/keys/signing.pem -pubout -outform DER | base64 -w0)
-chmod 700 /srv/moviehub/keys; chmod 600 /srv/moviehub/keys/signing.pem
+chown moviehub-release:moviehub-release /srv/moviehub/keys/signing.pem
+chmod 600 /srv/moviehub/keys/signing.pem
+chmod 644 /srv/moviehub/tools/rhino-1.8.0.jar
 
 step "Forgejo"
 id git >/dev/null 2>&1 || adduser --system --group --home /home/git --shell /bin/bash git
-FJ_VER=$(curl -fsSL https://codeberg.org/api/v1/repos/forgejo/forgejo/releases/latest | jq -r .tag_name | sed 's/^v//')
-[ -n "$FJ_VER" ] && [ "$FJ_VER" != null ] || fail "Could not find the latest Forgejo version."
-# Download beside the old file and swap it in, so a re-run works while Forgejo is running.
-curl -fsSL -o /usr/local/bin/forgejo.new "https://codeberg.org/forgejo/forgejo/releases/download/v$FJ_VER/forgejo-$FJ_VER-linux-amd64"
-chmod 755 /usr/local/bin/forgejo.new && mv -f /usr/local/bin/forgejo.new /usr/local/bin/forgejo
+bash /root/forgejo-binary.sh forgejo 17.0.2 /usr/local/bin/forgejo
 mkdir -p /var/lib/forgejo /etc/forgejo
 chown git:git /var/lib/forgejo
 chmod 750 /var/lib/forgejo
@@ -110,12 +150,9 @@ curl -fs http://127.0.0.1:3000/api/healthz >/dev/null || fail "Forgejo did not s
 FJ="runuser -u git -- /usr/local/bin/forgejo --config /etc/forgejo/app.ini --work-path /var/lib/forgejo"
 FJCLI="runuser -u git -- env FORGEJO_WORK_DIR=/var/lib/forgejo /usr/local/bin/forgejo forgejo-cli"
 ADMIN=billy
-ADMINPW=$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-20)
 if ! $FJ admin user list | awk '{print $2}' | grep -qx "$ADMIN"; then
     $FJ admin user create --admin --username "$ADMIN" --password "$ADMINPW" \
         --email moviehub@localhost --must-change-password=false
-else
-    $FJ admin user change-password --username "$ADMIN" --password "$ADMINPW" --must-change-password=false
 fi
 API=http://127.0.0.1:3000/api/v1
 auth=(-u "$ADMIN:$ADMINPW")
@@ -127,45 +164,35 @@ if ! curl -fs "${auth[@]}" "$API/repos/$ADMIN/moviehub" >/dev/null; then
         \"repo_owner\": \"$ADMIN\", \"private\": true, \"mirror\": false, \"service\": \"git\"}" >/dev/null
 fi
 
-step "Token, secrets and settings for the workflows"
-TOKEN=$(curl -fsS "${auth[@]}" -H 'Content-Type: application/json' -X POST "$API/users/$ADMIN/tokens" \
-    -d "{\"name\": \"health-$(date +%s)\", \"scopes\": [\"write:repository\", \"write:issue\"]}" | jq -r .sha1)
-[ -n "$TOKEN" ] && [ "$TOKEN" != null ] || fail "Could not create the workflow token."
-NTFY_TOPIC="moviehub-$(rand 12)"
+step "Protected main and repository-scoped credentials"
+# Finish the import before protecting main. No authenticated URL is logged or saved in Git.
+TOKEN_HEADER="Authorization: Basic $(printf '%s:%s' "$ADMIN" "$ADMINPW" | base64 -w0)"
+# A completed bootstrap can be retried after the owner has merged later work.
+if [[ ! -e /root/.moviehub-imported ]]; then
+    FJ_BOOT_AUTH="$TOKEN_HEADER" git -C /srv/moviehub/repo --config-env=http.extraHeader=FJ_BOOT_AUTH \
+        push -q http://127.0.0.1:3000/$ADMIN/moviehub.git HEAD:refs/heads/main
+    touch /root/.moviehub-imported
+fi
+unset TOKEN_HEADER
 NTFY_URL="https://ntfy.sh/$NTFY_TOPIC"
-put_secret() { curl -fsS "${auth[@]}" -H 'Content-Type: application/json' -X PUT \
-    "$API/repos/$ADMIN/moviehub/actions/secrets/$1" -d "{\"data\": \"$2\"}" >/dev/null \
-    || echo "WARNING: could not set secret $1 (set it in repository Settings > Actions > Secrets)"; }
-put_var() { curl -fsS "${auth[@]}" -H 'Content-Type: application/json' -X POST \
-    "$API/repos/$ADMIN/moviehub/actions/variables/$1" -d "{\"value\": \"$2\"}" >/dev/null \
-    || echo "WARNING: could not set variable $1 (set it in repository Settings > Actions > Variables)"; }
-put_secret HEALTH_TOKEN "$TOKEN"
-put_secret NTFY_URL "$NTFY_URL"
-put_var MOVIEHUB_FORGEJO_URL "http://127.0.0.1:3000"
+FJ_ADMIN_PASSWORD="$ADMINPW" FJ_BOT_PASSWORD="$BOTPW" FJ_NTFY_URL="$NTFY_URL" \
+    python3 /srv/moviehub/repo/server/bootstrap/configure-repair.py
+runuser -u moviehub-release -- env HOME=/var/lib/moviehub-release git config --global credential.helper store
+runuser -u moviehub-release -- env HOME=/var/lib/moviehub-release git config --global credential.useHttpPath true
+bash /srv/moviehub/repo/server/bootstrap/install-publisher.sh
 
-step "Forgejo runner (runs the workflows directly in this container as user moviehub)"
-RUN_VER=$(curl -fsSL https://code.forgejo.org/api/v1/repos/forgejo/runner/releases/latest | jq -r .tag_name | sed 's/^v//')
-[ -n "$RUN_VER" ] && [ "$RUN_VER" != null ] || fail "Could not find the latest runner version."
-curl -fsSL -o /usr/local/bin/forgejo-runner.new \
-    "https://code.forgejo.org/forgejo/runner/releases/download/v$RUN_VER/forgejo-runner-$RUN_VER-linux-amd64"
-chmod 755 /usr/local/bin/forgejo-runner.new && mv -f /usr/local/bin/forgejo-runner.new /usr/local/bin/forgejo-runner
+step "Repository-scoped Forgejo runner"
+bash /root/forgejo-binary.sh runner 13.2.2 /usr/local/bin/forgejo-runner
 RUNNER_HOME=/srv/moviehub/runner
 mkdir -p "$RUNNER_HOME"; chown moviehub:moviehub "$RUNNER_HOME"
 if [ ! -f "$RUNNER_HOME/.runner" ]; then
     SECRET=$(rand 20)
-    # Two documented ways to register; try the offline one first, then a registration token.
-    if $FJCLI actions register --config /etc/forgejo/app.ini --name moviehub --labels moviehub:host --secret "$SECRET" >/dev/null 2>&1 \
-        && runuser -u moviehub -- bash -c "cd $RUNNER_HOME && /usr/local/bin/forgejo-runner create-runner-file \
-            --instance http://127.0.0.1:3000 --secret $SECRET --name moviehub" >/dev/null; then
-        echo "Runner registered (offline secret)."
-    else
-        RTOKEN=$($FJ actions generate-runner-token 2>/dev/null | tail -1)
-        [ -n "$RTOKEN" ] || fail "Could not register the workflow runner."
-        runuser -u moviehub -- bash -c "cd $RUNNER_HOME && /usr/local/bin/forgejo-runner register --no-interactive \
-            --instance http://127.0.0.1:3000 --token $RTOKEN --name moviehub --labels moviehub:host" >/dev/null
-        echo "Runner registered (token)."
-    fi
-    runuser -u moviehub -- bash -c "cd $RUNNER_HOME && /usr/local/bin/forgejo-runner generate-config > config.yml"
+    $FJCLI actions register --config /etc/forgejo/app.ini --name moviehub --scope "$ADMIN/moviehub" \
+        --labels moviehub:host --secret "$SECRET"
+    runuser -u moviehub -- bash -c 'cd "$1" && exec /usr/local/bin/forgejo-runner create-runner-file --instance http://127.0.0.1:3000 --secret "$2" --name moviehub' -- "$RUNNER_HOME" "$SECRET"
+fi
+if [[ ! -s "$RUNNER_HOME/config.yml" ]]; then
+    runuser -u moviehub -- bash -ec 'cd "$1"; /usr/local/bin/forgejo-runner generate-config > config.new; mv config.new config.yml' -- "$RUNNER_HOME"
 fi
 cat > /etc/systemd/system/forgejo-runner.service <<EOF
 [Unit]
@@ -175,6 +202,10 @@ Requires=forgejo.service
 [Service]
 User=moviehub
 WorkingDirectory=$RUNNER_HOME
+Environment=HOME=/var/lib/moviehub-checks XDG_RUNTIME_DIR=/run/moviehub-checks
+RuntimeDirectory=moviehub-checks
+RuntimeDirectoryMode=0700
+Delegate=yes
 ExecStart=/usr/local/bin/forgejo-runner daemon --config $RUNNER_HOME/config.yml
 Restart=always
 [Install]
@@ -182,30 +213,15 @@ WantedBy=multi-user.target
 EOF
 
 step "Gate (install codes + update feed)"
-FEED_KEY=$(rand 24)
-[ -d /srv/moviehub/repo/.git ] || git clone -q https://github.com/billyke2000s/moviehub /srv/moviehub/repo
-git config --global --add safe.directory /srv/moviehub/repo
-git -C /srv/moviehub/repo checkout -q "$BRANCH" 2>/dev/null || true
-git -C /srv/moviehub/repo pull -q --ff-only || echo "WARNING: could not update /srv/moviehub/repo"
-# Bring Forgejo's copy up to date with GitHub (fast-forward only; never overwrites newer work).
-git -C /srv/moviehub/repo push -q "http://$ADMIN:$ADMINPW@127.0.0.1:3000/$ADMIN/moviehub.git" "HEAD:refs/heads/main" \
-    || echo "WARNING: could not update Forgejo's copy (it has newer commits than GitHub?)"
 cat > /etc/moviehub-gate.env <<EOF
 FEED_DIR=/srv/moviehub/feed
 FEED_KEY=$FEED_KEY
 EOF
 chmod 600 /etc/moviehub-gate.env
 cp /srv/moviehub/repo/server/gate/moviehub-gate.service /etc/systemd/system/
-chown -R moviehub:moviehub /srv/moviehub
-chown root:root /srv/moviehub/keys
-chown moviehub:moviehub /srv/moviehub/keys/signing.pem
-chmod 711 /srv/moviehub/keys
 systemctl daemon-reload
 systemctl enable forgejo-runner moviehub-gate
 systemctl restart forgejo-runner moviehub-gate
-
-step "Codex (GPT) command line"
-npm install -g @openai/codex >/dev/null 2>&1 || echo "WARNING: Codex install failed; install later with: npm install -g @openai/codex"
 
 step "Writing $CREDS"
 cat > "$CREDS" <<EOF
@@ -220,16 +236,16 @@ Phone alerts (ntfy app) : subscribe to topic  $NTFY_TOPIC  on ntfy.sh
 Signing public key      : $PUBKEY
 Signing PRIVATE key     : /srv/moviehub/keys/signing.pem   <- copy to a USB stick, keep it safe
 
-Still to do yourself: Codex login (runuser -u moviehub -- codex), Cloudflare, GitHub secrets
+Still to configure: offline worker image, dedicated test emulator for films, Cloudflare, GitHub secrets
 MOVIEHUB_FEED_URL / MOVIEHUB_FEED_KEY for the switchover release.
 EOF
 chmod 600 "$CREDS"
 rm -f /root/moviehub-env
 
 step "Checks"
-for s in forgejo forgejo-runner moviehub-gate; do printf '%-16s %s\n' "$s" "$(systemctl is-active $s)"; done
-curl -fs -o /dev/null -w 'gate public page: HTTP %{http_code}\n' http://127.0.0.1:8080/ || echo "gate public page: NOT ANSWERING"
-curl -fs -o /dev/null -w 'gate code page:   HTTP %{http_code}\n' http://127.0.0.1:8081/ || echo "gate code page: NOT ANSWERING"
+for s in forgejo forgejo-runner moviehub-gate; do systemctl is-active --quiet "$s" || fail "Service $s is not active"; printf '%-16s %s\n' "$s" "$(systemctl is-active $s)"; done
+curl -fs -o /dev/null -w 'gate public page: HTTP %{http_code}\n' http://127.0.0.1:8080/ || fail "Gate public page did not answer."
+curl -fs -o /dev/null -w 'gate code page:   HTTP %{http_code}\n' http://127.0.0.1:8081/ || fail "Gate code page did not answer."
 echo
 echo "PUBLIC_SIGNING_KEY=$PUBKEY"
 echo "MOVIEHUB SETUP FINISHED. Forgejo: http://$CONTAINER_IP:3000  Credentials: $CREDS"

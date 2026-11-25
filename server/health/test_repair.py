@@ -98,7 +98,7 @@ class Forgejo:
 
     def call(self, method, path, body=None):
         if path == '/issues/7':
-            return dict(state='open', title='[broken source] vod:library', body='The fixture fails.',
+            return dict(state='open', title='[broken source] vod:library', body='The fixture fails.\n<!-- moviehub-playback-cases [[10331, -1, -1]] -->',
                         comments=len(self.comments))
         if method == 'GET' and path.startswith('/issues/7/comments'):
             return self.comments
@@ -122,6 +122,8 @@ class Workflow(unittest.TestCase):
         self.file = Path(repair.VOD_FOLDER) / 'fixture.py'
         (self.root / self.file).parent.mkdir(parents=True)
         (self.root / self.file).write_text('broken')
+        (self.root / repair.VOD_FOLDER / 'moviehub_providers.json').write_text(
+            json.dumps([{'id':'library','module':'fixture'}]))
         self.git('init', '-q', '-b', 'main')
         self.git('config', 'user.name', 'Fixture')
         self.git('config', 'user.email', 'fixture@localhost')
@@ -135,6 +137,20 @@ class Workflow(unittest.TestCase):
         self.forge = Forgejo()
         self.enterContext(patch.object(repair, 'ROOT', self.root))
         self.enterContext(patch.dict(os.environ, CODEX_CMD=sys.executable + ' ' + str(self.worker), NTFY_URL=''))
+        self.real_proposal = repair.isolated_worker.proposal
+        self.enterContext(patch.object(repair.isolated_worker, 'proposal', side_effect=self.fixture_proposal))
+
+    def fixture_proposal(self, root, base, prompt):
+        # The offline suite runs only its own fixture script. The dedicated isolation
+        # job exercises the production Podman boundary using a real rootless container.
+        with tempfile.TemporaryDirectory() as work:
+            subprocess.run(['git', 'clone', '-q', '--no-local', str(root), work], check=True)
+            result = subprocess.run([sys.executable, str(self.worker), prompt], cwd=work,
+                                    capture_output=True, text=True, check=True)
+            subprocess.run(['git', 'add', '-A'], cwd=work, check=True)
+            diff = subprocess.check_output(['git', 'diff', '--binary', '--cached', base], cwd=work)
+            return diff, result.stdout
+
 
     def git(self, *args):
         return subprocess.check_output(['git', *args], cwd=self.root, text=True).strip()
@@ -185,6 +201,28 @@ class Workflow(unittest.TestCase):
             self.assertFalse(repair.handle(self.forge, 7))
         self.assertIn('unsupported path', self.forge.comments[-1]['body'])
         self.assertFalse(self.git('ls-remote', '--heads', 'origin', 'refs/heads/repair/issue-7'))
+
+    def test_one_of_two_affected_titles_is_insufficient(self):
+        self.worker_script('Path(%r).write_text("patched")\n' % str(self.file))
+        first, second = (10331,-1,-1), (27205,-1,-1)
+        baseline = {first:(False,'first failed'), second:(False,'second failed')}
+        partial = {first:(True,'first played'), second:(False,'second failed')}
+        real_call = self.forge.call
+        def both(method, path, body=None):
+            result = real_call(method,path,body)
+            if path == '/issues/7':
+                result['body'] = '<!-- moviehub-playback-cases [[10331,-1,-1],[27205,-1,-1]] -->'
+            return result
+        with patch.object(self.forge, 'call', side_effect=both), patch.object(ev,'measure',side_effect=[baseline,partial]):
+            self.assertFalse(repair.handle(self.forge,7))
+        self.assertFalse(self.forge.pulls)
+
+    def test_absent_worker_image_never_executes_host_worker(self):
+        with patch.dict(os.environ, MOVIEHUB_WORKER_IMAGE=''), patch.object(
+                repair.isolated_worker.subprocess, 'run', side_effect=AssertionError('host program started')):
+            with self.assertRaisesRegex(ValueError, 'image'):
+                self.enterContext(patch.object(repair.isolated_worker, 'proposal', self.real_proposal))
+                repair.isolated_worker.proposal(self.root,'HEAD','fixture')
 
     def test_natural_recovery_creates_no_repair_pr(self):
         self.worker_script('Path(%r).write_text("patched")\n' % str(self.file))

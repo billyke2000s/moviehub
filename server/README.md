@@ -8,108 +8,55 @@ providers while a repair is pending.
 New installs: someone types your Downloader code → "Enter login" → the code your phone just made →
 the APK downloads. The code works once, for 5 minutes.
 
-Items marked **[check]** are commands I could not run from here. Check them against the tool's own
-docs the first time.
+## Test before installing Forgejo
 
-## Quick setup (one command)
-
-On the Proxmox host shell (as root):
+From a Linux checkout with Git, Node, FFmpeg and Python 3.11+, run the verification suite:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/billyke2000s/moviehub/main/server/bootstrap/host.sh -o /root/mh.sh && bash /root/mh.sh
+python3 -m unittest discover -s server/health -v
 ```
 
-It does steps 1–4 and 6 below by itself: creates one new capped container (1.5 GB RAM + 1 GB swap by default; never touches others),
-installs Forgejo with a private copy of the repo, the runner, the signing key, the gate and Codex,
-and writes every password and key to `/root/moviehub-credentials.txt` inside the container. Log:
-`/root/moviehub-bootstrap.log` on the host. Still manual: Codex sign-in, Cloudflare (step 5),
-the switchover (step 7). The sections below explain each part.
-
-## 1. Container (Proxmox)
-
-One unprivileged Debian 12 container, capped so it can never starve Minecraft:
+It uses a temporary Git remote and locally generated video. To test actual Forgejo permissions,
+run the same disposable install check as CI. This downloads the signed server binary,
+starts it on loopback under your current user and removes its test database afterwards.
 
 ```sh
-# On the Proxmox host. 110 = any free ID; adjust storage names to yours.
-pveam update && pveam download local debian-12-standard_12.7-1_amd64.tar.zst   # [check] exact template name: pveam available
-pct create 110 local:vztmpl/debian-12-standard_12.7-1_amd64.tar.zst \
-  --hostname moviehub --cores 4 --memory 4096 --swap 512 \
-  --rootfs local-lvm:32 --net0 name=eth0,bridge=vmbr0,ip=dhcp,ip6=auto \
-  --unprivileged 1 --onboot 1
-pct set 110 --cpuunits 50     # lower CPU priority than Minecraft (default 100)
-pct start 110 && pct enter 110
+mkdir -p build/server-check
+bash server/bootstrap/forgejo-binary.sh forgejo 17.0.2 "$PWD/build/server-check/forgejo"
+FORGEJO_TEST_BINARY="$PWD/build/server-check/forgejo" python3 server/bootstrap/tests/test_forgejo_install.py
 ```
 
-Inside the container:
+## Quick setup on Proxmox
+
+Run from the Proxmox host as root. Set `rev` to the full 40-character commit you reviewed.
+The host and guest scripts then come from that same revision.
 
 ```sh
-apt update && apt install -y git python3 python3-pip openjdk-17-jdk-headless ffmpeg curl openssl
-pip install --break-system-packages requests==2.32.5 six==1.17.0
-# Node 22 (Debian's is too old for the Live TV probe), from nodejs.org or NodeSource  [check]
-adduser --system --group --home /srv/moviehub moviehub
-mkdir -p /srv/moviehub/{feed/app,feed/scrapers,keys,health,tools}
-curl -fL -o /srv/moviehub/tools/rhino-1.8.0.jar https://repo.maven.apache.org/maven2/org/mozilla/rhino/1.8.0/rhino-1.8.0.jar
-echo "e7ff37ec00b4c19ea16f42b5b3a601616d559dbb76e65bc9d094bd6bda2a925d  /srv/moviehub/tools/rhino-1.8.0.jar" | sha256sum --check
-chown -R moviehub: /srv/moviehub
+curl -fL "https://raw.githubusercontent.com/billyke2000s/moviehub/$rev/server/bootstrap/host.sh" -o /root/mh.sh &&
+MOVIEHUB_REVISION="$rev" bash /root/mh.sh
 ```
 
-## 2. Forgejo (your own GitHub) and its runner
+The installer creates one unprivileged Debian 12 guest with 4 cores, 1.5 GB RAM and 1 GB swap.
+Set `MOVIEHUB_MEMORY` and `MOVIEHUB_SWAP` in MiB before first creation to change the limits.
+The defaults cover the server services. A local model and Android emulator need their own measured memory budget.
 
-1. Install Forgejo from <https://forgejo.org/docs/latest/admin/installation/> (single binary +
-   systemd). Keep it on your home network only: do not route it through Cloudflare.
-2. In Forgejo: **+ → New migration → GitHub**, paste `https://github.com/billyke2000s/moviehub`,
-   and tick "This repository will be a mirror" off. Make it **private**.
-3. Repository **Settings → Actions**: enable Actions.
-4. Install `forgejo-runner` (<https://forgejo.org/docs/latest/admin/actions/>) as user `moviehub`,
-   registered with the label `moviehub:host`, so jobs run directly in the container and can reach
-   `/srv/moviehub` **[check]**:
-   ```sh
-   forgejo-runner register --no-interactive --instance http://localhost:3000 \
-     --token <token from Site administration → Actions → Runners> --name moviehub --labels moviehub:host
-   ```
-5. Repository **Settings → Actions → Variables**: `MOVIEHUB_FORGEJO_URL` = `http://localhost:3000`.
-   **Secrets**: `HEALTH_TOKEN` (a token from your user settings with repository and issue write
-   access) and `NTFY_URL` (step 6).
-6. Phone alerts: install the **ntfy** app, subscribe to a topic with a long random name
-   (e.g. `moviehub-` plus four random words). `NTFY_URL` = `https://ntfy.sh/<that topic>`.
-   Anyone who guesses the name can read it, so keep it long.
-7. Clone the repo for the gate: `git clone http://localhost:3000/<you>/moviehub /srv/moviehub/repo`.
+Retry the same command after an interruption. The installer records the guest ID and a matching
+marker under `/root/.moviehub-bootstrap`, reuses its credentials, and stops on a mismatched guest.
+A successful installation writes `/root/moviehub-credentials.txt` inside the guest. The host
+log is `/root/moviehub-bootstrap.log`. Existing older installations have a different credential layout.
 
-## 3. Signing key (do this once, then back it up)
+## Repository and signing
 
-The boxes only install scraper packages signed with this key. **Lose it and every box needs a
-reinstall. Leak it and someone could push code to every box.**
+Forgejo and its repository-scoped runner are installed inside the guest. Open the Forgejo address
+from the credentials file on your LAN. The repair account can write candidate branches and issues.
+The owner controls merges to protected `main`. The install-code page is on port 8081 and the public
+download page is on 8080. Keep the Forgejo UI and port 8081 private to the LAN.
 
-```sh
-openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out /srv/moviehub/keys/signing.pem
-chown moviehub: /srv/moviehub/keys/signing.pem && chmod 600 /srv/moviehub/keys/signing.pem
-openssl pkey -in /srv/moviehub/keys/signing.pem -pubout -outform DER | base64 -w0; echo
-```
-
-Put the last line (the public key, safe to share) into
-`android-tv-launcher/app/src/main/assets/providers/trust.json` as `"publicKey"` and commit it.
-Copy `signing.pem` to a USB stick and keep it somewhere safe, off the server.
-
-This same key also switches on the Live TV provider updater, which was built but had no key.
-
-## 4. Feed key and the gate
-
-```sh
-openssl rand -hex 24      # the feed key; goes into the app build and the gate
-cat > /etc/moviehub-gate.env <<EOF
-FEED_DIR=/srv/moviehub/feed
-FEED_KEY=<the key>
-TRUST_CLOUDFLARE=1
-EOF
-chmod 600 /etc/moviehub-gate.env
-cp /srv/moviehub/repo/server/gate/moviehub-gate.service /etc/systemd/system/
-systemctl daemon-reload && systemctl enable --now moviehub-gate
-```
-
-- Public page: port **8080** (Cloudflare only). Code page: port **8081**, **home network only**.
-  Open `http://<container IP>:8081` on your phone and use **Add to Home screen**.
-- Feed layout: `feed/app/` (home.apk + update.json), `feed/scrapers/`, `feed/providers/`,
-  `feed/experimental/`, `feed/scrapers-experimental/`.
+The signing key belongs to `moviehub-release`. The runner can request a release with its exact
+commit ID. The publisher fetches protected main privately, rebuilds in a clean directory and
+checks that revision again before installing the signed files. The gate reads the feed as a third user.
+Back up `/srv/moviehub/keys/signing.pem` securely. Put the **public** key from the credentials file
+in the Android trust configuration before shipping an APK that needs these updates.
 
 ## 5. Cloudflare
 
@@ -124,23 +71,26 @@ Then:
 - Downloader code: register `https://tv.<domain>/` at aftvnews.com/downloader-codes **[check]**.
 - App feed address: `https://tv.<domain>/feed/` (used in step 7).
 
-## 6. Codex (GPT) for automatic fixes
+## 6. Configure the repair worker
 
-```sh
-npm install -g @openai/codex        # [check] OpenAI's install instructions
-sudo -u moviehub -H codex           # first run: choose "Sign in with ChatGPT"   [check]
-```
+The proposal job requires rootless Podman and a preloaded offline worker image under the
+`moviehub` runner account. The image must contain `/usr/bin/python3`, Git, tar, your coding
+worker and its local inference dependencies. Configure `MOVIEHUB_WORKER_IMAGE` with the full
+`sha256:` image ID and `CODEX_CMD` with the command inside that image. It receives the task as
+its last argument and edits the disposable checkout. The worker has no outbound network, so a
+cloud CLI login or a model hosted at the server's localhost cannot serve this job.
 
-`auto-fix.yml` runs `codex exec --full-auto "<task>"` **[check]**. If your Codex version uses
-different flags, set the repository variable `CODEX_CMD`. Codex needs internet access to look at
-the sites; if its sandbox blocks the network, allow it in Codex's settings.
+Rootless Podman needs usable subordinate UID/GID mappings. Check `podman info` as the runner
+on your actual guest. A new install supplies neither a model image nor an Android emulator.
+If a local worker is unavailable the issue stays unverified. An existing `repair/issue-N` branch
+containing a single candidate commit based on current main can still be checked without a model.
 
 Run **Actions → Auto-fix broken source → Run** with the issue number. The worker must edit files.
 A text-only diagnosis stays on the issue. If a candidate exists on `repair/issue-N`, running the
 same issue again tests that commit. If main moved, rebase the single candidate commit before retrying.
 
 Verification uses separate clean builds of the original revision, candidate, and original revision
-again. A review opens when the same case from the incident fails, plays, then fails again.
+again. Every recorded case must fail, play, then fail again. The review branch identifies the exact tested candidate.
 Live TV uses the rebuilt provider package and FFmpeg audio/video frame counts for the same channel ID.
 Film verification uses the existing Android LibVLC single-source audit, including runtime and
 midpoint seek. The PR lists the revisions, changed files and observations. The reviewer confirms
@@ -170,7 +120,7 @@ emulator. `CODEX_MINUTES` controls the worker's time budget independently of ver
 
 ## Day to day
 
-- Phone says **"X broken"**: nothing to do. Codex is already trying.
+- Phone says **"X broken"**: nothing to do. The issue records whether a worker ran or which prerequisite is missing.
 - Phone says **"playback sample passed"**: open the PR, inspect the before/after results and confirm the content before merging.
 - A failed or unverified attempt records its reason on the issue. A saved branch can be tested again.
 - New box: open the code page, tap **New code**, read the code out.

@@ -32,6 +32,7 @@ jobs:
                   FORGEJO_TOKEN: ${{ secrets.HEALTH_TOKEN }}
                   NTFY_URL: ${{ secrets.NTFY_URL }}
                   MOVIEHUB_AUDIT_EMULATOR: ${{ vars.MOVIEHUB_AUDIT_EMULATOR }}
+                  MOVIEHUB_WORKER_IMAGE: ${{ vars.MOVIEHUB_WORKER_IMAGE }}
                   CODEX_MINUTES: ${{ vars.CODEX_MINUTES || '30' }}
                   CODEX_CMD: ${{ vars.CODEX_CMD || 'codex exec --full-auto' }}
               run: |
