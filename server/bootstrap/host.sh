@@ -60,7 +60,7 @@ fi
 [[ "$(pct status "$CTID")" == "status: running" ]] || pct start "$CTID"
 ready=0
 for _ in $(seq 1 60); do
-    CONTAINER_IP=$(pct exec "$CTID" -- hostname -I 2>/dev/null | tr ' ' '\n' | awk '/^[0-9]+(\.[0-9]+){3}$/ && !seen++ {print}') || true
+    CONTAINER_IP=$(pct exec "$CTID" -- hostname -I 2>/dev/null | tr ' ' '\n' | awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && !seen++ {print}') || true
     if [[ -n "$CONTAINER_IP" ]] && pct exec "$CTID" -- getent hosts github.com >/dev/null 2>&1; then ready=1; break; fi
     sleep 2
 done

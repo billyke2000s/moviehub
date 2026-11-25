@@ -33,7 +33,9 @@ jobs:
         steps:
             - uses: actions/checkout@v5
             - name: Install signed test server into the temporary workspace
-              run: bash server/bootstrap/forgejo-binary.sh forgejo 17.0.2 "$RUNNER_TEMP/forgejo"
+              run: |
+                  bash server/bootstrap/forgejo-binary.sh forgejo 17.0.2 "$RUNNER_TEMP/forgejo"
+                  bash server/bootstrap/forgejo-binary.sh runner 13.2.2 "$RUNNER_TEMP/forgejo-runner"
             - name: Create disposable runner and signing identities
               run: |
                   test ! -e /srv/moviehub
@@ -47,7 +49,7 @@ jobs:
                   echo '{"versionCode":1}' | sudo tee /srv/moviehub/feed/app/update.json >/dev/null
                   sudo bash server/bootstrap/install-publisher.sh
             - name: Check repeat setup, protected branches, release permissions and signed output
-              run: MOVIEHUB_TEST_PUBLISHER=1 FORGEJO_TEST_BINARY="$RUNNER_TEMP/forgejo" python3 server/bootstrap/tests/test_forgejo_install.py
+              run: MOVIEHUB_TEST_PUBLISHER=1 FORGEJO_TEST_RUNNER="$RUNNER_TEMP/forgejo-runner" FORGEJO_TEST_BINARY="$RUNNER_TEMP/forgejo" python3 server/bootstrap/tests/test_forgejo_install.py
     isolated-worker:
         runs-on: ubuntu-latest
         timeout-minutes: 12
@@ -62,3 +64,5 @@ jobs:
                   image=$(podman pull -q docker.io/library/python:3.11-bookworm)
                   export MOVIEHUB_WORKER_IMAGE="sha256:${image#sha256:}"
                   python3 server/bootstrap/tests/test_worker_container.py
+                  podman run --rm --network=none --tmpfs /root:rw,mode=700 \
+                    -v "$GITHUB_WORKSPACE:/repo:ro" "$image" bash /repo/server/bootstrap/tests/test_host_resume.sh

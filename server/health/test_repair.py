@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import auto_fix as repair
 import check_sources as health
+import isolated_worker
 import playback_evidence as ev
 
 
@@ -26,6 +27,21 @@ def live_rows(channel='f', **fields):
                   videoFrames=30, audioFrames=20)
     sample.update(fields)
     return [dict(id='demo', catalogue='ok', samples=[sample])]
+
+
+class WorkerOutput(unittest.TestCase):
+    def test_only_bounded_json_is_accepted(self):
+        def read(script):
+            return isolated_worker.bounded_result([sys.executable, '-c', script], 'input', {}, 10)
+        self.assertEqual(read("import json,sys;print(json.dumps(sys.stdin.read()))"), 'input')
+        with patch.object(isolated_worker, 'MAX_PATCH', 32):
+            with self.assertRaisesRegex(ValueError, 'output exceeds'):
+                read("print('x' * 256)")
+
+    def test_silent_worker_times_out(self):
+        with self.assertRaisesRegex(ValueError, 'timed out'):
+            isolated_worker.bounded_result([sys.executable, '-c', 'import time;time.sleep(30)'],
+                                           '', {}, 0.2)
 
 
 class Evidence(unittest.TestCase):

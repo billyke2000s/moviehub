@@ -192,7 +192,7 @@ if [ ! -f "$RUNNER_HOME/.runner" ]; then
     runuser -u moviehub -- bash -c 'cd "$1" && exec /usr/local/bin/forgejo-runner create-runner-file --instance http://127.0.0.1:3000 --secret "$2" --name moviehub' -- "$RUNNER_HOME" "$SECRET"
 fi
 if [[ ! -s "$RUNNER_HOME/config.yml" ]]; then
-    runuser -u moviehub -- bash -ec 'cd "$1"; /usr/local/bin/forgejo-runner generate-config > config.new; mv config.new config.yml' -- "$RUNNER_HOME"
+    install -m 0600 -o moviehub -g moviehub /srv/moviehub/repo/server/bootstrap/runner.yml "$RUNNER_HOME/config.yml"
 fi
 cat > /etc/systemd/system/forgejo-runner.service <<EOF
 [Unit]

@@ -1,0 +1,3 @@
+runner:
+  capacity: 1
+  labels: ["moviehub:host"]

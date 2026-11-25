@@ -30,17 +30,7 @@ class WorkerContainer(unittest.TestCase):
                     'Path("source.py").write_text("after\\n"); print("fixture diagnosis")' % str(canary))
             with patch.dict(os.environ, CODEX_CMD=shlex.join(['/usr/bin/python3','-c',code]),
                             FORGEJO_TOKEN='fixture-only'):
-                original_run = subprocess.run
-                def diagnose(args, **kwargs):
-                    if args[0] == '/usr/bin/prlimit':
-                        # Only the harmless, generated test worker runs in this job.
-                        kwargs['stderr'] = subprocess.PIPE
-                    result = original_run(args, **kwargs)
-                    if result.returncode and result.stderr:
-                        print(result.stderr.decode(errors='replace')[-4096:], file=sys.stderr)
-                    return result
-                with patch.object(subprocess, 'run', side_effect=diagnose):
-                    data, diagnosis=isolated_worker.proposal(root,'HEAD','fixture')
+                data, diagnosis=isolated_worker.proposal(root,'HEAD','fixture')
             self.assertIn(b'+after', data)
             self.assertIn('fixture diagnosis', diagnosis)
             self.assertEqual((root/'source.py').read_text(), 'before\n')

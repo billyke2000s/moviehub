@@ -104,6 +104,9 @@ LEVEL = Warn
                 self.assertEqual(old, [])
                 _, _, old_after_retry = setup.configure(url,'billy',owner_pw,bot_pw,'http://localhost/unused')
                 self.assertEqual(len(old_after_retry), 2)
+                runner_binary = os.environ.get('FORGEJO_TEST_RUNNER')
+                if runner_binary:
+                    self.exercise_runner(local, cli, base, tree, env, url, api, ogit, runner_binary)
                 repo='/repos/billy/moviehub'
                 self.assertTrue(api('GET',repo,authorization='token '+read)['private'])
                 with self.assertRaises(urllib.error.HTTPError) as denied:
@@ -152,6 +155,47 @@ LEVEL = Warn
                 process.terminate()
                 try: process.wait(timeout=10)
                 except subprocess.TimeoutExpired: process.kill();process.wait()
+
+
+    def exercise_runner(self, local, cli, base, tree, env, url, api, owner_git, binary):
+        runner_home = base/'runner'
+        runner_home.mkdir()
+        secret = secrets.token_hex(20)
+        local(cli + ['forgejo-cli','actions','register','--scope','billy/moviehub','--name','moviehub',
+                     '--labels','moviehub:host','--secret',secret], check=True)
+        result = subprocess.run([binary,'create-runner-file','--instance',url,'--secret',secret,
+                                 '--name','moviehub'], cwd=runner_home,env=env,capture_output=True,timeout=20)
+        self.assertEqual(result.returncode,0)
+        (runner_home/'config.yml').write_bytes((Path(__file__).resolve().parents[1]/'runner.yml').read_bytes())
+        log = (runner_home/'test-run.log').open('w')
+        worker = subprocess.Popen([binary,'--config','config.yml','daemon'],cwd=runner_home,env=env,
+                                  stdout=log,stderr=log)
+        try:
+            # A static one-step job exercises server scheduling, the registered runner and the host label.
+            workflow = tree/'.forgejo/workflows/offline-fixture.yml'
+            workflow.parent.mkdir(parents=True)
+            workflow.write_text('name: Fixture\non: [push]\njobs:\n  fixture:\n    runs-on: moviehub\n'
+                                '    steps:\n      - run: echo moviehub-runner-ready\n')
+            local(owner_git+['switch','-qc','qa/runner-start'],check=True)
+            local(owner_git+['add','.forgejo'],check=True)
+            local(owner_git+['commit','-qm','Offline runner fixture'],check=True)
+            local(owner_git+['push','-q','origin','HEAD:refs/heads/qa/runner-start'],check=True)
+            sha=local(owner_git+['rev-parse','HEAD'],check=True).stdout.decode().strip()
+            for _ in range(90):
+                results = api('GET','/repos/billy/moviehub/actions/runs')
+                matches = [run for run in results['workflow_runs'] if run['commit_sha'] == sha]
+                if matches and matches[0]['status'] in ('success', 'failure', 'cancelled', 'skipped'):
+                    self.assertEqual(matches[0]['status'], 'success')
+                    return
+                if worker.poll() is not None:
+                    self.fail('registered runner exited before completing its job')
+                time.sleep(1)
+            self.fail('registered runner did not finish its harmless fixture job')
+        finally:
+            worker.terminate()
+            try: worker.wait(timeout=5)
+            except subprocess.TimeoutExpired: worker.kill();worker.wait()
+            log.close()
 
 
 if __name__=='__main__':

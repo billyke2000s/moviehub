@@ -17,13 +17,15 @@ python3 -m unittest discover -s server/health -v
 ```
 
 It uses a temporary Git remote and locally generated video. To test actual Forgejo permissions,
-run the same disposable install check as CI. This downloads the signed server binary,
-starts it on loopback under your current user and removes its test database afterwards.
+run the disposable Forgejo check. It starts a signed server and runner on loopback, submits a
+harmless job to the runner and removes the test database afterwards.
 
 ```sh
 mkdir -p build/server-check
 bash server/bootstrap/forgejo-binary.sh forgejo 17.0.2 "$PWD/build/server-check/forgejo"
-FORGEJO_TEST_BINARY="$PWD/build/server-check/forgejo" python3 server/bootstrap/tests/test_forgejo_install.py
+bash server/bootstrap/forgejo-binary.sh runner 13.2.2 "$PWD/build/server-check/runner"
+FORGEJO_TEST_BINARY="$PWD/build/server-check/forgejo" FORGEJO_TEST_RUNNER="$PWD/build/server-check/runner" \
+    python3 server/bootstrap/tests/test_forgejo_install.py
 ```
 
 ## Quick setup on Proxmox

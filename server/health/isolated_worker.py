@@ -4,12 +4,45 @@ import os
 from pathlib import Path
 import re
 import shlex
+import selectors
+import time
 import subprocess
 import tempfile
 import uuid
 
 PODMAN = '/usr/bin/podman'
 MAX_PATCH = 2 * 1024 * 1024
+
+
+def bounded_result(command, prompt, env, seconds):
+    """Limit the result stream without limiting Podman's access to its own image layers."""
+    deadline = time.monotonic() + seconds
+    with tempfile.TemporaryFile() as task:
+        task.write(prompt.encode())
+        task.seek(0)
+        with subprocess.Popen(command, cwd='/', env=env, stdin=task, stdout=subprocess.PIPE,
+                              stderr=subprocess.DEVNULL) as process:
+            try:
+                output = bytearray()
+                with selectors.DefaultSelector() as ready:
+                    ready.register(process.stdout, selectors.EVENT_READ)
+                    while True:
+                        remaining = deadline - time.monotonic()
+                        if remaining <= 0 or not ready.select(remaining):
+                            raise ValueError('isolated worker timed out')
+                        chunk = os.read(process.stdout.fileno(), 65536)
+                        if not chunk:
+                            break
+                        output.extend(chunk)
+                        if len(output) > 2 * MAX_PATCH:
+                            raise ValueError('worker output exceeds the review limit')
+                code = process.wait(timeout=max(0, deadline-time.monotonic()))
+                if code:
+                    raise ValueError('isolated worker exited %d; no completed proposal' % code)
+                return json.loads(output)
+            finally:
+                if process.poll() is None:
+                    process.kill()
 
 
 def proposal(root, base, prompt):
@@ -46,23 +79,14 @@ def proposal(root, base, prompt):
                 '--env=HOME=/tmp/home', '--workdir=/tmp', '--entrypoint=/usr/bin/python3',
                 '--volume', str(archive) + ':/source.tar:ro', '--volume', str(helper) + ':/worker_entry.py:ro',
                 '-i', image.removeprefix('sha256:'), '-I', '/worker_entry.py', *command]
-        # Results are read from the disposable container's bounded tmpfs. Its stdout/stderr is
-        # never inherited by Forgejo and no worker file is opened as host Git configuration.
         try:
-            with tempfile.TemporaryFile() as output:
-                # prlimit applies to the Podman client writing the host file, including a noisy image.
-                result = subprocess.run(['/usr/bin/prlimit', '--fsize='+str(2 * MAX_PATCH), '--',
-                                         PODMAN, '--remote=false', *args], cwd='/', env=env,
-                                        input=prompt.encode(), stdout=output, stderr=subprocess.DEVNULL,
-                                        timeout=60 * minutes, check=False)
-                if result.returncode:
-                    raise ValueError('isolated worker failed; no completed proposal')
-                output.seek(0)
-                data = json.loads(output.read(2 * MAX_PATCH + 1))
-                patch = data['patch'].encode()
-                if len(patch) > MAX_PATCH:
-                    raise ValueError('worker patch exceeds the review limit')
-                return patch, str(data['diagnosis'])[:2000]
+            data = bounded_result([PODMAN, '--remote=false', *args], prompt, env, minutes * 60)
+            if not isinstance(data, dict) or not isinstance(data.get('patch'), str):
+                raise ValueError('worker returned no structured patch')
+            patch = data['patch'].encode()
+            if len(patch) > MAX_PATCH:
+                raise ValueError('worker patch exceeds the review limit')
+            return patch, str(data.get('diagnosis', ''))[:2000]
         finally:
             engine('rm', '--force', '--ignore', name, stdout=subprocess.DEVNULL,
                    stderr=subprocess.DEVNULL, timeout=30, check=False)
