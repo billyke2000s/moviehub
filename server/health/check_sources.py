@@ -41,6 +41,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from playback_evidence import measured_live_failure
+
 ROOT = Path(__file__).resolve().parents[2]
 VOD_PROBE = ROOT / 'android-tv-launcher/tests/probe-free-vod.py'
 LIVE_PROBE = ROOT / 'provider-engine/tools/live-probe.mjs'
@@ -90,13 +92,17 @@ def live_results(results):
                  type(s.get('videoFrames')) is int and s['videoFrames'] >= 10]
         ok = catalogue_ok and bool(plays)
         if not catalogue_ok:
+            reason = r.get('catalogue', '')
+            if not (reason == 'PROVIDER: empty catalogue' or
+                    (reason.startswith('PROVIDER:') and re.search(r'\bHTTP [45][0-9]{2}\b', reason))):
+                ok = None
             summary = 'channel list failed: %s' % r.get('catalogue')
         elif not samples or r.get('playbackScope') == 'not_tested':
             ok = None
             summary = 'channel list loaded; playback was not tested'
-        elif not ok and any(s.get('play') == 'ok' for s in samples):
+        elif not ok and not all(measured_live_failure(s) for s in samples):
             ok = None
-            summary = 'decode counters missing or insufficient'
+            summary = 'playback measurement incomplete or inconclusive'
         elif not ok:
             summary = 'channel list loads (%s channels) but no sample played' % r.get('channels')
         else:
@@ -285,7 +291,7 @@ def issue_body(result, folder):
                  if 'tmdb' in r and r.get('streams') == 0]
     else:
         cases = [s['caseId'] for r in result['records'] for s in r.get('samples', [])
-                 if s.get('play') != 'ok' and re.fullmatch('[a-f0-9]{64}', s.get('caseId', ''))]
+                 if measured_live_failure(s) and re.fullmatch('[a-f0-9]{64}', s.get('caseId', ''))]
     return ('**%s** (%s) is failing: %s.\n\n'
             '<!-- moviehub-playback-cases %s -->\n\n'
             'Evidence saved on the server: `%s`\n\n'

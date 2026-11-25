@@ -94,6 +94,7 @@ same issue again tests that commit. If main moved, rebase the single candidate c
 Verification uses separate clean builds of the original revision, candidate, and original revision
 again. Every recorded case must fail, play, then fail again. The review branch identifies the exact tested candidate.
 Live TV uses the rebuilt provider package and FFmpeg audio/video frame counts for the same channel ID.
+Generic decoder errors, network interruptions and missing measurements keep a sample unverified.
 Film verification uses the existing Android LibVLC single-source audit, including runtime and
 midpoint seek. The PR lists the revisions, changed files and observations. The reviewer confirms
 the actual programme or film before closing the incident. Unidentified channels and incomplete

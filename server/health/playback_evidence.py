@@ -42,6 +42,10 @@ def vod_cases(rows, provider):
     return cases
 
 
+def measured_live_failure(sample):
+    return sample.get('decodeStatus') == 'media_failed' or sample.get('resolveHttpFailure') is True
+
+
 def live_cases(rows, provider):
     """A server decode can identify the sampled catalogue entry. Its name cannot identify a broadcast."""
     if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict) or rows[0].get('id') != provider:
@@ -62,7 +66,7 @@ def live_cases(rows, provider):
         video, audio = sample.get('videoFrames', 0), sample.get('audioFrames', 0)
         if play == 'ok' and resolved.startswith('ok (') and video >= 10 and audio >= 10:
             cases[key] = (True, '%s: %d video and %d audio frames' % (name, video, audio))
-        elif play.startswith('PROVIDER?:') or resolved.startswith('PROVIDER:'):
+        elif measured_live_failure(sample):
             cases[key] = (False, name + (': decode failed' if play else ': resolve failed'))
     return cases
 

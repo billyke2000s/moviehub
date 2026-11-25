@@ -72,7 +72,7 @@ class Evidence(unittest.TestCase):
             ev.vod_cases(rows[::2], 'library')
 
     def test_channel_needs_same_id_and_measured_audio_and_video(self):
-        bad = ev.live_cases(live_rows(play='PROVIDER?: decode'), 'demo')
+        bad = ev.live_cases(live_rows(play='media_failed: input', decodeStatus='media_failed'), 'demo')
         good = ev.live_cases(live_rows(), 'demo')
         self.assertTrue(ev.transition(bad, good, bad))
         for rows in (live_rows('e'), live_rows(videoFrames=1), live_rows(audioFrames=0),
@@ -81,6 +81,16 @@ class Evidence(unittest.TestCase):
         dup = live_rows()
         dup[0]['samples'] *= 2
         self.assertFalse(ev.live_cases(dup, 'demo'))
+
+    def test_ambiguous_decoder_error_cannot_supply_a_failed_base(self):
+        for fields in [dict(play='PROVIDER?: Error opening output files: Invalid argument'),
+                       dict(play='unverified: FFmpeg exited', decodeStatus='unverified'),
+                       dict(play='', resolve='PROVIDER: network error')]:
+            rows = live_rows(**fields)
+            self.assertEqual(ev.live_cases(rows, 'demo'), {})
+            self.assertIsNone(health.live_results(rows)['live:demo']['ok'])
+        rows = [dict(id='demo', catalogue='OURS: interpreter unavailable', samples=[])]
+        self.assertIsNone(health.live_results(rows)['live:demo']['ok'])
 
     def test_inconclusive_telemetry_cannot_close_an_incident_or_count_an_outage(self):
         state = {'vod:x': dict(fails=2, broken=True, lastComment=1)}
@@ -100,7 +110,7 @@ class Evidence(unittest.TestCase):
                 self.assertFalse(old.exists())
 
     def test_missing_retry_stays_unknown(self):
-        calls = iter([live_rows(play='PROVIDER?: failed'), []])
+        calls = iter([live_rows(play='media_failed: input', decodeStatus='media_failed'), []])
         result = health.live_with_retry(lambda *args: next(calls), 1, sleep=lambda _: None)
         self.assertIsNone(result['live:demo']['ok'])
 

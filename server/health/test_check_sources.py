@@ -24,8 +24,8 @@ class Decisions(unittest.TestCase):
 
     def test_live_needs_catalogue_and_a_playing_sample(self):
         results = [
-            {'id': 'good', 'catalogue': 'ok', 'channels': 5, 'samples': [{'play': 'PROVIDER?: x'}, {'play': 'ok', 'videoFrames': 12, 'audioFrames': 30}]},
-            {'id': 'noplay', 'catalogue': 'ok', 'channels': 5, 'samples': [{'play': 'PROVIDER?: x'}]},
+            {'id': 'good', 'catalogue': 'ok', 'channels': 5, 'samples': [{'play': 'media_failed', 'decodeStatus': 'media_failed'}, {'play': 'ok', 'videoFrames': 12, 'audioFrames': 30}]},
+            {'id': 'noplay', 'catalogue': 'ok', 'channels': 5, 'samples': [{'play': 'media_failed', 'decodeStatus': 'media_failed'}]},
             {'id': 'down', 'catalogue': 'PROVIDER: catalogue HTTP 403', 'samples': []},
             {'id': 'zlive', 'catalogue': 'ok', 'channels': 252, 'samples': []},
         ]
@@ -65,7 +65,7 @@ class Decisions(unittest.TestCase):
     def test_live_blip_is_retried_before_counting(self):
         calls, waits = [], []
         rows = {
-            (): [{'id': 'dlhd', 'catalogue': 'ok', 'channels': 3, 'samples': [{'play': 'PROVIDER?: 403'}]},
+            (): [{'id': 'dlhd', 'catalogue': 'ok', 'channels': 3, 'samples': [{'resolve': 'PROVIDER: HTTP 403', 'resolveHttpFailure': True}]},
                  {'id': 'zlive', 'catalogue': 'ok', 'channels': 9, 'samples': []},
                  {'id': 'freeshot', 'catalogue': 'PROVIDER: HTTP 503', 'samples': []}],
             ('dlhd', 'freeshot'): [
