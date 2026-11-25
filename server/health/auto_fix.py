@@ -116,7 +116,9 @@ def verify(base, candidate, source, cases):
             before = {key: observation for key, observation in evidence.measure(original, source).items()
                       if key in cases}
         if not any(not passed for passed, _ in before.values()):
-            raise ValueError('base produced no failed playback case; no repair established')
+            if any(passed for passed, _ in before.values()):
+                raise ValueError('the original build already plays the measured case; no repair established')
+            raise ValueError('the original case has no conclusive playback measurement')
         after = evidence.measure(patched, source)
     if not evidence.transition(before, after, before):
         raise ValueError('the candidate did not pass a case that failed on the base')
@@ -164,6 +166,10 @@ def handle(forgejo, number, retry_diagnosis=True):
                     return False
             candidate = propose(source, issue, base, branch, previous)
         paths, cases = verify(base, candidate, source, affected_cases(source, issue['body']))
+        refs = git('ls-remote', '--heads', 'origin', 'refs/heads/main', 'refs/heads/' + branch).decode()
+        heads = {ref: sha for sha, ref in (line.split() for line in refs.splitlines())}
+        if heads.get('refs/heads/main') != base or heads.get('refs/heads/' + branch) != candidate:
+            raise ValueError('base or candidate moved during verification; the newer revision needs testing')
     except NoPatch as error:
         comment(DIAGNOSIS + '\n\n' + '\n'.join('> ' + line for line in str(error).splitlines()))
         return False

@@ -194,3 +194,31 @@ class Workflow(unittest.TestCase):
             self.assertFalse(repair.handle(self.forge, 7))
         self.assertFalse(self.forge.pulls)
         self.assertIn('did not repeat', self.forge.comments[-1]['body'])
+
+    def test_fix_of_unrelated_title_cannot_open_a_review(self):
+        self.worker_script('Path(%r).write_text("patched")\n' % str(self.file))
+        real_call = self.forge.call
+
+        def only_other_title(method, path, body=None):
+            response = real_call(method, path, body)
+            if path == '/issues/7':
+                response['body'] = '<!-- moviehub-playback-cases [[27205, -1, -1]] -->'
+            return response
+
+        with patch.object(self.forge, 'call', side_effect=only_other_title), patch.object(
+                ev, 'measure', return_value=ev.vod_cases(vod_rows(status='no_decoded_video'), 'library')):
+            self.assertFalse(repair.handle(self.forge, 7))
+        self.assertFalse(self.forge.pulls)
+        self.assertIn('no conclusive playback measurement', self.forge.comments[-1]['body'])
+
+    def test_changed_candidate_after_playback_keeps_review_closed(self):
+        self.worker_script('Path(%r).write_text("patched")\n' % str(self.file))
+
+        def verify(*args):
+            self.git('push', 'origin', ':refs/heads/repair/issue-7')
+            return [str(self.file)], ['measured case']
+
+        with patch.object(repair, 'verify', side_effect=verify):
+            self.assertFalse(repair.handle(self.forge, 7))
+        self.assertFalse(self.forge.pulls)
+        self.assertIn('moved during verification', self.forge.comments[-1]['body'])

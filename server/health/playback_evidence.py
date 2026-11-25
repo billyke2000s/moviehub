@@ -9,7 +9,7 @@ import re
 
 def vod_cases(rows, provider):
     """Evidence from the packaged LibVLC single-source test, keyed by the exact catalogue request."""
-    if not rows or rows[-1] != {'kind': 'finished', 'shard': 0, 'shards': 1}:
+    if not isinstance(rows, list) or not all(isinstance(r, dict) for r in rows) or not rows or rows[-1] != {'kind': 'finished', 'shard': 0, 'shards': 1}:
         raise ValueError('incomplete Android playback report')
     if any(r.get('website') != provider for r in rows[:-1]):
         raise ValueError('unexpected website in Android report')
@@ -44,7 +44,7 @@ def vod_cases(rows, provider):
 
 def live_cases(rows, provider):
     """A server decode can identify the sampled catalogue entry. Its name cannot identify a broadcast."""
-    if len(rows) != 1 or rows[0]['id'] != provider:
+    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict) or rows[0].get('id') != provider:
         raise ValueError('wrong provider in Live TV report')
     row = rows[0]
     if row.get('catalogue') != 'ok' or row.get('playbackScope') == 'not_tested':
