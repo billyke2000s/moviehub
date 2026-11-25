@@ -16,7 +16,7 @@ What it does
      (default 1, because of the retry).
   3. Broken: opens one Forgejo issue titled "[broken source] <id>" with the probe result and the saved
      page, labelled "broken-source", and sends one push notification. Already open: adds a short
-     comment at most once a day. Working again: closes the issue and notifies.
+     comment at most once a day. A later successful sample leaves the incident open for review.
 
 Settings (environment variables)
   FORGEJO_URL     e.g. http://forgejo:3000   (empty = print only, no issues)
@@ -54,7 +54,7 @@ TITLE = '[broken source] '
 # ----------------------------------------------------------------------------- deciding health
 
 def vod_results(runs):
-    """runs: list of JSONL outputs (one per film). A site is healthy if any film found streams."""
+    """runs: list of JSONL outputs (one per film). Links returned by discovery have unknown playback health."""
     sites = {}
     for output in runs:
         for line in output.splitlines():
@@ -62,15 +62,16 @@ def vod_results(runs):
                 row = json.loads(line)
             except ValueError:
                 continue
-            if 'provider' not in row:
+            if not isinstance(row, dict) or not isinstance(row.get('provider'), str):
                 continue
             key = 'vod:' + row['provider']
             entry = sites.setdefault(key, {'id': key, 'kind': 'film/series site', 'ok': False, 'records': []})
-            entry['ok'] |= row.get('streams', 0) > 0
+            if type(row.get('streams')) is not int or row['streams'] > 0:
+                entry['ok'] = None
             entry['records'].append(row)
     for entry in sites.values():
         statuses = sorted({str(r.get('status')) for r in entry['records']})
-        entry['summary'] = ('streams found' if entry['ok'] else
+        entry['summary'] = ('playback unverified (discovery only)' if entry['ok'] is None else
                             'no streams for either test film (status: %s)' % ', '.join(statuses))
     return sites
 
@@ -82,11 +83,18 @@ def live_results(results):
         key = 'live:' + r['id']
         samples = r.get('samples', [])
         catalogue_ok = r.get('catalogue') == 'ok'
-        plays = [s for s in samples if s.get('play') == 'ok']
-        # ZLive has no sample playback in the probe; its catalogue is the signal.
-        ok = catalogue_ok and (bool(plays) or not samples)
+        plays = [s for s in samples if s.get('play') == 'ok' and
+                 type(s.get('audioFrames')) is int and s['audioFrames'] >= 10 and
+                 type(s.get('videoFrames')) is int and s['videoFrames'] >= 10]
+        ok = catalogue_ok and bool(plays)
         if not catalogue_ok:
             summary = 'channel list failed: %s' % r.get('catalogue')
+        elif not samples or r.get('playbackScope') == 'not_tested':
+            ok = None
+            summary = 'channel list loaded; playback was not tested'
+        elif not ok and any(s.get('play') == 'ok' for s in samples):
+            ok = None
+            summary = 'decode counters missing or insufficient'
         elif not ok:
             summary = 'channel list loads (%s channels) but no sample played' % r.get('channels')
         else:
@@ -105,6 +113,8 @@ def decide(state, results, fail_runs, now):
     newly, still, recovered = [], [], []
     for key, result in results.items():
         entry = state.setdefault(key, {'fails': 0, 'broken': False, 'lastComment': 0})
+        if result['ok'] is None:
+            continue
         if result['ok']:
             if entry['broken']:
                 recovered.append(key)
@@ -127,8 +137,18 @@ def run_vod():
     for film in FILMS:
         command = [sys.executable, str(VOD_PROBE), '--timeout-seconds', '75', '--movie', *film]
         done = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=1800)
-        outputs.append(done.stdout)
-        if done.returncode != 0:
+        if done.returncode == 0:
+            lines = []
+            for line in done.stdout.splitlines():
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if isinstance(row, dict) and 'provider' in row:
+                    row.update(tmdb=int(film[3]), season=-1, episode=-1)
+                    lines.append(json.dumps(row))
+            outputs.append('\n'.join(lines))
+        else:
             sys.stderr.write('Film probe exited %s: %s\n' % (done.returncode, done.stderr[-500:]))
     return outputs
 
@@ -139,10 +159,12 @@ def run_live(ids=()):
     if not rhino or not Path(rhino).is_file():
         sys.stderr.write('RHINO_JAR not set; skipping Live TV probe\n')
         return []
+    LIVE_RESULT.unlink(missing_ok=True)
     done = subprocess.run(['node', str(LIVE_PROBE), *ids], cwd=ROOT, capture_output=True, text=True,
                           timeout=3600, env={**os.environ, 'RHINO_JAR': rhino})
     if done.returncode != 0:
         sys.stderr.write('Live probe exited %s: %s\n' % (done.returncode, done.stderr[-500:]))
+        return []
     try:
         return json.loads(LIVE_RESULT.read_text())
     except (OSError, ValueError):
@@ -165,14 +187,21 @@ def site_of(provider_id):
 def live_with_retry(run, wait, sleep=time.sleep):
     """Live TV results; failing providers are probed once more after `wait` seconds."""
     results = live_results(run())
-    failing = [key[5:] for key, r in results.items() if not r['ok']]
+    failing = [key[5:] for key, r in results.items() if r['ok'] is False]
     if failing and wait > 0:
         sleep(wait)
         retried = live_results(run(failing))
         for key, result in retried.items():
-            if not result['ok']:
+            if result['ok'] is False:
                 result['summary'] += ' (failed twice, %d s apart)' % wait
-            results[key] = result
+        # A missing retry is inconclusive, not a second observed failure.
+        for provider in failing:
+            key = 'live:' + provider
+            if key in retried:
+                results[key] = retried[key]
+            else:
+                results[key]['ok'] = None
+                results[key]['summary'] = 'retry produced no result'
     return results
 
 
@@ -212,8 +241,14 @@ class Forgejo:
             return json.loads(text) if text else None
 
     def open_issues(self):
-        issues = self.call('GET', '/issues?state=open&type=issues&limit=50&labels=' + LABEL) or []
-        return {i['title'][len(TITLE):]: i for i in issues if i['title'].startswith(TITLE)}
+        found = {}
+        page = 1
+        while True:
+            rows = self.call('GET', '/issues?state=open&type=issues&limit=50&page=%d&labels=%s' % (page, LABEL)) or []
+            found.update({i['title'][len(TITLE):]: i for i in rows if i['title'].startswith(TITLE)})
+            if len(rows) < 50:
+                return found
+            page += 1
 
     def label_id(self):
         for label in self.call('GET', '/labels?limit=50') or []:
@@ -241,13 +276,20 @@ def issue_body(result, folder):
     reproduce = ('python3 android-tv-launcher/tests/probe-free-vod.py --provider %s --movie "Inception" '
                  '2010 tt1375666 27205' % result['id'][4:] if result['id'].startswith('vod:') else
                  'RHINO_JAR=$RHINO_JAR node provider-engine/tools/live-probe.mjs %s' % result['id'][5:])
+    if result['id'].startswith('vod:'):
+        cases = [[r['tmdb'], r['season'], r['episode']] for r in result['records']
+                 if 'tmdb' in r and r.get('streams') == 0]
+    else:
+        cases = [s['caseId'] for r in result['records'] for s in r.get('samples', [])
+                 if s.get('play') != 'ok' and re.fullmatch('[a-f0-9]{64}', s.get('caseId', ''))]
     return ('**%s** (%s) is failing: %s.\n\n'
+            '<!-- moviehub-playback-cases %s -->\n\n'
             'Evidence saved on the server: `%s`\n\n'
             'Reproduce:\n```\n%s\n```\n\n'
             'Fix it by following [docs/FIX_A_BROKEN_SOURCE.md](../src/branch/main/docs/FIX_A_BROKEN_SOURCE.md). '
-            'A fix only counts when that command finds working streams again.\n\n'
+            'This diagnostic alone cannot confirm a repair. Verify the affected playback case independently.\n\n'
             '<details><summary>Probe result</summary>\n\n```json\n%s\n```\n</details>\n'
-            % (result['id'], result['kind'], result['summary'], folder, reproduce, record))
+            % (result['id'], result['kind'], result['summary'], json.dumps(cases), folder, reproduce, record))
 
 
 # ----------------------------------------------------------------------------- main
@@ -271,19 +313,26 @@ def main():
     state = json.loads(state_file.read_text()) if state_file.is_file() else {}
     now = int(time.time())
     stamp = datetime.datetime.now().strftime('%Y-%m-%d_%H%M')
-    newly, still, recovered = decide(state, results, fail_runs, now)
 
     forgejo = None
     if env.get('FORGEJO_URL') and env.get('FORGEJO_TOKEN') and env.get('FORGEJO_REPO'):
         forgejo = Forgejo(env['FORGEJO_URL'], env['FORGEJO_TOKEN'], env['FORGEJO_REPO'])
     issues = forgejo.open_issues() if forgejo else {}
+    # A reviewer can close an incident after confirming the affected content on TV.
+    # Re-arm its counter for the next outage, including state from older server versions.
+    if forgejo:
+        for key in results:
+            if state.get(key, {}).get('broken') and key not in issues:
+                state.pop(key)
+    newly, still, recovered = decide(state, results, fail_runs, now)
 
     for key in newly:
         folder = save_evidence(evidence, results[key], stamp)
         if forgejo and key not in issues:
             forgejo.call('POST', '/issues', {'title': TITLE + key, 'body': issue_body(results[key], folder),
                                              'labels': [forgejo.label_id()]})
-        notify(env.get('NTFY_URL'), 'MovieHub: %s broken' % key, results[key]['summary'])
+        if key not in issues:
+            notify(env.get('NTFY_URL'), 'MovieHub: %s broken' % key, results[key]['summary'])
     for key in still:
         entry = state[key]
         if forgejo and key in issues and now - entry.get('lastComment', 0) > 23 * 3600:
@@ -294,15 +343,15 @@ def main():
     for key in recovered:
         if forgejo and key in issues:
             forgejo.call('POST', '/issues/%d/comments' % issues[key]['number'],
-                         {'body': 'Working again: %s. Closing.' % results[key]['summary']})
-            forgejo.call('PATCH', '/issues/%d' % issues[key]['number'], {'state': 'closed'})
-        notify(env.get('NTFY_URL'), 'MovieHub: %s working again' % key, results[key]['summary'])
+                         {'body': 'A scheduled server sample decoded: %s. The originally reported '
+                                  'channel or title still needs confirmation.' % results[key]['summary']})
 
     state_file.parent.mkdir(parents=True, exist_ok=True)
     state_file.write_text(json.dumps(state, indent=2, sort_keys=True))
-    healthy = sum(r['ok'] for r in results.values())
-    print(json.dumps({'checked': len(results), 'healthy': healthy, 'newlyBroken': newly,
-                      'stillBroken': still, 'recovered': recovered}))
+    healthy = sum(r['ok'] is True for r in results.values())
+    unverified = sum(r['ok'] is None for r in results.values())
+    print(json.dumps({'checked': len(results), 'samplesPlayed': healthy, 'unverified': unverified, 'newlyBroken': newly,
+                      'stillBroken': still, 'sampleResumed': recovered}))
 
 
 if __name__ == '__main__':

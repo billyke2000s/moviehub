@@ -5,7 +5,7 @@ tool-specific files only point here. Do not copy these rules into another file; 
 
 **Fixing a broken source (a `[broken source]` issue)?** Follow
 [docs/FIX_A_BROKEN_SOURCE.md](docs/FIX_A_BROKEN_SOURCE.md) only. Do not read the large documents
-below for that job. A fix counts only when the live probe finds streams again.
+below for that job. A repair review requires independent playback evidence for the affected case.
 
 Read [AI working rules](docs/AI_WORKING_RULES.md), [ARCHITECTURE.md](ARCHITECTURE.md),
 [TESTING.md](TESTING.md) and [STATUS.md](STATUS.md) before changing code. Use the

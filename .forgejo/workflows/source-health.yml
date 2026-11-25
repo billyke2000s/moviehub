@@ -1,7 +1,7 @@
 name: Source health
 # Runs on your home server (Forgejo runner labelled "moviehub", host mode), so sites are tested from a
 # UK home connection like the family's boxes. Live TV every hour (a failing source is re-tested
-# 5 minutes later before it counts); films every 6 hours. Opens/closes "[broken source]" issues and
+# 5 minutes later before it counts); films every 6 hours. Tracks "[broken source]" issues and
 # pings your phone. Never changes code or publishes anything. GitHub ignores this folder.
 on:
     schedule:
@@ -17,6 +17,9 @@ jobs:
         steps:
             - uses: actions/checkout@v4
             - name: Compile the app's JavaScript interpreter for the Live TV probe
+              shell: bash
+              env:
+                  RHINO_JAR: /srv/moviehub/tools/rhino-1.8.0.jar
               run: |
                   mkdir -p build/provider-tests
                   javac -cp "$RHINO_JAR" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderCodec,ProviderSignature,ProviderUrls,ProviderSegments}.java android-tv-launcher/tests/ProviderProbeCli.java

@@ -2,8 +2,8 @@
 
 This is the procedure for any AI (Codex/GPT, Claude, others) or person fixing a source that the
 health checker reported as a `[broken source]` issue. It exists because fixes used to be claimed
-from reading code alone and then failed on the real site. **A fix counts only when the live
-command below finds working streams again on the server.**
+from reading code alone and then failed on the real site. Discovery and catalogue checks give diagnostic evidence. A repair review requires a measured
+playback improvement on the original failing case.
 
 ## 1. Reproduce it first
 
@@ -19,7 +19,7 @@ python3 android-tv-launcher/tests/probe-free-vod.py --provider <id> --movie "Inc
 RHINO_JAR=/srv/moviehub/tools/rhino-1.8.0.jar node provider-engine/tools/live-probe.mjs <id>
 ```
 
-If it now works, the site had a temporary outage: comment that on the issue and stop.
+Record what the command observed. A returned link or a loaded channel catalogue leaves playback unverified.
 
 ## 2. Find out what actually changed
 
@@ -37,22 +37,18 @@ Change only the files for that one source. Do not reformat other files, rename t
 
 ## 3. Prove it
 
-Run the same reproduce command again. It must report `streams` greater than 0 (film sites) or a
-sample with `play: ok` (Live TV). Then run the offline checks:
+The Forgejo repair verifier runs clean base, candidate and base-control checkouts for the
+reported case. Live TV needs decoded audio and video on the same channel ID. Films need the
+pinned Android player audit with audio, video, a plausible runtime and a midpoint seek.
+A healthy control, an unavailable player or a different working sample leaves the repair unverified.
+For runner setup, see [the server guide](../server/README.md#6-codex-gpt-for-automatic-fixes).
 
-```sh
-python3 android-tv-launcher/tests/test_free_vod.py
-python3 android-tv-launcher/tests/test_scraper_loader.py
-```
+## 4. Review the change
 
-If you cannot get streams back, open no pull request. Comment on the issue with what you found.
-
-## 4. Open the pull request
-
-Title: `Fix <source id>: <what changed>`. In the body, paste the command you ran and the actual
-output line showing streams (not a description of it), and the issue number (`Fixes #N`).
-
-Never commit keys, tokens, account details or playback URLs with tokens in them.
+The worker keeps a text-only diagnosis on the issue and a proposed patch on `repair/issue-N`.
+Re-running the issue with a saved candidate reuses its commit. The wrapper opens a PR with both
+revisions and measured observations after verification. Confirm the content identity before closing
+the issue. Keep credentials and signed media URLs out of reports.
 
 ## What happens after the owner merges
 

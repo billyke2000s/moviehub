@@ -1,0 +1,25 @@
+name: Server playback verification tests
+on:
+    pull_request:
+        paths:
+            - "server/health/**"
+            - ".forgejo/workflows/*"
+            - "provider-engine/tools/live-probe.mjs"
+            - ".github/workflows/server-health-tests.yml"
+    workflow_dispatch:
+permissions:
+    contents: read
+jobs:
+    offline:
+        runs-on: ubuntu-latest
+        timeout-minutes: 8
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+            - run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+            - run: python3 -m unittest discover -s server/health -v

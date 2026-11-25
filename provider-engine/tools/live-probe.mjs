@@ -9,7 +9,7 @@
 //   RHINO_JAR=… node provider-engine/tools/live-probe.mjs [provider …]
 import { readFileSync, writeFileSync, mkdirSync, appendFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import dns from "node:dns/promises";
 
 const pkg = JSON.parse(readFileSync("android-tv-launcher/app/src/main/assets/providers/builtin.json"));
@@ -335,7 +335,7 @@ function decode(stream) {
     };
 }
 
-export { run };
+export { run, decode };
 
 if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
     const SKY = /sky\s*sports?/i;
@@ -402,6 +402,12 @@ if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
         if (id === "zlive" && playbackSamples.length === 0) result.playbackScope = "not_tested";
         for (const row of playbackSamples) {
             const sample = { name: String(row.name).slice(0, 60), resolve: "", play: "" };
+            const channelId = row.channelId ?? row.id;
+            if ((typeof channelId === "string" || typeof channelId === "number") && String(channelId)) {
+                sample.caseId = createHash("sha256")
+                    .update(JSON.stringify([id, String(channelId), row.preferredPlayer ?? null]))
+                    .digest("hex");
+            }
             const rstats = {
                 ...stats,
                 hosts: new Set(),
@@ -417,6 +423,8 @@ if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
                         : await run(id, "resolve", row, rstats);
                 sample.resolve = "ok (" + new URL(value.url).hostname + ")";
                 const played = decode(value);
+                sample.videoFrames = played.frames[0];
+                sample.audioFrames = played.frames[1];
                 sample.play = played.ok ? "ok" : "PROVIDER?: " + played.error;
             } catch (e) {
                 sample.resolve = (e instanceof Ours ? "OURS: " : "PROVIDER: ") + e.message;

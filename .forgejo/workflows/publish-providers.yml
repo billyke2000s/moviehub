@@ -6,7 +6,7 @@ name: Publish Live TV providers
 on:
     push:
         branches: [main]
-        paths: ["provider-engine/**"]
+        paths: ["provider-engine/**", "!provider-engine/tools/live-probe*.mjs"]
     workflow_dispatch:
 jobs:
     publish:

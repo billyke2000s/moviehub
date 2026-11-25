@@ -13,18 +13,18 @@ def line(provider, streams, status='ok'):
 
 
 class Decisions(unittest.TestCase):
-    def test_film_site_healthy_if_either_film_works(self):
+    def test_film_links_leave_playback_unverified(self):
         runs = ['\n'.join([line('a', 0), line('b', 0, 'timeout'), '{"providers": 2}']),
                 '\n'.join([line('a', 3), line('b', 0, 'error')])]
         sites = c.vod_results(runs)
-        self.assertTrue(sites['vod:a']['ok'])
+        self.assertIsNone(sites['vod:a']['ok'])
         self.assertFalse(sites['vod:b']['ok'])
         self.assertIn('error', sites['vod:b']['summary'])
         self.assertIn('timeout', sites['vod:b']['summary'])
 
     def test_live_needs_catalogue_and_a_playing_sample(self):
         results = [
-            {'id': 'good', 'catalogue': 'ok', 'channels': 5, 'samples': [{'play': 'PROVIDER?: x'}, {'play': 'ok'}]},
+            {'id': 'good', 'catalogue': 'ok', 'channels': 5, 'samples': [{'play': 'PROVIDER?: x'}, {'play': 'ok', 'videoFrames': 12, 'audioFrames': 30}]},
             {'id': 'noplay', 'catalogue': 'ok', 'channels': 5, 'samples': [{'play': 'PROVIDER?: x'}]},
             {'id': 'down', 'catalogue': 'PROVIDER: catalogue HTTP 403', 'samples': []},
             {'id': 'zlive', 'catalogue': 'ok', 'channels': 252, 'samples': []},
@@ -34,7 +34,7 @@ class Decisions(unittest.TestCase):
         self.assertFalse(live['live:noplay']['ok'])
         self.assertFalse(live['live:down']['ok'])
         self.assertIn('403', live['live:down']['summary'])
-        self.assertTrue(live['live:zlive']['ok'])
+        self.assertIsNone(live['live:zlive']['ok'])
 
     def test_one_blip_is_ignored_two_in_a_row_open_one_issue(self):
         state = {}
@@ -67,7 +67,7 @@ class Decisions(unittest.TestCase):
                  {'id': 'zlive', 'catalogue': 'ok', 'channels': 9, 'samples': []},
                  {'id': 'freeshot', 'catalogue': 'PROVIDER: HTTP 503', 'samples': []}],
             ('dlhd', 'freeshot'): [
-                {'id': 'dlhd', 'catalogue': 'ok', 'channels': 3, 'samples': [{'play': 'ok'}]},
+                {'id': 'dlhd', 'catalogue': 'ok', 'channels': 3, 'samples': [{'play': 'ok', 'videoFrames': 12, 'audioFrames': 30}]},
                 {'id': 'freeshot', 'catalogue': 'PROVIDER: HTTP 503', 'samples': []}],
         }
 
@@ -79,7 +79,7 @@ class Decisions(unittest.TestCase):
         self.assertEqual(calls, [(), ('dlhd', 'freeshot')])  # only the failing ones re-tested
         self.assertEqual(waits, [300])
         self.assertTrue(results['live:dlhd']['ok'])  # blip: recovered on retry
-        self.assertTrue(results['live:zlive']['ok'])
+        self.assertIsNone(results['live:zlive']['ok'])
         self.assertFalse(results['live:freeshot']['ok'])
         self.assertIn('failed twice', results['live:freeshot']['summary'])
 
@@ -88,7 +88,7 @@ class Decisions(unittest.TestCase):
         results = c.live_with_retry(lambda ids=(): calls.append(ids) or [
             {'id': 'zlive', 'catalogue': 'ok', 'channels': 9, 'samples': []}], 300, sleep=None)
         self.assertEqual(len(calls), 1)
-        self.assertTrue(results['live:zlive']['ok'])
+        self.assertIsNone(results['live:zlive']['ok'])
 
     def test_issue_body_points_at_playbook_and_reproduction(self):
         result = {'id': 'vod:free99:levidia_ch', 'kind': 'film/series site', 'summary': 'no streams',

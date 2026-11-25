@@ -1,123 +1,203 @@
 #!/usr/bin/env python3
-"""Hands a "[broken source]" issue to Codex, then checks the result itself.
-
-    python3 server/health/auto_fix.py <issue number>
-
-Run from a clean checkout of main on the server (the Forgejo workflow auto-fix.yml does this when the
-health checker opens an issue). Steps:
-
-  1. Reads the issue, works out the source id, makes branch fix/<id>-<date>.
-  2. Runs Codex (CODEX_CMD, default "codex exec --full-auto") with docs/FIX_A_BROKEN_SOURCE.md.
-  3. Runs the live probe ITSELF. Codex saying "fixed" counts for nothing: only streams > 0 (film site)
-     or a sample that plays (Live TV) does.
-  4. Passed: commits only the changed source files, pushes, opens a pull request with the real probe
-     output. Failed: comments on the issue with the probe result and Codex's last words, opens nothing.
-
-Settings: FORGEJO_URL, FORGEJO_TOKEN, FORGEJO_REPO (as check_sources.py), RHINO_JAR, CODEX_CMD,
-CODEX_MINUTES (default 30).
-"""
-import datetime
+"""Keep proposed edits and independently compare the base and candidate before requesting review."""
+import contextlib
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import check_sources as health  # noqa: E402
+import check_sources as health
+import playback_evidence as evidence
 
 ROOT = health.ROOT
-ALLOWED = ('android-tv-launcher/app/src/main/python/', 'provider-engine/')
+SOURCE_ID = re.compile(r'(?:vod|live):[a-zA-Z0-9_][a-zA-Z0-9_.:-]*')
+VOD_FOLDER = 'android-tv-launcher/app/src/main/python/'
 
 
-def git(*args, check=True):
-    return subprocess.run(['git', *args], cwd=ROOT, capture_output=True, text=True, check=check).stdout
+def git(*args, cwd=None, **kwargs):
+    return subprocess.run(['git', *args], cwd=ROOT if cwd is None else cwd, stdout=subprocess.PIPE, check=True, **kwargs).stdout
 
 
-def probe(source):
-    """Returns (ok, output) by running the real probe for one source."""
-    if source.startswith('vod:'):
-        film = health.FILMS[1]
-        done = subprocess.run([sys.executable, str(health.VOD_PROBE), '--provider', source[4:],
-                               '--timeout-seconds', '120', '--movie', *film],
-                              cwd=ROOT, capture_output=True, text=True, timeout=900)
-        results = health.vod_results([done.stdout])
-    else:
-        done = subprocess.run(['node', str(health.LIVE_PROBE), source[5:]], cwd=ROOT, capture_output=True,
-                              text=True, timeout=1800)
+@contextlib.contextmanager
+def checkout(revision):
+    with tempfile.TemporaryDirectory(prefix='moviehub-check-') as temp:
+        folder = Path(temp)
+        git('worktree', 'add', '--quiet', '--detach', temp, revision)
         try:
-            results = health.live_results(json.loads(health.LIVE_RESULT.read_text()))
-        except (OSError, ValueError):
-            results = {}
-    result = results.get(source)
-    output = (done.stdout or '')[-3000:]
-    return bool(result and result['ok']), (result['summary'] if result else 'no result') + '\n' + output
+            yield folder
+        finally:
+            git('worktree', 'remove', '--force', temp)
 
 
-def changed_files():
-    names = [line[3:] for line in git('status', '--porcelain').splitlines()]
-    return [n for n in names if n]
+def allowed(path, source):
+    if source.startswith('vod:'):
+        return path.startswith(VOD_FOLDER) and path.endswith(('.py', '.json'))
+    provider = source.split(':', 1)[1]
+    return ((path.startswith('provider-engine/upstream/modules/' + provider + '/') and path.endswith('.ts'))
+            or (provider == 'freelivesports' and path == 'provider-engine/upstream/freelivesports.ts'))
+
+
+def check_changes(cwd, base, source):
+    # Check deletions, both halves of a rename, modes, staged edits and any commits the worker made.
+    rows = git('diff', '--raw', '-z', '--no-renames', '--cached', base, cwd=cwd).split(b'\0')[:-1]
+    paths = []
+    for meta, raw in zip(rows[::2], rows[1::2]):
+        path = os.fsdecode(raw)
+        old, new = meta[1:].split()[:2]
+        if not allowed(path, source) or {old, new} - {b'000000', b'100644'}:
+            raise ValueError('candidate touches an unsupported path or file mode: ' + repr(path))
+        paths.append(path)
+    return paths
+
+
+def propose(source, issue, base, branch, previous=''):
+    # The worker gets a disposable clone with no remote or checkout credentials. Construct the
+    # candidate from its allowed file diff in a separate clean checkout.
+    with tempfile.TemporaryDirectory(prefix='moviehub-proposal-') as temp:
+        git('clone', '--quiet', '--no-local', '--no-checkout', str(ROOT), temp)
+        git('remote', 'remove', 'origin', cwd=temp)
+        git('checkout', '--quiet', '--detach', base, cwd=temp)
+        prompt = ('Prepare a local change for %s. The wrapper owns verification, commits and review.\n%s'
+                  % (source, issue['body'][:8000]))
+        if previous:
+            prompt += '\nSaved diagnosis from the earlier attempt:\n' + previous
+        env = {key: value for key, value in os.environ.items()
+               if not (key.startswith(('FORGEJO_', 'GITHUB_', 'GIT_CONFIG_', 'ACTIONS_', 'RUNNER_'))
+                       or key in ('GH_TOKEN', 'NTFY_URL'))}
+        cmd = shlex.split(env.get('CODEX_CMD', 'codex exec --full-auto')) + [prompt]
+        try:
+            worker = subprocess.run(cmd, cwd=temp, env=env, capture_output=True, text=True,
+                                    timeout=60 * int(env.get('CODEX_MINUTES', '30')), check=False)
+        except subprocess.TimeoutExpired:
+            raise ValueError('worker timed out; no completed proposal')
+        if worker.returncode:
+            raise ValueError('worker exited %d; no completed proposal' % worker.returncode)
+        git('add', '-A', cwd=temp)
+        paths = check_changes(temp, base, source)
+        if not paths:
+            # Quote the diagnosis as data; never use its wording as an issue-closing PR body.
+            diagnosis = (worker.stdout or '').strip()[-2000:]
+            diagnosis = re.sub(r'https?://\S+', '[address omitted]', diagnosis)
+            raise NoPatch(diagnosis or 'The worker returned no diagnosis.')
+        patch = git('diff', '--cached', '--binary', '--no-renames', base, cwd=temp)
+    with checkout(base) as clean:
+        git('apply', '--index', '--binary', '-', input=patch, cwd=clean)
+        git('commit', '--quiet', '-m', 'Propose provider change for ' + source, cwd=clean)
+        candidate = git('rev-parse', 'HEAD', cwd=clean).decode().strip()
+        git('push', 'origin', 'HEAD:refs/heads/' + branch, cwd=clean)
+    return candidate
+
+
+class NoPatch(Exception):
+    pass
+
+
+def affected_cases(source, body):
+    match = re.search(r'^<!-- moviehub-playback-cases (.+) -->$', body, re.MULTILINE)
+    if match:
+        keys = json.loads(match[1])
+        return {tuple(key) if isinstance(key, list) else key for key in keys}
+    # Older film issues came from the same two named movies. Older Live TV
+    # reports have no stable channel IDs, so they cannot identify the original case.
+    return {(int(film[3]), -1, -1) for film in health.FILMS} if source.startswith('vod:') else set()
+
+
+def verify(base, candidate, source, cases):
+    # Verify the saved object, never an uncommitted work tree or a previous run's report.
+    with checkout(candidate) as patched:
+        paths = check_changes(patched, base, source)
+        if not paths:
+            raise ValueError('candidate contains no provider change')
+        with checkout(base) as original:
+            before = {key: observation for key, observation in evidence.measure(original, source).items()
+                      if key in cases}
+        if not any(not passed for passed, _ in before.values()):
+            raise ValueError('base produced no failed playback case; no repair established')
+        after = evidence.measure(patched, source)
+    if not evidence.transition(before, after, before):
+        raise ValueError('the candidate did not pass a case that failed on the base')
+    with checkout(base) as control:
+        repeated = evidence.measure(control, source)
+    cases = evidence.transition(before, after, repeated)
+    if not cases:
+        raise ValueError('the original failure did not repeat on the base; no repair established')
+    return paths, cases
+
+
+DIAGNOSIS = 'Diagnosis only. No code changed.'
+PENDING = 'Playback unverified.'
+
+
+def handle(forgejo, number, retry_diagnosis=True):
+    issue_path = '/issues/%d' % number
+    issue = forgejo.call('GET', issue_path)
+    source = issue['title'].removeprefix(health.TITLE).strip()
+    if not issue['title'].startswith(health.TITLE) or issue['state'] != 'open' or not SOURCE_ID.fullmatch(source):
+        raise ValueError('expected an open broken-source issue with a valid provider ID')
+    branch = 'repair/issue-%d' % number
+    base = git('rev-parse', 'HEAD').decode().strip()
+    saved = git('ls-remote', '--heads', 'origin', 'refs/heads/' + branch).split()
+    candidate = None
+
+    def comment(message):
+        forgejo.call('POST', issue_path + '/comments', {'body': message})
+
+    try:
+        if saved:
+            git('fetch', '--quiet', 'origin', 'refs/heads/' + branch)
+            candidate = git('rev-parse', 'FETCH_HEAD').decode().strip()
+            parents = git('show', '-s', '--format=%P', candidate).decode().split()
+            if parents != [base]:
+                raise ValueError('saved proposal has a different base; rebase the proposal before retrying')
+        else:
+            previous = ''
+            if issue.get('comments'):
+                comments = forgejo.call('GET', issue_path + '/comments?limit=50') or []
+                previous = next((item['body'][len(DIAGNOSIS):].strip()[:2200] for item in reversed(comments)
+                                 if item.get('body', '').startswith(DIAGNOSIS)), '')
+                if previous and not retry_diagnosis:
+                    print('A diagnosis is already saved. Manually dispatch this issue to resume it.')
+                    return False
+            candidate = propose(source, issue, base, branch, previous)
+        paths, cases = verify(base, candidate, source, affected_cases(source, issue['body']))
+    except NoPatch as error:
+        comment(DIAGNOSIS + '\n\n' + '\n'.join('> ' + line for line in str(error).splitlines()))
+        return False
+    except (OSError, UnicodeError, KeyError, TypeError, ValueError, subprocess.SubprocessError) as error:
+        reason = ('verification command failed or timed out' if isinstance(error, subprocess.SubprocessError)
+                  else str(error))
+        note = (' Saved candidate `%s` on `%s`. Re-running this issue verifies that commit without '
+                'invoking the AI again.' % (candidate, branch)) if candidate else ''
+        comment('%s %s.%s' % (PENDING, reason.rstrip('.'), note))
+        return False
+
+    measurement = 'Android LibVLC playback and midpoint seek' if source.startswith('vod:') else 'server FFmpeg audio/video decode'
+    body = ('Related to #%d.\n\n%s failed on base, passed on the candidate, and failed on a fresh base run. '
+            'The content identity still needs review.\n\nBase: `%s`\n\nCandidate: `%s`\n\nCases:\n%s\n\nChanged files:\n%s'
+            % (number, measurement, base, candidate, '\n'.join('- ' + repr(case) for case in cases),
+               '\n'.join('- `%s`' % p for p in paths)))
+    # Forgejo enforces one open PR per head/base pair. Rechecking an existing PR only adds evidence.
+    existing = forgejo.call('GET', '/pulls?state=open&head=' + forgejo.repo.split('/')[0] + ':' + branch) or []
+    if any(pr['head']['ref'] == branch and pr['base']['ref'] == 'main' for pr in existing):
+        comment(body)
+    else:
+        forgejo.call('POST', '/pulls', {'title': 'Review playback change for ' + source,
+                                        'head': branch, 'base': 'main', 'body': body})
+    health.notify(os.environ.get('NTFY_URL'), 'MovieHub: playback sample passed', 'Review the candidate for ' + source)
+    return True
 
 
 def main():
     if len(sys.argv) != 2 or not sys.argv[1].isdigit():
         sys.exit('usage: auto_fix.py <issue number>')
-    number = int(sys.argv[1])
     env = os.environ
     forgejo = health.Forgejo(env['FORGEJO_URL'], env['FORGEJO_TOKEN'], env['FORGEJO_REPO'])
-    issue = forgejo.call('GET', '/issues/%d' % number)
-    if not issue['title'].startswith(health.TITLE) or issue['state'] != 'open':
-        sys.exit('Not an open broken-source issue')
-    source = issue['title'][len(health.TITLE):].strip()
-    if not (source.startswith('vod:') or source.startswith('live:')):
-        sys.exit('Unknown source id: ' + source)
-
-    ok, before = probe(source)
-    if ok:
-        forgejo.call('POST', '/issues/%d/comments' % number,
-                     {'body': 'Auto-fix: the source works again without changes (temporary outage).\n\n```\n%s\n```'
-                              % before})
-        return
-
-    branch = 'fix/%s-%s' % (source.replace(':', '-').replace('_', '-'), datetime.date.today().isoformat())
-    git('checkout', '-B', branch)
-    prompt = ('Fix the broken source "%s" (Forgejo issue #%d). Follow docs/FIX_A_BROKEN_SOURCE.md exactly. '
-              'Issue text:\n\n%s' % (source, number, issue['body'][:8000]))
-    command = shlex.split(env.get('CODEX_CMD', 'codex exec --full-auto')) + [prompt]
-    try:
-        codex = subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
-                               timeout=60 * int(env.get('CODEX_MINUTES', '30')))
-        codex_said = (codex.stdout + codex.stderr)[-2500:]
-    except subprocess.TimeoutExpired:
-        codex_said = 'Codex ran out of time.'
-
-    files = changed_files()
-    outside = [f for f in files if not f.startswith(ALLOWED)]
-    ok, after = probe(source) if files and not outside else (False, 'not run')
-    if not ok:
-        reason = ('Codex changed files outside the scraper folders: %s' % ', '.join(outside) if outside else
-                  'Codex made no changes.' if not files else 'The live probe still finds nothing.')
-        git('checkout', '--', '.', check=False)
-        git('clean', '-fd', '--', *ALLOWED, check=False)
-        git('checkout', 'main', check=False)
-        forgejo.call('POST', '/issues/%d/comments' % number, {'body': (
-            'Auto-fix attempt failed, nothing opened. %s\n\n**Probe after:**\n```\n%s\n```\n\n'
-            '<details><summary>Codex output (last part)</summary>\n\n```\n%s\n```\n</details>'
-            % (reason, after, codex_said))})
-        return
-
-    git('add', '--', *files)
-    git('commit', '-m', 'Fix %s\n\nAutomated fix for #%d. Live probe passed on the home server.' % (source, number))
-    git('push', '-f', 'origin', branch)
-    forgejo.call('POST', '/pulls', {
-        'title': 'Fix %s' % source, 'head': branch, 'base': 'main',
-        'body': ('Fixes #%d\n\n**Live probe on the home server after the change (run by the script, not Codex):**'
-                 '\n```\n%s\n```\n\nFiles: %s\n\nMerging publishes the scrapers to every box within about '
-                 '6 hours.\n\n<details><summary>Codex output (last part)</summary>\n\n```\n%s\n```\n</details>'
-                 % (number, after, ', '.join(files), codex_said))})
-    health.notify(env.get('NTFY_URL'), 'MovieHub: fix ready for %s' % source,
-                  'Live probe passed. Open Forgejo and merge to send it to every box.')
+    if not handle(forgejo, int(sys.argv[1]), env.get('REPAIR_TRIGGER', 'workflow_dispatch') == 'workflow_dispatch'):
+        sys.exit('No verified playback change; see the issue for evidence.')
 
 
 if __name__ == '__main__':

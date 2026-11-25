@@ -1,18 +1,9 @@
 # MovieHub home server
 
-Your server is the **workshop**. It checks Live TV every hour and films every 6 hours from your UK
-home connection,
-lets Codex (GPT) try a fix and proves it plays, and publishes fixes. The boxes still do all the
-scraping themselves, and they keep working with their last scrapers if the server is off.
-
-```
- Live TV hourly      fails, and again 5 min later   Codex tries      script re-runs the live probe
- (films every 6 h)   ─► issue + phone ping     ──►  a fix      ──►  streams? ─► pull request + ping
-                                                                    no?     ─► comment, nothing opened
- you tap Merge ──►  publish-providers (Live TV) / publish-scrapers (films): test, sign, put in feed
-               ──►  boxes update quietly: Live TV as soon as a stream fails to play (at most every
-                    15 min), otherwise within 12 h; films within 6 h
-```
+The server checks Live TV hourly and film discovery every six hours. When it opens a broken-source
+issue, the repair worker can propose a code change. The server saves that change on an issue branch.
+Only an independent playback comparison can open a repair review. Boxes keep using their installed
+providers while a repair is pending.
 
 New installs: someone types your Downloader code → "Enter login" → the code your phone just made →
 the APK downloads. The code works once, for 5 minutes.
@@ -144,9 +135,25 @@ sudo -u moviehub -H codex           # first run: choose "Sign in with ChatGPT"  
 different flags, set the repository variable `CODEX_CMD`. Codex needs internet access to look at
 the sites; if its sandbox blocks the network, allow it in Codex's settings.
 
-Whatever Codex says, `server/health/auto_fix.py` re-runs the live probe itself and opens a pull
-request **only if streams come back**. You still merge. You can also run it by hand:
-**Actions → Auto-fix broken source → Run** with the issue number.
+Run **Actions → Auto-fix broken source → Run** with the issue number. The worker must edit files.
+A text-only diagnosis stays on the issue. If a candidate exists on `repair/issue-N`, running the
+same issue again tests that commit. If main moved, rebase the single candidate commit before retrying.
+
+Verification uses separate clean builds of the original revision, candidate, and original revision
+again. A review opens when the same case from the incident fails, plays, then fails again.
+Live TV uses the rebuilt provider package and FFmpeg audio/video frame counts for the same channel ID.
+Film verification uses the existing Android LibVLC single-source audit, including runtime and
+midpoint seek. The PR lists the revisions, changed files and observations. The reviewer confirms
+the actual programme or film before closing the incident. Unidentified channels and incomplete
+test results remain pending.
+
+**Film verification setup.** Give the Forgejo runner access to a dedicated disposable Android TV
+emulator, the Android build tools listed in DEVELOPMENT.md, Gradle, `adb`, and `python` pointing
+to Python 3. Set the Forgejo repository variable `MOVIEHUB_AUDIT_EMULATOR` to its exact
+`adb devices` serial (for example `emulator-5554`). The verifier removes the two MovieHub debug
+packages and their data on that emulator before each build. Use a test emulator reserved for this job.
+Without one, film candidates stay saved and unverified. A new server install does not provide an
+emulator. `CODEX_MINUTES` controls the worker's time budget independently of verification.
 
 ## 7. Switch the boxes over (tomorrow)
 
@@ -164,9 +171,8 @@ request **only if streams come back**. You still merge. You can also run it by h
 ## Day to day
 
 - Phone says **"X broken"**: nothing to do. Codex is already trying.
-- Phone says **"fix ready for X"**: open Forgejo, look at the pull request, tap **Merge**.
-- Phone says **"Auto-fix attempt failed"**: ask an AI to fix it by hand using
-  `docs/FIX_A_BROKEN_SOURCE.md`, or ignore it if the site is dead.
+- Phone says **"playback sample passed"**: open the PR, inspect the before/after results and confirm the content before merging.
+- A failed or unverified attempt records its reason on the issue. A saved branch can be tested again.
 - New box: open the code page, tap **New code**, read the code out.
 
 ## Files
@@ -174,7 +180,7 @@ request **only if streams come back**. You still merge. You can also run it by h
 | File | What it is |
 | --- | --- |
 | `server/gate/gate.py` | Install codes, one-time APK links, keyed update feed |
-| `server/health/check_sources.py` | Runs the probes, opens/closes issues, sends phone alerts |
-| `server/health/auto_fix.py` | Runs Codex, re-checks with the live probe, opens a PR only on success |
+| `server/health/check_sources.py` | Runs the probes, tracks incidents, sends phone alerts |
+| `server/health/auto_fix.py` | Saves proposals and requests review after independent playback verification |
 | `server/tools/build-scrapers.py` | Builds and signs a scraper package (refuses the wrong key) |
 | `.forgejo/workflows/*.yml` | Health check (Live TV hourly, films 6-hourly), auto-fix on new issues, publish Live TV providers and film scrapers on merge |
