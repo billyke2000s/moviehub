@@ -1,6 +1,6 @@
 name: Auto-fix broken source
 # When the health checker opens a "[broken source]" issue, Codex tries a fix on the home server.
-# The script re-runs the live probe itself and opens a pull request only if streams come back.
+# Saved candidates need a failing base, passing candidate and failing base recheck on the same case.
 # You still merge; nothing reaches the boxes without that.
 on:
     issues:
@@ -12,9 +12,9 @@ on:
                 required: true
 jobs:
     fix:
-        if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'broken-source')
+        if: github.event_name == 'workflow_dispatch' || (github.event.action == 'opened' && contains(github.event.issue.labels.*.name, 'broken-source')) || (github.event.action == 'labeled' && github.event.label.name == 'broken-source')
         runs-on: moviehub
-        timeout-minutes: 60
+        timeout-minutes: 480
         concurrency:
             group: auto-fix
         steps:
@@ -22,19 +22,20 @@ jobs:
               with:
                   ref: main
                   token: ${{ secrets.HEALTH_TOKEN }}
-            - name: Compile the app's JavaScript interpreter for the Live TV probe
-              run: |
-                  mkdir -p build/provider-tests
-                  javac -cp "/srv/moviehub/tools/rhino-1.8.0.jar" -d build/provider-tests android-tv-launcher/app/src/main/java/local/tv/home/{ProviderScript,ProviderCodec,ProviderSignature,ProviderUrls,ProviderSegments}.java android-tv-launcher/tests/ProviderProbeCli.java
             - name: Let Codex try, then check it ourselves
               env:
+                  REPAIR_TRIGGER: ${{ github.event_name }}
+                  ISSUE_NUMBER: ${{ inputs.issue || github.event.issue.number }}
                   RHINO_JAR: /srv/moviehub/tools/rhino-1.8.0.jar
                   FORGEJO_URL: ${{ vars.MOVIEHUB_FORGEJO_URL }}
                   FORGEJO_REPO: ${{ github.repository }}
                   FORGEJO_TOKEN: ${{ secrets.HEALTH_TOKEN }}
                   NTFY_URL: ${{ secrets.NTFY_URL }}
+                  MOVIEHUB_AUDIT_EMULATOR: ${{ vars.MOVIEHUB_AUDIT_EMULATOR }}
+                  MOVIEHUB_WORKER_IMAGE: ${{ vars.MOVIEHUB_WORKER_IMAGE }}
+                  CODEX_MINUTES: ${{ vars.CODEX_MINUTES }}
                   CODEX_CMD: ${{ vars.CODEX_CMD || 'codex exec --full-auto' }}
               run: |
                   git config user.name "MovieHub auto-fix"
                   git config user.email "autofix@localhost"
-                  python3 server/health/auto_fix.py "${{ inputs.issue || github.event.issue.number }}"
+                  python3 server/health/auto_fix.py "$ISSUE_NUMBER"

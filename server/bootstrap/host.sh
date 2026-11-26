@@ -1,67 +1,77 @@
 #!/usr/bin/env bash
-# MovieHub server setup, part 1: runs on the Proxmox HOST as root.
-#
-#   curl -fsSL https://raw.githubusercontent.com/billyke2000s/moviehub/main/server/bootstrap/host.sh -o /root/mh.sh && bash /root/mh.sh
-#
-# (Download first, then run: piping into bash would let later commands swallow the script.)
-#
-# Creates ONE new unprivileged Debian 12 container (4 cores, 1.5 GB RAM + 1 GB swap by default; set
-# MOVIEHUB_MEMORY / MOVIEHUB_SWAP in MB to change; CPU priority below the default
-# so other containers such as Minecraft always win), then runs container.sh inside it. It never
-# touches existing containers or VMs. Everything is logged to /root/moviehub-bootstrap.log.
+# Fresh Proxmox install. Re-running resumes only a guest created by this installer.
 set -euo pipefail
+umask 077
+command -v pct >/dev/null || { echo 'Run this on the Proxmox host.' >&2; exit 1; }
 exec > >(tee -a /root/moviehub-bootstrap.log) 2>&1
-BRANCH="${MOVIEHUB_BRANCH:-main}"
-RAW="https://raw.githubusercontent.com/billyke2000s/moviehub/$BRANCH/server/bootstrap"
-step() { echo; echo "==== $* ($(date +%H:%M:%S))"; }
-fail() { echo "SETUP STOPPED: $*"; exit 1; }
+state=/root/.moviehub-bootstrap
+install -d -m 0700 "$state"
+exec 9>"$state/lock"
+flock -n 9 || { echo 'Another MovieHub installation is running.' >&2; exit 1; }
+fail() { echo "SETUP STOPPED: $*" >&2; exit 1; }
 
-command -v pct >/dev/null || fail "This is not a Proxmox host (no pct command)."
-if pct list | awk 'NR>1 {print $NF}' | grep -qx moviehub; then
-    fail "A container called 'moviehub' already exists. Nothing changed. Remove it first to start over."
+if [[ ! -f "$state/identity" ]]; then
+    BRANCH=${MOVIEHUB_BRANCH:-main}
+    [[ "$BRANCH" =~ ^[A-Za-z0-9][A-Za-z0-9_./-]*$ ]] || fail 'Invalid git branch.'
+    INSTALL_REV=${MOVIEHUB_REVISION:-}
+    if [[ -z "$INSTALL_REV" ]]; then
+        INSTALL_REV=$(curl -fsSL "https://api.github.com/repos/billyke2000s/moviehub/commits/$BRANCH" |
+            python3 -c 'import json,sys; print(json.load(sys.stdin)["sha"])')
+    fi
+    [[ "$INSTALL_REV" =~ ^[0-9a-f]{40}$ ]] || fail 'Expected the full installer commit.'
+    names=$(pct list)
+    if awk 'NR>1 && $NF=="moviehub" {found=1} END {exit !found}' <<< "$names"; then
+        fail 'An existing MovieHub guest has no matching installer record. Nothing was changed.'
+    fi
+    CTID=$(pvesh get /cluster/nextid)
+    [[ "$CTID" =~ ^[1-9][0-9]+$ ]] || fail 'Invalid guest ID.'
+    marker=moviehub-installer-$(openssl rand -hex 16)
+    ROOTPW=$(openssl rand -hex 18)
+    tmp=$(mktemp "$state/identity.XXXXXXXX")
+    declare -p CTID BRANCH INSTALL_REV marker ROOTPW > "$tmp"
+    mv -T "$tmp" "$state/identity"
+else
+    . "$state/identity"
 fi
 
-step "Choosing storage and container number"
-CTID=$(pvesh get /cluster/nextid)
-TSTORE=$(pvesm status --content vztmpl --enabled 1 | awk 'NR>1 {print $1; exit}')
-RSTORE=$(pvesm status --content rootdir --enabled 1 | awk 'NR>1 {print $1; exit}')
-[ -n "$TSTORE" ] || fail "No storage allows container templates."
-[ -n "$RSTORE" ] || fail "No storage allows container disks."
-ip link show vmbr0 >/dev/null 2>&1 || fail "Network bridge vmbr0 not found."
-echo "Container $CTID, template storage $TSTORE, disk storage $RSTORE"
-
-step "Getting the Debian 12 template"
-pveam update >/dev/null
-TEMPLATE=$(pveam available --section system | awk '{print $2}' | grep '^debian-12-standard_.*amd64' | sort -V | tail -1)
-[ -n "$TEMPLATE" ] || fail "Debian 12 template not found."
-pveam list "$TSTORE" | grep -q "$TEMPLATE" || pveam download "$TSTORE" "$TEMPLATE"
-
-step "Creating container $CTID (moviehub)"
-ROOTPW=$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-20)
-pct create "$CTID" "$TSTORE:vztmpl/$TEMPLATE" \
-    --hostname moviehub --cores 4 --memory "${MOVIEHUB_MEMORY:-1536}" --swap "${MOVIEHUB_SWAP:-1024}" --cpuunits 50 \
-    --rootfs "$RSTORE:32" --net0 name=eth0,bridge=vmbr0,ip=dhcp,ip6=auto \
-    --unprivileged 1 --features nesting=1 --onboot 1 --password "$ROOTPW"
-pct start "$CTID"
-
-step "Waiting for the container's network"
-IP=""
+if config=$(pct config "$CTID" 2>/dev/null); then
+    grep -Fxq "description: $marker" <<< "$config" || fail "CT $CTID does not match this installation."
+else
+    [[ ! -f "$state/created" ]] || fail "Previously created CT $CTID is missing. No replacement was created."
+    tstore=$(pvesm status --content vztmpl --enabled 1 | awk 'NR==2 {print $1}')
+    rstore=$(pvesm status --content rootdir --enabled 1 | awk 'NR==2 {print $1}')
+    [[ -n "$tstore" && -n "$rstore" ]] || fail 'Template and root disk storage are required.'
+    ip link show vmbr0 >/dev/null || fail 'Network bridge vmbr0 is missing.'
+    pveam update >/dev/null
+    template=$(pveam available --section system | awk '$2 ~ /^debian-12-standard_.*amd64/ {print $2}' | sort -V | tail -1)
+    [[ -n "$template" ]] || fail 'Debian 12 template not found.'
+    cached=$(pveam list "$tstore")
+    grep -Fq "$template" <<< "$cached" || pveam download "$tstore" "$template"
+    pct create "$CTID" "$tstore:vztmpl/$template" --hostname moviehub --description "$marker" \
+        --cores 4 --memory "${MOVIEHUB_MEMORY:-1536}" --swap "${MOVIEHUB_SWAP:-1024}" --cpuunits 50 \
+        --rootfs "$rstore:32" --net0 name=eth0,bridge=vmbr0,ip=dhcp,ip6=auto \
+        --unprivileged 1 --features nesting=1 --onboot 1 --password "$ROOTPW"
+fi
+touch "$state/created"
+if [[ -f "$state/complete" ]]; then
+    echo "Installation previously completed on CT $CTID. See /root/moviehub-credentials.txt inside the guest."
+    exit 0
+fi
+[[ "$(pct status "$CTID")" == "status: running" ]] || pct start "$CTID"
+ready=0
 for _ in $(seq 1 60); do
-    # First IPv4 address: Forgejo's web address cannot be a bare IPv6 address.
-    IP=$(pct exec "$CTID" -- hostname -I 2>/dev/null | tr ' ' '\n' | grep -m1 -E '^[0-9]+(\.[0-9]+){3}$') || true
-    if [ -n "$IP" ] && pct exec "$CTID" -- getent hosts github.com >/dev/null 2>&1; then break; fi
+    CONTAINER_IP=$(pct exec "$CTID" -- hostname -I 2>/dev/null | tr ' ' '\n' | awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && !seen++ {print}') || true
+    if [[ -n "$CONTAINER_IP" ]] && pct exec "$CTID" -- getent hosts github.com >/dev/null 2>&1; then ready=1; break; fi
     sleep 2
 done
-[ -n "$IP" ] || fail "Container $CTID got no IP address (is DHCP on?)."
-echo "Container IP: $IP"
-
-step "Running the installer inside the container"
-curl -fsSL "$RAW/container.sh" -o /tmp/moviehub-container.sh
-printf 'CONTAINER_IP=%s\nROOTPW=%s\nBRANCH=%s\n' "$IP" "$ROOTPW" "$BRANCH" > /tmp/moviehub-env
-pct push "$CTID" /tmp/moviehub-container.sh /root/container.sh
-pct push "$CTID" /tmp/moviehub-env /root/moviehub-env --perms 600
-rm -f /tmp/moviehub-env
+((ready)) || fail "CT $CTID did not get IPv4 and DNS. Retry the same command after restoring connectivity."
+raw="https://raw.githubusercontent.com/billyke2000s/moviehub/$INSTALL_REV/server/bootstrap"
+for script in container.sh forgejo-binary.sh; do
+    curl -fsSL --retry 2 "$raw/$script" -o "$state/$script"
+    pct push "$CTID" "$state/$script" "/root/$script" --perms 700
+done
+declare -p CONTAINER_IP ROOTPW BRANCH INSTALL_REV > "$state/guest.env"
+pct push "$CTID" "$state/guest.env" /root/moviehub-env --perms 600
 pct exec "$CTID" -- bash /root/container.sh </dev/null
-
-echo
-echo "Container: $CTID (moviehub) at $IP. Log: /root/moviehub-bootstrap.log"
+touch "$state/complete"
+echo "MovieHub installed on CT $CTID at $CONTAINER_IP."

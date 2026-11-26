@@ -12,7 +12,13 @@ Older, dated sections are kept in [docs/history/TESTING.md](docs/history/TESTING
   update-address rules.
 - `test_scraper_loader.py` (Android CI, free VOD step): a package is used including subpackages;
   broken packages fall back to the APK's scrapers. Desktop CPython only, not Chaquopy on a device.
-- `server/gate/test_gate.py`, `server/health/test_check_sources.py`: run with `python3`.
+- Run `python3 server/gate/test_gate.py` and `python3 -m unittest discover -s server/health -v`.
+  The health suite needs Python 3.11+, Git, Node and FFmpeg. It exercises a real local Git remote,
+  report-only workers, candidate reuse, protected verifier files, exact-case comparisons and
+  loopback HTTP 200 responses containing HTML, silent video and decoded audio/video. These offline
+  fixtures do not establish playback on a home TV. The same workflow starts a signed Forgejo server with
+  a temporary private repository, runs a real Forgejo runner job, and exercises branch permissions and the
+  release helper. A separate job checks rootless Podman isolation and interrupted installs with simulated Proxmox commands. See [the disposable setup check](server/README.md#test-before-installing-forgejo).
 
 ## Unreleased: Playwright provider analysis
 

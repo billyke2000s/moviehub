@@ -9,7 +9,7 @@
 //   RHINO_JAR=… node provider-engine/tools/live-probe.mjs [provider …]
 import { readFileSync, writeFileSync, mkdirSync, appendFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import dns from "node:dns/promises";
 
 const pkg = JSON.parse(readFileSync("android-tv-launcher/app/src/main/assets/providers/builtin.json"));
@@ -319,23 +319,27 @@ function decode(stream) {
         if (m) frames[Number(m[1])]++;
     }
     const ok = p.status === 0 && frames[0] >= 10 && frames[1] >= 10;
-    const error = (p.stderr || "")
-        .split("\n")
-        .map((l) => l.replace(/https?:\/\/[^\s'"]+/g, "<url>").trim())
-        .filter(Boolean)
-        .slice(-1)[0];
-    return {
-        ok,
-        frames,
-        error: ok
-            ? ""
-            : p.status === 0
-              ? "No sustained decoded video/audio (" + frames.join("/") + " frames)"
-              : (error || "ffmpeg exit " + p.status).slice(0, 140),
-    };
+    if (ok) return { ok, frames, status: "decoded", error: "" };
+    if (p.error || p.signal) {
+        return { ok, frames, status: "unverified", error: "FFmpeg did not complete the measurement" };
+    }
+    const diagnostic = p.stderr || "";
+    const missingTrack = /Stream map ['"]?0:[av]:0['"]? matches no streams/i.test(diagnostic) ||
+        (/Stream map '' matches no streams/i.test(diagnostic) &&
+         /Failed to set value '0:[av]:0' for option 'map'/.test(diagnostic));
+    if (missingTrack) {
+        return { ok, frames, status: "media_failed", error: "Input lacks a required audio or video track" };
+    }
+    if (/Invalid data found when processing input/i.test(diagnostic)) {
+        return { ok, frames, status: "media_failed", error: "FFmpeg rejected the input media" };
+    }
+    if (p.status === 0) {
+        return { ok, frames, status: "media_failed", error: "Insufficient decoded frames: " + frames.join("/") };
+    }
+    return { ok, frames, status: "unverified", error: "FFmpeg exited without a conclusive input measurement" };
 }
 
-export { run };
+export { run, decode };
 
 if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
     const SKY = /sky\s*sports?/i;
@@ -402,6 +406,12 @@ if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
         if (id === "zlive" && playbackSamples.length === 0) result.playbackScope = "not_tested";
         for (const row of playbackSamples) {
             const sample = { name: String(row.name).slice(0, 60), resolve: "", play: "" };
+            const channelId = row.channelId ?? row.id;
+            if ((typeof channelId === "string" || typeof channelId === "number") && String(channelId)) {
+                sample.caseId = createHash("sha256")
+                    .update(JSON.stringify([id, String(channelId), row.preferredPlayer ?? null]))
+                    .digest("hex");
+            }
             const rstats = {
                 ...stats,
                 hosts: new Set(),
@@ -417,8 +427,13 @@ if (process.env.MOVIEHUB_PROBE_LIBRARY !== "1") {
                         : await run(id, "resolve", row, rstats);
                 sample.resolve = "ok (" + new URL(value.url).hostname + ")";
                 const played = decode(value);
-                sample.play = played.ok ? "ok" : "PROVIDER?: " + played.error;
+                sample.videoFrames = played.frames[0];
+                sample.audioFrames = played.frames[1];
+                sample.decodeStatus = played.status;
+                sample.play = played.ok ? "ok" : played.status + ": " + played.error;
             } catch (e) {
+                sample.resolveHttpFailure =
+                    !(e instanceof Ours) && rstats.httpErrors.length > 0 && !rstats.networkErrors.length;
                 sample.resolve = (e instanceof Ours ? "OURS: " : "PROVIDER: ") + e.message;
                 if (rstats.httpErrors.length)
                     sample.resolve += " (HTTP " + rstats.httpErrors.slice(-3).join(", ") + ")";

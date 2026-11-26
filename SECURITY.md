@@ -1,5 +1,7 @@
 # Security
 
+The home repair worker runs offline in rootless Podman. Its output is an untrusted patch. MovieHub checks the patch in a temporary Git index and verifies all incident cases on separate checkouts. The Forgejo runner has a repository-scoped bot credential. The release helper runs under a different OS account, accepts only protected main by commit ID, and owns the signing key and writable feed. See [server setup](server/README.md#repository-and-signing).
+
 ## Over-the-air scraper packages and the self-hosted feed (unreleased)
 
 - Scraper packages run Python on every box, so the package signature is the security boundary:

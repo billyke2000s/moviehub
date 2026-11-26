@@ -16,31 +16,13 @@ jobs:
         runs-on: moviehub
         timeout-minutes: 20
         steps:
-            - uses: actions/checkout@v4
-            - name: Check the scrapers before anything is published
-              run: |
-                  python3 android-tv-launcher/tests/test_free_vod.py
-                  python3 android-tv-launcher/tests/test_primewire.py
-                  python3 android-tv-launcher/tests/test_scraper_loader.py
-            - name: Build, sign and publish
+            - name: Publish the selected revision from protected main
               env:
+                  REVISION: ${{ github.sha }}
                   TARGET: ${{ inputs.target || 'normal' }}
               run: |
-                  set -euo pipefail
-                  feed=/srv/moviehub/feed
-                  area=scrapers; app=app
-                  if [ "$TARGET" = experimental ]; then area=scrapers-experimental; app=experimental; fi
-                  # Target the APK version boxes actually run (the one in the feed).
-                  version_code=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['versionCode'])" "$feed/$app/update.json")
-                  python3 server/tools/build-scrapers.py --key /srv/moviehub/keys/signing.pem --app "$version_code" --out build/scrapers
-                  mkdir -p "$feed/$area"
-                  # Copy to temporary names, then rename (atomic). A box that downloads between the two
-                  # renames sees a signature mismatch, uses nothing, and simply tries again next check.
-                  cp build/scrapers/scrapers.zip "$feed/$area/.scrapers.zip.new"
-                  cp build/scrapers/scrapers.sig "$feed/$area/.scrapers.sig.new"
-                  mv "$feed/$area/.scrapers.zip.new" "$feed/$area/scrapers.zip"
-                  mv "$feed/$area/.scrapers.sig.new" "$feed/$area/scrapers.sig"
-                  echo "Published to $area for app version $version_code"
+                  case "$TARGET" in normal) area=scrapers ;; experimental) area=scrapers-experimental ;; *) exit 2 ;; esac
+                  printf '%s\n' "$REVISION" | sudo -n -u moviehub-release /usr/local/libexec/moviehub-publish "$area"
             - name: Tell your phone
               if: always()
               env:

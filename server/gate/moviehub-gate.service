@@ -4,7 +4,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-User=moviehub
+User=moviehub-gate
 EnvironmentFile=/etc/moviehub-gate.env
 ExecStart=/usr/bin/python3 /srv/moviehub/repo/server/gate/gate.py
 Restart=always
