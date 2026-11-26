@@ -91,6 +91,13 @@ Run **Actions → Auto-fix broken source → Run** with the issue number. The wo
 A text-only diagnosis stays on the issue. If a candidate exists on `repair/issue-N`, running the
 same issue again tests that commit. If main moved, rebase the single candidate commit before retrying.
 
+The AI gets up to five hours per attempt. Set the Forgejo repository variable `CODEX_MINUTES`
+to any whole number from 1 to 300 to choose a shorter limit. Verification begins as soon as the
+worker returns a patch. The eight-hour limit covers the entire job, including playback checks.
+If you already have a server from an earlier installer, set `ENDLESS_TASK_TIMEOUT = 8h` under
+`[actions]` in `/etc/forgejo/app.ini` and `timeout: 8h` under `runner` in
+`/srv/moviehub/runner/config.yml`. Restart `forgejo` and `forgejo-runner` when the runner is idle.
+
 Verification uses separate clean builds of the original revision, candidate, and original revision
 again. Every recorded case must fail, play, then fail again. The review branch identifies the exact tested candidate.
 Live TV uses the rebuilt provider package and FFmpeg audio/video frame counts for the same channel ID.
@@ -106,7 +113,7 @@ to Python 3. Set the Forgejo repository variable `MOVIEHUB_AUDIT_EMULATOR` to it
 `adb devices` serial (for example `emulator-5554`). The verifier removes the two MovieHub debug
 packages and their data on that emulator before each build. Use a test emulator reserved for this job.
 Without one, film candidates stay saved and unverified. A new server install does not provide an
-emulator. `CODEX_MINUTES` controls the worker's time budget independently of verification.
+emulator.
 
 ## 7. Switch the boxes over (tomorrow)
 

@@ -12,6 +12,7 @@ import uuid
 
 PODMAN = '/usr/bin/podman'
 MAX_PATCH = 2 * 1024 * 1024
+MAX_WORKER_MINUTES = 300
 
 
 def bounded_result(command, prompt, env, seconds):
@@ -63,9 +64,9 @@ def proposal(root, base, prompt):
     command = shlex.split(os.environ.get('CODEX_CMD', 'codex exec --full-auto'))
     if not command:
         raise ValueError('empty worker command')
-    minutes = int(os.environ.get('CODEX_MINUTES', '30'))
-    if not 1 <= minutes <= 120:
-        raise ValueError('worker time budget must be 1 to 120 minutes')
+    minutes = int(os.environ.get('CODEX_MINUTES') or MAX_WORKER_MINUTES)
+    if not 1 <= minutes <= MAX_WORKER_MINUTES:
+        raise ValueError(f'worker time budget must be 1 to {MAX_WORKER_MINUTES} minutes')
     with tempfile.TemporaryDirectory(prefix='mh-input-') as temp:
         archive = Path(temp) / 'source.tar'
         subprocess.run(['git', 'archive', '--format=tar', '-o', str(archive), base],

@@ -14,7 +14,7 @@ jobs:
     fix:
         if: github.event_name == 'workflow_dispatch' || (github.event.action == 'opened' && contains(github.event.issue.labels.*.name, 'broken-source')) || (github.event.action == 'labeled' && github.event.label.name == 'broken-source')
         runs-on: moviehub
-        timeout-minutes: 300
+        timeout-minutes: 480
         concurrency:
             group: auto-fix
         steps:
@@ -33,7 +33,7 @@ jobs:
                   NTFY_URL: ${{ secrets.NTFY_URL }}
                   MOVIEHUB_AUDIT_EMULATOR: ${{ vars.MOVIEHUB_AUDIT_EMULATOR }}
                   MOVIEHUB_WORKER_IMAGE: ${{ vars.MOVIEHUB_WORKER_IMAGE }}
-                  CODEX_MINUTES: ${{ vars.CODEX_MINUTES || '30' }}
+                  CODEX_MINUTES: ${{ vars.CODEX_MINUTES }}
                   CODEX_CMD: ${{ vars.CODEX_CMD || 'codex exec --full-auto' }}
               run: |
                   git config user.name "MovieHub auto-fix"

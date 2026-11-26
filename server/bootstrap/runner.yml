@@ -1,3 +1,4 @@
 runner:
   capacity: 1
+  timeout: 8h
   labels: ["moviehub:host"]

@@ -29,12 +29,19 @@ class WorkerContainer(unittest.TestCase):
                     'assert not Path("/run/podman/podman.sock").exists(); '
                     'Path("source.py").write_text("after\\n"); print("fixture diagnosis")' % str(canary))
             with patch.dict(os.environ, CODEX_CMD=shlex.join(['/usr/bin/python3','-c',code]),
-                            FORGEJO_TOKEN='fixture-only'):
+                            FORGEJO_TOKEN='fixture-only', CODEX_MINUTES=''), \
+                 patch.object(isolated_worker, 'bounded_result', wraps=isolated_worker.bounded_result) as run:
                 data, diagnosis=isolated_worker.proposal(root,'HEAD','fixture')
+            self.assertEqual(run.call_args.args[-1], 5 * 60 * 60)
             self.assertIn(b'+after', data)
             self.assertIn('fixture diagnosis', diagnosis)
             self.assertEqual((root/'source.py').read_text(), 'before\n')
             self.assertEqual(canary.read_text(), 'private fixture')
+
+    def test_rejects_more_than_five_hours(self):
+        with patch.dict(os.environ, CODEX_MINUTES='301'):
+            with self.assertRaisesRegex(ValueError, '1 to 300 minutes'):
+                isolated_worker.proposal(Path.cwd(), 'HEAD', 'fixture')
 
 
 if __name__=='__main__':

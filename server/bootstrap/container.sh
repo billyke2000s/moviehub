@@ -121,6 +121,7 @@ DEFAULT_PRIVATE = private
 
 [actions]
 ENABLED = true
+ENDLESS_TASK_TIMEOUT = 8h
 EOF
 fi
 # Forgejo may add generated settings to its own config on first start, so it must be able to write it.

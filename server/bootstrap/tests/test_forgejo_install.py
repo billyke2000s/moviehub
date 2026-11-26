@@ -48,6 +48,7 @@ INSTALL_LOCK = true
 DISABLE_REGISTRATION = true
 [actions]
 ENABLED = true
+ENDLESS_TASK_TIMEOUT = 8h
 [log]
 LEVEL = Warn
 """)
@@ -175,6 +176,7 @@ LEVEL = Warn
             workflow = tree/'.forgejo/workflows/offline-fixture.yml'
             workflow.parent.mkdir(parents=True)
             workflow.write_text('name: Fixture\non: [push]\njobs:\n  fixture:\n    runs-on: moviehub\n'
+                                '    timeout-minutes: 480\n'
                                 '    steps:\n      - run: echo moviehub-runner-ready\n')
             local(owner_git+['switch','-qc','qa/runner-start'],check=True)
             local(owner_git+['add','.forgejo'],check=True)
